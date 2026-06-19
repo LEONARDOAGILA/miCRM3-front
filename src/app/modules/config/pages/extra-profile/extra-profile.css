@@ -1,0 +1,83 @@
+/* Estilos para el zoom */
+.lity-img, .lity-image img {
+  transition: transform 0.3s ease !important;
+  cursor: zoom-in;
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+/* Estilos para los botones */
+.lity-custom-nav:hover {
+  background: rgba(0,0,0,0.9) !important;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.lity-custom-nav:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+#lity-custom-zoom:hover {
+  background: rgba(0,0,0,0.9) !important;
+  transform: scale(1.1);
+}
+
+#lity-custom-zoom:active {
+  transform: scale(0.95);
+}
+
+/* Deshabilitar click en el overlay de lity */
+.lity-overlay {
+  pointer-events: none !important;
+}
+
+/* Mantener la X clickeable */
+.lity-close {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 10002 !important;
+}
+
+/* Mantener el contenido clickeable si es necesario */
+.lity-container {
+  pointer-events: auto !important;
+}
+
+/* Estilos para el contenedor con scroll (panning) */
+.lity-content {
+  overflow: auto !important;
+  max-width: 90vw;
+  max-height: 90vh;
+  cursor: grab;
+}
+
+.lity-content:active {
+  cursor: grabbing;
+}
+
+/* Estilo para la imagen */
+.lity-img, .lity-image img {
+  transition: transform 0.3s ease;
+  cursor: zoom-in;
+  transform-origin: top left;
+}
+
+/* Scrollbar personalizado (opcional) */
+.lity-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.lity-content::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+}
+
+.lity-content::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.5);
+  border-radius: 4px;
+}
+
+.lity-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.8);
+}

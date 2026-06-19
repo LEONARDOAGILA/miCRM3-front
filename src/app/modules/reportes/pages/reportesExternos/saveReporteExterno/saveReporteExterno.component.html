@@ -1,0 +1,83 @@
+<!-- begin spinner -->
+<ng-container *ngIf="(isLoading$ | async)">
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+</ng-container>
+
+
+<!-- CABECERA DE MODAL -->
+<app-modal-header 
+    [title]="titulo"
+    (onClose)="modal.close('Close click')"
+></app-modal-header>
+
+
+<!-- CUERPO DE MODAL -->
+<div class="modal-body">
+<p></p>
+  <form [formGroup]="form" class="form-validate form-horizontal" novalidate="">
+      <div class="container-fluid">
+            <div class="row">
+                <app-campoTexto 
+                    [control]="form.controls['nombre']"
+                    label="NOMBRE"
+                    placeholder="NOMBRE"
+                    [maxLength]="255"
+                    [trimEspacios]="true"
+                    [mayusculas]="true"
+                ></app-campoTexto>
+            </div>
+
+            <div class="row">
+            <app-campoTextoArea
+                [control]="form.controls['descripcion']"
+                label="DESCRIPCION"
+                placeholder="Ingrese la descripción"
+                [maxLength]="500"
+                [trimEspacios]="true"
+            ></app-campoTextoArea>
+
+            </div>
+
+            <div class="row">
+                <app-campoTexto 
+                    [control]="form.controls['url']"
+                    label="URL"
+                    placeholder="URL"
+                    [maxLength]="500"
+                    [trimEspacios]="true"
+                ></app-campoTexto>
+            </div>
+
+            <div class="mb-n2">
+                <app-combo 
+                formControlName="departamento_id" 
+                [items]="departamentoModel" 
+                [label]="'Departamento'" 
+                bindLabel="nombre" 
+                bindValue="id">
+                </app-combo>
+            </div>
+
+            <div class="row">
+                <app-checkbox
+                    [control]="form.controls['activo']"
+                    [label]="'Activo'"
+                    [id]="'ck-isactive'"
+                ></app-checkbox>                              
+            </div>
+
+      </div>
+  </form>
+<p></p>  
+</div>
+
+
+<!-- PIE DE MODAL -->
+<app-modal-footer
+    [isDisabled]="!isdisabled"
+    (onClose)="modal.close('Close click')"
+    (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>
+
+

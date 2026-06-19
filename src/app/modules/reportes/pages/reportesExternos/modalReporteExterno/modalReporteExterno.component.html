@@ -1,0 +1,28 @@
+<div class="modal-header d-flex">
+    <button type="button" class="btn-close buttonn1" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+</div>
+
+<div class="modal-body">
+    <div>
+
+    <div class="iframe-container" [class.fullscreen]="isFullscreen">
+        <div class="fullscreen-button-salir-pantalla-completa" *ngIf="isFullscreen === true">
+            <button type="button" class="btn-expandir-custom" (click)="toggleFullscreen()">
+                <i class="fas fa-expand"></i> <!-- Icono de expandir -->
+            </button>
+            <button type="button" class="btn-close btn-close-custom" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+        </div>
+        <!-- <iframe [src]="url_" allowfullscreen="false"></iframe> -->
+<div class="iframe-wrapper" style="height: 100%; overflow: hidden;">
+    <iframe 
+        [src]="url_" 
+        allowfullscreen="false" 
+        style="margin-top: -60px; width: 100%; height: calc(100% + 50px);"
+    ></iframe>
+</div>
+
+        <div class="flotante"></div>
+    </div>
+
+    </div>
+</div>

@@ -1,0 +1,133 @@
+:root {
+  /* Colores para modo claro */
+  --table-bg: #ffffff;
+  --table-header-bg: #ffffff;
+  --table-row-hover: #f8fafc;
+  --table-row-active: #e7f1ff;
+  --table-border: #f0f0f0;
+  --table-text: #212529;
+  --table-shadow: rgba(0, 0, 0, 0.05);
+  --no-data-text: #6c757d;
+  
+  /* Scrollbar */
+  --scrollbar-width: 3px;
+  --scrollbar-track-bg: #f1f1f1;
+  --scrollbar-thumb-bg: #888;
+  --scrollbar-thumb-hover-bg: #555;
+  --scrollbar-border-radius: 1.5px;
+  --scrollbar-padding: 5px;
+}
+
+/* Modo oscuro */
+.dark-mode {
+  --table-bg: #2a3042;
+  --table-header-bg: #2a3042;
+  --table-row-hover: #343a4a;
+  --table-row-active: #3a4466;
+  --table-border: #3a4256;
+  --table-text: #e9ecef;
+  --table-shadow: rgba(0, 0, 0, 0.2);
+  --no-data-text: #adb5bd;
+  
+  /* Scrollbar modo oscuro */
+  --scrollbar-track-bg: #2a3042;
+  --scrollbar-thumb-bg: #4a5068;
+  --scrollbar-thumb-hover-bg: #5a6688;
+}
+
+/* Estilos base */
+.scrollable-container {
+  overflow-y: hidden;
+  padding-right: var(--scrollbar-padding);
+}
+
+.scrollable-container:hover {
+  overflow-y: auto;
+}
+
+.scrollable-container:hover::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+}
+
+.scrollable-container:hover::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-bg);
+  border-radius: var(--scrollbar-border-radius);
+}
+
+.scrollable-container:hover::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-bg);
+  border-radius: var(--scrollbar-border-radius);
+}
+
+.scrollable-container:hover::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-bg);
+}
+
+.scrollable-container:hover {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-bg) var(--scrollbar-track-bg);
+}
+
+.file-tree {
+  max-height: 350px;
+}
+
+/* Estructura principal */
+.file-manager-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Mensaje de no datos */
+.no-data-row td {
+  padding: 20px;
+  text-align: center;
+  color: var(--no-data-text);
+  font-style: italic;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .file-manager-container {
+    position: relative;
+  }
+
+  .file-manager-sidebar-mobile-toggler {
+    position: fixed;
+    left: 10px;
+    top: 10px;
+    z-index: 1100;
+    transition: left 0.3s ease;
+  }
+
+  .file-manager-sidebar-mobile-toggled .file-manager-sidebar-mobile-toggler {
+    left: 240px;
+  }
+
+  .file-manager-sidebar {
+    position: fixed;
+    left: -250px;
+    top: 0;
+    width: 250px;
+    height: 100vh;
+    background: var(--table-bg);
+    box-shadow: 2px 0 10px var(--table-shadow);
+    transition: left 0.3s ease;
+    z-index: 1050;
+  }
+
+  .file-manager-sidebar-mobile-toggled .file-manager-sidebar {
+    left: 0;
+  }
+
+  .file-manager-content {
+    transition: margin-left 0.3s ease;
+  }
+
+  .file-manager-sidebar-mobile-toggled .file-manager-content {
+    margin-left: 250px;
+  }
+}

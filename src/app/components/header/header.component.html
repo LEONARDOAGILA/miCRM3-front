@@ -1,0 +1,232 @@
+<!-- BEGIN #header -->
+<div id="header" class="app-header" [attr.data-bs-theme]="this.appSettings.appHeaderInverse ? 'dark' : ''">
+<!-- BEGIN navbar-header -->
+<div class="navbar-header">
+  <!-- Botón de menú principal - MOVERLO PRIMERO -->
+  <button type="button" class="navbar-mobile-toggler" (click)="toggleAppSidebarMobile()" *ngIf="!this.appSettings.appSidebarNone">
+    <span class="icon-bar"></span>
+    <span class="icon-bar"></span>
+    <span class="icon-bar"></span>
+  </button>
+  
+  <!-- Los demás botones -->
+  <button type="button" class="navbar-mobile-toggler" *ngIf="this.appSidebarTwo" (click)="toggleAppSidebarEndMobile()">
+    <span class="icon-bar"></span>
+    <span class="icon-bar"></span>
+    <span class="icon-bar"></span>
+  </button>
+  <a href="/" class="navbar-brand"><span class="navbar-logo"></span> <b class="me-2">IUNIX</b></a>
+	<span class="badge bg-success bg-opacity-10 text-success small navbar-logo" style="font-size: 0.75rem; border: 1px solid rgba(40, 167, 69, 0.3);">Versión 3.0</span>
+
+  <button type="button" class="navbar-mobile-toggler" (click)="toggleAppTopMenuMobile()" *ngIf="this.appSettings.appTopMenu && !this.appSettings.appSidebarNone">
+    <span class="fa-stack fa-lg text-inverse">
+      <i class="far fa-square fa-stack-2x"></i>
+      <i class="fa fa-cog fa-stack-1x"></i>
+    </span>
+  </button>
+  <button type="button" class="navbar-mobile-toggler" (click)="toggleAppHeaderMegaMenuMobile()" *ngIf="this.appSettings.appHeaderMegaMenu">
+    <span class="fa-stack fa-lg text-inverse">
+      <i class="far fa-square fa-stack-2x"></i>
+      <i class="fa fa-cog fa-stack-1x"></i>
+    </span>
+  </button>
+  <button type="button" class="navbar-mobile-toggler" (click)="toggleAppTopMenuMobile()" *ngIf="this.appSettings.appTopMenu && this.appSettings.appSidebarNone">
+    <span class="icon-bar"></span>
+    <span class="icon-bar"></span>
+    <span class="icon-bar"></span>
+  </button>
+</div>
+<!-- END navbar-header -->
+
+
+  <!-- BEGIN mega-menu -->
+  <div class="collapse d-md-block me-auto" *ngIf="this.appSettings.appHeaderMegaMenu" [ngClass]="{ 'd-block': (this.appSettings.appHeaderMegaMenu && this.appSettings.appHeaderMegaMenuMobileToggled) }">
+   <div class="navbar-nav">
+			<div class="navbar-item dropdown dropdown-lg">
+        <a href="javascript:;" class="navbar-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+					<i class="fa fa-th-large fa-fw me-1"></i> 
+					<span class="d-lg-inline d-md-none">Mega</span>
+					<b class="caret ms-1"></b>
+				</a>
+        <div class="dropdown-menu dropdown-menu-lg">
+        	Content here
+        </div>
+      </div>
+			<div class="navbar-item">
+				<a href="javascript:;" class="navbar-link d-flex align-items-center">
+					<i class="fa fa-gem fa-fw me-1"></i>
+					<span class="d-lg-inline d-md-none">Client</span>
+				</a>
+			</div>
+			<div class="navbar-item dropdown">
+        <a href="javascript:;" class="navbar-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+          <i class="fa fa-database fa-fw me-1"></i> 
+          <span class="d-lg-inline d-md-none">New</span>
+          <b class="caret ms-1"></b>
+        </a>
+        <div class="dropdown-menu">
+          <a href="javascript:;" class="dropdown-item">Action</a>
+          <a href="javascript:;" class="dropdown-item">Another action</a>
+          <a href="javascript:;" class="dropdown-item">Something else here</a>
+          <div class="dropdown-divider"></div>
+          <a href="javascript:;" class="dropdown-item">Separated link</a>
+          <div class="dropdown-divider"></div>
+          <a href="javascript:;" class="dropdown-item">One more separated link</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END mega-menu -->
+
+  <!-- BEGIN nav -->
+  <div class="navbar-nav">
+
+
+<div class="navbar-item navbar-form">
+	<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-3">
+
+<div class="d-flex align-items-center me-3">
+  <h5 class="mb-0 fw-bold text-muted">
+    Empresa en Desarrollo
+  </h5>
+</div>
+
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+			<div class="vr d-none d-md-block text-secondary"></div>
+			<div class="d-flex align-items-center gap-2">
+				<i class="fa fa-calendar text-primary"></i>
+				<span class="small text-dark">{{ today | date:'EEEE, dd/MM/yyyy' }}</span>
+				<i class="fa fa-clock text-warning ms-2"></i>
+				<span class="small fw-semibold text-dark">{{ today | date:'HH:mm' }}</span>
+			</div>
+		</div>
+	</div>
+
+		</div>
+
+
+    <!-- CAMPANA DE NOTIFICACIONES -->
+    <div class="navbar-item dropdown">
+
+      <a href="javascript:;" data-bs-toggle="dropdown" class="navbar-link dropdown-toggle icon" title="Notificaciones">
+        <i class="fa fa-bell"
+          [ngClass]="{'animar-campana': animarCampana}"></i>
+
+          
+        <!-- 🔔 Mostrar número de notificaciones -->
+        <span *ngIf="contadorWebsockets > 0" class="badge bg-danger">
+          {{ contadorWebsockets }}
+        </span>
+      </a>
+
+      <div class="dropdown-menu media-list dropdown-menu-end">
+        <div class="dropdown-header">
+          NOTIFICACIONES ({{ contadorWebsockets }})
+        </div>
+
+        <!-- ✅ Si hay mensajes -->
+        <div *ngIf="contadorWebsockets > 0; else sinNotif" class="text-center w-300px py-3">
+          <p class="mb-0">Has recibido {{ contadorWebsockets }} nuevas notificaciones.</p>
+          <button class="btn btn-sm btn-primary mt-2" (click)="resetearContador()">
+            Marcar como leídas
+          </button>
+        </div>
+
+        <!-- ❌ Si no hay notificaciones -->
+        <ng-template #sinNotif>
+          <div class="text-center w-300px py-3 text-muted">
+            No se encontraron notificaciones
+          </div>
+        </ng-template>
+
+        <div class="dropdown-footer text-center">
+          <a href="javascript:;" class="text-decoration-none">Ver más</a>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- USUARIOS Y AJUSTES -->
+    <div class="navbar-item dropdown" *ngIf="this.appSettings.appHeaderLanguageBar">
+      <a href="javascript:;" class="navbar-link dropdown-toggle" data-bs-toggle="dropdown">
+        <span class="fi fi-us" title="us"></span>
+				<span class="d-none d-sm-inline ms-1">EN</span> <b class="caret"></b>
+      </a>
+      <div class="dropdown-menu">
+        <a href="javascript:;" class="dropdown-item"><span class="fi fi-us me-2" title="us"></span> English</a>
+        <a href="javascript:;" class="dropdown-item"><span class="fi fi-cn me-2" title="cn"></span> Chinese</a>
+        <a href="javascript:;" class="dropdown-item"><span class="fi fi-jp me-2" title="jp"></span> Japanese</a>
+        <a href="javascript:;" class="dropdown-item"><span class="fi fi-be me-2" title="be"></span> Belgium</a>
+        <div class="dropdown-divider"></div>
+        <a href="javascript:;" class="dropdown-item text-center">more options</a>
+      </div>
+    </div>
+    <div class="navbar-item navbar-user dropdown">
+      <a href="javascript:;" class="navbar-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+
+        <div class="image image-icon bg-gray-800 text-gray-600" *ngIf="imagenUsuario">
+          <img *ngIf="imagenUsuario" src="{{imagenUsuario}}" alt="" />
+				</div>
+
+        <div class="image image-icon bg-gray-800 text-gray-600" *ngIf="!imagenUsuario">
+					<i class="fa fa-user"></i>
+				</div>
+
+				<span style="margin-right: 5px;">
+					<i *ngIf="iconoActivoInactivo; else iconoInactivoTemplate" class="fa fa-circle"
+						style="color: green;" aria-hidden="true"></i>
+					<ng-template #iconoInactivoTemplate>
+						<i class="fa fa-circle" style="color: red" aria-hidden="true"></i>
+					</ng-template>
+				</span>
+        
+<div>
+  <span class="d-none d-md-inline">
+    <span class="d-none d-sm-inline" *ngIf="usuarioLogeado">{{usuarioLogeado.login_user}}</span>
+  </span>
+  <i class="fa fa-caret-down ms-1" style="font-size: 1rem; opacity: 0.7;"></i>
+</div>
+
+
+
+      </a>
+      <div class="dropdown-menu dropdown-menu-end me-1">
+        <a routerLink="/home" class="dropdown-item menu-link" >🏠︎&nbsp;&nbsp;Inicio</a>
+        <a routerLink="config/extra-profile" class="dropdown-item menu-link" >🪪&nbsp;&nbsp;Editar Perfil</a>
+				<a href="javascript:;" class="dropdown-item d-flex align-items-center">📧&nbsp;&nbsp;Inbox
+					<span class="badge bg-danger rounded-pill ms-auto pb-4px">2</span>
+				</a>
+				<a href="javascript:;" class="dropdown-item menu-link" >📅&nbsp;&nbsp;Calendario</a>
+				<a routerLink="config/extra-settings" class="dropdown-item">⚙️&nbsp;&nbsp;Ajustes</a>
+        <a routerLink="config/extra-search-results" class="dropdown-item">❓&nbsp;&nbsp;Ayuda</a>
+				<div class="dropdown-divider"></div>
+
+				<a (click)="editActivoInactivo(usuarioLogeado.id, false);" style="cursor:pointer;" class="dropdown-item"
+					*ngIf="activoInactivo; else inactivoTemplate">
+					<i class="fa fa-circle" style="color: green;" aria-hidden="true"></i>&nbsp;&nbsp;En linea
+				</a>
+				<ng-template #inactivoTemplate>
+					<a (click)="editActivoInactivo(usuarioLogeado.id, true);" style="cursor:pointer;"
+						class="dropdown-item">
+						Fuera de linea <i class="fa fa-circle" style="color: red" aria-hidden="true"></i>
+					</a>
+				</ng-template>
+
+        
+        <a (click)="fun_salir();" style="cursor:pointer;" class="dropdown-item">❌&nbsp;&nbsp;Cerrar Sesión</a>
+
+			</div>
+    </div>
+
+
+
+    <div class="navbar-divider d-none d-md-block" *ngIf="this.appSidebarTwo"></div>
+		<div class="navbar-item d-none d-md-block" *ngIf="this.appSidebarTwo">
+			<a href="javascript:;" (click)="toggleAppSidebarEnd()" class="navbar-link icon">
+				<i class="fa fa-th"></i>
+			</a>
+		</div>
+  </div>
+  <!-- END nav -->
+</div>
+<!-- END #header -->

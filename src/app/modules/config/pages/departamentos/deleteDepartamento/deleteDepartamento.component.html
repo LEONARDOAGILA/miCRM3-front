@@ -1,0 +1,28 @@
+<!-- begin spinner -->
+<ng-container *ngIf="isLoading">
+    <div class="loader1"></div>
+    <div class="overlay1"></div>
+</ng-container>
+<!-- end spinner -->
+
+
+<div class="modal-content">
+    <div class="modal-header">
+        <h3 class="modal-title">{{title}}</h3>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>   
+    </div>
+        
+    <div class="cursor-default modal-body">
+        <span>¿Está seguro que desea eliminar el Departamento:<b> {{ registro_selected.nombre }} </b>?</span>
+    </div>
+
+    <div class="modal-footer">
+        <div class="restar-buttons">
+            <button class="btn btn-oval btn-warning equal-width-button" (click)="modal.close('Close click')" type="button"><i class="bi bi-arrow-left"><span class="m-2">No</span></i></button>
+        </div>
+        <div class="save-buttons">
+            <button (click)="deleteDepartamento()" class="btn btn-danger equal-width-button" type="submit"><i class="bi bi-trash"><span class="m-2">Si, Eliminar</span></i></button>
+        </div>
+    </div>
+</div>
+

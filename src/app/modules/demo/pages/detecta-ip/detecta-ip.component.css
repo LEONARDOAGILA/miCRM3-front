@@ -1,0 +1,15 @@
+.ip-container {
+  text-align: center;
+  margin: 20px;
+}
+
+.error {
+  color: red;
+  font-weight: bold;
+}
+
+button {
+  margin-top: 10px;
+  padding: 5px 10px;
+  border-radius: 5px;
+}

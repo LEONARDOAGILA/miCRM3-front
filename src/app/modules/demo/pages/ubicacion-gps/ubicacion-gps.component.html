@@ -1,0 +1,18 @@
+<div class="ubicacion-container">
+  <h2>📍 Obtener Ubicación GPS</h2>
+
+  <button (click)="obtenerUbicacion()" [disabled]="cargando">
+    {{ cargando ? 'Obteniendo...' : 'Obtener ubicación' }}
+  </button>
+
+  <div *ngIf="latitud && longitud" class="resultado">
+    <p><strong>Latitud:</strong> {{ latitud }}</p>
+    <p><strong>Longitud:</strong> {{ longitud }}</p>
+  </div>
+
+  <p *ngIf="error" class="error">{{ error }}</p>
+
+  <div class="mapa-wrapper">
+    <div #mapContainer class="mapa"></div>
+  </div>
+</div>

@@ -1,0 +1,34 @@
+<!-- BEGIN panel -->
+<panel title="Panel Title here"  reload="true" >
+
+  <form [formGroup]="myForm">
+    <app-combo
+      [items]="people$ | async"
+      formControlName="personId"
+      [label]="'Cliente'"
+      bindLabel="name"
+      bindValue="id"
+    ></app-combo>
+
+    <app-combo
+      [items]="months"
+      formControlName="monthsId"
+      [label]="'Mes'"
+      bindLabel="label"
+      bindValue="value"
+    ></app-combo>
+
+
+  </form>
+    
+
+  <div class="save-buttons" *ngIf="!isdisabled">
+    <button class="btn btn-primary" type="submit"  (click)="onSubmitForm($event, myForm.value)" [disabled]="isdisabled">
+        <i class="bi bi-save"><span class="m-2">Guardar</span></i>            
+    </button>
+  </div>
+
+
+</panel>
+<!-- end panel -->
+

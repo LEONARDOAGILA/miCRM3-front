@@ -1,0 +1,6 @@
+<div class="ip-container">
+  <h2>Detecta IP</h2>
+  <p *ngIf="ipPublica">Tu IP pública es: {{ ipPublica }}</p>
+  <p *ngIf="error" class="error">{{ error }}</p>
+  <button (click)="obtenerIP()">Actualizar IP</button>
+</div>

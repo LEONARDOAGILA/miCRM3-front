@@ -1,0 +1,12 @@
+<div class="modal-footer">
+  <div class="restar-buttons">
+    <button class="btn btn-danger equal-width-button" type="button" (click)="handleClose()">
+      <i class="bi bi-x-circle"><span class="m-2">Salir</span></i>
+    </button>
+  </div>
+  <div class="save-buttons" *ngIf="isDisabled">
+    <button class="btn btn-primary equal-width-button" type="submit" (click)="handleSubmit($event)">
+      <i class="bi bi-save"><span class="m-2">Guardar</span></i>
+    </button>
+  </div>
+</div>

@@ -1,0 +1,89 @@
+<!-- begin spinner -->
+<div class="overlay0" *ngIf="isLoading"><span class="loader2"  *ngIf="isLoading"></span></div>
+<!-- end spinner -->
+
+
+
+<!-- BEGIN login -->
+<div class="login login-v1">
+	<!-- BEGIN login-container -->
+	<div class="login-container">
+		<!-- BEGIN login-header -->
+		<div class="login-header">
+			<div class="brand">
+				<div class="d-flex align-items-center">
+					<b style="color: green">Mi </b> <b style="color: red;"> Empresa</b>
+				</div>
+			</div>
+			<div class="icon">
+				<i class="fa fa-lock"></i>
+			</div>
+		</div>
+
+
+
+		<!-- END login-header -->
+
+		<!-- BEGIN login-body -->
+		<div class="login-body">
+			<!-- BEGIN login-content -->
+			<div class="login-content fs-13px">
+
+				<form class="mb-3" [formGroup]="loginForm" autocomplete="off" >
+
+					<div class="form-floating mb-20px">
+						<input 
+							type="text" 
+							required 
+							autocomplete="off"
+							formControlName="login_user" 
+							class="form-control fs-13px h-45px"
+							id="login_user123" 
+							placeholder="Usuario" 
+							[appMayusculas]="true"
+							[appTrimEspacios] = "true"
+							[appNoEspacios] = "true"
+						/>
+						<label for="login_user" class="d-flex align-items-center py-0">Usuario</label>
+					</div>
+
+					<!-- Campo de contraseña (ahora type="text") -->
+<div class="form-floating mb-20px">
+	<input 
+		type="text" 
+		inputmode="text"
+		autocomplete="off"
+		formControlName="password" 
+		class="form-control fs-13px h-45px password-mask"
+		id="password" 
+		placeholder="Contraseña" 
+		(focus)="onFocus($event)"
+		(input)="onInput($event)"
+		required
+	/>
+	<label for="password" class="d-flex align-items-center py-0">Contraseña</label>
+</div>
+
+										
+					<div class="login-buttons">
+						<button  type="submit"
+							class="btn h-45px btn-success d-block w-100 btn-lg" (click)="submit()">Iniciar Sesión
+						</button>
+
+						<!-- Botón Olvidé mi contraseña -->
+						<div class="text-center mt-3">
+							<button type="button" class="btn btn-link" (click)="abrirOlvideContrasena()">
+							<i class="bi bi-question-circle"></i> ¿Olvidaste tu contraseña?
+							</button>
+						</div>						
+					</div>
+				</form>
+			</div>
+			<!-- END login-content -->
+		</div>
+		<!-- END login-body -->
+	</div>
+	<!-- END login-container -->
+</div>
+<!-- END login -->
+

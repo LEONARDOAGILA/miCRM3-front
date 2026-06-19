@@ -1,0 +1,206 @@
+@keyframes pulse {
+	0% { opacity: 1; transform: scale(1); }
+	50% { opacity: 0.5; transform: scale(0.8); }
+	100% { opacity: 1; transform: scale(1); }
+}
+
+// Modo oscuro para módulos compactos
+[data-bs-theme="dark"] {
+  .module-card-compact {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    
+    h5 {
+      color: #ffffff !important;
+    }
+    
+    small {
+      color: #94a3b8 !important;
+    }
+    
+    .module-icon-compact {
+      &.bg-primary,
+      &.bg-success,
+      &.bg-info,
+      &.bg-warning,
+      &.bg-danger,
+      &.bg-purple,
+      &.bg-pink,
+      &.bg-secondary,
+      &.bg-teal,
+      &.bg-orange,
+      &.bg-indigo,
+      &.bg-dark {
+        background: #475569 !important;
+      }
+    }
+  }
+}
+
+
+// Footer modo oscuro
+[data-bs-theme="dark"] {
+  .app-footer {
+    background-color: #1e293b !important;
+    border-top-color: #334155 !important;
+  }
+  
+  .text-dark {
+    color: #ffffff !important;
+  }
+  
+  .text-secondary {
+    color: #94a3b8 !important;
+  }
+  
+  .bg-light {
+    background-color: #1e293b !important;
+  }
+  
+  .border-top {
+    border-top-color: #334155 !important;
+  }
+  
+  .vr {
+    border-color: #475569 !important;
+  }
+}
+
+// Hero section - alinear verticalmente
+.grow {
+  flex-grow: 1;
+}
+
+.align-items-left {
+  align-items: flex-start;
+}
+
+// Mejora para los widgets en modo oscuro
+[data-bs-theme="dark"] {
+  .widget-stats {
+    background-color: #1e293b !important;
+    
+    .stats-title, .stats-info h4, .stats-info p {
+      color: #ffffff !important;
+    }
+    
+    .stats-link a {
+      color: #94a3b8 !important;
+      
+      &:hover {
+        color: #60a5fa !important;
+      }
+    }
+  }
+  
+  .panel {
+    background-color: #1e293b !important;
+  }
+  
+  .panel-heading {
+    background-color: #0f172a !important;
+  }
+  
+  .list-group-item {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #ffffff !important;
+    
+    &:hover {
+      background-color: #334155 !important;
+    }
+  }
+  
+  .text-muted {
+    color: #94a3b8 !important;
+  }
+}
+
+
+/* Footer en una sola fila para móvil */
+@media (max-width: 767.98px) {
+  #footer .d-flex {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  #footer .d-flex::-webkit-scrollbar {
+    display: none;
+  }
+  
+  #footer .small {
+    font-size: 0.65rem !important;
+    white-space: nowrap;
+  }
+  
+  #footer .gap-2 {
+    gap: 0.5rem !important;
+  }
+  
+  #footer .gap-3 {
+    gap: 0.5rem !important;
+  }
+  
+  #footer .vr {
+    display: none !important;
+  }
+  
+  #footer .px-3 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+}
+
+
+// En tu archivo home.scss
+.profile-header-tab {
+  &.nav-tabs {
+    border-bottom: 1px solid #e2e8f0 !important;
+    
+    @media (max-width: 576px) {
+      border-bottom-width: 1px;
+      border-bottom-style: solid;
+      border-bottom-color: #e2e8f0;
+    }
+    
+    .nav-link {
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      
+      &.active {
+        border-bottom-color: var(--bs-primary);
+        background: transparent;
+      }
+      
+      &:hover {
+        border-bottom-color: #cbd5e1;
+      }
+    }
+  }
+}
+
+// Modo oscuro
+[data-bs-theme="dark"] {
+  .profile-header-tab {
+    &.nav-tabs {
+      border-bottom-color: #334155 !important;
+      
+      .nav-link {
+        color: #cbd5e1;
+        
+        &.active {
+          border-bottom-color: #60a5fa;
+          color: #60a5fa;
+        }
+        
+        &:hover {
+          border-bottom-color: #475569;
+        }
+      }
+    }
+  }
+}

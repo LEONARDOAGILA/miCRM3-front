@@ -1,0 +1,126 @@
+/* Estilos base del contenedor del iframe */
+.iframe-container {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    transition: all 0.3s ease;
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilo para pantalla completa */
+.iframe-container.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background: white;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.iframe-container.fullscreen .flotante {
+    display: none;
+}
+
+/* Estilos del iframe */
+.iframe-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+/* Contenedor de botones en pantalla completa */
+.fullscreen-button-salir-pantalla-completa {
+    position: fixed;
+    top: 0;
+    right: 0;
+    padding: 15px;
+    z-index: 10001;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Barra flotante inferior */
+.flotante {
+    width: 100%;
+    height: 24px;
+    position: absolute;
+    background: #EAEAEA;
+    z-index: 10000;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 10px;
+}
+
+/* Estilos para los botones */
+.btn-close-custom,
+.btn-expandir-custom {
+    width: 1.5em;
+    height: 1.5em;
+    font-size: 1.1rem;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    color: #333;
+}
+
+.btn-close-custom:hover,
+.btn-expandir-custom:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    color: #000;
+}
+
+/* Estilo específico para el botón de expandir */
+.btn-expandir-custom {
+    margin-right: 0;
+}
+
+/* Estilos para el wrapper del iframe */
+.iframe-wrapper {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Ajustes para el modal */
+::ng-deep .my-class .modal-dialog {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 auto;
+    height: calc(100% - 2rem);
+}
+
+::ng-deep .my-class .modal-content {
+    height: 100%;
+    border: none;
+    border-radius: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .iframe-container {
+        height: 400px;
+    }
+    
+    .fullscreen-button-salir-pantalla-completa {
+        padding: 10px;
+    }
+}

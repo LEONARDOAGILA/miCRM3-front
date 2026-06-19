@@ -1,0 +1,35 @@
+<div class="file-node">
+  <div
+    class="file-link"
+    [class.selected]="isSelected"
+    (click)="onNodeClick($event)"
+  >
+    <!-- Flecha para expandir/colapsar -->
+    <span class="file-arrow" *ngIf="node.children" (click)="toggleNode($event)">
+      <i [class]="node.isOpen ? 'fas fa-minus' : 'fas fa-plus'"></i>
+    </span>
+
+    <!-- Ícono de archivo o carpeta con color dinámico -->
+    <span class="file-icon">
+      <i *ngIf="node.icono" [class]="node.icono" [style.color]="node.color || '#ffc107'"></i>
+      <i *ngIf="!node.icono && !node.escarpeta" class="far fa-file-code fa-lg text-body text-opacity-50"></i>
+      <i *ngIf="!node.icono && node.escarpeta"  class="fa fa-folder" [style.color]="node.color || '#ffc107'"></i>
+    </span>
+     
+    <!-- Nombre del nodo -->
+    <span class="file-text">{{ node.nombre }}</span>
+  </div>
+
+  <!-- Subárbol de nodos hijos -->
+  <div class="file-tree" [class.active]="node.isOpen">
+    <ng-container *ngIf="node.children && node.isOpen">
+      <app-file-tree-node
+        *ngFor="let child of node.children"
+        [node]="child"
+        [isSelected]="child.isSelected"
+        (nodeSelected)="onChildNodeSelected($event)"
+        (nodeToggled)="nodeToggled.emit($event)"
+      ></app-file-tree-node>
+    </ng-container>
+  </div>
+</div>

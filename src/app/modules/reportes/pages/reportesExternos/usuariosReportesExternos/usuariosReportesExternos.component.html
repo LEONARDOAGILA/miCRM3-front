@@ -1,0 +1,164 @@
+<!-- Cabecera del modal -->
+<app-modal-header 
+    [title]="tilte"
+    (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<div class="modal-body p-4">
+    <div class="content-container position-relative">
+        <!-- Loader overlay -->
+        <div class="loading-overlay" *ngIf="isLoading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+
+        <div class="container-fluid">
+            <div class="row g-3">
+                <!-- Tabla de usuarios disponibles -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-secundary">
+                        <div class="card-header bg-secundary text-black d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-users me-2"></i>
+                                {{ enunciado1 }}
+                            </h5>
+                            <span class="badge bg-light text-primary fs-6">{{ countUsuarios }}</span>
+                        </div>
+                        <div class="card-body p-0 d-flex flex-column">
+                            <!-- Filtros y búsqueda -->
+                            <div class="p-3 border-bottom">
+                                <div class="d-flex align-items-center gap-2">
+                                    <button (click)="clearAllFilters()" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-filter-circle-xmark" title="Quitar Filtros"></i>
+                                    </button>
+                                    <div class="flex-grow-1">
+                                        <app-campoBusqueda
+                                            [id]="'filter-text-box-listaUsuariosTabla1'"
+                                            [placeholder]="'Buscar usuarios...'"
+                                            [iconClass]="'fas fa-search'"
+                                            [containerClass]="'position-relative w-100'"
+                                            (searchChange)="onFilterTextBoxChanged()">
+                                        </app-campoBusqueda>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- AG-Grid -->
+                            <div class="flex-grow-1 p-2">
+                                <ag-grid-angular 
+                                    [rowData]="listaUsuariosTabla1" 
+                                    [columnDefs]="columnDefs"
+                                    [defaultColDef]="_appAgGridService.defaultColDef" 
+                                    [sideBar]="_appAgGridService.sideBar" 
+                                    [rowHeight]="_appAgGridService.rowHeight" 
+                                    [headerHeight]="_appAgGridService.headerHeight"
+                                    [localeText]="_appAgGridService.localeText"
+                                    [rowSelection]="'multiple'"
+                                    [pagination]="true"
+                                    [animateRows]="true" 
+                                    [cacheQuickFilter]="true" 
+                                    class="ag-theme-alpine ag-grid-transparente p-2"
+                                    style="width: 100%; height: 100%; min-height: 300px;" 
+                                    (gridReady)="onGridReady($event)" 
+                                    (cellClicked)="onCellClicked($event)">
+                                </ag-grid-angular>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+<!-- Botones de transferencia -->
+<div class="col-12 col-md-1 d-flex align-items-center justify-content-center py-2">
+    <div class="d-flex flex-row flex-md-column gap-2 w-100 justify-content-center">
+        <button type="button" class="btn btn-success btn-transfer" (click)="transferSelectedToRight()" title="Transferir seleccionados">
+            →
+        </button>
+        
+        <button type="button" class="btn btn-success btn-transfer" (click)="transferAllToRight()" title="Transferir todos visibles">
+            ⇒
+        </button>
+        
+        <div class="border-top my-1"></div>
+        
+        <button type="button" class="btn btn-danger btn-transfer" (click)="transferSelectedToLeft()" title="Remover seleccionados">
+            ←
+        </button>
+        
+        <button type="button" class="btn btn-danger btn-transfer" (click)="transferAllToLeft()" title="Remover todos">
+            ⇐
+        </button>
+    </div>
+</div>
+                <!-- Tabla de usuarios seleccionados -->
+                <div class="col-md-5">
+                    <div class="card h-100 border-success">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user-check me-2"></i>
+                                {{ enunciado2 }}
+                            </h5>
+                            <span class="badge bg-light text-success fs-6">{{ countUsuariosSeleccionados }}</span>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <div class="text-muted p-4 text-center" *ngIf="countUsuariosSeleccionados===0">
+                                <i class="fas fa-users-slash fa-3x mb-3"></i>
+                                <p>Usuarios seleccionados aparecerán aquí</p>
+                            </div>
+                        </div>
+
+                        <div class="card-body p-0 d-flex flex-column"  *ngIf="countUsuariosSeleccionados!=0">
+                            <!-- Filtros y búsqueda -->
+                            <div class="p-3 border-bottom">
+                                <div class="d-flex align-items-center gap-2">
+                                    <button (click)="clearAllFilters2()" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-filter-circle-xmark" title="Quitar Filtros"></i>
+                                    </button>
+                                    <div class="flex-grow-1">
+                                        <app-campoBusqueda
+                                            [id]="'filter-text-box-listaUsuariosTabla2'"
+                                            [placeholder]="'Buscar usuarios...'"
+                                            [iconClass]="'fas fa-search'"
+                                            [containerClass]="'position-relative w-100'"
+                                            (searchChange)="onFilterTextBoxChanged2()">
+                                        </app-campoBusqueda>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- AG-Grid -->
+                            <div class="flex-grow-1 p-2">
+                                <ag-grid-angular 
+                                    [rowData]="listaUsuariosTabla2" 
+                                    [columnDefs]="columnDefs2"
+                                    style="width: 100%; height: 46vh" 
+                                    (gridReady)="onGridReady2($event)" 
+                                    (cellClicked)="onCellClicked2($event)"
+                                    [defaultColDef]="_appAgGridService.defaultColDef" 
+                                    [sideBar]="_appAgGridService.sideBar" 
+                                    [rowHeight]="_appAgGridService.rowHeight" 
+                                    [headerHeight]="_appAgGridService.headerHeight"
+                                    [localeText]="_appAgGridService.localeText"
+                                    [rowSelection]="'multiple'"
+                                    [pagination]="true"
+                                    [animateRows]="true" 
+                                    [cacheQuickFilter]="true" 
+                                    class="ag-theme-alpine ag-grid-transparente p-2">
+                                </ag-grid-angular>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pie del modal -->
+<app-modal-footer
+    [isDisabled]="!isdisabled"
+    (onClose)="modal.close('Close click')"
+    (onSubmit)="saveUsersReportesExternos()">
+</app-modal-footer>

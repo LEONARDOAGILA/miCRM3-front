@@ -1,0 +1,12 @@
+<p>
+  miobservable works!
+</p>
+
+<h1>el titulo de midata es:  {{ (miData$|async)?.title }} </h1>
+
+
+<input type="text" [(ngModel)] ="Dom_misubject" /> 
+<button (click)="actualizaSubject()"> actualizar</button>
+
+<h2> subject 1:  {{ mimensaje$ | async }}</h2>
+<app-sub-observable></app-sub-observable>

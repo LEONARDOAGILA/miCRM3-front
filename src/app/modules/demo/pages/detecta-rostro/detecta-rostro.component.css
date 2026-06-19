@@ -1,0 +1,43 @@
+/* Contenedor principal */
+.video-container {
+  position: relative;
+  width: 320px;       /* ancho del video */
+  height: 240px;      /* alto del video */
+  margin: 50px auto;  /* centra horizontalmente y separa vertical */
+  border: 3px solid #4CAF50; /* borde verde para resaltar */
+  border-radius: 12px; /* bordes redondeados */
+  overflow: hidden;   /* asegura que nada sobresalga */
+  background: #000;   /* fondo negro detrás del video */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3); /* sombra suave */
+}
+
+
+
+
+
+.video-container {
+  position: relative;
+  width: 100%;
+  max-width: 360px;  /* ajustable según tu diseño */
+  aspect-ratio: 4/3; /* mantiene proporción */
+  margin: 50px auto;
+  border: 3px solid #4CAF50;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.video-container video,
+.video-container canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-container canvas {
+  pointer-events: none;
+}

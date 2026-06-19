@@ -1,0 +1,212 @@
+<div class="h-100 d-flex flex-column flex-1">
+  <div>
+    <!-- BEGIN breadcrumb -->
+    <ol class="breadcrumb float-xl-end">
+      <li class="breadcrumb-item"><a href="javascript:;">Home</a></li>
+      <li class="breadcrumb-item"><a href="javascript:;">Extra</a></li>
+      <li class="breadcrumb-item active">File Manager</li>
+    </ol>
+    <!-- END breadcrumb -->
+  </div>
+
+  
+<!-- INICIO PANEL -->
+<panel 
+    [title]="title"
+    [noButton]="false" 
+    [noButtonCollapse]="true" 
+    (panelReloaded)="refresh()"
+    class="flex-1 d-flex flex-column overflow-hidden" 
+    bodyClass="p-0 flex-1 overflow-hidden" 
+    panelClass="flex-1 m-0 d-flex flex-column overflow-hidden"   >
+  
+    <div class="file-manager h-100" [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled }">
+
+      <div class="file-manager-toolbar">
+        <button type="button" class="btn shadow-none text-body border-0" (click)="addRaiz()"><i class="fa fa-lg me-1 fa-plus"></i> 📁 Raiz</button>
+        <button type="button" class="btn shadow-none text-body border-0" [disabled]="!selectedNode?.escarpeta" (click)="add('addCarpeta')"><i class="fa fa-lg me-1 fa-plus"></i> 📁 Carpeta</button>
+
+        <button type="button" class="btn shadow-none text-body border-0" 
+                [disabled]="this.ejecutar_esactivo" 
+                (click)="viewReporteExterno()">
+          <i class="fa fa-lg me-1 fa-play" 
+            [class.text-success]="selectedNode && !this.ejecutar_esactivo"
+            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> EJECUTAR
+        </button>
+
+        <button type="button" class="btn shadow-none text-body border-0" 
+                [disabled]="!this.ejecutar_esactivo" 
+                (click)="add('addArchivo')">
+          <i class="fa fa-lg me-1 fa-plus" 
+            [class.text-success]="selectedNode && this.ejecutar_esactivo"
+            [class.text-secondary]="!selectedNode || !this.ejecutar_esactivo"></i> 📄 Archivo
+        </button>
+
+        
+        <button type="button" class="btn shadow-none text-body border-0" 
+                [disabled]="this.ejecutar_esactivo" 
+                (click)="viewReporteExterno()">
+          <i class="fa fa-lg me-1 fa-copy" 
+            [class.text-success]="selectedNode && !this.ejecutar_esactivo"
+            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Copiar
+        </button>
+
+
+        <button type="button" class="btn shadow-none text-body border-0" 
+                [disabled]="this.ejecutar_esactivo" 
+                (click)="viewReporteExterno()">
+          <i class="fa fa-lg me-1 fa-pen-to-square" 
+            [class.text-success]="selectedNode && !this.ejecutar_esactivo"
+            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Editar
+        </button>
+
+
+        <button type="button" class="btn shadow-none text-body border-0" 
+                [disabled]="this.ejecutar_esactivo" 
+                (click)="viewReporteExterno()">
+          <i class="fa fa-lg me-1 fa-object-ungroup" 
+            [class.text-success]="selectedNode && !this.ejecutar_esactivo"
+            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Mover
+        </button>
+
+        <button type="button" class="btn shadow-none text-body border-0" 
+                [disabled]="this.ejecutar_esactivo" 
+                (click)="viewReporteExterno()">
+          <i class="fa fa-lg me-1 fa-xmark" 
+            [class.text-danger]="selectedNode && !this.ejecutar_esactivo"
+            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Eliminar
+        </button>
+
+        <button type="button" class="btn shadow-none text-body border-0" 
+                [disabled]="this.ejecutar_esactivo" 
+                (click)="viewReporteExterno()">
+          <i class="fa fa-lg me-1 fa fa-eye" 
+            [class.text-warning]="selectedNode && !this.ejecutar_esactivo"
+            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Ver
+        </button>
+
+
+        <button type="button" class="btn shadow-none text-body border-0" 
+                [disabled]="this.ejecutar_esactivo" 
+                (click)="viewReporteExterno()">
+          <i class="fa  fa-users" 
+            [class.text-danger]="selectedNode && !this.ejecutar_esactivo"
+            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Permisos
+        </button>
+
+        <button type="button" class="btn shadow-none text-body border-0" 
+                [disabled]="!selectedNode" 
+                (click)="viewReporteExterno()">
+          <i class="fa fa-lg me-1 fa-lock-open" 
+            [class.text-success]="selectedNode"></i> Auditoria
+        </button>
+
+
+      </div>
+
+      <div class="file-manager-container">        
+        <div class="file-manager-sidebar">
+          <div class="file-manager-sidebar-mobile-toggler">
+              <button type="button" class="btn" (click)="toggleMobileSidebar()">
+                <i class="far fa-lg fa-folder" style="
+                  color: rgb(81, 22, 1); 
+                  font-size: 10px;
+                  background: #FFE8D6;
+                  padding: 4px;
+                  border-radius: 50%;
+                  width: 32px;
+                  height: 32px;
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                "></i>
+              </button>          
+          </div>
+
+          <div>
+            <ng-scrollbar> 
+              <div class="p-3 mt-3">
+                <input
+                  type="text"
+                  class="form-control form-control-sm mb-3"
+                  placeholder="Buscar Archivo..."
+                  [(ngModel)]="searchQuery"
+                  (input)="filterNodes()"
+                />
+                <div class="scrollable-container file-tree mb-3" style="height: 350px;">
+                  <app-file-tree-node
+                    *ngFor="let node of nodes"
+                    [node]="node"
+                    [isSelected]="node === selectedNode"
+                    (nodeSelected)="onNodeSelect($event)"
+                    (nodeToggled)="onNodeToggle($event)"
+                  ></app-file-tree-node>
+                </div>
+              </div>
+            </ng-scrollbar>
+          </div>
+        </div>
+
+        <div class="file-manager-content d-flex flex-column">
+          <div class="mb-0 d-flex text-nowrap p-3 border-bottom">
+            <button type="button" class="btn btn-sm btn-white me-2 px-2" (click)="goToRoot()">
+              <i class="fa fa-fw fa-home"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white me-2" (click)="goUpOneLevel()" [disabled]="!selectedNode">
+              <i class="fa fa-fw fa-arrow-turn-up ms-n1"></i> Up One Level
+            </button>
+
+            <div class="btn-group me-2">
+              <button type="button" class="btn btn-sm btn-white" (click)="goBack()" [disabled]="currentHistoryIndex <= 0">
+                <i class="fa me-1 fa-arrow-left"></i> Back
+              </button>
+              <button type="button" class="btn btn-sm btn-white" 
+                      (click)="goForward()" 
+                      [disabled]="navigationHistory.length === 0 || currentHistoryIndex >= navigationHistory.length - 1">
+                <i class="fa me-1 fa-arrow-right"></i> Forward
+              </button>
+            </div>
+            <button type="button" class="btn btn-sm btn-white me-2 px-2" (click)="refresh()">
+              <i class="fa fa-fw fa-arrows-rotate"></i>
+            </button>
+
+            <div class="btn-group me-2">
+              <button type="button" class="btn btn-sm btn-white" (click)="selectAll()">
+                <i class="fa fa-fw fa-check ms-n1"></i> Select All
+              </button>
+              <button type="button" class="btn btn-sm btn-white" (click)="unselectAll()">
+                <i class="far fa-fw fa-square ms-n1"></i> Unselect All
+              </button>
+            </div>
+          </div>
+
+          <!-- AG-Grid -->
+          <div style="height: calc(100% - 50px);">
+              <ag-grid-angular 
+                [rowData]="selectedNodeChildren" 
+                [columnDefs]="columnDefs"
+                [defaultColDef]="_appAgGridService.defaultColDef" 
+                [sideBar]="_appAgGridService.sideBar" 
+                [rowHeight]="_appAgGridService.rowHeight" 
+                [headerHeight]="_appAgGridService.headerHeight "
+                [localeText]="_appAgGridService.localeText"
+                [rowSelection]="'multiple'"
+                [pagination]="true"
+                [animateRows]="true" 
+                [cacheQuickFilter]="true" 
+                class="ag-theme-alpine zebra-grid ag-grid-transparente p-2 w-100 h-100"
+                (gridReady)="onGridReady($event)" 
+                  (cellDoubleClicked)="onCellDoubleClicked($event)"
+                  (cellClicked)="onCellClicked($event)"
+              ></ag-grid-angular>        
+          </div>
+                <!-- (cellClicked)="onCellClicked($event)"  -->
+
+          
+        </div>
+      </div>
+
+    </div>
+
+  </panel>
+</div>

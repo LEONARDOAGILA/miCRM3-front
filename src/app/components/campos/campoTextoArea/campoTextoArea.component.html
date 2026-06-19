@@ -1,0 +1,35 @@
+<div class="col-md">
+  <div class="form-floating p-1 mb-1">  <!-- Cambiado mb-2 a mb-0 -->
+    <textarea
+      class="scroll form-control fs-12px"
+      [id]="label"
+      [placeholder]="placeholder"
+      [formControl]="control"
+      (input)="onInputChange($event.target.value)"
+      [appMayusculas]="mayusculas"
+      [appSoloLetras]="soloLetras"
+      [appTrimEspacios]="trimEspacios"
+      [appNoEspacios]="noEspacios"
+      [ngClass]="{
+        'is-invalid': control.invalid && (control.touched || control.dirty),
+        'is-valid': control.valid && (control.touched || control.dirty)
+      }"
+      style="height: 90px; align-content: baseline;"
+    ></textarea>
+    <label [for]="label" class="d-flex align-items-top fs-13px">{{ label }}</label>
+  </div>
+  <div class="mt-3">  <!-- Agregado mt-1 para un pequeño espacio -->
+    <small class="text-danger msg-requerido" *ngIf="control.hasError('required') && (control.dirty || control.touched)">
+      Es requerido.
+    </small>
+    <small class="text-danger msg-requerido" *ngIf="control.hasError('noEspacios') && (control.dirty || control.touched)">
+      No puede contener solo espacios.
+    </small>
+    <small class="text-danger msg-requerido" *ngIf="control.hasError('minlength') && (control.dirty || control.touched)">
+      No puede ser menor a los {{ minLength }} caracteres.
+    </small>
+    <small class="text-danger msg-requerido" *ngIf="control.hasError('maxlength') && (control.dirty || control.touched)">
+      No puede exceder los {{ maxLength }} caracteres.
+    </small>
+  </div>
+</div>

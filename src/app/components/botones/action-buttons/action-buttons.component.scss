@@ -1,0 +1,77 @@
+/* Estilos base para todos los botones de icono */
+.btn-icon {
+    background: none;           /* Sin fondo */
+    border: none;              /* Sin borde */
+    cursor: pointer;           /* Cambia el cursor a mano */
+    padding: 3px 5px;          /* Espaciado mínimo */
+    //border-radius: 4px;        /* Bordes ligeramente redondeados */
+    transition: all 0.3s ease; /* Transición suave */
+    font-size: 1.1em;          /* Tamaño del icono */
+}
+
+/* Efectos hover para todos los botones */
+.btn-icon:hover:not(:disabled) {
+    transform: scale(1.2);     /* Efecto de zoom sutil */
+}
+
+/* Efecto active para todos los botones */
+.btn-icon:active:not(:disabled) {
+    transform: scale(0.95);    /* Efecto de clic */
+}
+
+/* Colores específicos para cada botón */
+.btn-view {
+    color: #2ecc71;            /* Color del icono */
+}
+
+.btn-view:hover:not(:disabled) {
+    color:  #27ae60;            /* Color más oscuro al pasar el mouse */
+}
+
+.btn-add {
+    color: #2ecc71;            /* Verde para agregar */
+}
+
+.btn-add:hover:not(:disabled) {
+    color: #27ae60;            /* Verde más oscuro */
+}
+
+.btn-edit {
+    color: #3498db;            /* Azul para editar */
+}
+
+.btn-edit:hover:not(:disabled) {
+    color: #2980b9;            /* Azul más oscuro */
+}
+
+.btn-cambio-clave {
+    color: #f39c12;            /* Naranja para ver */
+}
+
+.btn-cambio-clave:hover:not(:disabled) {
+    color: #d35400;            /* Naranja más oscuro */
+}
+
+.btn-create {
+    color: #9b59b6;            /* Púrpura para clonar */
+}
+
+.btn-create:hover:not(:disabled) {
+    color: #8e44ad;            /* Púrpura más oscuro */
+}
+
+.btn-delete {
+    color: #e74c3c;            /* Rojo para eliminar */
+}
+
+.btn-delete:hover:not(:disabled) {
+    color: #c0392b;            /* Rojo más oscuro */
+}
+
+/* Estilo para botones deshabilitados */
+.btn-icon:disabled {
+    color: #e0dfdf !important;
+    cursor: not-allowed;
+    transform: none !important;
+    opacity: 0.3;
+}

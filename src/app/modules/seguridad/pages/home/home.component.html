@@ -1,0 +1,47 @@
+<!-- BEGIN page-header -->
+<h1 class="page-header">
+  Menu de Seguridad
+  <small></small>
+</h1>
+<!-- END page-header -->
+
+<div style="min-height: 100vh; background: url(/assets/img/cover/cover-scrum-board.png) no-repeat fixed; background-size: 360px; background-position: right bottom;">
+
+  <!-- BEGIN content-container -->
+  <div class="background-container">
+    <div class="grow overflow-hidden">
+      <div class="app-content-padding">
+        <div class="tab-content">
+
+          <!-- BEGIN MODULES CARDS -->
+          <div class="modules-section mb-5">
+            <div class="row g-3">
+
+              <!-- Recorrer módulos permitidos dinámicamente -->
+              <div *ngFor="let modulo of modulosPermitidos" class="col-xl-3 col-md-6">
+                <a [routerLink]="['/' + modulo.url]"
+                   class="module-card-compact bg-white border text-decoration-none d-block">
+                  <div class="d-flex align-items-center gap-2 p-3">
+                    <div class="module-icon-compact {{ modulo.color }}">
+                      <i class="fa {{ modulo.icon }} fa-lg text-white"></i>
+                    </div>
+                    <div class="grow">
+                      <h5 class="mb-0 fw-bold">{{ modulo.label }}</h5>
+                      <small class="text-muted d-block">{{ modulo.descripcion }}</small>
+                    </div>
+                    <i class="fa {{ modulo.label === 'SALIR' ? 'fa-arrow-left' : 'fa-arrow-right' }} {{ modulo.label === 'SALIR' ? 'text-danger' : 'text-primary' }}"></i>
+                  </div>
+                </a>
+              </div>
+
+            </div>
+          </div>
+          <!-- END MODULES CARDS -->
+          
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END content-container -->
+
+</div>

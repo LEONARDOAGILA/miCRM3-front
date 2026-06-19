@@ -1,0 +1,64 @@
+<div class="col-md">
+  <div class="form-floating mb-3 mb-md-0 position-relative">
+    <input
+      type="text"
+      class="form-control fs-12px"
+      [id]="label"
+      [formControl]="control"
+      [placeholder]="placeholder"
+      [attr.maxlength]="maxLength"
+      [ngClass]="{
+        'is-invalid': control.invalid && (control.touched || control.dirty)
+      }"
+      (input)="onInputChange($event.target.value)"
+      (blur)="onBlur()"
+      autocomplete="off"
+    />
+    <label [for]="label" class="d-flex align-items-center fs-13px">{{ label }}</label>
+
+    <!-- Botón de limpiar -->
+    @if (control?.value && control?.enabled) {
+      <button 
+        type="button"
+        class="btn btn-link position-absolute end-0 top-0 mt-3 me-2 text-secondary"
+        style="z-index: 10; text-decoration: none;"
+        (click)="control.setValue(''); control.markAsDirty(); actualizarSugerencias();"
+        tabindex="-1">
+        <i class="fa fa-times-circle"></i>
+      </button>
+    }
+      
+    <!-- Sugerencias de dominios -->
+    @if (mostrarSugerencias && parteLocal && control?.enabled) {
+      <div class="email-suggestions position-absolute w-100 bg-white border rounded shadow-sm" 
+           style="top: 100%; left: 0; z-index: 1000; max-height: 220px; overflow-y: auto;">
+        @for (dominio of dominios; track dominio) {
+          <div class="suggestion-item px-3 py-2 border-bottom" 
+               (click)="seleccionarSugerencia(dominio)"
+               (mouseenter)="$event.target.style.backgroundColor = '#f8f9fa'"
+               (mouseleave)="$event.target.style.backgroundColor = 'white'">
+            <i class="fa fa-envelope me-2 text-muted"></i>
+            <strong>{{ parteLocal }}</strong><span class="text-muted">{{ dominio }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Mensajes de error -->
+  <div class="input-group with-focus">
+    <label class="col-lg-12 col-form-label text-lg-left"></label>
+    
+    @if (control.invalid && (control.dirty || control.touched)) {
+      @if (control.hasError('required')) {
+        <small class="text-danger msg-requerido">Es requerido.</small>
+      } @else if (control.hasError('sinEspacios')) {
+        <small class="text-danger msg-requerido">El correo electrónico no puede contener espacios.</small>
+      } @else if (control.hasError('emailInvalido')) {
+        <small class="text-danger msg-requerido">Correo inválido (ejemplo@dominio.com).</small>
+      } @else if (control.hasError('maxlength')) {
+        <small class="text-danger msg-requerido">No puede exceder los {{ maxLength }} caracteres.</small>
+      }
+    }
+  </div>
+</div>

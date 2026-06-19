@@ -1,0 +1,92 @@
+export const VariosFormCampoTipo = [
+  {
+    id: 1,
+    nombre: "texto",
+    type: "text",
+    color: "#a775c9",
+  },
+  {
+    id: 2,
+    nombre: "numerico",
+    type: "number",
+    color: "#a775c9",
+  },
+  {
+    id: 3,
+    nombre: "archivo",
+    type: "file",
+    color: "#a775c9",
+  },
+  {
+    id: 4,
+    nombre: "email",
+    type: "email",
+    color: "#e49f44",
+  },
+  {
+    id: 5,
+    nombre: "verdadero o falso",
+    type: "boolean",
+    color: "#e49f44",
+  },
+  {
+    id: 6,
+    nombre: "lista",
+    type: "select",
+    color: "#b9e444",
+  },
+  {
+    id: 7,
+    nombre: "decimal",
+    type: "decimal",
+    color: "#b9e444",
+  },
+  {
+    id: 8,
+    nombre: "fecha",
+    type: "fecha",
+    color: "#b9e444",
+  },
+  // {
+  //   id: 9,
+  //   nombre: "perfil de cliente",
+  //   type: "text",
+  //   color: "#b9e444",
+  // },
+  {
+    id: 10,
+    nombre: "equifax",
+    type: "text",
+    color: "#b9e444",
+  },
+  {
+    id: 11,
+    nombre: "equifax enrolamiento cliente",
+    type: "text",
+    color: "#e49144",
+  },
+  {
+    id: 12,
+    nombre: "solicitud de credito",
+    type: "text",
+    color: "#b9e444",
+  },
+  {
+    id: 13,
+    nombre: "email fase",
+    type: "text",
+    color: "#b9e444",
+  },
+  {
+    id: 14,
+    nombre: "pegar imagen",
+    type: "text",
+    color: "#b9e444",
+  },
+  {
+    id: 15,
+    nombre: "renegociacion",
+    type: "text",
+    color: "#b9e444",
+  },
+];

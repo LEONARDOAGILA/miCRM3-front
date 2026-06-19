@@ -1,0 +1,80 @@
+<!-- begin spinner -->
+<div class="overlay0" *ngIf="isLoading"><span class="loader2"  *ngIf="isLoading"></span></div>
+<!-- end spinner -->
+
+
+<!-- begin breadcrumb -->
+<div >
+	<ol class="breadcrumb float-xl-end">
+		<li class="breadcrumb-item"><a class="fcc-btn" style="cursor:pointer" (click)="loadData()">
+			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="32" d="M320 146s24.36-12-64-12a160 160 0 1 0 160 160"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="m256 58l80 80l-80 80"/></svg>
+			Actualizar</a> </li>
+		<li class="breadcrumb-item"><a href="javascript:;">
+			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" style="margin-bottom: 3px;"><path fill="currentColor" d="m12 5.69l5 4.5V18h-2v-6H9v6H7v-7.81zM12 3L2 12h3v8h6v-6h2v6h6v-8h3"/></svg>			
+			Home</a></li>
+		<li class="breadcrumb-item"><a  href="javascript:;">Library</a></li>
+		<li class="breadcrumb-item active"><a href="javascript:;">Data</a></li>
+  </ol>  
+
+  
+  
+</div>
+<!-- end breadcrumb -->
+
+
+
+
+<!-- begin page-header -->
+<h1 class="page-header">Home Principal <small>header small text goes here...</small></h1>
+<!-- end page-header -->
+
+
+<!-- BEGIN panel -->
+<panel title="Panel Title here"  reload="true" >
+	Panel Content Here
+  <button (click)="startLoading()">start</button>
+  <button (click)="stopLoading()">stop</button>
+  <button (click)="loadData()">Load2</button>
+</panel>
+<!-- end panel -->
+
+
+
+<!-- BEGIN panel -->
+<panel noButtonReload="true">
+	<ng-container header>
+		<h4 class="panel-title">Panel Header with Radio Button</h4>
+		<div class="panel-heading-btn" >
+			<div style="margin-right: 6px;">
+				<a class="btn btn-xs btn-icon btn-circle btn-success " (click)="loadData2()"><i class="fa fa-redo"></i></a>
+			</div>
+		</div>
+	</ng-container>
+	<div class="content-container1">
+		<div class="loader1" *ngIf="isLoading2"></div>
+		<div class="overlay1" *ngIf="isLoading2"></div>
+
+		<div class="content2">
+				
+			<!-- Contenido que deseas bloquear -->
+			<p *ngIf='this.isLoading2'>Este contenido está bloqueado mientras se carga.</p>
+
+			@if ( PokemonResults$! | async; as objeto ){
+				<ul>    
+				@for(item of objeto.data; track item.cod_comprobante_fp){
+					<li> {{ item.cod_comprobante_fp }} </li>
+				}		  
+				</ul>
+			}
+			@if(errorMessage){ <p>{{errorMessage}}</p> }
+			
+			
+			<button (click)="startLoading()">start</button>
+			<button (click)="stopLoading()">stop</button>
+			<button (click)="loadData2()">Load2</button>
+
+		</div>
+	</div>
+</panel>
+<!-- end panel -->
+

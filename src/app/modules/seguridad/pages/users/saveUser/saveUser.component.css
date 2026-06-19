@@ -1,0 +1,504 @@
+/* Estilos para desktop (por defecto) */
+.campo-busqueda {
+  margin-bottom: 15px;
+  margin-left: -5px;
+}
+
+/* Estilos para tablet (pantallas entre 577px y 768px) */
+@media (max-width: 768px) {
+  .campo-busqueda {
+    margin-bottom: 28px;
+    margin-left: -5px;
+  }
+}
+
+/* Estilos para móvil (pantallas menores a 576px) */
+@media (max-width: 576px) {
+  .campo-busqueda {
+    margin-bottom: 30px;
+    margin-left: -5px;
+  }
+}
+
+/*  LPAA INICIO - estilos de imagen    */
+
+/* AMPLIAR LA IMAGEN - OCUPA TODA LA PANTALLA */
+.modal-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Fondo oscuro semitransparente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: zoom-out;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+  /* Fondo transparente */
+}
+
+.fullscreen-image {
+  max-width: 110%;
+  max-height: 95vh;
+  object-fit: contain;
+  background-color: transparent;
+  /* Fondo transparente para la imagen */
+  image-rendering: -webkit-optimize-contrast;
+  /* Mejor calidad de imagen */
+  image-rendering: crisp-edges;
+}
+
+.btn-close-fullscreen {
+  position: fixed;
+  /* Cambiado de absolute a fixed */
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  background-color: rgba(0, 0, 0, 0.1);
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-close-fullscreen:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+.clickable-image {
+  cursor: zoom-in;
+}
+
+
+
+
+
+/* Agrega esto a tu archivo de estilos */
+.file-upload-wrapper {
+  display: block;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.file-upload-wrapper:hover .file-upload-label {
+  transform: translateY(-3px);
+}
+
+.file-upload-label {
+  padding: 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  transition: all 0.3s;
+}
+
+.file-upload-input {
+  display: none;
+}
+
+.card {
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+
+
+/* Estilos para el botón Cerrar */
+.close-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.close-icon:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.close-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+
+/* Estilos para el dran in drop */
+.drag-over {
+  border: 2px dashed #0d6efd !important;
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+.card {
+  transition: all 0.3s ease;
+}
+
+
+
+
+
+/* Estilos para el botón Pegar */
+.paste-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.paste-icon:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.paste-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+
+/* Estilos para botones de cámara/galería */
+/*  LPAA INICIO - estilos de imagen    */
+
+/* AMPLIAR LA IMAGEN - OCUPA TODA LA PANTALLA */
+.modal-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Fondo oscuro semitransparente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: zoom-out;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+  /* Fondo transparente */
+}
+
+.fullscreen-image {
+  max-width: 110%;
+  max-height: 95vh;
+  object-fit: contain;
+  background-color: transparent;
+  /* Fondo transparente para la imagen */
+  image-rendering: -webkit-optimize-contrast;
+  /* Mejor calidad de imagen */
+  image-rendering: crisp-edges;
+}
+
+.btn-close-fullscreen {
+  position: fixed;
+  /* Cambiado de absolute a fixed */
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  background-color: rgba(0, 0, 0, 0.1);
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-close-fullscreen:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+.clickable-image {
+  cursor: zoom-in;
+}
+
+/* Agrega esto a tu archivo de estilos */
+.file-upload-wrapper {
+  display: block;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.file-upload-wrapper:hover .file-upload-label {
+  transform: translateY(-3px);
+}
+
+.file-upload-label {
+  padding: 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  transition: all 0.3s;
+}
+
+.file-upload-input {
+  display: none;
+}
+
+.card {
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+/* Estilos para el botón Cerrar */
+.close-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.close-icon:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.close-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Estilos para el dran in drop */
+.drag-over {
+  border: 2px dashed #0d6efd !important;
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+.card {
+  transition: all 0.3s ease;
+}
+
+/* Estilos para el botón Pegar */
+.paste-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.paste-icon:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.paste-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Estilos para botones de cámara/galería */
+.camera-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.camera-buttons .btn {
+  flex: 1;
+  max-width: 140px;
+}
+
+/*  LPAA FIN - estilos de imagen    */
+
+/* ... (estilos anteriores se mantienen igual) */
+
+/* Estilos para el modal de la cámara */
+.camera-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.camera-container {
+  width: 100%;
+  max-width: 500px;
+  background: #1e1e1e;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+}
+
+.camera-preview {
+  width: 100%;
+  height: 0;
+  padding-bottom: 75%; /* Relación de aspecto 4:3 */
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.camera-preview video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-controls {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  background: #2c2c2c;
+}
+
+.btn-capture, .btn-close-camera, .btn-switch-camera {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-capture {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-capture:hover {
+  background-color: #218838;
+  transform: scale(1.05);
+}
+
+.btn-close-camera {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-close-camera:hover {
+  background-color: #c82333;
+  transform: scale(1.05);
+}
+
+.btn-switch-camera {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.btn-switch-camera:hover {
+  background-color: #138496;
+  transform: scale(1.05);
+}
+
+.camera-status {
+  color: white;
+  text-align: center;
+  margin-top: 15px;
+  font-size: 16px;
+}
+
+/* Efecto de flash al capturar foto - CORREGIDO */
+@keyframes captureFlash {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.capture-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10001;
+}
+
+.capture-flash.animate {
+  animation: captureFlash 0.3s ease-in-out;
+}

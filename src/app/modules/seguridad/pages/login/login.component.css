@@ -1,0 +1,12 @@
+.password-mask {
+  font-family: 'text-security-disc';
+  -webkit-text-security: disc;
+}
+
+/* Para iOS, asegurar que el teclado aparece */
+@supports (-webkit-touch-callout: none) {
+  .password-mask {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}

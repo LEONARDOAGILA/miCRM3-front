@@ -1,0 +1,78 @@
+<!-- begin spinner -->
+<ng-container *ngIf="(isLoading$ | async)">
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+</ng-container>
+
+
+
+
+<!-- CABECERA DE MODAL -->
+<app-modal-header 
+    [title]="titulo"
+    (onClose)="modal.close('Close click')"
+></app-modal-header>
+
+
+<!-- CUERPO DE MODAL -->
+<div class="modal-body">
+<p></p>
+  <form [formGroup]="form" class="form-validate form-horizontal" novalidate="">
+      <div class="container-fluid">
+          <div class="row">
+              <app-campoTexto 
+                  [control]="form.controls['nombre']"
+                  label="NOMBRE"
+                  placeholder="NOMBRE"
+                  [maxLength]="255"
+                  [trimEspacios]="true"
+                  [mayusculas]="true"
+              ></app-campoTexto>
+          </div>
+          <div class="row">
+              <app-checkbox
+                  [control]="form.controls['activo']"
+                  [label]="'Activo'"
+                  [id]="'ck-isactive'"
+              ></app-checkbox>                              
+          </div>
+      </div>
+  </form>
+<p></p>  
+</div>
+
+
+<!-- PIE DE MODAL -->
+<app-modal-footer
+    [isDisabled]="!isdisabled"
+    (onClose)="modal.close('Close click')"
+    (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>
+
+
+
+
+
+
+
+<!-- CABECERA DE MODAL -->
+<!-- <div class="modal-header panel-heading bg-gray-700 text-white">
+    <h1 class="modal-title text-gray-300">{{title}}</h1>
+    <button type="button" class="btn btn-danger btn-sm btn-icon btn-square" aria-label="Close" (click)="modal.dismiss('Close click')"><i class="fa fa-times"></i></button>
+</div> -->
+
+
+
+<!-- PIE DE MODAL -->
+<!-- <div class="modal-footer">
+  <div class="restar-buttons">
+      <button class="btn btn-danger equal-width-button"  type="button" (click)="modal.close('Close click')" >
+          <i class="bi bi-x-circle"><span class="m-2">Salir</span></i>
+      </button>
+  </div>
+  <div class="save-buttons" *ngIf="!isdisabled">
+      <button class="btn btn-primary equal-width-button" type="submit"  (click)="onSubmitForm($event, form.value)">
+          <i class="bi bi-save"><span class="m-2">Guardar</span></i>            
+      </button>
+  </div>
+</div> -->

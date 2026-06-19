@@ -1,0 +1,36 @@
+.file-tree {
+  margin-left: 5px; /* Indentación para los submenús */
+  display: none;
+}
+
+.file-tree.active {
+  display: block;
+}
+
+.file-node {
+  margin: 5px 0;
+}
+
+.file-link {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.file-link:hover {
+  background-color: #a8a7a7;
+}
+
+.file-link.selected {
+  background-color: #a8a7a7;
+  font-weight: bold;
+}
+
+.file-arrow, .file-icon {
+  margin-right: 5px;
+  width: 20px;
+  text-align: center;
+}

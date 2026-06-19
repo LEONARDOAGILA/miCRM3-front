@@ -1,0 +1,277 @@
+<!-- BEGIN profile -->
+<div class="profile mb-3">
+	<div class="profile-header">
+		<!-- BEGIN profile-header-cover - Oculto en móvil -->
+		<div class="profile-header-cover d-none d-sm-block"></div>
+		<!-- END profile-header-cover -->
+		
+		<!-- BEGIN profile-header-content - Oculto en móvil -->
+		<div class="profile-header-content d-none d-sm-flex">
+			<!-- BEGIN profile-header-img -->
+			<div class="profile-header-img">
+				<img src="/assets/img/user/user-13.jpg" alt="" />
+			</div>
+			<!-- END profile-header-img -->
+			<!-- BEGIN profile-header-info -->
+			<div class="profile-header-info">
+				<h4 class="mt-0 mb-1">Bienvenido</h4>
+				<p class="mb-2">Agila Astudillo Leonardo Patricio</p>
+				<a href="#" class="btn btn-xs btn-yellow">Ayuda</a>
+			</div>
+			<!-- END profile-header-info -->
+		</div>
+		<!-- END profile-header-content -->
+		
+		<!-- BEGIN profile-header-tab - Tabs con borde superior e inferior -->
+		<ul class="profile-header-tab nav nav-tabs flex-nowrap overflow-auto border py-0" role="tablist" style="border-color: #e9e7e7 !important; border-top-width: 1px; border-bottom-width: 1px;">
+			<li class="nav-item flex-shrink-0" role="presentation">
+				<button class="nav-link active" id="profile-post-tab" data-bs-toggle="tab" data-bs-target="#profile-post" type="button" role="tab" aria-controls="profile-post" aria-selected="true">
+					<i class="fa fa-th-large me-1"></i>
+					<span class="d-none d-sm-inline">MODULOS</span>
+					<span class="d-inline d-sm-none">Módulos</span>
+				</button>
+			</li>
+			<li class="nav-item flex-shrink-0" role="presentation">
+				<button class="nav-link" id="profile-about-tab" data-bs-toggle="tab" data-bs-target="#profile-about" type="button" role="tab" aria-controls="profile-about" aria-selected="false">
+					<i class="fa fa-chart-line me-1"></i>
+					<span class="d-none d-sm-inline">METRICAS</span>
+					<span class="d-inline d-sm-none">Métricas</span>
+				</button>
+			</li>
+			<li class="nav-item flex-shrink-0" role="presentation">
+				<button class="nav-link" id="profile-videos-tab" data-bs-toggle="tab" data-bs-target="#profile-videos" type="button" role="tab" aria-controls="profile-videos" aria-selected="false">
+					<i class="fa fa-envelope me-1"></i>
+					<span class="d-none d-sm-inline">CONTACTENOS</span>
+					<span class="d-inline d-sm-none">Contacto</span>
+				</button>
+			</li>
+		</ul>
+		<!-- END profile-header-tab -->
+	</div>
+</div>
+<!-- END profile -->
+
+<!-- BEGIN content-container -->
+<div class="grow overflow-hidden">
+	<ng-scrollbar class="h-100">
+		<div class="app-content-padding">
+			<!-- Tab panes con fade y show para mantener altura -->
+			<div class="tab-content">
+				<!-- BEGIN #profile-post tab -->
+				<div class="tab-pane fade show active" id="profile-post" role="tabpanel" aria-labelledby="profile-post-tab">
+					<!-- BEGIN MODULES CARDS -->
+					<div class="modules-section mb-5">
+						<div class="row g-3">
+							<div *ngFor="let modulo of modulosPermitidos" class="col-xl-3 col-md-6">
+								<!-- Para Seguridad que tiene action -->
+								<div *ngIf="modulo.action === 'seguridad'; else routerLinkTemplate"
+								     (click)="fun_seguridad()"
+								     class="module-card-compact bg-white border text-decoration-none d-block"
+								     style="cursor: pointer;">
+									<div class="d-flex align-items-center gap-2 p-3">
+										<div class="module-icon-compact {{ modulo.color }}">
+											<i class="fa {{ modulo.icon }} fa-lg text-white"></i>
+										</div>
+										<div class="grow">
+											<h5 class="mb-0 fw-bold">{{ modulo.label }}</h5>
+											<small class="text-muted d-block">{{ modulo.descripcion }}</small>
+										</div>
+										<i class="fa fa-arrow-right text-primary"></i>
+									</div>
+								</div>
+								<!-- Para los demás módulos con routerLink -->
+								<ng-template #routerLinkTemplate>
+									<a [routerLink]="[modulo.url]" class="module-card-compact bg-white border text-decoration-none d-block">
+										<div class="d-flex align-items-center gap-2 p-3">
+											<div class="module-icon-compact {{ modulo.color }}">
+												<i class="fa {{ modulo.icon }} fa-lg text-white"></i>
+											</div>
+											<div class="grow">
+												<h5 class="mb-0 fw-bold">{{ modulo.label }}</h5>
+												<small class="text-muted d-block">{{ modulo.descripcion }}</small>
+											</div>
+											<i class="fa fa-arrow-right text-primary"></i>
+										</div>
+									</a>
+								</ng-template>
+							</div>
+						</div>
+					</div>
+					<!-- END MODULES CARDS -->
+				</div>
+				<!-- END #profile-post tab -->
+
+				<!-- BEGIN #profile-about tab -->
+				<div class="tab-pane fade" id="profile-about" role="tabpanel" aria-labelledby="profile-about-tab">
+					<!-- BEGIN row -->
+					<div class="row">
+						<!-- BEGIN col-3 -->
+						<div class="col-xl-3 col-md-6">
+							<div class="widget widget-stats bg-blue">
+								<div class="stats-icon"><i class="fa fa-desktop"></i></div>
+								<div class="stats-info">
+									<h4>TOTAL VISITORS</h4>
+									<p>3,291,922</p>	
+								</div>
+								<div class="stats-link">
+									<a href="javascript:;">View Detail <i class="fa fa-arrow-alt-circle-right"></i></a>
+								</div>
+							</div>
+						</div>
+						<!-- END col-3 -->
+						<!-- BEGIN col-3 -->
+						<div class="col-xl-3 col-md-6">
+							<div class="widget widget-stats bg-info">
+								<div class="stats-icon"><i class="fa fa-link"></i></div>
+								<div class="stats-info">
+									<h4>BOUNCE RATE</h4>
+									<p>20.44%</p>	
+								</div>
+								<div class="stats-link">
+									<a href="javascript:;">View Detail <i class="fa fa-arrow-alt-circle-right"></i></a>
+								</div>
+							</div>
+						</div>
+						<!-- END col-3 -->
+						<!-- BEGIN col-3 -->
+						<div class="col-xl-3 col-md-6">
+							<div class="widget widget-stats bg-orange">
+								<div class="stats-icon"><i class="fa fa-users"></i></div>
+								<div class="stats-info">
+									<h4>UNIQUE VISITORS</h4>
+									<p>1,291,922</p>	
+								</div>
+								<div class="stats-link">
+									<a href="javascript:;">View Detail <i class="fa fa-arrow-alt-circle-right"></i></a>
+								</div>
+							</div>
+						</div>
+						<!-- END col-3 -->
+						<!-- BEGIN col-3 -->
+						<div class="col-xl-3 col-md-6">
+							<div class="widget widget-stats bg-red">
+								<div class="stats-icon"><i class="fa fa-clock"></i></div>
+								<div class="stats-info">
+									<h4>AVG TIME ON SITE</h4>
+									<p>00:12:23</p>	
+								</div>
+								<div class="stats-link">
+									<a href="javascript:;">View Detail <i class="fa fa-arrow-alt-circle-right"></i></a>
+								</div>
+							</div>
+						</div>
+						<!-- END col-3 -->
+					</div>
+					<!-- END row -->
+				</div>	
+				<!-- END #profile-about tab -->
+
+				<!-- BEGIN #profile-videos tab -->
+				<div class="tab-pane fade" id="profile-videos" role="tabpanel" aria-labelledby="profile-videos-tab">
+					<!-- BEGIN ACCESOS DIRECTOS Y ACTIVIDADES -->
+					<div class="row">
+						<!-- BEGIN ACCESOS DIRECTOS -->
+						<div class="col-xl-5">
+							<div class="panel panel-inverse">
+								<div class="panel-heading">
+									<h4 class="panel-title"><i class="fa fa-bolt me-2"></i> Accesos Directos</h4>
+									<div class="panel-heading-btn">
+										<a href="javascript:;" class="btn btn-xs btn-icon btn-default"><i class="fa fa-plus"></i></a>
+									</div>
+								</div>
+								<div class="panel-body p-0">
+									<div class="list-group list-group-flush">
+										<a href="javascript:;" class="list-group-item list-group-item-action d-flex align-items-center">
+											<i class="fa fa-user-plus fa-fw text-primary me-3"></i>
+											<span class="flex-1">Registrar Nuevo Cliente</span>
+											<i class="fa fa-chevron-right text-muted fa-sm"></i>
+										</a>
+										<a href="javascript:;" class="list-group-item list-group-item-action d-flex align-items-center">
+											<i class="fa fa-file-invoice fa-fw text-success me-3"></i>
+											<span class="flex-1">Crear Factura</span>
+											<i class="fa fa-chevron-right text-muted fa-sm"></i>
+										</a>
+										<a href="javascript:;" class="list-group-item list-group-item-action d-flex align-items-center">
+											<i class="fa fa-box fa-fw text-info me-3"></i>
+											<span class="flex-1">Buscar Producto</span>
+											<i class="fa fa-chevron-right text-muted fa-sm"></i>
+										</a>
+										<a [routerLink]="['/config']" class="list-group-item list-group-item-action d-flex align-items-center">
+											<i class="fa fa-chart-simple fa-fw text-warning me-3"></i>
+											<span class="flex-1">Reporte de Ventas</span>
+											<i class="fa fa-chevron-right text-muted fa-sm"></i>
+										</a>
+										<a href="javascript:;" class="list-group-item list-group-item-action d-flex align-items-center rounded-bottom">
+											<i class="fa fa-cog fa-fw text-secondary me-3"></i>
+											<span class="flex-1">Configuración del Sistema</span>
+											<i class="fa fa-chevron-right text-muted fa-sm"></i>
+										</a>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!-- END ACCESOS DIRECTOS -->
+
+						<!-- BEGIN ÚLTIMAS ACTIVIDADES -->
+						<div class="col-xl-6">
+							<!-- BEGIN panel -->
+							<div class="panel panel-inverse">
+								<div class="panel-heading">
+									<h4 class="panel-title"><i class="fa fa-clock me-2"></i>Actividad Reciente</h4>
+									<div class="panel-heading-btn">
+										<a href="javascript:;" class="btn btn-xs btn-icon btn-default"><i class="fa fa-refresh"></i></a>
+									</div>
+								</div>
+								<div class="panel-body p-0">
+									<div class="table-responsive">
+										<table class="table table-panel align-middle mb-0">
+											<tbody>
+												<tr *ngFor="let activity of recentActivities">
+													<td class="w-10px">
+														<i [class]="activity.icon" [style.color]="activity.color"></i>
+													</td>
+													<td>
+														<span class="fw-600">{{ activity.title }}</span>
+													</td>
+													<td class="text-end text-muted">
+														<small>{{ activity.time }}</small>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+								<div class="panel-footer text-end">
+									<a href="javascript:;" class="btn btn-white btn-sm">Ver toda la actividad <i class="fa fa-arrow-right ms-5px"></i></a>
+								</div>
+							</div>
+							<!-- END panel -->
+						</div>
+						<!-- END ÚLTIMAS ACTIVIDADES -->
+					</div>
+					<!-- END ACCESOS DIRECTOS Y ACTIVIDADES -->
+				</div>	
+				<!-- END #profile-videos tab -->
+			</div>
+		</div>
+	</ng-scrollbar>
+</div>
+
+<!-- BEGIN #footer - Versión con clases Bootstrap nativas -->
+<div id="footer" class="app-footer m-0 py-2 bg-light border-top">
+	<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-3">
+		<div>
+			<span class="small text-muted">&copy;IUNIX CRM/ERP®</span>
+		</div>
+		<div class="d-flex align-items-center gap-3 flex-wrap">
+			<div class="vr d-none d-md-block text-secondary"></div>
+			<div class="d-flex align-items-center gap-2">
+				<i class="fa fa-calendar text-primary"></i>
+				<span class="small text-dark">{{ fechaActual }}</span>
+				<i class="fa fa-clock text-warning ms-2"></i>
+				<span class="small fw-semibold text-dark">{{ horaActual }}</span>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- END #footer -->

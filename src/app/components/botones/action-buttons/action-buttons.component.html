@@ -1,0 +1,64 @@
+<div class="d-flex align-items-center justify-content-center">
+
+  <button 
+      *ngIf="buttonCambioClave" 
+      (click)="onCambioClave()"
+      class="btn-icon btn-cambio-clave" 
+      title="Cambio de clave"
+      aria-label="Cambiar contraseña">
+  <i class="fa-solid fa-key"></i>
+  </button>
+  <button 
+      *ngIf="this.buttonAdd" 
+      (click)="onAdd()"
+      class="btn-icon btn-add" 
+      [title]="!accesoModel.crear? 'Nuevo - Desactivado' : 'Nuevo'" 
+      >
+  <i class="fa fa-plus"></i>
+  </button>
+
+  <button 
+      *ngIf="this.buttonAdd2" 
+      class="btn-icon btn-inactivo" 
+      style="opacity: 0.0">
+  <i class="fa fa-plus"></i>
+  </button>
+
+  <button 
+      *ngIf="this.buttonView" 
+      (click)="onView()" 
+      class="btn-icon btn-view" 
+      [title]="!accesoModel.ver? 'Ver - Desactivado' : 'Ver'" 
+      [disabled]="!accesoModel.ver">
+  <i class="fa fa-eye"></i>
+  </button>
+
+  <button 
+      *ngIf="this.buttonEdit" 
+      (click)="onEdit()" 
+      class="btn-icon btn-edit" 
+      [title]="!accesoModel.editar? 'Editar - Desactivado' : 'Editar'" 
+      [disabled]="!accesoModel.editar">
+  <i class="fa fa-sharp-duotone fa-solid fa-pen-to-square"></i>
+  </button>
+
+  <button 
+      *ngIf="this.buttonClone" 
+      (click)="onClone()" 
+      class="btn-icon btn-create" 
+      [title]="!accesoModel.crear? 'Clonar - Desactivado' : 'Clonar'" 
+      [disabled]="!accesoModel.crear">
+  <i class="fa fa-clone"></i>
+  </button>
+
+  <button 
+      *ngIf="this.buttonDelete" 
+      (click)="onDelete()" 
+      class="btn-icon btn-delete" 
+      [title]="!accesoModel.eliminar? 'Eliminar - Desactivado' : 'Eliminar'" 
+      [disabled]="!accesoModel.eliminar">
+  <i class="fa fa-trash"></i>
+  </button>
+
+
+</div>

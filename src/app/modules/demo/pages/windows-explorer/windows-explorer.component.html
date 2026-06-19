@@ -1,0 +1,107 @@
+<div class="explorer-container" (click)="hideContextMenu()">
+  <div class="toolbar">
+    <button (click)="newItemType = 'folder'; newItemName = 'Nueva carpeta'; addNewItem()">
+      Nueva Carpeta
+    </button>
+    <button (click)="newItemType = 'file'; newItemName = 'Nuevo archivo'; addNewItem()">
+      Nuevo Archivo
+    </button>
+  </div>
+
+  <div class="file-tree">
+    <ng-container *ngFor="let item of fileSystem">
+      <div class="tree-item" [class.selected]="selectedItem === item">
+        <div 
+          (click)="toggleFolder(item)" 
+          (contextmenu)="showContextMenu($event, item)"
+          class="item-content"
+        >
+          <span class="icon">
+            <i *ngIf="item.type === 'folder'">
+              {{ item.isOpen ? '📂' : '📁' }}
+            </i>
+            <i *ngIf="item.type === 'file'">📄</i>
+          </span>
+          
+          <span *ngIf="!item.isEditing" class="name">{{ item.name }}</span>
+          
+          <input 
+            *ngIf="item.isEditing"
+            type="text" 
+            [(ngModel)]="newItemName"
+            (keyup.enter)="saveEditing(item)"
+            (keyup.escape)="cancelEditing(item)"
+            (blur)="saveEditing(item)"
+            autofocus
+          >
+        </div>
+
+        <div *ngIf="item.isOpen && item.children" class="children">
+          <div 
+            *ngFor="let child of item.children" 
+            class="tree-item child" 
+            [class.selected]="selectedItem === child"
+          >
+            <div 
+              (click)="toggleFolder(child)" 
+              (contextmenu)="showContextMenu($event, child)"
+              class="item-content"
+            >
+              <span class="icon">
+                <i *ngIf="child.type === 'folder'">
+                  {{ child.isOpen ? '📂' : '📁' }}
+                </i>
+                <i *ngIf="child.type === 'file'">📄</i>
+              </span>
+              
+              <span *ngIf="!child.isEditing" class="name">{{ child.name }}</span>
+              
+              <input 
+                *ngIf="child.isEditing"
+                type="text" 
+                [(ngModel)]="newItemName"
+                (keyup.enter)="saveEditing(child)"
+                (keyup.escape)="cancelEditing(child)"
+                (blur)="saveEditing(child)"
+                autofocus
+              >
+            </div>
+
+            <div *ngIf="child.isOpen && child.children" class="children">
+              <!-- Puedes añadir más niveles de anidación si lo deseas -->
+            </div>
+          </div>
+
+          <div class="add-item">
+            <input type="text" [(ngModel)]="newItemName" placeholder="Nombre" class="item-input">
+            <select [(ngModel)]="newItemType" class="type-select">
+              <option value="folder">Carpeta</option>
+              <option value="file">Archivo</option>
+            </select>
+            <button (click)="addNewItem(item)">+</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <div 
+    *ngIf="contextMenu.show" 
+    class="context-menu" 
+    [style.left.px]="contextMenu.x"
+    [style.top.px]="contextMenu.y"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="menu-item" (click)="startEditing(contextMenu.target!)">Renombrar</div>
+    <div class="menu-item" (click)="deleteItem(contextMenu.target!, getParentArray(contextMenu.target!) || fileSystem)">
+      Eliminar
+    </div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" (click)="newItemType = 'folder'; newItemName = 'Nueva carpeta'; addNewItem(contextMenu.target?.type === 'folder' ? contextMenu.target : null)">
+      Nueva carpeta
+    </div>
+    <div class="menu-item" (click)="newItemType = 'file'; newItemName = 'Nuevo archivo'; addNewItem(contextMenu.target?.type === 'folder' ? contextMenu.target : null)">
+      Nuevo archivo
+    </div>
+  </div>
+</div>

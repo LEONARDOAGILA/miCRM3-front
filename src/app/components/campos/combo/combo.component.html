@@ -1,0 +1,59 @@
+<div *ngIf="disabled"
+    class="form-group floating-control" 
+    [class.disabled]="disabled"
+>
+
+    <ng-select 
+        [items]="items"
+        [bindLabel]="bindLabel"
+        [bindValue]="bindValue"
+        [disabled]="disabled"
+        [(ngModel)]="value"
+        (ngModelChange)="onValueChange($event)"
+        (focus)="onFocus()"
+        (blur)="onBlur()"
+        (open)="onDropdownOpen()"
+        (close)="onDropdownClose()"
+        class="floating-select custom-ng-select"
+        [class.has-value]="!!value"
+        [class.is-focused]="isFocused"
+    ></ng-select>
+
+    <label class="floating-label" [class.active]="isFloating" >{{ label }}</label>
+
+</div>
+
+
+
+<div *ngIf="!disabled"
+    class="form-group floating-control" 
+    [class.disabled]="disabled"
+      [ngClass]="{
+        'is-invalid': control.invalid && (control.touched || control.dirty),
+        'is-valid': control.valid && (control.touched || control.dirty)
+      }"
+>
+
+    <ng-select 
+        [items]="items"
+        [bindLabel]="bindLabel"
+        [bindValue]="bindValue"
+        [disabled]="disabled"
+        [(ngModel)]="value"
+        (ngModelChange)="onValueChange($event)"
+        (focus)="onFocus()"
+        (blur)="onBlur()"
+        (open)="onDropdownOpen()"
+        (close)="onDropdownClose()"
+        class="floating-select custom-ng-select"
+        style="padding-top: -24px;margin-top: -6px;margin-bottom: -6px;"
+        [class.has-value]="!!value"
+        [class.is-focused]="isFocused"
+    ></ng-select>
+
+    <label class="floating-label" [class.active]="isFloating">{{ label }}</label>
+
+</div>
+
+
+<small class="ng-select-text-danger msg-requerido-combo" *ngIf="control?.hasError('required') && (control?.dirty || control?.touched)">Es requerido.</small>

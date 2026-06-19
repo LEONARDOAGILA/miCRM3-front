@@ -1,0 +1,299 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.time-picker-wrapper {
+  position: relative;
+  width: 100%;
+  
+  .time-picker-input {
+    width: 100%;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    padding: 0.5rem 0.75rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    background-color: #fff;
+    cursor: pointer;
+    
+    &:focus {
+      outline: none;
+      border-color: #348fe2;
+      box-shadow: 0 0 0 0.2rem rgba(52, 143, 226, 0.25);
+    }
+    
+    &.is-invalid {
+      border-color: #ff5b57;
+    }
+    
+    &:disabled {
+      background-color: #e9ecef;
+      cursor: not-allowed;
+    }
+  }
+  
+  .btn {
+    background: transparent;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.25rem 0.6rem;
+    z-index: 9999;
+    
+    &:hover:not(:disabled) {
+      color: #348fe2;
+    }
+    
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+  }
+  
+  .position-absolute { position: absolute; }
+  .start-0 { left: 0; }
+  .end-0 { right: 0; }
+  .top-50 { top: 50%; }
+  .translate-middle-y { transform: translateY(-50%); }
+  .shadow-none { box-shadow: none; }
+  
+  .time-picker-dropdown {
+    position: fixed;
+    z-index: 9999; /* Aumentado para estar por encima de todo */
+    display: none;
+    min-width: 240px;
+    max-width: 90vw;
+    background-color: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.25rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    
+    &.show {
+      display: block;
+    }
+    
+    .time-picker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0.6rem;
+      border-bottom: 1px solid #e9ecef;
+      
+      .current-time {
+        font-size: 0.875rem;
+        font-weight: 600;
+        font-family: monospace;
+        color: #348fe2;
+      }
+      
+      .btn-link {
+        padding: 0;
+        font-size: 0.65rem;
+        color: #348fe2;
+        background: none;
+        border: none;
+        cursor: pointer;
+        
+        i {
+          font-size: 0.6rem;
+          margin-right: 0.2rem;
+        }
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+    
+    .time-picker-body {
+      display: flex;
+      padding: 0.35rem;
+      gap: 0.35rem;
+      
+      .time-column {
+        flex: 1;
+        min-width: 50px;
+        
+        .time-column-header {
+          text-align: center;
+          font-size: 0.55rem;
+          font-weight: 600;
+          padding: 0.2rem;
+          margin-bottom: 0.25rem;
+          background-color: #f8f9fa;
+          border-radius: 0.2rem;
+        }
+        
+        .time-items {
+          max-height: 160px;
+          overflow-y: auto;
+          
+          &::-webkit-scrollbar {
+            width: 3px;
+          }
+          
+          .time-item {
+            display: block;
+            width: 100%;
+            padding: 0.25rem 0.2rem;
+            margin-bottom: 0.15rem;
+            border: none;
+            background: none;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 0.2rem;
+            font-size: 0.7rem;
+            
+            &:hover {
+              background-color: #f8f9fa;
+              color: #348fe2;
+            }
+            
+            &.active {
+              background-color: #348fe2;
+              color: #fff;
+            }
+          }
+        }
+      }
+    }
+    
+    .time-picker-footer {
+      padding: 0.35rem;
+      border-top: 1px solid #e9ecef;
+      display: flex;
+      gap: 0.35rem;
+      justify-content: flex-end;
+      
+      .btn-confirm {
+        padding: 0.2rem 0.6rem;
+        font-size: 0.65rem;
+        color: #fff;
+        background-color: #348fe2;
+        border: none;
+        border-radius: 0.2rem;
+        cursor: pointer;
+        
+        &:hover {
+          background-color: #2b6cb0;
+        }
+      }
+      
+      .btn-cancel {
+        padding: 0.2rem 0.6rem;
+        font-size: 0.65rem;
+        color: #6c757d;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.2rem;
+        cursor: pointer;
+        
+        &:hover {
+          background-color: #e9ecef;
+        }
+      }
+    }
+  }
+}
+
+// ==================== ESTILOS PARA MÓVILES ====================
+@media (max-width: 768px) {
+  .time-picker-wrapper {
+    .time-picker-dropdown {
+      position: fixed;
+      top: auto !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: unset !important;
+      border-radius: 0.5rem 0.5rem 0 0;
+      bottom: 0;
+      transform: translateY(0) !important;
+      animation: slideUp 0.3s ease-out;
+      
+      .time-picker-header {
+        padding: 0.75rem 1rem;
+        
+        .current-time {
+          font-size: 1rem;
+        }
+      }
+      
+      .time-picker-body {
+        padding: 0.75rem;
+        gap: 0.75rem;
+        
+        .time-column {
+          min-width: 70px;
+          
+          .time-column-header {
+            font-size: 0.7rem;
+            padding: 0.35rem;
+          }
+          
+          .time-items {
+            max-height: 200px;
+            
+            .time-item {
+              padding: 0.5rem 0.3rem;
+              font-size: 0.875rem;
+            }
+          }
+        }
+      }
+      
+      .time-picker-footer {
+        padding: 0.75rem;
+        gap: 0.75rem;
+        
+        .btn-confirm,
+        .btn-cancel {
+          padding: 0.5rem 1rem;
+          font-size: 0.875rem;
+        }
+      }
+    }
+  }
+}
+
+// Pantallas muy pequeñas (iPhone SE, iPhone 5, etc)
+@media (max-width: 380px) {
+  .time-picker-wrapper {
+    .time-picker-dropdown {
+      .time-picker-body {
+        padding: 0.5rem;
+        gap: 0.5rem;
+        
+        .time-column {
+          min-width: 55px;
+          
+          .time-items {
+            max-height: 180px;
+            
+            .time-item {
+              padding: 0.35rem 0.2rem;
+              font-size: 0.75rem;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Animación para móvil
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

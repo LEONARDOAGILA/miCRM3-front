@@ -1,0 +1,44 @@
+<!-- begin spinner -->
+<!-- <ng-container *ngIf="(isLoading$ | async)">
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+</ng-container> -->
+
+<!-- CABECERA DE MODAL -->
+<app-modal-header [title]="titulo" (onClose)="modal.close('Close click')"></app-modal-header>
+
+<!-- CUERPO DE MODAL -->
+<div class="modal-body">
+
+  <!-- INICIO CAMPO TEXTO DE BUSQUEDA Y DE FILTROS-->
+  <div class="row g-2 m-2 align-items-center">
+
+    <div class="col-auto pe-1"> <!-- pe-0 quita padding derecho -->
+      <button (click)="clearAllFilters()" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-filter-circle-xmark" title="Quitar Filtros"></i>
+      </button>
+    </div>
+
+    <div class="col position-relative">
+      <app-campoBusqueda [id]="'filter-text-box'" [placeholder]="'Buscar'" [iconClass]="'fa fa-search fa-lg'"
+        [containerClass]="'position-relative w-100'" (searchChange)="onFilterTextBoxChanged()">
+      </app-campoBusqueda>
+    </div>
+
+  </div>
+  <!-- FIN CAMPO TEXTO DE BUSQUEDA Y DE FILTROS-->
+
+  <!-- INICIO AG-GRID -->
+  <ag-grid-angular [rowData]="listaClientes" [style.height]="_appAgGridService.tamanoAgGrid" [columnDefs]="columnDefs"
+    [defaultColDef]="_appAgGridService.defaultColDef" [sideBar]="_appAgGridService.sideBar"
+    [rowHeight]="_appAgGridService.rowHeight" [headerHeight]="_appAgGridService.headerHeight "
+    [localeText]="_appAgGridService.localeText" [rowSelection]="'single'" [pagination]="true" [animateRows]="true"
+    [cacheQuickFilter]="true" class="ag-theme-alpine zebra-grid ag-grid-transparente p-2 "
+    (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)"></ag-grid-angular>
+  <!-- FIN AG-GRID -->
+
+</div>
+
+<!-- PIE DE MODAL -->
+<app-modal-footer [isDisabled]="isdisabled" (onClose)="modal.close('Close click')" (onSubmit)="seleccionarCliente()">
+</app-modal-footer>

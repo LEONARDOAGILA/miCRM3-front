@@ -1,0 +1,31 @@
+.password-mask-input {
+  font-family: monospace;
+}
+
+.input-group-text i {
+  font-size: 1rem;
+}
+
+.equal-width-button {
+  min-width: 120px;
+}
+
+.btn-oval {
+  border-radius: 20px;
+}
+
+/* Animación para los pasos */
+.modal-body {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

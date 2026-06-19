@@ -1,0 +1,63 @@
+<!-- BEGIN panel -->
+<div class="panel" [ngClass]="[ (this.expand) ? 'panel-expand': '', (this.reload) ? 'panel-loading': '', (this.panelClass) ? this.panelClass : '', (this.variant) ? 'panel-' + this.variant : 'panel-inverse' ]" *ngIf="!this.remove">
+  <!-- BEGIN panel-heading -->
+  <!-- <div class="panel-heading" [ngClass]="[ (this.headerClass) ? this.headerClass : '' ]"> -->
+  <div class="panel-heading" [ngClass]="[ (this.headerClass) ? this.headerClass : '' ]" style="padding-top: 0.35rem; padding-bottom: 0.35rem;">
+    <h4 class="panel-title" *ngIf="this.title">{{ title }}</h4>
+    <ng-content select="[header]"></ng-content>
+    <div class="panel-heading-btn" *ngIf="!this.noButton">
+      <div *ngIf="this.ButtonExportCsv" class="m-1"> 
+        <a href="javascript:;" class="btn btn-sm btn-icon btn-square btn-purple" (click)="panelExportCsv()" title="Exportar a CSV"><i class="fas fa-file-csv"></i></a>
+      </div>
+      <div *ngIf="this.ButtonExportExcel" class="m-1"> 
+        <a href="javascript:;" class="btn btn-sm btn-icon btn-square btn-green" (click)="panelExportExcel()" title="Exportar a Excel"><i class="fas fa-file-excel"></i></a>
+      </div>
+      <div *ngIf="this.ButtonPrint" class="me-3"> 
+        <a href="javascript:;" class="btn btn-sm btn-icon btn-square btn-info" (click)="panelPrint()" title="Imprimir"><i class="fa fa-print"></i></a>
+      </div>
+      <div *ngIf="!this.noButtonExpand" class="m-1"> 
+        <a href="javascript:;" class="btn btn-xs btn-icon btn-square btn-default" (click)="panelExpand()" title="Expandir"><i class="fa fa-expand"></i></a>
+      </div>
+      <div *ngIf="!this.noButtonReload" class="m-1"> 
+        <a href="javascript:;" class="btn btn-xs btn-icon btn-square btn-success" (click)="panelReload()" title="Recargar"><i class="fa fa-redo"></i></a>
+      </div>
+      <div *ngIf="!this.noButtonCollapse" class="m-1"> 
+        <a href="javascript:;" class="btn btn-xs btn-icon btn-square btn-warning" (click)="panelCollapse()" title="Minimizar"><i *ngIf="this.collapse" class="fa fa-plus"></i><i *ngIf="!this.collapse" class="fa fa-minus"></i></a>
+      </div>
+      <div *ngIf="!this.noButtonRemove" class="m-1"> 
+        <a href="javascript:;" class="btn btn-xs btn-icon btn-square btn-danger" (click)="panelRemove()" title="Cerrar"><i class="fa fa-times"></i></a>
+      </div>
+  </div>
+  </div>
+  <!-- END panel-heading -->
+
+  <!-- BEGIN before-body -->
+  <ng-content select="[beforeBody]"></ng-content>
+  <!-- END before-body -->
+
+  <!-- BEGIN panel-body -->
+  <div class="panel-body" [ngClass]="[ (this.collapse) ? 'd-none': '', (this.bodyClass) ? this.bodyClass : '' ]" *ngIf="!this.noBody">
+    <ng-content></ng-content>
+    <div class="panel-loader" *ngIf="this.reload"><span class="spinner spinner-sm"></span></div>
+  </div>
+  <!-- END panel-body -->
+
+  <!-- BEGIN no-body -->
+  <ng-content select="[noBody]"></ng-content>
+  <!-- END no-body -->
+
+  <!-- BEGIN outside-body -->
+  <ng-content select="[outsideBody]"></ng-content>
+  <!-- END outside-body -->
+
+  <!-- BEGIN panel-footer -->
+  <div class="panel-footer" #panelFooter [hidden]="!showFooter" [ngClass]="[ (this.footerClass) ? this.footerClass : '' ]">
+    <ng-content select="[footer]"></ng-content>
+  </div>
+  <!-- END panel-footer -->
+
+  <!-- BEGIN after-footer -->
+  <ng-content select="[afterFooter]"></ng-content>
+  <!-- END after-footer -->
+</div>
+<!-- END panel -->

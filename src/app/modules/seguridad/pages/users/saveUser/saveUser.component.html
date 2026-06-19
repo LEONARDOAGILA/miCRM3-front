@@ -1,0 +1,338 @@
+<!-- begin spinner -->
+<ng-container *ngIf="(isLoading$ | async)">
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+</ng-container>
+
+<!-- Cabecera del modal -->
+<app-modal-header [title]="titulo" (onClose)="activeModal.close('Close click')">
+</app-modal-header>
+
+<!-- Cuerpo del modal -->
+<div class="modal-body" tabindex="0" role="dialog" aria-labelledby="modalTitle">
+  <div class="container-fluid user-form-container">
+    <div class="row g-4 mt-1">
+
+      <!-- Columna izquierda - Avatar -->
+      <div class="col-lg-4">
+        <div class="avatar-section card h-100">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">Avatar del Usuario</h5>
+          </div>
+          <div class="card-body d-flex flex-column align-items-center">
+
+            <!-- -----  INICIO CAMPO IMAGEN ----------->
+            <div class="position-relative text-center border rounded p-3" [class.drag-over]="isDragOver"
+              (drop)="onDrop($event)" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)">
+
+              <!-- Botones Pegar y Cerra -->
+              <div *ngIf="!esView">
+                <div class="close-icon position-absolute top-0 start-0 m-2" (click)="triggerPaste()"
+                  title="Pegar imagen (Ctrl+V)">
+                  <i class="fa-solid fa-paste" style="color: white; font-size: 18px;"></i>
+                </div>
+                <div class="close-icon" (click)="clearImage()" *ngIf="imagen_previzualiza" title="Quitar Imagen">
+                  <i class="fa-solid fa-xmark" style="color: white; font-size: 18px;"></i>
+                </div>
+              </div>
+
+              <!-- Imagen Seleccionada -->
+              <img *ngIf="imagen_previzualiza" [src]="imagen_previzualiza"
+                class="img-fluid rounded shadow-sm clickable-image" alt="Avatar previsualización"
+                style="max-height: 300px; object-fit: contain;" (error)="handleImageError($event)"
+                (click)="openFullscreen()">
+
+              <!-- Selector si no hay imagen -->
+              <div *ngIf="!imagen_previzualiza" class="card shadow-sm mt-3 border-0">
+                <div class="card-body text-center">
+                  <label class="file-upload-wrapper w-100">
+                    <i class="bi bi-cloud-upload fs-1 text-primary"></i>
+                    <h5 class="mt-2">Seleccionar Imagen</h5>
+                    <p class="text-muted small m-0">Arrastra y suelta una imagen aquí</p>
+                    <p class="text-muted small m-0">o haz clic para buscar en tu dispositivo</p>
+                    <p class="text-muted small">También puedes usar Ctrl+V para pegar una imagen copiada</p>
+                    
+                    <div class="text-center mt-2">
+                      <button class="btn btn-primary btn-sm me-2" (click)="openCamera()">
+                        <i class="fa-solid fa-camera me-1"></i> Tomar Foto
+                      </button>
+                      <button class="btn btn-outline-primary btn-sm" (click)="openGallery()">
+                        <i class="fa-solid fa-image me-1"></i> Galería
+                      </button>
+                    </div>
+                    
+                    <input type="file" id="gallery-input" class="d-none" accept="image/*" 
+                           (change)="processFile($event)">
+                  </label>
+                </div>
+              </div>
+            </div>
+            <input #pasteInput class="d-none" [formControl]="form.controls['avatar']" (paste)="onPaste($event)">
+            <!-- -----  FIN CAMPO IMAGEN --------- -->
+
+            <!-- Campo URL del avatar -->
+            <div class="w-100 mt-3 mb-0 ms-2 me-2 pt-2 pb-2" *ngIf="false">
+              <app-campoTexto [control]="form.controls['avatar']" label="Avatar" placeholder="Avatar" [maxLength]="255"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna derecha - Formulario -->
+      <div class="col-lg-8">
+        <form [formGroup]="form" class="user-details-form" autocomplete="off">
+          <!-- Primera fila -->
+          <div class="row g-3">
+            <!-- Columna izquierda del formulario -->
+            <div class="col-md-6">
+              <div class="card h-100">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">Datos de Acceso</h5>
+                </div>
+                <div class="card-body">
+                  <!-- Campo EsActivo -->
+                  <div class="mt-1 mb-1 ms-2 me-2 pt-2 pb-2">
+                    <app-checkbox [control]="form.controls['isactive']" [label]="'  Usuario Activo'"
+                      [id]="'ck-isactive'">
+                    </app-checkbox>
+                  </div>
+
+                  <!-- Campo Login -->
+                  <div class="mb-1">
+                    <app-campoTexto 
+                        [control]="form.controls['login_user']" 
+                        label="Nombre de Usuario"
+                        placeholder="Nombre de Usuario" 
+                        [maxLength]="255" 
+                        [trimEspacios]="true" 
+                        [mayusculas]="true">
+                    </app-campoTexto>
+                  </div>
+
+                  <!-- Campo password -->
+                  <div class="mb-1" *ngIf="esNuevo || esClon" style="margin-top: -6px;">
+                      <app-campoClave 
+                        [control]="form.controls['password']"
+                        label="Clave de Usuario"
+                        placeholder="Ingrese su contraseña"
+                        [maxLength]="50"
+                        [minLength]="8"
+                        [requiereMayuscula]="true"
+                        [requiereMinuscula]="true"
+                        [requiereNumero]="true"
+                        [requiereEspecial]="true"
+                        [sinEspacios]="true"
+                        [trimEspacios]="true"
+                        autocomplete="new-password">
+                      </app-campoClave>
+                  </div>
+
+                  <!-- Campo Tipo -->
+                  <div class="mt-1" style="margin-top: -10px;">
+                    <app-combo formControlName="type_user" [items]="tipoUsuario" [label]="'Tipo de Usuario'"
+                      bindLabel="name" bindValue="id">
+                    </app-combo>
+                  </div>
+
+
+<!-- Campo Perfil -->
+<div class="mb-1" style="margin-top: -25px;">
+  
+  <div class="row g-2 align-items-center">
+    
+    <div class="col-4">
+      <app-campoNumeroEntero
+        [control]="form.controls['perfil_id']"
+        label="ID Perfil"
+        placeholder="ID"
+        [maxLength]="10"
+        (blur)="cargarPerfilPorId()"
+      ></app-campoNumeroEntero>
+    </div>
+
+    <div class="col-7" style="margin-left: -5px;">
+      <app-campoTexto
+        [control]="perfilNombreControl"
+        label="Nombre Perfil"
+        placeholder="Nombre del perfil"
+      ></app-campoTexto>
+    </div>
+
+    @if (!esView) {  
+      <div class="col-1 campo-busqueda">
+        <button class="btn btn-sm btn-outline-secondary w-150" 
+                (click)="abrirModalPerfiles()" 
+                title="Buscar Perfil"
+                style="height: 58px; display: flex; align-items: center; justify-content: center; background-color: #6c757d; color: white; border: none;">
+          <i class="fa fa-search"></i>
+        </button>
+      </div>
+    }
+
+  </div>
+</div>
+
+
+<!-- Campo Horario -->
+<div class="mb-1" style="margin-top: -15px;">
+  
+  <div class="row g-2 align-items-center">
+    
+    <div class="col-4">
+      <app-campoNumeroEntero
+        [control]="form.controls['chorario_id']"
+        label="ID Horario"
+        placeholder="ID"
+        [maxLength]="10"
+        (blur)="cargarHorarioPorId()"
+      ></app-campoNumeroEntero>
+    </div>
+
+    <div class="col-7" style="margin-left: -5px;">
+      <app-campoTexto
+        [control]="horarioNombreControl"
+        label="Nombre Horario"
+        placeholder="Nombre del horario"
+      ></app-campoTexto>
+    </div>
+
+    @if (!esView) {  
+      <div class="col-1 campo-busqueda">
+        <button class="btn btn-sm btn-outline-secondary w-150" 
+                (click)="abrirModalHorarios()" 
+                title="Buscar Horario"
+                style="height: 58px; display: flex; align-items: center; justify-content: center; background-color: #6c757d; color: white; border: none;">
+          <i class="fa fa-search"></i>
+        </button>
+      </div>
+    }
+
+  </div>
+</div>             
+
+
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna derecha del formulario -->
+            <div class="col-md-6">
+              <div class="card h-100">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">Información Personal</h5>
+                </div>
+                <div class="card-body">
+                  <!-- Campo Apellidos -->
+                  <div class="mb-1">
+                    <app-campoTexto [control]="form.controls['surname']" label="Apellidos" placeholder="Apellidos"
+                      [maxLength]="255" [trimEspacios]="true" [mayusculas]="true">
+                    </app-campoTexto>
+                  </div>
+
+                  <!-- Campo Nombres -->
+                  <div class="mb-1">
+                    <app-campoTexto [control]="form.controls['name']" label="Nombres" placeholder="Nombres"
+                      [maxLength]="255" [trimEspacios]="true" [mayusculas]="true">
+                    </app-campoTexto>
+                  </div>
+
+                  <!-- Campo Email -->
+                <div class="mb-1">
+                  <app-campoEmail
+                    [control]="form.controls['email']"
+                    label="Correo Electrónico"
+                    placeholder="ejemplo"
+                    [maxLength]="255"
+                    [required]="true"
+                    [trimEspacios]="true"
+                    [sinEspacios]="true">
+                  </app-campoEmail>
+                </div>
+
+                  <!-- Campo Telefono -->
+                  <div class="mb-1">
+                    <app-campoTelefono
+                      [control]="form.controls['phone']"
+                      label="Teléfono Celular"
+                      placeholder="Ej: 0987654321"
+                      [maxLength]="10"
+                      [required]="true"
+                      [pais]="'ecuador'"
+                      [tipoTelefono]="'celular'">
+                    </app-campoTelefono>
+                    <!-- pais="ninguno " para no validar -->
+                  </div>
+
+    
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<br>
+
+<!-- Pie del modal -->
+<app-modal-footer [isDisabled]="!isdisabled" (onClose)="activeModal.close('Close click')" (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>
+
+<!-- Modal para vista de imagen en pantalla completa -->
+<div class="modal-fullscreen" *ngIf="showFullscreenImage" (click)="closeFullscreen()">
+  <div class="modal-content">
+    <img [src]="imagen_previzualiza" class="fullscreen-image" alt="Avatar en pantalla completa">
+    <button class="btn btn-dark btn-close-fullscreen" (click)="closeFullscreen()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal para la cámara -->
+<!-- <div class="camera-modal-overlay" *ngIf="showCameraModal">
+  <div class="camera-container">
+    <div class="camera-preview">
+      <video id="cameraPreview" autoplay playsinline></video>
+    </div>
+    <div class="camera-controls">
+      <button class="btn-capture" (click)="capturePhoto()">
+        <i class="fa-solid fa-camera"></i>
+      </button>
+      <button class="btn-close-camera" (click)="closeCamera()">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+  </div>
+  <div class="camera-status">
+    {{ cameraError || 'Cámara activa. Sonríe :)' }}
+  </div>
+</div> -->
+
+<div class="camera-modal-overlay" *ngIf="showCameraModal">
+  <div class="camera-container">
+    <div class="camera-preview">
+      <video id="cameraPreview" autoplay playsinline></video>
+    </div>
+    <div class="camera-controls">
+      <button class="btn-switch-camera" (click)="switchCamera()" title="Cambiar cámara">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+      <button class="btn-capture" (click)="capturePhoto()">
+        <i class="fa-solid fa-camera"></i>
+      </button>
+      <button class="btn-close-camera" (click)="closeCamera()">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+  </div>
+  <div class="camera-status">
+    {{ cameraError || 'Cámara ' + (isUsingFrontCamera ? 'frontal' : 'trasera') + ' activa' }}
+  </div>
+</div>

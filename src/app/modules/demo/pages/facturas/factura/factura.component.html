@@ -1,0 +1,139 @@
+<!-- INICIO breadcrumb -->
+<ol class="breadcrumb" style="display: flex; justify-content: flex-end; width: 100%; margin: 0;">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Demo</a></li>
+  <li class="breadcrumb-item active">Factura</li>
+</ol>
+<!-- FIN breadcrumb -->
+
+<!-- INICIO PANEL -->
+<panel [title]="title" [noButton]="false" [noButtonCollapse]="true" [noButtonReload]="false" [noButtonReload]="false"
+  (panelExpanded)="ajustarTamanoGrid()">
+
+  <!--    INICIO BODY    -->
+  <div class="content-container1">
+
+    <!--    INICIO SPINNER    -->
+    <ng-container *ngIf="(isLoading$ | async)">
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    </ng-container>
+    <!--    FIN SPINNER    -->
+
+    <!-- INICIO CABECERA -->
+    <div class="card mb-3">
+      <h5 class="p-3 bg-gray-200">Información Cliente</h5>
+
+      <form [formGroup]="form" class="form-validate form-horizontal" novalidate="">
+
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-12">
+              <div class="d-flex gap-2 align-items-end">
+                <div class="flex-grow-1 position-relative">
+                  <app-campoTexto [control]="cabecera.controls['identificacion']" label="IDENTIFICACION"
+                    placeholder="IDENTIFICACION" [maxLength]="13" [trimEspacios]="true" [mayusculas]="true"
+                    (valueChange)="onIdentificacionChange($event)">
+                  </app-campoTexto>
+
+                  <!-- Lista de sugerencias -->
+                  <div *ngIf="showClienteSuggestions" class="position-absolute w-100 bg-white border rounded shadow-sm"
+                    style="top: 100%; left: 0; z-index: 1000; max-height: 200px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush">
+                      <li *ngFor="let cliente of filteredClientes"
+                        class="list-group-item list-group-item-action cursor-pointer py-2"
+                        (click)="selectCliente(cliente)">
+                        <div class="d-flex justify-content-between">
+                          <strong>{{ cliente.identificacion }}</strong>
+                          <span class="text-muted">{{ cliente.nombre_completo }}</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="flex-shrink-0 d-flex align-items-end" style="padding-bottom: 35px;">
+                  <button class="btn btn-primary d-flex align-items-center justify-content-center square-btn rounded-3"
+                    title="Buscar" (click)="buscarCliente()">
+                    <i class="fa fa-search"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-2">
+            <app-campoTexto [control]="cabecera.controls['nombre_completo']" label="CLIENTE" placeholder="CLIENTE"
+              [maxLength]="50" [trimEspacios]="true" [mayusculas]="true" [soloLetras]="true"></app-campoTexto>
+          </div>
+        </div>
+
+      </form>
+
+    </div>
+    <!-- FIN CABECERA -->
+
+    <!-- INICIO DETALLE -->
+    <div class="card mb-3">
+      <h5 class="p-3 bg-gray-200">Detalle - Productos</h5>
+
+      <!-- INICIO CAMPO TEXTO DE BUSQUEDA Y DE FILTROS-->
+      <div class="row g-2 m-2 align-items-center">
+
+        <div class="col-auto">
+          <button (click)="agregarProducto()" class="btn btn-sm btn-outline-success" [disabled]="!clienteSeleccionado">
+            + Agregar
+          </button>
+        </div>
+
+        <div class="col-auto">
+          <button (click)="eliminarProducto()" class="btn btn-sm btn-outline-danger"
+            [disabled]="!filaSeleccionada">
+            - Quitar
+          </button>
+        </div>
+
+        <div class="col position-relative">
+          <app-campoBusqueda [id]="'filter-text-box'" [placeholder]="'Buscar'" [iconClass]="'fa fa-search fa-lg'"
+            [containerClass]="'position-relative w-100'" (searchChange)="onFilterTextBoxChanged()">
+          </app-campoBusqueda>
+        </div>
+
+        <div class="col-auto"> <!-- pe-0 quita padding derecho -->
+          <button (click)="clearAllFilters()" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-filter-circle-xmark" title="Quitar Filtros"></i>
+          </button>
+        </div>
+
+      </div>
+      <!-- FIN CAMPO TEXTO DE BUSQUEDA Y DE FILTROS-->
+
+
+      <!-- INICIO AG-GRID -->
+      <ag-grid-angular [style.height]="_appAgGridService.tamanoAgGrid" [rowData]="rowData" [columnDefs]="columnDefs"
+        [defaultColDef]="_appAgGridService.defaultColDef" [sideBar]="_appAgGridService.sideBar"
+        [rowHeight]="_appAgGridService.rowHeight" [headerHeight]="_appAgGridService.headerHeight "
+        [localeText]="_appAgGridService.localeText" [rowSelection]="'single'" [pagination]="true" [animateRows]="true"
+        [cacheQuickFilter]="true" class="ag-theme-alpine zebra-grid ag-grid-transparente p-2 "
+        (gridReady)="onGridReady($event)" (cellValueChanged)="onCellValueChanged($event)"
+        (selectionChanged)="onSelectionChanged($event)"></ag-grid-angular>
+      <!-- FIN AG-GRID -->
+
+      <!-- INICIO BOTÓN GUARDAR -->
+      <div class="row g-2 m-2 align-items-center justify-content-end">
+        <div class="col-auto">
+          <button class="btn btn-primary" title="Guardar" (click)="guardarConValidacion()"
+            [disabled]="!formularioValido">
+            <i class="fa fa-save"></i> Guardar
+          </button>
+        </div>
+      </div>
+      <!-- FIN BOTÓN GUARDAR -->
+
+    </div>
+    <!-- FIN DETALLE -->
+
+  </div>
+  <!--   FIN BODY    -->
+
+</panel>
+<!-- FIN PANEL -->

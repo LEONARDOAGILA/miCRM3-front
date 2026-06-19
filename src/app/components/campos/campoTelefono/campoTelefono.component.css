@@ -1,0 +1,22 @@
+/* Eliminar íconos nativos de validación */
+input[type="tel"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Estilo para campo inválido */
+.form-control.is-invalid {
+  border-color: #dc3545;
+  background-image: none;
+}
+
+/* Quitar efecto de sombra al hacer focus */
+input:focus {
+  outline: none;
+}
+
+/* Espacio para el botón de limpiar */
+.form-control {
+  padding-right: 2rem;
+}

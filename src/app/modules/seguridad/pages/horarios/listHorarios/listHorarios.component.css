@@ -1,0 +1,32 @@
+.pagination-controls {
+  gap: 0.5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pagination-page-badge {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 576px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .pagination-info {
+    margin-bottom: 0.5rem;
+  }
+  .pagination-buttons {
+    justify-content: center;
+  }
+}

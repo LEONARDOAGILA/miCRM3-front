@@ -1,0 +1,29 @@
+
+<div class="container mt-4" >
+
+  <button (click)="generateExcel()" class="btn btn-secondary mb-2"> Export Excel</button>
+
+  <table class="table">
+    <thead class="thead-dark">
+      <tr>
+        <th scope="col">Year</th>
+        <th scope="col">Month</th>
+        <th scope="col">Facebook</th>
+        <th scope="col">Reddit</th>
+        <th scope="col">LinkedIn</th>
+        <th scope="col">Instagram</th>
+      </tr>
+    </thead>
+    <tbody>
+      <p>fsdfasdfasfasd</p>
+      <tr *ngFor=" let p of data ">
+        <th scope="row">{{p[0]}}</th>
+        <td>{{p[1]}}</td>
+        <td>{{p[2]}}</td>
+        <td>{{p[3]}}</td>
+        <td>{{p[4]}}</td>
+        <td>{{p[5]}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

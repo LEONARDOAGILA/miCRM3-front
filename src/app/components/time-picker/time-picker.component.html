@@ -1,0 +1,93 @@
+<div class="time-picker-wrapper">
+  <div style="position: relative;">
+    <input
+      #timeInput
+      type="text"
+      class="time-picker-input"
+      [value]="displayValue"
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [class.is-invalid]="required && !value && touched"
+      (click)="openDropdown($event)"
+      readonly
+    />
+    
+    <button 
+      type="button" 
+      class="btn position-absolute start-0 top-50 translate-middle-y shadow-none"
+      [disabled]="disabled"
+      (click)="openDropdown($event)">
+      <i class="fa fa-clock-o"></i>
+    </button>
+    
+    <button 
+      *ngIf="value && !disabled"
+      type="button" 
+      class="btn position-absolute end-0 top-50 translate-middle-y shadow-none"
+      (click)="clearTime()">
+      <i class="fa fa-times"></i>
+    </button>
+  </div>
+  
+  <div
+    #dropdownMenu
+    class="time-picker-dropdown"
+    [class.show]="showDropdown">
+    
+    <div class="time-picker-header">
+      <span class="current-time">{{ displayValue || '--:--' }}</span>
+      <button type="button" class="btn-link" (click)="setCurrentTime()">
+        <i class="fa fa-clock-o"></i> Ahora
+      </button>
+    </div>
+    
+    <div class="time-picker-body">
+      <div class="time-column">
+        <div class="time-column-header">Hora</div>
+        <div class="time-items">
+          <button
+            *ngFor="let hour of hours"
+            type="button"
+            class="time-item"
+            [class.active]="tempHour === hour"
+            (click)="selectHour(hour)">
+            {{ hour.toString().padStart(2, '0') }}
+          </button>
+        </div>
+      </div>
+      
+      <div class="time-column">
+        <div class="time-column-header">Min</div>
+        <div class="time-items">
+          <button
+            *ngFor="let minute of minutes"
+            type="button"
+            class="time-item"
+            [class.active]="tempMinute === minute"
+            (click)="selectMinute(minute)">
+            {{ minute.toString().padStart(2, '0') }}
+          </button>
+        </div>
+      </div>
+      
+      <div class="time-column" *ngIf="format === '12h'">
+        <div class="time-column-header">Período</div>
+        <div class="time-items">
+          <button
+            *ngFor="let p of periods"
+            type="button"
+            class="time-item"
+            [class.active]="tempPeriod === p"
+            (click)="selectPeriod(p)">
+            {{ p }}
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="time-picker-footer">
+      <button type="button" class="btn-cancel" (click)="cancelSelection()">Cancelar</button>
+      <button type="button" class="btn-confirm" (click)="confirmSelection()">Aceptar</button>
+    </div>
+  </div>
+</div>

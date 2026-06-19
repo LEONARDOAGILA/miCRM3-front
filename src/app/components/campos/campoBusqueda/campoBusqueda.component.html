@@ -1,0 +1,12 @@
+<div [class]="containerClass" style="position: relative;">  
+  <input
+      type="text"
+      class="form-control ps-35px rounded-3 fs-12px"
+      [id]="id"
+      [placeholder]="placeholder"
+      (input)="onInputChange($event)"
+  />
+  <button class="btn position-absolute start-0 top-0 shadow-none">
+      <i [class]="iconClass"></i>
+  </button>
+</div>

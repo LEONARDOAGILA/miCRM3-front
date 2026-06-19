@@ -1,0 +1,57 @@
+/* Estilos base para paginación */
+.pagination-controls {
+  gap: 0.5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Para pantallas muy pequeñas (teléfonos) */
+@media (max-width: 576px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-info {
+    margin-bottom: 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+  }
+
+  .pagination-buttons .btn i {
+    font-size: 0.8rem;
+  }
+
+  .pagination-page-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+  }
+}
+
+/* Para pantallas medianas (tablets) */
+@media (min-width: 577px) and (max-width: 768px) {
+  .pagination-buttons .btn {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .pagination-page-badge {
+    font-size: 0.75rem;
+  }
+}

@@ -1,0 +1,164 @@
+/* LPAA - ESTILOS PARA CAMPANA DE AVISO */
+@keyframes campanaLatido {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animar-campana {
+  animation: campanaLatido 1s ease-in-out infinite;
+  transform-origin: center;
+  color: #ffc107;
+  transition: color 0.3s ease;
+}
+
+/* Solución para móvil - evitar que usuario y campana se bajen */
+
+/*
+@media (max-width: 767.98px) {
+  .app-header {
+    display: flex;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .navbar-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    margin-left: auto;
+  }
+  
+  .navbar-nav .navbar-item {
+    flex-shrink: 0 !important;
+  }
+  
+  .navbar-user .navbar-link span:not(.image):not(.mx-1) {
+    display: none !important;
+  }
+  
+  .navbar-nav .navbar-link {
+    padding: 0.5rem 0.5rem !important;
+  }
+  
+  .navbar-link .fa-bell {
+    font-size: 1.1rem;
+  }
+  
+  .navbar-link .badge {
+    top: -4px;
+    right: -6px;
+    font-size: 0.55rem;
+    padding: 0.15rem 0.35rem;
+  }
+  
+  .navbar-user .image {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .navbar-user .fa-circle {
+    font-size: 0.7rem;
+  }
+  
+  .navbar-header .navbar-mobile-toggler:not(:first-child) {
+    display: none !important;
+  }
+  
+  .navbar-header .navbar-brand {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  .navbar-header {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .app-header > div:empty {
+    display: none !important;
+  }
+  
+  .collapse.d-md-block,
+  .me-auto.collapse {
+    display: none !important;
+    height: 0 !important;
+  }
+}
+
+*/
+
+
+
+
+/* Para pantallas muy pequeñas (menos de 400px) */
+@media (max-width: 400px) {
+  .navbar-nav .navbar-link {
+    padding: 0.5rem 0.35rem !important;
+  }
+  
+  .navbar-user .image {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Mejorar visibilidad del botón de menú en móvil */
+@media (max-width: 767.98px) {
+  .navbar-header .navbar-mobile-toggler:first-child {
+    display: inline-block !important;
+  }
+  
+  .navbar-header .navbar-brand {
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+}
+
+/* Asegurar que el footer sea visible */
+.app-footer,
+#footer {
+  display: block;
+  width: 100%;
+  position: relative;
+}
+
+/* Asegurar que el contenido principal tenga altura adecuada */
+.grow,
+.grow.overflow-hidden {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Corregir el scroll */
+ng-scrollbar,
+.ng-scrollbar {
+  flex: 1;
+  height: 100%;
+}
+
+/* Asegurar que el contenedor principal ocupe toda la altura */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+}

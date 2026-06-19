@@ -1,0 +1,15 @@
+<div [class]="containerClass">  
+  <input
+    #inputElement
+    type="text"
+    class="form-control ps-35px rounded-3 fs-12px"
+    [id]="id"
+    [placeholder]="placeholder"
+    (blur)="onBlur($event)"
+    (keyup.enter)="onKeyupEnter($event)"
+  />
+
+  <button class="btn position-absolute start-0 top-0 shadow-none" (click)="onButtonClick()">
+    <i [class]="iconClass"></i>
+  </button>
+</div>

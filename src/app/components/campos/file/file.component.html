@@ -1,0 +1,16 @@
+<div class="text-center">
+  <label class="file-label">
+    <input type="file" #fileInput [accept]="accept" [disabled]="disabled" (change)="onFileChange($event)"
+      class="file-input" />
+    <span class="file-button" [class.disabled]="disabled">
+      {{ label }}
+    </span>
+  </label>
+
+  <div *ngIf="selectedFile" class="file-info mt-2">
+    <span class="file-name">{{ getFileName() }}</span>
+    <button type="button" class="remove-button" (click)="removeFile()" [disabled]="disabled">
+      ✕
+    </button>
+  </div>
+</div>

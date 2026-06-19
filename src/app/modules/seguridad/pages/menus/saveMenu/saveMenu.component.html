@@ -1,0 +1,110 @@
+<!-- begin spinner -->
+<ng-container *ngIf="(isLoading$ | async)">
+    <div class="loader1" role="status" aria-label="Cargando"></div>
+    <div class="overlay1" aria-hidden="true"></div>
+</ng-container>
+<!-- end spinner -->
+
+<div class="modal-header">
+  <h1 class="modal-title">{{title}}</h1>
+  <button type="button" class="btn-close buttonn1" aria-label="Close" (click)="modal.dismiss('Close click')"></button>
+</div>
+
+<div class="modal-body">
+    <form [formGroup]="form" class="form-validate form-horizontal" novalidate="">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-3">
+                    <app-campoTexto
+                        [control]="form.controls['padre_id']"
+                        label="PADRE"
+                        placeholder="PADRE"
+                    ></app-campoTexto>
+                </div>
+                <div class="col-lg-3">
+                    <app-campoTexto
+                        [control]="form.controls['nivel']"
+                        label="NIVEL"
+                        placeholder="NIVEL"
+                    ></app-campoTexto>
+                </div>
+
+                <div class="col-lg-3">
+                    <app-campoNumeroEntero 
+                        [control]="form.controls['orden']"
+                        label="Orden"
+                        placeholder="Orden"
+                        [maxLength]="100"
+                    ></app-campoNumeroEntero>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-6">
+                    <app-campoTexto 
+                        [control]="form.controls['nombre']"
+                        label="NOMBRE"
+                        placeholder="NOMBRE"
+                        [maxLength]="100"
+                        [trimEspacios]="true"
+                    ></app-campoTexto>
+                </div>
+                <div class="col-lg-6">
+                    <app-campoTexto 
+                        [control]="form.controls['etiqueta']"
+                        label="ETIQUETA"
+                        placeholder="ETIQUETA"
+                        [maxLength]="15"
+                        [trimEspacios]="true"
+                    ></app-campoTexto>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg">
+                    <app-campoTexto 
+                        [control]="form.controls['descripcion']"
+                        label="DESCRIPCION"
+                        placeholder="DESCRIPCION"
+                        [maxLength]="100"
+                    ></app-campoTexto>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-6">
+                    <app-campoTexto 
+                        [control]="form.controls['icono']"
+                        label="ICONO"
+                        placeholder="ICONO"
+                        [maxLength]="100"
+                        [trimEspacios]="true"
+                    ></app-campoTexto>                    
+                </div>
+                <div class="col-lg-6">
+                    <app-campoTexto 
+                        [control]="form.controls['url']"
+                        label="URL"
+                        placeholder="URL"
+                        [maxLength]="100"
+                        [trimEspacios]="true"
+                    ></app-campoTexto>
+                </div>
+
+
+            </div>
+        </div>
+    </form>
+</div>
+
+
+<div class="modal-footer">
+    <div class="restar-buttons">
+        <button class="btn btn-oval btn-danger equal-width-button" (click)="modal.close('Close click')" type="button">
+            <i class="bi bi-x-circle"></i><span class="m-2">Salir</span>
+        </button>
+    </div>
+    <div class="save-buttons" *ngIf="!(isLoading$ | async)">
+        <button class="btn btn-primary equal-width-button" type="submit" (click)="onSubmitForm($event)">
+            <i class="bi bi-save"></i><span class="m-2">Guardar</span>            
+        </button>
+    </div>
+</div>
+

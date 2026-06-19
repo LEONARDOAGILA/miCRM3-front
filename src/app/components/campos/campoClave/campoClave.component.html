@@ -1,0 +1,111 @@
+<div class="form-floating mb-1">
+  <input
+    [type]="showPassword ? 'text' : 'password'"
+    class="form-control fs-14px"
+    [id]="label"
+    [placeholder]="placeholder"
+    [value]="value"
+    (input)="onInput($event)"
+    (blur)="onBlur()"
+    [disabled]="disabled"
+    [attr.maxlength]="maxLength"
+    [class.is-invalid]="isInvalid"
+    autocomplete="new-password"
+    autofill="off"
+    data-lpignore="true"
+  />
+  <label [for]="label" class="d-flex align-items-center fs-13px">{{ label }}</label>
+  
+  <!-- Botón para mostrar/ocultar contraseña -->
+  <button 
+    type="button"
+    class="password-toggle-btn"
+    (click)="togglePasswordVisibility()"
+    tabindex="-1">
+    <i [class]="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
+  </button>
+</div>
+
+<!-- Requisitos de contraseña - SOLO si mostrarRequisitos es true -->
+<div *ngIf="mostrarRequisitos" class="mb-1">
+  <small class="text-muted d-block mb-1">La contraseña debe cumplir:</small>
+  <div class="row g-1">
+    <div class="col-md-6">
+      <small class="d-flex align-items-center gap-2" [class.text-success]="cumpleMinLength" [class.text-danger]="!cumpleMinLength && touched">
+        <i [class]="cumpleMinLength ? 'fa fa-check-circle' : 'fa fa-circle'"></i>
+        Al menos {{ minLength }} caracteres
+      </small>
+    </div>
+    <div class="col-md-6" *ngIf="requiereMayuscula">
+      <small class="d-flex align-items-center gap-2" [class.text-success]="cumpleMayuscula" [class.text-danger]="!cumpleMayuscula && touched">
+        <i [class]="cumpleMayuscula ? 'fa fa-check-circle' : 'fa fa-circle'"></i>
+        Al menos una mayúscula
+      </small>
+    </div>
+    <div class="col-md-6" *ngIf="requiereMinuscula">
+      <small class="d-flex align-items-center gap-2" [class.text-success]="cumpleMinuscula" [class.text-danger]="!cumpleMinuscula && touched">
+        <i [class]="cumpleMinuscula ? 'fa fa-check-circle' : 'fa fa-circle'"></i>
+        Al menos una minúscula
+      </small>
+    </div>
+    <div class="col-md-6" *ngIf="requiereNumero">
+      <small class="d-flex align-items-center gap-2" [class.text-success]="cumpleNumero" [class.text-danger]="!cumpleNumero && touched">
+        <i [class]="cumpleNumero ? 'fa fa-check-circle' : 'fa fa-circle'"></i>
+        Al menos un número
+      </small>
+    </div>
+    <div class="col-md-12" *ngIf="sinEspacios">
+      <small class="d-flex align-items-center gap-2" [class.text-success]="cumpleSinEspacios" [class.text-danger]="!cumpleSinEspacios && touched">
+        <i [class]="cumpleSinEspacios ? 'fa fa-check-circle' : 'fa fa-circle'"></i>
+        Sin espacios
+      </small>
+    </div>
+    <div class="col-md-12" *ngIf="requiereEspecial">
+      <small class="d-flex align-items-center gap-2" [class.text-success]="cumpleEspecial" [class.text-danger]="!cumpleEspecial && touched">
+        <i [class]="cumpleEspecial ? 'fa fa-check-circle' : 'fa fa-circle'"></i>
+        Al menos un carácter especial (!@#$%^&*)
+      </small>
+    </div>
+  </div>
+</div>
+
+<!-- Barra de fortaleza de contraseña - SOLO si mostrarBarraFortaleza es true -->
+<div *ngIf="mostrarBarraFortaleza && value && touched" class="mb-1">
+  <div class="d-flex justify-content-between mb-1">
+    <small class="text-muted">Fortaleza de la contraseña</small>
+    <small class="text-muted">{{ fortalezaPorcentaje | number:'1.0-1' }}%</small>
+  </div>
+  <div class="progress" style="height: 6px;">
+    <div 
+      class="progress-bar" 
+      [class.bg-success]="fortalezaColor === 'success'"
+      [class.bg-warning]="fortalezaColor === 'warning'"
+      [class.bg-danger]="fortalezaColor === 'danger'"
+      [style.width.%]="fortalezaPorcentaje"
+      role="progressbar">
+    </div>
+  </div>
+  <small class="text-muted d-block mt-1">{{ fortalezaTexto }}</small>
+</div>
+
+<!-- Mensajes de error (si los quieres mostrar) -->
+<!-- <div *ngIf="isInvalid && mostrarRequisitos" class="mt-1">
+  <small class="text-danger d-block" *ngIf="!cumpleMinLength">
+    <i class="fa fa-exclamation-circle me-1"></i> Debe tener al menos {{ minLength }} caracteres.
+  </small>
+  <small class="text-danger d-block" *ngIf="sinEspacios && !cumpleSinEspacios">
+    <i class="fa fa-exclamation-circle me-1"></i> No puede contener espacios.
+  </small>
+  <small class="text-danger d-block" *ngIf="requiereMayuscula && !cumpleMayuscula">
+    <i class="fa fa-exclamation-circle me-1"></i> Debe contener al menos una mayúscula.
+  </small>
+  <small class="text-danger d-block" *ngIf="requiereMinuscula && !cumpleMinuscula">
+    <i class="fa fa-exclamation-circle me-1"></i> Debe contener al menos una minúscula.
+  </small>
+  <small class="text-danger d-block" *ngIf="requiereNumero && !cumpleNumero">
+    <i class="fa fa-exclamation-circle me-1"></i> Debe contener al menos un número.
+  </small>
+  <small class="text-danger d-block" *ngIf="requiereEspecial && !cumpleEspecial">
+    <i class="fa fa-exclamation-circle me-1"></i> Debe contener al menos un carácter especial (!@#$%^&*).
+  </small>
+</div> -->

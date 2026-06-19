@@ -1,0 +1,244 @@
+<!-- BEGIN content-container -->
+<div class="grow overflow-hidden">
+	<ng-scrollbar class="h-100">
+		<div class="app-content-padding">
+
+			<!-- BEGIN HERO SECTION -->
+			<div class="row mb-4">
+				<div class="col-12">
+					<div class="card border-0 shadow-sm">
+						<div class="card-body p-4">
+							<div class="d-flex align-items-start">
+								<div class="shrink-0 d-none d-md-block text-center">
+									<div class="bg-primary bg-opacity-10 p-3 rounded-3 mb-2">
+										<i class="fa fa-qrcode fa-3x text-primary"></i>
+									</div>
+									<h6 class="mb-0 fw-bold">IUNIX<span class="text-primary">®</span></h6>
+									<small class="text-muted">Lector QR/Barras</small>
+								</div>
+								<div class="grow ms-md-4">
+									<h2 class="mb-1">Lector <strong class="text-primary">QR y Código de Barras</strong></h2>
+									<p class="text-muted mb-4" style="font-size: 0.8rem; line-height: 1.5;">
+										Escanee códigos QR y códigos de barras utilizando la cámara de su dispositivo. 
+										El sistema detecta automáticamente el formato y guarda un historial de todos los escaneos realizados.
+									</p>
+									<div class="d-flex gap-3">
+										<button class="btn btn-primary btn-lg px-4" (click)="openCamera()">
+											<i class="fa fa-camera me-2"></i>Escanear QR
+										</button>
+                    <button 
+                       class="btn btn-primary btn-lg px-4"
+                      [class.active]="continuousMode"
+                      (click)="toggleContinuousMode()">
+                      {{ continuousMode ? 'Modo Continuo' : 'Modo Único' }}
+                    </button>
+                  </div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- END HERO SECTION -->
+
+			<!-- BEGIN STATS WIDGETS -->
+			<div class="row">
+				<div class="col-xl-3 col-md-6">
+					<div class="widget widget-stats bg-blue">
+						<div class="stats-icon"><i class="fa fa-qrcode"></i></div>
+						<div class="stats-info">
+							<h4>TOTAL ESCANEOS</h4>
+							<p>{{ totalScans }}</p>	
+						</div>
+						<div class="stats-link">
+							<a href="javascript:;">Ver detalle <i class="fa fa-arrow-alt-circle-right"></i></a>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-3 col-md-6">
+					<div class="widget widget-stats bg-info">
+						<div class="stats-icon"><i class="fa fa-qrcode"></i></div>
+						<div class="stats-info">
+							<h4>QR ESCANEADOS</h4>
+							<p>{{ qrScans }}</p>	
+						</div>
+						<div class="stats-link">
+							<a href="javascript:;">Ver detalle <i class="fa fa-arrow-alt-circle-right"></i></a>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-3 col-md-6">
+					<div class="widget widget-stats bg-orange">
+						<div class="stats-icon"><i class="fa fa-barcode"></i></div>
+						<div class="stats-info">
+							<h4>CÓDIGOS DE BARRAS</h4>
+							<p>{{ barcodeScans }}</p>	
+						</div>
+						<div class="stats-link">
+							<a href="javascript:;">Ver detalle <i class="fa fa-arrow-alt-circle-right"></i></a>
+						</div>
+					</div>
+				</div>
+
+			</div>
+			<!-- END STATS WIDGETS -->
+
+			<!-- BEGIN ÚLTIMO ESCANEO Y ACCIONES -->
+			<div class="row">
+
+				<!-- Botones de acción -->
+				<div class="col-xl-7">
+					<div class="panel panel-inverse">
+						<div class="panel-heading">
+							<h4 class="panel-title"><i class="fa fa-cog me-2"></i> Acciones</h4>
+						</div>
+						<div class="panel-body">
+							<div class="row g-3">
+								<div class="col-6">
+									<button class="btn btn-outline-primary w-100 py-3" (click)="exportHistory()">
+										<i class="fa fa-download me-2"></i> Exportar historial
+									</button>
+								</div>
+								<div class="col-6">
+									<button class="btn btn-outline-danger w-100 py-3" (click)="clearHistory()">
+										<i class="fa fa-trash me-2"></i> Limpiar historial
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- END ÚLTIMO ESCANEO Y ACCIONES -->
+
+			<!-- BEGIN HISTORIAL DE ESCANEOS -->
+			<div class="row" *ngIf="scanHistory.length > 0">
+				<div class="col-12">
+					<div class="panel panel-inverse">
+						<div class="panel-heading">
+							<h4 class="panel-title"><i class="fa fa-list me-2"></i> Historial de Escaneos ({{ scanHistory.length }})</h4>
+							<div class="panel-heading-btn">
+								<a href="javascript:;" class="btn btn-xs btn-icon btn-default" (click)="clearHistory()">
+									<i class="fa fa-trash"></i>
+								</a>
+							</div>
+						</div>
+						<div class="panel-body p-0">
+							<div class="list-group list-group-flush">
+								<div class="list-group-item" *ngFor="let item of scanHistory; let i = index">
+									<div class="d-flex align-items-center">
+										<div class="flex-shrink-0">
+											<span class="badge bg-secondary rounded-circle p-2">{{ i+1 }}</span>
+										</div>
+										<div class="grow ms-3">
+											<p class="mb-1"><strong>{{ item.format }}</strong></p>
+											<code class="small text-muted">{{ item.code }}</code>
+										</div>
+										<div class="flex-shrink-0 text-end">
+											<small class="text-muted">{{ item.timestamp | date:'HH:mm:ss' }}</small>
+											<button class="btn btn-sm btn-link text-success" (click)="copyToClipboard(item.code)">
+												<i class="fa fa-copy"></i>
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="panel-footer text-center" *ngIf="scanHistory.length > 5">
+							<a href="javascript:;" class="text-decoration-none" (click)="clearHistory()">
+								Limpiar todo <i class="fa fa-arrow-right ms-1"></i>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- END HISTORIAL DE ESCANEOS -->
+
+		</div>
+	</ng-scrollbar>
+</div>
+
+<!-- Modal para la cámara (escáner QR) -->
+<div class="camera-modal-overlay" *ngIf="showCameraModal">
+  <div class="camera-container">
+    <div class="camera-header">
+      <h3>
+        Escanear QR / Código de barras
+        <span class="badge ms-2" [class.bg-success]="continuousMode" [class.bg-secondary]="!continuousMode">
+          {{ continuousMode ? 'Modo Continuo' : 'Modo Único' }}
+        </span>
+      </h3>
+      <button class="btn-close-modal" (click)="closeCamera()">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="camera-preview">
+      <zxing-scanner
+        *ngIf="isModalScannerActive"
+        [formats]="modalAllowedFormats"
+        (torchCompatible)="onModalTorchCompatible($event)"
+        [(device)]="modalPreferredDevice"
+        [autofocusEnabled]="true"
+        [torch]="isModalTorchEnabled"
+        [tryHarder]="true"
+        [delayBetweenScanSuccess]="500"
+        [delayBetweenScanAttempts]="100"
+        (scanSuccess)="onModalScanSuccess($event)"
+        (camerasFound)="onModalCamerasFound($event)"
+        (autostarted)="modalScannerStarted()"
+        (autostarting)="modalScannerStarting()"
+      ></zxing-scanner>
+      
+      <div class="scanner-overlay" *ngIf="isModalScannerStarting">
+        <div class="loading-spinner"></div>
+        <p>Iniciando cámara...</p>
+      </div>
+      
+      <div class="focus-frame">
+        <div class="corner-top-left"></div>
+        <div class="corner-top-right"></div>
+        <div class="corner-bottom-left"></div>
+        <div class="corner-bottom-right"></div>
+      </div>
+      
+      <div class="scan-line"></div>
+      <div class="laser-line"></div>
+    </div>
+    
+    <div class="camera-controls">
+      <div class="camera-selector" *ngIf="modalDevicesFound.length > 0">
+        <select class="camera-select" (change)="setModalDevice(modalDevicesFound[$any($event.target).value])">
+          <option *ngFor="let device of modalDevicesFound; let i = index" 
+                  [value]="i"
+                  [selected]="device.deviceId === modalPreferredDevice?.deviceId">
+            📷 {{ device.label || 'Cámara ' + (i+1) }}
+            <span *ngIf="modalBackCameraIndex(device) >= 0"> (Trasera)</span>
+          </option>
+        </select>
+      </div>
+      
+      <button class="btn-switch-camera" (click)="switchModalCamera()" title="Cambiar cámara">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+      
+      <button class="btn-switch-camera" (click)="toggleModalTorch()" 
+              *ngIf="isModalTorchCompatible" title="Linterna">
+        <i class="fa-solid" [class.fa-lightbulb]="!isModalTorchEnabled" [class.fa-lightbulb-on]="isModalTorchEnabled"></i>
+      </button>
+      
+      <button class="btn-switch-camera" (click)="toggleContinuousMode()" title="Cambiar modo">
+        <i class="fa-solid" [class.fa-infinity]="continuousMode" [class.fa-1]="!continuousMode"></i>
+      </button>
+      
+      <button class="btn-close-camera" (click)="closeCamera()" title="Cerrar">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="camera-status">
+      {{ cameraError || (continuousMode ? 'Modo continuo - Escaneando...' : 'Modo único - Escanea y se cierra') }}
+    </div>
+  </div>
+</div>
+

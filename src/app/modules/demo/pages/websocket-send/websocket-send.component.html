@@ -1,0 +1,11 @@
+<div class="container mt-5 text-center">
+  <h3>Enviar mensaje por WebSocket</h3>
+  <input type="text"
+         class="form-control mt-3"
+         [(ngModel)]="message"
+         placeholder="Escribe tu mensaje" />
+
+  <button class="btn btn-primary mt-3" (click)="sendMessage()">
+    Enviar Mensaje
+  </button>
+</div>

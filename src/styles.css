@@ -1,0 +1,239 @@
+/* You can add global styles to this file, and also import other style files */
+@import '~@fortawesome/fontawesome-free/css/all.css';
+@import 'ag-grid-community/styles/ag-grid.css';
+@import 'ag-grid-community/styles/ag-theme-alpine.css';
+@import "~@ng-select/ng-select/themes/default.theme.css";
+
+
+
+
+
+
+/*  LPAA INICIO - BOTONES ACEPTAR Y CANCELAR DE FOOTER MODAL   */
+.equal-width-button {
+  width: 150px; /* Ajusta según lo que necesites */
+}
+/*  LPAA FIN - BOTONES ACEPTAR Y CANCELAR DE FOOTER MODAL   */
+
+
+
+/* Remove default bullets */
+ul {
+    list-style: none;
+    margin: 0;
+    margin-top: 10px;
+    margin-bottom: 5px;
+  }
+  
+  ul li {
+    clear: both;
+    padding-left: 18px;
+    position: relative;
+    margin: 0;
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
+  
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  
+  .caret {
+    width: 10px;
+  }
+  
+  .get-list-child-changed {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 40px;
+  }
+  
+  .show-list-child-changed {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    margin-left: 40px;
+  }
+  
+
+/**********lpaa INICIO --> colores botones **********/
+
+.aggrid-custom-header {
+  font-size: 9px !important;
+  font-weight: bold !important;
+  font-style: normal !important;
+  /* color: #000000 !important; */
+  /* background-color: #f1f1f1 !important; */
+  display: flex; 
+  align-items: center;  /* Centra verticalmente */
+  justify-content: center; /* Centra horizontalmente */
+  text-align: center; 
+}
+.ag-header-cell-label {
+  justify-content: center !important;
+  display: flex !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+
+
+.btn-square {
+  border-radius: 4px !important; /* Hace que el botón sea completamente cuadrado */
+  width: 40px;  /* Ajusta el tamaño del botón */
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* button.btn.btn-inactivo {
+  color: #fcfcfc !important;
+}
+
+button.btn.btn-cambioClave {
+  color: rgb(201, 201, 4) !important;
+}
+
+
+button.btn.btn-add {
+  color: #408004 !important;
+}
+
+
+button.btn.btn-view {
+  color: #408004 !important;
+}
+
+button.btn.btn-edit {
+  color: #22669F !important;
+}
+
+button.btn.btn-create {
+  color: #9575CD !important;
+}
+
+button.btn.btn-delete {
+  color: #FA5252 !important;
+} */
+/**********lpaa FIN --> colores botones **********/
+
+
+
+/**********ag-grid**********/
+.ag-theme-alpine {
+  /* customise with CSS variables */
+  /* --ag-grid-size: 4px;*/
+  --ag-font-size: 11px;
+  /*--ag-border-color: rgb(118, 116, 116);*/
+}
+
+.ag-theme-alpine .ag-header {
+  /* or with CSS selectors targeting grid DOM elements */
+  font-style: italic;
+}
+
+.ag-theme-alpine .ag-header-cell {
+  font-size: 11px;
+}
+
+
+
+
+
+/**********CONTENEDOR DE IMAGENES LUEGO DE COMPRIMIR Y MOSTRAR EN DOM**********/
+.box {
+  width: 200px;
+  height: 180px;
+  background: white;
+  overflow: hidden;
+  display: block;
+  padding: 2%;
+  margin: 0 auto 4px;
+}
+
+.box1 {
+  height: 400px;
+  background: white;
+  overflow: hidden;
+}
+
+.box img {
+  width: 100%;
+  height: 100%;
+}
+
+
+/**********FIN CONTENEDOR DE IMAGENES LUEGO DE COMPRIMIR Y MOSTRAR EN DOM**********/
+
+
+.example-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#myGrid {
+  flex: 1 1 0px;
+  width: 100%;
+}
+
+.example-header {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.custom-tooltip {
+  width: 150px;
+  height: 70px;
+  border: 1px solid cornflowerblue;
+  overflow: hidden;
+}
+
+.custom-tooltip p {
+  margin: 5px;
+  white-space: nowrap;
+}
+
+.custom-tooltip p:first-of-type {
+  font-weight: bold;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.despacho-warning {
+  background-color: sandybrown !important;
+}
+
+/* scroll personalizado */
+.scroll::-webkit-scrollbar {
+  width: 7px;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+  background: rgba(202, 202, 202, 0.837);
+  border-radius: 5px;
+}
+
+.divider {
+  height: 1px;
+  width: 100%;
+  background: #989898;
+  margin: 3px 0px 0px 3px;
+  /* top left right bottom */
+}
+
+
+/* Para que salga el icono del dedido en los dropdowns */
+.dropdown-item {
+  cursor: pointer;
+}
+

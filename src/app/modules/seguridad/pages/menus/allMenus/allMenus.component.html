@@ -1,0 +1,136 @@
+<!-- breadcrumb -->
+<ol class="breadcrumb" style="display: flex; justify-content: flex-end; width: 100%; margin: 0;">
+    <li class="breadcrumb-item"><a (click)="fun_home();">Configuración</a></li>
+    <li class="breadcrumb-item active">Menus</li>
+</ol>
+
+<!-- PANEL -->
+<panel 
+    [title]="title"
+    [noButton]="false" 
+    [noButtonCollapse]="true" 
+    [ButtonPrint]="accesoModel.reporte === true ? true : false"
+    [ButtonExportExcel]="accesoModel.reporte === true ? true : false"
+    [ButtonExportCsv]="accesoModel.reporte === true ? true : false"
+    (panelReloaded)="allMenus()" 
+    (panelExpanded)="ajustarTamanoGrid()" 
+    (panelPrinted)="printPdf()"  
+    (panelExportExceled)="exportExcel()" 
+    (panelExportCsved)="exportCsv()" 
+    [closeRoute]="'/seguridad'"
+    >
+
+  
+    <div class="content-container1">
+        <ng-container *ngIf="(isLoading$ | async)">
+          <div class="loader1"></div>
+          <div class="overlay1"></div>
+        </ng-container>
+    
+  
+      <div class="content2">          
+          <p *ngIf="(isLoading$ | async)">Este contenido está bloqueado mientras se carga.</p>              
+          @if(errorMessage){ <p>{{errorMessage}}</p> }
+
+
+          <div class="example-wrapper">
+
+      
+            <!-- <div class="btn-group m-2 position-relative">
+                
+                <input
+                  type="text"
+                  id="filter-text-box"
+                  class="form-control ps-35px rounded-3"
+                  placeholder="Buscar"
+                  (input)="onFilterTextBoxChanged()" />
+              
+                <button class="btn position-absolute start-0 top-0 shadow-none">
+                  <i class="fa fa-search fa-lg"></i>
+                </button>
+              
+
+                <button
+                  class="inactivo btn btn-primary d-flex align-items-center justify-content-center square-btn ms-1 rounded-3"
+                  title="Agregar Perfil"
+                  [disabled]="accesoModel.reporte === false"
+                  (click)="addMenu()">
+                  <i class="fa fa-plus"></i>
+                </button>
+            
+              </div> -->
+
+
+              <div class="row g-2 m-2 align-items-center">
+                <div class="col position-relative pe-1">  <!-- pe-0 quita padding derecho -->
+                  <app-campoBusqueda
+                    [id]="'filter-text-box'"
+                    [placeholder]="'Buscar'"
+                    [iconClass]="'fa fa-search fa-lg'"
+                    [containerClass]="'position-relative w-100'"
+                    (searchChange)="onFilterTextBoxChanged()">
+                  </app-campoBusqueda>
+                </div>
+
+                <div class="col-auto ps-0">  <!-- ps-0 quita padding izquierdo -->
+                  <button
+                    class="inactivo btn btn-primary d-flex align-items-center justify-content-center square-btn rounded-3"
+                    title="Agregar Perfil"
+                    [disabled]="accesoModel.reporte === false"
+                    (click)="addMenu()">
+                    <i class="fa fa-plus"></i>
+                  </button>
+                </div>
+
+                  <div class="col-auto" *ngIf="accesoModel.auditar === true">
+                    <button
+                      class="btn btn-warning d-flex align-items-center justify-content-center square-btn rounded-3 position-relative"
+                      title="Ver historial de auditoría del registro seleccionado"
+                      [disabled]="!selectedRow"
+                      (click)="auditoria()">
+                      <i class="fa fa-user-secret"></i>
+                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 8px;">
+                        <i class="fa fa-search"></i>
+                      </span>
+                    </button>
+                  </div>            
+
+              </div>
+
+        
+            <ag-grid-angular 
+                  [rowData]="menuModel" 
+                  [columnDefs]="columnDefs"
+                  [defaultColDef]="_appAgGridService.defaultColDef" 
+                  [sideBar]="_appAgGridService.sideBar" 
+                  [rowHeight]="_appAgGridService.rowHeight" 
+                  [headerHeight]="_appAgGridService.headerHeight "
+                  [localeText]="_appAgGridService.localeText"
+                  [rowSelection]="'single'"
+                  [pagination]="true"
+                  [animateRows]="true" 
+                  [cacheQuickFilter]="true" 
+  
+                  class="ag-theme-alpine ag-grid-transparente p-2"
+                  (gridReady)="onGridReady($event)" 
+                  (cellClicked)="onCellClicked($event)" 
+              ></ag-grid-angular>
+        
+      
+
+          </div>
+      
+      
+        
+  
+      </div>
+    </div>
+
+    
+
+
+
+
+
+
+</panel>

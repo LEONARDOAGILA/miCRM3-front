@@ -1,0 +1,11 @@
+.modal-header {
+    border-radius: 5px 5px 0 0;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-title {
+    font-size: 12px;
+}

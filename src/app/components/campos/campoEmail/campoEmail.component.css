@@ -1,0 +1,50 @@
+/* campoEmail.component.css */
+
+/* Eliminar todos los íconos nativos de validación */
+input[type="email"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+input[type="email"]::-webkit-calendar-picker-indicator,
+input[type="email"]::-webkit-inner-spin-button,
+input[type="email"]::-webkit-outer-spin-button,
+input[type="email"]::-webkit-validation-bubble,
+input[type="email"]::-webkit-validation-bubble-message,
+input[type="email"]::-webkit-validation-bubble-arrow,
+input[type="email"]::-webkit-validation-bubble-arrow-clipper {
+  display: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Firefox */
+input[type="email"] {
+  -moz-appearance: textfield;
+}
+
+/* Internet Explorer 10-11 */
+input[type="email"]::-ms-clear,
+input[type="email"]::-ms-reveal,
+input[type="email"]::-ms-check {
+  display: none;
+}
+
+/* Quitar efecto de sombra al hacer focus */
+input:focus {
+  outline: none;
+}
+
+/* Tu estilo existente para is-invalid se mantiene */
+.form-control.is-invalid {
+  border-color: #dc3545;
+  background-image: none; /* Esto quita cualquier ícono de fondo */
+  padding-right: 0.75rem; /* Ajusta el padding si necesitas */
+}
+
+/* Si quieres mantener el padding para el botón de limpiar */
+.form-control {
+  padding-right: 2rem; /* Espacio para el botón de limpiar */
+}

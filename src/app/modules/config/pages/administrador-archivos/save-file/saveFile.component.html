@@ -1,0 +1,162 @@
+<!-- Spinner -->
+<ng-container *ngIf="(isLoading$ | async)">
+    <div class="loader1" role="status" aria-label="Cargando"></div>
+    <div class="overlay1" aria-hidden="true"></div>
+</ng-container>
+
+<div class="modal-container">
+
+<!-- Cabecera del modal -->
+<app-modal-header 
+    [title]="title"
+    (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+
+
+    <div class="modal-body">
+        <form [formGroup]="form" class="form-validate form-horizontal" novalidate="">
+            <div class="container-fluid">
+                <!-- Primera fila: Campos principales -->
+                <div class="row g-3 mb-4">
+
+                    <div class="col-md-4">
+                        <app-campoNumeroEntero 
+                            [control]="form.controls['orden']"
+                            label="Orden"
+                            placeholder="Orden"
+                            [maxLength]="100"
+                        ></app-campoNumeroEntero>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="color-picker-container card p-2 shadow-sm">
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" 
+                                    class="form-control form-control-color p-1 border" 
+                                    [formControl]="form.controls['color']"
+                                    title="Seleccione un color"
+                                    style="width: 40px; height: 40px; cursor: pointer;">
+                                
+                                <div class="flex-grow-1">
+                                    <span class="color-value d-block text-muted small mb-1">Color:</span>
+                                    <span class="color-value d-block fw-semibold" 
+                                        [style.color]="form.controls['color'].value"
+                                        [class.text-dark]="!form.controls['color'].value">
+                                        {{form.controls['color'].value || 'Ningún color seleccionado'}}
+                                    </span>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>                    
+
+
+                    
+<div class="col-md-4 mb-3">
+  <div class="icon-picker-container border-0">
+    <!-- Contenedor con floating label -->
+    <div class="form-floating position-relative h-100">
+      <!-- Select Header con mayor altura -->
+      <div class="select-header d-flex align-items-center justify-content-between p-3 rounded-2 border cursor-pointer h-100"
+           (click)="toggleDropdown()"
+           [class.border-primary]="isDropdownOpen"
+           style="min-height: 56px">  <!-- Altura aumentada -->
+        
+        <span class="d-flex align-items-center w-100 h-100">
+          @if (form.controls['icono'].value) {
+            <i [class]="form.controls['icono'].value" class="fs-4 me-2"></i>  <!-- Icono más grande -->
+            <span class="text-truncate fs-6">{{getIconName(form.controls['icono'].value)}}</span>  <!-- Texto más grande -->
+          } @else {
+            <span class="text-muted fs-6">Seleccione un icono</span>  <!-- Texto más grande -->
+          }
+        </span>
+        <i class="fas fa-chevron-down fs-5 transition-all" [class.rotate-180]="isDropdownOpen"></i>  <!-- Flecha más grande -->
+      </div>
+      
+      
+      <!-- Dropdown (se mantiene similar pero con ajustes) -->
+      @if (isDropdownOpen) {
+        <div class="select-dropdown position-absolute w-100 mt-1 shadow-lg rounded-2 overflow-hidden z-3 bg-white">
+          <div class="search-container p-2 bg-light">
+            <input type="text" 
+                   class="form-control form-control-lg border-0 shadow-none" 
+                   placeholder="Buscar icono..."
+                   [formControl]="searchControl">
+          </div>
+          
+          <div class="dropdown-content max-h-300 overflow-y-auto">
+            @for (icon of filteredIcons; track icon.id) {
+              <div class="dropdown-item d-flex align-items-center p-3 hover-bg-light cursor-pointer"
+                   (click)="selectIcon(icon)"
+                   style="min-height: 48px">  <!-- Items más altos -->
+                <i [class]="icon.icon" class="fs-4 me-3 text-muted"></i>  <!-- Iconos más grandes -->
+                <span class="fs-6">{{icon.name}}</span>  <!-- Texto más grande -->
+              </div>
+            }
+            @empty {
+              <div class="p-3 text-center text-muted fs-6">
+                No se encontraron iconos
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+
+                </div>
+
+                <!-- Campos de texto largos -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <app-campoTexto 
+                            [control]="form.controls['nombre']"
+                            label="NOMBRE"
+                            placeholder="NOMBRE"
+                            [maxLength]="100"
+                            [trimEspacios]="true"
+                        ></app-campoTexto>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <app-campoTexto 
+                            [control]="form.controls['descripcion']"
+                            label="DESCRIPCIÓN"
+                            placeholder="DESCRIPCIÓN"
+                            [maxLength]="100"
+                        ></app-campoTexto>
+                    </div>
+                </div>
+
+                <div class="row g-3" *ngIf="this.accion==='addArchivo'">
+                    <div class="col-12">
+                        <app-campoTexto 
+                            [control]="form.controls['url']"
+                            label="URL"
+                            placeholder="URL"
+                            [maxLength]="100"
+                        ></app-campoTexto>
+                    </div>
+                </div>
+
+
+            </div>
+        </form>
+    </div>
+
+<!-- Pie del modal -->
+<app-modal-footer
+    [isDisabled]="true"
+    (onClose)="modal.close('Close click')"
+    (click)="onSubmitForm($event)">
+</app-modal-footer>
+
+
+
+
+</div>
