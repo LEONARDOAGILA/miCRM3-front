@@ -14,7 +14,7 @@
   </div>
 
   <!-- Body -->
-  <div class="modal-body p-4 d-flex flex-column scrollbar-style">
+  <div class="modal-body p-4 d-flex flex-column scrollbar-style" style="background-color: #d1d2d2; max-height: 80vh; overflow-y: auto;">
     <!-- Filtros -->
     <div class="row mb-4 g-3 align-items-end">
       <div class="col-md-3">
@@ -44,54 +44,115 @@
       </div>
     </div>
 
-    <!-- AG Grid -->
-    <div class="ag-grid-container border rounded-3 shadow-sm">
-<ag-grid-angular
-  class="ag-theme-alpine"
-  [rowData]="auditoriaData"
-  [columnDefs]="columnDefs"
-  [defaultColDef]="defaultColDef"
-  [domLayout]="'autoHeight'"
-  [pagination]="false"
-  [rowHeight]="120"
-  [enableCellTextSelection]="true"
-  [ensureDomOrder]="true"
-  [headerHeight]="25"
-  [rowStyle]="{'font-size': '10px'}"
-  (gridReady)="onGridReady($event)"
-  style="width: 100%; min-height: 400px;">
-</ag-grid-angular>
+    <!-- Grid y Detalle en layout de 2 columnas -->
+    <div class="row g-3" style="height: 500px; min-height: 400px; max-height: 600px;">
+      <!-- Columna del Grid -->
+      <div class="col-7 h-100">
+        <div class="ag-grid-container border rounded-3 shadow-sm h-100">
+          <ag-grid-angular
+            class="ag-theme-alpine h-100 w-100"
+            [rowData]="auditoriaData"
+            [columnDefs]="columnDefs"
+            [defaultColDef]="defaultColDef"
+            [domLayout]="'normal'"
+            [pagination]="false"
+            [rowHeight]="80"
+            [enableCellTextSelection]="true"
+            [ensureDomOrder]="true"
+            [headerHeight]="30"
+            [rowStyle]="{'font-size': '10px'}"
+            [rowSelection]="'single'"
+            (gridReady)="onGridReady($event)"
+            (rowClicked)="onRowClicked($event)"
+            style="width: 100%; height: 100%;">
+          </ag-grid-angular>
+        </div>
+      </div>
+
+      <!-- Columna del Detalle -->
+      <div class="col-5 h-100">
+        <div class="detalle-container border rounded-3 shadow-sm bg-light p-3 h-100" style="overflow-y: auto;">
+          <!-- Contenido del detalle -->
+          <ng-container *ngIf="selectedAuditoria">
+            <div class="detalle-header mb-3">
+              <h6 class="fw-bold mb-1">
+                <i class="bi bi-eye me-2"></i>Detalle de Cambios
+              </h6>
+            </div>
+
+            <ng-container *ngIf="obtenerCambiosFormateados(selectedAuditoria) as cambiosInfo">
+              <!-- Tabla de cambios -->
+              <div *ngIf="cambiosInfo.cambios.length > 0; else sinCambios">
+                <div class="table-responsive">
+                  <table class="table table-sm table-borderless mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width: 25%;">Campo</th>
+                        <th style="width: 37.5%;">Valor Anterior</th>
+                        <th style="width: 37.5%;">Valor Nuevo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let cambio of cambiosInfo.cambios">
+                        <td>
+                          <strong>{{ cambio.campo }}</strong>
+                        </td>
+                        <td>
+                          <span *ngIf="cambio.estado === 'removed'" class="text-danger fw-semibold">{{ cambio.valorAnterior }}</span>
+                          <span *ngIf="cambio.estado !== 'removed'">{{ cambio.valorAnterior }}</span>
+                        </td>
+                        <td>
+                          <span *ngIf="cambio.estado === 'added'" class="text-success fw-semibold">{{ cambio.valorNuevo }}</span>
+                          <span *ngIf="cambio.estado === 'modified'" class="text-warning fw-semibold">{{ cambio.valorNuevo }}</span>
+                          <span *ngIf="cambio.estado === 'removed'">{{ cambio.valorNuevo }}</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <ng-template #sinCambios>
+                <div class="text-center text-muted py-4">
+                  <i class="bi bi-check-circle fs-3 d-block mb-2"></i>
+                  <span>No se detectaron cambios en este registro</span>
+                </div>
+              </ng-template>
+            </ng-container>
+          </ng-container>
+
+          <!-- Mensaje cuando no hay selección -->
+          <ng-container *ngIf="!selectedAuditoria">
+            <div class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+              <p>Selecciona un registro para ver los detalles de los cambios</p>
+            </div>
+          </ng-container>
+        </div>
+      </div>
     </div>
 
-    <!-- Paginación -->
-    <div class="pagination-controls d-flex justify-content-between align-items-center mt-2 px-2 flex-wrap">
-      <div class="pagination-info small mb-2 mb-sm-0">
-        Mostrando {{ (paginaActual-1)*registrosPorPagina + 1 }} - 
-        {{ paginaActual * registrosPorPagina > totalRegistros ? totalRegistros : paginaActual * registrosPorPagina }}
-        de {{ totalRegistros }} registros
-      </div>
-      <div class="pagination-buttons">
-        <button class="btn btn-sm btn-outline-secondary me-1" (click)="firstPage()" [disabled]="paginaActual === 1">
-          <i class="fa fa-angle-double-left"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-secondary me-1" (click)="prevPage()" [disabled]="paginaActual === 1">
-          <i class="fa fa-chevron-left"></i>
-        </button>
-        <span class="pagination-page-badge small mx-1">Página {{ paginaActual }} de {{ ultimaPagina }}</span>
-        <button class="btn btn-sm btn-outline-secondary ms-1" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
-          <i class="fa fa-chevron-right"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-secondary ms-1" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
-          <i class="fa fa-angle-double-right"></i>
-        </button>
-      </div>
-    </div>
+  <!-- Paginación con más espacio -->
+<div class="pagination-controls d-flex justify-content-between align-items-center mt-4 pt-3 px-2 flex-wrap border-top">
+  <div class="pagination-info small mb-2 mb-sm-0">
+    <i class="bi bi-info-circle me-1"></i>
+    Mostrando <span class="fw-semibold">{{ (paginaActual-1)*registrosPorPagina + 1 }}</span> - 
+    <span class="fw-semibold">{{ paginaActual * registrosPorPagina > totalRegistros ? totalRegistros : paginaActual * registrosPorPagina }}</span>
+    de <span class="fw-semibold">{{ totalRegistros }}</span> registros
   </div>
-
-  <!-- Footer -->
-  <!-- <div class="modal-footer bg-light sticky-footer">
-    <button type="button" class="btn btn-outline-secondary" (click)="activeModal.close()">
-      <i class="bi bi-x-lg me-1"></i>Cerrar
+  <div class="pagination-buttons">
+    <button class="btn btn-sm btn-outline-secondary me-1" (click)="firstPage()" [disabled]="paginaActual === 1">
+      <i class="fa fa-angle-double-left"></i>
     </button>
-  </div> -->
+    <button class="btn btn-sm btn-outline-secondary me-1" (click)="prevPage()" [disabled]="paginaActual === 1">
+      <i class="fa fa-chevron-left"></i>
+    </button>
+    <span class="pagination-page-badge small mx-1">Página {{ paginaActual }} de {{ ultimaPagina }}</span>
+    <button class="btn btn-sm btn-outline-secondary ms-1" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+      <i class="fa fa-chevron-right"></i>
+    </button>
+    <button class="btn btn-sm btn-outline-secondary ms-1" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
+      <i class="fa fa-angle-double-right"></i>
+    </button>
+  </div>
 </div>
