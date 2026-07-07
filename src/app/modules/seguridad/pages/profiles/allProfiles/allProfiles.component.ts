@@ -557,6 +557,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
       const modalRef = this.modal.open(AuditoriaModalComponent, { 
         centered: true, 
         size: "xl", 
+        windowClass: "modal-fullscreen",
         backdrop: "static", 
         keyboard: true
       });

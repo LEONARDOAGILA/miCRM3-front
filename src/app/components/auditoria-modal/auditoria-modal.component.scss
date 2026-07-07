@@ -277,3 +277,127 @@
     align-items: center !important;
   }
 }
+
+// Estilos para el visor de JSON
+.json-viewer {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  padding: 4px 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  line-height: 1.4;
+  margin: 0;
+  color: inherit;
+  
+  // Scrollbar personalizado
+  &::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 2px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+
+// Estilo para el nombre del campo
+.campo-nombre {
+  font-size: 12px;
+  color: #0d6efd;
+  font-weight: 600;
+  
+  // Si el campo tiene un prefijo (ej: usuario.nombre)
+  &.campo-con-prefijo {
+    color: #6c757d;
+    font-weight: 400;
+  }
+}
+
+// Estilo para valores de texto plano (no JSON)
+.texto-plano {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 2px 4px;
+  background: transparent;
+  border: none;
+  display: inline-block;
+}
+
+// Para valores muy largos
+.texto-truncado {
+  max-width: 200px;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+
+// Wrapper para el JSON
+.json-wrapper {
+  width: 100%;
+  max-width: 100%;
+}
+
+// Visor de JSON con scroll
+.json-viewer {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  padding: 8px 12px;
+  max-height: 250px;
+  min-height: 35px;
+  overflow-y: auto;
+  overflow-x: auto;
+  line-height: 1.5;
+  margin: 0;
+  color: inherit;
+  width: 100%;
+  
+  // Scrollbar para WebKit (Chrome, Safari, Edge)
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c1c7cd;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a0a8b0;
+  }
+  
+  // Scrollbar para Firefox
+  scrollbar-width: thin;
+  scrollbar-color: #c1c7cd #f1f1f1;
+}
+
+
+
