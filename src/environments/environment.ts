@@ -3,8 +3,8 @@ export const environment = {
  
   production: false,
   WEBSOKETS_PRODUCTION: false,
-  URL_SERVICIOS: "http://192.168.1.141:8009/",
-  URL_WEBSOCKETS: "192.168.1.141",
+  URL_SERVICIOS: "http://192.168.2.173:8009/",
+  URL_WEBSOCKETS: "192.168.2.173",
   
 };
 
@@ -38,6 +38,6 @@ export const environment = {
   // WEBSOKETS_PRODUCTION: false,
   // URL_SERVICIOS: "http://192.168.254.15/",
   //URL_WEBSOCKETS: "192.168.254.15",
-  // URL_IMAGEN: "http://192.168.1.141:8009/storage/crm/",  // PARA STORAGE
+  // URL_IMAGEN: "http://192.168.2.173:8009/storage/crm/",  // PARA STORAGE
   //URL_IMAGEN: "http://img.almacenesespana.ec:8582/crm/",   // PARA NAS
 
