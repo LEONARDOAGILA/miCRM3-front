@@ -55,3 +55,73 @@
     font-size: 0.75rem;
   }
 }
+
+
+
+
+/* Ajustar el tamaño del modal personalizado - Header compacto, sin footer */
+::ng-deep .modal-fullscreen .modal-dialog {
+  max-width: 95%;
+  width: 95%;
+  margin: 5px auto;
+}
+
+::ng-deep .modal-fullscreen .modal-content {
+  max-height: 95vh;
+  height: 95vh;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+::ng-deep .modal-fullscreen .modal-header {
+  padding: 8px 20px !important;
+  min-height: 48px !important;
+  max-height: 52px !important;
+  flex-shrink: 0;
+  border-bottom: 2px solid #e9ecef;
+  background: #f8f9fa;
+  
+  .modal-title {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+  }
+  
+  .btn-close {
+    padding: 0.25rem !important;
+  }
+}
+
+::ng-deep .modal-fullscreen .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px !important;
+  max-height: calc(95vh - 60px) !important;
+  min-height: 200px;
+  background-color: #d1d2d2;
+}
+
+/* Eliminar footer */
+::ng-deep .modal-fullscreen .modal-footer {
+  display: none !important;
+}
+
+::ng-deep .modal-fullscreen .modal-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::ng-deep .modal-fullscreen .modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::ng-deep .modal-fullscreen .modal-body::-webkit-scrollbar-thumb {
+  background: #c1c7cd;
+  border-radius: 4px;
+}
+
+::ng-deep .modal-fullscreen .modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a0a8b0;
+}

@@ -1,4 +1,4 @@
-/* Estilos para el zoom */
+/* Estilos para el zoom - Versión mejorada */
 .lity-img, .lity-image img {
   transition: transform 0.3s ease !important;
   cursor: zoom-in;
@@ -7,35 +7,98 @@
   object-fit: contain;
 }
 
-/* Estilos para los botones */
+/* Estilos para los botones de navegación */
+.lity-custom-nav {
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
 .lity-custom-nav:hover {
-  background: rgba(0,0,0,0.9) !important;
-  transform: translateY(-50%) scale(1.1);
+  background: rgba(255,255,255,0.2) !important;
+  transform: translateY(-50%) scale(1.15) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
 .lity-custom-nav:active {
-  transform: translateY(-50%) scale(0.95);
+  transform: translateY(-50%) scale(0.9) !important;
 }
 
-#lity-custom-zoom:hover {
-  background: rgba(0,0,0,0.9) !important;
-  transform: scale(1.1);
+/* Estilos para la barra de herramientas */
+.btn-zoom {
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-#lity-custom-zoom:active {
-  transform: scale(0.95);
+.btn-zoom:hover {
+  background: rgba(255,255,255,0.15) !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.btn-zoom:active {
+  transform: scale(0.95) !important;
+}
+
+.btn-zoom:disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* Nivel de zoom */
+#lity-zoom-level {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Toolbar completo */
+#lity-custom-toolbar {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 8px 12px !important;
+  background: rgba(0,0,0,0.5) !important;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+}
+
+/* Toolbar en móviles */
+@media (max-width: 768px) {
+  #lity-custom-toolbar {
+    top: 10px !important;
+    right: 10px !important;
+    padding: 6px 10px !important;
+    gap: 4px !important;
+    border-radius: 12px;
+  }
+  
+  .btn-zoom {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  #lity-zoom-level {
+    min-width: 40px !important;
+    font-size: 0.75rem !important;
+    padding: 2px 6px !important;
+  }
+  
+  .lity-custom-nav {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 30px !important;
+  }
 }
 
 /* Deshabilitar click en el overlay de lity */
 .lity-overlay {
   pointer-events: none !important;
-}
-
-/* Mantener la X clickeable */
-.lity-close {
-  pointer-events: auto !important;
-  cursor: pointer !important;
-  z-index: 10002 !important;
 }
 
 /* Mantener el contenido clickeable si es necesario */
@@ -45,39 +108,139 @@
 
 /* Estilos para el contenedor con scroll (panning) */
 .lity-content {
-  overflow: auto !important;
+  overflow: hidden !important;
   max-width: 90vw;
   max-height: 90vh;
-  cursor: grab;
+  cursor: default;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
 }
 
-.lity-content:active {
-  cursor: grabbing;
-}
-
-/* Estilo para la imagen */
-.lity-img, .lity-image img {
-  transition: transform 0.3s ease;
-  cursor: zoom-in;
-  transform-origin: top left;
+/* La imagen dentro del contenedor */
+.lity-content img {
+  max-width: 100%;
+  max-height: 95vh;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 /* Scrollbar personalizado (opcional) */
 .lity-content::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .lity-content::-webkit-scrollbar-track {
-  background: rgba(0,0,0,0.3);
-  border-radius: 4px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 3px;
 }
 
 .lity-content::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.5);
-  border-radius: 4px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 3px;
 }
 
 .lity-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.5);
+}
+
+/* Fondo del lightbox */
+.lity {
+  background: rgba(0,0,0,0.92) !important;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+/* Animación de entrada */
+.lity-opened .lity-container {
+  animation: lityFadeIn 0.3s ease;
+}
+
+@keyframes lityFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Indicador de posición de la galería */
+.lity-gallery-counter {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.6);
+  font-size: 14px;
+  font-weight: 500;
+  background: rgba(0,0,0,0.4);
+  padding: 6px 16px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  z-index: 10000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.5px;
+  display: none;
+}
+
+.lity-gallery-counter.visible {
+  display: block;
+}
+
+/* Ajustes para el modo oscuro automático */
+@media (prefers-color-scheme: dark) {
+  .lity {
+    background: rgba(0,0,0,0.95) !important;
+  }
+  
+  #lity-custom-toolbar {
+    background: rgba(0,0,0,0.7) !important;
+    border-color: rgba(255,255,255,0.05);
+  }
+}
+
+/* Mejoras para dispositivos táctiles */
+@media (hover: none) and (pointer: coarse) {
+  .btn-zoom:hover {
+    transform: none !important;
+  }
+  
+  .lity-custom-nav:hover {
+    transform: translateY(-50%) !important;
+  }
+}
+
+/* ============================================ */
+/* ESTILOS DEL BOTÓN X - UNIFICADOS */
+/* ============================================ */
+/* Estilos del botón X - UNIFICADO */
+.lity-close {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 10002 !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.lity-close:hover {
+  transform: scale(1.2) !important;
+  background: rgba(255,255,255,0.2) !important;
+}
+
+/* Ocultar el botón X solo para imágenes */
+.lity-close.lity-close-hidden {
+  display: none !important;
 }

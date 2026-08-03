@@ -5,6 +5,8 @@ export const environment = {
   WEBSOKETS_PRODUCTION: false,
   URL_SERVICIOS: "http://192.168.2.173:8009/",
   URL_WEBSOCKETS: "192.168.2.173",
+
+  
   
 };
 
