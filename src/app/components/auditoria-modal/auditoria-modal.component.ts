@@ -55,10 +55,17 @@ export class AuditoriaModalComponent implements OnInit, AfterViewInit {
 
   private resizeTimeoutId: any;
 
-  @HostListener('window:resize', ['$event'])
-  onResize(event: Event): void {
-    this.ajustarTamanoGrid();
+@HostListener('window:resize', ['$event'])
+onResize(event: Event): void {
+  this.ajustarTamanoGrid();
+  // Forzar actualización de columnas responsive
+  if (this.gridApi) {
+    //this.gridApi.setColumnDefs(this.columnDefsResponsive);
+    setTimeout(() => {
+      this.gridApi.sizeColumnsToFit();
+    }, 100);
   }
+}
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -784,4 +791,136 @@ private extraerPathConMenu(path: string, menuNombre: string | null): string {
     this.paginaActual = 1;
     this.cargarAuditoria(1);
   }
+
+public get columnDefsResponsive(): any[] {
+  const isMobile = window.innerWidth < 768;
+  const isTablet = window.innerWidth >= 768 && window.innerWidth < 992;
+  
+  return [
+    {
+      headerName: 'ID',
+      field: 'id',
+      cellStyle: { textAlign: 'center' },
+      minWidth: isMobile ? 50 : 70,
+      maxWidth: isMobile ? 50 : 70,
+      hide: isMobile
+    },
+    {
+      headerName: 'Operación',
+      field: 'operacion',
+      cellStyle: { textAlign: 'center' },
+      minWidth: isMobile ? 70 : 120,
+      maxWidth: isMobile ? 80 : 120,
+      cellRenderer: (params: any) => {
+        const operacion = params.value;
+        let clase = '';
+        let icono = '';
+        let texto = '';
+        
+        if (operacion === 'INSERT') {
+          clase = 'badge-insert';
+          icono = 'bi bi-plus-circle';
+          texto = isMobile ? 'Crear' : 'Creación';
+        } else if (operacion === 'UPDATE') {
+          clase = 'badge-update';
+          icono = 'bi bi-arrow-repeat';
+          texto = isMobile ? 'Actual' : 'Actualización';
+        } else {
+          clase = 'badge-delete';
+          icono = 'bi bi-trash';
+          texto = isMobile ? 'Elim' : 'Eliminación';
+        }
+        
+        return `
+          <span class="d-inline-block py-1 px-2 rounded-1 ${clase}" style="width: 100%; font-size: ${isMobile ? '8px' : 'inherit'};">
+            <i class="${icono}"></i> ${texto}
+          </span>
+        `;
+      }
+    },
+    {
+      headerName: 'Fecha',
+      field: 'fecha_operacion', // Campo principal
+      cellStyle: { textAlign: 'center' },
+      minWidth: isMobile ? 80 : 150,
+      maxWidth: isMobile ? 90 : 150,
+      // Value getter que intenta múltiples nombres de campo
+      valueGetter: (params: any) => {
+        // Intentar diferentes nombres de campo
+        const fecha = params.data.fecha_operacion || 
+                     params.data.fechaOperacion || 
+                     params.data.fecha || 
+                     params.data.created_at || 
+                     params.data.updated_at;
+        
+        if (!fecha) return isMobile ? '--' : 'Sin fecha';
+        
+        try {
+          const date = new Date(fecha);
+          if (isNaN(date.getTime())) {
+            return isMobile ? fecha.substring(0, 10) : fecha;
+          }
+          
+          if (isMobile) {
+            // Formato corto en móvil: DD/MM/YY
+            return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getFullYear()).slice(-2)}`;
+          } else if (isTablet) {
+            // Formato medio en tablet: DD/MM/YYYY HH:MM
+            return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+          } else {
+            // Formato completo en desktop: DD/MM/YYYY HH:MM:SS
+            return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+          }
+        } catch (e) {
+          return isMobile ? fecha.substring(0, 10) : fecha;
+        }
+      }
+    },
+    {
+      headerName: 'Usuario',
+      field: 'usuario_login',
+      cellStyle: { 
+        textAlign: 'left',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      },
+      minWidth: isMobile ? 60 : 100,
+      maxWidth: isMobile ? 100 : 220,
+      flex: isMobile ? 0 : 1,
+      valueGetter: (params: any) => {
+        const login = params.data.usuario_login || 
+                     params.data.usuario || 
+                     params.data.user_login || 
+                     params.data.user || '';
+        const nombre = params.data.usuario_nombre || 
+                      params.data.usuarioNombre || 
+                      params.data.user_name || 
+                      params.data.nombre || '';
+        
+        if (isMobile) {
+          return login || nombre || 'N/A';
+        }
+        return login ? `${login}${nombre ? ' - ' + nombre : ''}` : (nombre || 'N/A');
+      }
+    },
+    {
+      headerName: 'IP',
+      field: 'ip_address',
+      cellStyle: { textAlign: 'left' },
+      minWidth: isMobile ? 60 : 100,
+      maxWidth: isMobile ? 70 : 120,
+      hide: isMobile,
+      valueGetter: (params: any) => {
+        return params.data.ip_address || 
+               params.data.ip || 
+               params.data.direccion_ip || 
+               '--';
+      }
+    }
+  ];
+}
+
+
+
 }
