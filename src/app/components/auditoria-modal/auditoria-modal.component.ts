@@ -8,11 +8,13 @@ import { firstValueFrom } from 'rxjs';
 import { GridApi, GridReadyEvent } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { AgGridModule } from 'ag-grid-angular';
+import { PanelModule } from '../../components/panel/panel.module'; // <-- Importa el PanelModule
+
 
 @Component({
   selector: 'app-auditoria-modal',
   standalone: true,
-  imports: [CommonModule, NgbModule, FormsModule, AgGridModule],
+  imports: [CommonModule, NgbModule, FormsModule, AgGridModule,    PanelModule ],
   templateUrl: './auditoria-modal.component.html',
   styleUrls: ['./auditoria-modal.component.scss']
 })

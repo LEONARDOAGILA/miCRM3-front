@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 
 @Component({
   selector: 'panel',
-  inputs: ['title', 'variant', 'noBody', 'noButton', 'headerClass', 'bodyClass', 'footerClass', 'panelClass', 'noButtonExpand', 'noButtonReload', 'noButtonCollapse', 'noButtonRemove', 'ButtonPrint','ButtonExportExcel','ButtonExportCsv'],
+  inputs: ['title', 'variant', 'noBody', 'noButton', 'headerClass', 'bodyClass', 'footerClass', 'panelClass', 'noButtonExpand', 'noButtonReload', 'noButtonCollapse', 'noButtonRemove', 'ButtonPrint','ButtonExportExcel','ButtonExportCsv','ButtonRemoveModal'],
   templateUrl: './panel.component.html',
   standalone: false
 })
@@ -41,6 +41,7 @@ export class PanelComponent implements AfterViewInit {
   @Output() panelExportExceled: EventEmitter<void> = new EventEmitter<void>();
   @Output() panelExportCsved: EventEmitter<void> = new EventEmitter<void>();
   @Output() panelRemoved: EventEmitter<void> = new EventEmitter<void>();
+  @Output() panelRemovedModal: EventEmitter<void> = new EventEmitter<void>();
 
 
   panelPrint() {
@@ -74,6 +75,11 @@ export class PanelComponent implements AfterViewInit {
     this.panelRemoved.emit(); // Emitir evento
     this._router.navigate([this.closeRoute]); // Usar la ruta personalizada
   }
+
+  panelRemoveModal() {
+    this.panelRemovedModal.emit(); // Emitir evento cuando se recarga el panel
+  }
+
 
 }
 
