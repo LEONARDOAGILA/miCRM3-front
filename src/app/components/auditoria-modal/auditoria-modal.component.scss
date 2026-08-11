@@ -1,19 +1,17 @@
 // Variables responsive
-$breakpoint-xs: 480px;
 $breakpoint-sm: 576px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 992px;
 $breakpoint-xl: 1200px;
-$breakpoint-xxl: 1400px;
 
 // Contenedor principal de layout - Grid + Detalle
 .audit-layout-container {
   display: grid;
   grid-template-columns: 35% 65%;
   gap: 1rem;
-  height: 500px;
+  height: 400px;
   min-height: 400px;
-  max-height: 600px;
+  max-height: 500px;
   
   .grid-column,
   .detail-column {
@@ -22,191 +20,43 @@ $breakpoint-xxl: 1400px;
   }
 }
 
-// Responsive: Tablets y pantallas medianas
-@media (max-width: $breakpoint-xl) {
-  .audit-layout-container {
-    grid-template-columns: 40% 60%;
-    height: 450px;
-    min-height: 350px;
-  }
+// Columnas
+.grid-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-// Responsive: Tablets pequeñas
-@media (max-width: $breakpoint-lg) {
-  .audit-layout-container {
-    grid-template-columns: 45% 55%;
-    height: 420px;
-    min-height: 300px;
-  }
+.detail-column {
+  flex: 0 0 45%;
+  min-width: 300px;
 }
 
-// Responsive: Móviles y pantallas pequeñas
+// Solo en móviles se aplica el margin-top
 @media (max-width: $breakpoint-md) {
-  .modal-body {
-    padding: 0.75rem !important;
+  .detail-column-mobile {
+    margin-top: 30px !important;
   }
   
-  .audit-layout-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: 280px 1fr;
-    height: auto;
-    min-height: 500px;
-    max-height: none;
-    gap: 0.75rem;
-    
-    .grid-column {
-      height: 280px;
-      min-height: 200px;
-    }
-    
-    .detail-column {
-      height: 350px;
-      min-height: 250px;
-    }
-  }
-  
-  // Ajustes de tabla en móvil
-  .cambios-table {
-    font-size: 10px;
-    
-    th, td {
-      padding: 4px 6px !important;
-    }
-    
-    .campo-cell {
-      min-width: 60px;
-      max-width: 80px;
-      word-break: break-word;
-    }
-    
-    .valor-cell {
-      min-width: 80px;
-      max-width: 120px;
-    }
-  }
-  
-  .json-viewer {
-    font-size: 9px;
-    padding: 4px 6px;
-    max-height: 80px;
-    min-height: 20px;
-  }
-  
-  .detalle-header {
-    .badge {
-      font-size: 9px;
-      padding: 3px 8px;
-    }
-  }
-  
-  .pagination-controls {
-    .pagination-info {
-      font-size: 10px;
-    }
-    
-    .pagination-buttons {
-      .btn {
-        font-size: 10px;
-        padding: 2px 8px;
-      }
-      
-      .pagination-page-badge {
-        font-size: 10px;
-        padding: 2px 8px;
-      }
-    }
-  }
 }
 
-// Responsive: Móviles muy pequeños
 @media (max-width: $breakpoint-sm) {
-  .modal-body {
-    padding: 0.5rem !important;
-  }
-  
-  .audit-layout-container {
-    grid-template-rows: 220px 1fr;
-    min-height: 400px;
-    
-    .grid-column {
-      height: 220px;
-      min-height: 150px;
-    }
-    
-    .detail-column {
-      height: 280px;
-      min-height: 200px;
-    }
-  }
-  
-  // Filtros en móvil
-  .row.g-2.g-md-3 {
-    .col-12 {
-      margin-bottom: 0.25rem;
-    }
-    
-    .form-label {
-      font-size: 10px;
-    }
-    
-    .form-select-sm,
-    .form-control-sm {
-      font-size: 11px;
-      padding: 0.2rem 0.5rem;
-    }
-    
-    .btn-sm {
-      font-size: 10px;
-      padding: 0.2rem 0.5rem;
-    }
-  }
-  
-  .cambios-table {
-    font-size: 9px;
-    
-    th, td {
-      padding: 3px 4px !important;
-    }
-    
-    .campo-cell {
-      min-width: 50px;
-      max-width: 60px;
-    }
-    
-    .valor-cell {
-      min-width: 60px;
-      max-width: 90px;
-    }
-  }
-  
-  .json-viewer {
-    font-size: 8px;
-    padding: 3px 4px;
-    max-height: 60px;
-    min-height: 16px;
-    line-height: 1.3;
-  }
-  
-  .detalle-header {
-    h6 {
-      font-size: 12px;
-    }
-    
-    .badge {
-      font-size: 8px;
-      padding: 2px 6px;
-    }
+  .detail-column-mobile {
+    margin-top: 25px !important;
   }
 }
 
-// Estilos del grid - Mejorados
+
+// Estilos del grid - TRANSPARENTE
 ::ng-deep .ag-theme-alpine {
-  --ag-background-color: transparent;
-  --ag-header-background-color: transparent;
+  --ag-background-color: transparent !important;
+  --ag-header-background-color: transparent !important;
   --ag-border-color: rgba(0, 0, 0, 0.1);
   
   .ag-root-wrapper {
     border: none !important;
+    height: 100% !important;
+    background-color: transparent !important;
   }
   
   .ag-root-wrapper,
@@ -217,10 +67,17 @@ $breakpoint-xxl: 1400px;
     background-color: transparent !important;
   }
   
+  .ag-body-viewport {
+    height: 100% !important;
+    max-height: 100% !important;
+    background-color: transparent !important;
+  }
+  
   .ag-row {
     background-color: transparent !important;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
     transition: background-color 0.2s ease;
+    min-height: 35px !important;
     
     &:hover {
       background-color: rgba(13, 110, 253, 0.05) !important;
@@ -292,8 +149,10 @@ $breakpoint-xxl: 1400px;
 
 // Estilos del contenedor de detalle
 .detalle-container {
-  background-color: #f8f9fa !important;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   
   .table {
     font-size: 11px;
@@ -309,14 +168,11 @@ $breakpoint-xxl: 1400px;
       position: sticky;
       top: 0;
       z-index: 10;
-      background-color: #f8f9fa !important;
-      border-bottom: 2px solid #dee2e6 !important;
       font-weight: 600;
       color: #495057;
     }
     
     tbody tr {
-      border-bottom: 1px solid #e9ecef;
       transition: background-color 0.2s ease;
       
       &:hover {
@@ -326,18 +182,14 @@ $breakpoint-xxl: 1400px;
   }
 }
 
-// Contenedor del grid
+// Contenedor del grid - TRANSPARENTE
 .ag-grid-container {
-  background-color: white;
+  background-color: transparent !important;
   border-radius: 5px !important;
   overflow: hidden;
-}
-
-// Modal body
-.modal-body {
-  background-color: #d1d2d2;
-  max-height: 85vh;
-  overflow-y: auto;
+  flex: 1 1 auto !important;
+  min-height: 200px !important;
+  margin-bottom: 0.5rem;
 }
 
 // Spinner y overlay
@@ -378,7 +230,6 @@ $breakpoint-xxl: 1400px;
   }
   
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
     border-radius: 3px;
   }
   
@@ -397,14 +248,19 @@ $breakpoint-xxl: 1400px;
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: #f8f9fa !important;
   border-bottom: 2px solid #dee2e6;
 }
 
 // Paginación
+.modal-footer-custom {
+  flex-shrink: 0 !important;
+  position: relative;
+  z-index: 10;
+  margin-top: 0.5rem;
+}
+
 .pagination-controls {
   .pagination-page-badge {
-    background-color: #e9ecef;
     padding: 4px 12px;
     border-radius: 4px;
     font-weight: 500;
@@ -457,30 +313,334 @@ $breakpoint-xxl: 1400px;
   max-width: 100%;
 }
 
-
-.detalle-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-.sticky-header {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
 .detalle-body {
-    flex: 1;
-    overflow-y: auto;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .cambios-table thead th {
-    position: sticky;
-    top: 0;
-    z-index: 999;
-    background: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 999;
 }
 
+// Layout responsive
+.audit-grid-detail {
+  @media (max-width: 991.98px) {
+    flex-direction: column !important;
+    
+    .grid-column {
+      flex: 0 0 50% !important;
+      min-height: 350px !important;
+    }
+    
+    .detail-column {
+      flex: 0 0 50% !important;
+      min-width: auto !important;
+      min-height: 250px;
+    }
+  }
+  
+  @media (max-width: 575.98px) {
+    gap: 10px !important;
+    
+    .grid-column {
+      flex: 0 0 50% !important;
+      min-height: 300px !important;
+    }
+    
+    .detail-column {
+      flex: 0 0 50% !important;
+      min-height: 250px !important;
+    }
+  }
+}
+
+// Ajustes para el grid en móvil
+.ag-grid-container {
+  @media (max-width: 575.98px) {
+    min-height: 250px !important;
+    
+    .ag-theme-alpine {
+      font-size: 9px !important;
+      
+      .ag-header-cell {
+        padding: 4px 6px !important;
+      }
+      
+      .ag-cell {
+        padding: 4px 6px !important;
+        font-size: 9px !important;
+        line-height: 1.4;
+      }
+      
+      .ag-row {
+        min-height: 35px !important;
+      }
+    }
+  }
+  
+  @media (min-width: 576px) and (max-width: 991.98px) {
+    min-height: 300px !important;
+    
+    .ag-theme-alpine {
+      .ag-header-cell {
+        padding: 6px 8px !important;
+      }
+      
+      .ag-cell {
+        padding: 6px 8px !important;
+        font-size: 10px !important;
+      }
+      
+      .ag-row {
+        min-height: 38px !important;
+      }
+    }
+  }
+}
+
+// Paginación responsive
+.pagination-controls {
+  @media (max-width: 575.98px) {
+    .pagination-info {
+      font-size: 10px !important;
+    }
+    
+    .btn-sm {
+      padding: 0.15rem 0.4rem !important;
+      font-size: 0.7rem !important;
+    }
+    
+    .pagination-page-badge {
+      font-size: 10px !important;
+    }
+  }
+}
+
+// Detalle responsive
+.detalle-header {
+  @media (max-width: 575.98px) {
+    .badge {
+      font-size: 8px !important;
+      padding: 0.2rem 0.4rem !important;
+    }
+    
+    .fw-bold {
+      font-size: 13px !important;
+    }
+  }
+}
+
+.detalle-body {
+  @media (max-width: 575.98px) {
+    .cambios-table {
+      th, td {
+        font-size: 8px !important;
+        padding: 2px 4px !important;
+      }
+      
+      .json-viewer {
+        font-size: 7px !important;
+        margin: 0 !important;
+        padding: 1px 2px !important;
+        max-width: 100px;
+        word-break: break-all;
+      }
+    }
+
+  }
+  
+  @media (min-width: 576px) and (max-width: 991.98px) {
+    .cambios-table {
+      th, td {
+        font-size: 9px !important;
+        padding: 3px 6px !important;
+      }
+      
+      .json-viewer {
+        font-size: 8px !important;
+        max-width: 150px;
+        word-break: break-all;
+      }
+
+    }
+  }
+}
+
+// Filtros responsive
+.row {
+  @media (max-width: 575.98px) {
+    .form-label {
+      font-size: 10px !important;
+    }
+    
+    .form-select-sm, .form-control-sm {
+      font-size: 11px !important;
+      padding: 0.2rem 0.4rem !important;
+    }
+    
+    .btn-sm {
+      font-size: 10px !important;
+      padding: 0.2rem 0.5rem !important;
+    }
+  }
+}
+
+// Scrollbar personalizado para móvil
+.scrollbar-style {
+  &::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  @media (max-width: 575.98px) {
+    &::-webkit-scrollbar {
+      width: 3px;
+      height: 3px;
+    }
+  }
+}
+
+
+
+// Para móviles
+@media (max-width: $breakpoint-md) {
+  .audit-layout-container {
+    overflow: hidden !important; // <-- Contenedor principal no se desborda
+  }
+  
+  .audit-grid-detail {
+    overflow: hidden !important;
+    
+    .detail-column {
+      overflow: hidden !important;
+      
+      .detalle-container {
+        overflow: hidden !important;
+        
+        .detalle-body {
+          overflow: auto !important;
+          
+          .table-responsive {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
+        }
+      }
+    }
+  }
+}
+
+
+// Fix para que la tabla no se corte en móvil
+@media (max-width: $breakpoint-md) {
+  .audit-grid-detail {
+    .detail-column {
+      overflow: hidden !important;
+      max-height: 350px !important;
+      min-height: 250px !important;
+    }
+  }
+  
+  .detalle-container {
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    height: 100% !important;
+    max-height: 350px !important;
+    
+    .detalle-header {
+      flex-shrink: 0 !important;
+    }
+    
+    .detalle-body {
+      overflow: auto !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      
+      .table-responsive {
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch;
+        
+        table {
+          min-width: 300px;
+          width: 100%;
+          margin-bottom: 0;
+          
+          th, td {
+            white-space: nowrap;
+            padding: 4px 6px !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .audit-grid-detail {
+    .detail-column {
+      max-height: 280px !important;
+      min-height: 200px !important;
+    }
+  }
+  
+  .detalle-container {
+    max-height: 280px !important;
+    
+    .detalle-body {
+      .table-responsive {
+        table {
+          min-width: 250px;
+          font-size: 8px !important;
+          
+          th, td {
+            padding: 3px 4px !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Asegurar que el panel-scroll-container tenga espacio
+.panel-scroll-container {
+  overflow-y: auto !important;
+  max-height: 70vh !important;
+  padding: 0.5rem 1rem !important;
+  
+  // Para móvil
+  @media (max-width: $breakpoint-md) {
+    max-height: 65vh !important;
+    padding: 0.5rem !important;
+  }
+  
+  @media (max-width: $breakpoint-sm) {
+    max-height: 60vh !important;
+    padding: 0.25rem !important;
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .detalle-container {
+    .detalle-body {
+      overflow: hidden !important; // Cambiar a hidden
+      
+      .table-responsive {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        
+        table {
+          display: table !important;
+          width: auto !important;
+          min-width: 320px !important;
+          max-width: none !important;
+        }
+      }
+    }
+  }
+}

@@ -4,42 +4,39 @@
   <div class="overlay1" aria-hidden="true"></div>
 </ng-container>
 
-<div class="modal-content scrollbar-style">
-  <!-- Header -->
-  <div class="modal-header bg-light d-flex align-items-center sticky-header">
-    <h5 class="modal-title fw-bold">
-      <i class="bi bi-clock-history me-2"></i>Historial de Auditoría
-    </h5>
-    <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss()"></button>
-  </div>
+<panel title="Historial de Auditoría" 
+       headerClass="bg-cyan-700" 
+       noButtonCollapse="false" 
+       noButtonRemove="false"
+       ButtonRemoveModal="true" 
+       (panelRemovedModal)="activeModal.dismiss()"
+       (panelReloaded)="cargarAuditoria(paginaActual)">
 
-  <!-- Body - con padding inferior para el footer -->
-  <div class="modal-body p-3 p-md-4 d-flex flex-column scrollbar-style" style="background-color: #d1d2d2; padding-bottom: 80px !important;">
-    <!-- Filtros -->
-    <div class="row mb-4 g-2 g-md-3 align-items-end">
-      <div class="col-12 col-sm-6 col-md-3">
-        <label class="form-label small text-muted mb-1">Tipo de operación</label>
-        <select class="form-select form-select-sm shadow-sm" [(ngModel)]="filtro.tipoOperacion">
-          <option value="">Todas las operaciones</option>
-          <option value="INSERT">Creación</option>
-          <option value="UPDATE">Actualización</option>
-          <option value="DELETE">Eliminación</option>
-        </select>
-      </div>
-      <div class="col-12 col-sm-6 col-md-3">
-        <label class="form-label small text-muted mb-1">Fecha desde</label>
-        <input type="date" class="form-control form-control-sm shadow-sm" [(ngModel)]="filtro.fechaDesde">
-      </div>
-      <div class="col-12 col-sm-6 col-md-3">
-        <label class="form-label small text-muted mb-1">Fecha hasta</label>
-        <input type="date" class="form-control form-control-sm shadow-sm" [(ngModel)]="filtro.fechaHasta">
-      </div>
-<<<<<<< HEAD
-      <div class="col-md-3 d-flex gap-2 mb-1">
-=======
-      <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
->>>>>>> c7e778edcf9a47c9623cdaba3bd8fa7535c2b5c5
-        <button class="btn btn-sm btn-primary grow" (click)="aplicarFiltros()">
+
+
+
+  <!-- Filtros -->
+  <div class="row mb-3 mb-md-4 g-2 g-md-3 align-items-end shrink-0">
+    <div class="col-12 col-sm-6 col-md-3">
+      <label class="form-label small text-muted mb-1">Tipo de operación</label>
+      <select class="form-select form-select-sm shadow-sm" [(ngModel)]="filtro.tipoOperacion">
+        <option value="">Todas las operaciones</option>
+        <option value="INSERT">Creación</option>
+        <option value="UPDATE">Actualización</option>
+        <option value="DELETE">Eliminación</option>
+      </select>
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+      <label class="form-label small text-muted mb-1">Fecha desde</label>
+      <input type="date" class="form-control form-control-sm shadow-sm" [(ngModel)]="filtro.fechaDesde">
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+      <label class="form-label small text-muted mb-1">Fecha hasta</label>
+      <input type="date" class="form-control form-control-sm shadow-sm" [(ngModel)]="filtro.fechaHasta">
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-primary w-100" (click)="aplicarFiltros()">
           <i class="bi bi-funnel me-1"></i>Filtrar
         </button>
         <button class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()">
@@ -47,11 +44,17 @@
         </button>
       </div>
     </div>
+  </div>
 
+  <!-- Grid y Detalle -->
+  <div class="audit-layout-container d-flex flex-column" style="min-height: 0; flex: 1;">
+    
     <!-- Grid y Detalle -->
-    <div class="audit-layout-container">
-      <div class="grid-column">
-        <div class="ag-grid-container border rounded-3 shadow-sm h-100">
+    <div class="audit-grid-detail d-flex" style="min-height: 0; gap: 15px; flex: 1;">
+      
+      <!-- Columna Grid -->
+      <div class="grid-column d-flex flex-column" style="min-height: 0; flex: 1;">
+        <div class="ag-grid-container border rounded-3 shadow-sm" style="min-height: 0; flex: 1 1 auto;">
           <ag-grid-angular
             class="ag-theme-alpine h-100 w-100"
             [rowData]="auditoriaData"
@@ -70,167 +73,131 @@
             style="width: 100%; height: 100%;">
           </ag-grid-angular>
         </div>
+        
+        <!-- Paginación -->
+        <div class="modal-footer-custom shrink-0 mt-2">
+          <div class="pagination-controls d-flex flex-column flex-sm-row justify-content-between align-items-center w-100 px-2 px-sm-3 py-2 bg-white rounded-3 shadow-sm" style="margin-top: -12px;">
+            <div class="pagination-info small mb-2 mb-sm-0">
+              <i class="bi bi-info-circle me-1"></i>
+              Mostrando <span class="fw-semibold">{{ (paginaActual-1)*registrosPorPagina + 1 }}</span> - 
+              <span class="fw-semibold">{{ paginaActual * registrosPorPagina > totalRegistros ? totalRegistros : paginaActual * registrosPorPagina }}</span>
+              de <span class="fw-semibold">{{ totalRegistros }}</span> registros
+            </div>
+            <div class="pagination-buttons d-flex flex-wrap justify-content-center">
+              <button class="btn btn-sm btn-outline-secondary me-1" (click)="firstPage()" [disabled]="paginaActual === 1">
+                <i class="fa fa-angle-double-left"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary me-1" (click)="prevPage()" [disabled]="paginaActual === 1">
+                <i class="fa fa-chevron-left"></i>
+              </button>
+              <span class="pagination-page-badge small mx-1">Página {{ paginaActual }} de {{ ultimaPagina }}</span>
+              <button class="btn btn-sm btn-outline-secondary ms-1" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+                <i class="fa fa-chevron-right"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary ms-1" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
+                <i class="fa fa-angle-double-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-
-
-      <div class="detail-column">
-          <div class="detalle-container border rounded-3 shadow-sm bg-light h-100 d-flex flex-column">
-
-            <ng-container *ngIf="selectedAuditoria">
-
-              <!-- Encabezado fijo -->
-              <div class="detalle-header sticky-header p-2 p-md-3">
-                <div class="d-flex align-items-center gap-3 flex-nowrap">
-                  <h5 class="fw-bold mb-0">Detalle de Cambios</h5>
-
-                  <div class="d-flex gap-2 flex-nowrap"
-                      *ngIf="obtenerCambiosFormateados(selectedAuditoria) as cambiosInfo">
-
-                    <span class="badge bg-secondary">
-                      <i class="bi bi-arrow-right me-1"></i>Total: {{ cambiosInfo.total }}
-                    </span>
-
-                    <span class="badge bg-success" *ngIf="cambiosInfo.added > 0">
-                      <i class="bi bi-plus-circle me-1"></i>Añadidos: {{ cambiosInfo.added }}
-                    </span>
-
-                    <span class="badge bg-danger" *ngIf="cambiosInfo.removed > 0">
-                      <i class="bi bi-dash-circle me-1"></i>Eliminados: {{ cambiosInfo.removed }}
-                    </span>
-
-                    <span class="badge bg-warning" *ngIf="cambiosInfo.modified > 0">
-                      <i class="bi bi-pencil me-1"></i>Modificados: {{ cambiosInfo.modified }}
-                    </span>
-
-                  </div>
+      <!-- Columna Detalle -->
+      <div class="detail-column detail-column-mobile">
+        <div class="detalle-container border rounded-3 shadow-sm d-flex flex-column">
+          <ng-container *ngIf="selectedAuditoria">
+            <!-- Encabezado -->
+            <div class="detalle-header sticky-header p-2 p-md-3 flex-shrink-0 border-bottom">
+              <div class="d-flex align-items-center gap-2 gap-md-3 flex-wrap">
+                <h5 class="fw-bold mb-0 fs-6 fs-md-5">Detalle de Cambios</h5>
+                <div class="d-flex gap-1 gap-md-2 flex-wrap"
+                    *ngIf="obtenerCambiosFormateados(selectedAuditoria) as cambiosInfo">
+                  <span class="badge bg-secondary">
+                    <i class="bi bi-arrow-right me-1"></i>Total: {{ cambiosInfo.total }}
+                  </span>
+                  <span class="badge bg-success" *ngIf="cambiosInfo.added > 0">
+                    <i class="bi bi-plus-circle me-1"></i>{{ cambiosInfo.added }}
+                  </span>
+                  <span class="badge bg-danger" *ngIf="cambiosInfo.removed > 0">
+                    <i class="bi bi-dash-circle me-1"></i>{{ cambiosInfo.removed }}
+                  </span>
+                  <span class="badge bg-warning" *ngIf="cambiosInfo.modified > 0">
+                    <i class="bi bi-pencil me-1"></i>{{ cambiosInfo.modified }}
+                  </span>
                 </div>
               </div>
+            </div>
 
-              <!-- Contenido con scroll -->
-              <div class="detalle-body grow overflow-auto px-2 px-md-3 pb-3">
-
-                <ng-container *ngIf="obtenerCambiosFormateados(selectedAuditoria) as cambiosInfo">
-
-                  <div *ngIf="cambiosInfo.cambios.length > 0; else sinCambios">
-
-                    <div class="table-responsive">
-                      <table class="table table-sm table-borderless mb-0 cambios-table">
-
-                        <thead class="table-light sticky-top">
-                          <tr>
-                            <th style="width:30%;">Campo</th>
-                            <th style="width:35%;">Valor Anterior</th>
-                            <th style="width:35%;">Valor Nuevo</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-
-                          <tr *ngFor="let cambio of cambiosInfo.cambios">
-
-                            <td class="campo-cell">
-                              <strong>{{ cambio.campo }}</strong>
-                            </td>
-
-                            <td class="valor-cell">
-                              <div class="json-wrapper">
-
-                                <span *ngIf="cambio.estado === 'added'" class="text-muted">
-                                  <em>—</em>
-                                </span>
-
-                                <span *ngIf="cambio.estado === 'removed'" class="text-danger fw-semibold">
-                                  <pre class="json-viewer json-removed">{{ cambio.valorAnterior }}</pre>
-                                </span>
-
-                                <span *ngIf="cambio.estado === 'modified'">
-                                  <pre class="json-viewer json-removed">{{ cambio.valorAnterior }}</pre>
-                                </span>
-
-                              </div>
-                            </td>
-
-                            <td class="valor-cell">
-                              <div class="json-wrapper">
-
-                                <span *ngIf="cambio.estado === 'added'" class="text-success fw-semibold">
-                                  <pre class="json-viewer json-added">{{ cambio.valorNuevo }}</pre>
-                                </span>
-
-                                <span *ngIf="cambio.estado === 'removed'" class="text-muted">
-                                  <em>—</em>
-                                </span>
-
-                                <span *ngIf="cambio.estado === 'modified'" class="fw-semibold">
-                                  <pre class="json-viewer json-added">{{ cambio.valorNuevo }}</pre>
-                                </span>
-
-                              </div>
-                            </td>
-
-                          </tr>
-
-                        </tbody>
-
-                      </table>
-                    </div>
-
+            <!-- Contenido -->
+            <div class="detalle-body flex-grow-1 overflow-auto px-2 px-md-3 pb-3">
+              <ng-container *ngIf="obtenerCambiosFormateados(selectedAuditoria) as cambiosInfo">
+                <div *ngIf="cambiosInfo.cambios.length > 0; else sinCambios">
+                  <div class="table-responsive">
+                    <table class="table table-sm table-borderless mb-0 cambios-table">
+                      <thead>
+                        <tr>
+                          <th style="width:30%;"><span class="text-muted">CAMPO</span></th>
+                          <th style="width:35%;"><span class="text-muted">VALOR ANTERIOR</span></th>
+                          <th style="width:35%;"><span class="text-muted">VALOR NUEVO</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let cambio of cambiosInfo.cambios">
+                          <td class="campo-cell">
+                            <strong class="small">{{ cambio.campo }}</strong>
+                          </td>
+                          <td class="valor-cell">
+                            <div class="json-wrapper">
+                              <span *ngIf="cambio.estado === 'added'" class="text-muted">
+                                <em>—</em>
+                              </span>
+                              <span *ngIf="cambio.estado === 'removed'" class="text-danger fw-semibold">
+                                <pre class="json-viewer json-removed small">{{ cambio.valorAnterior }}</pre>
+                              </span>
+                              <span *ngIf="cambio.estado === 'modified'">
+                                <pre class="json-viewer json-removed small">{{ cambio.valorAnterior }}</pre>
+                              </span>
+                            </div>
+                          </td>
+                          <td class="valor-cell">
+                            <div class="json-wrapper">
+                              <span *ngIf="cambio.estado === 'added'" class="text-success fw-semibold">
+                                <pre class="json-viewer json-added small">{{ cambio.valorNuevo }}</pre>
+                              </span>
+                              <span *ngIf="cambio.estado === 'removed'" class="text-muted">
+                                <em>—</em>
+                              </span>
+                              <span *ngIf="cambio.estado === 'modified'" class="fw-semibold">
+                                <pre class="json-viewer json-added small">{{ cambio.valorNuevo }}</pre>
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
+                </div>
+                <ng-template #sinCambios>
+                  <div class="text-center text-muted py-4">
+                    <i class="bi bi-check-circle fs-3 d-block mb-2"></i>
+                    <span>No se detectaron cambios en este registro</span>
+                  </div>
+                </ng-template>
+              </ng-container>
+            </div>
+          </ng-container>
 
-                  <ng-template #sinCambios>
-                    <div class="text-center text-muted py-4">
-                      <i class="bi bi-check-circle fs-3 d-block mb-2"></i>
-                      <span>No se detectaron cambios en este registro</span>
-                    </div>
-                  </ng-template>
-
-                </ng-container>
-
-              </div>
-
-            </ng-container>
-
-            <ng-container *ngIf="!selectedAuditoria">
-              <div class="text-center text-muted py-5">
-                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                <p>Selecciona un registro para ver los detalles de los cambios</p>
-              </div>
-            </ng-container>
-
-          </div>
+          <ng-container *ngIf="!selectedAuditoria">
+            <div class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+              <p>Selecciona un registro para ver los detalles de los cambios</p>
+            </div>
+          </ng-container>
+        </div>
       </div>
 
     </div>
-
-    <!-- Espacio adicional para el footer -->
-    <div style="height: 10px;"></div>
   </div>
 
-  <!-- Footer fijo con paginación -->
-  <div class="modal-footer-custom">
-    <div class="pagination-controls d-flex flex-column flex-sm-row justify-content-between align-items-center w-100 px-3 py-2">
-      <div class="pagination-info small mb-2 mb-sm-0">
-        <i class="bi bi-info-circle me-1"></i>
-        Mostrando <span class="fw-semibold">{{ (paginaActual-1)*registrosPorPagina + 1 }}</span> - 
-        <span class="fw-semibold">{{ paginaActual * registrosPorPagina > totalRegistros ? totalRegistros : paginaActual * registrosPorPagina }}</span>
-        de <span class="fw-semibold">{{ totalRegistros }}</span> registros
-      </div>
-      <div class="pagination-buttons d-flex flex-wrap justify-content-center">
-        <button class="btn btn-sm btn-outline-secondary me-1" (click)="firstPage()" [disabled]="paginaActual === 1">
-          <i class="fa fa-angle-double-left"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-secondary me-1" (click)="prevPage()" [disabled]="paginaActual === 1">
-          <i class="fa fa-chevron-left"></i>
-        </button>
-        <span class="pagination-page-badge small mx-1">Página {{ paginaActual }} de {{ ultimaPagina }}</span>
-        <button class="btn btn-sm btn-outline-secondary ms-1" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
-          <i class="fa fa-chevron-right"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-secondary ms-1" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
-          <i class="fa fa-angle-double-right"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+
+</panel>
