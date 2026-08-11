@@ -27,6 +27,10 @@
       <div *ngIf="!this.noButtonRemove" class="m-1"> 
         <a href="javascript:;" class="btn btn-xs btn-icon btn-square btn-danger" (click)="panelRemove()" title="Cerrar"><i class="fa fa-times"></i></a>
       </div>
+      <div *ngIf="this.ButtonRemoveModal" class="m-1"> 
+        <a href="javascript:;" class="btn btn-xs btn-icon btn-square btn-danger" (click)="panelRemoveModal()" title="Cerrar Modal"><i class="fa fa-times"></i></a>
+      </div>
+
   </div>
   </div>
   <!-- END panel-heading -->
