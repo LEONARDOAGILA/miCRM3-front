@@ -1,0 +1,492 @@
+/* ============================================================
+   SAVE HORARIO - Estilos del modal
+   Mismo lenguaje visual que los modales de usuario y perfil.
+   Colores tomados de las variables de Bootstrap / Color Admin,
+   por lo que funcionan igual en tema claro y oscuro.
+   ============================================================ */
+
+:host {
+  display: block;
+  --hr-radius: .5rem;
+}
+
+.horario-modal-body {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  padding: 1rem;
+}
+
+/* ============================================================
+   TARJETAS
+   ============================================================ */
+.form-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bs-component-bg, #fff);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--hr-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+  overflow: hidden;
+}
+
+.form-card__header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .625rem .875rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.form-card__header > i {
+  font-size: .875rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.form-card__body {
+  padding: 1rem .875rem .25rem;
+}
+
+.dias-header {
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.dias-header .btn {
+  font-size: .75rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ============================================================
+   CHIPS
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: none;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip-muted { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-info  { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+
+/* ============================================================
+   ESTADO DEL HORARIO (switch)
+   ============================================================ */
+.estado-horario {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  height: calc(3.5rem + 2px); /* mismo alto que un campo flotante */
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.estado-horario.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.estado-horario__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.estado-horario.is-on .estado-horario__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.estado-horario__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.estado-horario__label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+}
+
+.estado-horario__hint {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.estado-horario__switch {
+  margin-left: auto;
+}
+
+.estado-horario__switch ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.estado-horario__switch ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.estado-horario__switch ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.estado-horario__switch ::ng-deep .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  vertical-align: middle;
+}
+
+/* ============================================================
+   CAMPOS DEL ENCABEZADO
+   Los componentes compartidos reservan un label vacío bajo cada
+   campo; se elimina para igualar el ritmo vertical.
+   ============================================================ */
+:host ::ng-deep app-campoTexto {
+  display: block;
+}
+
+:host ::ng-deep .form-card__body .form-floating {
+  margin-bottom: 0 !important;
+}
+
+:host ::ng-deep .form-card__body .input-group.with-focus {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0;
+  min-height: 0;
+}
+
+:host ::ng-deep .form-card__body .input-group.with-focus > label.col-form-label {
+  display: none;
+}
+
+:host ::ng-deep .form-card__body .msg-requerido {
+  display: block;
+  margin-top: .25rem;
+  font-size: .7rem;
+  line-height: 1.3;
+}
+
+/* ============================================================
+   TABLA DE DÍAS
+   ============================================================ */
+.tabla-dias {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.dias-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .8125rem;
+}
+
+.dias-table thead th {
+  padding: .5rem .75rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  font-size: .625rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+}
+
+.dias-table tbody td {
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #eceef0);
+  vertical-align: top;
+}
+
+.dias-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dias-table tbody tr {
+  transition: background-color .15s ease;
+}
+
+.dias-table tbody tr:hover {
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .03);
+}
+
+/* Anchos de columna */
+.col-dia      { width: 26%; min-width: 130px; }
+.col-hora     { width: 20%; min-width: 120px; }
+.col-estado   { width: 20%; min-width: 120px; }
+.col-acciones { width: 56px; text-align: center; }
+
+/* Filas con problemas */
+.dias-table tbody tr.fila-invalida td:first-child {
+  box-shadow: inset 3px 0 0 var(--bs-warning, #ffc107);
+}
+
+.dias-table tbody tr.fila-duplicada td:first-child {
+  box-shadow: inset 3px 0 0 var(--bs-danger, #dc3545);
+}
+
+.dias-table tbody tr.fila-invalida,
+.dias-table tbody tr.fila-duplicada {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .06);
+}
+
+.dias-table tbody tr.fila-duplicada {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .06);
+}
+
+.campo-error {
+  display: block;
+  margin-top: .2rem;
+  font-size: .6875rem;
+  line-height: 1.3;
+  color: var(--bs-danger, #dc3545);
+}
+
+/* Switch por fila */
+.dia-switch {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding-left: 2.75rem;
+  margin: 0;
+  min-height: auto;
+}
+
+.dia-switch .form-check-input {
+  width: 2.25rem;
+  height: 1.25rem;
+  margin-left: -2.75rem;
+  margin-top: 0;
+  cursor: pointer;
+}
+
+.dia-switch .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  border-color: var(--bs-success, #198754);
+}
+
+.dia-switch .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  cursor: pointer;
+}
+
+.dia-switch .form-check-input:checked ~ .form-check-label {
+  color: var(--bs-success-text-emphasis, #146c43);
+}
+
+/* Botón quitar */
+.btn-quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.btn-quitar:hover:not(:disabled) {
+  background-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger, #dc3545);
+  color: #fff;
+}
+
+.btn-quitar:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+/* ============================================================
+   ESTADO VACÍO Y AVISOS
+   ============================================================ */
+.dias-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.dias-vacio i {
+  font-size: 1.75rem;
+  opacity: .5;
+}
+
+.dias-vacio p {
+  margin: 0;
+  font-size: .8125rem;
+}
+
+.dias-avisos {
+  display: flex;
+  flex-direction: column;
+  gap: .375rem;
+  padding: .625rem .875rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .4rem .625rem;
+  border-radius: .375rem;
+  font-size: .75rem;
+}
+
+.aviso--danger {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .1);
+  color: var(--bs-danger-text-emphasis, #b02a37);
+}
+
+.aviso--warning {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .15);
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+/* ============================================================
+   RESPONSIVE: en móvil cada fila se convierte en una ficha
+   ============================================================ */
+@media (max-width: 767.98px) {
+
+  .horario-modal-body {
+    padding: .75rem;
+  }
+
+  .dias-table thead {
+    display: none;
+  }
+
+  .dias-table,
+  .dias-table tbody,
+  .dias-table tr,
+  .dias-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .dias-table tbody tr {
+    position: relative;
+    margin: .625rem .75rem;
+    padding: .5rem .25rem;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: .5rem;
+  }
+
+  .dias-table tbody td {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    border-bottom: none;
+    padding: .3rem .625rem;
+  }
+
+  .dias-table tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 88px;
+    font-size: .6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color, #6c757d);
+  }
+
+  .dias-table tbody td > .form-select,
+  .dias-table tbody td > .form-control {
+    flex: 1 1 auto;
+  }
+
+  .dias-table tbody td.col-acciones {
+    position: absolute;
+    top: .35rem;
+    right: .35rem;
+    width: auto;
+    padding: 0;
+  }
+
+  .dias-table tbody td.col-acciones::before {
+    content: none;
+  }
+
+  /* Los mensajes de error se colocan bajo el campo, no en línea */
+  .dias-table tbody td {
+    flex-wrap: wrap;
+  }
+
+  .campo-error {
+    flex: 1 1 100%;
+    margin-left: 88px;
+  }
+
+  .dias-table tbody tr.fila-invalida td:first-child,
+  .dias-table tbody tr.fila-duplicada td:first-child {
+    box-shadow: none;
+  }
+
+  .dias-table tbody tr.fila-invalida { border-left: 3px solid var(--bs-warning, #ffc107); }
+  .dias-table tbody tr.fila-duplicada { border-left: 3px solid var(--bs-danger, #dc3545); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .estado-horario,
+  .btn-quitar,
+  .dias-table tbody tr {
+    transition: none;
+  }
+}

@@ -1,24 +1,21 @@
-import { Component, HostListener, Input, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuditoriaService } from '../../service/auditoria.service';
 import { FormsModule } from '@angular/forms';
 import { LoadingService } from '../../service/loading.service';
 import { firstValueFrom } from 'rxjs';
-import { GridApi, GridReadyEvent } from 'ag-grid-community';
-import { AgGridAngular } from 'ag-grid-angular';
-import { AgGridModule } from 'ag-grid-angular';
 import { PanelModule } from '../../components/panel/panel.module'; // <-- Importa el PanelModule
 
 
 @Component({
   selector: 'app-auditoria-modal',
   standalone: true,
-  imports: [CommonModule, NgbModule, FormsModule, AgGridModule,    PanelModule ],
+  imports: [CommonModule, NgbModule, FormsModule, PanelModule],
   templateUrl: './auditoria-modal.component.html',
   styleUrls: ['./auditoria-modal.component.scss']
 })
-export class AuditoriaModalComponent implements OnInit, AfterViewInit {
+export class AuditoriaModalComponent implements OnInit {
   @Input() tablaNombre!: string;
   @Input() registroId!: number;
 
@@ -37,37 +34,8 @@ export class AuditoriaModalComponent implements OnInit, AfterViewInit {
   public registrosPorPagina: number = 3;
   public ultimaPagina: number = 1;
 
-  @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
-  public gridApi!: GridApi;
-  public columnDefs: any[] = [];
-
   public selectedAuditoria: any = null;
   public selectedIndex: number = -1;
-
-  public defaultColDef: any = {
-    sortable: true,
-    resizable: true,
-    filter: false,
-    floatingFilter: false,
-    enableCellTextSelection: true,
-    ensureDomOrder: true,
-    cellClass: 'ag-cell-custom',
-    headerClass: 'ag-header-custom'
-  };
-
-  private resizeTimeoutId: any;
-
-@HostListener('window:resize', ['$event'])
-onResize(event: Event): void {
-  this.ajustarTamanoGrid();
-  // Forzar actualización de columnas responsive
-  if (this.gridApi) {
-    //this.gridApi.setColumnDefs(this.columnDefsResponsive);
-    setTimeout(() => {
-      this.gridApi.sizeColumnsToFit();
-    }, 100);
-  }
-}
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -77,16 +45,30 @@ onResize(event: Event): void {
   ) {}
 
   ngOnInit(): void {
-    this.initializeGrid();
     this.cargarAuditoria();
   }
 
-  ngAfterViewInit(): void {
-    setTimeout(() => {
-      if (this.auditoriaData.length > 0) {
-        this.seleccionarRegistro(this.auditoriaData[0], 0);
-      }
-    }, 500);
+  /** Etiqueta, icono y clase de color para un tipo de operación */
+  public operacionInfo(operacion: string): { texto: string; icono: string; clase: string } {
+    switch ((operacion || '').toUpperCase()) {
+      // Font Awesome: la app no carga la hoja de estilos de Bootstrap Icons
+      case 'INSERT':
+        return { texto: 'Creación', icono: 'fa-solid fa-plus', clase: 'badge-insert' };
+      case 'UPDATE':
+        return { texto: 'Actualización', icono: 'fa-solid fa-arrows-rotate', clase: 'badge-update' };
+      default:
+        return { texto: 'Eliminación', icono: 'fa-solid fa-trash', clase: 'badge-delete' };
+    }
+  }
+
+  /** Texto descriptivo del estado de un cambio (tooltip del indicador) */
+  public etiquetaEstado(estado: string): string {
+    switch (estado) {
+      case 'added':    return 'Campo agregado';
+      case 'removed':  return 'Campo eliminado';
+      case 'modified': return 'Campo modificado';
+      default:         return 'Sin cambios';
+    }
   }
 
   escapeHtml(text: string): string {
@@ -164,21 +146,12 @@ onResize(event: Event): void {
   seleccionarRegistro(registro: any, index: number): void {
     this.selectedAuditoria = registro;
     this.selectedIndex = index;
-    
-    if (this.gridApi) {
-      this.gridApi.deselectAll();
-      
-      this.gridApi.forEachNode((node: any) => {
-        if (node.rowIndex === index) {
-          node.setSelected(true);
-          this.gridApi.ensureNodeVisible(node, 'middle');
-        }
-      });
-      
-      this.gridApi.refreshCells();
-    }
-    
     this.cdr.detectChanges();
+  }
+
+  private limpiarSeleccion(): void {
+    this.selectedAuditoria = null;
+    this.selectedIndex = -1;
   }
 
   obtenerCambiosFormateados(registro: any): any {
@@ -638,113 +611,10 @@ private extraerPathConMenu(path: string, menuNombre: string | null): string {
     );
   }
 
-  onRowClicked(event: any): void {
-    const rowIndex = event.rowIndex;
-    const data = event.data;
-    if (data) {
-      this.seleccionarRegistro(data, rowIndex);
-    }
-  }
-
-  initializeGrid(): void {
-    const self = this;
-    this.columnDefs = [
-      {
-        headerName: 'ID',
-        field: 'id',
-        cellStyle: { textAlign: 'center' },
-        minWidth: 70,
-        maxWidth: 70,
-      },
-{
-    headerName: 'Operación',
-    field: 'operacion',
-    cellStyle: { textAlign: 'center' },
-    minWidth: 120,
-    maxWidth: 120,
-    cellRenderer: (params: any) => {
-        const operacion = params.value;
-        
-        let clase = '';
-        let icono = '';
-        let texto = '';
-        
-        if (operacion === 'INSERT') {
-            clase = 'badge-insert';
-            icono = 'bi bi-plus-circle';
-            texto = 'Creación';
-        } else if (operacion === 'UPDATE') {
-            clase = 'badge-update';
-            icono = 'bi bi-arrow-repeat';
-            texto = 'Actualización';
-        } else {
-            clase = 'badge-delete';
-            icono = 'bi bi-trash';
-            texto = 'Eliminación';
-        }
-        
-        return `
-            <span class="d-inline-block py-1 px-2 rounded-1 ${clase}" style="width: 100%;">
-                <i class="${icono}"></i> ${texto}
-            </span>
-        `;
-    }
-},
-{
-    headerName: 'Fecha',
-    field: 'fecha_operacion',
-    cellStyle: { textAlign: 'center' },
-    minWidth: 150,
-    maxWidth: 150,
-},
-{
-    headerName: 'Usuario',
-    field: 'usuario_login',
-    cellStyle: { 
-        textAlign: 'left',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-    },
-    minWidth: 100,
-    maxWidth: 220,
-    flex: 1,
-    valueGetter: (params: any) => {
-        const login = params.data.usuario_login || '';
-        const nombre = params.data.usuario_nombre || '';
-        return login ? `${login}${nombre ? ' - ' + nombre : ''}` : 'N/A';
-    }
-},
-      {
-        headerName: 'IP',
-        field: 'ip_address',
-        cellStyle: { textAlign: 'left' },
-        minWidth: 100,
-        maxWidth: 120,
-      }
-    ];
-  }
-
-  onGridReady(params: GridReadyEvent): void {
-    this.gridApi = params.api;
-    this.ajustarTamanoGrid();
-  }
-
-  ajustarTamanoGrid() {
-    if (this.gridApi) {
-      if (this.resizeTimeoutId) {
-        clearTimeout(this.resizeTimeoutId);
-      }
-      this.resizeTimeoutId = setTimeout(() => {
-        this.gridApi.sizeColumnsToFit();
-      }, 100);
-    }
-  }
-
   async cargarAuditoria(page: number = 1) {
     try {
       this._loadingService.setLoading(true);
-      
+
       const operacion = this.filtro.tipoOperacion ? this.filtro.tipoOperacion.toUpperCase() : '';
       
       let res: any = await firstValueFrom(this.auditoriaService.getAuditoriaByRegistro(
@@ -766,27 +636,20 @@ private extraerPathConMenu(path: string, menuNombre: string | null): string {
           this.ultimaPagina = res.data.meta.last_page;
         }
         
-        if (this.gridApi) {
-          this.gridApi.setRowData(this.auditoriaData);
-          
-          if (this.auditoriaData.length > 0) {
-            this.seleccionarRegistro(this.auditoriaData[0], 0);
-          } else {
-            this.selectedAuditoria = null;
-            this.selectedIndex = -1;
-          }
+        // Se selecciona el primer movimiento de la página
+        if (this.auditoriaData.length > 0) {
+          this.seleccionarRegistro(this.auditoriaData[0], 0);
+        } else {
+          this.limpiarSeleccion();
         }
       } else {
         this.auditoriaData = [];
-        if (this.gridApi) {
-          this.gridApi.setRowData([]);
-        }
-        this.selectedAuditoria = null;
-        this.selectedIndex = -1;
+        this.limpiarSeleccion();
       }
     } catch (error: any) {
       console.error('Error en la petición', error);
       this.auditoriaData = [];
+      this.limpiarSeleccion();
     } finally {
       this._loadingService.setLoading(false);
     }
@@ -832,136 +695,5 @@ private extraerPathConMenu(path: string, menuNombre: string | null): string {
     this.paginaActual = 1;
     this.cargarAuditoria(1);
   }
-
-public get columnDefsResponsive(): any[] {
-  const isMobile = window.innerWidth < 768;
-  const isTablet = window.innerWidth >= 768 && window.innerWidth < 992;
-  
-  return [
-    {
-      headerName: 'ID',
-      field: 'id',
-      cellStyle: { textAlign: 'center' },
-      minWidth: isMobile ? 50 : 70,
-      maxWidth: isMobile ? 50 : 70,
-      hide: isMobile
-    },
-    {
-      headerName: 'Operación',
-      field: 'operacion',
-      cellStyle: { textAlign: 'center' },
-      minWidth: isMobile ? 70 : 120,
-      maxWidth: isMobile ? 80 : 120,
-      cellRenderer: (params: any) => {
-        const operacion = params.value;
-        let clase = '';
-        let icono = '';
-        let texto = '';
-        
-        if (operacion === 'INSERT') {
-          clase = 'badge-insert';
-          icono = 'bi bi-plus-circle';
-          texto = isMobile ? 'Crear' : 'Creación';
-        } else if (operacion === 'UPDATE') {
-          clase = 'badge-update';
-          icono = 'bi bi-arrow-repeat';
-          texto = isMobile ? 'Actual' : 'Actualización';
-        } else {
-          clase = 'badge-delete';
-          icono = 'bi bi-trash';
-          texto = isMobile ? 'Elim' : 'Eliminación';
-        }
-        
-        return `
-          <span class="d-inline-block py-1 px-2 rounded-1 ${clase}" style="width: 100%; font-size: ${isMobile ? '8px' : 'inherit'};">
-            <i class="${icono}"></i> ${texto}
-          </span>
-        `;
-      }
-    },
-    {
-      headerName: 'Fecha',
-      field: 'fecha_operacion', // Campo principal
-      cellStyle: { textAlign: 'center' },
-      minWidth: isMobile ? 80 : 150,
-      maxWidth: isMobile ? 90 : 150,
-      // Value getter que intenta múltiples nombres de campo
-      valueGetter: (params: any) => {
-        // Intentar diferentes nombres de campo
-        const fecha = params.data.fecha_operacion || 
-                     params.data.fechaOperacion || 
-                     params.data.fecha || 
-                     params.data.created_at || 
-                     params.data.updated_at;
-        
-        if (!fecha) return isMobile ? '--' : 'Sin fecha';
-        
-        try {
-          const date = new Date(fecha);
-          if (isNaN(date.getTime())) {
-            return isMobile ? fecha.substring(0, 10) : fecha;
-          }
-          
-          if (isMobile) {
-            // Formato corto en móvil: DD/MM/YY
-            return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getFullYear()).slice(-2)}`;
-          } else if (isTablet) {
-            // Formato medio en tablet: DD/MM/YYYY HH:MM
-            return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-          } else {
-            // Formato completo en desktop: DD/MM/YYYY HH:MM:SS
-            return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
-          }
-        } catch (e) {
-          return isMobile ? fecha.substring(0, 10) : fecha;
-        }
-      }
-    },
-    {
-      headerName: 'Usuario',
-      field: 'usuario_login',
-      cellStyle: { 
-        textAlign: 'left',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      },
-      minWidth: isMobile ? 60 : 100,
-      maxWidth: isMobile ? 100 : 220,
-      flex: isMobile ? 0 : 1,
-      valueGetter: (params: any) => {
-        const login = params.data.usuario_login || 
-                     params.data.usuario || 
-                     params.data.user_login || 
-                     params.data.user || '';
-        const nombre = params.data.usuario_nombre || 
-                      params.data.usuarioNombre || 
-                      params.data.user_name || 
-                      params.data.nombre || '';
-        
-        if (isMobile) {
-          return login || nombre || 'N/A';
-        }
-        return login ? `${login}${nombre ? ' - ' + nombre : ''}` : (nombre || 'N/A');
-      }
-    },
-    {
-      headerName: 'IP',
-      field: 'ip_address',
-      cellStyle: { textAlign: 'left' },
-      minWidth: isMobile ? 60 : 100,
-      maxWidth: isMobile ? 70 : 120,
-      hide: isMobile,
-      valueGetter: (params: any) => {
-        return params.data.ip_address || 
-               params.data.ip || 
-               params.data.direccion_ip || 
-               '--';
-      }
-    }
-  ];
-}
-
-
 
 }

@@ -257,6 +257,19 @@ export class SaveHorarioComponent implements OnInit {
     return this.form.get('dhorario') as FormArray;
   }
 
+  /**
+   * Indica si el día de la fila indicada está repetido en otra fila,
+   * para poder marcarla en la tabla (el validador del FormArray solo
+   * dice que hay duplicados, no cuáles).
+   */
+  esDiaDuplicado(index: number): boolean {
+    const dia = this.dhorario.at(index)?.get('dia')?.value;
+    if (dia === null || dia === undefined) return false;
+
+    return this.dhorario.controls
+      .some((control, i) => i !== index && control.get('dia')?.value === dia);
+  }
+
   // ****** VALIDADORES ****** //
   validarDiasUnicos(formArray: AbstractControl): ValidationErrors | null {
     const diasSeleccionados = (formArray as FormArray).controls

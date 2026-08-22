@@ -1,504 +1,688 @@
-/* Estilos para desktop (por defecto) */
-.campo-busqueda {
-  margin-bottom: 15px;
-  margin-left: -5px;
+/* ============================================================
+   SAVE USER - Estilos del modal
+   Basados en las variables de Bootstrap / Color Admin para que
+   funcionen igual en tema claro y oscuro.
+   ============================================================ */
+
+:host {
+  display: block;
+  --su-radius: .5rem;
+  --su-gap: .85rem;
+  --su-field-h: calc(3.5rem + 2px); /* alto real de un .form-floating */
 }
 
-/* Estilos para tablet (pantallas entre 577px y 768px) */
-@media (max-width: 768px) {
-  .campo-busqueda {
-    margin-bottom: 28px;
-    margin-left: -5px;
-  }
+/* ---------- Cuerpo del modal ---------- */
+.user-modal-body {
+  background-color: var(--bs-tertiary-bg, #f5f6f8);
+  padding: 1rem;
 }
 
-/* Estilos para móvil (pantallas menores a 576px) */
-@media (max-width: 576px) {
-  .campo-busqueda {
-    margin-bottom: 30px;
-    margin-left: -5px;
-  }
+/* ============================================================
+   TARJETAS
+   ============================================================ */
+.form-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #e5e7eb);
+  border-radius: var(--su-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+  overflow: hidden;
 }
 
-/*  LPAA INICIO - estilos de imagen    */
-
-/* AMPLIAR LA IMAGEN - OCUPA TODA LA PANTALLA */
-.modal-fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  /* Fondo oscuro semitransparente */
+.form-card__header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  cursor: zoom-out;
-  padding: 20px;
-  box-sizing: border-box;
+  gap: .5rem;
+  padding: .625rem .875rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-bottom: 1px solid var(--bs-border-color, #e5e7eb);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
-.modal-content {
+.form-card__header > i {
+  font-size: .875rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .5rem;
+}
+
+/* ============================================================
+   CHIPS / ETIQUETAS
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: none;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip > i {
+  font-size: .5rem;
+}
+
+.chip-muted   { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-success { background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15); color: var(--bs-success, #198754); }
+.chip-danger  { background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .15);  color: var(--bs-danger, #dc3545); }
+.chip-info    { background-color: rgba(var(--bs-info-rgb, 13, 202, 240), .18);   color: var(--bs-info-text-emphasis, #087990); }
+
+/* ============================================================
+   AVATAR
+   ============================================================ */
+.avatar-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .875rem;
+  padding-bottom: 1rem;
+}
+
+.avatar-dropzone {
   position: relative;
-  max-width: 90%;
-  max-height: 90%;
+  width: 100%;
+  border: 2px dashed var(--bs-border-color, #dee2e6);
+  border-radius: var(--su-radius);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.avatar-dropzone.is-empty:hover {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.avatar-dropzone.drag-over {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
+}
+
+/* ----- Vista previa ----- */
+.avatar-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--su-radius) - 2px);
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.avatar-preview img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  cursor: zoom-in;
+  padding: .5rem;
+}
+
+.avatar-preview__overlay {
+  position: absolute;
+  inset: auto 0 0 0;
   display: flex;
   justify-content: center;
+  gap: .5rem;
+  padding: .625rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, .65), rgba(0, 0, 0, 0));
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.avatar-preview:hover .avatar-preview__overlay,
+.avatar-preview:focus-within .avatar-preview__overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.avatar-action {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
   align-items: center;
-  background-color: transparent;
-  /* Fondo transparente */
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, .9);
+  color: #212529;
+  font-size: .875rem;
+  cursor: pointer;
+  transition: transform .15s ease, background-color .15s ease;
+}
+
+.avatar-action:hover {
+  transform: scale(1.1);
+  background-color: #fff;
+}
+
+.avatar-action--danger:hover {
+  background-color: var(--bs-danger, #dc3545);
+  color: #fff;
+}
+
+/* ----- Estado vacío ----- */
+.avatar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 210px;
+  padding: 1.25rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.avatar-empty.is-disabled {
+  cursor: default;
+  opacity: .7;
+}
+
+.avatar-empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: .75rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .1);
+  transition: transform .2s ease;
+}
+
+.avatar-empty:not(.is-disabled):hover .avatar-empty__icon {
+  transform: translateY(-3px);
+}
+
+.avatar-empty__title {
+  margin: 0 0 .35rem;
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.avatar-empty__hint {
+  margin: 0;
+  font-size: .75rem;
+  line-height: 1.5;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.avatar-empty kbd {
+  padding: .1rem .3rem;
+  font-size: .7rem;
+  border-radius: .2rem;
+}
+
+/* ----- Botones de acción ----- */
+.avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .375rem;
+  width: 100%;
+}
+
+.avatar-actions .btn {
+  flex: 1 1 auto;
+  min-width: 92px;
+  font-size: .75rem;
+}
+
+/* ----- Resumen ----- */
+.avatar-summary {
+  width: 100%;
+  text-align: center;
+  padding-top: .75rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+.avatar-summary__name {
+  margin: 0;
+  font-size: .9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--bs-body-color, #212529);
+  word-break: break-word;
+}
+
+.avatar-summary__login {
+  margin: .1rem 0 0;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  word-break: break-all;
+}
+
+.avatar-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .35rem;
+  margin-top: .5rem;
+}
+
+/* ============================================================
+   ESTADO DEL USUARIO (switch)
+   ============================================================ */
+.estado-usuario {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  padding: .5rem .75rem;
+  margin-bottom: var(--su-gap);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.estado-usuario.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.estado-usuario__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.estado-usuario.is-on .estado-usuario__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.estado-usuario__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.estado-usuario__label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.estado-usuario__hint {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.estado-usuario__switch {
+  margin-left: auto;
+}
+
+/* Convierte el checkbox del componente compartido en un switch */
+.estado-usuario__switch ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.estado-usuario__switch ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.estado-usuario__switch ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.estado-usuario__switch ::ng-deep .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  vertical-align: middle;
+}
+
+/* ============================================================
+   CAMPOS DEL FORMULARIO
+   Los componentes compartidos (app-campoTexto, app-combo, ...)
+   traen sus propios márgenes; aquí se normalizan para que todos
+   los campos tengan la misma separación sin usar márgenes
+   negativos.
+   ============================================================ */
+.campo {
+  margin-bottom: var(--su-gap);
+}
+
+.campo:last-child {
+  margin-bottom: .5rem;
+}
+
+:host ::ng-deep app-campoTexto,
+:host ::ng-deep app-campoClave,
+:host ::ng-deep app-campoEmail,
+:host ::ng-deep app-campoTelefono,
+:host ::ng-deep app-campoNumeroEntero,
+:host ::ng-deep app-combo {
+  display: block;
+}
+
+/* El .form-floating trae mb-3 en móvil: se anula para usar .campo */
+:host ::ng-deep .campo .form-floating {
+  margin-bottom: 0 !important;
+}
+
+/* Bloque de mensajes de error: se elimina el label vacío que
+   reservaba ~30px de alto en cada campo */
+:host ::ng-deep .campo .input-group.with-focus {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0;
+  min-height: 0;
+}
+
+:host ::ng-deep .campo .input-group.with-focus > label.col-form-label {
+  display: none;
+}
+
+:host ::ng-deep .campo .msg-requerido {
+  display: block;
+  margin-top: .25rem;
+  font-size: .7rem;
+  line-height: 1.3;
+}
+
+/* ng-select (combo) */
+:host ::ng-deep .campo-combo .floating-control {
+  margin-bottom: 0 !important;
+}
+
+:host ::ng-deep .campo-combo .ng-select-text-danger {
+  margin-top: .25rem !important;
+  margin-bottom: 0 !important;
+  font-size: .7rem;
+}
+
+/* ---------- Campos con búsqueda (ID + nombre + lupa) ---------- */
+.campo-lookup .row {
+  align-items: flex-start;
+}
+
+.btn-lookup {
+  width: 42px;
+  height: var(--su-field-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #ced4da);
+  border-radius: .375rem;
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  color: var(--bs-body-color, #212529);
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.btn-lookup:hover,
+.btn-lookup:focus {
+  background-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  color: #fff;
+}
+
+/* El nombre del perfil/horario es de solo lectura: se marca visualmente */
+:host ::ng-deep .campo-lookup .form-control:disabled,
+:host ::ng-deep .campo-lookup .form-control[readonly] {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+}
+
+/* ============================================================
+   IMAGEN EN PANTALLA COMPLETA
+   ============================================================ */
+.fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+  background-color: rgba(0, 0, 0, .85);
+  cursor: zoom-out;
+  animation: suFadeIn .18s ease-out;
+}
+
+.fullscreen-box {
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .fullscreen-image {
-  max-width: 110%;
-  max-height: 95vh;
+  max-width: 100%;
+  max-height: 90vh;
   object-fit: contain;
-  background-color: transparent;
-  /* Fondo transparente para la imagen */
-  image-rendering: -webkit-optimize-contrast;
-  /* Mejor calidad de imagen */
-  image-rendering: crisp-edges;
+  border-radius: .5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
 }
 
 .btn-close-fullscreen {
   position: fixed;
-  /* Cambiado de absolute a fixed */
-  top: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 42px;
+  height: 42px;
+  z-index: 1081;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
-  background-color: rgba(0, 0, 0, 0.1);
   border: none;
-  color: white;
-  font-size: 1.8rem;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, .15);
+  color: #fff;
+  font-size: 1.25rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color .2s ease, transform .2s ease;
 }
 
 .btn-close-fullscreen:hover {
-  background-color: rgba(0, 0, 0, 0.9);
-  transform: scale(1.1);
+  background-color: var(--bs-danger, #dc3545);
+  transform: scale(1.08);
 }
 
-.clickable-image {
-  cursor: zoom-in;
+@keyframes suFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-
-
-
-
-/* Agrega esto a tu archivo de estilos */
-.file-upload-wrapper {
-  display: block;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.file-upload-wrapper:hover .file-upload-label {
-  transform: translateY(-3px);
-}
-
-.file-upload-label {
-  padding: 2rem;
-  border: none;
-  border-radius: 0.5rem;
-  transition: all 0.3s;
-}
-
-.file-upload-input {
-  display: none;
-}
-
-.card {
-  transition: transform 0.2s;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-}
-
-
-
-/* Estilos para el botón Cerrar */
-.close-icon {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 10;
-}
-
-.close-icon:hover {
-  background-color: rgba(0, 0, 0, 0.8);
-  transform: scale(1.1);
-}
-
-.close-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-
-/* Estilos para el dran in drop */
-.drag-over {
-  border: 2px dashed #0d6efd !important;
-  background-color: rgba(13, 110, 253, 0.1);
-}
-
-.card {
-  transition: all 0.3s ease;
-}
-
-
-
-
-
-/* Estilos para el botón Pegar */
-.paste-icon {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 10;
-}
-
-.paste-icon:hover {
-  background-color: rgba(0, 0, 0, 0.8);
-  transform: scale(1.1);
-}
-
-.paste-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-
-/* Estilos para botones de cámara/galería */
-/*  LPAA INICIO - estilos de imagen    */
-
-/* AMPLIAR LA IMAGEN - OCUPA TODA LA PANTALLA */
-.modal-fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  /* Fondo oscuro semitransparente */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  cursor: zoom-out;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.modal-content {
-  position: relative;
-  max-width: 90%;
-  max-height: 90%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: transparent;
-  /* Fondo transparente */
-}
-
-.fullscreen-image {
-  max-width: 110%;
-  max-height: 95vh;
-  object-fit: contain;
-  background-color: transparent;
-  /* Fondo transparente para la imagen */
-  image-rendering: -webkit-optimize-contrast;
-  /* Mejor calidad de imagen */
-  image-rendering: crisp-edges;
-}
-
-.btn-close-fullscreen {
-  position: fixed;
-  /* Cambiado de absolute a fixed */
-  top: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  background-color: rgba(0, 0, 0, 0.1);
-  border: none;
-  color: white;
-  font-size: 1.8rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-close-fullscreen:hover {
-  background-color: rgba(0, 0, 0, 0.9);
-  transform: scale(1.1);
-}
-
-.clickable-image {
-  cursor: zoom-in;
-}
-
-/* Agrega esto a tu archivo de estilos */
-.file-upload-wrapper {
-  display: block;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.file-upload-wrapper:hover .file-upload-label {
-  transform: translateY(-3px);
-}
-
-.file-upload-label {
-  padding: 2rem;
-  border: none;
-  border-radius: 0.5rem;
-  transition: all 0.3s;
-}
-
-.file-upload-input {
-  display: none;
-}
-
-.card {
-  transition: transform 0.2s;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-}
-
-/* Estilos para el botón Cerrar */
-.close-icon {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 10;
-}
-
-.close-icon:hover {
-  background-color: rgba(0, 0, 0, 0.8);
-  transform: scale(1.1);
-}
-
-.close-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Estilos para el dran in drop */
-.drag-over {
-  border: 2px dashed #0d6efd !important;
-  background-color: rgba(13, 110, 253, 0.1);
-}
-
-.card {
-  transition: all 0.3s ease;
-}
-
-/* Estilos para el botón Pegar */
-.paste-icon {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 10;
-}
-
-.paste-icon:hover {
-  background-color: rgba(0, 0, 0, 0.8);
-  transform: scale(1.1);
-}
-
-.paste-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Estilos para botones de cámara/galería */
-.camera-buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 10px;
-}
-
-.camera-buttons .btn {
-  flex: 1;
-  max-width: 140px;
-}
-
-/*  LPAA FIN - estilos de imagen    */
-
-/* ... (estilos anteriores se mantienen igual) */
-
-/* Estilos para el modal de la cámara */
+/* ============================================================
+   CÁMARA
+   ============================================================ */
 .camera-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.9);
+  inset: 0;
+  z-index: 1080;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, .9);
+  animation: suFadeIn .18s ease-out;
 }
 
 .camera-container {
   width: 100%;
   max-width: 500px;
   background: #1e1e1e;
-  border-radius: 12px;
+  border-radius: .75rem;
   overflow: hidden;
-  box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .45);
 }
 
 .camera-preview {
+  position: relative;
   width: 100%;
   height: 0;
-  padding-bottom: 75%; /* Relación de aspecto 4:3 */
-  position: relative;
+  padding-bottom: 75%; /* 4:3 */
   overflow: hidden;
   background: #000;
 }
 
 .camera-preview video {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
 .camera-controls {
-  padding: 20px;
   display: flex;
   justify-content: center;
-  gap: 15px;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.125rem;
   background: #2c2c2c;
 }
 
-.btn-capture, .btn-close-camera, .btn-switch-camera {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+.btn-capture,
+.btn-close-camera,
+.btn-switch-camera {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
   border: none;
+  border-radius: 50%;
+  color: #fff;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform .2s ease, background-color .2s ease;
 }
 
 .btn-capture {
-  background-color: #28a745;
-  color: white;
+  width: 66px;
+  height: 66px;
+  font-size: 1.5rem;
+  background-color: var(--bs-success, #28a745);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, .15);
 }
 
-.btn-capture:hover {
-  background-color: #218838;
-  transform: scale(1.05);
-}
+.btn-capture:hover { background-color: #218838; transform: scale(1.05); }
 
-.btn-close-camera {
-  background-color: #dc3545;
-  color: white;
-}
-
-.btn-close-camera:hover {
-  background-color: #c82333;
-  transform: scale(1.05);
-}
-
+.btn-close-camera,
 .btn-switch-camera {
-  background-color: #17a2b8;
-  color: white;
+  width: 48px;
+  height: 48px;
+  font-size: 1.125rem;
 }
 
-.btn-switch-camera:hover {
-  background-color: #138496;
-  transform: scale(1.05);
-}
+.btn-close-camera { background-color: var(--bs-danger, #dc3545); }
+.btn-close-camera:hover { background-color: #c82333; transform: scale(1.05); }
+
+.btn-switch-camera { background-color: #495057; }
+.btn-switch-camera:hover { background-color: #17a2b8; transform: scale(1.05); }
 
 .camera-status {
-  color: white;
+  margin-top: 1rem;
+  color: rgba(255, 255, 255, .85);
   text-align: center;
-  margin-top: 15px;
-  font-size: 16px;
+  font-size: .875rem;
 }
 
-/* Efecto de flash al capturar foto - CORREGIDO */
-@keyframes captureFlash {
-  0% { opacity: 0; }
-  50% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
+/* Efecto de flash al capturar */
 .capture-flash {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: white;
+  inset: 0;
+  background-color: #fff;
   opacity: 0;
   pointer-events: none;
-  z-index: 10001;
+  z-index: 1090;
 }
 
 .capture-flash.animate {
-  animation: captureFlash 0.3s ease-in-out;
+  animation: captureFlash .3s ease-in-out;
+}
+
+@keyframes captureFlash {
+  0%   { opacity: 0; }
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 991.98px) {
+  .avatar-empty {
+    min-height: 170px;
+  }
+  .avatar-preview img {
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .user-modal-body {
+    padding: .75rem;
+  }
+  .form-card__body {
+    padding: .875rem .75rem .5rem;
+  }
+  .avatar-actions .btn {
+    min-width: 0;
+  }
+  .btn-lookup {
+    width: 100%;
+  }
+  .campo-lookup .col-auto {
+    flex: 1 0 100%;
+  }
+  .campo-lookup .btn-lookup {
+    height: 42px;
+  }
+}
+
+/* Reduce animaciones si el usuario lo pide */
+@media (prefers-reduced-motion: reduce) {
+  .avatar-preview__overlay,
+  .avatar-action,
+  .avatar-empty__icon,
+  .btn-lookup,
+  .btn-capture,
+  .btn-close-camera,
+  .btn-switch-camera,
+  .btn-close-fullscreen {
+    transition: none;
+  }
+  .fullscreen-overlay,
+  .camera-modal-overlay {
+    animation: none;
+  }
 }

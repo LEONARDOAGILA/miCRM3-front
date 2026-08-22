@@ -23,13 +23,13 @@ import { NgSelectModule } from '@ng-select/ng-select';
   ]
 })
 export class ComboComponent implements ControlValueAccessor, Validator {
-  
+
   @Input() items: any[];
   @Input() bindLabel: string = 'name';
   @Input() bindValue: string = 'id';
   @Input() label: string = 'Seleccionar';
   @Input() required: boolean = false;
-  
+
   value: any;
   control: AbstractControl | null = null;
 
@@ -37,6 +37,20 @@ export class ComboComponent implements ControlValueAccessor, Validator {
   isFloating: boolean = false;
   isFocused: boolean = false;
   isDropdownOpen: boolean = false;
+
+  /** Id del campo, para enlazar el <label for> con el input interno del ng-select */
+  get idCampo(): string {
+    return 'combo-' + (this.label || 'campo').toString().trim().replace(/\s+/g, '-').toLowerCase();
+  }
+
+  /** Estados de validación, igual que en app-campoTexto */
+  get esInvalido(): boolean {
+    return !!this.control && this.control.invalid && (this.control.touched || this.control.dirty);
+  }
+
+  get esValido(): boolean {
+    return !!this.control && this.control.valid && (this.control.touched || this.control.dirty);
+  }
 
   // ControlValueAccessor implementation
   onChange: any = () => {};
@@ -74,25 +88,24 @@ export class ComboComponent implements ControlValueAccessor, Validator {
     this.onChange(value);
     this.onTouched();
 
-    
+
     if (this.control) {
       this.control.markAsTouched();
     }
   }
 
     onFocus() {
+      this.isFocused = true;
       this.isFloating = true;
-      // Fuerza la detección de cambios en el próximo ciclo de eventos
-      setTimeout(() => this.isFloating = true);
     }
 
     onBlur() {
-      this.isFloating = !!this.value;
+      this.isFocused = false;
+      this.isFloating = !!this.value || this.isDropdownOpen;
       this.onTouched();
       if (this.control) {
         this.control.markAsTouched();
       }
-      setTimeout(() => this.isFloating = !!this.value);
     }
 
     onDropdownOpen() {

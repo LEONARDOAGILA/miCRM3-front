@@ -1,110 +1,214 @@
-<!-- begin spinner -->
+<!-- ===================== SPINNER ===================== -->
 <ng-container *ngIf="(isLoading$ | async)">
     <div class="loader1" role="status" aria-label="Cargando"></div>
     <div class="overlay1" aria-hidden="true"></div>
 </ng-container>
-<!-- end spinner -->
 
-<div class="modal-header">
-  <h1 class="modal-title">{{title}}</h1>
-  <button type="button" class="btn-close buttonn1" aria-label="Close" (click)="modal.dismiss('Close click')"></button>
-</div>
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+    [title]="title"
+    (onClose)="modal.dismiss('Close click')">
+</app-modal-header>
 
-<div class="modal-body">
-    <form [formGroup]="form" class="form-validate form-horizontal" novalidate="">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-lg-3">
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body menu-modal-body">
+    <form [formGroup]="form" class="form-validate" novalidate>
+
+        <!-- ---------- Ubicación dentro del árbol ---------- -->
+        <div class="ubicacion">
+            <span class="chip chip-info">
+                <i class="fa-solid fa-layer-group"></i>
+                Nivel {{ form.controls['nivel'].value ?? 0 }}
+            </span>
+            <span class="chip chip-muted">
+                <i class="fa-solid fa-diagram-project"></i>
+                {{ form.controls['padre_id'].value ? 'Depende del menú #' + form.controls['padre_id'].value : 'Menú raíz' }}
+            </span>
+            <span class="chip chip-muted" *ngIf="tieneHijos">
+                <i class="fa-solid fa-sitemap"></i>
+                Tiene submenús
+            </span>
+        </div>
+
+        <!-- ---------- Datos del menú ---------- -->
+        <div class="form-card mb-3">
+
+            <div class="form-card__header">
+                <i class="fa-solid fa-bars"></i>
+                <span>Datos del menú</span>
+            </div>
+
+            <div class="form-card__body">
+                <div class="row g-3">
+
+                    <div class="col-12">
+                        <app-campoTexto
+                            [control]="form.controls['nombre']"
+                            label="NOMBRE"
+                            placeholder="NOMBRE"
+                            [maxLength]="100"
+                            [trimEspacios]="true">
+                        </app-campoTexto>
+                    </div>
+
+                    <div class="col-6">
+                        <app-campoNumeroEntero
+                            [control]="form.controls['orden']"
+                            label="Orden"
+                            placeholder="Orden"
+                            [maxLength]="100">
+                        </app-campoNumeroEntero>
+                    </div>
+
+                    <div class="col-6">
+                        <app-campoTexto
+                            [control]="form.controls['etiqueta']"
+                            label="ETIQUETA"
+                            placeholder="ETIQUETA"
+                            [maxLength]="15"
+                            [trimEspacios]="true">
+                        </app-campoTexto>
+                    </div>
+
+                    <div class="col-12">
+                        <p class="campo-hint" *ngIf="disableLabel">
+                            <i class="fa-solid fa-lock"></i>
+                            La etiqueta solo se puede editar en los menús raíz.
+                        </p>
+                    </div>
+
+                    <div class="col-12">
+                        <app-campoTexto
+                            [control]="form.controls['descripcion']"
+                            label="DESCRIPCION"
+                            placeholder="DESCRIPCION"
+                            [maxLength]="100">
+                        </app-campoTexto>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ---------- Navegación ---------- -->
+        <div class="form-card">
+
+            <div class="form-card__header">
+                <i class="fa-solid fa-link"></i>
+                <span>Navegación</span>
+            </div>
+
+            <div class="form-card__body">
+
+                <div class="mb-2">
                     <app-campoTexto
-                        [control]="form.controls['padre_id']"
-                        label="PADRE"
-                        placeholder="PADRE"
-                    ></app-campoTexto>
-                </div>
-                <div class="col-lg-3">
-                    <app-campoTexto
-                        [control]="form.controls['nivel']"
-                        label="NIVEL"
-                        placeholder="NIVEL"
-                    ></app-campoTexto>
-                </div>
-
-                <div class="col-lg-3">
-                    <app-campoNumeroEntero 
-                        [control]="form.controls['orden']"
-                        label="Orden"
-                        placeholder="Orden"
-                        [maxLength]="100"
-                    ></app-campoNumeroEntero>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-6">
-                    <app-campoTexto 
-                        [control]="form.controls['nombre']"
-                        label="NOMBRE"
-                        placeholder="NOMBRE"
-                        [maxLength]="100"
-                        [trimEspacios]="true"
-                    ></app-campoTexto>
-                </div>
-                <div class="col-lg-6">
-                    <app-campoTexto 
-                        [control]="form.controls['etiqueta']"
-                        label="ETIQUETA"
-                        placeholder="ETIQUETA"
-                        [maxLength]="15"
-                        [trimEspacios]="true"
-                    ></app-campoTexto>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-lg">
-                    <app-campoTexto 
-                        [control]="form.controls['descripcion']"
-                        label="DESCRIPCION"
-                        placeholder="DESCRIPCION"
-                        [maxLength]="100"
-                    ></app-campoTexto>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-6">
-                    <app-campoTexto 
-                        [control]="form.controls['icono']"
-                        label="ICONO"
-                        placeholder="ICONO"
-                        [maxLength]="100"
-                        [trimEspacios]="true"
-                    ></app-campoTexto>                    
-                </div>
-                <div class="col-lg-6">
-                    <app-campoTexto 
                         [control]="form.controls['url']"
                         label="URL"
                         placeholder="URL"
                         [maxLength]="100"
-                        [trimEspacios]="true"
-                    ></app-campoTexto>
+                        [trimEspacios]="true">
+                    </app-campoTexto>
+                    <p class="campo-hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Ruta interna de la pantalla, por ejemplo <code>/seguridad/usuarios</code>.
+                    </p>
                 </div>
 
+                <div class="icono-row">
+                    <div class="icono-campo">
+                        <app-campoTexto
+                            [control]="form.controls['icono']"
+                            label="ICONO"
+                            placeholder="ICONO"
+                            [maxLength]="100"
+                            [trimEspacios]="true">
+                        </app-campoTexto>
+                    </div>
+
+                    <button type="button"
+                            class="icono-preview"
+                            [class.is-empty]="!iconoActual"
+                            [class.is-open]="mostrarSelectorIconos"
+                            (click)="mostrarSelectorIconos = !mostrarSelectorIconos"
+                            title="Elegir un icono de la lista">
+                        <i [ngClass]="iconoActual || 'fa-regular fa-image'"></i>
+                    </button>
+                </div>
+
+                <div class="icono-acciones">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            (click)="mostrarSelectorIconos = !mostrarSelectorIconos">
+                        <i class="fa-solid" [ngClass]="mostrarSelectorIconos ? 'fa-chevron-up' : 'fa-icons'"></i>
+                        {{ mostrarSelectorIconos ? 'Cerrar lista' : 'Elegir icono de la lista' }}
+                    </button>
+
+                    <button type="button" class="btn btn-sm btn-link text-secondary"
+                            *ngIf="iconoActual" (click)="limpiarIcono()">
+                        Quitar
+                    </button>
+                </div>
+
+                <p class="campo-hint campo-hint--alerta" *ngIf="iconoNoDisponible">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Este icono no se mostrará: la aplicación no carga los iconos <code>bi</code>. Elige uno de la lista.
+                </p>
+
+                <!-- ---------- Selector de iconos ---------- -->
+                <div class="icono-selector" *ngIf="mostrarSelectorIconos">
+
+                    <div class="icono-selector__buscador">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" class="form-control form-control-sm"
+                               placeholder="Buscar icono (usuario, factura, reporte…)"
+                               [(ngModel)]="filtroIcono" [ngModelOptions]="{ standalone: true }">
+                        <button type="button" class="icono-selector__cerrar"
+                                (click)="mostrarSelectorIconos = false" title="Cerrar">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="icono-selector__grupos">
+                        <button type="button" *ngFor="let grupo of gruposIconos"
+                                class="grupo-chip" [class.activo]="grupoIcono === grupo"
+                                (click)="grupoIcono = grupo">
+                            {{ grupo }}
+                        </button>
+                    </div>
+
+                    <div class="icono-selector__grid" *ngIf="iconosFiltrados.length > 0; else sinIconos">
+                        <button type="button" *ngFor="let icono of iconosFiltrados"
+                                class="icono-opcion"
+                                [class.activo]="iconoActual === icono.clase"
+                                [title]="icono.nombre + ' (' + icono.clase + ')'"
+                                (click)="seleccionarIcono(icono.clase)">
+                            <i [ngClass]="icono.clase"></i>
+                            <span>{{ icono.nombre }}</span>
+                        </button>
+                    </div>
+
+                    <ng-template #sinIconos>
+                        <div class="icono-selector__vacio">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            Ningún icono coincide con «{{ filtroIcono }}»
+                        </div>
+                    </ng-template>
+
+                </div>
+
+                <p class="campo-hint" *ngIf="!mostrarSelectorIconos && !iconoNoDisponible">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Elige un icono de la lista o escribe su clase, por ejemplo <code>fa-solid fa-users</code>.
+                </p>
 
             </div>
         </div>
+
     </form>
 </div>
 
-
-<div class="modal-footer">
-    <div class="restar-buttons">
-        <button class="btn btn-oval btn-danger equal-width-button" (click)="modal.close('Close click')" type="button">
-            <i class="bi bi-x-circle"></i><span class="m-2">Salir</span>
-        </button>
-    </div>
-    <div class="save-buttons" *ngIf="!(isLoading$ | async)">
-        <button class="btn btn-primary equal-width-button" type="submit" (click)="onSubmitForm($event)">
-            <i class="bi bi-save"></i><span class="m-2">Guardar</span>            
-        </button>
-    </div>
-</div>
-
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+    [isDisabled]="!(isLoading$ | async)"
+    (onClose)="modal.close('Close click')"
+    (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

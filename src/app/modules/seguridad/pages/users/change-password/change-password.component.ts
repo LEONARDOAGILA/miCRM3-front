@@ -88,6 +88,42 @@ passwordMatchValidator(formGroup: FormGroup) {
 
 
 
+  /** Nombre y apellidos del usuario, para la ficha de cabecera */
+  public get nombreCompleto(): string {
+    const nombre = this.registro_selected?.name || '';
+    const apellido = this.registro_selected?.surname || '';
+    return `${nombre} ${apellido}`.trim();
+  }
+
+  /** Iniciales para el avatar de la ficha */
+  public get iniciales(): string {
+    const base = this.nombreCompleto || this.registro_selected?.login_user || '';
+    const partes = base.split(/\s+/).filter((p: string) => !!p);
+    if (partes.length === 0) return '?';
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[1][0]).toUpperCase();
+  }
+
+  /** Ambas claves escritas y coincidentes */
+  public get clavesCoinciden(): boolean {
+    const clave = this.form.get('new_password')?.value;
+    const confirmacion = this.form.get('new_password_confirmation')?.value;
+    return !!clave && !!confirmacion && clave === confirmacion;
+  }
+
+  /** Copia la contraseña generada para poder entregarla al usuario */
+  public async copiarContrasena(): Promise<void> {
+    const clave = this.form.get('new_password')?.value;
+    if (!clave) return;
+
+    try {
+      await navigator.clipboard.writeText(clave);
+      this._toastr.success('Contraseña copiada al portapapeles');
+    } catch (error) {
+      this._toastr.info('No se pudo copiar automáticamente, cópiela manualmente');
+    }
+  }
+
   ngOnInit(): void {
     this.form.get('login_user')?.setValue(this.registro_selected.login_user);
     this.form.get('name')?.setValue(this.registro_selected.name);
