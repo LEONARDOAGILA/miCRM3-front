@@ -1,0 +1,251 @@
+// ============================================================
+// app-combo
+// Replica el aspecto de app-campoTexto (.form-floating +
+// .form-control de Bootstrap) sobre un ng-select:
+//   · misma altura (3.5rem + 2px)
+//   · mismo borde, radio y colores (variables de Bootstrap,
+//     por lo que funciona en modo claro y oscuro)
+//   · label flotante y bloque de error idénticos
+// ============================================================
+
+:host {
+  display: block;
+}
+
+.combo-floating {
+  position: relative; // ya lo aporta .form-floating, se deja explícito
+}
+
+
+// ============================================================
+// CAJA DEL SELECT  (equivale al .form-control)
+// ============================================================
+
+:host ::ng-deep .combo-select {
+  display: block;
+  width: 100%;
+
+  .ng-select-container {
+    height: calc(3.5rem + 2px) !important;
+    min-height: calc(3.5rem + 2px) !important;
+
+    padding: 0 .75rem !important;
+    align-items: stretch !important;
+
+    background-color: var(--bs-component-bg, #fff) !important;
+    border: 1px solid var(--bs-component-border-color, #ced4da) !important;
+    border-radius: var(--bs-border-radius, .375rem) !important;
+    box-shadow: none !important;
+    color: var(--bs-component-color, #2d353c) !important;
+
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+  }
+
+  // ----- Valor: pegado abajo, dejando sitio arriba para el label -----
+  .ng-value-container {
+    padding: 1.625rem 0 .625rem !important;
+    align-items: flex-end !important;
+  }
+
+  .ng-value {
+    font-size: 12px;
+    line-height: 1.25;
+    color: var(--bs-component-color, #2d353c);
+  }
+
+  // El placeholder lo sustituye el label flotante
+  .ng-placeholder {
+    display: none !important;
+  }
+
+  // ----- Input de búsqueda alineado con el valor -----
+  .ng-input {
+    top: auto !important;
+    bottom: .6875rem !important;
+    left: 0 !important;
+    padding: 0 2.75rem 0 calc(.75rem + 1px) !important;
+
+    > input {
+      height: 1.25rem;
+      font-size: 12px;
+      color: var(--bs-component-color, #2d353c);
+    }
+  }
+
+  // ----- Flecha y botón de limpiar, centrados en toda la altura -----
+  .ng-arrow-wrapper,
+  .ng-clear-wrapper {
+    align-self: center;
+    color: var(--bs-secondary-color, #6c757d);
+  }
+
+  .ng-arrow-wrapper {
+    width: 22px;
+    padding-right: 0;
+  }
+
+  .ng-arrow {
+    border-top-color: var(--bs-secondary-color, #6c757d) !important;
+  }
+
+  &.ng-select-opened .ng-arrow {
+    border-bottom-color: var(--bs-secondary-color, #6c757d) !important;
+  }
+
+  .ng-clear-wrapper .ng-clear {
+    font-size: 16px;
+  }
+
+  .ng-clear-wrapper:hover .ng-clear {
+    color: var(--bs-danger, #dc3545);
+  }
+
+  .ng-spinner-loader {
+    margin-top: 0;
+  }
+
+
+  // ============================================================
+  // ESTADOS
+  // ============================================================
+
+  // ----- Foco / desplegado (mismo anillo que .form-control:focus) -----
+  &.ng-select-focused .ng-select-container,
+  &.ng-select-opened .ng-select-container {
+    border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .55) !important;
+    box-shadow: 0 0 0 .25rem rgba(var(--bs-primary-rgb, 13, 110, 253), .25) !important;
+  }
+
+  // Mantiene las esquinas redondeadas al abrir el desplegable
+  &.ng-select-opened > .ng-select-container {
+    border-radius: var(--bs-border-radius, .375rem) !important;
+  }
+
+  // ----- Validación -----
+  &.is-invalid .ng-select-container {
+    border-color: var(--bs-form-invalid-border-color, #dc3545) !important;
+  }
+
+  &.is-invalid.ng-select-focused .ng-select-container,
+  &.is-invalid.ng-select-opened .ng-select-container {
+    box-shadow: 0 0 0 .25rem rgba(var(--bs-danger-rgb, 220, 53, 69), .25) !important;
+  }
+
+  &.is-valid .ng-select-container {
+    border-color: var(--bs-form-valid-border-color, #198754) !important;
+  }
+
+  &.is-valid.ng-select-focused .ng-select-container,
+  &.is-valid.ng-select-opened .ng-select-container {
+    box-shadow: 0 0 0 .25rem rgba(var(--bs-success-rgb, 25, 135, 84), .25) !important;
+  }
+
+  // ----- Deshabilitado (igual que .form-control:disabled) -----
+  &.ng-select-disabled .ng-select-container {
+    background-color: var(--bs-component-disabled-bg, #e9ecef) !important;
+    opacity: 1;
+  }
+
+  &.ng-select-disabled .ng-arrow-wrapper {
+    opacity: .5;
+  }
+}
+
+
+// ============================================================
+// LABEL FLOTANTE
+// El posicionamiento base lo da .form-floating > label de
+// Bootstrap; aquí solo se define la animación al flotar.
+// ============================================================
+
+.combo-label {
+  color: var(--bs-component-color, #2d353c);
+  transition: opacity .1s ease-in-out, transform .1s ease-in-out;
+}
+
+.combo-label.active {
+  opacity: .65;
+  transform: scale(.85) translateY(-.5rem) translateX(.15rem);
+}
+
+.combo-floating.is-disabled .combo-label {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+
+// ============================================================
+// DESPLEGABLE
+// ============================================================
+
+:host ::ng-deep .ng-dropdown-panel {
+  background-color: var(--bs-component-bg, #fff) !important;
+  border-color: var(--bs-component-border-color, #ced4da) !important;
+  border-radius: var(--bs-border-radius, .375rem);
+  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+
+  &.ng-select-bottom {
+    border-top-color: var(--bs-component-border-color, #ced4da) !important;
+    margin-top: 2px;
+  }
+
+  &.ng-select-top {
+    border-bottom-color: var(--bs-component-border-color, #ced4da) !important;
+    margin-bottom: 2px;
+  }
+
+  .ng-dropdown-panel-items .ng-option {
+    padding: .4rem .75rem !important;
+
+    background-color: transparent !important;
+    color: var(--bs-component-color, #2d353c) !important;
+
+    font-size: 12px;
+
+    &.ng-option-marked {
+      background-color: var(--bs-component-dropdown-hover-bg, #f8f9fa) !important;
+      color: var(--bs-component-color, #2d353c) !important;
+    }
+
+    &.ng-option-selected,
+    &.ng-option-selected.ng-option-marked {
+      background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12) !important;
+      color: var(--bs-component-color, #2d353c) !important;
+
+      .ng-option-label {
+        font-weight: 600;
+      }
+    }
+
+    &.ng-option-disabled {
+      color: var(--bs-secondary-color, #6c757d) !important;
+    }
+  }
+
+  .ng-dropdown-panel-items .ng-optgroup {
+    background-color: var(--bs-component-dropdown-hover-bg, #f8f9fa) !important;
+    color: var(--bs-secondary-color, #6c757d) !important;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+}
+
+
+// ============================================================
+// MENSAJES DE ERROR (mismo tamaño que en app-campoTexto)
+// ============================================================
+
+.msg-requerido {
+  display: block;
+  font-size: .7rem;
+  line-height: 1.3;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+
+  .combo-label,
+  :host ::ng-deep .combo-select .ng-select-container {
+    transition: none;
+  }
+}

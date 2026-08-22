@@ -55,6 +55,12 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     { id: 4, name: 'USUARIO WEB' },
   ];
 
+  /** Nombre del tipo de usuario seleccionado (para el resumen del avatar) */
+  public get tipoUsuarioNombre(): string {
+    const id = this.form?.controls['type_user']?.value;
+    return this.tipoUsuario.find(t => t.id === id)?.name ?? '';
+  }
+
   public imagen_file: any = null;
   public imagen_paste: any = null;
   public imagen_previzualiza: any = null;
@@ -715,7 +721,7 @@ if (this.userModel.avatar) {
         closeButton: true
       });      
 
-      const pasteInput = document.querySelector('input.d-none') as HTMLInputElement;
+      const pasteInput = document.getElementById('paste-input') as HTMLInputElement;
       if (pasteInput) {
         pasteInput.focus();
       }
@@ -783,7 +789,8 @@ if (this.userModel.avatar) {
   }
   
   openFullscreen(): void {
-    if (!this.esView && this.imagen_previzualiza) {
+    // También se permite ampliar la imagen en modo consulta (view)
+    if (this.imagen_previzualiza) {
       this.showFullscreenImage = true;
       document.body.style.overflow = 'hidden';
     }

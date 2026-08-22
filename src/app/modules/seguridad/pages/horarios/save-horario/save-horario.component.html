@@ -1,134 +1,185 @@
-<!-- begin spinner -->
+<!-- ===================== SPINNER ===================== -->
 <ng-container *ngIf="(isLoading$ | async)">
   <div class="loader1" role="status" aria-label="Cargando"></div>
   <div class="overlay1" aria-hidden="true"></div>
 </ng-container>
 
-<!-- CABECERA DE MODAL -->
-<app-modal-header 
-  [title]="titulo" 
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
   (onClose)="modal.close('Close click')">
 </app-modal-header>
 
-<!-- CUERPO DE MODAL -->
-<div class="modal-body">
-  <form [formGroup]="form" class="form-validate form-horizontal" novalidate="">
-    
-    <div class="container-fluid">
-      <div class="row mb-3">
-        
-        <div class="col-md-8">
-          <app-campoTexto 
-            [control]="form.controls['nombre']"
-            label="NOMBRE"
-            placeholder="NOMBRE"
-            [maxLength]="255"
-            [trimEspacios]="true"
-            [mayusculas]="true">
-          </app-campoTexto>
-        </div>
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body horario-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
 
-        <div class="col-md-4 d-flex align-items-end">
-          <app-checkbox 
-            [control]="form.controls['activo']"
-            [label]="'activo'"
-            [id]="'ck-activo'">
-          </app-checkbox>
-        </div>
+    <!-- ---------- Datos del horario ---------- -->
+    <div class="form-card mb-3">
 
+      <div class="form-card__header">
+        <i class="fa-solid fa-clock"></i>
+        <span>Datos del horario</span>
+        <span class="chip chip-muted ms-auto" *ngIf="isdisabled">
+          <i class="fa-solid fa-eye"></i> Solo lectura
+        </span>
+      </div>
+
+      <div class="form-card__body">
+        <div class="row g-3 align-items-start">
+
+          <div class="col-12 col-md-7">
+            <app-campoTexto
+              [control]="form.controls['nombre']"
+              label="NOMBRE"
+              placeholder="NOMBRE"
+              [maxLength]="255"
+              [trimEspacios]="true"
+              [mayusculas]="true">
+            </app-campoTexto>
+          </div>
+
+          <div class="col-12 col-md-5">
+            <div class="estado-horario" [class.is-on]="form.controls['activo'].value">
+              <span class="estado-horario__icon"><i class="fa-solid fa-power-off"></i></span>
+              <div class="estado-horario__text">
+                <span class="estado-horario__label">Estado</span>
+                <span class="estado-horario__hint">
+                  {{ form.controls['activo'].value ? 'Horario disponible' : 'Horario deshabilitado' }}
+                </span>
+              </div>
+              <app-checkbox class="estado-horario__switch"
+                [control]="form.controls['activo']"
+                [label]="form.controls['activo'].value ? 'Activo' : 'Inactivo'"
+                [id]="'ck-activo'">
+              </app-checkbox>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
 
-    <!-- Botón para añadir horario -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0">Días y Horarios</h5>
+    <!-- ---------- Días y horarios ---------- -->
+    <div class="form-card" formArrayName="dhorario">
 
-      <button 
-        *ngIf="!isdisabled"
-        type="button"
-        class="btn btn-primary"
-        (click)="addHorarioItem()">
-        <i class="fa fa-plus me-1"></i> Agregar Día
-      </button>
-    </div>
+      <div class="form-card__header dias-header">
+        <i class="fa-solid fa-calendar-week"></i>
+        <span>Días y horarios</span>
 
-    <!-- Lista dinámica -->
-    <div formArrayName="dhorario">
+        <span class="chip" [ngClass]="dhorario.length >= 7 ? 'chip-muted' : 'chip-info'">
+          {{ dhorario.length }} de 7 días
+        </span>
 
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover">
+        <button
+          *ngIf="!isdisabled"
+          type="button"
+          class="btn btn-sm btn-primary ms-auto"
+          [disabled]="dhorario.length >= 7"
+          [title]="dhorario.length >= 7 ? 'Ya están configurados los 7 días de la semana' : 'Agregar un día al horario'"
+          (click)="addHorarioItem()">
+          <i class="fa fa-plus"></i> Agregar día
+        </button>
+      </div>
 
-          <thead class="table-light">
+      <!-- Lista de días -->
+      <div class="tabla-dias" *ngIf="dhorario.length > 0; else sinDias">
+        <table class="dias-table">
+
+          <thead>
             <tr>
-              <th style="width: 120px; min-width: 120px;">Día</th>
-              <th width="20%">Hora Inicio</th>
-              <th width="20%">Hora Fin</th>
-              <th width="15%">activo</th>
-              <th width="10%" *ngIf="!isdisabled">Acciones</th>
+              <th class="col-dia">Día</th>
+              <th class="col-hora">Hora inicio</th>
+              <th class="col-hora">Hora fin</th>
+              <th class="col-estado">Estado</th>
+              <th class="col-acciones" *ngIf="!isdisabled"></th>
             </tr>
           </thead>
 
           <tbody>
-            <tr *ngFor="let item of dhorario.controls; let i = index" [formGroupName]="i" 
-                [class.table-warning]="item.invalid && item.touched">
-              <td>
-                <select class="form-select form-select-sm" formControlName="dia" 
+            <tr *ngFor="let item of dhorario.controls; let i = index" [formGroupName]="i"
+                [class.fila-invalida]="item.invalid && item.touched"
+                [class.fila-duplicada]="esDiaDuplicado(i)">
+
+              <td class="col-dia" data-label="Día">
+                <select class="form-select form-select-sm" formControlName="dia"
                         [class.is-invalid]="item.get('dia')?.invalid && item.get('dia')?.touched">
                   <option *ngFor="let dia of diasSemana" [ngValue]="dia.id">{{ dia.nombre }}</option>
                 </select>
-                <div *ngIf="item.get('dia')?.invalid && item.get('dia')?.touched" class="invalid-feedback d-block">
-                  Día es requerido
-                </div>
+                <small class="campo-error" *ngIf="item.get('dia')?.invalid && item.get('dia')?.touched">
+                  El día es requerido
+                </small>
+                <small class="campo-error" *ngIf="esDiaDuplicado(i)">
+                  Día repetido
+                </small>
               </td>
-              <td>
+
+              <td class="col-hora" data-label="Hora inicio">
                 <input type="time" class="form-control form-control-sm" formControlName="hora_inicio"
                        [class.is-invalid]="item.get('hora_inicio')?.invalid && item.get('hora_inicio')?.touched">
-                <div *ngIf="item.get('hora_inicio')?.invalid && item.get('hora_inicio')?.touched" class="invalid-feedback d-block">
-                  Hora inicio es requerida
-                </div>
+                <small class="campo-error" *ngIf="item.get('hora_inicio')?.invalid && item.get('hora_inicio')?.touched">
+                  Requerida
+                </small>
               </td>
-              <td>
+
+              <td class="col-hora" data-label="Hora fin">
                 <input type="time" class="form-control form-control-sm" formControlName="hora_fin"
-                       [class.is-invalid]="item.get('hora_fin')?.invalid && item.get('hora_fin')?.touched">
-                <div *ngIf="item.get('hora_fin')?.invalid && item.get('hora_fin')?.touched" class="invalid-feedback d-block">
-                  Hora fin es requerida
-                </div>
+                       [class.is-invalid]="(item.get('hora_fin')?.invalid && item.get('hora_fin')?.touched) || item.hasError('horaInvalida')">
+                <small class="campo-error" *ngIf="item.get('hora_fin')?.invalid && item.get('hora_fin')?.touched">
+                  Requerida
+                </small>
+                <small class="campo-error" *ngIf="item.hasError('horaInvalida')">
+                  Debe ser posterior a la hora de inicio
+                </small>
               </td>
-              <td class="text-center">
-                <div class="form-check form-switch d-inline-block">
-                  <input type="checkbox" formControlName="activo" class="form-check-input" role="switch" 
-                         id="activo-{{i}}" [attr.disabled]="isdisabled ? '' : null">
+
+              <td class="col-estado" data-label="Estado">
+                <div class="form-check form-switch dia-switch">
+                  <input type="checkbox" formControlName="activo" class="form-check-input" role="switch"
+                         id="activo-{{i}}">
                   <label class="form-check-label" for="activo-{{i}}">
                     {{ item.get('activo')?.value ? 'Activo' : 'Inactivo' }}
                   </label>
                 </div>
               </td>
-              <td *ngIf="!isdisabled" class="text-center">
-                <button class="btn btn-sm btn-danger" type="button" (click)="removeHorarioItem(i)" 
-                        title="Eliminar día" [disabled]="dhorario.length <= 1">
+
+              <td class="col-acciones" *ngIf="!isdisabled" data-label="">
+                <button class="btn-quitar" type="button" (click)="removeHorarioItem(i)"
+                        title="Quitar día" [disabled]="dhorario.length <= 1">
                   <i class="fa fa-trash"></i>
                 </button>
               </td>
+
             </tr>
           </tbody>
 
         </table>
       </div>
 
-      <!-- VALIDACIONES GENERALES -->
-      <div *ngIf="dhorario.errors?.diasDuplicados" class="alert alert-danger mt-2">
-        <i class="fa fa-exclamation-triangle me-2"></i>
-        No se puede repetir el mismo día de la semana.
-      </div>
+      <!-- Estado vacío -->
+      <ng-template #sinDias>
+        <div class="dias-vacio">
+          <i class="fa-regular fa-calendar-xmark"></i>
+          <p>Todavía no hay días agregados a este horario</p>
+          <button type="button" class="btn btn-sm btn-primary" *ngIf="!isdisabled" (click)="addHorarioItem()">
+            <i class="fa fa-plus"></i> Agregar el primer día
+          </button>
+        </div>
+      </ng-template>
 
-      <div *ngIf="dhorario.invalid && dhorario.touched" class="alert alert-warning mt-2">
-        <i class="fa fa-info-circle me-2"></i>
-        Revise los campos marcados en amarillo.
-      </div>
+      <!-- Avisos -->
+      <div class="dias-avisos" *ngIf="dhorario.errors?.diasDuplicados || (dhorario.invalid && dhorario.touched)">
 
-      <div *ngIf="dhorario.length === 0" class="alert alert-info mt-2">
-        <i class="fa fa-info-circle me-2"></i>
-        No hay días agregados al horario.
+        <div class="aviso aviso--danger" *ngIf="dhorario.errors?.diasDuplicados">
+          <i class="fa fa-triangle-exclamation"></i>
+          No se puede repetir el mismo día de la semana.
+        </div>
+
+        <div class="aviso aviso--warning" *ngIf="dhorario.invalid && dhorario.touched && !dhorario.errors?.diasDuplicados">
+          <i class="fa fa-circle-info"></i>
+          Revise las filas marcadas: falta completar alguna hora o el rango no es válido.
+        </div>
+
       </div>
 
     </div>
@@ -136,8 +187,8 @@
   </form>
 </div>
 
-<!-- PIE DE MODAL -->
-<app-modal-footer 
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
   [isDisabled]="!isdisabled"
   (onClose)="modal.close('Close click')"
   (onSubmit)="onSubmitForm($event)">

@@ -1,109 +1,138 @@
-<!-- begin spinner -->
+<!-- ===================== SPINNER ===================== -->
 <ng-container *ngIf="(isLoading$ | async)">
     <div class="loader1" role="status" aria-label="Cargando"></div>
     <div class="overlay1" aria-hidden="true"></div>
 </ng-container>
-<!-- end spinner -->
 
-
-<!-- CABECERA DE MODAL -->
-<app-modal-header 
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
     [title]="title"
-    (onClose)="modal.close('Close click')"
-></app-modal-header>
+    (onClose)="modal.close('Close click')">
+</app-modal-header>
 
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body perfil-modal-body">
 
+    <!-- ---------- Datos del perfil ---------- -->
+    <div class="form-card mb-3">
 
-<div class="modal-body">
-    <form [formGroup]="form" class="form-validate form-horizontal small p-2" novalidate="" style="margin-top: -15px;">    
-        <div class="row">
-
-            <div class="col-6 col-md-6 col-lg-4">
-                <app-campoTexto
-                    [control]="form.controls['nombre']"
-                    label="NOMBRE"
-                    placeholder="NOMBRE"
-                    [maxLength]="100"
-                    [soloLetras]="false"
-                    [mayusculas]="true"
-                    [noEspacios]="true"
-                    [trimEspacios]="true"
-                ></app-campoTexto>
-            </div>
-        
-            <div class="col-4 col-md-3 col-lg-2">
-                <app-campoNumeroEntero
-                    [control]="form.controls['inactividad']"
-                    label="Inactividad"
-                    placeholder="Inactividad"
-                    title="Tiempo de Inactividad en Segundos. &#10;Si es 0, estará desactivado este servicio."
-                    [maxLength]="3"
-                ></app-campoNumeroEntero>
-            </div>
-        
-            <div class="col-2 col-md-3 col-lg-2 mt-4">
-                <app-checkbox
-                    [control]="form.controls['activo']"
-                    [label]="'Activo'"
-                    [id]="'ck-isactive'"
-                ></app-checkbox>                
-            </div>
-        
-
-        
-
+        <div class="form-card__header">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Datos del perfil</span>
+            <span class="chip chip-muted ms-auto" *ngIf="isdisabled">
+                <i class="fa-solid fa-eye"></i> Solo lectura..
+            </span>
         </div>
-        
-    </form>
-    
-    
-<div *ngIf="profile"  style="margin-top: -30px">
-  <!-- Contenedor del buscador: arriba del grid, alineado a la derecha -->
-  <div class="d-flex justify-content-end m-2">
-    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-      <app-campoBusqueda
-        [id]="'filter-text-box22'"
-        [placeholder]="'Buscar...'"
-        [iconClass]="'fa fa-search fa-lg'"
-        [containerClass]="'w-100'"
-        (searchChange)="onFilterTextBoxChanged()"
-      ></app-campoBusqueda>
+
+        <div class="form-card__body">
+            <form [formGroup]="form" class="form-validate" novalidate>
+                <div class="row g-3 align-items-start">
+
+                    <div class="col-12 col-md-6 col-lg-5">
+                        <app-campoTexto
+                            [control]="form.controls['nombre']"
+                            label="NOMBRE"
+                            placeholder="NOMBRE"
+                            [maxLength]="100"
+                            [soloLetras]="false"
+                            [mayusculas]="true"
+                            [noEspacios]="true"
+                            [trimEspacios]="true">
+                        </app-campoTexto>
+                    </div>
+
+                    <div class="col-6 col-md-3 col-lg-3">
+                        <app-campoNumeroEntero
+                            [control]="form.controls['inactividad']"
+                            label="Inactividad (seg)"
+                            placeholder="0"
+                            title="Tiempo de inactividad en segundos. Si es 0, el servicio queda desactivado."
+                            [maxLength]="3">
+                        </app-campoNumeroEntero>
+                    </div>
+
+                    <div class="col-6 col-md-3 col-lg-4">
+                        <div class="estado-perfil" [class.is-on]="form.controls['activo'].value">
+                            <span class="estado-perfil__icon"><i class="fa-solid fa-power-off"></i></span>
+                            <div class="estado-perfil__text">
+                                <span class="estado-perfil__label">Estado</span>
+                                <span class="estado-perfil__hint">
+                                    {{ form.controls['activo'].value ? 'Perfil disponible' : 'Perfil deshabilitado' }}
+                                </span>
+                            </div>
+                            <app-checkbox class="estado-perfil__switch"
+                                [control]="form.controls['activo']"
+                                [label]="form.controls['activo'].value ? 'Activo' : 'Inactivo'"
+                                [id]="'ck-isactive'">
+                            </app-checkbox>
+                        </div>
+                    </div>
+
+                </div>
+
+                <p class="form-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    El tiempo de inactividad se expresa en segundos; con <strong>0</strong> se desactiva el cierre de sesión automático.
+                </p>
+            </form>
+        </div>
     </div>
-  </div>
 
-  <!-- Grid -->
-   <div style="margin-top: -13px;">
-       <ag-grid-angular 
-         [rowData]="profile.acceso" 
-         [columnDefs]="columnDefs"
-         [style.height]="'380px'"            
-         [defaultColDef]="_appAgGridService.defaultColDef" 
-         [sideBar]="_appAgGridService.sideBar" 
-         [rowHeight]="_appAgGridService.rowHeight" 
-         [headerHeight]="_appAgGridService.headerHeight"
-         [localeText]="_appAgGridService.localeText"
-         [rowSelection]="'single'"
-         [pagination]="false"
-         [animateRows]="true" 
-         [cacheQuickFilter]="true" 
-         [context]="{ componentParent: this }"
-         class="ag-theme-alpine ag-grid-transparente p-2"
-         (gridReady)="onGridReady($event)" 
-         (cellClicked)="onCellClicked($event)" 
-       ></ag-grid-angular>
-   </div>
+    <!-- ---------- Permisos ---------- -->
+    <div class="form-card" *ngIf="profile">
+
+        <div class="form-card__header permisos-header">
+            <i class="fa-solid fa-key"></i>
+            <span>Permisos por menú</span>
+
+            <span class="chip chip-info" *ngIf="totalMenus">
+                {{ totalMenusActivos }} de {{ totalMenus }} habilitados
+            </span>
+
+            <div class="permisos-buscador ms-auto">
+                <app-campoBusqueda
+                    [id]="'filter-text-box22'"
+                    [placeholder]="'Buscar menú...'"
+                    [iconClass]="'fa fa-search'"
+                    [containerClass]="'w-100'"
+                    (searchChange)="onFilterTextBoxChanged()">
+                </app-campoBusqueda>
+            </div>
+        </div>
+
+        <div class="perfil-grid">
+            <ag-grid-angular
+                [rowData]="profile.acceso"
+                [columnDefs]="columnDefs"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [sideBar]="_appAgGridService.sideBar"
+                [rowHeight]="_appAgGridService.rowHeight"
+                [headerHeight]="_appAgGridService.headerHeight"
+                [localeText]="_appAgGridService.localeText"
+                [rowSelection]="'single'"
+                [pagination]="false"
+                [animateRows]="true"
+                [cacheQuickFilter]="true"
+                [context]="{ componentParent: this }"
+                class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+                (gridReady)="onGridReady($event)"
+                (cellClicked)="onCellClicked($event)">
+            </ag-grid-angular>
+        </div>
+
+        <div class="permisos-leyenda" *ngIf="!isdisabled">
+            <i class="fa-solid fa-hand-pointer"></i>
+            Haz clic sobre una casilla para activar o desactivar el permiso.
+            Al marcar <strong>Ejecutar</strong> en un menú padre se propaga a sus hijos.
+        </div>
+
+    </div>
+
 </div>
-    
-</div>
 
-
-
-
-<!-- PIE DE MODAL -->
+<!-- ===================== PIE ===================== -->
 <app-modal-footer
     [isDisabled]="!isdisabled"
     (onClose)="modal.close('Close click')"
     (onSubmit)="onSubmitForm($event)">
 </app-modal-footer>
-
-

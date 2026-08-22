@@ -56,24 +56,27 @@ export class Save2ProfileComponent implements OnInit  {
   public menuModel: MenuModel[] = [];
   public menus: MenuModel[] = [];
   
-  private styles = {
-    level0: { color: 'black', fontSize: '12px', textAlign: 'center' },
-    level1: { color: '#2874a6', fontSize: '12px', textAlign: 'center' },
-    level2: { color: 'green', fontSize: '12px', textAlign: 'center' },
-    level3: { color: 'purple', fontSize: '12px', textAlign: 'center' },
-    default: { color: 'gray', fontSize: '12px', textAlign: 'center' },
-    module: { color: 'black', fontSize: '12px', textAlign: 'center' },
-    noModule: { color: 'gray', fontSize: '12px', textAlign: 'center' },
-  };
-  private styles2 = {
-    level0: { color: 'black', fontSize: '12px', textAlign: 'left' },
-    level1: { color: '#2874a6', fontSize: '12px', textAlign: 'left' },
-    level2: { color: 'green', fontSize: '12px', textAlign: 'left' },
-    level3: { color: 'purple', fontSize: '12px', textAlign: 'left' },
-    default: { color: 'gray', fontSize: '12px', textAlign: 'left' },
-    module: { color: 'black', fontSize: '12px', textAlign: 'left' },
-    noModule: { color: 'gray', fontSize: '12px', textAlign: 'left' },
-  };
+  /** Nº de menús listados en el grid */
+  public get totalMenus(): number {
+    return this.profile?.acceso?.length || 0;
+  }
+
+  /** Nº de menús con acceso (ejecutar) habilitado */
+  public get totalMenusActivos(): number {
+    return (this.profile?.acceso || []).filter((a: any) => a.ejecutar).length;
+  }
+
+  /**
+   * Casilla de permiso para el grid. El clic lo gestiona onCellClicked,
+   * por eso el input no es interactivo (pointer-events: none en el CSS).
+   */
+  private checkboxCellRenderer(params: any): string {
+    const soloLectura = params.context?.componentParent?.isdisabled ? 'disabled' : '';
+    const marcado = params.value === true ? 'checked' : '';
+    return `<div class="permiso-check">
+              <input class="form-check-input" type="checkbox" ${marcado} ${soloLectura} />
+            </div>`;
+  }
 
 
   constructor(
@@ -159,23 +162,30 @@ export class Save2ProfileComponent implements OnInit  {
         {
           headerName: 'Nombre',
           field: 'menu.nombre',
-          cellStyle: (params) => { return this.styles2[`level${params.data.menu.level}`] || this.styles2.default; },
+          cellStyle: { textAlign: 'left' },
           cellRenderer: (params) => {
-            const indentation = '&nbsp;'.repeat(params.data.menu.nivel * 6); // Ajusta el número de espacios según necesites
-            return `${indentation}${params.value}`;
+            // El color por nivel se aplica con clases (.nivel-N) para que
+            // siga el tema; antes eran colores fijos y además se leía
+            // 'menu.level', que no existe en el modelo (es 'menu.nivel').
+            const nivel = params.data?.menu?.nivel || 0;
+            const sangria = nivel * 14;
+            const flecha = nivel > 0
+              ? '<i class="bi bi-arrow-return-right menu-flecha"></i>'
+              : '';
+            return `<span class="menu-nombre nivel-${nivel}" style="padding-left:${sangria}px">${flecha}${params.value ?? ''}</span>`;
           },
           minWidth: 250,
-          maxWidth: 600, 
-          sortable: false,        
+          maxWidth: 600,
+          sortable: false,
           filter: true,
         },
 
         {
           headerName: 'Descripcion',
-          field: 'menu.description',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },           
+          field: 'menu.descripcion',
+          cellStyle: { textAlign: 'left' },
           minWidth: 150,
-          maxWidth: 1200,          
+          maxWidth: 1200,
           sortable: false,
           hide: true,
         },
@@ -187,15 +197,7 @@ export class Save2ProfileComponent implements OnInit  {
           cellStyle: { textAlign: 'center' },
           minWidth: 95,
           maxWidth: 95,
-          cellRenderer: (params: any) => {
-            const disabled = params.context.componentParent.isdisabled ? 'disabled' : '';
-            return `
-              <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-                <input class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} ${disabled} />
-                <label class="form-check-label"></label>
-              </div>        
-            `;
-          }
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
         },
         
 
@@ -205,15 +207,7 @@ export class Save2ProfileComponent implements OnInit  {
           cellStyle: { textAlign: 'center' },
           minWidth: 95,
           maxWidth: 95,
-          cellRenderer: (params: any) => {
-            const disabled = params.context.componentParent.isdisabled ? 'disabled' : '';
-            return `
-              <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-                <input class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} ${disabled} />
-                <label class="form-check-label"></label>
-              </div>        
-            `;
-          }
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
         },
         {
           headerName: 'Ver',
@@ -221,15 +215,7 @@ export class Save2ProfileComponent implements OnInit  {
           cellStyle: { textAlign: 'center' },
           minWidth: 95,
           maxWidth: 95,
-          cellRenderer: (params: any) => {
-            const disabled = params.context.componentParent.isdisabled ? 'disabled' : '';
-            return `
-              <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-                <input class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} ${disabled} />
-                <label class="form-check-label"></label>
-              </div>        
-            `;
-          }
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
         },
 
         {
@@ -238,15 +224,7 @@ export class Save2ProfileComponent implements OnInit  {
           cellStyle: { textAlign: 'center' },
           minWidth: 95,
           maxWidth: 95,
-          cellRenderer: (params: any) => {
-            const disabled = params.context.componentParent.isdisabled ? 'disabled' : '';
-            return `
-              <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-                <input class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} ${disabled} />
-                <label class="form-check-label"></label>
-              </div>        
-            `;
-          }
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
         },
 
         {
@@ -255,15 +233,7 @@ export class Save2ProfileComponent implements OnInit  {
           cellStyle: { textAlign: 'center' },
           minWidth: 100,
           maxWidth: 100,
-          cellRenderer: (params: any) => {
-            const disabled = params.context.componentParent.isdisabled ? 'disabled' : '';
-            return `
-              <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-                <input class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} ${disabled} />
-                <label class="form-check-label"></label>
-              </div>        
-            `;
-          }
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
         },
 
         {
@@ -272,15 +242,7 @@ export class Save2ProfileComponent implements OnInit  {
           cellStyle: { textAlign: 'center' },
           minWidth: 95,
           maxWidth: 95,
-          cellRenderer: (params: any) => {
-            const disabled = params.context.componentParent.isdisabled ? 'disabled' : '';
-            return `
-              <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-                <input class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} ${disabled} />
-                <label class="form-check-label"></label>
-              </div>        
-            `;
-          }
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
         },
 
         {
@@ -289,15 +251,7 @@ export class Save2ProfileComponent implements OnInit  {
           cellStyle: { textAlign: 'center' },
           minWidth: 95,
           maxWidth: 95,
-          cellRenderer: (params: any) => {
-            const disabled = params.context.componentParent.isdisabled ? 'disabled' : '';
-            return `
-              <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-                <input class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} ${disabled} />
-                <label class="form-check-label"></label>
-              </div>        
-            `;
-          }
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
         },
 
         {
@@ -306,15 +260,7 @@ export class Save2ProfileComponent implements OnInit  {
           cellStyle: { textAlign: 'center' },
           minWidth: 95,
           maxWidth: 95,
-          cellRenderer: (params: any) => {
-            const disabled = params.context.componentParent.isdisabled ? 'disabled' : '';
-            return `
-              <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-                <input class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} ${disabled} />
-                <label class="form-check-label"></label>
-              </div>        
-            `;
-          }
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
         },       
         
         {
@@ -332,23 +278,16 @@ export class Save2ProfileComponent implements OnInit  {
       cellStyle: { textAlign: 'center' },
       minWidth: 120,
       maxWidth: 120,
+      // El HTML del cellRenderer es una cadena, no una plantilla de Angular:
+      // el clic se gestiona en onCellClicked, más abajo.
       cellRenderer: (params: any) => {
-        const disabled = params.context.componentParent.isdisabled ? 'disabled' : '';
-        return `
-            <button 
-              class="btn btn-sm btn-success p-0 px-1" 
-              [disabled]="isdisabled"
-              (click)="handleActionClick(params.data)">
-              
-              <i class="bi bi-gear fs-6"></i>
-              <span class="small">Más Permisos</span>
-            </button>
-        `;
+        const soloLectura = params.context?.componentParent?.isdisabled ? 'disabled' : '';
+        return `<button type="button" class="btn-mas-permisos" ${soloLectura} title="Más permisos">
+                  <i class="bi bi-gear"></i> Más permisos
+                </button>`;
       },
       onCellClicked: (event: CellClickedEvent) => {
         if (!this.isdisabled) {
-          console.log('Datos de la fila:', event.data);
-          // Aquí puedes llamar a una función para manejar la acción
           this.onActionButtonClick(event.data);
         }
       }
