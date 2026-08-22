@@ -272,10 +272,10 @@ private limpiarYFormatearPaths(cambios: any[]): any[] {
       // y mantenerlo como parte del path
       if (partesFiltradas.length >= 3) {
         // Ejemplo: acceso.menu_nombre.permiso -> acceso > menu_nombre > permiso
-        campo = partesFiltradas.join(' > ');
+        campo = partesFiltradas.join(' | ');
       } else if (partesFiltradas.length === 2) {
         // Ejemplo: perfil.nombre -> perfil > nombre
-        campo = partesFiltradas.join(' > ');
+        campo = partesFiltradas.join(' | ');
       } else {
         campo = partesFiltradas[0] || campo;
       }
@@ -293,6 +293,45 @@ private limpiarYFormatearPaths(cambios: any[]): any[] {
     };
   }).filter(c => c !== null);
 }
+
+// // Función para limpiar y formatear paths de forma genérica
+// private limpiarYFormatearPaths(cambios: any[]): any[] {
+//   return cambios.map(cambio => {
+//     let campo = cambio.campo;
+    
+//     // Si el campo tiene puntos, formatearlo
+//     if (campo.includes('.')) {
+//       const partes = campo.split('.');
+//       // Filtrar partes vacías
+//       let partesFiltradas = partes.filter(p => p && p.trim() !== '');
+      
+//       // Eliminar el primer nodo siempre (cualquiera que sea)
+//       if (partesFiltradas.length >= 2) {
+//         partesFiltradas = partesFiltradas.slice(1);
+//       }
+      
+//       // Identificar si hay un objeto padre y mantenerlo como parte del path
+//       if (partesFiltradas.length >= 3) {
+//         campo = partesFiltradas.join(' | ');
+//       } else if (partesFiltradas.length === 2) {
+//         campo = partesFiltradas.join(' | ');
+//       } else {
+//         campo = partesFiltradas[0] || campo;
+//       }
+//     }
+    
+//     // Eliminar .permisos y otros sufijos comunes
+//     campo = campo.replace(/\.permisos\./, ' > ');
+//     campo = campo.replace(/\.permisos$/, '');
+//     campo = campo.replace(/\.data\./, ' > ');
+//     campo = campo.replace(/\.data$/, '');
+    
+//     return {
+//       ...cambio,
+//       campo: campo
+//     };
+//   }).filter(c => c !== null);
+// }
 
 // NUEVA FUNCIÓN: Comparar objetos con nombres de menú de forma genérica
 private compararProfundoConMenus(obj1: any, obj2: any, path: string = '', nombreActual: string | null = null): any[] {
