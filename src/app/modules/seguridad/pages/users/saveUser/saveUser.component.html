@@ -121,15 +121,15 @@
                     <div class="form-card__body">
 
                       <!-- Estado del usuario -->
-                      <div class="estado-usuario" [class.is-on]="form.controls['isactive'].value">
-                        <span class="estado-usuario__icon"><i class="fa-solid fa-power-off"></i></span>
-                        <div class="estado-usuario__text">
-                          <span class="estado-usuario__label">Estado del usuario</span>
-                          <span class="estado-usuario__hint">
+                      <div class="estado-miswitch" [class.is-on]="form.controls['isactive'].value">
+                        <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>
+                        <div class="estado-miswitch__text">
+                          <span class="estado-miswitch__label">Estado del usuario</span>
+                          <span class="estado-miswitch__hint">
                             {{ form.controls['isactive'].value ? 'Puede iniciar sesión' : 'Acceso bloqueado' }}
                           </span>
                         </div>
-                        <app-checkbox class="estado-usuario__switch"
+                        <app-checkbox class="estado-miswitch__switch"
                           [control]="form.controls['isactive']"
                           [label]="form.controls['isactive'].value ? 'Activo' : 'Inactivo'"
                           [id]="'ck-isactive'">

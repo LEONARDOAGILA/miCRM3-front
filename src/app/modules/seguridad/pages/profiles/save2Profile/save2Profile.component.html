@@ -52,20 +52,25 @@
                     </div>
 
                     <div class="col-6 col-md-3 col-lg-4">
-                        <div class="estado-perfil" [class.is-on]="form.controls['activo'].value">
-                            <span class="estado-perfil__icon"><i class="fa-solid fa-power-off"></i></span>
-                            <div class="estado-perfil__text">
-                                <span class="estado-perfil__label">Estado</span>
-                                <span class="estado-perfil__hint">
-                                    {{ form.controls['activo'].value ? 'Perfil disponible' : 'Perfil deshabilitado' }}
-                                </span>
-                            </div>
-                            <app-checkbox class="estado-perfil__switch"
-                                [control]="form.controls['activo']"
-                                [label]="form.controls['activo'].value ? 'Activo' : 'Inactivo'"
-                                [id]="'ck-isactive'">
-                            </app-checkbox>
+
+                      <div class="estado-miswitch" [class.is-on]="form.controls['activo'].value">
+                        <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>
+                        <div class="estado-miswitch__text">
+                          <span class="estado-miswitch__label">Estado</span>
+                          <span class="estado-miswitch__hint">
+                            {{ form.controls['activo'].value ? 'Perfil disponible' : 'Perfil deshabilitado' }}
+                          </span>
                         </div>
+                        <app-checkbox class="estado-miswitch__switch"
+                          [control]="form.controls['activo']"
+                          [label]="form.controls['activo'].value ? 'Activo' : 'Inactivo'"
+                          [id]="'ck-isactive'">
+                        </app-checkbox>
+                      </div>
+
+
+
+
                     </div>
 
                 </div>

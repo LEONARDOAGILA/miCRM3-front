@@ -626,7 +626,7 @@ export class ButtonAccionUser {
     (async () => {
       try {
         const response = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
-        console.log('response',response)
+        // console.log('response',response)
         const index = this.AllUsersComponent.userModel.findIndex(
           registro => registro.id === response.id
         );
