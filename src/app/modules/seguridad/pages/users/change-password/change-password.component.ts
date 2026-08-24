@@ -88,6 +88,32 @@ passwordMatchValidator(formGroup: FormGroup) {
 
 
 
+  /** Avatar del usuario (misma imagen que muestra el modal de usuarios) */
+  public avatarUrl: string | null = null;
+  public avatarError = false;
+
+  /**
+   * Contraseña creada con el botón «Generar». Se muestra en claro para
+   * poder dictársela al usuario y se oculta en cuanto se edita a mano.
+   */
+  public claveGenerada: string | null = null;
+
+  private readonly TIPOS_USUARIO: { [id: number]: string } = {
+    1: 'SUPER USUARIO',
+    2: 'ADMINISTRADOR',
+    3: 'USUARIO SISTEMA',
+    4: 'USUARIO WEB',
+  };
+
+  /** Nombre del tipo de usuario, para el chip de la ficha */
+  public get tipoUsuarioNombre(): string {
+    return this.TIPOS_USUARIO[this.registro_selected?.type_user] || '';
+  }
+
+  public handleAvatarError(): void {
+    this.avatarError = true;
+  }
+
   /** Nombre y apellidos del usuario, para la ficha de cabecera */
   public get nombreCompleto(): string {
     const nombre = this.registro_selected?.name || '';
@@ -129,6 +155,17 @@ passwordMatchValidator(formGroup: FormGroup) {
     this.form.get('name')?.setValue(this.registro_selected.name);
     this.form.get('surname')?.setValue(this.registro_selected.surname);
     this.form.get('email')?.setValue(this.registro_selected.email);
+
+    if (this.registro_selected?.avatar && this.userId) {
+      this.avatarUrl = this._userService.getUserImage(this.userId, true);
+    }
+
+    // Si la clave se edita a mano, deja de mostrarse la generada
+    this.form.get('new_password')?.valueChanges.subscribe(valor => {
+      if (this.claveGenerada && valor !== this.claveGenerada) {
+        this.claveGenerada = null;
+      }
+    });
   }
 
 async onSubmit() {
@@ -320,6 +357,9 @@ generarYEstablecerContrasena(): void {
   // Establecer la nueva contraseña
   this.form.get('new_password')?.setValue(nuevaPassword);
   this.form.get('new_password_confirmation')?.setValue(nuevaPassword);
+
+  // Se muestra en claro para poder entregársela al usuario
+  this.claveGenerada = nuevaPassword;
   
   // Marcar campos como tocados
   this.form.get('new_password')?.markAsTouched();

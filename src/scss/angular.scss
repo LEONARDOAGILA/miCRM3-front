@@ -3,6 +3,9 @@
 
 
 
+
+
+
 // inicio - lpaa Estilos para CARDS compactos
 .grow {
   flex-grow: 1;
@@ -1722,3 +1725,123 @@ body {
 [dir="rtl"] * {
 	direction: rtl;
 }
+
+
+
+
+
+/* ============================================================
+   ESTADO DEL USUARIO (switch) - VERSIÓN GLOBAL
+   ============================================================ */
+
+.estado-miswitch {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  padding: .5rem .75rem;
+  margin-bottom: var(--su-gap, .85rem);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.estado-miswitch.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.estado-miswitch__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.estado-miswitch.is-on .estado-miswitch__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.estado-miswitch__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.estado-miswitch__label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.estado-miswitch__hint {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.estado-miswitch__switch {
+  margin-left: auto;
+}
+
+/* Estilos para el switch - SIN ::ng-deep */
+.estado-miswitch__switch .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.estado-miswitch__switch .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.estado-miswitch__switch .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.estado-miswitch__switch .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  vertical-align: middle;
+}
+
+/* Para que funcione en modo oscuro */
+[data-bs-theme="dark"] .estado-miswitch {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme="dark"] .estado-miswitch.is-on {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .12);
+}
+
+
+/* Versión ultra compacta para móvil */
+// @media (max-width: 575.98px) {
+//   /* Ocultar todo excepto el switch */
+//   .estado-miswitch__icon,
+//   .estado-miswitch__text,
+//   .estado-miswitch__hint {
+//     display: none !important;    
+//   } 
+// }

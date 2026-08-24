@@ -71,7 +71,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
     private _seguridadService: SeguridadService,
     private _userService: UserService,
   ) {
-    this.titulo = "Usuarios del Sistema";
+    this.titulo = "Usuarios";
     this.accesoModel = this.activeRoute.snapshot.data.access;
   }
 
@@ -572,7 +572,7 @@ export class ButtonAccionUser {
   cambioClave() {
     const modalRef = this.modalService.open(ChangePasswordComponent, {
       centered: true,
-      size: 'md',
+      size: 'xl',
       backdrop: 'static',
       keyboard: true
     });
@@ -626,7 +626,7 @@ export class ButtonAccionUser {
     (async () => {
       try {
         const response = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
-        console.log('response',response)
+        // console.log('response',response)
         const index = this.AllUsersComponent.userModel.findIndex(
           registro => registro.id === response.id
         );

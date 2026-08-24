@@ -85,9 +85,8 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private _toastr: ToastrService,
-  public activeModal: NgbActiveModal,  // ← renombrado a activeModal
-    private modalService: NgbModal,  // ← para abrir nuevos modales
-
+    public activeModal: NgbActiveModal,
+    private modalService: NgbModal,
     private _loadingService: LoadingService,
     private _seguridadService: SeguridadService,
     private _userService: UserService,
@@ -122,7 +121,6 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     this.esView = this.accion === 'view';
     this.esNuevo = this.accion === 'add';
     this.esClon = this.accion === 'clon';
-    //console.log('esView',this.esView)
     this.isdisabled = this.accion === 'view';    
     this.perfilNombreControl.disable();
     this.horarioNombreControl.disable();
@@ -161,10 +159,9 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   }
 
   onPaisChange(codigoPais: string) {
-  console.log('País seleccionado:', codigoPais);
-  // Puedes guardar el país en otra variable si lo necesitas
-  this.paisSeleccionado = codigoPais;
-}
+    console.log('País seleccionado:', codigoPais);
+    this.paisSeleccionado = codigoPais;
+  }
 
   //   ******   INICIALIZA FORMULARIO   ******  //
   initializeForm(): void {
@@ -195,16 +192,10 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     });
   }
 
-
-
-
-//   ******   PERFILES   ******  //
+  //   ******   PERFILES   ******  //
   async cargarPerfilPorId() {
-    //console.log('cargar perfil id')
     const perfilId = this.form.get('perfil_id')?.value;
-
     this.perfilIdInvalido = true;
-
 
     if (!perfilId) {
       this.perfilNombreControl.setValue('');
@@ -242,7 +233,6 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.seleccionado.subscribe((perfil: any) => {
       this.form.patchValue({ perfil_id: perfil.id });
       this.perfilNombreControl.setValue(perfil.nombre);
-      //this._toastr.success(`Perfil seleccionado: ${perfil.nombre}`);
     });
   }
 
@@ -254,13 +244,11 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       let perfil = null;
       
       if (isNumber) {
-        // Buscar por ID
         const res = await firstValueFrom(this._profileService.findByIdProfile(parseInt(busqueda))) as any;
         if (res?.status === 'success') {
           perfil = res.data;
         }
       } else {
-        // Buscar por nombre
         const res = await firstValueFrom(this._profileService.listProfiles()) as any;
         if (res?.status === 'success') {
           perfil = res.data.find((p: any) => 
@@ -284,10 +272,7 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     }
   }
 
-
-
-
-//   ******   HORARIOS   ******  //
+  //   ******   HORARIOS   ******  //
   async buscarHorario(busqueda: string) {
     try {
       this._loadingService.setLoading(true);
@@ -296,13 +281,11 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       let horario = null;
       
       if (isNumber) {
-        // Buscar por ID
         const res = await firstValueFrom(this._horarioService.getHorario(parseInt(busqueda))) as any;
         if (res?.status === 'success') {
           horario = res.data;
         }
       } else {
-        // Buscar por nombre
         const res = await firstValueFrom(this._horarioService.listHorarios()) as any;
         if (res?.status === 'success') {
           horario = res.data.find((h: any) => 
@@ -341,7 +324,6 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       if (res?.status === 'success') {
         this.horarioNombreControl.setValue(res.data.nombre);
       } else {
-
         this.horarioNombreControl.setValue('');
         this._toastr.warning('Horario no encontrado');
         this.form.patchValue({ chorario_id: null });
@@ -370,15 +352,11 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     });
   }
 
-
-
-
   //   ******   BUSQUEDA DE USUARIO   ******  //
   private async findByIdUser(id: number) {
     try {
       this._loadingService.setLoading(true);
       let res: any = await firstValueFrom(this._userService.findByIdUser(id));
-      //console.log('Respuesta de findByIdUser:', res);
 
       if (res?.status === 'success') {
         this.userModel = res.data;
@@ -401,29 +379,25 @@ export class SaveUserComponent implements OnInit, OnDestroy {
           chorario_id: this.userModel.chorario_id
         });
         
-        // Actualizar nombres visibles
         this.perfilNombreControl.setValue(this.userModel.perfil_nombre || '');
         this.horarioNombreControl.setValue(this.userModel.chorario_nombre || '');
 
-if (this.userModel.avatar) {
-  this.imagen_previzualiza = this._userService.getUserImage(id, true);
-  
-  if (this.accion === 'clon') {
-    await this.convertImageUrlToFile(this._userService.getUserImage(id, true));
-    // ✅ IMPORTANTE: Limpiar el avatar del formulario para que se genere uno nuevo
-    this.form.patchValue({ avatar: null });
-    this.userModel.avatar = null;
-  }
-  
-  const imageExists = await this.checkImageExists(this.imagen_previzualiza);
-  if (!imageExists) {
-    this.imagen_previzualiza = null;
-  }
-} else {
-  this.imagen_previzualiza = null;
-}
-
-
+        if (this.userModel.avatar) {
+          this.imagen_previzualiza = this._userService.getUserImage(id, true);
+          
+          if (this.accion === 'clon') {
+            await this.convertImageUrlToFile(this._userService.getUserImage(id, true));
+            this.form.patchValue({ avatar: null });
+            this.userModel.avatar = null;
+          }
+          
+          const imageExists = await this.checkImageExists(this.imagen_previzualiza);
+          if (!imageExists) {
+            this.imagen_previzualiza = null;
+          }
+        } else {
+          this.imagen_previzualiza = null;
+        }
       } else {
         console.error('Error: Respuesta sin status success', res);
         this.imagen_previzualiza = null;
@@ -441,19 +415,40 @@ if (this.userModel.avatar) {
   //   ******   GRABAR IMAGEN   ******  // 
   async grabarImagen() {
     try {
+      // ✅ Verificar que haya imagen
+      if (!this.imagen_file) {
+        console.warn('No hay imagen para guardar');
+        return null;
+      }
+      
+      // ✅ Verificar que haya userId
+      if (!this.userId) {
+        console.warn('No hay userId para guardar la imagen');
+        return null;
+      }
+      
+      // ✅ Crear un FormData nuevo siempre
       const formData = new FormData();
-      formData.append("UserId", this.userId?.toString() || '');
+      formData.append("UserId", this.userId.toString());
       formData.append("imagen_file", this.imagen_file);
+    
+      //console.log('Guardando imagen para userId:', this.userId);
+      //console.log('Nombre del archivo:', this.imagen_file.name);
+      //console.log('Tamaño del archivo:', this.imagen_file.size);
     
       const response = await firstValueFrom(this._userService.addImagen(formData));
       if (response.status === 'success') {
         this.nuevoAvatar = response.data.avatar;
+        //console.log('Imagen guardada exitosamente:', this.nuevoAvatar);
+        return response;
       } else {
         this._toastr.error('No se pudo subir la imagen');
+        return null;
       }
     } catch (error: any) {
       console.error('Error al subir imagen:', error);
       this._toastr.error(error.message || 'Error al subir la imagen');
+      return null;
     }
   }
 
@@ -467,30 +462,23 @@ if (this.userModel.avatar) {
         this.response = await firstValueFrom(this._userService.addUser(data));
         if (this.response.status === 'success') {
           this.userId = this.response.data.id;
-
-          if (this.cambioImagen) {
-            this.formDataImg.delete('UserId');
-            this.formDataImg.append('UserId', this.userId.toString());
+          
+          if (this.cambioImagen && this.imagen_file) {
             await this.grabarImagen();
-            this.response.data.avatar = this.nuevoAvatar
+            this.response.data.avatar = this.nuevoAvatar;
           }
-
-
         }
       } else {
         let formData = new FormData();
         formData.append('json', JSON.stringify(data));
 
         if (this.accion === 'edit') {
-          //console.log('formData',formData)
           this.response = await firstValueFrom(this._userService.editUser(this.registro_selected.id, formData));
           if (this.response.status === 'success') {
-            if (this.cambioImagen) {
-              console.log('grabando imagen')
+            if (this.cambioImagen && this.imagen_file) {
               await this.grabarImagen();
-              this.response.data.avatar = this.nuevoAvatar
+              this.response.data.avatar = this.nuevoAvatar;
             }
-
           }
         }
 
@@ -498,7 +486,7 @@ if (this.userModel.avatar) {
           this.response = await firstValueFrom(this._userService.clonUser(data));
           if (this.response.status === 'success') {
             this.userId = this.response.data.id;
-            if (this.cambioImagen) {
+            if (this.cambioImagen && this.imagen_file) {
               await this.grabarImagen();
               this.response.data.avatar = this.nuevoAvatar;
             }
@@ -515,6 +503,7 @@ if (this.userModel.avatar) {
       console.error('Error en la petición', error);
       this.isdisabled = false;
       this._loadingService.setLoading(false);
+      this._toastr.error(error.message || 'Error al guardar el usuario');
     }
   }
 
@@ -523,7 +512,6 @@ if (this.userModel.avatar) {
     this._toastr.clear();
     Object.values(this.form.controls).forEach(control => control.markAsTouched());
     
-    // Validar que el perfil y horario tengan valor
     const perfilId = this.form.get('perfil_id')?.value;
     const chorarioId = this.form.get('chorario_id')?.value;
     
@@ -535,8 +523,6 @@ if (this.userModel.avatar) {
       this._toastr.error('Debe seleccionar un Horario', 'Error');
       return;
     }
-    //console.log('this.form.getRawValue()',this.form.getRawValue())
-
     
     if (this.form.valid) {
       let formData = this.form.getRawValue();
@@ -546,9 +532,6 @@ if (this.userModel.avatar) {
     }
   }
 
-
-
-
   ////   INICIO DE IMAGEN  ///////////////////////////////////////////////////////////////////////////////////////////
   processFile($event: any) {
     if ($event.target.files[0].type.indexOf("image") < 0) {
@@ -557,13 +540,17 @@ if (this.userModel.avatar) {
       return;
     }
     this.imagen_file = $event.target.files[0];
+    this.cambioImagen = true;
+    this.imagen_paste = null;
+    
     let reader = new FileReader();
     reader.readAsDataURL(this.imagen_file);
-    reader.onloadend = () => this.imagen_previzualiza = reader.result;
-
-    this.cambioImagen = true;
-    this.prepara_imagen_antes_grabar();
-    this.imagen_paste = null;
+    reader.onloadend = () => {
+      this.imagen_previzualiza = reader.result;
+      if (this.userId) {
+        this.prepara_imagen_antes_grabar();
+      }
+    };
   }
 
   @HostListener('paste', ['$event'])
@@ -613,10 +600,12 @@ if (this.userModel.avatar) {
     reader.onload = (e: any) => {
       this.imagen_paste = e.target.result;
       this.imagen_previzualiza = this.imagen_paste;
-      this.imagen_file = null;
-      const file = new File([imageBlob], 'pasted-image.png', { type: imageBlob.type });
+      const file = new File([imageBlob], `pasted-image-${Date.now()}.png`, { type: imageBlob.type });
       this.imagen_file = file;
-      this.prepara_imagen_antes_grabar();
+      this.cambioImagen = true;
+      if (this.userId) {
+        this.prepara_imagen_antes_grabar();
+      }
     };
     reader.readAsDataURL(imageBlob);
   }
@@ -642,11 +631,8 @@ if (this.userModel.avatar) {
   clearImage() {
     this.imagen_previzualiza = null;
     this.imagen_paste = '';
+    this.imagen_file = null;
     this.form.get('avatar')?.setValue(null);
-    const input = document.getElementById('image-input') as HTMLInputElement;
-    if (input) {
-      input.value = '';
-    }
     this.cambioImagen = false;
   }
 
@@ -689,18 +675,22 @@ if (this.userModel.avatar) {
     }
 
     this.imagen_file = file;
+    this.cambioImagen = true;
+    this.imagen_paste = null;
+    
     const reader = new FileReader();
     reader.readAsDataURL(this.imagen_file);
-    reader.onloadend = () => this.imagen_previzualiza = reader.result;
-    this.cambioImagen = true;
-    this.prepara_imagen_antes_grabar();
-    this.imagen_paste = null;
+    reader.onloadend = () => {
+      this.imagen_previzualiza = reader.result;
+      if (this.userId) {
+        this.prepara_imagen_antes_grabar();
+      }
+    };
   }
 
   async triggerPaste(): Promise<void> {
     try {
       this.cambioImagen = true;
-      this.prepara_imagen_antes_grabar();
       
       const clipboardItems = await navigator.clipboard.read();
 
@@ -709,6 +699,7 @@ if (this.userModel.avatar) {
           if (type.startsWith('image/')) {
             const blob = await clipboardItem.getType(type);
             this.handleImagePaste(blob);
+            this.cambioImagen = true;
             return;
           }
         }
@@ -729,24 +720,30 @@ if (this.userModel.avatar) {
   }
 
   prepara_imagen_antes_grabar() {
-    if (this.imagen_file && this.userId) {
-      this.imagen = this.imagen_file;
-      this.formDataImg = new FormData();
-      this.formDataImg.append("UserId", this.userId.toString());
-      this.formDataImg.append("imagen_file", this.imagen);
-      
-      this.comprimirImagen.comprimirImagen(this.imagen)
-        .then((compressedFile: File) => {
-          this.formDataImg = new FormData();
-          this.formDataImg.append("UserId", this.userId.toString());
-          this.formDataImg.append("imagen_file", compressedFile);
-        })
-        .catch((error: any) => {
-          console.error('error en comprimir la imagen', error);
-        });
+    this.cambioImagen = true;
+    
+    if (!this.imagen_file) {
+      console.warn('No hay imagen para preparar');
+      return;
     }
+    
+    if (!this.userId) {
+      console.warn('No hay userId para preparar la imagen');
+      return;
+    }
+    
+    // Comprimir la imagen
+    this.comprimirImagen.comprimirImagen(this.imagen_file)
+      .then((compressedFile: File) => {
+        // Reemplazar la imagen original con la comprimida
+        this.imagen_file = compressedFile;
+        //console.log('Imagen comprimida:', compressedFile.name, compressedFile.size);
+      })
+      .catch((error: any) => {
+        console.error('Error en comprimir la imagen, se usará la original', error);
+      });
   }
-  
+
   handleImageError(event: any) {
     event.target.style.display = 'none';
   }
@@ -756,13 +753,17 @@ if (this.userModel.avatar) {
       const response = await fetch(imageUrl);
       const blob = await response.blob();
 
-      this.imagen_file = new File([blob], 'cloned_avatar.png', { type: blob.type });
+      this.imagen_file = new File([blob], `cloned_avatar_${Date.now()}.png`, { type: blob.type });
+      this.cambioImagen = true;
 
       const reader = new FileReader();
-      reader.onload = (e) => this.imagen_previzualiza = e.target?.result;
+      reader.onload = (e) => {
+        this.imagen_previzualiza = e.target?.result;
+        if (this.userId) {
+          this.prepara_imagen_antes_grabar();
+        }
+      };
       reader.readAsDataURL(this.imagen_file);
-      this.cambioImagen = true;
-      this.prepara_imagen_antes_grabar();
     } catch (error) {
       console.error('Error al convertir imagen:', error);
       this._toastr.error('No se pudo cargar la imagen para clonación');
@@ -789,7 +790,6 @@ if (this.userModel.avatar) {
   }
   
   openFullscreen(): void {
-    // También se permite ampliar la imagen en modo consulta (view)
     if (this.imagen_previzualiza) {
       this.showFullscreenImage = true;
       document.body.style.overflow = 'hidden';
@@ -894,16 +894,23 @@ if (this.userModel.avatar) {
     
     canvas.toBlob((blob) => {
       if (blob) {
-        const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+        // ✅ Crear el archivo con un nombre único
+        const file = new File([blob], `camera-capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
         
         this.imagen_file = file;
+        this.cambioImagen = true;
+        this.imagen_paste = null;
+        
         const reader = new FileReader();
         reader.readAsDataURL(this.imagen_file);
         reader.onloadend = () => {
           this.imagen_previzualiza = reader.result;
-          this.cambioImagen = true;
-          this.prepara_imagen_antes_grabar();
-          this.imagen_paste = null;
+          
+          // ✅ Si hay userId, preparar la imagen
+          if (this.userId) {
+            this.prepara_imagen_antes_grabar();
+          }
+          
           this.closeCamera();
           this._toastr.success('Foto capturada correctamente');
         };

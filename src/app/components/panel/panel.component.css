@@ -1,0 +1,118 @@
+/* =============================================
+   ICONOS PARA PANELES
+   ============================================= */
+
+/* BASE - Para todos los iconos */
+.panel-icono::before {
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  margin-right: 8px;
+  font-size: inherit;
+  display: inline-block;
+}
+
+/* ICONOS DISPONIBLES */
+.panel-icono-usuario .panel-icono::before { content: '\f007'; }  /* fa-user */
+.panel-icono-usuarios .panel-icono::before { content: '\f0c0'; }  /* fa-users */
+.panel-icono-clave .panel-icono::before { content: '\f084'; }   /* fa-key */
+.panel-icono-email .panel-icono::before { content: '\f0e0'; }   /* fa-envelope */
+.panel-icono-editar .panel-icono::before { content: '\f044'; }  /* fa-edit */
+.panel-icono-cerrar .panel-icono::before { content: '\f023'; }  /* fa-lock */
+.panel-icono-config .panel-icono::before { content: '\f013'; }  /* fa-cog */
+.panel-icono-shield .panel-icono::before { content: '\f132'; }  /* fa-shield */
+.panel-icono-home .panel-icono::before { content: '\f015'; }    /* fa-home */
+.panel-icono-search .panel-icono::before { content: '\f002'; }  /* fa-search */
+.panel-icono-plus .panel-icono::before { content: '\f067'; }    /* fa-plus */
+.panel-icono-minus .panel-icono::before { content: '\f068'; }   /* fa-minus */
+.panel-icono-trash .panel-icono::before { content: '\f1f8'; }   /* fa-trash */
+.panel-icono-save .panel-icono::before { content: '\f0c7'; }    /* fa-save */
+.panel-icono-print .panel-icono::before { content: '\f02f'; }   /* fa-print */
+.panel-icono-download .panel-icono::before { content: '\f019'; }/* fa-download */
+.panel-icono-upload .panel-icono::before { content: '\f093'; }  /* fa-upload */
+.panel-icono-refresh .panel-icono::before { content: '\f021'; } /* fa-refresh */
+.panel-icono-info .panel-icono::before { content: '\f05a'; }    /* fa-info-circle */
+.panel-icono-warning .panel-icono::before { content: '\f071'; } /* fa-exclamation-triangle */
+.panel-icono-danger .panel-icono::before { content: '\f057'; }  /* fa-times-circle */
+.panel-icono-success .panel-icono::before { content: '\f058'; } /* fa-check-circle */
+.panel-icono-clock .panel-icono::before { content: '\f017'; }   /* fa-clock */
+.panel-icono-calendar .panel-icono::before { content: '\f133'; }/* fa-calendar */
+.panel-icono-file .panel-icono::before { content: '\f15b'; }    /* fa-file */
+.panel-icono-folder .panel-icono::before { content: '\f07b'; }  /* fa-folder */
+.panel-icono-image .panel-icono::before { content: '\f03e'; }   /* fa-image */
+.panel-icono-video .panel-icono::before { content: '\f03d'; }   /* fa-video */
+.panel-icono-audio .panel-icono::before { content: '\f001'; }   /* fa-music */
+.panel-icono-chart .panel-icono::before { content: '\f080'; }   /* fa-chart-bar */
+.panel-icono-map .panel-icono::before { content: '\f279'; }     /* fa-map-marker-alt */
+.panel-icono-phone .panel-icono::before { content: '\f095'; }   /* fa-phone */
+.panel-icono-mobile .panel-icono::before { content: '\f10b'; }  /* fa-mobile-alt */
+.panel-icono-tablet .panel-icono::before { content: '\f10a'; }  /* fa-tablet-alt */
+.panel-icono-laptop .panel-icono::before { content: '\f109'; }  /* fa-laptop */
+.panel-icono-desktop .panel-icono::before { content: '\f108'; } /* fa-desktop */
+
+/* =============================================
+   FONDO GRIS PARA PANELES
+   ============================================= */
+
+/* Fondo gris para todo el panel */
+.panel-fondo-gris {
+  background-color: var(--bs-component-secondary-bg, var(--bs-tertiary-bg, #f8f9fa)) !important;
+  border: 1px solid var(--bs-component-border-color, #dee2e6) !important;
+  border-radius: 0.25rem !important;
+}
+
+
+/* Fondo gris para el body */
+.panel-fondo-gris-body {
+  background-color: var(--bs-component-secondary-bg, var(--bs-tertiary-bg, #f8f9fa)) !important;
+}
+
+/* Fondo gris para el footer */
+.panel-fondo-gris-footer {
+  background-color: var(--bs-component-secondary-bg, var(--bs-tertiary-bg, #f8f9fa)) !important;
+  border-top: 1px solid var(--bs-component-border-color, #dee2e6) !important;
+}
+
+/* =============================================
+   BORDE PARA PANELES (por defecto)
+   ============================================= */
+
+.panel {
+  border: 1px solid var(--bs-component-border-color, #dee2e6);
+  border-radius: 0.5rem;
+}
+
+/* Quitar duplicación de bordes cuando se usa fondo gris */
+.panel-fondo-gris .panel-fondo-gris-heading {
+  border-bottom: 1px solid var(--bs-component-border-color, #dee2e6);
+}
+
+.panel-fondo-gris .panel-fondo-gris-footer {
+  border-top: 1px solid var(--bs-component-border-color, #dee2e6);
+}
+
+/* =============================================
+   MODO OSCURO - COLOR ADMIN
+   ============================================= */
+
+[data-bs-theme="dark"] .panel {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme="dark"] .panel-fondo-gris {
+  background-color: var(--bs-component-secondary-bg, #2d2d2d) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-bs-theme="dark"] .panel-fondo-gris-heading {
+  background-color: var(--bs-component-secondary-bg, #2d2d2d) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-bs-theme="dark"] .panel-fondo-gris-body {
+  background-color: var(--bs-component-secondary-bg, #2d2d2d) !important;
+}
+
+[data-bs-theme="dark"] .panel-fondo-gris-footer {
+  background-color: var(--bs-component-secondary-bg, #2d2d2d) !important;
+  border-top-color: rgba(255, 255, 255, 0.1) !important;
+}

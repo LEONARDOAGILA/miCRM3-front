@@ -1,14 +1,14 @@
-/* ============================================================
-   SAVE USER - Estilos del modal
-   Basados en las variables de Bootstrap / Color Admin para que
-   funcionen igual en tema claro y oscuro.
-   ============================================================ */
 
 :host {
   display: block;
   --su-radius: .5rem;
   --su-gap: .85rem;
   --su-field-h: calc(3.5rem + 2px); /* alto real de un .form-floating */
+}
+
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .5rem;
 }
 
 /* ---------- Cuerpo del modal ---------- */
@@ -18,79 +18,8 @@
 }
 
 /* ============================================================
-   TARJETAS
-   ============================================================ */
-.form-card {
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bs-body-bg, #fff);
-  border: 1px solid var(--bs-border-color, #e5e7eb);
-  border-radius: var(--su-radius);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
-  overflow: hidden;
-}
-
-.form-card__header {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .625rem .875rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-bottom: 1px solid var(--bs-border-color, #e5e7eb);
-  font-size: .75rem;
-  font-weight: 700;
-  letter-spacing: .045em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.form-card__header > i {
-  font-size: .875rem;
-  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-}
-
-.form-card__body {
-  flex: 1 1 auto;
-  padding: 1rem .875rem .5rem;
-}
-
-/* ============================================================
-   CHIPS / ETIQUETAS
-   ============================================================ */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  padding: .2rem .55rem;
-  border-radius: 999px;
-  font-size: .6875rem;
-  font-weight: 600;
-  letter-spacing: .02em;
-  text-transform: none;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
-.chip > i {
-  font-size: .5rem;
-}
-
-.chip-muted   { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
-.chip-success { background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15); color: var(--bs-success, #198754); }
-.chip-danger  { background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .15);  color: var(--bs-danger, #dc3545); }
-.chip-info    { background-color: rgba(var(--bs-info-rgb, 13, 202, 240), .18);   color: var(--bs-info-text-emphasis, #087990); }
-
-/* ============================================================
    AVATAR
    ============================================================ */
-.avatar-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .875rem;
-  padding-bottom: 1rem;
-}
-
 .avatar-dropzone {
   position: relative;
   width: 100%;
@@ -226,19 +155,69 @@
   border-radius: .2rem;
 }
 
-/* ----- Botones de acción ----- */
+/* ============================================================
+   AVATAR ACTIONS - ESTILO PROFESIONAL
+   ============================================================ */
+
 .avatar-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: .375rem;
+  gap: 0.375rem;
   width: 100%;
+  padding: 0.25rem 0;
 }
 
-.avatar-actions .btn {
-  flex: 1 1 auto;
-  min-width: 92px;
-  font-size: .75rem;
+.btn-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: transparent;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+  letter-spacing: 0.01em;
+  min-width: 80px;
+}
+
+.btn-avatar i {
+  font-size: 0.875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  transition: color 0.15s ease;
+}
+
+.btn-avatar span {
+  line-height: 1.2;
+}
+
+.btn-avatar:hover {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-color: var(--bs-border-color, #ced4da);
+  color: var(--bs-body-color, #212529);
+}
+
+.btn-avatar:hover i {
+  color: var(--bs-body-color, #212529);
+}
+
+.btn-avatar:active,
+.btn-avatar:focus-visible {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb, 13, 110, 253), 0.15);
+}
+
+.btn-avatar:active i,
+.btn-avatar:focus-visible i {
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
 }
 
 /* ----- Resumen ----- */
@@ -274,106 +253,32 @@
 }
 
 /* ============================================================
-   ESTADO DEL USUARIO (switch)
+   CHIPS / ETIQUETAS
    ============================================================ */
-.estado-usuario {
-  display: flex;
-  align-items: center;
-  gap: .625rem;
-  padding: .5rem .75rem;
-  margin-bottom: var(--su-gap);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-left: 3px solid var(--bs-secondary, #6c757d);
-  border-radius: .375rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  transition: border-color .2s ease, background-color .2s ease;
-}
-
-.estado-usuario.is-on {
-  border-left-color: var(--bs-success, #198754);
-  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
-}
-
-.estado-usuario__icon {
+.chip {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
-  border-radius: 50%;
-  font-size: .8125rem;
-  color: var(--bs-secondary-color, #6c757d);
-  background-color: rgba(108, 117, 125, .15);
-}
-
-.estado-usuario.is-on .estado-usuario__icon {
-  color: var(--bs-success, #198754);
-  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
-}
-
-.estado-usuario__text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-  min-width: 0;
-}
-
-.estado-usuario__label {
-  font-size: .8125rem;
-  font-weight: 600;
-  color: var(--bs-body-color, #212529);
-}
-
-.estado-usuario__hint {
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
   font-size: .6875rem;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.estado-usuario__switch {
-  margin-left: auto;
-}
-
-/* Convierte el checkbox del componente compartido en un switch */
-.estado-usuario__switch ::ng-deep .form-check {
-  margin: 0;
-  padding-left: 3rem;
-  min-height: auto;
-}
-
-.estado-usuario__switch ::ng-deep .form-check-input {
-  width: 2.5rem;
-  height: 1.35rem;
-  margin-top: 0;
-  margin-left: -3rem;
-  background-color: rgba(108, 117, 125, .35);
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
-  background-position: left center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  border: none;
-  border-radius: 2rem;
-  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
-}
-
-.estado-usuario__switch ::ng-deep .form-check-input:checked {
-  background-color: var(--bs-success, #198754);
-  background-position: right center;
-}
-
-.estado-usuario__switch ::ng-deep .form-check-label {
-  font-size: .75rem;
   font-weight: 600;
-  color: var(--bs-secondary-color, #6c757d);
-  vertical-align: middle;
+  letter-spacing: .02em;
+  text-transform: none;
+  line-height: 1.4;
+  white-space: nowrap;
 }
+
+.chip > i {
+  font-size: .5rem;
+}
+
+.chip-success { background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15); color: var(--bs-success, #198754); }
+.chip-danger  { background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .15);  color: var(--bs-danger, #dc3545); }
+.chip-info    { background-color: rgba(var(--bs-info-rgb, 13, 202, 240), .18);   color: var(--bs-info-text-emphasis, #087990); }
 
 /* ============================================================
    CAMPOS DEL FORMULARIO
-   Los componentes compartidos (app-campoTexto, app-combo, ...)
-   traen sus propios márgenes; aquí se normalizan para que todos
-   los campos tengan la misma separación sin usar márgenes
-   negativos.
    ============================================================ */
 .campo {
   margin-bottom: var(--su-gap);
@@ -392,13 +297,10 @@
   display: block;
 }
 
-/* El .form-floating trae mb-3 en móvil: se anula para usar .campo */
 :host ::ng-deep .campo .form-floating {
   margin-bottom: 0 !important;
 }
 
-/* Bloque de mensajes de error: se elimina el label vacío que
-   reservaba ~30px de alto en cada campo */
 :host ::ng-deep .campo .input-group.with-focus {
   display: flex;
   flex-direction: column;
@@ -432,6 +334,7 @@
 /* ---------- Campos con búsqueda (ID + nombre + lupa) ---------- */
 .campo-lookup .row {
   align-items: flex-start;
+  flex-wrap: nowrap;
 }
 
 .btn-lookup {
@@ -446,6 +349,7 @@
   background-color: var(--bs-secondary-bg, #e9ecef);
   color: var(--bs-body-color, #212529);
   transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+  flex-shrink: 0;
 }
 
 .btn-lookup:hover,
@@ -455,7 +359,6 @@
   color: #fff;
 }
 
-/* El nombre del perfil/horario es de solo lectura: se marca visualmente */
 :host ::ng-deep .campo-lookup .form-control:disabled,
 :host ::ng-deep .campo-lookup .form-control[readonly] {
   background-color: var(--bs-secondary-bg, #e9ecef);
@@ -551,7 +454,7 @@
   position: relative;
   width: 100%;
   height: 0;
-  padding-bottom: 75%; /* 4:3 */
+  padding-bottom: 75%;
   overflow: hidden;
   background: #000;
 }
@@ -616,26 +519,6 @@
   font-size: .875rem;
 }
 
-/* Efecto de flash al capturar */
-.capture-flash {
-  position: fixed;
-  inset: 0;
-  background-color: #fff;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 1090;
-}
-
-.capture-flash.animate {
-  animation: captureFlash .3s ease-in-out;
-}
-
-@keyframes captureFlash {
-  0%   { opacity: 0; }
-  50%  { opacity: 1; }
-  100% { opacity: 0; }
-}
-
 /* ============================================================
    RESPONSIVE
    ============================================================ */
@@ -652,20 +535,25 @@
   .user-modal-body {
     padding: .75rem;
   }
-  .form-card__body {
-    padding: .875rem .75rem .5rem;
-  }
   .avatar-actions .btn {
     min-width: 0;
   }
   .btn-lookup {
-    width: 100%;
-  }
-  .campo-lookup .col-auto {
-    flex: 1 0 100%;
+    height: 58px !important;
   }
   .campo-lookup .btn-lookup {
     height: 42px;
+  }
+}
+
+@media (max-width: 400px) {
+  .btn-avatar span {
+    display: none;
+  }
+  
+  .btn-avatar {
+    min-width: 40px;
+    padding: 0.3rem 0.5rem;
   }
 }
 
