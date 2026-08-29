@@ -14,7 +14,7 @@ import { ProfileService } from '../../../../seguridad/services/profile.service';
 import { ComprimirImagen } from '../../../../../service/comprimirImagen';
 import { HorarioService } from '../../../../seguridad/services/horario.service';
 
-// Modelos
+// ModelosSSS
 import { UserModel } from "../../../interfaces/userModel";
 import { ListProfileComponent } from '../../profiles/listProfile/listProfile.component';
 import { ListHorariosComponent } from '../../horarios/listHorarios/listHorarios.component';
