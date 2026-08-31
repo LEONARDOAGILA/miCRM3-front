@@ -1,12 +1,13 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { 
-  FormBuilder, 
-  FormGroup, 
-  FormControl, 
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+  FormControl,
   Validators
 } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ToastrService } from 'ngx-toastr';
 import { LoadingService } from '../../../../../service/loading.service';
 import { UserService } from '../../../services/user.service';
@@ -17,7 +18,7 @@ import { UserService } from '../../../services/user.service';
   styleUrls: ['./change-password.component.css'],
   standalone: false,
 })
-export class ChangePasswordComponent implements OnInit {
+export class ChangePasswordComponent implements OnInit, OnDestroy {
   @Input() registro_selected: any = {};
   @Input() userId!: number;
   @Input() view_reset: boolean;
@@ -25,6 +26,9 @@ export class ChangePasswordComponent implements OnInit {
 
   public isLoading$ = this._loadingService.isLoading$;
   public isdisabled: boolean;
+
+  /** Corta toda suscripción viva al destruir el componente. */
+  private readonly unsubscribe$ = new Subject<void>();
 
   form: FormGroup<{
     login_user: FormControl<string | null>;
@@ -161,11 +165,18 @@ passwordMatchValidator(formGroup: FormGroup) {
     }
 
     // Si la clave se edita a mano, deja de mostrarse la generada
-    this.form.get('new_password')?.valueChanges.subscribe(valor => {
-      if (this.claveGenerada && valor !== this.claveGenerada) {
-        this.claveGenerada = null;
-      }
-    });
+    this.form.get('new_password')?.valueChanges
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe(valor => {
+        if (this.claveGenerada && valor !== this.claveGenerada) {
+          this.claveGenerada = null;
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribe$.next();
+    this.unsubscribe$.complete();
   }
 
 async onSubmit() {
@@ -214,163 +225,133 @@ async onSubmit() {
 }
 
 
-// Opción 1: Palabra + Número + Especial (Formato: Palabra123!)
-// Ejemplo: Casa123! , Perro456? , Gato789$
-generateEasyPassword(): string {
-  // Palabras comunes en mayúscula (primera letra mayúscula, resto minúscula)
-  const palabras = [
-    'Casa', 'Carro', 'Foco', 'Sol', 'Luna', 'Mar', 'Mesa', 'Agua',
-    'Rio', 'Montana', 'Play', 'Ciudad', 'Algo', 'Paz', 'Sill', 'Grand'
-  ];
-  
-  // Números de 2 dígitos (10-99)
-  const numero = Math.floor(Math.random() * 90) + 10;
-  
-  // Caracteres especiales permitidos
-  const especiales = ['!', '@', '#', '$', '%', '.', '&', '*'];
-  const especial = especiales[Math.floor(Math.random() * especiales.length)];
-  
-  // Palabra con primera letra mayúscula y resto minúscula
-  let palabra = palabras[Math.floor(Math.random() * palabras.length)];
-  palabra = palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase();
-  
-  // Contraseña: Palabra + Número + Especial
-  const password = palabra + numero + especial;
-  
-  // Verificar longitud mínima de 8 caracteres
-  if (password.length < 8) {
-    return this.generateEasyPassword(); // Regenerar si es muy corta
+  // ****** GENERACIÓN DE CLAVE TEMPORAL ****** //
+
+  /** Longitud de la clave generada. Entra en el maxLength(30) del formulario. */
+  private readonly LONGITUD_CLAVE = 16;
+
+  /**
+   * Alfabetos sin caracteres ambiguos: fuera las mayúsculas I/O, las minúsculas
+   * l/o y los dígitos 0/1, que se confunden entre sí al dictar la clave por
+   * teléfono o al teclearla desde un papel.
+   *
+   * Los símbolos salen del conjunto que acepta app-campoClave
+   * (/[!@#$%^&*(),.?":{}|<>]/) descartando los que dan problemas al pegarlos en
+   * una consola, un CSV o una URL: comillas, coma, paréntesis, llaves, dos
+   * puntos, barra vertical y los signos de mayor/menor.
+   *
+   * 24 + 24 + 8 + 8 = 64 símbolos, es decir 6 bits exactos por carácter.
+   */
+  private readonly MAYUSCULAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  private readonly MINUSCULAS = 'abcdefghijkmnpqrstuvwxyz';
+  private readonly DIGITOS = '23456789';
+  private readonly SIMBOLOS = '!@#$%&*?';
+
+  /**
+   * Entero uniforme en [0, max) con el CSPRNG del navegador.
+   * Descarta el rango sobrante para no introducir sesgo de módulo.
+   * Math.random() no sirve aquí: no es criptográfico y es predecible.
+   */
+  private aleatorio(max: number): number {
+    const limite = Math.floor(0xFFFFFFFF / max) * max;
+    const buffer = new Uint32Array(1);
+    let valor: number;
+    do {
+      crypto.getRandomValues(buffer);
+      valor = buffer[0];
+    } while (valor >= limite);
+    return valor % max;
   }
-  
-  return password;
-}
 
-// Opción 2: Dos palabras + Número (Formato: CasaPerro123!)
-// Ejemplo: CasaPerro123! , SolLuna456? , GatoFlor789$
-generateTwoWordsPassword(): string {
-  const palabras = ['Casa', 'Carro', 'Foco', 'Sol', 'Luna', 'Mesa'];
-  const especiales = ['!', '@', '#', '$', '%', '.', '&', '*'];
-  
-  let palabra1 = palabras[Math.floor(Math.random() * palabras.length)];
-  let palabra2 = palabras[Math.floor(Math.random() * palabras.length)];
-  const numero = Math.floor(Math.random() * 90) + 10;
-  const especial = especiales[Math.floor(Math.random() * especiales.length)];
-  
-  // Asegurar formato correcto
-  palabra1 = palabra1.charAt(0).toUpperCase() + palabra1.slice(1).toLowerCase();
-  palabra2 = palabra2.charAt(0).toUpperCase() + palabra2.slice(1).toLowerCase();
-  
-  const password = palabra1 + palabra2 + numero + especial;
-  
-  return password;
-}
-
-// Opción 3: Mes + Día + Especial (Formato: Enero23!)
-// Ejemplo: Enero23! , Febrero15? , Marzo08$
-generateDatePassword(): string {
-  const meses = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-  ];
-  
-  const especiales = ['!', '@', '#', '$', '%', '.', '&', '*'];
-  
-  const mes = meses[Math.floor(Math.random() * meses.length)];
-  const dia = Math.floor(Math.random() * 28) + 1; // Día 1-28
-  const diaFormateado = dia < 10 ? '0' + dia : dia.toString();
-  const especial = especiales[Math.floor(Math.random() * especiales.length)];
-  
-  // Formato: Mes + Día + Especial
-  const password = mes + diaFormateado + especial;
-  
-  return password;
-}
-
-// Opción 4: Color + Animal + Número + Especial (Formato: RojoLeon123!)
-// Ejemplo: RojoLeon123! , AzulTigre456? , VerdeOso789$
-generateColorAnimalPassword(): string {
-  const colores = ['Rojo', 'Azul', 'Verde', 'Negro', 'Blanco', 'Amarillo'];
-  const animales = ['Leon', 'Tigre', 'Oso', 'Lobo', 'Conejo', 'Mantarraya'];
-  const especiales = ['!', '@', '#', '$', '%', '.', '&', '*'];
-  
-  const color = colores[Math.floor(Math.random() * colores.length)];
-  const animal = animales[Math.floor(Math.random() * animales.length)];
-  const numero = Math.floor(Math.random() * 90) + 10;
-  const especial = especiales[Math.floor(Math.random() * especiales.length)];
-  
-  const password = color + animal + numero + especial;
-  
-  return password;
-}
-
-// Opción 5: Sigla + Año + Especial (Formato: ABC2024!)
-// Ejemplo: ABC2024! , XYZ1985? , MNO2001$
-generateInitialsPassword(): string {
-  const consonantes = 'BCDFGHJKLMNPQRSTVWXYZ';
-  const vocales = 'AEIOU';
-  const especiales = ['-', '@', '#', '$', '%', '.', '_', '*'];
-  
-  // Generar sigla de 3 letras (mayúsculas)
-  let sigla = '';
-  sigla += consonantes[Math.floor(Math.random() * consonantes.length)];
-  sigla += vocales[Math.floor(Math.random() * vocales.length)];
-  sigla += consonantes[Math.floor(Math.random() * consonantes.length)];
-  
-  const año = Math.floor(Math.random() * (2024 - 1980 + 1) + 1980);
-  const especial = especiales[Math.floor(Math.random() * especiales.length)];
-  
-  const password = sigla + año + especial;
-  
-  return password;
-}
-
-// Método principal que genera contraseña fácil y cumple TODAS las restricciones
-generarYEstablecerContrasena(): void {
-  // Elegir entre diferentes estilos de contraseñas fáciles
-  const estilos = [
-    this.generateEasyPassword.bind(this),           // Palabra + Número + Especial
-    this.generateTwoWordsPassword.bind(this),       // Dos palabras + Número + Especial
-    this.generateDatePassword.bind(this),           // Mes + Día + Especial
-    this.generateColorAnimalPassword.bind(this),    // Color + Animal + Número + Especial
-    this.generateInitialsPassword.bind(this)        // Sigla + Año + Especial
-  ];
-  
-  // Seleccionar un estilo aleatorio
-  const estiloSeleccionado = estilos[Math.floor(Math.random() * estilos.length)];
-  let nuevaPassword = estiloSeleccionado();
-  
-  // VALIDACIÓN EXPLÍCITA de todos los requisitos
-  const tieneMayuscula = /[A-Z]/.test(nuevaPassword);
-  const tieneMinuscula = /[a-z]/.test(nuevaPassword);
-  const tieneNumero = /[0-9]/.test(nuevaPassword);
-  const tieneEspecial = /[!@#$%.&*]/.test(nuevaPassword);
-  const tieneLongitud = nuevaPassword.length >= 8;
-  const noTieneEspacios = !/\s/.test(nuevaPassword);
-  
-  // Si no cumple algún requisito, regenerar
-  if (!tieneMayuscula || !tieneMinuscula || !tieneNumero || 
-      !tieneEspecial || !tieneLongitud || !noTieneEspacios) {
-    console.log('Regenerando contraseña - no cumplía requisitos:', nuevaPassword);
-    nuevaPassword = this.generateEasyPassword(); // Regenerar con estilo básico
+  /** Un carácter al azar del alfabeto indicado. */
+  private elegir(alfabeto: string): string {
+    return alfabeto.charAt(this.aleatorio(alfabeto.length));
   }
-  
-  // Establecer la nueva contraseña
-  this.form.get('new_password')?.setValue(nuevaPassword);
-  this.form.get('new_password_confirmation')?.setValue(nuevaPassword);
 
-  // Se muestra en claro para poder entregársela al usuario
-  this.claveGenerada = nuevaPassword;
-  
-  // Marcar campos como tocados
-  this.form.get('new_password')?.markAsTouched();
-  this.form.get('new_password_confirmation')?.markAsTouched();
-  
-  // Disparar validación
-  this.form.get('new_password')?.updateValueAndValidity();
-  this.form.get('new_password_confirmation')?.updateValueAndValidity();
-  
-}
+  /**
+   * Fisher-Yates con el mismo CSPRNG. Sin barajar, la posición de cada clase de
+   * carácter sería fija y el atacante podría descartar medio espacio de búsqueda.
+   */
+  private barajar(caracteres: string[]): string[] {
+    for (let i = caracteres.length - 1; i > 0; i--) {
+      const j = this.aleatorio(i + 1);
+      [caracteres[i], caracteres[j]] = [caracteres[j], caracteres[i]];
+    }
+    return caracteres;
+  }
 
+  /** ¿Tiene la clave las cuatro clases que exige app-campoClave? */
+  private cumpleRequisitos(clave: string): boolean {
+    return /[A-Z]/.test(clave)
+        && /[a-z]/.test(clave)
+        && /\d/.test(clave)
+        && /[!@#$%^&*(),.?":{}|<>]/.test(clave);
+  }
 
+  /**
+   * Reparto alternativo: fuerza un carácter de cada clase y baraja.
+   * Siempre produce una clave válida, pero sobrerrepresenta dígitos y símbolos
+   * (sus pools son de 8 frente a los 24 de las letras). Solo se usa como red de
+   * seguridad si el muestreo por rechazo agotara los intentos.
+   */
+  private generarConCuotas(): string {
+    const alfabeto = this.MAYUSCULAS + this.MINUSCULAS + this.DIGITOS + this.SIMBOLOS;
+    const caracteres: string[] = [
+      this.elegir(this.MAYUSCULAS),
+      this.elegir(this.MINUSCULAS),
+      this.elegir(this.DIGITOS),
+      this.elegir(this.SIMBOLOS),
+    ];
+    while (caracteres.length < this.LONGITUD_CLAVE) {
+      caracteres.push(this.elegir(alfabeto));
+    }
+    return this.barajar(caracteres).join('');
+  }
 
+  /**
+   * Clave temporal de 16 caracteres sobre un alfabeto de 64 símbolos.
+   *
+   * Usa muestreo por rechazo: sortea los 16 caracteres uniformemente y repite
+   * si falta alguna clase. Así la distribución es *exactamente* uniforme sobre
+   * el conjunto de claves válidas, sin el sesgo que introduce reservar
+   * posiciones por clase.
+   *
+   *   Entropía = log2(64^16) + log2(P(válida)) = 96 - 0,38 = 95,6 bits
+   *   P(válida) ~= 0,77  ->  1,3 intentos de media
+   *
+   * Historial: el generador original daba 11.520 combinaciones (~13 bits) con
+   * Math.random(); se recorría entero en segundos.
+   */
+  generarYEstablecerContrasena(): void {
+    const alfabeto = this.MAYUSCULAS + this.MINUSCULAS + this.DIGITOS + this.SIMBOLOS;
+    const MAX_INTENTOS = 50;   // agotarlos tiene probabilidad ~10^-32
+
+    let nuevaPassword = '';
+    for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+      let candidata = '';
+      for (let i = 0; i < this.LONGITUD_CLAVE; i++) {
+        candidata += this.elegir(alfabeto);
+      }
+      if (this.cumpleRequisitos(candidata)) {
+        nuevaPassword = candidata;
+        break;
+      }
+    }
+
+    // Inalcanzable en la práctica; evita devolver una clave inválida
+    if (!nuevaPassword) {
+      nuevaPassword = this.generarConCuotas();
+    }
+
+    this.form.get('new_password')?.setValue(nuevaPassword);
+    this.form.get('new_password_confirmation')?.setValue(nuevaPassword);
+
+    // Se muestra en claro para poder entregársela al usuario
+    this.claveGenerada = nuevaPassword;
+
+    this.form.get('new_password')?.markAsTouched();
+    this.form.get('new_password_confirmation')?.markAsTouched();
+    this.form.get('new_password')?.updateValueAndValidity();
+    this.form.get('new_password_confirmation')?.updateValueAndValidity();
+  }
 }

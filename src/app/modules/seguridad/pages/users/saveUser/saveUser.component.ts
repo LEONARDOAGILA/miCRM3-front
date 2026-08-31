@@ -1,7 +1,8 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output, OnDestroy } from '@angular/core';
-import { firstValueFrom, Subject } from 'rxjs';
+import { firstValueFrom, from, merge, of, Observable, Subject } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
-import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
 // Servicios
@@ -104,11 +105,26 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    
-    if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
-      this.mediaStream = null;
-    }
+
+    this.closeCamera();                   // libera el MediaStream si seguía abierto
+
+    // El modal puede cerrarse con la imagen en pantalla completa y dejar
+    // el <body> sin scroll para toda la app.
+    document.body.style.overflow = '';
+
+    // Suelta el data URL del avatar: puede pesar varios MB.
+    this.imagen_previzualiza = null;
+    this.imagen_paste = null;
+    this.imagen_file = null;
+  }
+
+  /** Emite cuando el modal hijo se cierra o cuando este componente muere. */
+  private hastaQueCierre(modalRef: NgbModalRef): Observable<unknown> {
+    return merge(
+      this.destroy$,
+      // dismiss() rechaza la promesa; para nosotros es un cierre normal.
+      from(modalRef.result).pipe(catchError(() => of(null)))
+    );
   }
 
   //   ******   INIT   ******  //
@@ -223,17 +239,19 @@ export class SaveUserComponent implements OnInit, OnDestroy {
 
   async abrirModalPerfiles() {
     if (this.isdisabled) return;
-    
+
     const modalRef = this.modalService.open(ListProfileComponent, {
       size: 'md',
       centered: true,
       backdrop: 'static'
     });
-    
-    modalRef.componentInstance.seleccionado.subscribe((perfil: any) => {
-      this.form.patchValue({ perfil_id: perfil.id });
-      this.perfilNombreControl.setValue(perfil.nombre);
-    });
+
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(this.hastaQueCierre(modalRef)))
+      .subscribe((perfil: any) => {
+        this.form.patchValue({ perfil_id: perfil.id });
+        this.perfilNombreControl.setValue(perfil.nombre);
+      });
   }
 
   async buscarPerfil(busqueda: string) {
@@ -339,17 +357,19 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   
   async abrirModalHorarios() {
     if (this.isdisabled) return;
-    
+
     const modalRef = this.modalService.open(ListHorariosComponent, {
       size: 'md',
       centered: true,
       backdrop: 'static'
     });
-    
-    modalRef.componentInstance.seleccionado.subscribe((horario: any) => {
-      this.form.patchValue({ chorario_id: horario.id });
-      this.horarioNombreControl.setValue(horario.nombre);
-    });
+
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(this.hastaQueCierre(modalRef)))
+      .subscribe((horario: any) => {
+        this.form.patchValue({ chorario_id: horario.id });
+        this.horarioNombreControl.setValue(horario.nombre);
+      });
   }
 
   //   ******   BUSQUEDA DE USUARIO   ******  //
@@ -781,14 +801,14 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   }
 
   public showFullscreenImage: boolean = false;
-  
-  @HostListener('document:keydown.escape', ['$event'])
-  onKeydownHandler(event: KeyboardEvent) {
-    if (this.showFullscreenImage) {
-      this.closeFullscreen();
-    }
+
+  /** Único manejador de Escape: la cámara va encima de la vista a pantalla completa. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.showCameraModal) { this.closeCamera(); return; }
+    if (this.showFullscreenImage) { this.closeFullscreen(); }
   }
-  
+
   openFullscreen(): void {
     if (this.imagen_previzualiza) {
       this.showFullscreenImage = true;
@@ -925,12 +945,5 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     }
     this.showCameraModal = false;
     this.cameraError = '';
-  }
-
-  @HostListener('document:keydown.escape', ['$event'])
-  onEscapeKey(event: KeyboardEvent) {
-    if (this.showCameraModal) {
-      this.closeCamera();
-    }
   }
 }
