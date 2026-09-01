@@ -11,92 +11,90 @@
 }
 
 // ============================================================
-// DATE RANGE PICKER NATIVO
+// DATE RANGE PICKER
 // ============================================================
 
-.date-range-wrapper {
+// El input del daterangepicker: un solo campo con las dos fechas
+.date-range-input {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: .5rem .75rem;
-  
-  padding: .625rem .75rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  gap: .35rem;
+
+  padding: 0 .5rem;
+
+  background-color: var(--bs-body-bg, #fff);
   border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: var(--au-radius);
-  margin-bottom: var(--au-gap);
-}
+  border-radius: var(--bs-border-radius, .375rem);
 
-.date-range-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .5rem .75rem;
-  flex: 1 1 auto;
-}
-
-.date-range-fields {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .5rem;
-}
-
-.date-field {
-  display: flex;
-  align-items: center;
-  gap: .3rem;
-  
-  .date-label {
-    font-size: .625rem;
-    font-weight: 700;
-    letter-spacing: .05em;
-    text-transform: uppercase;
+  > i {
+    flex: 0 0 auto;
     color: var(--bs-secondary-color, #6c757d);
-    white-space: nowrap;
-    
-    i {
-      margin-right: .15rem;
-    }
-  }
-  
-  .form-control {
-    width: 150px;
     font-size: .75rem;
-    padding: .25rem .5rem;
-    
-    @media (max-width: 575.98px) {
-      width: 120px;
-    }
+  }
+
+  .form-control {
+    width: 100%;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
   }
 }
 
-.date-range-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .25rem;
-  
-  .btn {
-    font-size: .6875rem;
-    padding: .2rem .6rem;
-    white-space: nowrap;
+// El calendario es un overlay: dentro de un modal de ng-bootstrap necesita
+// ganarle al backdrop. El tema Color Admin le pone z-index 1020.
+:host ::ng-deep .md-drppicker.shown {
+  z-index: 1060;
+}
+
+// ---------- Modo oscuro: selectores de mes y año ----------
+// El calendario es un widget CLARO por dentro y no tiene variante oscura:
+// la librería le pone `background-color: #fff` y el tema `color: #2d353c`,
+// sin ningún override bajo [data-bs-theme=dark].
+//
+// Pero Bootstrap sí declara `color-scheme: dark` en [data-bs-theme=dark], y
+// esa propiedad se hereda. Los selectores de mes/año son <select> NATIVOS, así
+// que el navegador dibujaba su lista desplegable en oscuro (texto claro) sobre
+// el fondo casi blanco que la librería le da al select
+// (.dropdowns select { background-color: #ffffffe6 }): claro sobre claro.
+//
+// Con color-scheme: light el navegador vuelve a pintarlos claros, en coherencia
+// con el resto del calendario. Los colores explícitos son la red de seguridad
+// para los navegadores que tratan <option> aparte.
+:host ::ng-deep .md-drppicker {
+  color-scheme: light;
+
+  .dropdowns,
+  .dropdowns select,
+  select.monthselect,
+  select.yearselect {
+    color-scheme: light;
+    background-color: #fff;
+    color: #2d353c;
+  }
+
+  .dropdowns option {
+    background-color: #fff;
+    color: #2d353c;
   }
 }
 
 .date-range-compare {
+  flex: 1 1 100%;
+
   display: flex;
   align-items: center;
   gap: .3rem;
-  
+
   font-size: .6875rem;
   color: var(--bs-secondary-color, #6c757d);
-  white-space: nowrap;
-  
+
   strong {
     color: var(--bs-component-color, #2d353c);
   }
-  
+
   i {
     opacity: .7;
   }
@@ -140,6 +138,16 @@
 .audit-filters__field {
   flex: 1 1 150px;
   min-width: 0;
+}
+
+// El rango necesita sitio para "DD/MM/YYYY - DD/MM/YYYY"
+.audit-filters__field--rango {
+  flex: 2 1 230px;
+}
+
+.audit-filters__field--operacion {
+  flex: 1 1 140px;
+  max-width: 200px;
 }
 
 .audit-filters__actions {
@@ -658,6 +666,13 @@ tr.is-modified .diff-dot { background-color: var(--bs-warning, #ffc107); }
   }
 }
 
+.diff-code--text {
+  background-color: rgba(128, 128, 128, 0.08); /* Gris con transparencia */
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  color: var(--bs-danger-text-emphasis, #918d8e);
+}
+
+
 .diff-code--old {
   background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
   border: 1px solid rgba(var(--bs-danger-rgb, 220, 53, 69), .2);
@@ -760,34 +775,52 @@ tr.is-modified .diff-dot { background-color: var(--bs-warning, #ffc107); }
     max-height: 320px;
   }
   
-  .date-range-wrapper {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .date-range-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .date-range-fields {
-    justify-content: space-between;
-    
-    .date-field {
-      flex: 1;
-      
-      .form-control {
-        width: 100%;
+  // ---------- Calendario ----------
+  // La librería flota .ranges y los dos .calendar uno al lado del otro
+  // (.md-drppicker.ltr .ranges, .md-drppicker.ltr .calendar { float: left }).
+  // Como el popup es position:absolute con overflow:hidden y ~540px de ancho,
+  // en pantallas estrechas se sale del viewport y se ve recortado a la mitad.
+  // Aquí se apila todo en vertical y se limita al ancho de la pantalla.
+  :host ::ng-deep .md-drppicker {
+    max-width: calc(100vw - 1.5rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 80vh;
+
+    &.double {
+      width: auto;
+    }
+
+    .ranges,
+    .calendar {
+      float: none !important;
+      clear: both !important;
+    }
+
+    .calendar {
+      max-width: 100%;
+      margin: 4px auto;
+    }
+
+    // Los rangos rápidos, en fila y con scroll: ocupan mucho apilados
+    .ranges ul {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: .25rem;
+      scrollbar-width: thin;
+
+      li {
+        flex: 0 0 auto;
+
+        button {
+          width: auto;
+          white-space: nowrap;
+          border-radius: 999px;
+          padding: .35rem .75rem;
+        }
       }
     }
-  }
-  
-  .date-range-buttons {
-    justify-content: center;
-  }
-  
-  .date-range-compare {
-    justify-content: center;
   }
 }
 
@@ -802,12 +835,24 @@ tr.is-modified .diff-dot { background-color: var(--bs-warning, #ffc107); }
     flex: 1 1 100%;
   }
 
+  .audit-filters__field--operacion {
+    max-width: none;
+  }
+
   .audit-filters__actions {
     flex: 1 1 100%;
 
     .btn:first-child {
       flex: 1 1 auto;
     }
+  }
+
+  // El popup se ancla a la izquierda del input; pegado al borde de la pantalla
+  // se recortaría por la derecha.
+  :host ::ng-deep .md-drppicker.shown {
+    left: .75rem !important;
+    right: .75rem !important;
+    max-width: calc(100vw - 1.5rem);
   }
 
   .audit-pagination {

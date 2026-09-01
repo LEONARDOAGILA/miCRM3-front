@@ -14,50 +14,33 @@
 
   <div class="audit-modal">
 
-    <!-- ===================== DATE RANGE ===================== -->
-    <div class="date-range-wrapper">
-      <div class="date-range-header">
-        <div class="date-range-fields">
-          <div class="date-field">
-            <label class="date-label">
-              <i class="fa-regular fa-calendar"></i> Desde
-            </label>
-            <input type="date" 
-                   class="form-control form-control-sm" 
-                   [(ngModel)]="fechaInicio"
-                   (change)="onFechaChange()">
-          </div>
-          <div class="date-field">
-            <label class="date-label">
-              <i class="fa-regular fa-calendar"></i> Hasta
-            </label>
-            <input type="date" 
-                   class="form-control form-control-sm" 
-                   [(ngModel)]="fechaFin"
-                   (change)="onFechaChange()">
-          </div>
-        </div>
-        <div class="date-range-buttons">
-          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="aplicarRango(7)">
-            <i class="fa-regular fa-clock"></i> 7 días
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="aplicarRango(15)">
-            <i class="fa-regular fa-clock"></i> 15 días
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="aplicarRango(30)">
-            <i class="fa-regular fa-clock"></i> 30 días
-          </button>
-        </div>
-      </div>
-      <div class="date-range-compare" *ngIf="prevDate">
-        <i class="fa-regular fa-calendar-plus"></i>
-        comparado con <strong>{{ prevDate }}</strong>
-      </div>
-    </div>
-
     <!-- ===================== FILTROS ===================== -->
     <div class="audit-filters">
-      <div class="audit-filters__field">
+
+      <div class="audit-filters__field audit-filters__field--rango">
+        <label class="audit-label" for="audit-rango">Rango de fechas</label>
+        <div class="ngx-daterangepicker-action date-range-input">
+          <i class="fa fa-calendar fa-fw" aria-hidden="true"></i>
+          <input id="audit-rango"
+                 type="text"
+                 class="form-control form-control-sm shadow-none"
+                 readonly
+                 placeholder="Todo el historial"
+                 ngxDaterangepickerMd
+                 [locale]="locale"
+                 [ranges]="ranges"
+                 [opens]="'right'"
+                 [alwaysShowCalendars]="alwaysShowCalendars"
+                 [showDropdowns]="true"
+                 [showCustomRangeLabel]="true"
+                 [showClearButton]="true"
+                 [showCancel]="true"
+                 [(ngModel)]="selected"
+                 (ngModelChange)="onRangoChange($event)" />
+        </div>
+      </div>
+
+      <div class="audit-filters__field audit-filters__field--operacion">
         <label class="audit-label" for="audit-f-operacion">Operación</label>
         <select id="audit-f-operacion" class="form-select form-select-sm" [(ngModel)]="filtro.tipoOperacion">
           <option value="">Todas</option>
@@ -69,12 +52,15 @@
 
       <div class="audit-filters__actions">
         <button type="button" class="btn btn-sm btn-primary" (click)="aplicarFiltros()">
-          <i class="fa-solid fa-filter"></i> Filtrar
+          <i class="fa-solid fa-filter" aria-hidden="true"></i> Filtrar
         </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()" title="Limpiar filtros">
-          <i class="fa-solid fa-eraser"></i>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()"
+                aria-label="Limpiar filtros" title="Limpiar filtros">
+          <i class="fa-solid fa-eraser" aria-hidden="true"></i>
         </button>
       </div>
+
+
     </div>
 
     <!-- ===================== CONTENIDO ===================== -->
@@ -206,7 +192,8 @@
                       <tr *ngFor="let cambio of cambiosInfo.cambios" [ngClass]="'is-' + cambio.estado">
                         <td class="diff-field" data-label="Campo">
                           <span class="diff-dot" [attr.title]="etiquetaEstado(cambio.estado)"></span>
-                          <span class="diff-field__name">{{ cambio.campo }}</span>
+                          <!-- <span class="diff-field__name">{{ cambio.campo }}</span> -->
+                          <pre class="diff-code diff-code--text" >{{ cambio.campo }}</pre>
                         </td>
                         <td class="diff-value" data-label="Antes">
                           <span class="diff-empty" *ngIf="cambio.estado === 'added'">—</span>
