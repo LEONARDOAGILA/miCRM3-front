@@ -7,7 +7,15 @@
 
   --au-radius: .5rem;
   --au-gap: .75rem;
-  --au-panel-h: clamp(300px, 48vh, 460px);
+
+  // Alto ocupado por todo lo que hay ENCIMA de los paneles cuando el modal
+  // está en su tamaño normal. Se resta al viewport para que los paneles lleguen
+  // justo hasta el fondo del modal:
+  //   3.5rem  márgenes del .modal-dialog (1.75rem arriba + 1.75rem abajo)
+  //   2.2rem  cabecera del <panel>
+  //   2.0rem  padding vertical del .panel-body
+  //   5.3rem  bloque de filtros + su gap inferior
+  --au-chrome: 13rem;
 }
 
 // ============================================================
@@ -22,7 +30,11 @@
 
   padding: 0 .5rem;
 
-  background-color: var(--bs-body-bg, #fff);
+  // --bs-component-bg, no --bs-body-bg: es la que usa .form-select y la que
+  // vale blanco (#FFFFFF) en claro. --bs-body-bg es el fondo de página de
+  // Color Admin (#dee2e6, gris) y hacía que el campo pareciera deshabilitado.
+  // En oscuro ambas son oscuras, por eso allí no se notaba.
+  background-color: var(--bs-component-bg, #fff);
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: var(--bs-border-radius, .375rem);
 
@@ -32,15 +44,34 @@
     font-size: .75rem;
   }
 
+  // El caret va sobre el INPUT, no sobre el contenedor: así el área de la
+  // flecha sigue siendo parte del campo y al pulsarla se abre el calendario
+  // (la directiva escucha el click del <input>, no el del div).
+  //
+  // El SVG está copiado tal cual del de Bootstrap para que sea idéntico al
+  // del <select> de al lado. No se puede usar var(--bs-form-select-bg-img)
+  // porque esa variable la define Bootstrap sobre el propio .form-select,
+  // no en :root, y aquí no llegaría por herencia.
   .form-control {
     width: 100%;
     min-width: 0;
     padding-left: 0;
-    padding-right: 0;
+    padding-right: 1.25rem;
     border: none;
-    background: none;
     cursor: pointer;
+
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 16px 12px;
   }
+}
+
+// Misma variante clara/oscura que aplica Bootstrap al caret del <select>.
+// :host-context porque data-bs-theme vive en <html>, fuera del componente.
+:host-context([data-bs-theme='dark']) .date-range-input .form-control {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23dee2e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
 }
 
 // El calendario es un overlay: dentro de un modal de ng-bootstrap necesita
@@ -116,6 +147,39 @@
   grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
   gap: var(--au-gap);
   min-height: 0;
+
+  // Los paneles llegan desde donde están hasta el fondo del modal.
+  // dvh para que en móvil descuente la barra del navegador; vh queda de
+  // reserva para los navegadores que no lo soporten.
+  height: calc(100vh - var(--au-chrome));
+  height: calc(100dvh - var(--au-chrome));
+  min-height: 260px;
+}
+
+// ---------- Panel expandido ----------
+// Al pulsar "Expandir", el tema convierte .panel en position:fixed inset:0 con
+// display:flex y `> .panel-body { flex: 1 }`, así que ahí sí hay altura
+// definida: se encadena flex hasta .audit-body y se descarta el calc del
+// viewport, que ya no aplica.
+:host ::ng-deep .panel.panel-expand {
+
+  > .panel-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-x: auto;   // el tema lo deja en `scroll` y saca una barra fija
+  }
+
+  .audit-modal {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .audit-body {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+  }
 }
 
 // ============================================================
@@ -186,8 +250,9 @@
   flex-direction: column;
 
   min-width: 0;
+  // Sin height: como item de grid se estira solo al alto de la fila
+  // (align-items: stretch). Poner uno explícito rompería ese estiramiento.
   min-height: 0;
-  height: var(--au-panel-h);
 
   background-color: var(--bs-component-bg, #fff);
   border: 1px solid var(--bs-border-color, #dee2e6);
@@ -759,8 +824,12 @@ tr.is-modified .diff-dot { background-color: var(--bs-warning, #ffc107); }
 // --- Tablet y móvil: una columna ---
 @media (max-width: 991.98px) {
 
+  // Una columna: los dos paneles se apilan y crecen con su contenido.
+  // Encajarlos en el alto del viewport dejaría cada uno a la mitad.
   .audit-body {
     grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    min-height: 0;
   }
 
   .audit-panel {
