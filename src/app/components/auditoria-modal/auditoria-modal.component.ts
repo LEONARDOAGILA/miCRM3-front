@@ -5,8 +5,8 @@ import { AuditoriaService } from '../../service/auditoria.service';
 import { FormsModule } from '@angular/forms';
 import { LoadingService } from '../../service/loading.service';
 import { firstValueFrom } from 'rxjs';
-import { PanelModule } from '../../components/panel/panel.module'; // <-- Importa el PanelModule
-
+import { PanelModule } from '../../components/panel/panel.module';
+import moment from 'moment';
 
 @Component({
   selector: 'app-auditoria-modal',
@@ -20,22 +20,27 @@ export class AuditoriaModalComponent implements OnInit {
   @Input() registroId!: number;
 
   public isLoading$ = this._loadingService.isLoading$;
-
   public auditoriaData: any[] = [];
+  public selectedAuditoria: any = null;
+  public selectedIndex: number = -1;
 
+  // ===================== FILTROS =====================
   public filtro = {
     tipoOperacion: '',
     fechaDesde: '',
     fechaHasta: ''
   };
 
+  // ===================== DATE RANGE =====================
+  public fechaInicio: string = '';
+  public fechaFin: string = '';
+  public prevDate: string = '';
+
+  // ===================== PAGINACIÓN =====================
   public paginaActual: number = 1;
   public totalRegistros: number = 0;
   public registrosPorPagina: number = 3;
   public ultimaPagina: number = 1;
-
-  public selectedAuditoria: any = null;
-  public selectedIndex: number = -1;
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -45,13 +50,57 @@ export class AuditoriaModalComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Fechas por defecto: últimos 7 días
+    const hoy = moment();
+    const hace7Dias = moment().subtract(7, 'days');
+    
+    this.fechaInicio = hace7Dias.format('YYYY-MM-DD');
+    this.fechaFin = hoy.format('YYYY-MM-DD');
+    this.filtro.fechaDesde = this.fechaInicio;
+    this.filtro.fechaHasta = this.fechaFin;
+    
+    this.actualizarPrevDate();
     this.cargarAuditoria();
   }
 
-  /** Etiqueta, icono y clase de color para un tipo de operación */
+  // ===================== DATE RANGE METHODS =====================
+
+  actualizarPrevDate(): void {
+    if (this.fechaInicio && this.fechaFin) {
+      const inicio = moment(this.fechaInicio);
+      const fin = moment(this.fechaFin);
+      const diff = fin.diff(inicio, 'days');
+      
+      const prevInicio = moment(inicio).subtract(diff + 1, 'days');
+      const prevFin = moment(inicio).subtract(1, 'days');
+      
+      this.prevDate = prevInicio.format('D MMMM') + ' - ' + prevFin.format('D MMMM YYYY');
+    }
+  }
+
+  aplicarRango(dias: number): void {
+    const hoy = moment();
+    const inicio = moment().subtract(dias, 'days');
+    
+    this.fechaInicio = inicio.format('YYYY-MM-DD');
+    this.fechaFin = hoy.format('YYYY-MM-DD');
+    this.filtro.fechaDesde = this.fechaInicio;
+    this.filtro.fechaHasta = this.fechaFin;
+    
+    this.actualizarPrevDate();
+    this.aplicarFiltros();
+  }
+
+  onFechaChange(): void {
+    this.filtro.fechaDesde = this.fechaInicio;
+    this.filtro.fechaHasta = this.fechaFin;
+    this.actualizarPrevDate();
+  }
+
+  // ===================== OPERACIONES =====================
+
   public operacionInfo(operacion: string): { texto: string; icono: string; clase: string } {
     switch ((operacion || '').toUpperCase()) {
-      // Font Awesome: la app no carga la hoja de estilos de Bootstrap Icons
       case 'INSERT':
         return { texto: 'Creación', icono: 'fa-solid fa-plus', clase: 'badge-insert' };
       case 'UPDATE':
@@ -61,7 +110,6 @@ export class AuditoriaModalComponent implements OnInit {
     }
   }
 
-  /** Texto descriptivo del estado de un cambio (tooltip del indicador) */
   public etiquetaEstado(estado: string): string {
     switch (estado) {
       case 'added':    return 'Campo agregado';
@@ -71,22 +119,11 @@ export class AuditoriaModalComponent implements OnInit {
     }
   }
 
-  escapeHtml(text: string): string {
-    if (!text) return '';
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
+  // ===================== FORMATEO =====================
 
-  // Función para formatear valores - MUESTRA JSON ORIGINAL SIN TRUNCAR
   formatearValor(valor: any): string {
     if (valor === null || valor === undefined) return '—';
-    if (typeof valor === 'string') {
-      return valor;
-    }
+    if (typeof valor === 'string') return valor;
     if (typeof valor === 'number') return valor.toString();
     if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
     
@@ -109,6 +146,8 @@ export class AuditoriaModalComponent implements OnInit {
     
     return String(valor);
   }
+
+  // ===================== COMPARACIÓN =====================
 
   private compararObjetos(obj1: any, obj2: any): { [key: string]: 'added' | 'removed' | 'modified' | 'same' } {
     const resultado: { [key: string]: 'added' | 'removed' | 'modified' | 'same' } = {};
@@ -143,6 +182,8 @@ export class AuditoriaModalComponent implements OnInit {
     return resultado;
   }
 
+  // ===================== SELECCIÓN =====================
+
   seleccionarRegistro(registro: any, index: number): void {
     this.selectedAuditoria = registro;
     this.selectedIndex = index;
@@ -153,6 +194,8 @@ export class AuditoriaModalComponent implements OnInit {
     this.selectedAuditoria = null;
     this.selectedIndex = -1;
   }
+
+  // ===================== CAMBIOS FORMATEADOS =====================
 
   obtenerCambiosFormateados(registro: any): any {
     if (!registro) return null;
@@ -174,16 +217,9 @@ export class AuditoriaModalComponent implements OnInit {
       // Si no se puede parsear, usar los valores originales
     }
     
-    // Usar la nueva función de comparación con nombres de menú
     const cambiosCompletos = this.compararProfundoConMenus(objAnterior, objNuevo);
-    
-    // Aplanar cambios anidados
     const cambiosAplanados = this.aplanarCambios(cambiosCompletos);
-    
-    // Filtrar solo cambios significativos
     const cambiosFiltrados = this.obtenerSoloCambios(cambiosAplanados);
-    
-    // Limpiar y formatear paths
     const cambiosLimpios = this.limpiarYFormatearPaths(cambiosFiltrados);
     
     if (cambiosLimpios.length === 0) {
@@ -211,370 +247,263 @@ export class AuditoriaModalComponent implements OnInit {
     };
   }
 
-  // Función para extraer el nombre del menú de un objeto
-  private extraerNombreMenu(obj: any): string | null {
-    if (!obj || typeof obj !== 'object') return null;
-    
-    // Si el objeto tiene menu_nombre, usarlo
-    if (obj.menu_nombre) {
-      return obj.menu_nombre;
-    }
-    
-    // Si tiene permisos, buscar menu_nombre en el objeto padre
-    if (obj.permisos && typeof obj.permisos === 'object') {
-      return null;
-    }
-    
-    return null;
-  }
-
-
-
-// Función para limpiar y formatear paths de forma genérica
-private limpiarYFormatearPaths(cambios: any[]): any[] {
-  return cambios.map(cambio => {
-    let campo = cambio.campo;
-    
-    // Si el campo tiene puntos, formatearlo
-    if (campo.includes('.')) {
-      const partes = campo.split('.');
-      // Filtrar partes vacías
-      let partesFiltradas = partes.filter(p => p && p.trim() !== '');
+  private limpiarYFormatearPaths(cambios: any[]): any[] {
+    return cambios.map(cambio => {
+      let campo = cambio.campo;
       
-      // Identificar si hay un objeto padre (como "acceso", "perfil", "usuario", etc.)
-      // y mantenerlo como parte del path
-      if (partesFiltradas.length >= 3) {
-        // Ejemplo: acceso.menu_nombre.permiso -> acceso > menu_nombre > permiso
-        campo = partesFiltradas.join(' | ');
-      } else if (partesFiltradas.length === 2) {
-        // Ejemplo: perfil.nombre -> perfil > nombre
-        campo = partesFiltradas.join(' | ');
-      } else {
-        campo = partesFiltradas[0] || campo;
-      }
-    }
-    
-    // Eliminar .permisos y otros sufijos comunes
-    campo = campo.replace(/\.permisos\./, ' > ');
-    campo = campo.replace(/\.permisos$/, '');
-    campo = campo.replace(/\.data\./, ' > ');
-    campo = campo.replace(/\.data$/, '');
-    
-    return {
-      ...cambio,
-      campo: campo
-    };
-  }).filter(c => c !== null);
-}
-
-// // Función para limpiar y formatear paths de forma genérica
-// private limpiarYFormatearPaths(cambios: any[]): any[] {
-//   return cambios.map(cambio => {
-//     let campo = cambio.campo;
-    
-//     // Si el campo tiene puntos, formatearlo
-//     if (campo.includes('.')) {
-//       const partes = campo.split('.');
-//       // Filtrar partes vacías
-//       let partesFiltradas = partes.filter(p => p && p.trim() !== '');
-      
-//       // Eliminar el primer nodo siempre (cualquiera que sea)
-//       if (partesFiltradas.length >= 2) {
-//         partesFiltradas = partesFiltradas.slice(1);
-//       }
-      
-//       // Identificar si hay un objeto padre y mantenerlo como parte del path
-//       if (partesFiltradas.length >= 3) {
-//         campo = partesFiltradas.join(' | ');
-//       } else if (partesFiltradas.length === 2) {
-//         campo = partesFiltradas.join(' | ');
-//       } else {
-//         campo = partesFiltradas[0] || campo;
-//       }
-//     }
-    
-//     // Eliminar .permisos y otros sufijos comunes
-//     campo = campo.replace(/\.permisos\./, ' > ');
-//     campo = campo.replace(/\.permisos$/, '');
-//     campo = campo.replace(/\.data\./, ' > ');
-//     campo = campo.replace(/\.data$/, '');
-    
-//     return {
-//       ...cambio,
-//       campo: campo
-//     };
-//   }).filter(c => c !== null);
-// }
-
-// NUEVA FUNCIÓN: Comparar objetos con nombres de menú de forma genérica
-private compararProfundoConMenus(obj1: any, obj2: any, path: string = '', nombreActual: string | null = null): any[] {
-  const cambios: any[] = [];
-  
-  // Si ambos son null o undefined, no hay cambios
-  if (obj1 === null && obj2 === null) return cambios;
-  if (obj1 === undefined && obj2 === undefined) return cambios;
-  if (obj1 === null && obj2 === undefined) return cambios;
-  if (obj1 === undefined && obj2 === null) return cambios;
-  
-  // Si son primitivos, comparar directamente
-  if (this.esPrimitivo(obj1) || this.esPrimitivo(obj2)) {
-    if (obj1 !== obj2) {
-      let campoFormateado = path || 'valor';
-      
-      // Si tenemos nombre, construir el path correcto
-      if (nombreActual) {
-        // Si el path es "acceso" o empieza con "acceso."
-        if (campoFormateado === 'acceso') {
-          campoFormateado = `acceso.${nombreActual}`;
-        } else if (campoFormateado.startsWith('acceso.')) {
-          if (!campoFormateado.includes(nombreActual)) {
-            campoFormateado = `acceso.${nombreActual}`;
-          }
-        } else if (campoFormateado.includes('permisos')) {
-          campoFormateado = campoFormateado.replace('permisos', nombreActual);
-        } else if (campoFormateado === '' || campoFormateado === 'valor') {
-          // Si está vacío, construir con acceso y menú
-          campoFormateado = `acceso.${nombreActual}`;
-        } else if (campoFormateado.includes('.')) {
-          // Para otros casos con puntos, reemplazar la última parte
-          const partes = campoFormateado.split('.');
-          if (partes.length >= 2) {
-            // Si la última parte es un nombre de campo, mantener la estructura
-            partes[partes.length - 1] = nombreActual;
-            campoFormateado = partes.join('.');
-          }
+      if (campo.includes('.')) {
+        const partes = campo.split('.');
+        let partesFiltradas = partes.filter(p => p && p.trim() !== '');
+        
+        if (partesFiltradas.length >= 3) {
+          campo = partesFiltradas.join(' | ');
+        } else if (partesFiltradas.length === 2) {
+          campo = partesFiltradas.join(' | ');
         } else {
-          // Para casos simples, agregar el nombre
-          campoFormateado = `${campoFormateado}.${nombreActual}`;
+          campo = partesFiltradas[0] || campo;
         }
       }
       
-      cambios.push({
-        campo: campoFormateado,
-        valorAnterior: this.formatearValor(obj1),
-        valorNuevo: this.formatearValor(obj2),
-        estado: obj1 === undefined || obj1 === null ? 'added' : 
-                obj2 === undefined || obj2 === null ? 'removed' : 'modified'
-      });
-    }
-    return cambios;
-  }
-  
-  // Si son arrays, comparar elemento por elemento
-  if (Array.isArray(obj1) || Array.isArray(obj2)) {
-    const arr1 = Array.isArray(obj1) ? obj1 : [];
-    const arr2 = Array.isArray(obj2) ? obj2 : [];
-    
-    const maxLen = Math.max(arr1.length, arr2.length);
-    const cambiosArray: any[] = [];
-    
-    for (let i = 0; i < maxLen; i++) {
-      const val1 = i < arr1.length ? arr1[i] : undefined;
-      const val2 = i < arr2.length ? arr2[i] : undefined;
+      campo = campo.replace(/\.permisos\./, ' > ');
+      campo = campo.replace(/\.permisos$/, '');
+      campo = campo.replace(/\.data\./, ' > ');
+      campo = campo.replace(/\.data$/, '');
       
-      if (JSON.stringify(val1) !== JSON.stringify(val2)) {
-        let nuevoPath = path;
-        let nuevoNombre = nombreActual;
+      return {
+        ...cambio,
+        campo: campo
+      };
+    }).filter(c => c !== null);
+  }
+
+  private compararProfundoConMenus(obj1: any, obj2: any, path: string = '', nombreActual: string | null = null): any[] {
+    const cambios: any[] = [];
+    
+    if (obj1 === null && obj2 === null) return cambios;
+    if (obj1 === undefined && obj2 === undefined) return cambios;
+    if (obj1 === null && obj2 === undefined) return cambios;
+    if (obj1 === undefined && obj2 === null) return cambios;
+    
+    if (this.esPrimitivo(obj1) || this.esPrimitivo(obj2)) {
+      if (obj1 !== obj2) {
+        let campoFormateado = path || 'valor';
         
-        // Si el elemento tiene menu_nombre, usarlo
-        if (val1 && typeof val1 === 'object' && val1.menu_nombre) {
-          nuevoNombre = val1.menu_nombre;
-          if (path === 'acceso' || path === '' || path === 'valor') {
-            nuevoPath = `acceso.${nuevoNombre}`;
-          } else if (path.startsWith('acceso.')) {
-            const partes = path.split('.');
+        if (nombreActual) {
+          if (campoFormateado === 'acceso') {
+            campoFormateado = `acceso.${nombreActual}`;
+          } else if (campoFormateado.startsWith('acceso.')) {
+            if (!campoFormateado.includes(nombreActual)) {
+              campoFormateado = `acceso.${nombreActual}`;
+            }
+          } else if (campoFormateado.includes('permisos')) {
+            campoFormateado = campoFormateado.replace('permisos', nombreActual);
+          } else if (campoFormateado === '' || campoFormateado === 'valor') {
+            campoFormateado = `acceso.${nombreActual}`;
+          } else if (campoFormateado.includes('.')) {
+            const partes = campoFormateado.split('.');
             if (partes.length >= 2) {
+              partes[partes.length - 1] = nombreActual;
+              campoFormateado = partes.join('.');
+            }
+          } else {
+            campoFormateado = `${campoFormateado}.${nombreActual}`;
+          }
+        }
+        
+        cambios.push({
+          campo: campoFormateado,
+          valorAnterior: this.formatearValor(obj1),
+          valorNuevo: this.formatearValor(obj2),
+          estado: obj1 === undefined || obj1 === null ? 'added' : 
+                  obj2 === undefined || obj2 === null ? 'removed' : 'modified'
+        });
+      }
+      return cambios;
+    }
+    
+    if (Array.isArray(obj1) || Array.isArray(obj2)) {
+      const arr1 = Array.isArray(obj1) ? obj1 : [];
+      const arr2 = Array.isArray(obj2) ? obj2 : [];
+      
+      const maxLen = Math.max(arr1.length, arr2.length);
+      const cambiosArray: any[] = [];
+      
+      for (let i = 0; i < maxLen; i++) {
+        const val1 = i < arr1.length ? arr1[i] : undefined;
+        const val2 = i < arr2.length ? arr2[i] : undefined;
+        
+        if (JSON.stringify(val1) !== JSON.stringify(val2)) {
+          let nuevoPath = path;
+          let nuevoNombre = nombreActual;
+          
+          if (val1 && typeof val1 === 'object' && val1.menu_nombre) {
+            nuevoNombre = val1.menu_nombre;
+            if (path === 'acceso' || path === '' || path === 'valor') {
+              nuevoPath = `acceso.${nuevoNombre}`;
+            } else if (path.startsWith('acceso.')) {
+              const partes = path.split('.');
+              if (partes.length >= 2) {
+                nuevoPath = `acceso.${nuevoNombre}`;
+              } else {
+                nuevoPath = `acceso.${nuevoNombre}`;
+              }
+            } else {
+              nuevoPath = `acceso.${nuevoNombre}`;
+            }
+          } else if (val2 && typeof val2 === 'object' && val2.menu_nombre) {
+            nuevoNombre = val2.menu_nombre;
+            if (path === 'acceso' || path === '' || path === 'valor') {
+              nuevoPath = `acceso.${nuevoNombre}`;
+            } else if (path.startsWith('acceso.')) {
               nuevoPath = `acceso.${nuevoNombre}`;
             } else {
               nuevoPath = `acceso.${nuevoNombre}`;
             }
           } else {
-            nuevoPath = `acceso.${nuevoNombre}`;
-          }
-        } else if (val2 && typeof val2 === 'object' && val2.menu_nombre) {
-          nuevoNombre = val2.menu_nombre;
-          if (path === 'acceso' || path === '' || path === 'valor') {
-            nuevoPath = `acceso.${nuevoNombre}`;
-          } else if (path.startsWith('acceso.')) {
-            nuevoPath = `acceso.${nuevoNombre}`;
-          } else {
-            nuevoPath = `acceso.${nuevoNombre}`;
-          }
-        } else {
-          // Buscar cualquier campo que termine en "_nombre" para usarlo como nombre
-          if (val1 && typeof val1 === 'object') {
-            for (const key of Object.keys(val1)) {
-              if (key.endsWith('_nombre') && val1[key]) {
-                nuevoNombre = val1[key];
-                const padreKey = key.replace('_nombre', '');
-                if (path.includes(padreKey) || path === '') {
-                  nuevoPath = padreKey;
+            if (val1 && typeof val1 === 'object') {
+              for (const key of Object.keys(val1)) {
+                if (key.endsWith('_nombre') && val1[key]) {
+                  nuevoNombre = val1[key];
+                  const padreKey = key.replace('_nombre', '');
+                  if (path.includes(padreKey) || path === '') {
+                    nuevoPath = padreKey;
+                  }
+                  break;
                 }
-                break;
               }
-            }
-          } else if (val2 && typeof val2 === 'object') {
-            for (const key of Object.keys(val2)) {
-              if (key.endsWith('_nombre') && val2[key]) {
-                nuevoNombre = val2[key];
-                const padreKey = key.replace('_nombre', '');
-                if (path.includes(padreKey) || path === '') {
-                  nuevoPath = padreKey;
+            } else if (val2 && typeof val2 === 'object') {
+              for (const key of Object.keys(val2)) {
+                if (key.endsWith('_nombre') && val2[key]) {
+                  nuevoNombre = val2[key];
+                  const padreKey = key.replace('_nombre', '');
+                  if (path.includes(padreKey) || path === '') {
+                    nuevoPath = padreKey;
+                  }
+                  break;
                 }
-                break;
               }
             }
           }
+          
+          const cambiosItem = this.compararProfundoConMenus(val1, val2, nuevoPath, nuevoNombre);
+          cambiosArray.push(...cambiosItem);
         }
-        
-        const cambiosItem = this.compararProfundoConMenus(val1, val2, nuevoPath, nuevoNombre);
-        cambiosArray.push(...cambiosItem);
       }
+      
+      if (cambiosArray.length > 0) {
+        cambios.push(...cambiosArray);
+      }
+      return cambios;
     }
     
-    if (cambiosArray.length > 0) {
-      cambios.push(...cambiosArray);
-    }
-    return cambios;
-  }
-  
-  // Si son objetos, comparar propiedades
-  if (typeof obj1 === 'object' || typeof obj2 === 'object') {
-    const keys = new Set([...Object.keys(obj1 || {}), ...Object.keys(obj2 || {})]);
-    
-    // Si el objeto tiene menu_nombre, actualizar el nombre del menú
-    if (obj1 && obj1.menu_nombre) {
-      nombreActual = obj1.menu_nombre;
-      if (path === '' || path === 'acceso' || path === 'valor') {
-        path = `acceso.${nombreActual}`;
-      }
-    } else if (obj2 && obj2.menu_nombre) {
-      nombreActual = obj2.menu_nombre;
-      if (path === '' || path === 'acceso' || path === 'valor') {
-        path = `acceso.${nombreActual}`;
-      }
-    } else {
-      // Buscar cualquier campo que termine en "_nombre"
-      for (const key of keys) {
-        if (key.endsWith('_nombre')) {
-          const val = obj1?.[key] || obj2?.[key];
-          if (val && typeof val === 'string') {
-            nombreActual = val;
-            const padreKey = key.replace('_nombre', '');
-            if (path === '' || path === 'valor' || path === padreKey) {
-              path = padreKey || 'objeto';
-            }
-            break;
-          }
+    if (typeof obj1 === 'object' || typeof obj2 === 'object') {
+      const keys = new Set([...Object.keys(obj1 || {}), ...Object.keys(obj2 || {})]);
+      
+      if (obj1 && obj1.menu_nombre) {
+        nombreActual = obj1.menu_nombre;
+        if (path === '' || path === 'acceso' || path === 'valor') {
+          path = `acceso.${nombreActual}`;
         }
-      }
-    }
-    
-    // Procesamiento normal de objetos
-    for (const key of keys) {
-      // Saltar keys que no queremos mostrar
-      if (key === 'menu_id' || key === 'menu_nombre' || key === 'id' || key === 'perfil_id' || key.endsWith('_id') || key.endsWith('_nombre')) {
-        continue;
-      }
-      
-      const val1 = obj1?.[key];
-      const val2 = obj2?.[key];
-      
-      if (val1 === undefined && val2 === undefined) continue;
-      if (val1 === null && val2 === null) continue;
-      
-      // Si la clave es 'permisos', tratarla especialmente
-      if (key === 'permisos' && (typeof val1 === 'object' || typeof val2 === 'object')) {
-        let menuPath = path;
-        if (nombreActual) {
-          if (path === 'acceso' || path === '' || path === 'valor') {
-            menuPath = `acceso.${nombreActual}`;
-          } else if (path.startsWith('acceso.') && !path.includes(nombreActual)) {
-            menuPath = `acceso.${nombreActual}`;
-          } else if (!path.startsWith('acceso.')) {
-            menuPath = `acceso.${nombreActual}`;
-          }
+      } else if (obj2 && obj2.menu_nombre) {
+        nombreActual = obj2.menu_nombre;
+        if (path === '' || path === 'acceso' || path === 'valor') {
+          path = `acceso.${nombreActual}`;
         }
-        const cambiosItem = this.compararProfundoConMenus(val1, val2, menuPath, nombreActual);
-        cambios.push(...cambiosItem);
-        continue;
-      }
-      
-      // Si son objetos o arrays, recursión
-      if ((typeof val1 === 'object' && val1 !== null) || (typeof val2 === 'object' && val2 !== null)) {
-        let nuevoPath = path;
-        
-        if (nombreActual) {
-          if (path === 'acceso' || path === '' || path === 'valor') {
-            nuevoPath = `acceso.${nombreActual}.${key}`;
-          } else if (path.startsWith('acceso.') && !path.includes(nombreActual)) {
-            nuevoPath = `acceso.${nombreActual}.${key}`;
-          } else if (!path.startsWith('acceso.')) {
-            nuevoPath = `acceso.${nombreActual}.${key}`;
-          } else {
-            nuevoPath = path ? `${path}.${key}` : key;
-          }
-        } else {
-          nuevoPath = path ? `${path}.${key}` : key;
-        }
-        
-        const cambiosItem = this.compararProfundoConMenus(val1, val2, nuevoPath, nombreActual);
-        cambios.push(...cambiosItem);
       } else {
-        // Primitivos
-        if (val1 !== val2) {
-          let campoFormateado = path;
+        for (const key of keys) {
+          if (key.endsWith('_nombre')) {
+            const val = obj1?.[key] || obj2?.[key];
+            if (val && typeof val === 'string') {
+              nombreActual = val;
+              const padreKey = key.replace('_nombre', '');
+              if (path === '' || path === 'valor' || path === padreKey) {
+                path = padreKey || 'objeto';
+              }
+              break;
+            }
+          }
+        }
+      }
+      
+      for (const key of keys) {
+        if (key === 'menu_id' || key === 'menu_nombre' || key === 'id' || key === 'perfil_id' || key.endsWith('_id') || key.endsWith('_nombre')) {
+          continue;
+        }
+        
+        const val1 = obj1?.[key];
+        const val2 = obj2?.[key];
+        
+        if (val1 === undefined && val2 === undefined) continue;
+        if (val1 === null && val2 === null) continue;
+        
+        if (key === 'permisos' && (typeof val1 === 'object' || typeof val2 === 'object')) {
+          let menuPath = path;
+          if (nombreActual) {
+            if (path === 'acceso' || path === '' || path === 'valor') {
+              menuPath = `acceso.${nombreActual}`;
+            } else if (path.startsWith('acceso.') && !path.includes(nombreActual)) {
+              menuPath = `acceso.${nombreActual}`;
+            } else if (!path.startsWith('acceso.')) {
+              menuPath = `acceso.${nombreActual}`;
+            }
+          }
+          const cambiosItem = this.compararProfundoConMenus(val1, val2, menuPath, nombreActual);
+          cambios.push(...cambiosItem);
+          continue;
+        }
+        
+        if ((typeof val1 === 'object' && val1 !== null) || (typeof val2 === 'object' && val2 !== null)) {
+          let nuevoPath = path;
           
           if (nombreActual) {
             if (path === 'acceso' || path === '' || path === 'valor') {
-              campoFormateado = `acceso.${nombreActual}.${key}`;
+              nuevoPath = `acceso.${nombreActual}.${key}`;
             } else if (path.startsWith('acceso.') && !path.includes(nombreActual)) {
-              campoFormateado = `acceso.${nombreActual}.${key}`;
+              nuevoPath = `acceso.${nombreActual}.${key}`;
             } else if (!path.startsWith('acceso.')) {
-              campoFormateado = `acceso.${nombreActual}.${key}`;
+              nuevoPath = `acceso.${nombreActual}.${key}`;
+            } else {
+              nuevoPath = path ? `${path}.${key}` : key;
+            }
+          } else {
+            nuevoPath = path ? `${path}.${key}` : key;
+          }
+          
+          const cambiosItem = this.compararProfundoConMenus(val1, val2, nuevoPath, nombreActual);
+          cambios.push(...cambiosItem);
+        } else {
+          if (val1 !== val2) {
+            let campoFormateado = path;
+            
+            if (nombreActual) {
+              if (path === 'acceso' || path === '' || path === 'valor') {
+                campoFormateado = `acceso.${nombreActual}.${key}`;
+              } else if (path.startsWith('acceso.') && !path.includes(nombreActual)) {
+                campoFormateado = `acceso.${nombreActual}.${key}`;
+              } else if (!path.startsWith('acceso.')) {
+                campoFormateado = `acceso.${nombreActual}.${key}`;
+              } else {
+                campoFormateado = path ? `${path}.${key}` : key;
+              }
             } else {
               campoFormateado = path ? `${path}.${key}` : key;
             }
-          } else {
-            campoFormateado = path ? `${path}.${key}` : key;
+            
+            cambios.push({
+              campo: campoFormateado,
+              valorAnterior: this.formatearValor(val1),
+              valorNuevo: this.formatearValor(val2),
+              estado: val1 === undefined || val1 === null ? 'added' : 
+                      val2 === undefined || val2 === null ? 'removed' : 'modified'
+            });
           }
-          
-          cambios.push({
-            campo: campoFormateado,
-            valorAnterior: this.formatearValor(val1),
-            valorNuevo: this.formatearValor(val2),
-            estado: val1 === undefined || val1 === null ? 'added' : 
-                    val2 === undefined || val2 === null ? 'removed' : 'modified'
-          });
         }
       }
     }
+    
+    return cambios;
   }
-  
-  return cambios;
-}
 
-
-
-
-// Función para extraer el path completo con el nombre del menú
-private extraerPathConMenu(path: string, menuNombre: string | null): string {
-  if (!menuNombre) return path;
-  
-  // Si el path tiene "acceso.", mantenerlo
-  if (path.startsWith('acceso.')) {
-    return `acceso.${menuNombre}`;
-  }
-  
-  // Si el path tiene "permisos.", reemplazar con el nombre del menú
-  if (path.includes('permisos.')) {
-    return path.replace('permisos.', `${menuNombre}.`);
-  }
-  
-  return path;
-}
-
-  // Helper para verificar si es primitivo
   private esPrimitivo(valor: any): boolean {
     return valor === null || 
            valor === undefined || 
@@ -583,7 +512,6 @@ private extraerPathConMenu(path: string, menuNombre: string | null): string {
            typeof valor === 'boolean';
   }
 
-  // Función para aplanar cambios anidados
   private aplanarCambios(cambios: any[], prefix: string = ''): any[] {
     const resultado: any[] = [];
     
@@ -602,7 +530,6 @@ private extraerPathConMenu(path: string, menuNombre: string | null): string {
     return resultado;
   }
 
-  // Función para obtener solo los cambios significativos
   private obtenerSoloCambios(cambios: any[]): any[] {
     return cambios.filter(cambio => 
       cambio.valorAnterior !== cambio.valorNuevo ||
@@ -611,49 +538,7 @@ private extraerPathConMenu(path: string, menuNombre: string | null): string {
     );
   }
 
-  async cargarAuditoria(page: number = 1) {
-    try {
-      this._loadingService.setLoading(true);
-
-      const operacion = this.filtro.tipoOperacion ? this.filtro.tipoOperacion.toUpperCase() : '';
-      
-      let res: any = await firstValueFrom(this.auditoriaService.getAuditoriaByRegistro(
-        this.tablaNombre,
-        this.registroId,
-        operacion,
-        this.filtro.fechaDesde,
-        this.filtro.fechaHasta,
-        page,
-        this.registrosPorPagina
-      ));
-
-      if (res?.status === 'success' && res?.data) {
-        this.auditoriaData = res.data.data || [];
-        
-        if (res.data.meta) {
-          this.totalRegistros = res.data.meta.total;
-          this.paginaActual = res.data.meta.current_page;
-          this.ultimaPagina = res.data.meta.last_page;
-        }
-        
-        // Se selecciona el primer movimiento de la página
-        if (this.auditoriaData.length > 0) {
-          this.seleccionarRegistro(this.auditoriaData[0], 0);
-        } else {
-          this.limpiarSeleccion();
-        }
-      } else {
-        this.auditoriaData = [];
-        this.limpiarSeleccion();
-      }
-    } catch (error: any) {
-      console.error('Error en la petición', error);
-      this.auditoriaData = [];
-      this.limpiarSeleccion();
-    } finally {
-      this._loadingService.setLoading(false);
-    }
-  }
+  // ===================== PAGINACIÓN =====================
 
   firstPage(): void {
     if (this.paginaActual !== 1) {
@@ -681,12 +566,22 @@ private extraerPathConMenu(path: string, menuNombre: string | null): string {
     this.goToPage(this.paginaActual - 1);
   }
 
+  // ===================== FILTROS =====================
+
   limpiarFiltros(): void {
     this.filtro = {
       tipoOperacion: '',
       fechaDesde: '',
       fechaHasta: ''
     };
+    // También reseteamos las fechas del selector
+    const hoy = moment();
+    const hace7Dias = moment().subtract(7, 'days');
+    this.fechaInicio = hace7Dias.format('YYYY-MM-DD');
+    this.fechaFin = hoy.format('YYYY-MM-DD');
+    this.filtro.fechaDesde = this.fechaInicio;
+    this.filtro.fechaHasta = this.fechaFin;
+    this.actualizarPrevDate();
     this.paginaActual = 1;
     this.cargarAuditoria(1);
   }
@@ -696,4 +591,48 @@ private extraerPathConMenu(path: string, menuNombre: string | null): string {
     this.cargarAuditoria(1);
   }
 
+  // ===================== CARGA =====================
+
+  async cargarAuditoria(page: number = 1) {
+    try {
+      this._loadingService.setLoading(true);
+
+      const operacion = this.filtro.tipoOperacion ? this.filtro.tipoOperacion.toUpperCase() : '';
+      
+      let res: any = await firstValueFrom(this.auditoriaService.getAuditoriaByRegistro(
+        this.tablaNombre,
+        this.registroId,
+        operacion,
+        this.filtro.fechaDesde,
+        this.filtro.fechaHasta,
+        page,
+        this.registrosPorPagina
+      ));
+
+      if (res?.status === 'success' && res?.data) {
+        this.auditoriaData = res.data.data || [];
+        
+        if (res.data.meta) {
+          this.totalRegistros = res.data.meta.total;
+          this.paginaActual = res.data.meta.current_page;
+          this.ultimaPagina = res.data.meta.last_page;
+        }
+        
+        if (this.auditoriaData.length > 0) {
+          this.seleccionarRegistro(this.auditoriaData[0], 0);
+        } else {
+          this.limpiarSeleccion();
+        }
+      } else {
+        this.auditoriaData = [];
+        this.limpiarSeleccion();
+      }
+    } catch (error: any) {
+      console.error('Error en la petición', error);
+      this.auditoriaData = [];
+      this.limpiarSeleccion();
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
 }
