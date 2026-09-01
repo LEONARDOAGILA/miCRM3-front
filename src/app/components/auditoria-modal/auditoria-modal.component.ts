@@ -7,11 +7,42 @@ import { LoadingService } from '../../service/loading.service';
 import { firstValueFrom } from 'rxjs';
 import { PanelModule } from '../../components/panel/panel.module';
 import moment from 'moment';
+import {
+  NgxDaterangepickerMd,
+  LOCALE_CONFIG,
+  LocaleService,
+  DefaultLocaleConfig,
+} from 'ngx-daterangepicker-material';
+
+/**
+ * Extremo de un rango del picker.
+ *
+ * Se tipa por la forma y no como moment.Moment porque la librería emite
+ * objetos dayjs, aunque los `ranges` se le pasen construidos con moment.
+ * Lo único que se necesita de ellos es .format(), que ambas exponen.
+ */
+interface FechaLike {
+  format(patron: string): string;
+}
+
+interface FechaRango {
+  startDate: FechaLike | null;
+  endDate: FechaLike | null;
+}
 
 @Component({
   selector: 'app-auditoria-modal',
   standalone: true,
-  imports: [CommonModule, NgbModule, FormsModule, PanelModule],
+  imports: [CommonModule, NgbModule, FormsModule, PanelModule, NgxDaterangepickerMd],
+  providers: [
+    // LocaleService no es providedIn:'root'. NgbModal crea este componente
+    // standalone con su propio injector, y la directiva del picker lo resuelve
+    // por la cadena del element injector, que no alcanza los providers que
+    // NgxDaterangepickerMd.forRoot() deja en AppModule -> NG0201.
+    // Hay que declararlos también aquí.
+    { provide: LOCALE_CONFIG, useValue: DefaultLocaleConfig },
+    { provide: LocaleService, useClass: LocaleService, deps: [LOCALE_CONFIG] },
+  ],
   templateUrl: './auditoria-modal.component.html',
   styleUrls: ['./auditoria-modal.component.scss']
 })
@@ -36,6 +67,46 @@ export class AuditoriaModalComponent implements OnInit {
   public fechaFin: string = '';
   public prevDate: string = '';
 
+  /**
+   * Rango del ngx-daterangepicker-material (mismo patrón que dashboard3).
+   *
+   * Arranca en null a propósito: el modal debe abrirse mostrando TODO el
+   * historial. Con un rango por defecto de "últimos 7 días" el listado salía
+   * vacío, porque la auditoría es sobre todo histórica (16.487 de 16.490
+   * registros tienen más de 30 días).
+   *
+   * Tiene que ser null, no {startDate: null, endDate: null}: la directiva sólo
+   * vacía el input cuando el valor entero es falsy (setValue -> picker.clear()).
+   */
+  public selected: FechaRango | null = null;
+  public alwaysShowCalendars = true;
+
+  public locale: any = {
+    format: 'DD/MM/YYYY',
+    displayFormat: 'DD/MM/YYYY',
+    separator: ' - ',
+    applyLabel: 'Aplicar',
+    cancelLabel: 'Cancelar',
+    clearLabel: 'Limpiar',
+    customRangeLabel: 'Personalizado',
+    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+    monthNames: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+    firstDay: 1, // lunes
+  };
+
+  public ranges: any = {
+    'Hoy': [moment(), moment()],
+    'Ayer': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+    'Últimos 7 días': [moment().subtract(6, 'days'), moment()],
+    'Últimos 15 días': [moment().subtract(14, 'days'), moment()],
+    'Últimos 30 días': [moment().subtract(29, 'days'), moment()],
+    'Este mes': [moment().startOf('month'), moment().endOf('month')],
+    'Mes pasado': [
+      moment().subtract(1, 'month').startOf('month'),
+      moment().subtract(1, 'month').endOf('month'),
+    ],
+  };
+
   // ===================== PAGINACIÓN =====================
   public paginaActual: number = 1;
   public totalRegistros: number = 0;
@@ -50,51 +121,64 @@ export class AuditoriaModalComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Fechas por defecto: últimos 7 días
-    const hoy = moment();
-    const hace7Dias = moment().subtract(7, 'days');
-    
-    this.fechaInicio = hace7Dias.format('YYYY-MM-DD');
-    this.fechaFin = hoy.format('YYYY-MM-DD');
-    this.filtro.fechaDesde = this.fechaInicio;
-    this.filtro.fechaHasta = this.fechaFin;
-    
-    this.actualizarPrevDate();
+    moment.locale('es');
+    // Sin rango: se abre con todo el historial (ver comentario de `selected`)
     this.cargarAuditoria();
   }
 
   // ===================== DATE RANGE METHODS =====================
 
-  actualizarPrevDate(): void {
-    if (this.fechaInicio && this.fechaFin) {
-      const inicio = moment(this.fechaInicio);
-      const fin = moment(this.fechaFin);
-      const diff = fin.diff(inicio, 'days');
-      
-      const prevInicio = moment(inicio).subtract(diff + 1, 'days');
-      const prevFin = moment(inicio).subtract(1, 'days');
-      
-      this.prevDate = prevInicio.format('D MMMM') + ' - ' + prevFin.format('D MMMM YYYY');
+  /**
+   * Rango elegido en el picker -> los dos campos que espera el backend.
+   *
+   * Solo la parte de fecha (YYYY-MM-DD): AuditoriaController valida
+   * `date_format:Y-m-d` y auditoria.fn_auditoria_listar_paginado hace
+   * `fecha_hasta::TIMESTAMP + INTERVAL '1 day' - INTERVAL '1 second'`,
+   * o sea que el filtro es por día completo.
+   */
+  onRangoChange(rango: FechaRango | null): void {
+    // El botón "Limpiar" del picker emite null: vuelve a todo el historial
+    if (!rango?.startDate || !rango?.endDate) {
+      this.fechaInicio = '';
+      this.fechaFin = '';
+      this.filtro.fechaDesde = '';
+      this.filtro.fechaHasta = '';
+    } else {
+      // OJO: se llama al .format() del propio objeto, sin envolverlo en moment().
+      //
+      // ngx-daterangepicker-material trabaja por dentro con dayjs (es su
+      // peerDependency), así que lo que emite son objetos dayjs aunque los
+      // `ranges` se hayan construido con moment. Y moment(dayjsObj) NO falla:
+      // no reconoce sus unidades, cae en "ahora" y devuelve un moment válido
+      // con la fecha de HOY. Pasaba la validación Y-m-d del backend y filtraba
+      // por el día equivocado, sin dar ningún error.
+      //
+      // Tanto dayjs como moment exponen .format(), así que esto funciona con
+      // los dos y no depende de qué librería devuelva el picker.
+      this.fechaInicio = rango.startDate.format('YYYY-MM-DD');
+      this.fechaFin = rango.endDate.format('YYYY-MM-DD');
+      this.filtro.fechaDesde = this.fechaInicio;
+      this.filtro.fechaHasta = this.fechaFin;
     }
-  }
 
-  aplicarRango(dias: number): void {
-    const hoy = moment();
-    const inicio = moment().subtract(dias, 'days');
-    
-    this.fechaInicio = inicio.format('YYYY-MM-DD');
-    this.fechaFin = hoy.format('YYYY-MM-DD');
-    this.filtro.fechaDesde = this.fechaInicio;
-    this.filtro.fechaHasta = this.fechaFin;
-    
     this.actualizarPrevDate();
     this.aplicarFiltros();
   }
 
-  onFechaChange(): void {
-    this.filtro.fechaDesde = this.fechaInicio;
-    this.filtro.fechaHasta = this.fechaFin;
-    this.actualizarPrevDate();
+  actualizarPrevDate(): void {
+    if (!this.fechaInicio || !this.fechaFin) {
+      this.prevDate = '';
+      return;
+    }
+
+    const inicio = moment(this.fechaInicio);
+    const fin = moment(this.fechaFin);
+    const diff = fin.diff(inicio, 'days');
+
+    const prevInicio = moment(inicio).subtract(diff + 1, 'days');
+    const prevFin = moment(inicio).subtract(1, 'days');
+
+    this.prevDate = prevInicio.format('D MMMM') + ' - ' + prevFin.format('D MMMM YYYY');
   }
 
   // ===================== OPERACIONES =====================
@@ -574,13 +658,10 @@ export class AuditoriaModalComponent implements OnInit {
       fechaDesde: '',
       fechaHasta: ''
     };
-    // También reseteamos las fechas del selector
-    const hoy = moment();
-    const hace7Dias = moment().subtract(7, 'days');
-    this.fechaInicio = hace7Dias.format('YYYY-MM-DD');
-    this.fechaFin = hoy.format('YYYY-MM-DD');
-    this.filtro.fechaDesde = this.fechaInicio;
-    this.filtro.fechaHasta = this.fechaFin;
+    // Limpiar = volver a todo el historial, también en el selector de fechas
+    this.selected = null;
+    this.fechaInicio = '';
+    this.fechaFin = '';
     this.actualizarPrevDate();
     this.paginaActual = 1;
     this.cargarAuditoria(1);
