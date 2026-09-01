@@ -14,9 +14,49 @@
 
   <div class="audit-modal">
 
+    <!-- ===================== DATE RANGE ===================== -->
+    <div class="date-range-wrapper">
+      <div class="date-range-header">
+        <div class="date-range-fields">
+          <div class="date-field">
+            <label class="date-label">
+              <i class="fa-regular fa-calendar"></i> Desde
+            </label>
+            <input type="date" 
+                   class="form-control form-control-sm" 
+                   [(ngModel)]="fechaInicio"
+                   (change)="onFechaChange()">
+          </div>
+          <div class="date-field">
+            <label class="date-label">
+              <i class="fa-regular fa-calendar"></i> Hasta
+            </label>
+            <input type="date" 
+                   class="form-control form-control-sm" 
+                   [(ngModel)]="fechaFin"
+                   (change)="onFechaChange()">
+          </div>
+        </div>
+        <div class="date-range-buttons">
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="aplicarRango(7)">
+            <i class="fa-regular fa-clock"></i> 7 días
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="aplicarRango(15)">
+            <i class="fa-regular fa-clock"></i> 15 días
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="aplicarRango(30)">
+            <i class="fa-regular fa-clock"></i> 30 días
+          </button>
+        </div>
+      </div>
+      <div class="date-range-compare" *ngIf="prevDate">
+        <i class="fa-regular fa-calendar-plus"></i>
+        comparado con <strong>{{ prevDate }}</strong>
+      </div>
+    </div>
+
     <!-- ===================== FILTROS ===================== -->
     <div class="audit-filters">
-
       <div class="audit-filters__field">
         <label class="audit-label" for="audit-f-operacion">Operación</label>
         <select id="audit-f-operacion" class="form-select form-select-sm" [(ngModel)]="filtro.tipoOperacion">
@@ -27,16 +67,6 @@
         </select>
       </div>
 
-      <div class="audit-filters__field">
-        <label class="audit-label" for="audit-f-desde">Desde</label>
-        <input id="audit-f-desde" type="date" class="form-control form-control-sm" [(ngModel)]="filtro.fechaDesde">
-      </div>
-
-      <div class="audit-filters__field">
-        <label class="audit-label" for="audit-f-hasta">Hasta</label>
-        <input id="audit-f-hasta" type="date" class="form-control form-control-sm" [(ngModel)]="filtro.fechaHasta">
-      </div>
-
       <div class="audit-filters__actions">
         <button type="button" class="btn btn-sm btn-primary" (click)="aplicarFiltros()">
           <i class="fa-solid fa-filter"></i> Filtrar
@@ -45,7 +75,6 @@
           <i class="fa-solid fa-eraser"></i>
         </button>
       </div>
-
     </div>
 
     <!-- ===================== CONTENIDO ===================== -->
@@ -53,7 +82,6 @@
 
       <!-- ---------- Movimientos ---------- -->
       <section class="audit-panel audit-panel--lista">
-
         <header class="audit-panel__head">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span>Movimientos</span>
@@ -63,40 +91,32 @@
         </header>
 
         <div class="audit-lista" *ngIf="auditoriaData.length > 0; else sinMovimientos">
-
           <button type="button" class="movimiento"
                   *ngFor="let registro of auditoriaData; let i = index"
                   [class.activo]="selectedIndex === i"
                   [ngClass]="'op-' + (registro.operacion || '').toLowerCase()"
                   (click)="seleccionarRegistro(registro, i)">
-
             <span class="movimiento__icono">
               <i [class]="operacionInfo(registro.operacion).icono"></i>
             </span>
-
             <span class="movimiento__cuerpo">
               <span class="movimiento__titulo">
                 {{ operacionInfo(registro.operacion).texto }}
                 <span class="movimiento__id">#{{ registro.id }}</span>
               </span>
-
               <span class="movimiento__dato" *ngIf="registro.fecha_operacion">
                 <i class="fa-regular fa-clock"></i> {{ registro.fecha_operacion }}
               </span>
-
               <span class="movimiento__dato" *ngIf="registro.usuario_login || registro.usuario_nombre">
                 <i class="fa-regular fa-user"></i>
                 {{ registro.usuario_login || 'N/A' }}{{ registro.usuario_nombre ? ' · ' + registro.usuario_nombre : '' }}
               </span>
-
               <span class="movimiento__dato" *ngIf="registro.ip_address">
                 <i class="fa-solid fa-network-wired"></i> {{ registro.ip_address }}
               </span>
             </span>
-
             <i class="fa-solid fa-chevron-right movimiento__flecha"></i>
           </button>
-
         </div>
 
         <ng-template #sinMovimientos>
@@ -115,35 +135,27 @@
             </ng-container>
             <ng-template #sinRegistros>Sin registros</ng-template>
           </div>
-
           <div class="audit-pagination__buttons">
-            <button type="button" class="pag-btn" (click)="firstPage()"
-                    [disabled]="paginaActual === 1" title="Primera página">
+            <button type="button" class="pag-btn" (click)="firstPage()" [disabled]="paginaActual === 1" title="Primera página">
               <i class="fa fa-angle-double-left"></i>
             </button>
-            <button type="button" class="pag-btn" (click)="prevPage()"
-                    [disabled]="paginaActual === 1" title="Anterior">
+            <button type="button" class="pag-btn" (click)="prevPage()" [disabled]="paginaActual === 1" title="Anterior">
               <i class="fa fa-chevron-left"></i>
             </button>
             <span class="audit-pagination__page">{{ paginaActual }} / {{ ultimaPagina }}</span>
-            <button type="button" class="pag-btn" (click)="nextPage()"
-                    [disabled]="paginaActual === ultimaPagina" title="Siguiente">
+            <button type="button" class="pag-btn" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina" title="Siguiente">
               <i class="fa fa-chevron-right"></i>
             </button>
-            <button type="button" class="pag-btn" (click)="lastPage()"
-                    [disabled]="paginaActual === ultimaPagina" title="Última página">
+            <button type="button" class="pag-btn" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina" title="Última página">
               <i class="fa fa-angle-double-right"></i>
             </button>
           </div>
         </footer>
-
       </section>
 
       <!-- ---------- Detalle ---------- -->
       <section class="audit-panel audit-panel--detalle">
-
         <ng-container *ngIf="selectedAuditoria; else sinSeleccion">
-
           <header class="audit-panel__head">
             <i class="fa-solid fa-code-compare"></i>
             <span>Detalle de cambios</span>
@@ -161,7 +173,6 @@
             </div>
           </header>
 
-          <!-- Metadatos del movimiento seleccionado -->
           <div class="audit-meta">
             <span class="audit-chip" [ngClass]="operacionInfo(selectedAuditoria.operacion).clase">
               <i [class]="operacionInfo(selectedAuditoria.operacion).icono"></i>
@@ -179,13 +190,9 @@
             </span>
           </div>
 
-          <!-- Cuerpo -->
           <div class="audit-detail__body">
             <ng-container *ngIf="obtenerCambiosFormateados(selectedAuditoria) as cambiosInfo">
-
               <ng-container *ngIf="cambiosInfo.cambios.length > 0; else sinCambios">
-
-                <!-- Tabla (pantallas medianas y grandes) -->
                 <div class="audit-table-wrap">
                   <table class="diff-table">
                     <thead>
@@ -213,19 +220,15 @@
                     </tbody>
                   </table>
                 </div>
-
               </ng-container>
-
               <ng-template #sinCambios>
                 <div class="audit-empty">
                   <i class="fa-regular fa-circle-check"></i>
                   <p>No se detectaron cambios en este registro</p>
                 </div>
               </ng-template>
-
             </ng-container>
           </div>
-
         </ng-container>
 
         <ng-template #sinSeleccion>
@@ -240,7 +243,6 @@
             </div>
           </div>
         </ng-template>
-
       </section>
 
     </div>

@@ -1,9 +1,10 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Component, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AgGridAngular } from 'ag-grid-angular';
+import { AgGridAngular, ICellRendererAngularComp } from 'ag-grid-angular';
 
 ///   SERVICIOS    ///
 import { SeguridadService } from '../../../services/seguridad.service';
@@ -52,9 +53,25 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   private touchStartX = 0;
   private touchStartY = 0;
 
-  @HostListener('window:resize', ['$event'])
-  onResize(event: Event): void { this._appAgGridService.ajustarTamanoGrid(this.gridApi); }
+  /** Corta toda suscripción viva al destruir el componente. */
+  private readonly unsubscribe$ = new Subject<void>();
+
+  /** Timeouts pendientes, para cancelarlos en ngOnDestroy. */
+  private timeoutIds: any[] = [];
   private resizeTimeoutId: any;
+
+  /**
+   * Referencias estables a los listeners de la cabecera. Con `.bind(this)` cada
+   * llamada creaba una función nueva y removeEventListener era imposible.
+   */
+  private headerElement: Element | null = null;
+  private readonly onHeaderClick: EventListener = () => this.toggleActionsColumn();
+  private readonly onHeaderTouchStart: EventListener = (e) => this.handleTouchStart(e as TouchEvent);
+  private readonly onHeaderTouchEnd: EventListener = (e) => this.handleTouchEnd(e as TouchEvent);
+
+  /** Ahora sí pasa por el debounce de ajustarTamanoGrid(). */
+  @HostListener('window:resize')
+  onResize(): void { this.ajustarTamanoGrid(); }
 
   @ViewChild(CampoBusquedaPaginacionComponent) campoBusquedaPaginacion!: CampoBusquedaPaginacionComponent;
   public searchTerm: string = '';
@@ -81,9 +98,39 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.resizeTimeoutId) {
-      clearTimeout(this.resizeTimeoutId);
-    }
+    this.unsubscribe$.next();
+    this.unsubscribe$.complete();
+
+    this.timeoutIds.forEach(id => clearTimeout(id));
+    this.timeoutIds = [];
+    if (this.resizeTimeoutId) { clearTimeout(this.resizeTimeoutId); }
+
+    this.quitarListenersCabecera();
+  }
+
+  /**
+   * Suscribe al @Output de un modal y corta la suscripción cuando el modal se
+   * cierra o cuando este componente se destruye.
+   *
+   * Con firstValueFrom() la promesa nunca se resolvía si el usuario cancelaba:
+   * registrosE solo emite al guardar con éxito y nunca hace complete(). El
+   * closure quedaba retenido para siempre junto al modal entero — formulario,
+   * registro y el avatar en base64 incluidos.
+   */
+  public escucharModal<T>(
+    modalRef: NgbModalRef,
+    salida: EventEmitter<T>,
+    alEmitir: (valor: T) => void
+  ): void {
+    // dismiss() rechaza la promesa; para nosotros es un cierre normal.
+    const modalCerrado$ = from(modalRef.result).pipe(catchError(() => of(null)));
+
+    salida
+      .pipe(takeUntil(merge(this.unsubscribe$, modalCerrado$)))
+      .subscribe({
+        next: alEmitir,
+        error: (err) => console.error('Error en el modal:', err),
+      });
   }
 
   fun_home() {
@@ -263,16 +310,34 @@ export class AllUsersComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    setTimeout(() => {
-      const headerElement = document.querySelector('.ag-header-cell[col-id="actions"]');
-      if (headerElement) {
-        headerElement.addEventListener('click', this.handleHeaderAction.bind(this));
-        headerElement.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
-        headerElement.addEventListener('touchend', this.handleTouchEnd.bind(this));
-      }
-    }, 500);
+
+    this.timeoutIds.push(
+      setTimeout(() => this.montarListenersCabecera(), 500)
+    );
+
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
     this.ajustarAlturaGrid();
+  }
+
+  private montarListenersCabecera(): void {
+    // ag-Grid recrea la celda de cabecera al cambiar columnDefs: hay que soltar
+    // la anterior o el elemento huérfano sigue reteniendo el componente.
+    this.quitarListenersCabecera();
+
+    this.headerElement = document.querySelector('.ag-header-cell[col-id="actions"]');
+    if (!this.headerElement) { return; }
+
+    this.headerElement.addEventListener('click', this.onHeaderClick);
+    this.headerElement.addEventListener('touchstart', this.onHeaderTouchStart, { passive: true });
+    this.headerElement.addEventListener('touchend', this.onHeaderTouchEnd);
+  }
+
+  private quitarListenersCabecera(): void {
+    if (!this.headerElement) { return; }
+    this.headerElement.removeEventListener('click', this.onHeaderClick);
+    this.headerElement.removeEventListener('touchstart', this.onHeaderTouchStart);
+    this.headerElement.removeEventListener('touchend', this.onHeaderTouchEnd);
+    this.headerElement = null;
   }
 
   handleTouchStart(e: TouchEvent) {
@@ -291,10 +356,6 @@ export class AllUsersComponent implements OnInit, OnDestroy {
       this.toggleActionsColumn();
       e.preventDefault();
     }
-  }
-
-  handleHeaderAction() {
-    this.toggleActionsColumn();
   }
 
   toggleActionsColumn() {
@@ -323,9 +384,13 @@ export class AllUsersComponent implements OnInit, OnDestroy {
       }
       this.gridApi.setColumnDefs(columnDefs);
       this.gridApi.sizeColumnsToFit();
-      setTimeout(() => {
-        this.gridApi.sizeColumnsToFit();
-      }, 100);
+
+      this.timeoutIds.push(
+        setTimeout(() => {
+          this.gridApi.sizeColumnsToFit();
+          this.montarListenersCabecera();   // ag-Grid acaba de recrear la cabecera
+        }, 100)
+      );
     }
   }
 
@@ -500,186 +565,139 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   }
 
   // ****** ACCIONES ****** //
-  addUser() {
-    if (!this._seguridadService.isexpired()) {
-      const modalRef = this.modal.open(SaveUserComponent, {
-        centered: true,
-        size: 'xl',
-        backdrop: 'static',
-        keyboard: false
-      });
-      modalRef.componentInstance.registro_selected = 0;
-      modalRef.componentInstance.accion = 'add';
-      (async () => {
-        try {
-          const nuevoUsuario = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
-          this.userModel.unshift(nuevoUsuario);
-          this.gridApi.setRowData(this.userModel);
-        } catch (error) {
-          console.error('Error o cancelación en creación:', error);
-        }
-      })();
-    }
-  }
-
-  auditoria() {
-    if (!this.selectedRow) return;
-    if (!this._seguridadService.isexpired()) {
-      const modalRef = this.modal.open(AuditoriaModalComponent, {
-        centered: true,
-        size: "xl",
-        backdrop: "static",
-        keyboard: true
-      });
-      modalRef.componentInstance.tablaNombre = 'users';
-      modalRef.componentInstance.registroId = this.selectedRow.id;
-    }
-  }
-}
-
-// ****** COMPONENTE DE BOTONES DE ACCIÓN ****** //
-@Component({
-  selector: 'app-button-accion-user',
-  standalone: false,
-  template: `
-    <app-action-buttons 
-      [accesoModel]="AllUsersComponent.accesoModel"
-      [buttonCambioClave]="true"
-      [buttonView]="true"
-      [buttonEdit]="true"
-      [buttonClone]="true"
-      [buttonDelete]="true"
-      (cambioClave)="cambioClave()"
-      (view)="viewUser()"
-      (edit)="editUser()"
-      (clone)="clonUser()"
-      (delete)="deleteUser()">
-    </app-action-buttons>
-  `,
-})
-export class ButtonAccionUser {
-  private params: any;
-
-  constructor(
-    private modalService: NgbModal,
-    public AllUsersComponent: AllUsersComponent
-  ) { }
-
-  agInit(params: any): void {
-    this.params = params;
-  }
-
-  cambioClave() {
-    const modalRef = this.modalService.open(ChangePasswordComponent, {
+  private abrirModalUsuario(registro: any, accion: 'add' | 'edit' | 'clon' | 'view'): NgbModalRef {
+    const modalRef = this.modal.open(SaveUserComponent, {
       centered: true,
       size: 'xl',
       backdrop: 'static',
-      keyboard: true
+      keyboard: accion === 'view',
     });
-    modalRef.componentInstance.userId = this.params.data.id;
-    modalRef.componentInstance.login_user = this.params.data.login_user;
-    modalRef.componentInstance.email = this.params.data.email;
-    modalRef.componentInstance.view_reset = true;
-
-    modalRef.componentInstance.registro_selected = this.params.data;
-    (async () => {
-      try {
-        await firstValueFrom(modalRef.componentInstance.passwordChanged);
-        console.log('Contraseña cambiada con éxito');
-      } catch (error) {
-        console.error('Error o cancelación:', error);
-      }
-    })();
+    modalRef.componentInstance.registro_selected = registro;
+    modalRef.componentInstance.accion = accion;
+    return modalRef;
   }
 
-  clonUser() {
-    const modalRef = this.modalService.open(SaveUserComponent, {
-      centered: true,
-      size: 'xl',
-      backdrop: 'static',
-      keyboard: false
+  addUser(): void {
+    if (this._seguridadService.isexpired()) { return; }
+
+    const modalRef = this.abrirModalUsuario(0, 'add');
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
+      this.userModel = [nuevo, ...this.userModel];
+      this.gridApi?.setRowData(this.userModel);
     });
-
-    modalRef.componentInstance.registro_selected = this.params.data;
-    modalRef.componentInstance.accion = 'clon';
-
-    (async () => {
-      try {
-        const nuevoUsuario = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
-        this.AllUsersComponent.userModel.unshift(nuevoUsuario);
-        this.AllUsersComponent.gridApi.setRowData(this.AllUsersComponent.userModel);
-      } catch (error) {
-        console.error('Error o cancelación en clonación:', error);
-      }
-    })();
   }
 
-  editUser() {
-    const modalRef = this.modalService.open(SaveUserComponent, {
-      centered: true,
-      size: 'xl',
-      backdrop: 'static',
-      keyboard: false
+  clonUser(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+
+    const modalRef = this.abrirModalUsuario(registro, 'clon');
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
+      this.userModel = [nuevo, ...this.userModel];
+      this.gridApi?.setRowData(this.userModel);
     });
-    modalRef.componentInstance.registro_selected = this.params.data;
-    modalRef.componentInstance.accion = 'edit';
-    (async () => {
-      try {
-        const response = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
-        // console.log('response',response)
-        const index = this.AllUsersComponent.userModel.findIndex(
-          registro => registro.id === response.id
-        );
-        if (index !== -1) {
-          this.AllUsersComponent.userModel[index] = response;
-          const rowNode = this.AllUsersComponent.gridApi.getRowNode(index.toString());
-          rowNode?.setData(response);
-        }
-      } catch (error) {
-        console.error('Error o cancelación en edición:', error);
-      }
-    })();
   }
 
-  viewUser() {
-    const modalRef = this.modalService.open(SaveUserComponent, {
-      centered: true,
-      size: 'xl',
-      backdrop: 'static',
-      keyboard: true
+  editUser(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+
+    const modalRef = this.abrirModalUsuario(registro, 'edit');
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (actualizado: any) => {
+      const index = this.userModel.findIndex(r => r.id === actualizado.id);
+      if (index === -1) { return; }
+      this.userModel[index] = actualizado;
+      this.gridApi?.getRowNode(index.toString())?.setData(actualizado);
     });
-    modalRef.componentInstance.registro_selected = this.params.data;
-    modalRef.componentInstance.accion = 'view';
   }
 
-  deleteUser() {
-    const modalRef = this.modalService.open(DeleteUserComponent, {
+  viewUser(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+    this.abrirModalUsuario(registro, 'view');   // solo lectura: no emite nada
+  }
+
+  deleteUser(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+
+    const modalRef = this.modal.open(DeleteUserComponent, {
       centered: true,
       size: 'md',
       backdrop: 'static',
       keyboard: true
     });
-    modalRef.componentInstance.registro_selected = this.params.data;
-    (async () => {
-      try {
-        await firstValueFrom(modalRef.componentInstance.registrosE);
-        const usuarioAEliminar = this.params.data;
-        const index = this.AllUsersComponent.userModel.findIndex(
-          registro => registro.id === usuarioAEliminar.id
-        );
-        if (index !== -1) {
-          this.AllUsersComponent.userModel.splice(index, 1);
-          this.AllUsersComponent.gridApi.applyTransaction({ remove: [usuarioAEliminar] });
-        }
-      } catch (error) {
-        console.error('Error o cancelación en eliminación:', error);
-      }
-    })();
+    modalRef.componentInstance.registro_selected = registro;
+
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => {
+      const index = this.userModel.findIndex(r => r.id === registro.id);
+      if (index === -1) { return; }
+      this.userModel.splice(index, 1);
+      this.gridApi?.applyTransaction({ remove: [registro] });
+    });
   }
 
+  cambioClave(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
 
+    const modalRef = this.modal.open(ChangePasswordComponent, {
+      centered: true,
+      size: 'xl',
+      backdrop: 'static',
+      keyboard: true
+    });
+    modalRef.componentInstance.userId = registro.id;
+    modalRef.componentInstance.login_user = registro.login_user;
+    modalRef.componentInstance.email = registro.email;
+    modalRef.componentInstance.view_reset = true;
+    modalRef.componentInstance.registro_selected = registro;
 
+    this.escucharModal(modalRef, modalRef.componentInstance.passwordChanged, () => {
+      this.allUsers(this.paginaActual);   // refresca updated_at / updated_by
+    });
+  }
 
+  auditoria(): void {
+    if (!this.selectedRow) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    const modalRef = this.modal.open(AuditoriaModalComponent, {
+      centered: true,
+      size: "xl",
+      backdrop: "static",
+      keyboard: true
+    });
+    modalRef.componentInstance.tablaNombre = 'users';
+    modalRef.componentInstance.registroId = this.selectedRow.id;
+  }
 }
 
+// ****** COMPONENTE DE BOTONES DE ACCIÓN ****** //
+// Simple delegador: toda la lógica de modales vive en AllUsersComponent, así no
+// se duplica ni deja closures colgando en cada fila renderizada.
+@Component({
+  selector: 'app-button-accion-user',
+  standalone: false,
+  template: `
+    <app-action-buttons
+      [accesoModel]="parent.accesoModel"
+      [buttonCambioClave]="true"
+      [buttonView]="true"
+      [buttonEdit]="true"
+      [buttonClone]="true"
+      [buttonDelete]="true"
+      (cambioClave)="parent.cambioClave(params.data)"
+      (view)="parent.viewUser(params.data)"
+      (edit)="parent.editUser(params.data)"
+      (clone)="parent.clonUser(params.data)"
+      (delete)="parent.deleteUser(params.data)">
+    </app-action-buttons>
+  `,
+})
+export class ButtonAccionUser implements ICellRendererAngularComp {
+  public params: any;
+
+  constructor(public parent: AllUsersComponent) { }
+
+  agInit(params: any): void { this.params = params; }
+
+  /** true = ag-Grid reutiliza esta instancia en vez de recrearla en cada scroll. */
+  refresh(params: any): boolean { this.params = params; return true; }
+}
 

@@ -1,7 +1,5 @@
 // ============================================================
 // AUDITORÍA - MODAL DE HISTORIAL
-// Todo encapsulado en :host. Colores desde las variables de
-// Bootstrap / Color Admin (funciona en claro y en oscuro).
 // ============================================================
 
 :host {
@@ -9,10 +7,100 @@
 
   --au-radius: .5rem;
   --au-gap: .75rem;
-  // Alto de los dos paneles en escritorio; se adapta a la pantalla
   --au-panel-h: clamp(300px, 48vh, 460px);
 }
 
+// ============================================================
+// DATE RANGE PICKER NATIVO
+// ============================================================
+
+.date-range-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem .75rem;
+  
+  padding: .625rem .75rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--au-radius);
+  margin-bottom: var(--au-gap);
+}
+
+.date-range-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem .75rem;
+  flex: 1 1 auto;
+}
+
+.date-range-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+}
+
+.date-field {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  
+  .date-label {
+    font-size: .625rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color, #6c757d);
+    white-space: nowrap;
+    
+    i {
+      margin-right: .15rem;
+    }
+  }
+  
+  .form-control {
+    width: 150px;
+    font-size: .75rem;
+    padding: .25rem .5rem;
+    
+    @media (max-width: 575.98px) {
+      width: 120px;
+    }
+  }
+}
+
+.date-range-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  
+  .btn {
+    font-size: .6875rem;
+    padding: .2rem .6rem;
+    white-space: nowrap;
+  }
+}
+
+.date-range-compare {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  
+  strong {
+    color: var(--bs-component-color, #2d353c);
+  }
+  
+  i {
+    opacity: .7;
+  }
+}
 
 // ============================================================
 // LAYOUT
@@ -31,7 +119,6 @@
   gap: var(--au-gap);
   min-height: 0;
 }
-
 
 // ============================================================
 // FILTROS
@@ -82,7 +169,6 @@
   font-size: .75rem;
 }
 
-
 // ============================================================
 // PANELES
 // ============================================================
@@ -132,7 +218,6 @@
   gap: .25rem;
 }
 
-
 // ============================================================
 // CHIPS
 // ============================================================
@@ -180,7 +265,6 @@
   background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .2);
   color: var(--bs-warning-text-emphasis, #997404);
 }
-
 
 // ============================================================
 // LISTA DE MOVIMIENTOS
@@ -237,7 +321,6 @@
     border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .35);
   }
 
-  // Color del borde izquierdo según la operación
   &.op-insert { border-left-color: var(--bs-success, #198754); }
   &.op-update { border-left-color: var(--bs-warning, #ffc107); }
   &.op-delete { border-left-color: var(--bs-danger, #dc3545); }
@@ -336,7 +419,6 @@
   opacity: 1;
 }
 
-
 // ============================================================
 // PAGINACIÓN
 // ============================================================
@@ -414,7 +496,6 @@
   white-space: nowrap;
 }
 
-
 // ============================================================
 // DETALLE
 // ============================================================
@@ -467,7 +548,6 @@
   width: 100%;
   overflow-x: auto;
 }
-
 
 // ------------------------------------------------------------
 // Tabla de diferencias
@@ -590,7 +670,6 @@ tr.is-modified .diff-dot { background-color: var(--bs-warning, #ffc107); }
   color: var(--bs-success-text-emphasis, #146c43);
 }
 
-
 // ------------------------------------------------------------
 // Estados vacíos
 // ------------------------------------------------------------
@@ -622,7 +701,6 @@ tr.is-modified .diff-dot { background-color: var(--bs-warning, #ffc107); }
     max-width: 240px;
   }
 }
-
 
 // ============================================================
 // LOADER
@@ -659,12 +737,11 @@ tr.is-modified .diff-dot { background-color: var(--bs-warning, #ffc107); }
   100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-
 // ============================================================
 // RESPONSIVE
 // ============================================================
 
-// --- Tablet y móvil: una columna, alturas naturales ---
+// --- Tablet y móvil: una columna ---
 @media (max-width: 991.98px) {
 
   .audit-body {
@@ -682,10 +759,39 @@ tr.is-modified .diff-dot { background-color: var(--bs-warning, #ffc107); }
   .audit-panel--detalle .audit-detail__body {
     max-height: 320px;
   }
+  
+  .date-range-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .date-range-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .date-range-fields {
+    justify-content: space-between;
+    
+    .date-field {
+      flex: 1;
+      
+      .form-control {
+        width: 100%;
+      }
+    }
+  }
+  
+  .date-range-buttons {
+    justify-content: center;
+  }
+  
+  .date-range-compare {
+    justify-content: center;
+  }
 }
 
-
-// --- Móvil: filtros apilados y diferencias en fichas ---
+// --- Móvil: filtros apilados ---
 @media (max-width: 575.98px) {
 
   .audit-filters {
@@ -764,7 +870,6 @@ tr.is-modified .diff-dot { background-color: var(--bs-warning, #ffc107); }
     max-height: 120px;
   }
 }
-
 
 @media (prefers-reduced-motion: reduce) {
   .movimiento,
