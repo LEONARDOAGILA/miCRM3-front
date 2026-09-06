@@ -1,12 +1,224 @@
+/* ============================================================
+   LOGIN
+   El tema Color Admin ya trae .login.login-v1 (alto completo,
+   fondo #2d353c, cabecera y contenido a 400px). Aquí sólo se
+   añade lo que no cubre: el fondo, la tarjeta del formulario,
+   los estados de validación y el botón de ver contraseña.
+
+   Es un diseño oscuro fijo: el tema no le da variante clara.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+/* ---------- Fondo ---------- */
+/* El tema pinta `background-image` y en la regla siguiente lo anula con el
+   atajo `background: #2d353c`, así que la pantalla quedaba en un gris plano.
+   Se recupera profundidad con dos radiales sobre ese mismo color base.
+   Para usar una foto en su lugar:
+     background-image: linear-gradient(rgba(19,23,26,.88), rgba(19,23,26,.94)),
+                       url('/assets/img/login-bg/login-bg-11.jpg');
+     background-size: cover;
+     background-position: center; */
+:host ::ng-deep .login.login-v1 {
+  background-color: #232a30;
+  background-image:
+    radial-gradient(1200px 600px at 15% 10%, rgba(0, 172, 172, .18), transparent 60%),
+    radial-gradient(900px 500px at 85% 90%, rgba(52, 143, 226, .16), transparent 60%);
+  background-repeat: no-repeat;
+}
+
+/* ---------- Cabecera ---------- */
+:host ::ng-deep .login.login-v1 .login-header {
+  margin-bottom: 1rem;
+}
+
+/* El tema ya estiliza .brand .logo como un cuadrado con el color de la app */
+:host ::ng-deep .login.login-v1 .login-header .brand b {
+  font-weight: 600;
+}
+
+/* ---------- Tarjeta del formulario ---------- */
+/* El formulario iba suelto sobre el fondo; una tarjeta lo separa y centra
+   la atención. backdrop-filter degrada solo si el navegador no lo soporta. */
+.login-card {
+  padding: 1.75rem 1.5rem 1.25rem;
+
+  background-color: rgba(45, 53, 60, .85);
+  backdrop-filter: blur(10px);
+
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: .75rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
+}
+
+.login-card__titulo {
+  margin: 0 0 .15rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.login-card__ayuda {
+  margin: 0 0 1.25rem;
+  font-size: .75rem;
+  color: #adb5bd;
+}
+
+.login-card__pie {
+  margin-top: .75rem;
+  padding-top: .75rem;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  text-align: center;
+}
+
+/* ---------- Campos ---------- */
+.login-campo {
+  position: relative;
+  margin-bottom: .75rem;
+}
+
+/* Icono decorativo a la derecha del campo de usuario */
+.login-campo__icono {
+  position: absolute;
+  top: 50%;
+  right: .875rem;
+  transform: translateY(-50%);
+
+  font-size: .8125rem;
+  color: #6c757d;
+  pointer-events: none;
+}
+
+.login-campo .form-control {
+  padding-right: 2.5rem;
+  transition: box-shadow .15s ease, background-color .15s ease;
+}
+
+/* El tema deja el foco sin marca (`box-shadow: none`): se devuelve un anillo */
+:host ::ng-deep .login.login-v1 .login-content .form-control:focus {
+  background-color: #525a61;
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .3);
+}
+
+.login-campo .form-control.is-invalid {
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-danger-rgb, 220, 53, 69), .25);
+}
+
+/* Bootstrap añade su propio icono de error dentro del campo; sobra porque
+   el mensaje ya va debajo y chocaría con el ojo de la contraseña */
+.login-campo .form-control.is-invalid {
+  background-image: none;
+}
+
+/* ---------- Ocultado de la contraseña ---------- */
+/* El campo es type="text" para que el navegador no lo trate como contraseña
+   (y por tanto no ofrezca guardarla ni la autocomplete: autocomplete="off"
+   lo ignoran todos en los campos type="password"). El ocultado visual lo
+   hace esta clase, que el ojo activa y desactiva.
+
+   OJO: -webkit-text-security es una propiedad no estándar. Cubre Chrome,
+   Edge, Safari y Opera. Si necesitas cubrir Firefox con garantías hace falta
+   una fuente de discos real (paquete npm `text-security`); la declaración
+   font-family que había antes en este archivo no hacía nada porque esa fuente
+   no está definida en ningún @font-face del proyecto. */
 .password-mask {
-  font-family: 'text-security-disc';
   -webkit-text-security: disc;
 }
 
-/* Para iOS, asegurar que el teclado aparece */
+/* iOS necesita que el campo siga siendo seleccionable para abrir el teclado */
 @supports (-webkit-touch-callout: none) {
   .password-mask {
     -webkit-user-select: text;
     user-select: text;
+  }
+}
+
+/* ---------- Ver / ocultar contraseña ---------- */
+.login-campo__ojo {
+  position: absolute;
+  top: 50%;
+  right: .5rem;
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2rem;
+  height: 2rem;
+
+  padding: 0;
+  border: none;
+  border-radius: .375rem;
+
+  background: none;
+  color: #adb5bd;
+  font-size: .8125rem;
+  cursor: pointer;
+
+  transition: color .15s ease, background-color .15s ease;
+}
+
+.login-campo__ojo:hover,
+.login-campo__ojo:focus-visible {
+  color: #fff;
+  background-color: rgba(255, 255, 255, .08);
+}
+
+/* ---------- Mensajes de validación ---------- */
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+
+  margin: -.5rem 0 .625rem .125rem;
+
+  font-size: .6875rem;
+  color: var(--bs-danger-text-emphasis, #ff9c9a);
+}
+
+/* ---------- Botón principal ---------- */
+.login-boton {
+  margin-top: .25rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.login-boton:disabled {
+  opacity: .75;
+  cursor: progress;
+}
+
+/* ---------- Enlace de recuperación ---------- */
+.login-enlace {
+  padding: 0;
+  font-size: .75rem;
+  color: #adb5bd;
+  text-decoration: none;
+}
+
+.login-enlace:hover,
+.login-enlace:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 575.98px) {
+  .login-card {
+    padding: 1.25rem 1rem 1rem;
+  }
+
+  .login-card__titulo {
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-campo .form-control,
+  .login-campo__ojo {
+    transition: none;
   }
 }

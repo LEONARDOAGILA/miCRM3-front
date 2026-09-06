@@ -1,89 +1,125 @@
-<!-- begin spinner -->
-<div class="overlay0" *ngIf="isLoading"><span class="loader2"  *ngIf="isLoading"></span></div>
-<!-- end spinner -->
+<!-- ===================== SPINNER ===================== -->
+<div class="overlay0" *ngIf="isLoading">
+  <span class="loader2"></span>
+</div>
 
-
-
-<!-- BEGIN login -->
+<!-- ===================== LOGIN ===================== -->
 <div class="login login-v1">
-	<!-- BEGIN login-container -->
-	<div class="login-container">
-		<!-- BEGIN login-header -->
-		<div class="login-header">
-			<div class="brand">
-				<div class="d-flex align-items-center">
-					<b style="color: green">Mi </b> <b style="color: red;"> Empresa</b>
-				</div>
-			</div>
-			<div class="icon">
-				<i class="fa fa-lock"></i>
-			</div>
-		</div>
+  <div class="login-container">
 
+    <!-- ---------- Cabecera ---------- -->
+    <div class="login-header">
+      <div class="brand">
+        <div class="d-flex align-items-center">
+          <span class="logo"></span>
+          <div>
+            Mi <b>Empresa</b>
+            <small>Sistema de gestión</small>
+          </div>
+        </div>
+      </div>
+      <div class="icon">
+        <i class="fa fa-lock" aria-hidden="true"></i>
+      </div>
+    </div>
 
+    <!-- ---------- Cuerpo ---------- -->
+    <div class="login-body">
+      <div class="login-content fs-13px">
 
-		<!-- END login-header -->
+        <!-- (ngSubmit) para que Enter también inicie sesión -->
+        <form class="login-card"
+              [formGroup]="loginForm"
+              (ngSubmit)="submit()"
+              autocomplete="off"
+              novalidate>
 
-		<!-- BEGIN login-body -->
-		<div class="login-body">
-			<!-- BEGIN login-content -->
-			<div class="login-content fs-13px">
+          <h1 class="login-card__titulo">Iniciar sesión</h1>
+          <p class="login-card__ayuda">Ingrese sus credenciales para continuar</p>
 
-				<form class="mb-3" [formGroup]="loginForm" autocomplete="off" >
+          <!-- Usuario -->
+          <div class="form-floating login-campo">
+            <input type="text"
+                   id="login_user"
+                   formControlName="login_user"
+                   class="form-control fs-13px h-45px"
+                   placeholder="Usuario"
+                   autocomplete="off"
+                   data-lpignore="true"
+                   data-1p-ignore
+                   data-form-type="other"
+                   required
+                   [class.is-invalid]="campoInvalido('login_user')"
+                   [appMayusculas]="true"
+                   [appTrimEspacios]="true"
+                   [appNoEspacios]="true" />
+            <label for="login_user" class="d-flex align-items-center py-0">Usuario</label>
+            <i class="fa fa-user login-campo__icono" aria-hidden="true"></i>
+          </div>
 
-					<div class="form-floating mb-20px">
-						<input 
-							type="text" 
-							required 
-							autocomplete="off"
-							formControlName="login_user" 
-							class="form-control fs-13px h-45px"
-							id="login_user123" 
-							placeholder="Usuario" 
-							[appMayusculas]="true"
-							[appTrimEspacios] = "true"
-							[appNoEspacios] = "true"
-						/>
-						<label for="login_user" class="d-flex align-items-center py-0">Usuario</label>
-					</div>
+          <div class="login-error" *ngIf="campoInvalido('login_user')">
+            <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i> Ingrese su usuario
+          </div>
 
-					<!-- Campo de contraseña (ahora type="text") -->
-<div class="form-floating mb-20px">
-	<input 
-		type="text" 
-		inputmode="text"
-		autocomplete="off"
-		formControlName="password" 
-		class="form-control fs-13px h-45px password-mask"
-		id="password" 
-		placeholder="Contraseña" 
-		(focus)="onFocus($event)"
-		(input)="onInput($event)"
-		required
-	/>
-	<label for="password" class="d-flex align-items-center py-0">Contraseña</label>
+          <!-- Contraseña -->
+          <!-- IMPORTANTE: type="text" a propósito, nunca type="password".
+               Los navegadores ignoran autocomplete="off" en los campos de
+               contraseña, así que la única forma fiable de que no ofrezcan
+               guardarla ni la autocompleten es que no la reconozcan como tal.
+               El ocultado lo hace el CSS (.password-mask), y el ojo alterna esa
+               clase — el type NUNCA cambia, para no delatar el campo. -->
+          <div class="form-floating login-campo login-campo--clave">
+            <input type="text"
+                   id="login_password"
+                   formControlName="password"
+                   class="form-control fs-13px h-45px"
+                   [class.password-mask]="!mostrarPassword"
+                   placeholder="Contraseña"
+                   autocomplete="off"
+                   data-lpignore="true"
+                   data-1p-ignore
+                   data-form-type="other"
+                   required
+                   [class.is-invalid]="campoInvalido('password')" />
+            <label for="login_password" class="d-flex align-items-center py-0">Contraseña</label>
+
+            <button type="button"
+                    class="login-campo__ojo"
+                    (click)="mostrarPassword = !mostrarPassword"
+                    [attr.aria-label]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                    [attr.aria-pressed]="mostrarPassword"
+                    [title]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+              <i class="fa" [class.fa-eye]="!mostrarPassword" [class.fa-eye-slash]="mostrarPassword"
+                 aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <div class="login-error" *ngIf="campoInvalido('password')">
+            <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i> Ingrese su contraseña
+          </div>
+
+          <!-- Acciones -->
+          <button type="submit"
+                  class="btn btn-success h-45px w-100 login-boton"
+                  [disabled]="isLoading">
+            <span *ngIf="!isLoading">
+              <i class="fa fa-right-to-bracket fa-fw me-1" aria-hidden="true"></i> Iniciar sesión
+            </span>
+            <span *ngIf="isLoading">
+              <i class="fa fa-circle-notch fa-spin fa-fw me-1" aria-hidden="true"></i> Verificando…
+            </span>
+          </button>
+
+          <div class="login-card__pie">
+            <button type="button" class="btn btn-link login-enlace" (click)="abrirOlvideContrasena()">
+              <i class="fa fa-question-circle fa-fw" aria-hidden="true"></i> ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
 </div>
-
-										
-					<div class="login-buttons">
-						<button  type="submit"
-							class="btn h-45px btn-success d-block w-100 btn-lg" (click)="submit()">Iniciar Sesión
-						</button>
-
-						<!-- Botón Olvidé mi contraseña -->
-						<div class="text-center mt-3">
-							<button type="button" class="btn btn-link" (click)="abrirOlvideContrasena()">
-							<i class="bi bi-question-circle"></i> ¿Olvidaste tu contraseña?
-							</button>
-						</div>						
-					</div>
-				</form>
-			</div>
-			<!-- END login-content -->
-		</div>
-		<!-- END login-body -->
-	</div>
-	<!-- END login-container -->
-</div>
-<!-- END login -->
-
