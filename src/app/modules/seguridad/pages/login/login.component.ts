@@ -48,7 +48,12 @@ export class LoginComponent implements OnInit, OnDestroy{
   public vloginUserValue: String = '';
   public vpassword : String = '';
   public vemail : String = '';
-  private realPassword: string = ''; // Variable para almacenar la contraseña real
+
+  /** Alterna entre <input type="password"> y type="text" */
+  public mostrarPassword = false;
+
+  /** Marca el intento de envío para no señalar en rojo un formulario intacto */
+  private enviado = false;
 
     
   constructor(
@@ -99,43 +104,23 @@ export class LoginComponent implements OnInit, OnDestroy{
 
 
 
-    // Función para enmascarar la contraseña con asteriscos
-    maskPassword(event: Event) {
-      const input = event.target as HTMLInputElement;
-      const newValue = input.value;
-
-      // Si el usuario borra, actualizamos la contraseña real
-      if (newValue.length < this.realPassword.length) {
-        this.realPassword = this.realPassword.slice(0, newValue.length);
-      } 
-      // Si el usuario escribe, añadimos el nuevo carácter al valor real
-      else if (newValue.length > this.realPassword.length) {
-        const newChar = newValue.slice(-1); // Obtiene el último carácter ingresado
-        this.realPassword += newChar;
-      }
-
-      // Reemplaza el valor visible con asteriscos
-      input.value = '*'.repeat(newValue.length);
-
-      // Actualiza el FormControl con el valor real (sin asteriscos)
-      this.loginForm.get('password')?.setValue(this.realPassword);
-    }
-
-    // Función para limpiar el campo al enfocarse
-    removeReadonly(event: Event) {
-      const input = event.target as HTMLInputElement;
-      input.removeAttribute('readonly');
-      input.value = ''; // Limpia el campo al enfocarse
-      this.realPassword = ''; // Reinicia la contraseña real
+    /** ¿Hay que pintar el campo en rojo y mostrar su mensaje? */
+    campoInvalido(campo: string): boolean {
+      const control = this.loginForm?.get(campo);
+      if (!control) { return false; }
+      return control.invalid && (control.touched || this.enviado);
     }
 
 
   
   async submit() {
+      this.enviado = true;
+
       if (this.loginForm.valid) {
-          try { 
+          try {
+              // Antes se ponía a true e inmediatamente a false en la línea
+              // siguiente, así que el spinner no llegaba a verse nunca.
               this.isLoading = true;
-              this.isLoading = false;
               let response: any = await firstValueFrom(this._seguridadService.loginUser(this.loginForm.value));
               this.vloginUserValue = this.loginForm.get('login_user')?.value;
               this.vpassword = this.loginForm.get('password')?.value;
@@ -206,11 +191,15 @@ export class LoginComponent implements OnInit, OnDestroy{
                 this._inactivityService.deactivate();
                 this.loginForm.get('password')?.setValue('');
               }
-          } catch (error) { 
-            console.error('Error durante el login:', error); 
+          } catch (error) {
+            console.error('Error durante el login:', error);
             this._inactivityService.deactivate();
             this.loginForm.get('password')?.setValue('');
-          } 
+          } finally {
+            // Se apaga siempre: si no, un login fallido dejaba el botón
+            // bloqueado y el overlay puesto para siempre.
+            this.isLoading = false;
+          }
       }else{
         //this.notificaciones.error('El formulario no puede estar vacio');
         this._toastr.error(`El formulario no puede estar vacio`, 'Error', {timeOut: 2000,closeButton: true });
@@ -248,39 +237,4 @@ abrirOlvideContrasena() {
 
 
 
-onFocus(event: Event) {
-  const input = event.target as HTMLInputElement;
-  // En iOS, esto funciona mejor
-  setTimeout(() => {
-    input.focus();
-  }, 10);
-}
-
-onInput(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const newValue = input.value;
-  
-  // Detectar si el usuario está escribiendo o borrando
-  if (newValue.length > this.realPassword.length) {
-    const addedChar = newValue.slice(-1);
-    this.realPassword += addedChar;
-  } else if (newValue.length < this.realPassword.length) {
-    this.realPassword = this.realPassword.slice(0, newValue.length);
-  }
-  
-  // Mostrar asteriscos en el campo visual
-  input.value = '*'.repeat(this.realPassword.length);
-  
-  // Guardar la contraseña real en el form
-  this.loginForm.get('password')?.setValue(this.realPassword);
-  
-  // Mantener la posición del cursor al final
-  setTimeout(() => {
-    input.setSelectionRange(input.value.length, input.value.length);
-  }, 0);
-}
-  
-
-
-  
 }

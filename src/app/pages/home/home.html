@@ -62,39 +62,35 @@
 					<!-- BEGIN MODULES CARDS -->
 					<div class="modules-section mb-5">
 						<div class="row g-3">
-							<div *ngFor="let modulo of modulosPermitidos" class="col-xl-3 col-md-6">
-								<!-- Para Seguridad que tiene action -->
-								<div *ngIf="modulo.action === 'seguridad'; else routerLinkTemplate"
-								     (click)="fun_seguridad()"
-								     class="module-card-compact bg-white border text-decoration-none d-block"
-								     style="cursor: pointer;">
-									<div class="d-flex align-items-center gap-2 p-3">
-										<div class="module-icon-compact {{ modulo.color }}">
-											<i class="fa {{ modulo.icon }} fa-lg text-white"></i>
+							@for (modulo of modulosPermitidos; track modulo.url) {
+								<div class="col-xl-3 col-md-6">
+									<!-- Para Seguridad que tiene action -->
+									@if (modulo.action === 'seguridad') {
+										<div (click)="fun_seguridad()" class="seg-card" style="cursor: pointer;">
+											<span class="seg-card__icono {{ modulo.color }}">
+												<i class="fa {{ modulo.icon }}" aria-hidden="true"></i>
+											</span>
+											<span class="seg-card__cuerpo">
+												<span class="seg-card__titulo">{{ modulo.label }}</span>
+												<span class="seg-card__descripcion">{{ modulo.descripcion }}</span>
+											</span>
+											<i class="fa fa-arrow-right seg-card__flecha" aria-hidden="true"></i>
 										</div>
-										<div class="grow">
-											<h5 class="mb-0 fw-bold">{{ modulo.label }}</h5>
-											<small class="text-muted d-block">{{ modulo.descripcion }}</small>
-										</div>
-										<i class="fa fa-arrow-right text-primary"></i>
-									</div>
+									} @else {
+										<!-- Para los demás módulos con routerLink -->
+										<a [routerLink]="[modulo.url]" class="seg-card">
+											<span class="seg-card__icono {{ modulo.color }}">
+												<i class="fa {{ modulo.icon }}" aria-hidden="true"></i>
+											</span>
+											<span class="seg-card__cuerpo">
+												<span class="seg-card__titulo">{{ modulo.label }}</span>
+												<span class="seg-card__descripcion">{{ modulo.descripcion }}</span>
+											</span>
+											<i class="fa fa-arrow-right seg-card__flecha" aria-hidden="true"></i>
+										</a>
+									}
 								</div>
-								<!-- Para los demás módulos con routerLink -->
-								<ng-template #routerLinkTemplate>
-									<a [routerLink]="[modulo.url]" class="module-card-compact bg-white border text-decoration-none d-block">
-										<div class="d-flex align-items-center gap-2 p-3">
-											<div class="module-icon-compact {{ modulo.color }}">
-												<i class="fa {{ modulo.icon }} fa-lg text-white"></i>
-											</div>
-											<div class="grow">
-												<h5 class="mb-0 fw-bold">{{ modulo.label }}</h5>
-												<small class="text-muted d-block">{{ modulo.descripcion }}</small>
-											</div>
-											<i class="fa fa-arrow-right text-primary"></i>
-										</div>
-									</a>
-								</ng-template>
-							</div>
+							}
 						</div>
 					</div>
 					<!-- END MODULES CARDS -->
@@ -226,17 +222,19 @@
 									<div class="table-responsive">
 										<table class="table table-panel align-middle mb-0">
 											<tbody>
-												<tr *ngFor="let activity of recentActivities">
-													<td class="w-10px">
-														<i [class]="activity.icon" [style.color]="activity.color"></i>
-													</td>
-													<td>
-														<span class="fw-600">{{ activity.title }}</span>
-													</td>
-													<td class="text-end text-muted">
-														<small>{{ activity.time }}</small>
-													</td>
-												</tr>
+												@for (activity of recentActivities; track activity.title) {
+													<tr>
+														<td class="w-10px">
+															<i [class]="activity.icon" [style.color]="activity.color"></i>
+														</td>
+														<td>
+															<span class="fw-600">{{ activity.title }}</span>
+														</td>
+														<td class="text-end text-muted">
+															<small>{{ activity.time }}</small>
+														</td>
+													</tr>
+												}
 											</tbody>
 										</table>
 									</div>

@@ -88,15 +88,15 @@ export class ListProfileComponent implements OnInit {
   headerName: 'Seleccionar',
   field: 'seleccionar',
   pinned: 'right',
-  minWidth: 60,
-  maxWidth: 60,
+  minWidth: 85,
+  maxWidth: 85,
   cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
   sortable: false,
   resizable: false,
   headerComponentParams: {
     template: `
       <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
-        <span>Ir</span>
+        <span>Seleccionar</span>
       </div>
     `
   },
