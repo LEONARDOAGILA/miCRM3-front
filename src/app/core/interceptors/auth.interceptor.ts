@@ -85,6 +85,11 @@ export class AuthInterceptor implements HttpInterceptor {
           title = 'Error de validación';
           message = this.parseValidationErrors(serverError);
           break;
+
+        case 429: // Too Many Requests -> lo devuelve el throttle del login
+          title = 'Demasiados intentos';
+          message = this.mensajeDemasiadosIntentos(error);
+          break;
         
         case 500: // Internal Server Error
           title = 'Error del servidor';
@@ -103,6 +108,25 @@ export class AuthInterceptor implements HttpInterceptor {
     }
 
     return { title, message, shouldLogout };
+  }
+
+  /**
+   * Laravel responde 429 con "Too Many Attempts." y la cabecera Retry-After
+   * (segundos que faltan). Se traduce y se indica la espera concreta.
+   */
+  private mensajeDemasiadosIntentos(error: HttpErrorResponse): string {
+    const segundos = Number(error.headers?.get('Retry-After'));
+
+    if (!segundos || isNaN(segundos)) {
+      return 'Ha realizado demasiados intentos. Espere unos minutos y vuelva a intentarlo.';
+    }
+
+    if (segundos < 60) {
+      return `Ha realizado demasiados intentos. Vuelva a intentarlo en ${segundos} segundos.`;
+    }
+
+    const minutos = Math.ceil(segundos / 60);
+    return `Ha realizado demasiados intentos. Vuelva a intentarlo en ${minutos} ${minutos === 1 ? 'minuto' : 'minutos'}.`;
   }
 
   private parseBadRequest(error: any): string {
