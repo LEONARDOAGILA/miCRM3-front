@@ -8,9 +8,9 @@
 <panel [title]="titulo"
        [noButton]="false" 
        [noButtonCollapse]="true" 
-       [ButtonPrint]="accesoModel.reporte === true ? true : false"
-       [ButtonExportExcel]="accesoModel.reporte === true ? true : false"
-       [ButtonExportCsv]="accesoModel.reporte === true ? true : false"
+       [ButtonPrint]="accesoModel?.reporte === true ? true : false"
+       [ButtonExportExcel]="accesoModel?.reporte === true ? true : false"
+       [ButtonExportCsv]="accesoModel?.reporte === true ? true : false"
        (panelReloaded)="allUsers()" 
        (panelExpanded)="ajustarTamanoGrid()" 
        (panelPrinted)="printPdf()"  
@@ -49,13 +49,13 @@
             <button
               class="inactivo btn btn-primary d-flex align-items-center justify-content-center square-btn rounded-3"
               title="Agregar Usuario"
-              [disabled]="accesoModel.crear === false"
+              [disabled]="accesoModel?.crear === false"
               (click)="addUser()">
               <i class="fa fa-plus"></i>
             </button>
           </div>
 
-          <div class="col-auto" *ngIf="accesoModel.auditar === true">
+          <div class="col-auto" *ngIf="accesoModel?.auditar === true">
             <button
               class="btn btn-warning d-flex align-items-center justify-content-center square-btn rounded-3 position-relative"
               title="Ver historial de auditoría del registro seleccionado"
@@ -106,9 +106,7 @@
             </button>
           </div>
           <div class="pagination-info small mb-2 mb-sm-0">
-            Mostrando {{ (paginaActual-1)*registrosPorPagina + 1 }} - 
-            {{ paginaActual * registrosPorPagina > totalRegistros ? totalRegistros : paginaActual * registrosPorPagina }}
-            de {{ totalRegistros }} registros
+            Mostrando {{ desde }} - {{ hasta }} de {{ totalRegistros }} registros
           </div>
 
         </div>

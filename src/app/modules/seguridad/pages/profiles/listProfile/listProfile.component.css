@@ -1,32 +1,220 @@
-.pagination-controls {
-  gap: 0.5rem;
+/* ============================================================
+   SELECTOR DE PERFIL
+   Se apoya en las variables de Bootstrap que ya usa la plantilla
+   (--bs-app-theme, --bs-component-bg, ...) para acompañar al panel
+   de temas y al modo oscuro sin colores fijos.
+   ============================================================ */
+
+.selector-body {
+  padding: 1rem;
 }
 
-.pagination-buttons {
+/* ---------- Búsqueda ---------- */
+.selector-busqueda {
   display: flex;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: .5rem;
+}
+
+/* El campo compartido reserva un label vacío debajo; lo anulamos
+   para que el buscador y su botón queden alineados. */
+.selector-busqueda ::ng-deep app-campoBusquedaPaginacion {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.selector-busqueda__limpiar {
+  flex: 0 0 auto;
+}
+
+/* ---------- Resumen ---------- */
+.selector-resumen {
+  margin: .625rem 0 .5rem;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.selector-resumen__filtro {
+  font-style: italic;
+}
+
+/* ---------- Lista ---------- */
+/* Altura máxima en vez de los 350px fijos de la rejilla: con pocos
+   perfiles el modal ya no deja un hueco vacío debajo. */
+.selector-lista {
+  display: flex;
+  flex-direction: column;
+  gap: .375rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  padding: .125rem;
+  margin: 0 -.125rem;
+}
+
+/* ---------- Fila ---------- */
+.perfil-fila {
+  display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: .75rem;
+  width: 100%;
+  padding: .625rem .75rem;
+  text-align: left;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, var(--bs-body-bg, #fff));
+  color: var(--bs-body-color, #212529);
+  transition: border-color .12s ease-in-out, background-color .12s ease-in-out, transform .12s ease-in-out;
 }
 
-.pagination-page-badge {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 0.25rem;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
+.perfil-fila:hover {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  background-color: var(--bs-component-secondary-bg, var(--bs-tertiary-bg, #f8f9fa));
 }
 
-@media (max-width: 576px) {
-  .pagination-controls {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
-  }
-  .pagination-info {
-    margin-bottom: 0.5rem;
-  }
-  .pagination-buttons {
+.perfil-fila:focus-visible {
+  outline: 2px solid var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  outline-offset: 1px;
+}
+
+.perfil-fila:active {
+  transform: scale(.995);
+}
+
+/* Perfil que el usuario ya tiene asignado */
+.perfil-fila--actual {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  border-left-width: 3px;
+}
+
+/* ---------- Partes de la fila ---------- */
+.perfil-fila__id {
+  flex: 0 0 auto;
+  min-width: 2rem;
+  padding: .125rem .375rem;
+  border-radius: .25rem;
+  background-color: var(--bs-component-secondary-bg, var(--bs-tertiary-bg, #f1f3f5));
+  color: var(--bs-secondary-color, #6c757d);
+  font-family: var(--bs-font-monospace, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.perfil-fila__datos {
+  display: flex;
+  flex-direction: column;
+  gap: .125rem;
+  flex: 1 1 auto;
+  min-width: 0;                     /* deja que el nombre largo trunque */
+}
+
+.perfil-fila__nombre {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La inactividad era un número suelto en una columna llamada
+   "Inactividad"; aquí se explica y lleva unidad. */
+.perfil-fila__meta {
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.perfil-fila__actual {
+  flex: 0 0 auto;
+  padding: .125rem .375rem;
+  border-radius: .25rem;
+  background-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.perfil-fila__flecha {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #adb5bd);
+}
+
+.perfil-fila:hover .perfil-fila__flecha {
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ---------- Sin resultados ---------- */
+.selector-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.selector-vacio__icono {
+  font-size: 2rem;
+  opacity: .45;
+}
+
+.selector-vacio__titulo {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* ---------- Paginación ---------- */
+.selector-paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .75rem;
+  padding-top: .625rem;
+  border-top: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+}
+
+.selector-paginacion__info {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.selector-paginacion__botones {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+.selector-paginacion__pagina {
+  min-width: 3.25rem;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;   /* evita el salto al cambiar de página */
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 575.98px) {
+  .selector-paginacion {
     justify-content: center;
+  }
+
+  .perfil-fila__actual {
+    display: none;                  /* el borde izquierdo ya lo indica */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .perfil-fila {
+    transition: none;
+  }
+  .perfil-fila:active {
+    transform: none;
   }
 }

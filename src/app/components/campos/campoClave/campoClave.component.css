@@ -13,6 +13,27 @@ input[type="password"]:-webkit-autofill {
   -webkit-text-security: disc !important;
 }
 
+/* ---------- Ocultado de la contraseña ---------- */
+/* El campo es type="text" para que el navegador no lo reconozca como contraseña
+   y no ofrezca generarla ni rellenarla (autocomplete="off" lo ignoran todos en
+   los campos type="password"). El ocultado visual lo hace esta clase, que el
+   ojo activa y desactiva; el type NUNCA cambia, para no delatar el campo.
+   Misma técnica que la pantalla de login.
+
+   Si el navegador no soporta -webkit-text-security, el componente vuelve a
+   type="password" y esta clase no llega a aplicarse. */
+.password-mask {
+  -webkit-text-security: disc;
+}
+
+/* iOS necesita que el campo siga siendo seleccionable para abrir el teclado */
+@supports (-webkit-touch-callout: none) {
+  .password-mask {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
 
 /* Ajustar la posición del campo floating */
 .form-floating {

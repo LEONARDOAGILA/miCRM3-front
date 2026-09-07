@@ -22,6 +22,23 @@ export class CampoTextoComponent   {
   @Input() mayusculas: boolean = false; // Parámetro para activar/desactivar
   @Input() soloLetras: boolean = false; // Parámetro para activar/desactivar
   @Input() trimEspacios: boolean = false; // Parámetro para activar/desactivar
+
+  /**
+   * Impide que el navegador y los gestores de contraseñas ofrezcan valores
+   * guardados sobre este campo.
+   *
+   * Hace falta en formularios que tienen un campo de clave al lado: Chrome los
+   * interpreta como un login y despliega las credenciales guardadas del
+   * operador sobre el campo de usuario, que es justo lo que no queremos cuando
+   * se está dando de alta a OTRA persona.
+   *
+   * Emite la misma combinación que ya usa app-campoClave, que es la que
+   * funciona: autocomplete="new-password" (Chrome/Firefox), data-lpignore
+   * (LastPass) y data-form-type="other" (Dashlane, 1Password).
+   *
+   * Por defecto false, para no cambiar el comportamiento del resto de pantallas.
+   */
+  @Input() sinAutocompletado: boolean = false;
   onInputChange(value: string) {
     this.valueChange.emit(value); // Emite el nuevo valor
   }

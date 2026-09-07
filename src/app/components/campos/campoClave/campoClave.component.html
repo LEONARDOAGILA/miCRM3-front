@@ -1,7 +1,11 @@
 <div class="form-floating mb-1">
+  <!-- type="text" + .password-mask a propósito: con type="password" el navegador
+       ignora autocomplete="off" y ofrece igualmente generar o rellenar la clave.
+       Ver soportaEnmascaradoCss en el componente. -->
   <input
-    [type]="showPassword ? 'text' : 'password'"
+    [type]="tipoInput"
     class="form-control fs-14px"
+    [class.password-mask]="enmascarar"
     [id]="label"
     [placeholder]="placeholder"
     [value]="value"
@@ -10,9 +14,13 @@
     [disabled]="disabled"
     [attr.maxlength]="maxLength"
     [class.is-invalid]="isInvalid"
-    autocomplete="new-password"
-    autofill="off"
+    [attr.autocomplete]="autocomplete"
+    autocorrect="off"
+    autocapitalize="off"
+    spellcheck="false"
     data-lpignore="true"
+    data-1p-ignore
+    data-form-type="other"
   />
   <label [for]="label" class="d-flex align-items-center fs-13px">{{ label }}</label>
   

@@ -31,7 +31,42 @@ export class CampoClaveComponent implements ControlValueAccessor, Validator, OnI
   @Input() maxLength: number = 50;
   @Input() minLength: number = 8;
   @Input() autocomplete: string = 'off';
-  
+
+  /**
+   * ¿Puede el navegador ocultar los caracteres por CSS?
+   *
+   * Los navegadores IGNORAN autocomplete="off" en los campos type="password":
+   * Chrome ofrece igualmente generar o rellenar una contraseña. La única forma
+   * fiable de que no aparezca ese menú es que el campo no sea type="password".
+   *
+   * Así que usamos type="text" + enmascarado por CSS (-webkit-text-security),
+   * la misma técnica que ya emplea la pantalla de login.
+   *
+   * Si el navegador no soporta esa propiedad volvemos a type="password":
+   * preferimos que salga el menú del navegador antes que mostrar la contraseña
+   * en claro. Chrome, Edge, Safari y Firefox 119+ la soportan.
+   */
+  private readonly soportaEnmascaradoCss: boolean =
+    typeof CSS !== 'undefined'
+    && typeof CSS.supports === 'function'
+    && (CSS.supports('-webkit-text-security', 'disc') || CSS.supports('text-security', 'disc'));
+
+  /**
+   * type real del input. Con enmascarado por CSS se queda SIEMPRE en 'text',
+   * también al pulsar el ojo: cambiar el type delataría el campo ante el
+   * gestor de contraseñas.
+   */
+  public get tipoInput(): 'text' | 'password' {
+    if (this.soportaEnmascaradoCss) { return 'text'; }
+    return this.showPassword ? 'text' : 'password';
+  }
+
+  /** ¿Hay que ocultar los caracteres con la clase CSS? */
+  public get enmascarar(): boolean {
+    return this.soportaEnmascaradoCss && !this.showPassword;
+  }
+
+
   @Input() requiereMayuscula: boolean = true;
   @Input() requiereMinuscula: boolean = true;
   @Input() requiereNumero: boolean = true;

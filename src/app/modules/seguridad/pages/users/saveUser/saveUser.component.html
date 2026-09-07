@@ -92,7 +92,7 @@
 
 
             <!-- ---------- Inputs auxiliares ---------- -->
-            <input type="file" id="gallery-input" class="d-none" accept="image/*" (change)="processFile($event)">
+            <input #galleryInput type="file" id="gallery-input" class="d-none" accept="image/*" (change)="processFile($event)">
             <input #pasteInput id="paste-input" class="d-none" [formControl]="form.controls['avatar']" (paste)="onPaste($event)">
           </div>
           </ng-container>
@@ -137,6 +137,9 @@
                       </div>
 
                       <!-- Nombre de usuario -->
+                      <!-- sinAutocompletado: al haber un campo de clave al lado, el
+                           navegador tomaba este formulario por un login y desplegaba
+                           las credenciales guardadas del operador. -->
                       <div class="campo">
                         <app-campoTexto
                           [control]="form.controls['login_user']"
@@ -144,12 +147,50 @@
                           placeholder="Nombre de Usuario"
                           [maxLength]="255"
                           [trimEspacios]="true"
-                          [mayusculas]="true">
+                          [mayusculas]="true"
+                          [sinAutocompletado]="true">
                         </app-campoTexto>
                       </div>
 
                       <!-- Clave -->
                       <div class="campo" *ngIf="esNuevo || esClon">
+
+                        <!-- Generar clave recomendada -->
+                        <button type="button"
+                                *ngIf="!esView"
+                                class="btn btn-primary w-100 d-flex align-items-center justify-content-center clave-generar"
+                                (click)="generarClaveRecomendada()">
+                          <i class="fa fa-magic fa-fw me-1" aria-hidden="true"></i>
+                          Generar contraseña segura
+                        </button>
+
+                        <!-- Clave generada -->
+                        <div class="clave-generada" *ngIf="claveGenerada">
+                          <div class="clave-generada__cabecera">
+                            <span class="clave-generada__etiqueta">
+                              <i class="fa fa-key fa-fw" aria-hidden="true"></i> Contraseña generada
+                            </span>
+                            <button type="button"
+                                    class="btn btn-sm clave-generada__copiar"
+                                    (click)="copiarClave()"
+                                    aria-label="Copiar la contraseña al portapapeles"
+                                    title="Copiar">
+                              <i class="fa fa-copy fa-fw" aria-hidden="true"></i>
+                            </button>
+                          </div>
+
+                          <code class="clave-generada__valor" aria-live="polite">{{ claveGenerada }}</code>
+
+                          <div class="clave-generada__aviso">
+                            <i class="fa fa-exclamation-triangle fa-fw" aria-hidden="true"></i>
+                            Cópiela antes de guardar: no vuelve a mostrarse.
+                          </div>
+                        </div>
+
+                        <div class="clave-manual" *ngIf="!claveGenerada && !esView">
+                          o escríbela manualmente
+                        </div>
+
                         <app-campoClave
                           [control]="form.controls['password']"
                           label="Clave de Usuario"
@@ -161,8 +202,7 @@
                           [requiereNumero]="true"
                           [requiereEspecial]="true"
                           [sinEspacios]="true"
-                          [trimEspacios]="true"
-                          autocomplete="new-password">
+                          [trimEspacios]="true">
                         </app-campoClave>
                       </div>
 
@@ -333,7 +373,7 @@
 <div class="camera-modal-overlay" *ngIf="showCameraModal">
   <div class="camera-container">
     <div class="camera-preview">
-      <video id="cameraPreview" autoplay playsinline></video>
+      <video #cameraPreview id="cameraPreview" autoplay playsinline></video>
     </div>
     <div class="camera-controls">
       <button type="button" class="btn-switch-camera" (click)="switchCamera()" title="Cambiar cámara">

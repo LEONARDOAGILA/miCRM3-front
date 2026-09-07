@@ -11,6 +11,9 @@
       [appSoloLetras]="soloLetras"
       [appTrimEspacios]="trimEspacios"
       [appNoEspacios]="noEspacios"
+      [attr.autocomplete]="sinAutocompletado ? 'new-password' : null"
+      [attr.data-lpignore]="sinAutocompletado ? 'true' : null"
+      [attr.data-form-type]="sinAutocompletado ? 'other' : null"
       [ngClass]="{
         'is-invalid': control.invalid && (control.touched || control.dirty),
         'is-valid': control.valid && (control.touched || control.dirty)

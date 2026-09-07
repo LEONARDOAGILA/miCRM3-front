@@ -48,27 +48,26 @@ export class DeleteUserComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: (response: any) => {
-          if (response.status === 'success') {
-            this.modal.close();
-            this.registrosE.emit(this.registro_selected);
-            this._toastr.success(response.message, 'Éxito', { closeButton: true });
-            this.isLoading = false;
-            this.loadingBar.complete();
-          } else {
-            this._toastr.error(response.message || 'Error al eliminar el usuario', 'Error');
-            this.modal.close();
-            this.isLoading = false;
-            this.loadingBar.complete();
-          }
-        },
-        error: (error: any) => {
-          console.error('Error en deleteUser:', error);
-          this._toastr.error(error.message || 'Error al eliminar el usuario', 'Error');
-          this.modal.close();
           this.isLoading = false;
           this.loadingBar.complete();
+
+          if (response.status !== 'success') {
+            // No cerramos el modal: el usuario debe poder reintentar
+            this._toastr.error(response.message || 'No se pudo eliminar el usuario', 'Error');
+            return;
+          }
+
+          // Emitir ANTES de cerrar. El padre corta la suscripción cuando se
+          // resuelve modalRef.result, así que cerrar primero dejaba la fila en
+          // la grilla si el orden llegaba a cambiar.
+          this.registrosE.emit(this.registro_selected);
+          this._toastr.success(response.message, 'Éxito', { closeButton: true });
+          this.modal.close();
         },
-        complete: () => {
+        error: (error: any) => {
+          // El AuthInterceptor ya muestra el toast del error HTTP: aquí solo
+          // reactivamos el modal para poder reintentar.
+          console.error('Error en deleteUser:', error);
           this.isLoading = false;
           this.loadingBar.complete();
         },

@@ -1,78 +1,136 @@
-<!-- begin spinner -->
+<!-- ===================== SPINNER ===================== -->
 <ng-container *ngIf="(isLoading$ | async)">
   <div class="loader1" role="status" aria-label="Cargando"></div>
   <div class="overlay1" aria-hidden="true"></div>
 </ng-container>
 
+<!-- ===================== CABECERA ===================== -->
+<!-- La misma cabecera que el resto de modales de la aplicación -->
+<app-modal-header
+  title="Seleccionar Perfil"
+  (onClose)="modal.dismiss()">
+</app-modal-header>
 
-<!-- CABECERA -->
-<div class="modal-header">
-  <h4 class="modal-title">Seleccionar Perfil</h4>
-  <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
-</div>
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body selector-body">
 
-<!-- CUERPO -->
-<div class="modal-body">
-  <!-- Barra de búsqueda -->
-  <div class="row g-2 mb-3 align-items-center">
-    <div class="col">
-      <app-campoBusquedaPaginacion
-        [id]="'filter-text-box-modal'"
-        [placeholder]="'Buscar perfil...'"
-        [iconClass]="'fa fa-search fa-lg'"
-        [containerClass]="'position-relative w-100'"
-        (buscar)="onSearch($event)">
-      </app-campoBusquedaPaginacion>
-    </div>
-    <div class="col-auto">
-      <button class="btn btn-outline-secondary" (click)="limpiarBusqueda()" title="Limpiar">
-        <i class="fa fa-eraser"></i>
+  <!-- ---------- Búsqueda ---------- -->
+  <div class="selector-busqueda">
+    <app-campoBusquedaPaginacion
+      [id]="'filter-text-box-modal'"
+      [placeholder]="'Buscar por nombre...'"
+      [iconClass]="'fa fa-search fa-lg'"
+      [containerClass]="'position-relative w-100'"
+      (buscar)="onSearch($event)">
+    </app-campoBusquedaPaginacion>
+
+    <button type="button"
+            class="btn btn-outline-secondary selector-busqueda__limpiar"
+            (click)="limpiarBusqueda()"
+            [disabled]="!searchTerm"
+            title="Limpiar búsqueda"
+            aria-label="Limpiar búsqueda">
+      <i class="fa fa-eraser" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <!-- ---------- Resumen ---------- -->
+  <p class="selector-resumen" *ngIf="totalRegistros > 0">
+    {{ totalRegistros }} {{ totalRegistros === 1 ? 'perfil disponible' : 'perfiles disponibles' }}
+    <span *ngIf="searchTerm" class="selector-resumen__filtro">
+      · filtrando por «{{ searchTerm }}»
+    </span>
+  </p>
+
+  <!-- ---------- Listado ---------- -->
+  <!-- Cada fila es un <button>: clic en cualquier punto, foco y Enter nativos.
+       Antes era una celda de ag-Grid y sólo respondía la flecha de la derecha. -->
+  <div class="selector-lista"
+       role="listbox"
+       aria-label="Perfiles disponibles"
+       (keydown)="onListaKeydown($event)"
+       *ngIf="rowData.length > 0">
+
+    <button type="button"
+            class="perfil-fila"
+            *ngFor="let perfil of rowData; let i = index"
+            #filaPerfil
+            role="option"
+            [attr.aria-selected]="perfil.id === perfilSeleccionadoId"
+            [class.perfil-fila--actual]="perfil.id === perfilSeleccionadoId"
+            [attr.tabindex]="i === indiceActivo ? 0 : -1"
+            (focus)="indiceActivo = i"
+            (click)="seleccionar(perfil)">
+
+      <span class="perfil-fila__id">{{ perfil.id }}</span>
+
+      <span class="perfil-fila__datos">
+        <span class="perfil-fila__nombre">{{ perfil.nombre }}</span>
+        <span class="perfil-fila__meta">
+          <i class="fa fa-clock-o fa-fw" aria-hidden="true"></i>
+          Cierre por inactividad: {{ perfil.inactividad }} min
+        </span>
+      </span>
+
+      <span class="perfil-fila__actual" *ngIf="perfil.id === perfilSeleccionadoId">
+        <i class="fa fa-check fa-fw" aria-hidden="true"></i> Actual
+      </span>
+
+      <i class="fa fa-chevron-right perfil-fila__flecha" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <!-- ---------- Sin resultados ---------- -->
+  <!-- Antes la rejilla se quedaba vacía sin explicar por qué -->
+  <div class="selector-vacio" *ngIf="rowData.length === 0 && !(isLoading$ | async)">
+    <i class="fa fa-folder-open-o selector-vacio__icono" aria-hidden="true"></i>
+    <p class="selector-vacio__titulo">
+      {{ searchTerm ? 'Ningún perfil coincide con la búsqueda' : 'No hay perfiles disponibles' }}
+    </p>
+    <button type="button"
+            class="btn btn-sm btn-outline-secondary"
+            *ngIf="searchTerm"
+            (click)="limpiarBusqueda()">
+      <i class="fa fa-eraser me-1" aria-hidden="true"></i> Limpiar búsqueda
+    </button>
+  </div>
+
+  <!-- ---------- Paginación ---------- -->
+  <div class="selector-paginacion" *ngIf="ultimaPagina > 1 || totalRegistros > 0">
+    <span class="selector-paginacion__info">
+      {{ desde }}–{{ hasta }} de {{ totalRegistros }}
+    </span>
+
+    <div class="selector-paginacion__botones" *ngIf="ultimaPagina > 1">
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              (click)="firstPage()" [disabled]="paginaActual === 1"
+              title="Primera página" aria-label="Primera página">
+        <i class="fa fa-angle-double-left" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              (click)="prevPage()" [disabled]="paginaActual === 1"
+              title="Página anterior" aria-label="Página anterior">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+      </button>
+
+      <span class="selector-paginacion__pagina" aria-live="polite">
+        {{ paginaActual }} / {{ ultimaPagina }}
+      </span>
+
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              (click)="nextPage()" [disabled]="paginaActual === ultimaPagina"
+              title="Página siguiente" aria-label="Página siguiente">
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              (click)="lastPage()" [disabled]="paginaActual === ultimaPagina"
+              title="Última página" aria-label="Última página">
+        <i class="fa fa-angle-double-right" aria-hidden="true"></i>
       </button>
     </div>
   </div>
-
-  <!-- AG-GRID -->
-  <ag-grid-angular
-    [rowData]="rowData"
-    [columnDefs]="columnDefs"
-    [defaultColDef]="_appAgGridService.defaultColDef"
-    [rowHeight]="35"
-    [headerHeight]="35"
-    [rowSelection]="'single'"
-    style="height: 350px; width: 100%;"    
-    class="ag-theme-alpine ag-grid-transparente p-2 ag-grid-responsive"
-    (gridReady)="onGridReady($event)"
-    (cellClicked)="onCellClicked($event)"
-    [enableCellTextSelection]="true"
-
-  ></ag-grid-angular>
-
-  <!-- Controles de paginación -->
-  <div class="pagination-controls d-flex justify-content-between align-items-center mt-3 px-2 flex-wrap">
-    <div class="pagination-info small mb-2 mb-sm-0">
-      Mostrando {{ (paginaActual-1)*registrosPorPagina + 1 }} - 
-      {{ paginaActual * registrosPorPagina > totalRegistros ? totalRegistros : paginaActual * registrosPorPagina }}
-      de {{ totalRegistros }} registros
-    </div>
-    <div class="pagination-buttons">
-      <button class="btn btn-sm btn-outline-secondary me-1" (click)="firstPage()" [disabled]="paginaActual === 1">
-        <i class="fa fa-angle-double-left"></i>
-      </button>
-      <button class="btn btn-sm btn-outline-secondary me-1" (click)="prevPage()" [disabled]="paginaActual === 1">
-        <i class="fa fa-chevron-left"></i>
-      </button>
-      <span class="pagination-info  small mx-1">Página {{ paginaActual }} de {{ ultimaPagina }}</span>
-      <button class="btn btn-sm btn-outline-secondary ms-1" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
-        <i class="fa fa-chevron-right"></i>
-      </button>
-      <button class="btn btn-sm btn-outline-secondary ms-1" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
-        <i class="fa fa-angle-double-right"></i>
-      </button>
-    </div>
-  </div>
 </div>
 
-<!-- PIE -->
-<div class="modal-footer">
-  <button class="btn btn-secondary" (click)="modal.dismiss()">Cancelar</button>
-</div>
+<!-- ===================== PIE ===================== -->
+<app-modal-footer [isDisabled]="false" (onClose)="modal.dismiss()">
+</app-modal-footer>

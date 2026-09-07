@@ -1,15 +1,20 @@
-
-import { Component, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { AgGridAngular } from 'ag-grid-angular';
-import { GridApi, GridReadyEvent, CellClickedEvent } from 'ag-grid-community';
 
 import { ProfileService } from '../../../../seguridad/services/profile.service';
-import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
+/**
+ * Selector de perfil.
+ *
+ * Antes montaba un ag-Grid completo para listar 5 filas de {id, nombre,
+ * inactividad}, y la selección sólo funcionaba pulsando la flecha de la última
+ * columna: hacer clic en el nombre del perfil no hacía nada. Ahora cada fila es
+ * un <button>, así que se selecciona haciendo clic en cualquier punto y el
+ * teclado funciona de forma nativa.
+ */
 @Component({
   selector: 'app-listProfile',
   templateUrl: './listProfile.component.html',
@@ -17,134 +22,99 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class ListProfileComponent implements OnInit {
-  
 
+  /** Perfil ya asignado, para marcarlo como «Actual» en la lista. */
+  @Input() perfilSeleccionadoId?: number;
 
   @Output() seleccionado = new EventEmitter<any>();
 
-  @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
-  public gridApi!: GridApi;
-  public columnDefs: any[] = [];
-  public rowData: any[] = [];
-  
   @ViewChild(CampoBusquedaPaginacionComponent) campoBusquedaPaginacion!: CampoBusquedaPaginacionComponent;
+  @ViewChildren('filaPerfil') filas!: QueryList<ElementRef<HTMLButtonElement>>;
+
+  public rowData: any[] = [];
   public searchTerm: string = '';
-  
-  // Variables de paginación
+
+  /** Fila con el foco del teclado (patrón roving tabindex). */
+  public indiceActivo = 0;
+
+  // Paginación
   public paginaActual: number = 1;
   public totalRegistros: number = 0;
   public registrosPorPagina: number = 5;
   public ultimaPagina: number = 1;
-  
+
   public isLoading$ = this._loadingService.isLoading$;
 
   constructor(
     public modal: NgbActiveModal,
     private _profileService: ProfileService,
-    public _appAgGridService: AppAgGridService,
     private _loadingService: LoadingService
   ) {}
 
   ngOnInit(): void {
-    this.initializeGrid();
     this.cargarPerfiles();
   }
 
-  initializeGrid(): void {
-    this.columnDefs = [
-      {
-        headerName: 'ID',
-        field: 'id',
-        cellStyle: { textAlign: 'center' },
-        minWidth: 70,
-        maxWidth: 70,
-      },
-      {
-        headerName: 'Nombre',
-        field: 'nombre',
-        cellStyle: { textAlign: 'left' },
-        minWidth: 150,
-        maxWidth: 450,
-      },
-      {
-        headerName: 'Inactividad',
-        field: 'inactividad',
-        minWidth: 100,
-        maxWidth: 100,
-        cellStyle: { textAlign: 'center' }
-      },
-      // {
-      //   headerName: 'Estado',
-      //   field: 'activo',
-      //   width: 80,
-      //   cellStyle: { textAlign: 'center' },
-      //   cellRenderer: (params: any) => {
-      //     return params.value === true ? 
-      //       '<span class="badge bg-success">Activo</span>' : 
-      //       '<span class="badge bg-danger">Inactivo</span>';
-      //   }
-      // },
-{
-  headerName: 'Seleccionar',
-  field: 'seleccionar',
-  pinned: 'right',
-  minWidth: 85,
-  maxWidth: 85,
-  cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-  sortable: false,
-  resizable: false,
-  headerComponentParams: {
-    template: `
-      <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
-        <span>Seleccionar</span>
-      </div>
-    `
-  },
-  cellRenderer: () => {
-    return `<button class="btn btn-sm btn-outline-primary" style="padding: 4px 6px; border-radius: 4px;">
-             <i class="fas fa-arrow-right"></i>
-            </button>`;
-  }
-}
-
-
-    ];
+  /** Primer registro mostrado; 0 cuando no hay resultados. */
+  public get desde(): number {
+    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
   }
 
-  onGridReady(params: GridReadyEvent): void {
-    this.gridApi = params.api;
-    this._appAgGridService.ajustarTamanoGrid(this.gridApi);
+  /** Último registro mostrado, sin pasarse del total. */
+  public get hasta(): number {
+    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
   }
 
-  onCellClicked(event: CellClickedEvent): void {
-    if (event.colDef.field === 'seleccionar') {
-      this.seleccionado.emit(event.data);
-      this.modal.close();
+  public seleccionar(perfil: any): void {
+    this.seleccionado.emit(perfil);
+    this.modal.close();
+  }
+
+  /**
+   * Flechas para recorrer la lista, Inicio/Fin para saltar a los extremos.
+   * Enter y Espacio los gestiona el propio <button>.
+   */
+  public onListaKeydown(event: KeyboardEvent): void {
+    const ultimo = this.rowData.length - 1;
+    if (ultimo < 0) { return; }
+
+    let destino: number | null = null;
+
+    switch (event.key) {
+      case 'ArrowDown': destino = Math.min(this.indiceActivo + 1, ultimo); break;
+      case 'ArrowUp':   destino = Math.max(this.indiceActivo - 1, 0); break;
+      case 'Home':      destino = 0; break;
+      case 'End':       destino = ultimo; break;
+      default: return;
     }
+
+    event.preventDefault();
+    this.indiceActivo = destino;
+    this.filas?.get(destino)?.nativeElement.focus();
   }
 
   async cargarPerfiles(page: number = 1) {
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
-        this._profileService.listProfiles(page, this.registrosPorPagina, this.searchTerm)        
+        this._profileService.listProfiles(page, this.registrosPorPagina, this.searchTerm)
       );
-      //console.log('perfiles list',res)
-      
+
       this.rowData = res.body?.data?.data || [];
-      
+      this.indiceActivo = 0;
+
       if (res.body?.data?.meta) {
         this.totalRegistros = res.body.data.meta.total;
         this.registrosPorPagina = res.body.data.meta.per_page;
         this.paginaActual = res.body.data.meta.current_page;
         this.ultimaPagina = res.body.data.meta.last_page;
       }
-      
-      if (this.gridApi) {
-        this.gridApi.setRowData(this.rowData);
-      }
     } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar perfiles:', error);
+      this.rowData = [];
+      this.totalRegistros = 0;
+      this.ultimaPagina = 1;
     } finally {
       this._loadingService.setLoading(false);
     }
@@ -159,21 +129,17 @@ export class ListProfileComponent implements OnInit {
   limpiarBusqueda() {
     this.searchTerm = '';
     this.paginaActual = 1;
-    this.campoBusquedaPaginacion.reset();
+    this.campoBusquedaPaginacion?.reset();
     this.cargarPerfiles(1);
   }
 
-  // Funciones de paginación
+  // Paginación
   firstPage(): void {
-    if (this.paginaActual !== 1) {
-      this.goToPage(1);
-    }
+    if (this.paginaActual !== 1) { this.goToPage(1); }
   }
 
   lastPage(): void {
-    if (this.paginaActual !== this.ultimaPagina) {
-      this.goToPage(this.ultimaPagina);
-    }
+    if (this.paginaActual !== this.ultimaPagina) { this.goToPage(this.ultimaPagina); }
   }
 
   goToPage(page: number): void {
@@ -190,4 +156,3 @@ export class ListProfileComponent implements OnInit {
     this.goToPage(this.paginaActual - 1);
   }
 }
-

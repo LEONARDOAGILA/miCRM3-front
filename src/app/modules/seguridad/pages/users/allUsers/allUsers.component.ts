@@ -1,10 +1,11 @@
-import { Component, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridAngular, ICellRendererAngularComp } from 'ag-grid-angular';
+import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
 import { SeguridadService } from '../../../services/seguridad.service';
@@ -57,8 +58,22 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   private readonly unsubscribe$ = new Subject<void>();
 
   /** Timeouts pendientes, para cancelarlos en ngOnDestroy. */
-  private timeoutIds: any[] = [];
+  private timeoutIds = new Set<any>();
   private resizeTimeoutId: any;
+
+  /**
+   * setTimeout que se da de baja solo al dispararse.
+   *
+   * Antes se hacía timeoutIds.push(setTimeout(...)) y el id nunca se quitaba:
+   * el array crecía sin techo mientras la pantalla estuviera abierta.
+   */
+  private programar(fn: () => void, ms: number): void {
+    const id = setTimeout(() => {
+      this.timeoutIds.delete(id);
+      fn();
+    }, ms);
+    this.timeoutIds.add(id);
+  }
 
   /**
    * Referencias estables a los listeners de la cabecera. Con `.bind(this)` cada
@@ -77,6 +92,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   public searchTerm: string = '';
 
   constructor(
+    private host: ElementRef<HTMLElement>,
     private modal: NgbModal,
     private route: Router,
     private activeRoute: ActivatedRoute,
@@ -85,6 +101,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
     private _appExportCsvService: AppExportCsvService,
     public _appAgGridService: AppAgGridService,
     private _loadingService: LoadingService,
+    private _toastr: ToastrService,
     private _seguridadService: SeguridadService,
     private _userService: UserService,
   ) {
@@ -102,7 +119,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
     this.unsubscribe$.complete();
 
     this.timeoutIds.forEach(id => clearTimeout(id));
-    this.timeoutIds = [];
+    this.timeoutIds.clear();
     if (this.resizeTimeoutId) { clearTimeout(this.resizeTimeoutId); }
 
     this.quitarListenersCabecera();
@@ -135,6 +152,16 @@ export class AllUsersComponent implements OnInit, OnDestroy {
 
   fun_home() {
     this.route.navigate(['/seguridad']);
+  }
+
+  /** Primer registro mostrado; 0 sin resultados (antes decía "1 - 0 de 0"). */
+  public get desde(): number {
+    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
+  }
+
+  /** Último registro mostrado, sin pasarse del total. */
+  public get hasta(): number {
+    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
   }
 
   // ****** FUNCIONES DE AG-GRID ****** //
@@ -311,9 +338,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
 
-    this.timeoutIds.push(
-      setTimeout(() => this.montarListenersCabecera(), 500)
-    );
+    this.programar(() => this.montarListenersCabecera(), 500);
 
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
     this.ajustarAlturaGrid();
@@ -324,7 +349,9 @@ export class AllUsersComponent implements OnInit, OnDestroy {
     // la anterior o el elemento huérfano sigue reteniendo el componente.
     this.quitarListenersCabecera();
 
-    this.headerElement = document.querySelector('.ag-header-cell[col-id="actions"]');
+    // Acotado a este componente: con document.querySelector, si había otra
+    // grilla en pantalla se enganchaba a la cabecera equivocada.
+    this.headerElement = this.host.nativeElement.querySelector('.ag-header-cell[col-id="actions"]');
     if (!this.headerElement) { return; }
 
     this.headerElement.addEventListener('click', this.onHeaderClick);
@@ -385,12 +412,10 @@ export class AllUsersComponent implements OnInit, OnDestroy {
       this.gridApi.setColumnDefs(columnDefs);
       this.gridApi.sizeColumnsToFit();
 
-      this.timeoutIds.push(
-        setTimeout(() => {
-          this.gridApi.sizeColumnsToFit();
-          this.montarListenersCabecera();   // ag-Grid acaba de recrear la cabecera
-        }, 100)
-      );
+      this.programar(() => {
+        this.gridApi.sizeColumnsToFit();
+        this.montarListenersCabecera();   // ag-Grid acaba de recrear la cabecera
+      }, 100);
     }
   }
 
@@ -405,9 +430,10 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   }
 
     ajustarAlturaGrid() {
-      // Obtener el contenedor del grid
-      const gridElement = document.querySelector('.ag-theme-alpine') as HTMLElement;
-      
+      // Obtener el contenedor del grid (el de ESTE componente, no el primero
+      // que aparezca en el documento)
+      const gridElement = this.host.nativeElement.querySelector('.ag-theme-alpine') as HTMLElement;
+
       if (gridElement) {
         // Calcular altura disponible (puedes ajustar esta lógica según tus necesidades)
         const windowHeight = window.innerHeight;
@@ -441,8 +467,19 @@ export class AllUsersComponent implements OnInit, OnDestroy {
         this._userService.allUsers(page, this.registrosPorPagina, this.searchTerm)
       ) as any;
 
+      // El backend responde 200 aunque la función de PostgreSQL devuelva
+      // success:false. Sin esta comprobación un fallo de BD se veía como una
+      // grilla vacía, sin ningún aviso.
+      if (res.body?.status !== 'success') {
+        this._toastr.error(res.body?.message || 'No se pudo obtener el listado de usuarios', 'Error');
+        this.userModel = [];
+        this.totalRegistros = 0;
+        this.ultimaPagina = 1;
+        this.gridApi?.setRowData(this.userModel);
+        return;
+      }
+
       this.userModel = res.body?.data?.data || [];
-      //console.log('Cargando usuarios...', this.userModel);
 
       if (res.body?.data?.meta) {
         this.totalRegistros = res.body.data.meta.total;
@@ -452,11 +489,56 @@ export class AllUsersComponent implements OnInit, OnDestroy {
       }
 
       if (this.gridApi) this.gridApi.setRowData(this.userModel);
-      this._loadingService.setLoading(false);
     } catch (error) {
-      this._loadingService.setLoading(false);
+      // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar usuarios:', error);
+    } finally {
+      // En finally para que el retorno anticipado de arriba no deje el spinner colgado
+      this._loadingService.setLoading(false);
     }
+  }
+
+  /**
+   * Trae TODOS los registros que cumplen el filtro actual, para exportar.
+   *
+   * Los exportadores recorrían this.userModel, que con la paginación en
+   * servidor son solo los 10 de la página visible: el PDF decía "Listado de
+   * Usuarios" y traía una página suelta.
+   */
+  private async obtenerTodosParaExportar(): Promise<UserModel[]> {
+    if (this.totalRegistros === 0) { return []; }
+
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(
+        this._userService.allUsers(1, this.totalRegistros, this.searchTerm)
+      ) as any;
+
+      if (res.body?.status !== 'success') {
+        this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
+        return [];
+      }
+      return res.body?.data?.data || [];
+    } catch (error) {
+      console.error('Error al obtener el listado completo:', error);
+      return [];
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /** Filas del reporte, ya ordenadas y con el formato de salida. */
+  private filasReporte(usuarios: UserModel[]): any[][] {
+    return usuarios
+      .sort((a, b) => (a.login_user || '').localeCompare(b.login_user || ''))
+      .map(item => [
+        item.id,
+        item.login_user,
+        item.name,
+        item.surname,
+        item.email,
+        item.isactive ? 'Activo' : 'Inactivo'
+      ]);
   }
 
   // ****** FUNCIONES DE BUSQUEDA ****** //
@@ -467,13 +549,11 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   }
 
   clearAllFilters() {
-    this.campoBusquedaPaginacion.reset();
+    // reset() ya vacía el input del buscador: el getElementById que había aquí
+    // hacía lo mismo por segunda vez y a nivel de documento.
+    this.campoBusquedaPaginacion?.reset();
     if (this.gridApi) {
       this.gridApi.setFilterModel(null);
-      const quickFilterInput = document.getElementById('filter-text-box') as HTMLInputElement;
-      if (quickFilterInput) {
-        quickFilterInput.value = '';
-      }
       this.searchTerm = '';
       this.gridApi.onFilterChanged();
       this.allUsers(this.paginaActual).then(() => {
@@ -512,55 +592,59 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   }
 
   // ****** IMPRESIÓN Y EXPORTACIÓN ****** //
+  /** Título del reporte, indicando si sale filtrado. */
+  private tituloReporte(): string {
+    return this.searchTerm
+      ? `Listado de Usuarios (filtro: ${this.searchTerm})`
+      : 'Listado de Usuarios';
+  }
+
   async printPdf() {
+    const usuarios = await this.obtenerTodosParaExportar();
+    if (usuarios.length === 0) {
+      this._toastr.info('No hay usuarios para exportar');
+      return;
+    }
+
     this._appPrintPdfService.generarReporte({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Usuarios",
-      titleTable: "Listado de Usuarios",
+      titleTable: this.tituloReporte(),
       headers: ['ID', 'Usuario', 'Nombre', 'Apellido', 'Email', 'Activo'],
-      data: this.userModel.map(item => [
-        item.id,
-        item.login_user,
-        item.name,
-        item.surname,
-        item.email,
-        item.isactive ? 'Activo' : 'Inactivo'
-      ]),
+      data: this.filasReporte(usuarios),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
+    const usuarios = await this.obtenerTodosParaExportar();
+    if (usuarios.length === 0) {
+      this._toastr.info('No hay usuarios para exportar');
+      return;
+    }
+
     this._appExportExcelService.generarReporteExcel({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Usuarios",
-      titleTable: "Listado de Usuarios",
+      titleTable: this.tituloReporte(),
       headers: ['ID', 'Usuario', 'Nombre', 'Apellido', 'Email', 'Activo'],
-      data: this.userModel.map(item => [
-        item.id,
-        item.login_user,
-        item.name,
-        item.surname,
-        item.email,
-        item.isactive ? 'Activo' : 'Inactivo'
-      ]),
+      data: this.filasReporte(usuarios),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
+    const usuarios = await this.obtenerTodosParaExportar();
+    if (usuarios.length === 0) {
+      this._toastr.info('No hay usuarios para exportar');
+      return;
+    }
+
     this._appExportCsvService.generarReporteCSV({
       headers: ['ID', 'Usuario', 'Nombre', 'Apellido', 'Email', 'Activo'],
-      data: this.userModel.map(item => [
-        item.id,
-        item.login_user,
-        item.name,
-        item.surname,
-        item.email,
-        item.isactive ? 'Activo' : 'Inactivo'
-      ]),
+      data: this.filasReporte(usuarios),
     });
   }
 

@@ -30,9 +30,11 @@
       </div>
       <div>
         <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar este usuario?</h6>
+        <!-- Los "accesos" cuelgan del PERFIL, no del usuario: borrar un usuario
+             no toca ninguno. Lo que sí se elimina en cascada son sus sesiones. -->
         <p class="eliminar-aviso__texto" id="eliminarUsuarioDescripcion">
-          Esta acción no se puede deshacer. Se eliminarán también todos los accesos
-          y datos asociados a este usuario.
+          Esta acción no se puede deshacer. Se cerrarán sus sesiones activas y el
+          usuario dejará de poder iniciar sesión. Su historial de auditoría se conserva.
         </p>
       </div>
     </div>

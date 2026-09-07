@@ -574,3 +574,87 @@
     animation: none;
   }
 }
+
+/* ============ GENERADOR DE CLAVE ============ */
+/* Mismos estilos que change-password: el bloque se ve igual en las dos
+   pantallas que entregan una contraseña al operador. */
+
+.clave-generar {
+  margin-bottom: .625rem;
+  font-weight: 600;
+}
+
+.clave-generada {
+  margin-bottom: .625rem;
+  padding: .625rem .75rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-left: 3px solid var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, var(--bs-body-bg, #fff));
+}
+
+.clave-generada__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .375rem;
+}
+
+.clave-generada__etiqueta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.clave-generada__copiar {
+  flex: 0 0 auto;
+  padding: .125rem .5rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  background-color: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.clave-generada__copiar:hover {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* La clave tiene que poder leerse entera para dictarla o teclearla.
+   word-break evita que 16 caracteres sin espacios desborden la caja, y
+   el color explícito anula el rosa que <code> hereda de --bs-code-color. */
+.clave-generada__valor {
+  display: block;
+  font-family: var(--bs-font-monospace, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: .08em;
+  word-break: break-all;
+  color: var(--bs-body-color, #212529);
+  -webkit-user-select: all;
+  user-select: all;                 /* un clic selecciona la clave completa */
+}
+
+.clave-generada__aviso {
+  margin-top: .375rem;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.clave-manual {
+  margin-bottom: .625rem;
+  font-size: 11px;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+@media (max-width: 767.98px) {
+  .clave-generada__valor {
+    font-size: 15px;
+    letter-spacing: .05em;
+  }
+}

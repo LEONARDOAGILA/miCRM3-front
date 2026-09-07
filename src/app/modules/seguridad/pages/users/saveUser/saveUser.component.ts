@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, OnInit, Output, OnDestroy } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, OnDestroy, ViewChild } from '@angular/core';
 import { firstValueFrom, from, merge, of, Observable, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
@@ -13,6 +13,7 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import { LoadingService } from '../../../../../service/loading.service';
 import { ProfileService } from '../../../../seguridad/services/profile.service';
 import { ComprimirImagen } from '../../../../../service/comprimirImagen';
+import { GeneradorClaveService } from '../../../../../service/generador-clave.service';
 import { HorarioService } from '../../../../seguridad/services/horario.service';
 
 // ModelosSSS
@@ -46,8 +47,6 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   // Controles independientes para Perfil y Horario
   public perfilNombreControl = new FormControl({ value: '', disabled: true });
   public horarioNombreControl = new FormControl({ value: '', disabled: true });
-  public perfilIdInvalido: boolean = false;
-  public horarioIdInvalido: boolean = false;
 
   public tipoUsuario = [
     { id: 1, name: 'SUPER USUARIO' },
@@ -65,9 +64,7 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   public imagen_file: any = null;
   public imagen_paste: any = null;
   public imagen_previzualiza: any = null;
-  public imagen: any = null;
   public comprimirImagen: ComprimirImagen = new ComprimirImagen();
-  public formDataImg = new FormData();
   public cambioImagen: boolean = false;
   public esView: boolean = true;
   public nuevoAvatar: string = '';
@@ -78,10 +75,42 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   public cameraError: string = '';
   public isUsingFrontCamera: boolean = true;
   private mediaStream: MediaStream | null = null;
-  
+
   // Para cancelar suscripciones
   private destroy$ = new Subject<void>();
-  paisSeleccionado: string;
+
+  /**
+   * true en cuanto corre ngOnDestroy. Los callbacks nativos (FileReader,
+   * Image, promesas de compresión) no se cancelan solos: sin esta bandera
+   * seguían escribiendo sobre el componente muerto y resucitaban el data URL
+   * del avatar que la propia limpieza acababa de soltar.
+   */
+  private destruido = false;
+
+  /** Lecturas de fichero en curso, para abortarlas al destruir. */
+  private readonly lectores = new Set<FileReader>();
+
+  /** Descargas de imagen en curso (checkImageExists), para cancelarlas. */
+  private readonly imagenesEnVuelo = new Set<HTMLImageElement>();
+
+  /** Input de fichero oculto de la galería. */
+  @ViewChild('galleryInput') private galleryInput?: ElementRef<HTMLInputElement>;
+
+  /** Input oculto que recibe el pegado de imagen. */
+  @ViewChild('pasteInput') private pasteInput?: ElementRef<HTMLInputElement>;
+
+  /** <video> de la cámara. Vive dentro de un *ngIf, así que llega por el setter. */
+  private videoCamara: HTMLVideoElement | null = null;
+
+  @ViewChild('cameraPreview')
+  set cameraPreviewRef(ref: ElementRef<HTMLVideoElement> | undefined) {
+    this.videoCamara = ref?.nativeElement ?? null;
+    // El <video> aparece después de que showCameraModal pase a true, así que
+    // el stream puede estar listo antes que el elemento (y al revés).
+    if (this.videoCamara) {
+      this.videoCamara.srcObject = this.mediaStream;
+    }
+  }
 
   constructor(
     private fb: FormBuilder,
@@ -92,6 +121,7 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     private _seguridadService: SeguridadService,
     private _userService: UserService,
     private _profileService: ProfileService,
+    private _generadorClave: GeneradorClaveService,
     private _horarioService: HorarioService,
   ) {
     this.textoClon = "";
@@ -103,10 +133,26 @@ export class SaveUserComponent implements OnInit, OnDestroy {
 
   //   ******   DESTROY   ******  //
   ngOnDestroy(): void {
+    // Antes que nada: a partir de aquí ningún callback pendiente debe escribir.
+    this.destruido = true;
+
     this.destroy$.next();
     this.destroy$.complete();
 
     this.closeCamera();                   // libera el MediaStream si seguía abierto
+
+    // Aborta las lecturas de fichero en vuelo. Sin esto, onloadend corría
+    // después de este método y volvía a asignar imagen_previzualiza.
+    this.lectores.forEach(lector => lector.abort());
+    this.lectores.clear();
+
+    // Corta las descargas de imagen pendientes (src = '' aborta la petición).
+    this.imagenesEnVuelo.forEach(img => {
+      img.onload = null;
+      img.onerror = null;
+      img.src = '';
+    });
+    this.imagenesEnVuelo.clear();
 
     // El modal puede cerrarse con la imagen en pantalla completa y dejar
     // el <body> sin scroll para toda la app.
@@ -116,6 +162,54 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     this.imagen_previzualiza = null;
     this.imagen_paste = null;
     this.imagen_file = null;
+  }
+
+  /**
+   * Lee un Blob como data URL cancelando bien la operación.
+   *
+   * Devuelve null si la lectura falla o si el componente se destruyó mientras
+   * tanto, para que quien llame no reasigne nada sobre un componente muerto.
+   * Sustituye a los cinco bloques `new FileReader()` que había repetidos.
+   */
+  private leerComoDataUrl(blob: Blob): Promise<string | null> {
+    return new Promise((resolve) => {
+      if (this.destruido) { resolve(null); return; }
+
+      const lector = new FileReader();
+      this.lectores.add(lector);
+
+      const terminar = (valor: string | null) => {
+        this.lectores.delete(lector);
+        lector.onloadend = null;
+        lector.onerror = null;
+        lector.onabort = null;
+        resolve(this.destruido ? null : valor);
+      };
+
+      lector.onloadend = () => terminar(typeof lector.result === 'string' ? lector.result : null);
+      lector.onerror = () => terminar(null);
+      lector.onabort = () => terminar(null);
+
+      lector.readAsDataURL(blob);
+    });
+  }
+
+  /**
+   * Deja la imagen leída en la vista previa y la prepara para subirla.
+   * Punto único de entrada tras seleccionar/pegar/capturar una imagen.
+   */
+  private async mostrarImagenSeleccionada(archivo: File): Promise<boolean> {
+    this.imagen_file = archivo;
+    this.cambioImagen = true;
+
+    const dataUrl = await this.leerComoDataUrl(archivo);
+    if (dataUrl === null) { return false; }   // lectura abortada o componente destruido
+
+    this.imagen_previzualiza = dataUrl;
+    if (this.userId) {
+      this.prepara_imagen_antes_grabar();
+    }
+    return true;
   }
 
   /** Emite cuando el modal hijo se cierra o cuando este componente muere. */
@@ -143,6 +237,15 @@ export class SaveUserComponent implements OnInit, OnDestroy {
 
     // Inicializar formulario
     this.initializeForm();
+
+    // Si la clave se edita a mano, deja de mostrarse la sugerida
+    this.form.get('password')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(valor => {
+        if (this.claveGenerada && valor !== this.claveGenerada) {
+          this.claveGenerada = null;
+        }
+      });
 
     switch (this.accion) {
       case 'add':
@@ -172,11 +275,6 @@ export class SaveUserComponent implements OnInit, OnDestroy {
         await this.findByIdUser(this.registro_selected.id);
         break;
     }
-  }
-
-  onPaisChange(codigoPais: string) {
-    console.log('País seleccionado:', codigoPais);
-    this.paisSeleccionado = codigoPais;
   }
 
   //   ******   INICIALIZA FORMULARIO   ******  //
@@ -211,7 +309,6 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   //   ******   PERFILES   ******  //
   async cargarPerfilPorId() {
     const perfilId = this.form.get('perfil_id')?.value;
-    this.perfilIdInvalido = true;
 
     if (!perfilId) {
       this.perfilNombreControl.setValue('');
@@ -245,6 +342,9 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       centered: true,
       backdrop: 'static'
     });
+
+    // Para que el selector marque como «Actual» el perfil ya asignado
+    modalRef.componentInstance.perfilSeleccionadoId = this.form.get('perfil_id')?.value;
 
     modalRef.componentInstance.seleccionado
       .pipe(takeUntil(this.hastaQueCierre(modalRef)))
@@ -329,7 +429,6 @@ export class SaveUserComponent implements OnInit, OnDestroy {
 
   async cargarHorarioPorId() {
     const horarioId = this.form.get('chorario_id')?.value;
-    this.horarioIdInvalido = false;
 
     if (!horarioId) {
       this.horarioNombreControl.setValue('');
@@ -466,8 +565,8 @@ export class SaveUserComponent implements OnInit, OnDestroy {
         return null;
       }
     } catch (error: any) {
+      // El AuthInterceptor ya muestra el toast del error HTTP: no lo duplicamos.
       console.error('Error al subir imagen:', error);
-      this._toastr.error(error.message || 'Error al subir la imagen');
       return null;
     }
   }
@@ -478,40 +577,33 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
       this.isdisabled = true;
       
-      if (this.accion === 'add') {
-        this.response = await firstValueFrom(this._userService.addUser(data));
-        if (this.response.status === 'success') {
-          this.userId = this.response.data.id;
-          
-          if (this.cambioImagen && this.imagen_file) {
-            await this.grabarImagen();
-            this.response.data.avatar = this.nuevoAvatar;
-          }
-        }
-      } else {
-        let formData = new FormData();
+      if (this.accion === 'edit') {
+        // editUser espera el payload dentro de un campo 'json' (FormData).
+        const formData = new FormData();
         formData.append('json', JSON.stringify(data));
+        this.response = await firstValueFrom(this._userService.editUser(this.registro_selected.id, formData));
+      } else {
+        // add y clon usan el mismo endpoint y mandan el objeto plano.
+        this.response = await firstValueFrom(
+          this.accion === 'clon' ? this._userService.clonUser(data) : this._userService.addUser(data)
+        );
+      }
 
-        if (this.accion === 'edit') {
-          this.response = await firstValueFrom(this._userService.editUser(this.registro_selected.id, formData));
-          if (this.response.status === 'success') {
-            if (this.cambioImagen && this.imagen_file) {
-              await this.grabarImagen();
-              this.response.data.avatar = this.nuevoAvatar;
-            }
-          }
-        }
+      // Una respuesta sin éxito no debe emitirse como si lo fuera: antes se
+      // emitía this.response.data (undefined) y salía un toast verde.
+      if (this.response?.status !== 'success') {
+        this.isdisabled = false;
+        this._loadingService.setLoading(false);
+        return;
+      }
 
-        if (this.accion === 'clon') {
-          this.response = await firstValueFrom(this._userService.clonUser(data));
-          if (this.response.status === 'success') {
-            this.userId = this.response.data.id;
-            if (this.cambioImagen && this.imagen_file) {
-              await this.grabarImagen();
-              this.response.data.avatar = this.nuevoAvatar;
-            }
-          }
-        }
+      if (this.accion !== 'edit') {
+        this.userId = this.response.data.id;
+      }
+
+      if (this.cambioImagen && this.imagen_file) {
+        await this.grabarImagen();
+        this.response.data.avatar = this.nuevoAvatar;
       }
 
       this.registrosE.emit(this.response.data);
@@ -520,10 +612,52 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       this.activeModal.close();
 
     } catch (error: any) {
+      // El AuthInterceptor ya notificó el error HTTP: aquí solo reactivamos el form.
       console.error('Error en la petición', error);
       this.isdisabled = false;
       this._loadingService.setLoading(false);
-      this._toastr.error(error.message || 'Error al guardar el usuario');
+    }
+  }
+
+  // ****** GENERACIÓN DE CLAVE ****** //
+
+  /**
+   * Clave sugerida, mostrada en claro para poder entregársela al nuevo usuario.
+   * Se oculta en cuanto la clave se edita a mano.
+   */
+  public claveGenerada: string | null = null;
+
+  /** Entra en el maxLength(20) que valida el formulario. */
+  private readonly LONGITUD_CLAVE = 16;
+
+  /**
+   * Misma generación que la pantalla de cambio de contraseña: 16 caracteres
+   * sobre un alfabeto de 64 con el CSPRNG del navegador (~95,6 bits).
+   * El algoritmo vive en GeneradorClaveService para no tener dos copias.
+   */
+  public generarClaveRecomendada(): void {
+    if (this.isdisabled) { return; }
+
+    const nuevaClave = this._generadorClave.generar(this.LONGITUD_CLAVE);
+    const control = this.form.get('password');
+
+    control?.setValue(nuevaClave);
+    control?.markAsDirty();
+    control?.markAsTouched();
+    control?.updateValueAndValidity();
+
+    this.claveGenerada = nuevaClave;
+  }
+
+  /** Copia la clave sugerida para poder dictarla o entregarla. */
+  public async copiarClave(): Promise<void> {
+    const clave = this.form.get('password')?.value;
+    if (!clave) { return; }
+
+    if (await this._generadorClave.copiar(clave)) {
+      this._toastr.success('Contraseña copiada al portapapeles');
+    } else {
+      this._toastr.info('No se pudo copiar automáticamente, cópiela manualmente');
     }
   }
 
@@ -545,32 +679,35 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     }
     
     if (this.form.valid) {
-      let formData = this.form.getRawValue();
-      this.saveRecord(formData);
+      const payload = this.form.getRawValue();
+
+      // En edición el backend ignora la contraseña (fn_usuarios_modificar no la
+      // recibe). Enviar un password vacío solo es ruido y un riesgo latente.
+      if (this.accion === 'edit') {
+        delete payload.password;
+      }
+
+      this.saveRecord(payload);
     } else {
       this._toastr.error('Revise los campos del formulario.', 'No se puede Guardar', { timeOut: 20000, closeButton: true });
     }
   }
 
   ////   INICIO DE IMAGEN  ///////////////////////////////////////////////////////////////////////////////////////////
-  processFile($event: any) {
-    if ($event.target.files[0].type.indexOf("image") < 0) {
-      const inputElement: HTMLInputElement = $event.target;
+  async processFile($event: any) {
+    const inputElement: HTMLInputElement = $event.target;
+    const archivo: File | undefined = inputElement.files?.[0];
+
+    if (!archivo || archivo.type.indexOf('image') < 0) {
       inputElement.value = '';
       return;
     }
-    this.imagen_file = $event.target.files[0];
-    this.cambioImagen = true;
+
     this.imagen_paste = null;
-    
-    let reader = new FileReader();
-    reader.readAsDataURL(this.imagen_file);
-    reader.onloadend = () => {
-      this.imagen_previzualiza = reader.result;
-      if (this.userId) {
-        this.prepara_imagen_antes_grabar();
-      }
-    };
+    await this.mostrarImagenSeleccionada(archivo);
+
+    // Permite volver a elegir el mismo fichero (change no dispara si no cambia).
+    inputElement.value = '';
   }
 
   @HostListener('paste', ['$event'])
@@ -615,39 +752,14 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     }
   }
   
-  handleImagePaste(imageBlob: Blob): void {
-    const reader = new FileReader();
-    reader.onload = (e: any) => {
-      this.imagen_paste = e.target.result;
-      this.imagen_previzualiza = this.imagen_paste;
-      const file = new File([imageBlob], `pasted-image-${Date.now()}.png`, { type: imageBlob.type });
-      this.imagen_file = file;
-      this.cambioImagen = true;
-      if (this.userId) {
-        this.prepara_imagen_antes_grabar();
-      }
-    };
-    reader.readAsDataURL(imageBlob);
-  }
-  
-  base64toFile(base64: string, filename: string): File {
-    const arr = base64.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
+  async handleImagePaste(imageBlob: Blob): Promise<void> {
+    const file = new File([imageBlob], `pasted-image-${Date.now()}.png`, { type: imageBlob.type });
+    const ok = await this.mostrarImagenSeleccionada(file);
+    if (ok) {
+      this.imagen_paste = this.imagen_previzualiza;
     }
-    const blob = new Blob([u8arr], { type: mime });
-    return new File([blob], filename, { type: mime });
   }
-  
-  isBase64String(text: string): boolean {
-    const base64Regex = /^(data:image\/[a-zA-Z]+;base64,)/;
-    return base64Regex.test(text);
-  }
-  
+
   clearImage() {
     this.imagen_previzualiza = null;
     this.imagen_paste = '';
@@ -688,24 +800,14 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     }
   }
   
-  private handleDroppedFile(file: File): void {
+  private async handleDroppedFile(file: File): Promise<void> {
     if (!file.type.match('image.*')) {
       this._toastr.error('El archivo debe ser una imagen', 'Error');
       return;
     }
 
-    this.imagen_file = file;
-    this.cambioImagen = true;
     this.imagen_paste = null;
-    
-    const reader = new FileReader();
-    reader.readAsDataURL(this.imagen_file);
-    reader.onloadend = () => {
-      this.imagen_previzualiza = reader.result;
-      if (this.userId) {
-        this.prepara_imagen_antes_grabar();
-      }
-    };
+    await this.mostrarImagenSeleccionada(file);
   }
 
   async triggerPaste(): Promise<void> {
@@ -732,10 +834,7 @@ export class SaveUserComponent implements OnInit, OnDestroy {
         closeButton: true
       });      
 
-      const pasteInput = document.getElementById('paste-input') as HTMLInputElement;
-      if (pasteInput) {
-        pasteInput.focus();
-      }
+      this.pasteInput?.nativeElement.focus();
     }
   }
 
@@ -755,47 +854,71 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     // Comprimir la imagen
     this.comprimirImagen.comprimirImagen(this.imagen_file)
       .then((compressedFile: File) => {
+        // El modal puede haberse cerrado mientras comprimía: no revivimos el File.
+        if (this.destruido) { return; }
         // Reemplazar la imagen original con la comprimida
         this.imagen_file = compressedFile;
-        //console.log('Imagen comprimida:', compressedFile.name, compressedFile.size);
       })
       .catch((error: any) => {
         console.error('Error en comprimir la imagen, se usará la original', error);
       });
   }
 
-  handleImageError(event: any) {
-    event.target.style.display = 'none';
+  /**
+   * La imagen del avatar no se pudo cargar (404 en el servidor, normalmente).
+   * Antes se ocultaba el <img> con display:none, lo que dejaba el hueco vacío y
+   * el elemento oculto para siempre; ahora se cae al estado "sin imagen".
+   */
+  handleImageError(_event: any) {
+    this.imagen_previzualiza = null;
   }
   
   private async convertImageUrlToFile(imageUrl: string): Promise<void> {
     try {
       const response = await fetch(imageUrl);
       const blob = await response.blob();
+      if (this.destruido) { return; }
 
-      this.imagen_file = new File([blob], `cloned_avatar_${Date.now()}.png`, { type: blob.type });
-      this.cambioImagen = true;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.imagen_previzualiza = e.target?.result;
-        if (this.userId) {
-          this.prepara_imagen_antes_grabar();
-        }
-      };
-      reader.readAsDataURL(this.imagen_file);
+      const file = new File([blob], `cloned_avatar_${Date.now()}.png`, { type: blob.type });
+      await this.mostrarImagenSeleccionada(file);
     } catch (error) {
       console.error('Error al convertir imagen:', error);
+      if (this.destruido) { return; }
       this._toastr.error('No se pudo cargar la imagen para clonación');
       this.imagen_previzualiza = null;
     }
   }
-  
-  private checkImageExists(url: string): Promise<boolean> {
+
+  /**
+   * ¿Responde el servidor con una imagen en esa URL?
+   *
+   * Lleva timeout y cancelación: si el servidor no contestaba, ni onload ni
+   * onerror llegaban a dispararse y la promesa quedaba pendiente para siempre,
+   * reteniendo el componente entero a través del await de findByIdUser.
+   */
+  private checkImageExists(url: string, timeoutMs = 8000): Promise<boolean> {
     return new Promise((resolve) => {
+      if (this.destruido) { resolve(false); return; }
+
       const img = new Image();
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
+      let resuelto = false;
+
+      const terminar = (existe: boolean) => {
+        if (resuelto) { return; }
+        resuelto = true;
+        clearTimeout(temporizador);
+        this.imagenesEnVuelo.delete(img);
+        img.onload = null;
+        img.onerror = null;
+        img.src = '';               // aborta la descarga si seguía en curso
+        resolve(existe);
+      };
+
+      const temporizador = setTimeout(() => terminar(false), timeoutMs);
+
+      this.imagenesEnVuelo.add(img);
+      img.onload = () => terminar(true);
+      img.onerror = () => terminar(false);
       img.src = url;
     });
   }
@@ -823,11 +946,7 @@ export class SaveUserComponent implements OnInit, OnDestroy {
 
   openGallery(): void {
     if (this.esView) return;
-    
-    const galleryInput = document.getElementById('gallery-input') as HTMLInputElement;
-    if (galleryInput) {
-      galleryInput.click();
-    }
+    this.galleryInput?.nativeElement.click();
   }
 
   async openCamera(): Promise<void> {
@@ -863,15 +982,22 @@ export class SaveUserComponent implements OnInit, OnDestroy {
         audio: false 
       });
       
+      // El modal pudo cerrarse mientras el usuario daba permisos: no dejamos
+      // la cámara encendida contra un componente ya destruido.
+      if (this.destruido || !this.showCameraModal) {
+        this.mediaStream.getTracks().forEach(track => track.stop());
+        this.mediaStream = null;
+        return;
+      }
+
       this.isUsingFrontCamera = facingMode === 'user';
-      
-      setTimeout(() => {
-        const videoElement = document.getElementById('cameraPreview') as HTMLVideoElement;
-        if (videoElement && this.mediaStream) {
-          videoElement.srcObject = this.mediaStream;
-        }
-      }, 100);
-      
+
+      // Si el <video> ya está en el DOM lo enganchamos ahora; si aún no, lo hace
+      // el setter de @ViewChild('cameraPreview') en cuanto aparezca.
+      if (this.videoCamara) {
+        this.videoCamara.srcObject = this.mediaStream;
+      }
+
     } catch (error: any) {
       console.error('Error al acceder a la cámara:', error);
       throw error;
@@ -890,9 +1016,9 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   }
 
   capturePhoto(): void {
-    const videoElement = document.getElementById('cameraPreview') as HTMLVideoElement;
+    const videoElement = this.videoCamara;
     if (!videoElement) return;
-    
+
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     
@@ -912,29 +1038,17 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       context.setTransform(1, 0, 0, 1, 0, 0);
     }
     
-    canvas.toBlob((blob) => {
-      if (blob) {
-        // ✅ Crear el archivo con un nombre único
-        const file = new File([blob], `camera-capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        
-        this.imagen_file = file;
-        this.cambioImagen = true;
-        this.imagen_paste = null;
-        
-        const reader = new FileReader();
-        reader.readAsDataURL(this.imagen_file);
-        reader.onloadend = () => {
-          this.imagen_previzualiza = reader.result;
-          
-          // ✅ Si hay userId, preparar la imagen
-          if (this.userId) {
-            this.prepara_imagen_antes_grabar();
-          }
-          
-          this.closeCamera();
-          this._toastr.success('Foto capturada correctamente');
-        };
-      }
+    canvas.toBlob(async (blob) => {
+      if (!blob || this.destruido) { return; }
+
+      const file = new File([blob], `camera-capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      this.imagen_paste = null;
+
+      const ok = await this.mostrarImagenSeleccionada(file);
+      if (!ok) { return; }   // el modal se cerró durante la lectura
+
+      this.closeCamera();
+      this._toastr.success('Foto capturada correctamente');
     }, 'image/jpeg', 0.8);
   }
 
@@ -942,6 +1056,9 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach(track => track.stop());
       this.mediaStream = null;
+    }
+    if (this.videoCamara) {
+      this.videoCamara.srcObject = null;   // suelta la referencia al stream
     }
     this.showCameraModal = false;
     this.cameraError = '';
