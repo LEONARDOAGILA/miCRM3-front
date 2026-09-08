@@ -1,0 +1,129 @@
+/* ============================================================
+   ÁREA DE TEXTO
+
+   Mismo lenguaje visual que app-campoTexto (borde, anillo de
+   foco con el color de la aplicación y bloque de mensajes),
+   con la geometría propia de un campo multilínea: la etiqueta
+   se ancla arriba y el texto empieza por debajo de ella.
+   ============================================================ */
+
+.campo-area {
+  position: relative;
+
+  /* Hueco propio donde cae el mensaje de validacion, que va posicionado.
+     Al traerlo el componente funciona en cualquier pantalla, aunque el
+     contenedor no reserve nada. */
+  margin-bottom: 1.25rem;
+}
+
+/* ---------- Campo ---------- */
+.campo-area .form-control {
+  border-color: var(--bs-border-color, #dee2e6);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+/* El tema deja el foco sin marca (box-shadow: none); se devuelve el anillo */
+.campo-area .form-control:focus {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+}
+
+.campo-area .form-control:disabled,
+.campo-area .form-control[readonly] {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  opacity: 1;                         /* Safari los aclara de más */
+}
+
+/* Solo vertical: al redimensionar en horizontal se rompía la rejilla del
+   formulario, porque el campo se salía de su columna. */
+.campo-area__campo {
+  resize: vertical;
+  line-height: 1.4;
+}
+
+/* ---------- Reparto vertical ---------- */
+/* En un área de texto el valor no se centra: arranca bajo la etiqueta.
+   Bootstrap deja 1.625rem arriba pensando en su caja por defecto; aquí basta
+   con 1.5rem y así se gana una línea útil de contenido. */
+.campo-area .form-floating > .form-control,
+.campo-area .form-floating > .form-control:focus,
+.campo-area .form-floating > .form-control:not(:placeholder-shown) {
+  padding-top: 1.5rem;
+  padding-bottom: .5rem;
+}
+
+/* ---------- Etiqueta flotante ---------- */
+/* height: auto -> la etiqueta se queda arriba en lugar de ocupar todo el alto
+   del área y tapar el texto con su fondo. */
+.campo-area .form-floating > label {
+  height: auto;
+  padding: .5rem .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-area .form-floating > .form-control:focus ~ label,
+.campo-area .form-floating > .form-control:not(:placeholder-shown) ~ label {
+  transform: scale(.85) translateY(-.25rem) translateX(.15rem);
+}
+
+/* ---------- Validación ---------- */
+/* Bootstrap mete un icono de fondo dentro del campo; sobra porque el mensaje
+   ya va debajo, y en un área de texto queda flotando en mitad del recuadro. */
+.campo-area .form-control.is-invalid,
+.campo-area .form-control.is-valid {
+  background-image: none;
+}
+
+.campo-area .form-control.is-invalid {
+  border-color: var(--bs-danger, #dc3545);
+}
+
+.campo-area .form-control.is-invalid:focus {
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-danger-rgb, 220, 53, 69), .15);
+}
+
+/* El verde de "válido" iba en TODOS los campos correctos y llenaba de ruido
+   los formularios largos: se deja sólo un borde suave, sin anillo. */
+.campo-area .form-control.is-valid {
+  border-color: var(--bs-success-border-subtle, #a3cfbb);
+}
+
+.campo-area .form-control.is-valid:focus {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+}
+
+/* ---------- Mensajes ---------- */
+.campo-area__mensajes {
+  /* Absoluto: el mensaje vive en el hueco que el campo ya deja debajo, en
+     lugar de reservar una linea propia. Con diez campos, esa reserva
+     desperdiciaba unos 300px de formulario en huecos vacios. */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding-top: .125rem;
+}
+
+.campo-area__error {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+
+  font-size: .75rem;
+  line-height: 1.2;
+  color: var(--bs-danger, #dc3545);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 767.98px) {
+  .campo-area {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campo-area .form-control {
+    transition: none;
+  }
+}

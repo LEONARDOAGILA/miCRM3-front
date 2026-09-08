@@ -291,19 +291,67 @@ export class SaveHorarioComponent implements OnInit {
   }
 
   // ****** MANEJO DE DHORARIO ****** //
-  newHorarioItem(): FormGroup {
+  newHorarioItem(dia: number = 1): FormGroup {
     return this._fb.group({
       id: [null],
       chorario_id: [null],
-      dia: [1, Validators.required],
+      dia: [dia, Validators.required],
       hora_inicio: ['', Validators.required],
       hora_fin: ['', Validators.required],
       activo: [true]
     }, { validators: this.validarHoras });
   }
 
+  /**
+   * Primer día de la semana que todavía no está en la lista.
+   * Devuelve null si ya están los siete.
+   */
+  private primerDiaLibre(): number | null {
+    const usados = new Set(
+      this.dhorario.controls.map(control => control.get('dia')?.value)
+    );
+
+    return this.diasSemana.find(dia => !usados.has(dia.id))?.id ?? null;
+  }
+
+  /**
+   * Reordena las filas por día (lunes → domingo).
+   *
+   * Se reutilizan los mismos FormGroup en lugar de recrearlos: así se
+   * conservan los valores ya escritos y el estado touched/dirty de cada
+   * control, que es lo que decide qué mensajes de error se ven.
+   */
+  private ordenarPorDia(): void {
+    const ordenados = [...this.dhorario.controls].sort(
+      (a, b) => (a.get('dia')?.value ?? 0) - (b.get('dia')?.value ?? 0)
+    );
+
+    // emitEvent:false para no disparar la validación en cada paso intermedio
+    while (this.dhorario.length > 0) {
+      this.dhorario.removeAt(0, { emitEvent: false });
+    }
+    ordenados.forEach(control => this.dhorario.push(control, { emitEvent: false }));
+
+    this.dhorario.updateValueAndValidity();
+  }
+
+  /**
+   * Agrega el primer día que falte, en vez de repetir siempre el lunes, y
+   * deja la lista ordenada de lunes a domingo.
+   */
   addHorarioItem(): void {
-    this.dhorario.push(this.newHorarioItem());
+    const dia = this.primerDiaLibre();
+
+    if (dia === null) {
+      this._toastr.warning(
+        'Ya están configurados los siete días de la semana',
+        'Advertencia'
+      );
+      return;
+    }
+
+    this.dhorario.push(this.newHorarioItem(dia));
+    this.ordenarPorDia();
   }
 
   removeHorarioItem(index: number): void {

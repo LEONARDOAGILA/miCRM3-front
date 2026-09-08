@@ -531,7 +531,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
     //   ******   ACCION NUEVO   ******  //
     addMenu() {
       if (!this._seguridadService.isexpired()) {    
-        const modalRef = this.modal.open(SaveMenuComponent, { centered: true, size: "xs", backdrop: "static", keyboard: false,});
+        const modalRef = this.modal.open(SaveMenuComponent, { centered: true, size: "lg", backdrop: "static", keyboard: false,});
         modalRef.componentInstance.registro_selected = 0;
           modalRef.componentInstance.accion = 'addNuevaRaiz';
           const maxOrder2 = this.getMaxOrder2Root();
@@ -600,7 +600,7 @@ export class ButtonAccionMenu {
   }
 
   addMenu() {
-      const modalRef = this.modalService.open(SaveMenuComponent, { centered: true, size: 'xs',  backdrop: 'static',  keyboard: false });
+      const modalRef = this.modalService.open(SaveMenuComponent, { centered: true, size: 'lg',  backdrop: 'static',  keyboard: false });
       modalRef.componentInstance.registro_selected = this.params.data;
       modalRef.componentInstance.accion = 'add';
       const maxOrder2 = this.AllMenusComponent.getMaxOrder2ByParent(this.params.data.id);
@@ -618,7 +618,7 @@ export class ButtonAccionMenu {
   }
         
   editMenu() {
-      const modalRef = this.modalService.open(SaveMenuComponent, { centered: true, size: 'xs',  backdrop: 'static',  keyboard: false });
+      const modalRef = this.modalService.open(SaveMenuComponent, { centered: true, size: 'lg',  backdrop: 'static',  keyboard: false });
       modalRef.componentInstance.registro_selected = this.params.data;
       modalRef.componentInstance.accion = 'edit';
       let tieneHijos = this.AllMenusComponent.menuModel.some(item => item.padre_id === this.params.data.id);

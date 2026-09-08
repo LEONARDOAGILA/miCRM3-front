@@ -1,0 +1,71 @@
+/* ============================================================
+   PIE DE MODAL
+
+   El archivo estaba vacío y el aspecto dependía de dos <div>
+   envoltorio sin estilos (.restar-buttons y .save-buttons) más
+   .equal-width-button, que fija 150px desde styles.css.
+
+   Aquí el ancho se resuelve con min-width, no con width fija:
+   así el botón crece si el texto es más largo (por ejemplo
+   «Guardando…») en vez de recortarlo.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.pie-modal {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5rem;
+
+  padding: .75rem 1rem;
+  border-top: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+}
+
+.pie-modal__boton {
+  min-width: 130px;
+  font-size: 12px;
+  font-weight: 500;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* El icono no debe encogerse cuando el texto es largo */
+.pie-modal__boton > i {
+  flex: 0 0 auto;
+}
+
+.pie-modal__boton:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+/* Mientras guarda, el cursor indica espera sobre el botón activo */
+.pie-modal__boton.btn-primary:disabled {
+  cursor: progress;
+}
+
+/* ---------- Responsive ---------- */
+/* En móvil los dos botones ocupan el ancho completo y se apilan: con 130px
+   de mínimo cada uno, en pantallas estrechas se salían del modal. */
+@media (max-width: 400px) {
+  .pie-modal {
+    flex-direction: column-reverse;   /* Guardar arriba, la acción principal */
+    align-items: stretch;
+  }
+
+  .pie-modal__boton {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pie-modal__boton .fa-spin {
+    animation: none;
+  }
+}

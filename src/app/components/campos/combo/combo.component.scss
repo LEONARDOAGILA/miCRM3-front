@@ -1,15 +1,26 @@
 // ============================================================
 // app-combo
-// Replica el aspecto de app-campoTexto (.form-floating +
-// .form-control de Bootstrap) sobre un ng-select:
-//   · misma altura (3.5rem + 2px)
-//   · mismo borde, radio y colores (variables de Bootstrap,
-//     por lo que funciona en modo claro y oscuro)
-//   · label flotante y bloque de error idénticos
+//
+// Replica el aspecto de app-campoTexto sobre un ng-select:
+//   · misma altura (45px)
+//   · mismo borde, radio y anillo de foco con el color de la app
+//   · misma etiqueta flotante y mismo bloque de mensajes
+//
+// Los colores salen de las variables de Bootstrap que ya usa la
+// plantilla, así que acompaña al panel de temas y al modo oscuro.
 // ============================================================
 
 :host {
   display: block;
+}
+
+.combo {
+  position: relative;
+
+  /* Hueco propio donde cae el mensaje de validacion, que va posicionado.
+     Al traerlo el componente funciona en cualquier pantalla, aunque el
+     contenedor no reserve nada. */
+  margin-bottom: 1.25rem;
 }
 
 .combo-floating {
@@ -26,34 +37,36 @@
   width: 100%;
 
   .ng-select-container {
-    height: calc(3.5rem + 2px) !important;
-    min-height: calc(3.5rem + 2px) !important;
+    height: 55px !important;
+    min-height: 55px !important;
 
     padding: 0 .75rem !important;
     align-items: stretch !important;
 
     background-color: var(--bs-component-bg, #fff) !important;
-    border: 1px solid var(--bs-component-border-color, #ced4da) !important;
+    border: 1px solid var(--bs-border-color, #dee2e6) !important;
     border-radius: var(--bs-border-radius, .375rem) !important;
     box-shadow: none !important;
     color: var(--bs-component-color, #2d353c) !important;
 
-    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    transition: border-color .15s ease, box-shadow .15s ease;
   }
 
-  // ----- Valor: pegado abajo, dejando sitio arriba para el label -----
+  // ----- Valor: pegado abajo, dejando sitio arriba para la etiqueta -----
+  // Mismo reparto que app-campoTexto en 45px: 1.25rem arriba, .25rem abajo.
   .ng-value-container {
-    padding: 1.625rem 0 .625rem !important;
+    padding: 1.25rem 0 .25rem !important;
     align-items: flex-end !important;
   }
 
   .ng-value {
     font-size: 12px;
-    line-height: 1.25;
+    font-weight: 600;
+    line-height: 2.15;
     color: var(--bs-component-color, #2d353c);
   }
 
-  // El placeholder lo sustituye el label flotante
+  // El placeholder lo sustituye la etiqueta flotante
   .ng-placeholder {
     display: none !important;
   }
@@ -61,13 +74,13 @@
   // ----- Input de búsqueda alineado con el valor -----
   .ng-input {
     top: auto !important;
-    bottom: .6875rem !important;
+    bottom: .3125rem !important;
     left: 0 !important;
     padding: 0 2.75rem 0 calc(.75rem + 1px) !important;
 
     > input {
       height: 1.25rem;
-      font-size: 12px;
+      font-size: 13px;
       color: var(--bs-component-color, #2d353c);
     }
   }
@@ -109,11 +122,13 @@
   // ESTADOS
   // ============================================================
 
-  // ----- Foco / desplegado (mismo anillo que .form-control:focus) -----
+  // ----- Foco / desplegado -----
+  // Mismo anillo que app-campoTexto: color de la aplicación, no el primary
+  // de Bootstrap, para que acompañe al panel de temas.
   &.ng-select-focused .ng-select-container,
   &.ng-select-opened .ng-select-container {
-    border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .55) !important;
-    box-shadow: 0 0 0 .25rem rgba(var(--bs-primary-rgb, 13, 110, 253), .25) !important;
+    border-color: var(--bs-app-theme, #00acac) !important;
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18) !important;
   }
 
   // Mantiene las esquinas redondeadas al abrir el desplegable
@@ -123,27 +138,30 @@
 
   // ----- Validación -----
   &.is-invalid .ng-select-container {
-    border-color: var(--bs-form-invalid-border-color, #dc3545) !important;
+    border-color: var(--bs-danger, #dc3545) !important;
   }
 
   &.is-invalid.ng-select-focused .ng-select-container,
   &.is-invalid.ng-select-opened .ng-select-container {
-    box-shadow: 0 0 0 .25rem rgba(var(--bs-danger-rgb, 220, 53, 69), .25) !important;
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-danger-rgb, 220, 53, 69), .15) !important;
   }
 
+  // El verde de "válido" iba en TODOS los campos correctos y llenaba de ruido
+  // los formularios largos: se deja sólo un borde suave, sin anillo.
   &.is-valid .ng-select-container {
-    border-color: var(--bs-form-valid-border-color, #198754) !important;
+    border-color: var(--bs-success-border-subtle, #a3cfbb) !important;
   }
 
   &.is-valid.ng-select-focused .ng-select-container,
   &.is-valid.ng-select-opened .ng-select-container {
-    box-shadow: 0 0 0 .25rem rgba(var(--bs-success-rgb, 25, 135, 84), .25) !important;
+    border-color: var(--bs-app-theme, #00acac) !important;
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18) !important;
   }
 
-  // ----- Deshabilitado (igual que .form-control:disabled) -----
+  // ----- Deshabilitado -----
   &.ng-select-disabled .ng-select-container {
-    background-color: var(--bs-component-disabled-bg, #e9ecef) !important;
-    opacity: 1;
+    background-color: var(--bs-secondary-bg, #e9ecef) !important;
+    opacity: 1;                       // Safari lo aclara de más
   }
 
   &.ng-select-disabled .ng-arrow-wrapper {
@@ -153,23 +171,22 @@
 
 
 // ============================================================
-// LABEL FLOTANTE
-// El posicionamiento base lo da .form-floating > label de
-// Bootstrap; aquí solo se define la animación al flotar.
+// ETIQUETA FLOTANTE
 // ============================================================
 
 .combo-label {
-  color: var(--bs-component-color, #2d353c);
+  color: var(--bs-secondary-color, #3b3f44);
   transition: opacity .1s ease-in-out, transform .1s ease-in-out;
 }
 
+// Mismo desplazamiento que app-campoTexto en 45px
 .combo-label.active {
-  opacity: .65;
-  transform: scale(.85) translateY(-.5rem) translateX(.15rem);
+  opacity: .98;
+  transform: scale(.85) translateY(-.75rem) translateX(.15rem);
 }
 
 .combo-floating.is-disabled .combo-label {
-  color: var(--bs-secondary-color, #6c757d);
+  color: var(--bs-secondary-color, #3b3f44);
 }
 
 
@@ -179,36 +196,37 @@
 
 :host ::ng-deep .ng-dropdown-panel {
   background-color: var(--bs-component-bg, #fff) !important;
-  border-color: var(--bs-component-border-color, #ced4da) !important;
+  border-color: var(--bs-border-color, #dee2e6) !important;
   border-radius: var(--bs-border-radius, .375rem);
   box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
 
   &.ng-select-bottom {
-    border-top-color: var(--bs-component-border-color, #ced4da) !important;
+    border-top-color: var(--bs-border-color, #dee2e6) !important;
     margin-top: 2px;
   }
 
   &.ng-select-top {
-    border-bottom-color: var(--bs-component-border-color, #ced4da) !important;
+    border-bottom-color: var(--bs-border-color, #dee2e6) !important;
     margin-bottom: 2px;
   }
 
   .ng-dropdown-panel-items .ng-option {
-    padding: .4rem .75rem !important;
+    padding: .5rem .75rem !important;
 
     background-color: transparent !important;
     color: var(--bs-component-color, #2d353c) !important;
 
-    font-size: 12px;
+    font-size: 13px;
 
     &.ng-option-marked {
       background-color: var(--bs-component-dropdown-hover-bg, #f8f9fa) !important;
       color: var(--bs-component-color, #2d353c) !important;
     }
 
+    // La opción elegida se marca con el color de la app, no con el primary
     &.ng-option-selected,
     &.ng-option-selected.ng-option-marked {
-      background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12) !important;
+      background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12) !important;
       color: var(--bs-component-color, #2d353c) !important;
 
       .ng-option-label {
@@ -223,7 +241,7 @@
 
   .ng-dropdown-panel-items .ng-optgroup {
     background-color: var(--bs-component-dropdown-hover-bg, #f8f9fa) !important;
-    color: var(--bs-secondary-color, #6c757d) !important;
+    color: var(--bs-secondary-color, #3b3f44) !important;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
@@ -232,15 +250,40 @@
 
 
 // ============================================================
-// MENSAJES DE ERROR (mismo tamaño que en app-campoTexto)
+// MENSAJES  (mismo bloque que app-campoTexto)
 // ============================================================
 
-.msg-requerido {
-  display: block;
-  font-size: .7rem;
-  line-height: 1.3;
+.combo__mensajes {
+  /* Absoluto: el mensaje vive en el hueco que el campo ya deja debajo, en
+     lugar de reservar una linea propia. Con diez campos, esa reserva
+     desperdiciaba unos 300px de formulario en huecos vacios. */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding-top: .125rem;
 }
 
+.combo__error {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+
+  font-size: .75rem;
+  line-height: 1.2;
+  color: var(--bs-danger, #dc3545);
+}
+
+
+// ============================================================
+// RESPONSIVE
+// ============================================================
+
+@media (max-width: 767.98px) {
+  .combo {
+    margin-bottom: 1.5rem;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
 

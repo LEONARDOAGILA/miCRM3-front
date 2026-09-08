@@ -1,10 +1,10 @@
-<div class="form-floating mb-1">
+<div class="form-floating campo-clave">
   <!-- type="text" + .password-mask a propósito: con type="password" el navegador
        ignora autocomplete="off" y ofrece igualmente generar o rellenar la clave.
        Ver soportaEnmascaradoCss en el componente. -->
   <input
     [type]="tipoInput"
-    class="form-control fs-14px"
+    class="form-control fs-13px h-45px"
     [class.password-mask]="enmascarar"
     [id]="label"
     [placeholder]="placeholder"
@@ -22,15 +22,19 @@
     data-1p-ignore
     data-form-type="other"
   />
-  <label [for]="label" class="d-flex align-items-center fs-13px">{{ label }}</label>
-  
+  <!-- py-0 centra la etiqueta flotante en el campo de 45px -->
+  <label [for]="label" class="d-flex align-items-center py-0 fs-13px">{{ label }}</label>
+
   <!-- Botón para mostrar/ocultar contraseña -->
-  <button 
+  <button
     type="button"
     class="password-toggle-btn"
     (click)="togglePasswordVisibility()"
-    tabindex="-1">
-    <i [class]="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
+    tabindex="-1"
+    [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+    [attr.aria-pressed]="showPassword"
+    [title]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+    <i [class]="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'" aria-hidden="true"></i>
   </button>
 </div>
 

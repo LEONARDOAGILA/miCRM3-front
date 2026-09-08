@@ -1,33 +1,49 @@
-  <div class="form-floating mb-3 mb-md-0">
+<!-- Sin envoltorio .col-md a propósito: a diferencia de app-campoTexto, las
+     pantallas colocan este componente donde ya hay una columna. -->
+<div class="campo-numero">
+
+  <div class="form-floating">
     <input
-      class="form-control fs-15px"
+      class="form-control fs-13px h-45px"
       [type]="type"
       [id]="label"
       [placeholder]="placeholder"
-      [formControl]="control"      
+      [formControl]="control"
       (input)="onInputChange($event.target.value)"
       (blur)="onBlur($event)"
       appSoloNumerosEnteros
+      inputmode="numeric"
       [ngClass]="{
         'is-invalid': control.invalid && (control.touched || control.dirty)
       }"
-  />
-  
-  <!-- 'is-valid': control.valid && (control.touched || control.dirty) -->
-    <label [for]="label" class="d-flex align-items-center fs-13px">{{ label }}</label>
+    />
 
+    <!-- py-0 centra la etiqueta flotante en el campo de 45px -->
+    <label [for]="label" class="d-flex align-items-center py-0 fs-13px">{{ label }}</label>
   </div>
 
-
-  <div class="input-group with-focus">
-    <label class="col-lg-12 col-form-label text-lg-left"></label>
-    <small class="text-danger msg-requerido" *ngIf="control.hasError('required') && (control.dirty || control.touched)">
+  <!-- Zona de mensajes, igual que en app-campoTexto.
+       Antes había aquí un <label class="col-form-label"> vacío que reservaba
+       espacio muerto; ahora el hueco lo reserva el CSS (min-height), así que
+       el formulario no salta cuando aparece el error. -->
+  <div class="campo-numero__mensajes">
+    <small class="campo-numero__error"
+           *ngIf="control.hasError('required') && (control.dirty || control.touched)">
+      <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
       Es requerido.
     </small>
-    <small class="text-danger msg-requerido" *ngIf="control.hasError('cedulaInvalida') && (control.dirty || control.touched)">
+
+    <small class="campo-numero__error"
+           *ngIf="control.hasError('cedulaInvalida') && (control.dirty || control.touched)">
+      <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
       La Identificación no es válida.
     </small>
-    <small class="text-danger msg-requerido" *ngIf="control.hasError('maxlength') && (control.dirty || control.touched)">
+
+    <small class="campo-numero__error"
+           *ngIf="control.hasError('maxlength') && (control.dirty || control.touched)">
+      <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
       No puede exceder los {{ maxLength }} caracteres.
     </small>
   </div>
+
+</div>

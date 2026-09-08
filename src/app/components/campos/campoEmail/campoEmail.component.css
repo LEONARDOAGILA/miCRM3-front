@@ -1,50 +1,188 @@
-/* campoEmail.component.css */
+/* ============================================================
+   CAMPO DE CORREO
 
-/* Eliminar todos los íconos nativos de validación */
-input[type="email"] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
+   Mismo lenguaje visual que app-campoTexto: campo de 45px,
+   anillo de foco con el color de la aplicación y el mensaje de
+   error pegado debajo con su icono.
+   ============================================================ */
+
+.campo-email {
+  position: relative;
+
+  /* Hueco propio donde cae el mensaje de validacion, que va posicionado.
+     Al traerlo el componente funciona en cualquier pantalla, aunque el
+     contenedor no reserve nada. */
+  margin-bottom: 1.25rem;
 }
 
-/* WebKit (Chrome, Safari, Edge) */
-input[type="email"]::-webkit-calendar-picker-indicator,
-input[type="email"]::-webkit-inner-spin-button,
-input[type="email"]::-webkit-outer-spin-button,
-input[type="email"]::-webkit-validation-bubble,
-input[type="email"]::-webkit-validation-bubble-message,
-input[type="email"]::-webkit-validation-bubble-arrow,
-input[type="email"]::-webkit-validation-bubble-arrow-clipper {
-  display: none;
-  -webkit-appearance: none;
-  appearance: none;
+/* ---------- Campo ---------- */
+.campo-email .form-control {
+  padding-right: 2.5rem;              /* sitio para el botón de limpiar */
+  border-color: var(--bs-border-color, #dee2e6);
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-/* Firefox */
-input[type="email"] {
-  -moz-appearance: textfield;
+/* El tema deja el foco sin marca (box-shadow: none); se devuelve el anillo */
+.campo-email .form-control:focus {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
 }
 
-/* Internet Explorer 10-11 */
-input[type="email"]::-ms-clear,
-input[type="email"]::-ms-reveal,
-input[type="email"]::-ms-check {
-  display: none;
+.campo-email .form-control:disabled,
+.campo-email .form-control[readonly] {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  opacity: 1;                         /* Safari los aclara de más */
 }
 
-/* Quitar efecto de sombra al hacer focus */
-input:focus {
-  outline: none;
+/* ---------- Reparto vertical para 45px ---------- */
+/* Bootstrap calcula el relleno del estado flotante para su altura por defecto
+   de 58px: 1.625rem arriba + .625rem abajo. En un campo de 45px eso deja unos
+   7px de caja para el texto. Aquí se recalcula. */
+.campo-email .form-floating > .form-control:focus,
+.campo-email .form-floating > .form-control:not(:placeholder-shown) {
+  padding-top: 1.25rem;
+  padding-bottom: .25rem;
 }
 
-/* Tu estilo existente para is-invalid se mantiene */
-.form-control.is-invalid {
-  border-color: #dc3545;
-  background-image: none; /* Esto quita cualquier ícono de fondo */
-  padding-right: 0.75rem; /* Ajusta el padding si necesitas */
+.campo-email .form-floating > label {
+  color: var(--bs-secondary-color, #6c757d);
 }
 
-/* Si quieres mantener el padding para el botón de limpiar */
-.form-control {
-  padding-right: 2rem; /* Espacio para el botón de limpiar */
+.campo-email .form-floating > .form-control:focus ~ label,
+.campo-email .form-floating > .form-control:not(:placeholder-shown) ~ label {
+  transform: scale(.85) translateY(-.75rem) translateX(.15rem);
+}
+
+/* ---------- Validación ---------- */
+/* Bootstrap mete un icono de fondo dentro del campo; sobra porque el mensaje
+   ya va debajo y chocaría con el botón de limpiar. */
+.campo-email .form-control.is-invalid {
+  border-color: var(--bs-danger, #dc3545);
+  background-image: none;
+  padding-right: 2.5rem;
+}
+
+.campo-email .form-control.is-invalid:focus {
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-danger-rgb, 220, 53, 69), .15);
+}
+
+/* ---------- Botón de limpiar ---------- */
+/* Iba con utilidades (mt-3 me-2) calculadas para el campo de 58px; con 45px
+   quedaba descentrado. Ahora se centra respecto a la altura real. */
+.campo-email__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .5rem;
+  transform: translateY(-50%);
+  z-index: 3;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2rem;
+  height: 2rem;
+
+  padding: 0;
+  border: none;
+  border-radius: .375rem;
+
+  background: none;
+  color: var(--bs-secondary-color, #adb5bd);
+  font-size: .8125rem;
+  cursor: pointer;
+
+  transition: color .15s ease, background-color .15s ease;
+}
+
+.campo-email__limpiar:hover,
+.campo-email__limpiar:focus-visible {
+  color: var(--bs-danger, #dc3545);
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+}
+
+/* ---------- Sugerencias de dominio ---------- */
+/* Antes era un div con estilos en línea y el color de fondo se cambiaba desde
+   la plantilla con (mouseenter)/(mouseleave); ahora lo hace el CSS y respeta
+   el tema en lugar de un blanco fijo. */
+.campo-email__sugerencias {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 1000;
+
+  width: 100%;
+  max-height: 13.75rem;
+  overflow-y: auto;
+
+  background-color: var(--bs-component-bg, #fff);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius, .375rem);
+  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+}
+
+.campo-email__sugerencia {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+
+  padding: .5rem .75rem;
+  border: none;
+  border-bottom: 1px solid var(--bs-border-color, #e9ecef);
+
+  background: none;
+  color: var(--bs-component-color, #212529);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.campo-email__sugerencia:last-child {
+  border-bottom: none;
+}
+
+.campo-email__sugerencia:hover,
+.campo-email__sugerencia:focus-visible {
+  background-color: var(--bs-component-dropdown-hover-bg, #f8f9fa);
+}
+
+.campo-email__sugerencia-icono {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Mensajes ---------- */
+.campo-email__mensajes {
+  /* Absoluto: el mensaje vive en el hueco que el campo ya deja debajo, en
+     lugar de reservar una linea propia. Con diez campos, esa reserva
+     desperdiciaba unos 300px de formulario en huecos vacios. */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding-top: .125rem;
+}
+
+.campo-email__error {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+
+  font-size: .75rem;
+  line-height: 1.2;
+  color: var(--bs-danger, #dc3545);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 767.98px) {
+  .campo-email {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campo-email .form-control,
+  .campo-email__limpiar {
+    transition: none;
+  }
 }

@@ -30,177 +30,154 @@
             </span>
         </div>
 
-        <!-- ---------- Datos del menú ---------- -->
-        <div class="form-card mb-3">
+        <div class="row g-3">
 
-            <div class="form-card__header">
-                <i class="fa-solid fa-bars"></i>
-                <span>Datos del menú</span>
-            </div>
+            <!-- ============ DATOS DEL MENÚ ============ -->
+            <div class="col-lg-5">
+                <panel
+                    headerClass="bg-gray-800"
+                    title="Datos del menú"
+                    noButton="true"
+                    noBody="true"
+                    panelClass="h-100 mb-0"
+                    icono="editar"
+                    fondoGris="true">
 
-            <div class="form-card__body">
-                <div class="row g-3">
+                    <ng-container outsideBody>
+                        <div class="form-card__body">
+                            <div class="row g-0">
 
-                    <div class="col-12">
-                        <app-campoTexto
-                            [control]="form.controls['nombre']"
-                            label="NOMBRE"
-                            placeholder="NOMBRE"
-                            [maxLength]="100"
-                            [trimEspacios]="true">
-                        </app-campoTexto>
-                    </div>
+                                <div class="col-12">
+                                    <app-campoTexto
+                                        [control]="form.controls['nombre']"
+                                        label="NOMBRE"
+                                        placeholder="NOMBRE"
+                                        [maxLength]="100"
+                                        [trimEspacios]="true">
+                                    </app-campoTexto>
+                                </div>
 
-                    <div class="col-6">
-                        <app-campoNumeroEntero
-                            [control]="form.controls['orden']"
-                            label="Orden"
-                            placeholder="Orden"
-                            [maxLength]="100">
-                        </app-campoNumeroEntero>
-                    </div>
+                                <!-- Orden y etiqueta comparten fila: son campos cortos -->
+                                <div class="col-5">
+                                    <app-campoNumeroEntero
+                                        [control]="form.controls['orden']"
+                                        label="Orden"
+                                        placeholder="Orden"
+                                        [maxLength]="100">
+                                    </app-campoNumeroEntero>
+                                </div>
 
-                    <div class="col-6">
-                        <app-campoTexto
-                            [control]="form.controls['etiqueta']"
-                            label="ETIQUETA"
-                            placeholder="ETIQUETA"
-                            [maxLength]="15"
-                            [trimEspacios]="true">
-                        </app-campoTexto>
-                    </div>
+                                <div class="col-7">
+                                    <app-campoTexto
+                                        [control]="form.controls['etiqueta']"
+                                        label="ETIQUETA"
+                                        placeholder="ETIQUETA"
+                                        [maxLength]="15"
+                                        [trimEspacios]="true">
+                                    </app-campoTexto>
+                                </div>
 
-                    <div class="col-12">
-                        <p class="campo-hint" *ngIf="disableLabel">
-                            <i class="fa-solid fa-lock"></i>
-                            La etiqueta solo se puede editar en los menús raíz.
-                        </p>
-                    </div>
+                                <div class="col-12" *ngIf="disableLabel">
+                                    <p class="campo-hint">
+                                        <i class="fa-solid fa-lock"></i>
+                                        La etiqueta solo se puede editar en los menús raíz.
+                                    </p>
+                                </div>
 
-                    <div class="col-12">
-                        <app-campoTexto
-                            [control]="form.controls['descripcion']"
-                            label="DESCRIPCION"
-                            placeholder="DESCRIPCION"
-                            [maxLength]="100">
-                        </app-campoTexto>
-                    </div>
+                                <div class="col-12">
+                                    <app-campoTexto
+                                        [control]="form.controls['descripcion']"
+                                        label="DESCRIPCION"
+                                        placeholder="DESCRIPCION"
+                                        [maxLength]="100">
+                                    </app-campoTexto>
+                                </div>
 
-                </div>
-            </div>
-        </div>
-
-        <!-- ---------- Navegación ---------- -->
-        <div class="form-card">
-
-            <div class="form-card__header">
-                <i class="fa-solid fa-link"></i>
-                <span>Navegación</span>
-            </div>
-
-            <div class="form-card__body">
-
-                <div class="mb-2">
-                    <app-campoTexto
-                        [control]="form.controls['url']"
-                        label="URL"
-                        placeholder="URL"
-                        [maxLength]="100"
-                        [trimEspacios]="true">
-                    </app-campoTexto>
-                    <p class="campo-hint">
-                        <i class="fa-solid fa-circle-info"></i>
-                        Ruta interna de la pantalla, por ejemplo <code>/seguridad/usuarios</code>.
-                    </p>
-                </div>
-
-                <div class="icono-row">
-                    <div class="icono-campo">
-                        <app-campoTexto
-                            [control]="form.controls['icono']"
-                            label="ICONO"
-                            placeholder="ICONO"
-                            [maxLength]="100"
-                            [trimEspacios]="true">
-                        </app-campoTexto>
-                    </div>
-
-                    <button type="button"
-                            class="icono-preview"
-                            [class.is-empty]="!iconoActual"
-                            [class.is-open]="mostrarSelectorIconos"
-                            (click)="mostrarSelectorIconos = !mostrarSelectorIconos"
-                            title="Elegir un icono de la lista">
-                        <i [ngClass]="iconoActual || 'fa-regular fa-image'"></i>
-                    </button>
-                </div>
-
-                <div class="icono-acciones">
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            (click)="mostrarSelectorIconos = !mostrarSelectorIconos">
-                        <i class="fa-solid" [ngClass]="mostrarSelectorIconos ? 'fa-chevron-up' : 'fa-icons'"></i>
-                        {{ mostrarSelectorIconos ? 'Cerrar lista' : 'Elegir icono de la lista' }}
-                    </button>
-
-                    <button type="button" class="btn btn-sm btn-link text-secondary"
-                            *ngIf="iconoActual" (click)="limpiarIcono()">
-                        Quitar
-                    </button>
-                </div>
-
-                <p class="campo-hint campo-hint--alerta" *ngIf="iconoNoDisponible">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    Este icono no se mostrará: la aplicación no carga los iconos <code>bi</code>. Elige uno de la lista.
-                </p>
-
-                <!-- ---------- Selector de iconos ---------- -->
-                <div class="icono-selector" *ngIf="mostrarSelectorIconos">
-
-                    <div class="icono-selector__buscador">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" class="form-control form-control-sm"
-                               placeholder="Buscar icono (usuario, factura, reporte…)"
-                               [(ngModel)]="filtroIcono" [ngModelOptions]="{ standalone: true }">
-                        <button type="button" class="icono-selector__cerrar"
-                                (click)="mostrarSelectorIconos = false" title="Cerrar">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-
-                    <div class="icono-selector__grupos">
-                        <button type="button" *ngFor="let grupo of gruposIconos"
-                                class="grupo-chip" [class.activo]="grupoIcono === grupo"
-                                (click)="grupoIcono = grupo">
-                            {{ grupo }}
-                        </button>
-                    </div>
-
-                    <div class="icono-selector__grid" *ngIf="iconosFiltrados.length > 0; else sinIconos">
-                        <button type="button" *ngFor="let icono of iconosFiltrados"
-                                class="icono-opcion"
-                                [class.activo]="iconoActual === icono.clase"
-                                [title]="icono.nombre + ' (' + icono.clase + ')'"
-                                (click)="seleccionarIcono(icono.clase)">
-                            <i [ngClass]="icono.clase"></i>
-                            <span>{{ icono.nombre }}</span>
-                        </button>
-                    </div>
-
-                    <ng-template #sinIconos>
-                        <div class="icono-selector__vacio">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                            Ningún icono coincide con «{{ filtroIcono }}»
+                            </div>
                         </div>
-                    </ng-template>
-
-                </div>
-
-                <p class="campo-hint" *ngIf="!mostrarSelectorIconos && !iconoNoDisponible">
-                    <i class="fa-solid fa-circle-info"></i>
-                    Elige un icono de la lista o escribe su clase, por ejemplo <code>fa-solid fa-users</code>.
-                </p>
-
+                    </ng-container>
+                </panel>
             </div>
+
+            <!-- ============ NAVEGACIÓN ============ -->
+            <div class="col-lg-7">
+                <panel
+                    headerClass="bg-gray-800"
+                    title="Navegación"
+                    noButton="true"
+                    noBody="true"
+                    panelClass="h-100 mb-0"
+                    icono="home"
+                    fondoGris="true">
+
+                    <ng-container outsideBody>
+                        <div class="form-card__body">
+
+                            <app-campoTexto
+                                [control]="form.controls['url']"
+                                label="URL"
+                                placeholder="URL"
+                                [maxLength]="100"
+                                [trimEspacios]="true">
+                            </app-campoTexto>
+
+                            <p class="campo-hint">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Ruta interna de la pantalla, por ejemplo <code>/seguridad/usuarios</code>.
+                            </p>
+
+                            <!-- ---------- Icono ---------- -->
+                            <div class="icono-row">
+                                <div class="icono-campo">
+                                    <app-campoTexto
+                                        [control]="form.controls['icono']"
+                                        label="ICONO"
+                                        placeholder="ICONO"
+                                        [maxLength]="100"
+                                        [trimEspacios]="true">
+                                    </app-campoTexto>
+                                </div>
+
+                                <!-- Abre el selector en su propio modal, para no
+                                     estirar este formulario. -->
+                                <button type="button"
+                                        class="icono-preview"
+                                        [class.is-empty]="!iconoActual"
+                                        (click)="abrirSelectorIconos()"
+                                        aria-label="Elegir un icono de la lista"
+                                        title="Elegir un icono de la lista">
+                                    <i [ngClass]="iconoActual || 'fa-regular fa-image'"></i>
+                                </button>
+                            </div>
+
+                            <div class="icono-acciones">
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        (click)="abrirSelectorIconos()">
+                                    <i class="fa-solid fa-icons"></i>
+                                    Elegir icono de la lista
+                                </button>
+
+                                <button type="button" class="btn btn-sm btn-link text-secondary"
+                                        *ngIf="iconoActual" (click)="limpiarIcono()">
+                                    Quitar
+                                </button>
+                            </div>
+
+                            <p class="campo-hint campo-hint--alerta" *ngIf="iconoNoDisponible">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Este icono no se mostrará: la aplicación no carga los iconos <code>bi</code>. Elige uno de la lista.
+                            </p>
+
+                            <p class="campo-hint" *ngIf="!iconoNoDisponible">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Elige un icono de la lista o escribe su clase, por ejemplo <code>fa-solid fa-users</code>.
+                            </p>
+
+                        </div>
+                    </ng-container>
+                </panel>
+            </div>
+
         </div>
 
     </form>

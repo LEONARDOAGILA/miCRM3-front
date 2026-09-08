@@ -1,44 +1,53 @@
+<!-- Se conserva el envoltorio .col-md: las pantallas que usan el combo lo
+     colocan en sus filas contando con que se comporte como columna. -->
 <div class="col-md">
+  <div class="combo">
 
-  <div class="form-floating combo-floating mb-3 mb-md-0"
-       [class.is-focused]="isFocused || isDropdownOpen"
-       [class.is-disabled]="disabled">
+    <div class="form-floating combo-floating"
+         [class.is-focused]="isFocused || isDropdownOpen"
+         [class.is-disabled]="disabled">
 
-    <ng-select
-      class="combo-select"
-      [items]="items"
-      [bindLabel]="bindLabel"
-      [bindValue]="bindValue"
-      [labelForId]="idCampo"
-      [disabled]="disabled"
-      [clearable]="!disabled"
-      [placeholder]="''"
-      [notFoundText]="'Sin resultados'"
-      [clearAllText]="'Limpiar'"
-      [(ngModel)]="value"
-      (ngModelChange)="onValueChange($event)"
-      (focus)="onFocus()"
-      (blur)="onBlur()"
-      (open)="onDropdownOpen()"
-      (close)="onDropdownClose()"
-      [ngClass]="{
-        'is-invalid': esInvalido,
-        'is-valid': esValido
-      }">
-    </ng-select>
+      <ng-select
+        class="combo-select"
+        [items]="items"
+        [bindLabel]="bindLabel"
+        [bindValue]="bindValue"
+        [labelForId]="idCampo"
+        [disabled]="disabled"
+        [clearable]="!disabled"
+        [placeholder]="''"
+        [notFoundText]="'Sin resultados'"
+        [clearAllText]="'Limpiar'"
+        [(ngModel)]="value"
+        (ngModelChange)="onValueChange($event)"
+        (focus)="onFocus()"
+        (blur)="onBlur()"
+        (open)="onDropdownOpen()"
+        (close)="onDropdownClose()"
+        [ngClass]="{
+          'is-invalid': esInvalido,
+          'is-valid': esValido
+        }">
+      </ng-select>
 
-    <label [for]="idCampo" class="combo-label d-flex align-items-center fs-13px" [class.active]="isFloating || !!value">
-      {{ label }}
-    </label>
+      <label [for]="idCampo" class="combo-label d-flex align-items-center py-0 fs-13px"
+             [class.active]="isFloating || !!value">
+        {{ label }}
+      </label>
+
+    </div>
+
+    <!-- Zona de mensajes, igual que en app-campoTexto.
+         Antes había aquí un <label class="col-form-label"> vacío que reservaba
+         espacio muerto; ahora el hueco lo reserva el CSS (min-height), así que
+         el formulario no salta cuando aparece el error. -->
+    <div class="combo__mensajes">
+      <small class="combo__error"
+             *ngIf="control?.hasError('required') && (control?.dirty || control?.touched)">
+        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+        Es requerido.
+      </small>
+    </div>
 
   </div>
-
-  <!-- Mensajes de error (mismo bloque que app-campoTexto) -->
-  <div class="input-group with-focus">
-    <label class="col-lg-12 col-form-label text-lg-left"></label>
-    <small class="text-danger msg-requerido" *ngIf="control?.hasError('required') && (control?.dirty || control?.touched)">
-      Es requerido.
-    </small>
-  </div>
-
 </div>

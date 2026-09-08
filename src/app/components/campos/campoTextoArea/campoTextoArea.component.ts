@@ -22,6 +22,14 @@ export class CampoTextoAreaComponent {
   @Input() soloLetras: boolean = false; // Parámetro para activar/desactivar
   @Input() trimEspacios: boolean = false; // Parámetro para activar/desactivar
 
+  /**
+   * Alto del área de texto en píxeles.
+   *
+   * Antes iba fijo en un style en línea de la plantilla; 90 mantiene el mismo
+   * tamaño de siempre, y ahora cada pantalla puede pedir uno mayor.
+   */
+  @Input() alto: number = 90;
+
   onInputChange(value: string) {
     this.valueChange.emit(value); // Emite el nuevo valor
   }

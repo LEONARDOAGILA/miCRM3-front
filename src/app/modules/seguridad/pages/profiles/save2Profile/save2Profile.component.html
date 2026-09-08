@@ -14,16 +14,23 @@
 <div class="modal-body perfil-modal-body">
 
     <!-- ---------- Datos del perfil ---------- -->
-    <div class="form-card mb-3">
+    <panel
+        headerClass="bg-gray-800"
+        title="Datos del perfil"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-3"
+        icono="shield"
+        fondoGris="true">
 
-        <div class="form-card__header">
-            <i class="fa-solid fa-user-shield"></i>
-            <span>Datos del perfil</span>
-            <span class="chip chip-muted ms-auto" *ngIf="isdisabled">
-                <i class="fa-solid fa-eye"></i> Solo lectura..
+        <!-- El slot [header] del panel deja meter contenido junto al título -->
+        <div header class="panel-acciones" *ngIf="isdisabled">
+            <span class="chip chip-muted">
+                <i class="fa-solid fa-eye"></i> Solo lectura
             </span>
         </div>
 
+        <ng-container outsideBody>
         <div class="form-card__body">
             <form [formGroup]="form" class="form-validate" novalidate>
                 <div class="row g-3 align-items-start">
@@ -81,20 +88,26 @@
                 </p>
             </form>
         </div>
-    </div>
+        </ng-container>
+    </panel>
 
     <!-- ---------- Permisos ---------- -->
-    <div class="form-card" *ngIf="profile">
+    <panel
+        *ngIf="profile"
+        headerClass="bg-gray-800"
+        title="Permisos por menú"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-0"
+        icono="clave"
+        fondoGris="true">
 
-        <div class="form-card__header permisos-header">
-            <i class="fa-solid fa-key"></i>
-            <span>Permisos por menú</span>
-
+        <div header class="panel-acciones permisos-header">
             <span class="chip chip-info" *ngIf="totalMenus">
                 {{ totalMenusActivos }} de {{ totalMenus }} habilitados
             </span>
 
-            <div class="permisos-buscador ms-auto">
+            <div class="permisos-buscador">
                 <app-campoBusqueda
                     [id]="'filter-text-box22'"
                     [placeholder]="'Buscar menú...'"
@@ -105,6 +118,10 @@
             </div>
         </div>
 
+        <ng-container outsideBody>
+
+        <!-- El ag-grid se mantiene tal cual: mismas columnas, mismo contexto
+             y los mismos manejadores de gridReady/cellClicked. -->
         <div class="perfil-grid">
             <ag-grid-angular
                 [rowData]="profile.acceso"
@@ -131,7 +148,8 @@
             Al marcar <strong>Ejecutar</strong> en un menú padre se propaga a sus hijos.
         </div>
 
-    </div>
+        </ng-container>
+    </panel>
 
 </div>
 

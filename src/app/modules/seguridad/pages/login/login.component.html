@@ -4,122 +4,134 @@
 </div>
 
 <!-- ===================== LOGIN ===================== -->
-<div class="login login-v1">
-  <div class="login-container">
+<!-- Layout partido al estilo "auth with image" de Color Admin: la imagen ocupa
+     el lado izquierdo y el formulario vive en un panel claro a la derecha.
+     Las clases van con prefijo propio (acceso-*) porque el tema instalado no
+     incluye las de .login-with-news-feed. -->
+<div class="acceso">
 
-    <!-- ---------- Cabecera ---------- -->
-    <div class="login-header">
-      <div class="brand">
-        <div class="d-flex align-items-center">
-          <span class="logo"></span>
-          <div>
-            Mi <b>Empresa</b>
-            <small>Sistema de gestión</small>
-          </div>
+  <!-- ---------- Lado de la imagen ---------- -->
+  <!-- aria-hidden: es decorativo, no aporta nada a quien usa lector de pantalla -->
+  <aside class="acceso__imagen" aria-hidden="true">
+    <div class="acceso__velo"></div>
+
+    <div class="acceso__leyenda">
+      <h2 class="acceso__leyenda-titulo">Gestiona tu operación en un solo lugar</h2>
+      <p class="acceso__leyenda-texto">
+        Clientes, inventarios, reportes y seguridad, con trazabilidad completa
+        de cada movimiento.
+      </p>
+    </div>
+  </aside>
+
+  <!-- ---------- Lado del formulario ---------- -->
+  <main class="acceso__panel">
+    <div class="acceso__contenido">
+
+      <!-- Marca -->
+      <div class="acceso__marca">
+        <span class="acceso__logo" aria-hidden="true">
+          <i class="fa fa-cubes"></i>
+        </span>
+        <div class="acceso__marca-texto">
+          <span class="acceso__marca-nombre">Mi <b>Empresa</b></span>
+          <small class="acceso__marca-lema">Sistema de gestión</small>
         </div>
       </div>
-      <div class="icon">
-        <i class="fa fa-lock" aria-hidden="true"></i>
-      </div>
-    </div>
 
-    <!-- ---------- Cuerpo ---------- -->
-    <div class="login-body">
-      <div class="login-content fs-13px">
+      <!-- Encabezado -->
+      <h1 class="acceso__titulo">Iniciar sesión</h1>
+      <p class="acceso__ayuda">Ingrese sus credenciales para continuar</p>
 
-        <!-- (ngSubmit) para que Enter también inicie sesión -->
-        <form class="login-card"
-              [formGroup]="loginForm"
-              (ngSubmit)="submit()"
-              autocomplete="off"
-              novalidate>
+      <!-- (ngSubmit) para que Enter también inicie sesión -->
+      <form class="acceso__form"
+            [formGroup]="loginForm"
+            (ngSubmit)="submit()"
+            autocomplete="off"
+            novalidate>
 
-          <h1 class="login-card__titulo">Iniciar sesión</h1>
-          <p class="login-card__ayuda">Ingrese sus credenciales para continuar</p>
+        <!-- Usuario -->
+        <div class="form-floating login-campo">
+          <input type="text"
+                 id="login_user"
+                 formControlName="login_user"
+                 class="form-control fs-13px h-45px"
+                 placeholder="Usuario"
+                 autocomplete="off"
+                 data-lpignore="true"
+                 data-1p-ignore
+                 data-form-type="other"
+                 required
+                 [class.is-invalid]="campoInvalido('login_user')"
+                 [appMayusculas]="true"
+                 [appTrimEspacios]="true"
+                 [appNoEspacios]="true" />
+          <label for="login_user" class="d-flex align-items-center py-0">Usuario</label>
+          <i class="fa fa-user login-campo__icono" aria-hidden="true"></i>
+        </div>
 
-          <!-- Usuario -->
-          <div class="form-floating login-campo">
-            <input type="text"
-                   id="login_user"
-                   formControlName="login_user"
-                   class="form-control fs-13px h-45px"
-                   placeholder="Usuario"
-                   autocomplete="off"
-                   data-lpignore="true"
-                   data-1p-ignore
-                   data-form-type="other"
-                   required
-                   [class.is-invalid]="campoInvalido('login_user')"
-                   [appMayusculas]="true"
-                   [appTrimEspacios]="true"
-                   [appNoEspacios]="true" />
-            <label for="login_user" class="d-flex align-items-center py-0">Usuario</label>
-            <i class="fa fa-user login-campo__icono" aria-hidden="true"></i>
-          </div>
+        <div class="login-error" *ngIf="campoInvalido('login_user')">
+          <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i> Ingrese su usuario
+        </div>
 
-          <div class="login-error" *ngIf="campoInvalido('login_user')">
-            <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i> Ingrese su usuario
-          </div>
+        <!-- Contraseña -->
+        <!-- IMPORTANTE: type="text" a propósito, nunca type="password".
+             Los navegadores ignoran autocomplete="off" en los campos de
+             contraseña, así que la única forma fiable de que no ofrezcan
+             guardarla ni la autocompleten es que no la reconozcan como tal.
+             El ocultado lo hace el CSS (.password-mask), y el ojo alterna esa
+             clase — el type NUNCA cambia, para no delatar el campo. -->
+        <div class="form-floating login-campo login-campo--clave">
+          <input type="text"
+                 id="login_password"
+                 formControlName="password"
+                 class="form-control fs-13px h-45px"
+                 [class.password-mask]="!mostrarPassword"
+                 placeholder="Contraseña"
+                 autocomplete="off"
+                 data-lpignore="true"
+                 data-1p-ignore
+                 data-form-type="other"
+                 required
+                 [class.is-invalid]="campoInvalido('password')" />
+          <label for="login_password" class="d-flex align-items-center py-0">Contraseña</label>
 
-          <!-- Contraseña -->
-          <!-- IMPORTANTE: type="text" a propósito, nunca type="password".
-               Los navegadores ignoran autocomplete="off" en los campos de
-               contraseña, así que la única forma fiable de que no ofrezcan
-               guardarla ni la autocompleten es que no la reconozcan como tal.
-               El ocultado lo hace el CSS (.password-mask), y el ojo alterna esa
-               clase — el type NUNCA cambia, para no delatar el campo. -->
-          <div class="form-floating login-campo login-campo--clave">
-            <input type="text"
-                   id="login_password"
-                   formControlName="password"
-                   class="form-control fs-13px h-45px"
-                   [class.password-mask]="!mostrarPassword"
-                   placeholder="Contraseña"
-                   autocomplete="off"
-                   data-lpignore="true"
-                   data-1p-ignore
-                   data-form-type="other"
-                   required
-                   [class.is-invalid]="campoInvalido('password')" />
-            <label for="login_password" class="d-flex align-items-center py-0">Contraseña</label>
-
-            <button type="button"
-                    class="login-campo__ojo"
-                    (click)="mostrarPassword = !mostrarPassword"
-                    [attr.aria-label]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-                    [attr.aria-pressed]="mostrarPassword"
-                    [title]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
-              <i class="fa" [class.fa-eye]="!mostrarPassword" [class.fa-eye-slash]="mostrarPassword"
-                 aria-hidden="true"></i>
-            </button>
-          </div>
-
-          <div class="login-error" *ngIf="campoInvalido('password')">
-            <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i> Ingrese su contraseña
-          </div>
-
-          <!-- Acciones -->
-          <button type="submit"
-                  class="btn btn-success h-45px w-100 login-boton"
-                  [disabled]="isLoading">
-            <span *ngIf="!isLoading">
-              <i class="fa fa-right-to-bracket fa-fw me-1" aria-hidden="true"></i> Iniciar sesión
-            </span>
-            <span *ngIf="isLoading">
-              <i class="fa fa-circle-notch fa-spin fa-fw me-1" aria-hidden="true"></i> Verificando…
-            </span>
+          <button type="button"
+                  class="login-campo__ojo"
+                  (click)="mostrarPassword = !mostrarPassword"
+                  [attr.aria-label]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                  [attr.aria-pressed]="mostrarPassword"
+                  [title]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+            <i class="fa" [class.fa-eye]="!mostrarPassword" [class.fa-eye-slash]="mostrarPassword"
+               aria-hidden="true"></i>
           </button>
+        </div>
 
-          <div class="login-card__pie">
-            <button type="button" class="btn btn-link login-enlace" (click)="abrirOlvideContrasena()">
-              <i class="fa fa-question-circle fa-fw" aria-hidden="true"></i> ¿Olvidaste tu contraseña?
-            </button>
-          </div>
+        <div class="login-error" *ngIf="campoInvalido('password')">
+          <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i> Ingrese su contraseña
+        </div>
 
-        </form>
+        <!-- Acciones -->
+        <button type="submit"
+                class="btn btn-success h-45px w-100 login-boton"
+                [disabled]="isLoading">
+          <span *ngIf="!isLoading">
+            <i class="fa fa-right-to-bracket fa-fw me-1" aria-hidden="true"></i> Iniciar sesión
+          </span>
+          <span *ngIf="isLoading">
+            <i class="fa fa-circle-notch fa-spin fa-fw me-1" aria-hidden="true"></i> Verificando…
+          </span>
+        </button>
 
-      </div>
+        <div class="acceso__pie">
+          <button type="button" class="btn btn-link login-enlace" (click)="abrirOlvideContrasena()">
+            <i class="fa fa-question-circle fa-fw" aria-hidden="true"></i> ¿Olvidaste tu contraseña?
+          </button>
+        </div>
+
+      </form>
+
     </div>
+  </main>
 
-  </div>
 </div>

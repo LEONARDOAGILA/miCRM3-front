@@ -2,8 +2,14 @@
 :host {
   display: block;
   --su-radius: .5rem;
-  --su-gap: .85rem;
-  --su-field-h: calc(3.5rem + 2px); /* alto real de un .form-floating */
+
+  /* Único hueco vertical entre campos. El mensaje de validación se posiciona
+     DENTRO de este espacio, así que tiene que caber una línea de 12px.
+     Antes cada campo reservaba además su propia línea, y entre los dos
+     sumaban ~44px de separación: el formulario ocupaba el doble de alto. */
+  --su-gap: 1.25rem;
+
+  --su-field-h: 45px;               /* alto real de un campo */
 }
 
 .form-card__body {
@@ -280,12 +286,16 @@
 /* ============================================================
    CAMPOS DEL FORMULARIO
    ============================================================ */
+/* Cada campo ya trae su propio hueco (margin-bottom en el componente), y ahí
+   dentro cae su mensaje de validación. Añadir otro margen aquí era lo que
+   duplicaba la separación entre filas. Sólo lo llevan los bloques que NO son
+   un campo, como el generador de contraseña. */
 .campo {
-  margin-bottom: var(--su-gap);
+  margin-bottom: 0;
 }
 
 .campo:last-child {
-  margin-bottom: .5rem;
+  margin-bottom: 0;
 }
 
 :host ::ng-deep app-campoTexto,
@@ -297,39 +307,10 @@
   display: block;
 }
 
-:host ::ng-deep .campo .form-floating {
-  margin-bottom: 0 !important;
-}
-
-:host ::ng-deep .campo .input-group.with-focus {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin: 0;
-  min-height: 0;
-}
-
-:host ::ng-deep .campo .input-group.with-focus > label.col-form-label {
-  display: none;
-}
-
-:host ::ng-deep .campo .msg-requerido {
-  display: block;
-  margin-top: .25rem;
-  font-size: .7rem;
-  line-height: 1.3;
-}
-
-/* ng-select (combo) */
-:host ::ng-deep .campo-combo .floating-control {
-  margin-bottom: 0 !important;
-}
-
-:host ::ng-deep .campo-combo .ng-select-text-danger {
-  margin-top: .25rem !important;
-  margin-bottom: 0 !important;
-  font-size: .7rem;
-}
+/* Aquí había cuatro reglas ::ng-deep que tapaban el <label> vacío y el
+   .input-group.with-focus que los campos usaban para sus mensajes. Esa
+   estructura ya no existe: ahora el mensaje va posicionado dentro del hueco
+   que deja --su-gap, así que las reglas sobraban. */
 
 /* ---------- Campos con búsqueda (ID + nombre + lupa) ---------- */
 .campo-lookup .row {

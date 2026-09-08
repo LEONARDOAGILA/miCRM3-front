@@ -1,12 +1,26 @@
-<div class="modal-footer">
-  <div class="restar-buttons">
-    <button class="btn btn-danger equal-width-button" type="button" (click)="handleClose()">
-      <i class="bi bi-x-circle"><span class="m-2">Salir</span></i>
-    </button>
-  </div>
-  <div class="save-buttons" *ngIf="isDisabled">
-    <button class="btn btn-primary equal-width-button" type="submit" (click)="handleSubmit($event)">
-      <i class="bi bi-save"><span class="m-2">Guardar</span></i>
-    </button>
-  </div>
+<div class="modal-footer pie-modal">
+
+  <!-- type="button" a propósito: el pie va siempre FUERA del <form> en las 13
+       pantallas que lo usan, así que type="submit" no enviaba nada; y si algún
+       día se mete dentro, evita que se dispare dos veces (submit nativo + el
+       (onSubmit) del componente). -->
+  <button type="button"
+          class="btn btn-danger pie-modal__boton"
+          [disabled]="cargando"
+          (click)="handleClose()">
+    <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>
+    <span>{{ textoCerrar }}</span>
+  </button>
+
+  <button type="button"
+          *ngIf="isDisabled"
+          class="btn btn-primary pie-modal__boton"
+          [disabled]="cargando"
+          (click)="handleSubmit($event)">
+    <i class="fa fa-fw me-1"
+       [ngClass]="cargando ? 'fa-circle-notch fa-spin' : 'fa-save'"
+       aria-hidden="true"></i>
+    <span>{{ cargando ? 'Guardando…' : textoGuardar }}</span>
+  </button>
+
 </div>

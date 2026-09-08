@@ -1,16 +1,22 @@
-/* En styles.css o global.css */
+/* ============================================================
+   CAMPO DE CONTRASEÑA
+
+   Mismo lenguaje visual que app-campoTexto: campo de 45px y
+   anillo de foco con el color de la aplicación, más la lista de
+   requisitos y la barra de fortaleza propias del componente.
+   ============================================================ */
+
+/* Chrome pinta un fondo amarillo al autocompletar. El truco del box-shadow
+   interior lo tapa; antes forzaba blanco fijo, ahora usa el color del tema
+   para no romper el modo oscuro. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px white inset !important;
-  box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--bs-component-bg, #fff) inset !important;
+  box-shadow: 0 0 0 1000px var(--bs-component-bg, #fff) inset !important;
+  -webkit-text-fill-color: var(--bs-component-color, #212529) !important;
   transition: background-color 9999s ease-in-out 0s;
-}
-
-/* Para campos de contraseña */
-input[type="password"]:-webkit-autofill {
-  -webkit-text-security: disc !important;
 }
 
 /* ---------- Ocultado de la contraseña ---------- */
@@ -34,39 +40,109 @@ input[type="password"]:-webkit-autofill {
   }
 }
 
-
-/* Ajustar la posición del campo floating */
-.form-floating {
+/* ---------- Campo ---------- */
+.campo-clave {
   position: relative;
+
+  /* Mismo hueco que el resto de campos, para que el ritmo vertical del
+     formulario sea uniforme. */
+  margin-bottom: 1.25rem;
 }
 
-/* Ajustar el padding derecho del input para evitar superposición */
-.form-floating input {
-  padding-right: 70px !important;
+/* Sitio para el ojo. Antes eran 70px (y 90px con error), medidos para el campo
+   de 58px y para el icono de validación de Bootstrap, que aquí se quita. */
+.campo-clave .form-control {
+  padding-right: 2.5rem;
+  border-color: var(--bs-border-color, #dee2e6);
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-/* Botón de mostrar/ocultar contraseña */
+/* El tema deja el foco sin marca (box-shadow: none); se devuelve el anillo */
+.campo-clave .form-control:focus {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+}
+
+.campo-clave .form-control:disabled,
+.campo-clave .form-control[readonly] {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  opacity: 1;                         /* Safari los aclara de más */
+}
+
+/* ---------- Reparto vertical para 45px ---------- */
+/* Bootstrap calcula el relleno del estado flotante para su altura por defecto
+   de 58px: 1.625rem arriba + .625rem abajo. En un campo de 45px eso deja unos
+   7px de caja para el texto. Aquí se recalcula. */
+.campo-clave .form-control:focus,
+.campo-clave .form-control:not(:placeholder-shown) {
+  padding-top: 1.25rem;
+  padding-bottom: .25rem;
+}
+
+.campo-clave > label {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-clave > .form-control:focus ~ label,
+.campo-clave > .form-control:not(:placeholder-shown) ~ label {
+  transform: scale(.85) translateY(-.75rem) translateX(.15rem);
+}
+
+/* ---------- Validación ---------- */
+/* Bootstrap mete un icono de fondo dentro del campo; sobra porque los
+   requisitos van debajo y chocaría con el ojo. */
+.campo-clave .form-control.is-invalid {
+  border-color: var(--bs-danger, #dc3545);
+  background-image: none;
+  padding-right: 2.5rem;
+}
+
+.campo-clave .form-control.is-invalid:focus {
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-danger-rgb, 220, 53, 69), .15);
+}
+
+/* ---------- Ver / ocultar contraseña ---------- */
+/* Mismo botón que el de la pantalla de login */
 .password-toggle-btn {
   position: absolute;
-  right: 12px;
   top: 50%;
+  right: .5rem;
   transform: translateY(-50%);
   z-index: 10;
-  background: transparent;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2rem;
+  height: 2rem;
+
+  padding: 0;
   border: none;
-  color: #6c757d;
+  border-radius: .375rem;
+
+  background: none;
+  color: var(--bs-secondary-color, #adb5bd);
+  font-size: .8125rem;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 4px;
+
+  transition: color .15s ease, background-color .15s ease;
 }
 
-.password-toggle-btn:hover {
-  color: #0d6efd;
+.password-toggle-btn:hover,
+.password-toggle-btn:focus-visible {
+  color: var(--bs-component-color, #212529);
+  background-color: var(--bs-secondary-bg, #f1f3f5);
 }
 
-/* Ajuste cuando el campo tiene error */
-.form-floating .is-invalid {
-  padding-right: 90px !important;
-  background-image: none;
+/* ---------- Requisitos y barra de fortaleza ---------- */
+:host ::ng-deep .progress {
+  background-color: var(--bs-secondary-bg, #e9ecef);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .campo-clave .form-control,
+  .password-toggle-btn {
+    transition: none;
+  }
+}

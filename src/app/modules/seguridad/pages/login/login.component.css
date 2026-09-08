@@ -1,82 +1,183 @@
 /* ============================================================
-   LOGIN
-   El tema Color Admin ya trae .login.login-v1 (alto completo,
-   fondo #2d353c, cabecera y contenido a 400px). Aquí sólo se
-   añade lo que no cubre: el fondo, la tarjeta del formulario,
-   los estados de validación y el botón de ver contraseña.
+   LOGIN — layout partido "auth with image", en modo oscuro
 
-   Es un diseño oscuro fijo: el tema no le da variante clara.
+   Imagen a la izquierda, formulario en panel oscuro a la derecha.
+   El tema instalado NO trae las clases .login-with-news-feed de
+   Color Admin, así que la maquetación va con prefijo propio
+   (acceso-*) y no depende de nada del tema.
+
+   Sólo cambia la presentación: el marcado conserva los mismos
+   controles, directivas y clases funcionales (.password-mask).
+
+   La paleta va en variables al principio: cambiando esas seis
+   líneas se ajusta todo el tono de la pantalla.
    ============================================================ */
 
 :host {
   display: block;
 }
 
-/* ---------- Fondo ---------- */
-/* El tema pinta `background-image` y en la regla siguiente lo anula con el
-   atajo `background: #2d353c`, así que la pantalla quedaba en un gris plano.
-   Se recupera profundidad con dos radiales sobre ese mismo color base.
-   Para usar una foto en su lugar:
-     background-image: linear-gradient(rgba(19,23,26,.88), rgba(19,23,26,.94)),
-                       url('/assets/img/login-bg/login-bg-11.jpg');
-     background-size: cover;
-     background-position: center; */
-:host ::ng-deep .login.login-v1 {
-  background-color: #232a30;
-  background-image:
-    radial-gradient(1200px 600px at 15% 10%, rgba(0, 172, 172, .18), transparent 60%),
-    radial-gradient(900px 500px at 85% 90%, rgba(52, 143, 226, .16), transparent 60%);
+.acceso {
+  /* ---------- Paleta oscura ---------- */
+  --acceso-fondo: #1a2027;              /* panel del formulario */
+  --acceso-superficie: #232c34;         /* campos */
+  --acceso-superficie-alta: #2b353e;    /* campos con el foco puesto */
+  --acceso-borde: rgba(255, 255, 255, .10);
+  --acceso-borde-fuerte: rgba(255, 255, 255, .18);
+  --acceso-texto: #e9ecef;
+  --acceso-texto-tenue: #8b949e;
+  --acceso-peligro: #ff8a85;            /* rojo aclarado: el #dc3545 sobre
+                                           fondo oscuro no da contraste */
+
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;          /* evita el salto por la barra del navegador móvil */
+  background-color: var(--acceso-fondo);
+}
+
+/* ============================================================
+   LADO IZQUIERDO — imagen
+   ============================================================ */
+.acceso__imagen {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-end;
+
+  background-image: url('/assets/img/login-bg/login-bg-11.jpg');
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
 }
 
-/* ---------- Cabecera ---------- */
-:host ::ng-deep .login.login-v1 .login-header {
-  margin-bottom: 1rem;
+/* Velo oscuro: sin él el texto de la leyenda no se lee sobre según qué zona
+   de la foto, y el contraste dependería de la imagen que se ponga.
+   Se cierra hacia el color del panel para que la unión entre los dos lados
+   no se vea como un corte. */
+.acceso__velo {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(26, 32, 39, .30) 0%,
+    rgba(26, 32, 39, .62) 55%,
+    rgba(26, 32, 39, .92) 100%
+  );
 }
 
-/* El tema ya estiliza .brand .logo como un cuadrado con el color de la app */
-:host ::ng-deep .login.login-v1 .login-header .brand b {
+.acceso__leyenda {
+  position: relative;          /* por encima del velo */
+  padding: 3rem;
+  max-width: 34rem;
+  color: #fff;
+}
+
+.acceso__leyenda-titulo {
+  margin: 0 0 .75rem;
+  font-size: 1.75rem;
   font-weight: 600;
+  line-height: 1.25;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .5);
 }
 
-/* ---------- Tarjeta del formulario ---------- */
-/* El formulario iba suelto sobre el fondo; una tarjeta lo separa y centra
-   la atención. backdrop-filter degrada solo si el navegador no lo soporta. */
-.login-card {
-  padding: 1.75rem 1.5rem 1.25rem;
-
-  background-color: rgba(45, 53, 60, .85);
-  backdrop-filter: blur(10px);
-
-  border: 1px solid rgba(255, 255, 255, .08);
-  border-radius: .75rem;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
+.acceso__leyenda-texto {
+  margin: 0;
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, .82);
 }
 
-.login-card__titulo {
-  margin: 0 0 .15rem;
+/* ============================================================
+   LADO DERECHO — formulario
+   ============================================================ */
+.acceso__panel {
+  flex: 0 0 30rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2.5rem;
+  background-color: var(--acceso-fondo);
+  overflow-y: auto;            /* pantallas bajas: hace scroll el panel, no la página */
+}
+
+.acceso__contenido {
+  width: 100%;
+  max-width: 22.5rem;
+}
+
+/* ---------- Marca ---------- */
+.acceso__marca {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 2.5rem;
+}
+
+.acceso__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: .625rem;
+
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
   font-size: 1.125rem;
+}
+
+.acceso__marca-texto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.acceso__marca-nombre {
+  font-size: 1.0625rem;
+  font-weight: 400;
+  color: var(--acceso-texto);
+}
+
+.acceso__marca-nombre b {
+  font-weight: 700;
+}
+
+.acceso__marca-lema {
+  font-size: .75rem;
+  color: var(--acceso-texto-tenue);
+}
+
+/* ---------- Encabezado ---------- */
+.acceso__titulo {
+  margin: 0 0 .25rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: #fff;
 }
 
-.login-card__ayuda {
-  margin: 0 0 1.25rem;
-  font-size: .75rem;
-  color: #adb5bd;
+.acceso__ayuda {
+  margin: 0 0 1.75rem;
+  font-size: .8125rem;
+  color: var(--acceso-texto-tenue);
 }
 
-.login-card__pie {
-  margin-top: .75rem;
-  padding-top: .75rem;
-  border-top: 1px solid rgba(255, 255, 255, .08);
+/* ---------- Pie ---------- */
+.acceso__pie {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--acceso-borde);
   text-align: center;
 }
 
-/* ---------- Campos ---------- */
+/* ============================================================
+   CAMPOS
+   ============================================================ */
 .login-campo {
   position: relative;
-  margin-bottom: .75rem;
+  margin-bottom: 1rem;
 }
 
 /* Icono decorativo a la derecha del campo de usuario */
@@ -87,29 +188,50 @@
   transform: translateY(-50%);
 
   font-size: .8125rem;
-  color: #6c757d;
+  color: var(--acceso-texto-tenue);
   pointer-events: none;
 }
 
 .login-campo .form-control {
-  padding-right: 2.5rem;
-  transition: box-shadow .15s ease, background-color .15s ease;
+  padding-right: 2.75rem;
+
+  background-color: var(--acceso-superficie);
+  border-color: var(--acceso-borde-fuerte);
+  color: var(--acceso-texto);
+
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
 }
 
-/* El tema deja el foco sin marca (`box-shadow: none`): se devuelve un anillo */
-:host ::ng-deep .login.login-v1 .login-content .form-control:focus {
-  background-color: #525a61;
-  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .3);
+/* Bootstrap reimpone su fondo claro al enfocar; hay que sostener el oscuro */
+.login-campo .form-control:focus {
+  background-color: var(--acceso-superficie-alta);
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--acceso-texto);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .25);
+}
+
+/* La etiqueta flotante va sobre el campo: sin esto se lee negra sobre oscuro */
+.login-campo > label {
+  color: var(--acceso-texto-tenue);
 }
 
 .login-campo .form-control.is-invalid {
-  box-shadow: 0 0 0 .2rem rgba(var(--bs-danger-rgb, 220, 53, 69), .25);
-}
-
-/* Bootstrap añade su propio icono de error dentro del campo; sobra porque
-   el mensaje ya va debajo y chocaría con el ojo de la contraseña */
-.login-campo .form-control.is-invalid {
+  border-color: var(--acceso-peligro);
+  box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .25);
+  /* Bootstrap mete su propio icono de error dentro del campo; sobra porque el
+     mensaje ya va debajo y chocaría con el ojo de la contraseña. */
   background-image: none;
+}
+
+/* Chrome pinta un fondo amarillo al autocompletar y se carga el modo oscuro.
+   El box-shadow interior lo tapa y text-fill-color mantiene el texto claro. */
+.login-campo .form-control:-webkit-autofill,
+.login-campo .form-control:-webkit-autofill:hover,
+.login-campo .form-control:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--acceso-superficie) inset !important;
+  box-shadow: 0 0 0 1000px var(--acceso-superficie) inset !important;
+  -webkit-text-fill-color: var(--acceso-texto) !important;
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 /* ---------- Ocultado de la contraseña ---------- */
@@ -119,10 +241,7 @@
    hace esta clase, que el ojo activa y desactiva.
 
    OJO: -webkit-text-security es una propiedad no estándar. Cubre Chrome,
-   Edge, Safari y Opera. Si necesitas cubrir Firefox con garantías hace falta
-   una fuente de discos real (paquete npm `text-security`); la declaración
-   font-family que había antes en este archivo no hacía nada porque esa fuente
-   no está definida en ningún @font-face del proyecto. */
+   Edge, Safari, Opera y Firefox 119+. */
 .password-mask {
   -webkit-text-security: disc;
 }
@@ -154,7 +273,7 @@
   border-radius: .375rem;
 
   background: none;
-  color: #adb5bd;
+  color: var(--acceso-texto-tenue);
   font-size: .8125rem;
   cursor: pointer;
 
@@ -173,15 +292,15 @@
   align-items: center;
   gap: .25rem;
 
-  margin: -.5rem 0 .625rem .125rem;
+  margin: -.625rem 0 .875rem .125rem;
 
-  font-size: .6875rem;
-  color: var(--bs-danger-text-emphasis, #ff9c9a);
+  font-size: .75rem;
+  color: var(--acceso-peligro);
 }
 
 /* ---------- Botón principal ---------- */
 .login-boton {
-  margin-top: .25rem;
+  margin-top: .5rem;
   font-weight: 600;
   letter-spacing: .01em;
 }
@@ -194,25 +313,96 @@
 /* ---------- Enlace de recuperación ---------- */
 .login-enlace {
   padding: 0;
-  font-size: .75rem;
-  color: #adb5bd;
+  font-size: .8125rem;
+  color: var(--acceso-texto-tenue);
   text-decoration: none;
 }
 
 .login-enlace:hover,
 .login-enlace:focus-visible {
-  color: #fff;
+  color: var(--bs-app-theme, #00acac);
   text-decoration: underline;
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 575.98px) {
-  .login-card {
-    padding: 1.25rem 1rem 1rem;
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* Tablet: el panel deja de ser fijo para que la imagen no se coma la pantalla */
+@media (max-width: 1199.98px) {
+  .acceso__panel {
+    flex: 0 0 26rem;
+    padding: 2rem;
   }
 
-  .login-card__titulo {
-    font-size: 1rem;
+  .acceso__leyenda {
+    padding: 2.5rem;
+  }
+
+  .acceso__leyenda-titulo {
+    font-size: 1.5rem;
+  }
+}
+
+/* Móvil: la imagen pasa a ser el fondo del formulario. Ocultarla del todo
+   dejaría una pantalla plana sin identidad. */
+@media (max-width: 991.98px) {
+  .acceso {
+    position: relative;
+  }
+
+  .acceso__imagen {
+    position: absolute;
+    inset: 0;
+    align-items: stretch;
+  }
+
+  /* Sobre la foto hace falta bastante más velo para que la tarjeta destaque */
+  .acceso__velo {
+    background: linear-gradient(
+      to bottom,
+      rgba(26, 32, 39, .86) 0%,
+      rgba(26, 32, 39, .94) 100%
+    );
+  }
+
+  .acceso__leyenda {
+    display: none;
+  }
+
+  .acceso__panel {
+    position: relative;        /* por encima de la imagen */
+    flex: 1 1 auto;
+    padding: 1.5rem;
+    background-color: transparent;
+  }
+
+  /* La tarjeta se separa del fondo con un borde claro, porque sobre una
+     imagen ya oscurecida el contraste de color por sí solo no basta. */
+  .acceso__contenido {
+    padding: 2rem 1.75rem;
+    border: 1px solid var(--acceso-borde);
+    border-radius: .75rem;
+    background-color: var(--acceso-fondo);
+    box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, .5);
+  }
+
+  .acceso__marca {
+    margin-bottom: 1.75rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .acceso__panel {
+    padding: 1rem;
+  }
+
+  .acceso__contenido {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .acceso__titulo {
+    font-size: 1.25rem;
   }
 }
 

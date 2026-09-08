@@ -24,6 +24,14 @@ export class CampoTextoComponent   {
   @Input() trimEspacios: boolean = false; // Parámetro para activar/desactivar
 
   /**
+   * Icono decorativo opcional a la derecha del campo, con las clases de Font
+   * Awesome (por ejemplo 'fa-user' o 'fa-envelope').
+   *
+   * Vacío por defecto: los campos que no lo indiquen se ven igual que siempre.
+   */
+  @Input() icono: string = '';
+
+  /**
    * Impide que el navegador y los gestores de contraseñas ofrezcan valores
    * guardados sobre este campo.
    *
