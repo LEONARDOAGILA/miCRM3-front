@@ -31,7 +31,10 @@
           tabindex="-1"
           aria-label="Limpiar el correo"
           title="Limpiar">
-          <i class="fa fa-times-circle" aria-hidden="true"></i>
+          <!-- Mismo signo que usa el ng-select de app-combo para limpiar
+               (el carácter ×, no un icono), para que los dos campos se
+               vean igual. -->
+          <span class="campo-email__limpiar-x" aria-hidden="true">&times;</span>
         </button>
       }
 

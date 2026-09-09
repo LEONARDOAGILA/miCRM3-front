@@ -23,7 +23,7 @@
 		<!-- END profile-header-content -->
 		
 		<!-- BEGIN profile-header-tab - Tabs con borde superior e inferior -->
-		<ul class="profile-header-tab nav nav-tabs flex-nowrap overflow-auto border py-0" role="tablist" style="border-color: #e9e7e7 !important; border-top-width: 1px; border-bottom-width: 1px;">
+		<ul class="profile-header-tab nav nav-tabs flex-nowrap overflow-auto border py-0" role="tablist" >
 			<li class="nav-item flex-shrink-0" role="presentation">
 				<button class="nav-link active" id="profile-post-tab" data-bs-toggle="tab" data-bs-target="#profile-post" type="button" role="tab" aria-controls="profile-post" aria-selected="true">
 					<i class="fa fa-th-large me-1"></i>
@@ -256,7 +256,9 @@
 </div>
 
 <!-- BEGIN #footer - Versión con clases Bootstrap nativas -->
-<div id="footer" class="app-footer m-0 py-2 bg-light border-top">
+<!-- d-md-none: solo se muestra por debajo de 768px, el mismo corte que ya usan
+     los ajustes de este pie en home.scss -->
+<div id="footer" class="app-footer m-0 py-2 bg-light border-top d-md-none">
 	<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-3">
 		<div>
 			<span class="small text-muted">&copy;IUNIX CRM/ERP®</span>
@@ -265,9 +267,9 @@
 			<div class="vr d-none d-md-block text-secondary"></div>
 			<div class="d-flex align-items-center gap-2">
 				<i class="fa fa-calendar text-primary"></i>
-				<span class="small text-dark">{{ fechaActual }}</span>
+				<span class="small text-dark"> {{ today | date:'EEEE, dd/MM/yyyy' }}</span>
 				<i class="fa fa-clock text-warning ms-2"></i>
-				<span class="small fw-semibold text-dark">{{ horaActual }}</span>
+				<span class="small fw-semibold text-dark">{{ today | date:'HH:mm' }}</span>
 			</div>
 		</div>
 	</div>

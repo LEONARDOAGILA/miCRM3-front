@@ -143,3 +143,51 @@
     transition: none;
   }
 }
+
+/* ---------- Botón de limpiar ---------- */
+/* Mismo botón y mismo signo × que app-campoEmail y el ng-select de app-combo,
+   para que todos los campos se vacíen igual. */
+.campo-texto__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .5rem;
+  transform: translateY(-50%);
+  z-index: 3;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2rem;
+  height: 2rem;
+
+  padding: 0;
+  border: none;
+  border-radius: .375rem;
+
+  background: none;
+  color: var(--bs-secondary-color, #6c757d);
+  cursor: pointer;
+
+  transition: color .15s ease, background-color .15s ease;
+}
+
+.campo-texto__limpiar-x {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+  pointer-events: none;          /* que el clic lo reciba siempre el botón */
+}
+
+.campo-texto__limpiar:hover,
+.campo-texto__limpiar:focus-visible {
+  color: var(--bs-danger, #dc3545);
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+}
+
+/* Sitio para la × dentro del campo */
+.campo-texto .form-control,
+.campo-texto .form-control.is-invalid,
+.campo-texto .form-control.is-valid {
+  padding-right: 2.5rem;
+}

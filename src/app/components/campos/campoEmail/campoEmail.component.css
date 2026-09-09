@@ -88,11 +88,19 @@
   border-radius: .375rem;
 
   background: none;
-  color: var(--bs-secondary-color, #adb5bd);
-  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
   cursor: pointer;
 
   transition: color .15s ease, background-color .15s ease;
+}
+
+/* El signo × con el mismo tamaño y peso que le da app-combo a su .ng-clear,
+   para que los dos campos limpien con el mismo botón. */
+.campo-email__limpiar-x {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+  pointer-events: none;          /* que el clic lo reciba siempre el botón */
 }
 
 .campo-email__limpiar:hover,

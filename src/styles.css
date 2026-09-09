@@ -237,3 +237,40 @@ body {
   cursor: pointer;
 }
 
+
+
+/* ============================================================
+   INICIO — hueco de la cabecera fija en móvil
+
+   El tema le da a #app.app-header-fixed un padding-top de 101px
+   por debajo de 768px, calculado para una cabecera de dos filas
+   ($app-header-height * 2 + 1). La cabecera real mide 14px menos,
+   y en la pantalla de inicio se nota porque va a altura completa:
+   queda una franja muerta bajo la barra.
+
+   Se corrige el propio padding en vez de poner un margin-top
+   negativo en #app: el resultado es el mismo y no hay riesgo de
+   que el contenido se salga del contenedor.
+
+   La clase home-page la pone y la quita HomePage (appSettings.appClass),
+   así que esto no afecta al resto de pantallas.
+   ============================================================ */
+@media (max-width: 767.98px) {
+
+  /* El desplazamiento va en una variable porque hay que aplicarlo en DOS
+     sitios que tienen que coincidir: el padding que compensa la cabecera
+     fija y la altura del contenido a pantalla completa. Corregir sólo uno
+     mueve el hueco de arriba abajo en lugar de eliminarlo. */
+  #app.home-page {
+    --home-header-offset: 87px;
+  }
+
+  #app.home-page.app-header-fixed {
+    padding-top: var(--home-header-offset);
+  }
+
+  #app.home-page.app-content-full-height .app-content {
+    height: calc(100vh - var(--home-header-offset));
+    height: calc(100dvh - var(--home-header-offset));
+  }
+}

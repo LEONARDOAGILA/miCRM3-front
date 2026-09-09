@@ -15,6 +15,9 @@
   padding: 1rem;
 }
 
+.estado-miswitch{
+  min-height: 58px;
+}
 /* ============================================================
    TARJETAS
    ============================================================ */
@@ -116,6 +119,26 @@
   padding: .5rem;
 }
 
+/* ---------- Panel expandido ---------- */
+/* Al expandir, el tema pone .panel a pantalla completa como flex en columna y
+   estira su .panel-body con flex:1. Pero este panel va con noBody="true", así
+   que ese .panel-body no existe: el contenido cuelga directo de .panel por el
+   slot [outsideBody] y no había nada que creciera. De ahí que el grid se
+   quedara con su altura fija mientras el panel ocupaba toda la pantalla.
+
+   min-height:0 es imprescindible: sin él el elemento flex no puede encogerse
+   por debajo de su contenido y el scroll interno del ag-grid no funciona. */
+:host ::ng-deep .panel.panel-expand > .perfil-grid {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+/* La leyenda se queda abajo, sin estirarse */
+:host ::ng-deep .panel.panel-expand > .permisos-leyenda {
+  flex: 0 0 auto;
+}
+
 .permisos-leyenda {
   display: flex;
   align-items: center;
@@ -129,6 +152,12 @@
 
 .permisos-leyenda i {
   color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.permisos-leyenda__ayuda {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
 }
 
 /* ------------------------------------------------------------
@@ -228,8 +257,10 @@
     max-width: none;
   }
 
-  .estado-perfil {
-    height: auto;
+  /* La ayuda ocupaba tres líneas en el móvil y describe un gesto de ratón.
+     Se oculta y queda sólo el contador de permisos habilitados. */
+  .permisos-leyenda__ayuda {
+    display: none;
   }
 
   .perfil-grid {
@@ -239,7 +270,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .estado-perfil,
+  .estado-miswitch,
   :host ::ng-deep .btn-mas-permisos {
     transition: none;
   }

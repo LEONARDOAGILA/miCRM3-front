@@ -32,6 +32,19 @@ export class CampoTextoComponent   {
   @Input() icono: string = '';
 
   /**
+   * Muestra el botón × para vaciar el campo, como en app-campoEmail y
+   * app-combo. Se puede apagar en los campos donde no tenga sentido.
+   */
+  @Input() limpiable: boolean = true;
+
+  /** Vacía el campo y avisa al padre, igual que si se hubiera borrado a mano. */
+  limpiar(): void {
+    this.control.setValue('');
+    this.control.markAsDirty();
+    this.valueChange.emit('');
+  }
+
+  /**
    * Impide que el navegador y los gestores de contraseñas ofrezcan valores
    * guardados sobre este campo.
    *

@@ -1738,8 +1738,13 @@ body {
   display: flex;
   align-items: center;
   gap: .625rem;
-  padding: .5rem .75rem;
-  margin-bottom: var(--su-gap, .85rem);
+
+  /* Misma altura y mismo hueco inferior que un campo (45px + 1.25rem), para
+     que al compartir fila con un input queden alineados arriba y abajo.
+     min-height y no height: si el texto llegara a envolverse, crece. */
+  min-height: 45px;
+  padding: .375rem .75rem;
+  margin-bottom: var(--su-gap, 1.25rem);
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-left: 3px solid var(--bs-secondary, #6c757d);
   border-radius: .375rem;

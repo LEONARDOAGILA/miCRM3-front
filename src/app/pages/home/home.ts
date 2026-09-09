@@ -82,6 +82,11 @@ export class HomePage implements OnInit, OnDestroy {
   ) {
     this.appSettings.appContentFullHeight = true;
     this.appSettings.appContentClass = 'p-0 ';
+
+    // Marca #app para poder ajustar desde styles.css el hueco que deja la
+    // cabecera fija en móvil. appClass está enlazado a [class] de #app en
+    // app.component.html y no lo usaba nadie.
+    this.appSettings.appClass = 'home-page';
     this.elRef.nativeElement.classList.add('d-flex', 'flex-column', 'h-100');
   }
 
@@ -124,6 +129,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.destroy$.complete();
     this.appSettings.appContentFullHeight = false;
     this.appSettings.appContentClass = '';
+    this.appSettings.appClass = '';
   }
 
   actualizarHora(): void {

@@ -27,9 +27,22 @@
       <!-- py-0 centra la etiqueta flotante en el campo de 45px -->
       <label [for]="label" class="d-flex align-items-center py-0 fs-13px">{{ label }}</label>
 
-      <!-- Icono decorativo opcional, a la derecha -->
+      <!-- Botón de limpiar: mismo signo × que usa el ng-select de app-combo.
+           Solo con valor y el campo habilitado, igual que en app-campoEmail. -->
+      <button type="button"
+              class="campo-texto__limpiar"
+              *ngIf="limpiable && control?.value && control?.enabled"
+              (click)="limpiar()"
+              tabindex="-1"
+              [attr.aria-label]="'Limpiar ' + (label || 'el campo')"
+              title="Limpiar">
+        <span class="campo-texto__limpiar-x" aria-hidden="true">&times;</span>
+      </button>
+
+      <!-- Icono decorativo opcional. Se oculta cuando aparece la × para que
+           no se solapen en el mismo extremo del campo. -->
       <i class="fa campo-texto__icono"
-         *ngIf="icono"
+         *ngIf="icono && !(limpiable && control?.value && control?.enabled)"
          [ngClass]="icono"
          aria-hidden="true"></i>
     </div>
