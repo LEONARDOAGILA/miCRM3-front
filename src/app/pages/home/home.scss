@@ -318,3 +318,42 @@
     }
   }
 }
+// ============================================================
+// Expandir <panel> a pantalla completa dentro de las pestañas
+//
+// El botón "expandir" del panel le pone position: fixed con top/bottom/
+// left/right a 0. Eso sólo cubre la pantalla si ningún antecesor es su
+// bloque contenedor. ng-scrollbar envuelve el contenido en
+// .ng-scroll-content con `contain: content` (= layout + paint), y la
+// contención de layout convierte a ese elemento en el bloque contenedor de
+// los descendientes fixed: el panel "expandido" se quedaba encerrado en el
+// área de scroll, bajo las pestañas y sobre el pie.
+//
+// ::ng-deep porque .ng-scroll-content lo genera ngx-scrollbar dentro de su
+// propia plantilla; :host lo acota a esta pantalla.
+//
+// !important a propósito: la regla de la librería sale compilada como
+// .ng-scroll-viewport[_nghost] > .ng-scroll-content[_ngcontent] (dos clases y
+// dos atributos) y gana a cualquier selector que podamos escribir desde aquí
+// sin copiar sus atributos internos, que cambian con cada versión.
+// ============================================================
+:host ::ng-deep .ng-scroll-content {
+  contain: none !important;
+}
+
+// ---------- Además, en iOS ----------
+// Safari en iPhone posiciona los descendientes fixed respecto al contenedor
+// con scroll táctil (overflow: auto + -webkit-overflow-scrolling: touch), no
+// respecto a la pantalla. Quitar contain no basta allí: hay que dejar de ser
+// contenedor de scroll MIENTRAS haya un panel expandido. Como el panel
+// expandido cubre la pantalla entera, que el fondo no haga scroll durante ese
+// rato no se nota; al contraer vuelve todo a su sitio.
+//
+// :has() lo soporta iOS 15.4+ (el iPhone 7 llega a 15.8) y Chrome 105+.
+// El elemento <ng-scrollbar> es a la vez el viewport de scroll (clase
+// ng-scroll-viewport), por eso las propiedades se ponen sobre él.
+:host ::ng-deep ng-scrollbar:has(.panel.panel-expand) {
+  overflow: hidden !important;
+  -webkit-overflow-scrolling: auto !important;
+  will-change: auto !important;
+}
