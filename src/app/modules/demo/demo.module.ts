@@ -9,7 +9,9 @@ import { HomeComponent } from './pages/home/home.component';
 import { DemoRoutingModule } from './demo-routing.module';
 import { Dashboard1Component } from './pages/dashboard1/dashboard1.component';
 import { Dashboard2Component } from './pages/dashboard2/dashboard2.component';
-import { Dashboard3Component } from './pages/dashboard3/dashboard3.component';
+// Dashboard3 ya no se declara aquí: tiene su propio módulo, para que la pantalla
+// de inicio pueda cargarlo suelto sin arrastrar el peso entero de DemoModule.
+import { Dashboard3Module } from './pages/dashboard3/dashboard3.module';
 import { FormFloatingLabelComponent } from './pages/formFloatingLabel/formFloatingLabel.component';
 import { SpinnerComponentimplements } from './pages/spinner/spinner.component';
 import { WindowsExplorerComponent } from './pages/windows-explorer/windows-explorer.component';
@@ -70,7 +72,6 @@ import { WebsocketRecivedComponent } from './pages/websocket-recived/websocket-r
   declarations: [
     Dashboard1Component,
     Dashboard2Component,
-    Dashboard3Component,
     HomeComponent,
     MiobservableComponent,
     SubObservableComponent,
@@ -113,6 +114,10 @@ import { WebsocketRecivedComponent } from './pages/websocket-recived/websocket-r
     ModalHeaderComponent,
     ZXingScannerModule,
     AgGridModule,
+
+    // Trae declarado Dashboard3Component, que es lo que usa la ruta
+    // /demo/dashboard3 de DemoRoutingModule.
+    Dashboard3Module,
     
 // plugins
     HighlightAuto,
@@ -140,4 +145,3 @@ import { WebsocketRecivedComponent } from './pages/websocket-recived/websocket-r
 export class DemoModule { 
 
 }
-

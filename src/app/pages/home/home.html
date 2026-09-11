@@ -32,7 +32,10 @@
 				</button>
 			</li>
 			<li class="nav-item flex-shrink-0" role="presentation">
-				<button class="nav-link" id="profile-about-tab" data-bs-toggle="tab" data-bs-target="#profile-about" type="button" role="tab" aria-controls="profile-about" aria-selected="false">
+				<!-- (click) además del data-bs-toggle: Bootstrap sigue encargándose de
+				     mostrar la pestaña y el método sólo se ocupa de traer el dashboard,
+				     que hasta este momento ni siquiera se ha descargado. -->
+				<button class="nav-link" id="profile-about-tab" data-bs-toggle="tab" data-bs-target="#profile-about" type="button" role="tab" aria-controls="profile-about" aria-selected="false" (click)="cargarMetricas()">
 					<i class="fa fa-chart-line me-1"></i>
 					<span class="d-none d-sm-inline">METRICAS</span>
 					<span class="d-inline d-sm-none">Métricas</span>
@@ -159,7 +162,38 @@
 						<!-- END col-3 -->
 					</div>
 					<!-- END row -->
-				</div>	
+
+					<!-- BEGIN dashboard3 bajo demanda -->
+					@if (metricasCargando) {
+						<div class="text-center text-muted py-5">
+							<i class="fa fa-circle-notch fa-spin fa-2x mb-3 d-block"></i>
+							<p class="mb-0 small">Cargando métricas…</p>
+						</div>
+					}
+
+					@if (metricasError) {
+						<div class="alert alert-warning mb-0">
+							<div class="d-flex align-items-center flex-wrap gap-2">
+								<i class="fa fa-triangle-exclamation"></i>
+								<span class="flex-1">No se pudieron cargar las métricas.</span>
+								<button type="button" class="btn btn-sm btn-warning" (click)="cargarMetricas()">
+									Reintentar
+								</button>
+							</div>
+							@if (metricasErrorDetalle) {
+								<!-- El texto del fallo se enseña aquí porque en el móvil
+								     no hay consola donde leerlo. -->
+								<pre class="small mb-0 mt-2 text-break" style="white-space: pre-wrap;">{{ metricasErrorDetalle }}</pre>
+							}
+						</div>
+					}
+
+					<!-- El dashboard se inserta aquí. Este ancla NO puede ir dentro de
+					     un @if: si desapareciera del árbol, @ViewChild se quedaría sin
+					     sitio donde crear el componente. -->
+					<ng-container #metricasHost></ng-container>
+					<!-- END dashboard3 bajo demanda -->
+				</div>
 				<!-- END #profile-about tab -->
 
 				<!-- BEGIN #profile-videos tab -->

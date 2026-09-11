@@ -1,4 +1,15 @@
-import { Component, OnInit, OnDestroy, ElementRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ElementRef,
+  ViewChild,
+  ViewContainerRef,
+  Injector,
+  NgModuleRef,
+  ChangeDetectorRef,
+  createNgModule
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, takeUntil, interval } from 'rxjs';
 import { AppSettings } from '../../service/app-settings.service';
@@ -45,7 +56,20 @@ export class HomePage implements OnInit, OnDestroy {
   public fechaActual: string = '';
   public mensajes: string[] = [];
   public modulosPermitidos: ModuloCard[] = [];
-  
+
+  // ---------- Pestaña MÉTRICAS (carga bajo demanda) ----------
+  // Hueco donde se inserta el dashboard. Tiene que estar SIEMPRE en la
+  // plantilla (fuera de cualquier @if) para que la consulta lo encuentre.
+  @ViewChild('metricasHost', { read: ViewContainerRef })
+  private metricasHost?: ViewContainerRef;
+
+  public metricasCargando = false;
+  public metricasError = false;
+  public metricasErrorDetalle = '';
+
+  private metricasCargadas = false;
+  private demoModuleRef?: NgModuleRef<unknown>;
+
   private destroy$ = new Subject<void>();
 
   recentActivities: ActivityItem[] = [
@@ -75,6 +99,8 @@ export class HomePage implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private elRef: ElementRef,
+    private injector: Injector,
+    private cdr: ChangeDetectorRef,
     public appSettings: AppSettings,
     private _seguridadService: SeguridadService,
     private _wsNotifService: WebsocketNotificationService,
@@ -124,9 +150,72 @@ export class HomePage implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * Crea el dashboard de métricas la primera vez que se pulsa la pestaña.
+   *
+   * Se carga Dashboard3Module, que declara sólo este componente. NO se carga
+   * DemoModule: allí conviven el escáner zxing, face-api/tensorflow, leaflet,
+   * exceljs, fullcalendar, ag-grid y demás, más de 5 MB de código para un
+   * panel que no usa nada de eso. En un móvil antiguo eso es la diferencia
+   * entre cargar y no cargar.
+   *
+   * Por eso el import() es dinámico y no una importación de las de arriba:
+   * así el empaquetador mantiene ese código en su propio trozo, que no se
+   * descarga hasta que alguien pulsa la pestaña.
+   *
+   * El componente se declara en un NgModule, así que hace falta el inyector
+   * de ese módulo (ngx-daterangepicker, apexcharts); creando sólo el
+   * componente no se resolverían sus dependencias.
+   */
+  async cargarMetricas(): Promise<void> {
+    if (this.metricasCargadas || this.metricasCargando) {
+      return;
+    }
+
+    this.metricasCargando = true;
+    this.metricasError = false;
+    this.metricasErrorDetalle = '';
+
+    try {
+      const [{ Dashboard3Module }, { Dashboard3Component }] = await Promise.all([
+        import('../../modules/demo/pages/dashboard3/dashboard3.module'),
+        import('../../modules/demo/pages/dashboard3/dashboard3.component')
+      ]);
+
+      this.demoModuleRef = createNgModule(Dashboard3Module, this.injector);
+      this.metricasHost?.createComponent(Dashboard3Component, {
+        environmentInjector: this.demoModuleRef
+      });
+
+      this.metricasCargadas = true;
+    } catch (error) {
+      // Si falla se deja metricasCargadas en false para que el botón de
+      // reintentar pueda volver a intentarlo.
+      console.error('No se pudo cargar el panel de métricas:', error);
+      this.metricasError = true;
+
+      // El detalle se enseña en pantalla a propósito: en un móvil no hay
+      // consola donde mirarlo, y sin el texto del fallo no hay forma de
+      // distinguir un trozo que no se ha descargado de un error del propio
+      // dashboard.
+      const e = error as { name?: string; message?: string };
+      this.metricasErrorDetalle = [e?.name, e?.message].filter(Boolean).join(': ')
+        || String(error);
+    } finally {
+      this.metricasCargando = false;
+      this.cdr.markForCheck();
+    }
+  }
+
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+
+    // Primero el componente y después el módulo: al revés, el dashboard se
+    // destruiría con su inyector ya cerrado.
+    this.metricasHost?.clear();
+    this.demoModuleRef?.destroy();
+
     this.appSettings.appContentFullHeight = false;
     this.appSettings.appContentClass = '';
     this.appSettings.appClass = '';
