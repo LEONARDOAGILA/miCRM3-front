@@ -47,9 +47,7 @@ registerLocaleData(localeEs, 'es');
     TopMenuComponent,
     FloatSubMenuComponent,
     ThemePanelComponent,
-    
-    HomePage,
-    
+
     ErrorPage
   ],
   imports: [
@@ -58,7 +56,10 @@ registerLocaleData(localeEs, 'es');
     BrowserModule,
     HttpClientModule,
     NgScrollbarModule,
-    
+
+    // HomePage es standalone: va en imports, no en declarations
+    HomePage,
+
     PanelModule,
     ToastrModule.forRoot(), // ToastrModule added
     LoadingBarModule,

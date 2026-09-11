@@ -1,17 +1,12 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  ElementRef,
-  ViewChild,
-  ViewContainerRef,
-  Injector,
-  NgModuleRef,
-  ChangeDetectorRef,
-  createNgModule
-} from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy, ElementRef } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { NgScrollbarModule } from 'ngx-scrollbar';
 import { Subject, takeUntil, interval } from 'rxjs';
+import { Dashboard1Component } from '../../components/dashboards/dashboard1/dashboard1.component';
+import { Dashboard2Component } from '../../components/dashboards/dashboard2/dashboard2.component';
+import { Dashboard3Component } from '../../components/dashboards/dashboard3/dashboard3.component';
+import { ContactanosComponent } from '../../components/contactanos/contactanos.component';
 import { AppSettings } from '../../service/app-settings.service';
 import { ECHO_PUSHER } from "../../config/config";
 import { SeguridadService } from "../../modules/seguridad/services/seguridad.service";
@@ -44,11 +39,31 @@ interface ActivityItem {
   color: string;
 }
 
+/**
+ * Standalone para que los @defer de la plantilla generen trozos de verdad.
+ *
+ * Un @defer sólo separa el código de un componente si puede quitar la
+ * referencia estática a él. Cuando el anfitrión está declarado en un NgModule,
+ * esa referencia vive en el array imports del módulo y el empaquetador no
+ * puede quitarla: el componente se pinta tarde, pero se descarga con main.js.
+ * Con el anfitrión standalone la referencia está en este fichero y sólo se
+ * usa dentro de los @defer, así que el compilador la convierte en import().
+ */
 @Component({
   selector: 'home',
   templateUrl: './home.html',
   styleUrls: ['./home.scss'],
-  standalone: false
+  standalone: true,
+  imports: [
+    DatePipe,            // | date del pie
+    RouterLink,          // [routerLink] de las tarjetas y los accesos directos
+    NgScrollbarModule,   // <ng-scrollbar>
+    // Sólo se usan dentro de bloques @defer: se descargan al pulsar su pestaña
+    Dashboard1Component,
+    Dashboard2Component,
+    Dashboard3Component,
+    ContactanosComponent
+  ]
 })
 export class HomePage implements OnInit, OnDestroy {
   today: Date = new Date();
@@ -57,18 +72,14 @@ export class HomePage implements OnInit, OnDestroy {
   public mensajes: string[] = [];
   public modulosPermitidos: ModuloCard[] = [];
 
-  // ---------- Pestaña MÉTRICAS (carga bajo demanda) ----------
-  // Hueco donde se inserta el dashboard. Tiene que estar SIEMPRE en la
-  // plantilla (fuera de cualquier @if) para que la consulta lo encuentre.
-  @ViewChild('metricasHost', { read: ViewContainerRef })
-  private metricasHost?: ViewContainerRef;
-
-  public metricasCargando = false;
-  public metricasError = false;
-  public metricasErrorDetalle = '';
-
-  private metricasCargadas = false;
-  private demoModuleRef?: NgModuleRef<unknown>;
+  // ---------- Pestañas MÉTRICAS ----------
+  // Cada bandera dispara el @defer (when ...) de su pestaña. Se ponen a true
+  // al pulsar la pestaña y no vuelven a false: @defer carga una vez y el
+  // componente se queda creado, que es lo que se quiere al cambiar de pestaña.
+  public metricas1Activa = false;
+  public metricas2Activa = false;
+  public metricas3Activa = false;
+  public contactanosActivo = false;
 
   private destroy$ = new Subject<void>();
 
@@ -99,8 +110,6 @@ export class HomePage implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private elRef: ElementRef,
-    private injector: Injector,
-    private cdr: ChangeDetectorRef,
     public appSettings: AppSettings,
     private _seguridadService: SeguridadService,
     private _wsNotifService: WebsocketNotificationService,
@@ -150,72 +159,9 @@ export class HomePage implements OnInit, OnDestroy {
       });
   }
 
-  /**
-   * Crea el dashboard de métricas la primera vez que se pulsa la pestaña.
-   *
-   * Se carga Dashboard3Module, que declara sólo este componente. NO se carga
-   * DemoModule: allí conviven el escáner zxing, face-api/tensorflow, leaflet,
-   * exceljs, fullcalendar, ag-grid y demás, más de 5 MB de código para un
-   * panel que no usa nada de eso. En un móvil antiguo eso es la diferencia
-   * entre cargar y no cargar.
-   *
-   * Por eso el import() es dinámico y no una importación de las de arriba:
-   * así el empaquetador mantiene ese código en su propio trozo, que no se
-   * descarga hasta que alguien pulsa la pestaña.
-   *
-   * El componente se declara en un NgModule, así que hace falta el inyector
-   * de ese módulo (ngx-daterangepicker, apexcharts); creando sólo el
-   * componente no se resolverían sus dependencias.
-   */
-  async cargarMetricas(): Promise<void> {
-    if (this.metricasCargadas || this.metricasCargando) {
-      return;
-    }
-
-    this.metricasCargando = true;
-    this.metricasError = false;
-    this.metricasErrorDetalle = '';
-
-    try {
-      const [{ Dashboard3Module }, { Dashboard3Component }] = await Promise.all([
-        import('../../modules/demo/pages/dashboard3/dashboard3.module'),
-        import('../../modules/demo/pages/dashboard3/dashboard3.component')
-      ]);
-
-      this.demoModuleRef = createNgModule(Dashboard3Module, this.injector);
-      this.metricasHost?.createComponent(Dashboard3Component, {
-        environmentInjector: this.demoModuleRef
-      });
-
-      this.metricasCargadas = true;
-    } catch (error) {
-      // Si falla se deja metricasCargadas en false para que el botón de
-      // reintentar pueda volver a intentarlo.
-      console.error('No se pudo cargar el panel de métricas:', error);
-      this.metricasError = true;
-
-      // El detalle se enseña en pantalla a propósito: en un móvil no hay
-      // consola donde mirarlo, y sin el texto del fallo no hay forma de
-      // distinguir un trozo que no se ha descargado de un error del propio
-      // dashboard.
-      const e = error as { name?: string; message?: string };
-      this.metricasErrorDetalle = [e?.name, e?.message].filter(Boolean).join(': ')
-        || String(error);
-    } finally {
-      this.metricasCargando = false;
-      this.cdr.markForCheck();
-    }
-  }
-
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
-
-    // Primero el componente y después el módulo: al revés, el dashboard se
-    // destruiría con su inyector ya cerrado.
-    this.metricasHost?.clear();
-    this.demoModuleRef?.destroy();
-
     this.appSettings.appContentFullHeight = false;
     this.appSettings.appContentClass = '';
     this.appSettings.appClass = '';
