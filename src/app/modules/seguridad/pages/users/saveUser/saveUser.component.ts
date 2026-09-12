@@ -463,6 +463,9 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       backdrop: 'static'
     });
 
+    // Para que el selector marque como «Actual» el horario ya asignado
+    modalRef.componentInstance.horarioSeleccionadoId = this.form.get('chorario_id')?.value;
+
     modalRef.componentInstance.seleccionado
       .pipe(takeUntil(this.hastaQueCierre(modalRef)))
       .subscribe((horario: any) => {

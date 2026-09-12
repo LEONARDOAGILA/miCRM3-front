@@ -1,14 +1,29 @@
-import { Component, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { AgGridAngular } from 'ag-grid-angular';
-import { GridApi, GridReadyEvent, CellClickedEvent } from 'ag-grid-community';
+import { GridApi, GridReadyEvent, CellClickedEvent, RowClassParams } from 'ag-grid-community';
 
 import { HorarioService } from '../../../../seguridad/services/horario.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
+/**
+ * Modal de selección de horario (lo abre saveUser para el campo "Horario").
+ *
+ * Grilla ag-Grid con paginación en servidor y buscador. Al pulsar cualquier
+ * celda de una fila se emite ese horario por `seleccionado` y se cierra el
+ * modal; la columna "Ir" queda como pista visual de que la fila es pulsable.
+ *
+ * Además marca el horario que el usuario ya tiene asignado
+ * (horarioSeleccionadoId) con una barra lateral y la etiqueta «Actual».
+ *
+ * Memoria: no hay suscripciones vivas (las peticiones van con
+ * firstValueFrom, que completa sola) ni temporizadores ni listeners
+ * nativos, así que no hace falta ngOnDestroy. Quien abre el modal es el
+ * responsable de cortar su suscripción a `seleccionado` (saveUser lo hace
+ * con takeUntil al cerrarse el modal).
+ */
 @Component({
   selector: 'app-listHorarios',
   templateUrl: './listHorarios.component.html',
@@ -17,22 +32,35 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
 })
 export class ListHorariosComponent implements OnInit {
 
+  /** Horario ya asignado al usuario, para marcarlo como «Actual» en la grilla. */
+  @Input() horarioSeleccionadoId?: number;
+
+  /** Horario elegido. Se emite una sola vez, justo antes de cerrar. */
   @Output() seleccionado = new EventEmitter<any>();
 
-  @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
+  // ---------- ag-Grid ----------
   public gridApi!: GridApi;
   public columnDefs: any[] = [];
+  /** Filas de la página actual. */
   public rowData: any[] = [];
-  
+
+  /** Clase para la fila del horario ya asignado (estilo en el .css). */
+  public rowClassRules = {
+    'fila-actual': (params: RowClassParams) =>
+      this.horarioSeleccionadoId != null && params.data?.id === this.horarioSeleccionadoId
+  };
+
+  // ---------- Búsqueda ----------
   @ViewChild(CampoBusquedaPaginacionComponent) campoBusquedaPaginacion!: CampoBusquedaPaginacionComponent;
+  /** Filtro vigente; viaja al servidor en cada página. */
   public searchTerm: string = '';
-  
-  // Variables de paginación
+
+  // ---------- Paginación en servidor ----------
   public paginaActual: number = 1;
   public totalRegistros: number = 0;
   public registrosPorPagina: number = 5;
   public ultimaPagina: number = 1;
-  
+
   public isLoading$ = this._loadingService.isLoading$;
 
   constructor(
@@ -46,6 +74,20 @@ export class ListHorariosComponent implements OnInit {
     this.initializeGrid();
     this.cargarHorarios();
   }
+
+  /** Primer registro mostrado; 0 sin resultados (antes decía "1 - 0 de 0"). */
+  public get desde(): number {
+    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
+  }
+
+  /** Último registro mostrado, sin pasarse del total. */
+  public get hasta(): number {
+    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
+  }
+
+  // ================================================================
+  // AG-GRID
+  // ================================================================
 
   initializeGrid(): void {
     this.columnDefs = [
@@ -62,9 +104,16 @@ export class ListHorariosComponent implements OnInit {
         cellStyle: { textAlign: 'left' },
         minWidth: 200,
         maxWidth: 400,
+        // El horario ya asignado lleva la etiqueta «Actual» junto al nombre
+        cellRenderer: (params: any) =>
+          params.data?.id === this.horarioSeleccionadoId
+            ? `${params.value ?? ''} <span class="lista-actual">Actual</span>`
+            : (params.value ?? '')
       },
+      // Columna "Ir": sólo indica que la fila se puede elegir. La selección
+      // real la hace onCellClicked sobre cualquier celda.
       {
-        headerName: 'Seleccionar',
+        headerName: 'Ir',
         field: 'seleccionar',
         pinned: 'right',
         minWidth: 60,
@@ -72,18 +121,12 @@ export class ListHorariosComponent implements OnInit {
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         sortable: false,
         resizable: false,
-        headerComponentParams: {
-          template: `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
-              <span>Ir</span>
-            </div>
-          `
-        },
-        cellRenderer: () => {
-          return `<button class="btn btn-sm btn-outline-primary" style="padding: 4px 6px; border-radius: 4px;">
-                    <i class="fas fa-arrow-right"></i>
-                   </button>`;
-        }
+        filter: false,
+        suppressMenu: true,
+        cellRenderer: () =>
+          `<span class="lista-ir" title="Elegir este horario">
+             <i class="fas fa-arrow-right"></i>
+           </span>`
       }
     ];
   }
@@ -93,39 +136,53 @@ export class ListHorariosComponent implements OnInit {
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
   }
 
+  /**
+   * Un clic en cualquier celda elige la fila: emite el horario y cierra.
+   * Antes había que acertar en el botón de la columna "Ir".
+   */
   onCellClicked(event: CellClickedEvent): void {
-    if (event.colDef.field === 'seleccionar') {
-      this.seleccionado.emit(event.data);
-      this.modal.close();
-    }
+    if (!event.data) { return; }
+    this.seleccionado.emit(event.data);
+    this.modal.close(event.data);
   }
 
+  // ================================================================
+  // DATOS
+  // ================================================================
+
+  /** Pide una página al servidor y actualiza grilla y contadores. */
   async cargarHorarios(page: number = 1) {
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
-        this._horarioService.listHorarios(page, this.registrosPorPagina, this.searchTerm)        
+        this._horarioService.listHorarios(page, this.registrosPorPagina, this.searchTerm)
       );
-      
+
       this.rowData = res.body?.data?.data || [];
-      
+
       if (res.body?.data?.meta) {
         this.totalRegistros = res.body.data.meta.total;
         this.registrosPorPagina = res.body.data.meta.per_page;
         this.paginaActual = res.body.data.meta.current_page;
         this.ultimaPagina = res.body.data.meta.last_page;
       }
-      
+
       if (this.gridApi) {
         this.gridApi.setRowData(this.rowData);
       }
     } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar horarios:', error);
     } finally {
       this._loadingService.setLoading(false);
     }
   }
 
+  // ================================================================
+  // BÚSQUEDA
+  // ================================================================
+
+  /** Nuevo filtro → siempre desde la página 1, o podría caer fuera de rango. */
   async onSearch(term?: string) {
     if (term !== undefined) this.searchTerm = term;
     this.paginaActual = 1;
@@ -135,11 +192,15 @@ export class ListHorariosComponent implements OnInit {
   limpiarBusqueda() {
     this.searchTerm = '';
     this.paginaActual = 1;
-    this.campoBusquedaPaginacion.reset();
+    this.campoBusquedaPaginacion?.reset();
     this.cargarHorarios(1);
   }
 
-  // Funciones de paginación
+  // ================================================================
+  // PAGINACIÓN
+  // ================================================================
+  // Todas pasan por goToPage(), que es la única que valida el rango.
+
   firstPage(): void {
     if (this.paginaActual !== 1) {
       this.goToPage(1);

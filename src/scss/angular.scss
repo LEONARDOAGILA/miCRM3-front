@@ -236,80 +236,199 @@
 
 
 
-/*  LPAA - INICIO FONDO TRANSPARENTE DE AG-GRID  */
+/* ============================================================
+   AG-GRID — skin único para toda la aplicación
+   ============================================================
+   Un solo sitio para el aspecto de todas las grillas (antes se repartía
+   entre styles.css, este fichero y el cellStyle del servicio, y se
+   pisaban con !important).
 
-/* Estilo para filas alternadas (zebra striping) */
-.zebra-grid .ag-row-odd {
-  background-color: #f9f9f9; /* Gris muy claro */
-}
+   Se apoya en las variables --ag-* que trae ag-Grid 28 en lugar de
+   sobreescribir selectores internos, y las alimenta con las variables
+   del tema (--bs-*): así hereda el color de acento (--bs-app-theme) y
+   el modo oscuro sin repetir colores.
 
-.zebra-grid .ag-row-even {
-  background-color: white; /* Blanco */
-}
+   Fondo transparente a propósito: la grilla siempre va dentro de un
+   <panel>, y es el panel quien pone el fondo. Por eso las filas se
+   pintan con colores con alfa, que valen sobre blanco o sobre gris.
 
-/* Opcional: Estilo para hover */
-.zebra-grid .ag-row:hover {
-  background-color: #f0f0f0; /* Gris un poco más oscuro al pasar el mouse */
-}
+   La clase .ag-grid-transparente se mantiene por compatibilidad (la
+   llevan 14 grillas) pero ya no hace nada: todo cuelga de
+   .ag-theme-alpine.
+   ============================================================ */
 
-/* Opcional: Estilo para fila seleccionada */
-.zebra-grid .ag-row-selected {
-  background-color: #666565 !important; /* Gris más oscuro para selección */
-}
+.ag-theme-alpine {
+  // ---------- Base ----------
+  --ag-font-family: inherit;
+  --ag-font-size: 11px;
+  --ag-foreground-color: var(--bs-body-color);
+  --ag-data-color: var(--bs-body-color);
+  --ag-secondary-foreground-color: var(--bs-secondary-color);
+  --ag-background-color: transparent;
 
+  // Color de acento: ordenación, checkboxes, foco, rango
+  --ag-alpine-active-color: var(--bs-app-theme);
+  --ag-input-focus-border-color: var(--bs-app-theme);
+  --ag-range-selection-border-color: var(--bs-app-theme);
+  --ag-checkbox-checked-color: var(--bs-app-theme);
 
-  .ml-lg-custom, // campo busqueda de ag-grid
-  .ml-md-lg-custom {
-    margin-left: 30px; /* Valor por defecto para móviles */
+  // ---------- Bordes ----------
+  // Rejilla completa (marco, líneas horizontales y verticales) pero suave:
+  // todas las líneas van con alfa sobre el color del texto, así se ven sobre
+  // cualquier fondo sin pesar.
+  --ag-borders: solid 1px;
+  --ag-borders-critical: solid 1px;
+  --ag-border-color: rgba(var(--bs-body-color-rgb), .12);
+  --ag-secondary-border-color: rgba(var(--bs-body-color-rgb), .12);
+  --ag-row-border-color: rgba(var(--bs-body-color-rgb), .10);           // horizontales
+  --ag-cell-horizontal-border: solid rgba(var(--bs-body-color-rgb), .08); // verticales (1px fijo)
+  --ag-header-column-separator-display: block;                           // verticales en cabecera
+  --ag-header-column-separator-color: rgba(var(--bs-body-color-rgb), .14);
+  --ag-header-column-separator-height: 60%;
+  --ag-header-column-resize-handle-display: block;
+  --ag-header-column-resize-handle-color: rgba(var(--bs-body-color-rgb), .18);
+  --ag-header-column-resize-handle-height: 50%;
+
+  // ---------- Cabecera ----------
+  --ag-header-background-color: rgba(var(--bs-body-color-rgb), .035);
+  --ag-header-foreground-color: var(--bs-secondary-color);
+  --ag-header-cell-hover-background-color: rgba(var(--bs-body-color-rgb), .06);
+  --ag-header-cell-moving-background-color: rgba(var(--bs-app-theme-rgb), .10);
+
+  // ---------- Filas ----------
+  --ag-odd-row-background-color: rgba(var(--bs-body-color-rgb), .02);
+  --ag-row-hover-color: rgba(var(--bs-app-theme-rgb), .07);
+  --ag-selected-row-background-color: rgba(var(--bs-app-theme-rgb), .14);
+  --ag-cell-horizontal-padding: 10px;
+
+  // ---------- Paneles laterales (filtros) y menús ----------
+  --ag-control-panel-background-color: var(--bs-component-bg, #fff);
+  --ag-subheader-background-color: rgba(var(--bs-body-color-rgb), .035);
+  --ag-side-bar-panel-width: 220px;
+
+  border-radius: .5rem;
+  overflow: hidden;
+
+  // Cabecera: mayúsculas pequeñas, sin cursiva, línea inferior marcada
+  .ag-header {
+    border-bottom: 2px solid var(--bs-border-color);
   }
-  @media (min-width: 768px) {  /* A partir de 768px (tablets) */
-    .ml-lg-custom,
-    .ml-md-lg-custom {
-      margin-left: 154px; /* Cambia a 154px en pantallas más grandes */
+
+  .ag-header-cell,
+  .ag-header-group-cell {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  // Texto de cabecera centrado (estándar de la aplicación). Las cabeceras
+  // con plantilla propia (ACCIONES) ya vienen centradas.
+  .ag-header-cell-label {
+    justify-content: center;
+    text-align: center;
+  }
+
+  // Icono de ordenación en color de acento y separado del texto
+  .ag-header-cell-sortable .ag-sort-indicator-icon {
+    color: var(--bs-app-theme);
+    padding-left: 4px;
+  }
+
+  // Fila seleccionada: además del fondo, una barra en el borde izquierdo.
+  // Sólo en el contenedor central para que no se repita en la columna fijada.
+  .ag-center-cols-container .ag-row-selected {
+    box-shadow: inset 3px 0 0 var(--bs-app-theme);
+  }
+
+  // Transición suave del hover
+  .ag-row {
+    transition: background-color .12s ease;
+  }
+
+  // Columna fijada a la derecha (ACCIONES): separador y sombra hacia dentro
+  // para que se note que flota sobre el resto.
+  .ag-pinned-right-header,
+  .ag-pinned-right-cols-container {
+    box-shadow: -6px 0 10px -6px rgba(0, 0, 0, .12);
+  }
+
+  // Mensaje "No hay registros"
+  .ag-overlay-no-rows-center {
+    padding: .5rem 1rem;
+    border-radius: .375rem;
+    background-color: rgba(var(--bs-body-color-rgb), .04);
+    color: var(--bs-secondary-color);
+    font-size: 12px;
+  }
+
+  // Barras de scroll finas, del color del texto atenuado
+  .ag-body-horizontal-scroll-viewport,
+  .ag-body-viewport {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--bs-body-color-rgb), .25) transparent;
+
+    &::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(var(--bs-body-color-rgb), .25);
+      border-radius: 4px;
     }
   }
-.ag-grid-transparente {
-  background-color: transparent !important;
-  .ag-root-wrapper,
-  .ag-root,
-  .ag-header,
-  .ag-header-row,
-  .ag-header-cell,
-  .ag-body-viewport,
-  .ag-center-cols-clipper,
-  .ag-center-cols-container,
-  .ag-row,
-  .ag-cell {
-    background-color: transparent !important;
-  }
-  .ag-row-hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-  }
-  .ag-cell {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
-    @extend .text-dark;
-  }
-  .ag-paging-panel {
-    @extend .text-body;
-  }  
-  .ag-paging-button {
-     @extend .text-body;
-  }
-  .ag-header-cell{
-     @extend .text-body;
-  }
-  // Header: texto y fondo
-  // .ag-header,
-  // .ag-header-row,
-  // .ag-header-cell,
-  // .ag-header-group-cell {
-  //   background-color: #2e2b2b !important; // Cambia esto por el color deseado
-  //   color: white !important;
-  //   font-weight: bold;
-  //   border-right: 1px solid rgba(255, 255, 255, 0.1);
-  // }
 }
-/*  LPAA - FIN FONDO TRANSPARENTE DE AG-GRID  */
+
+// Clase de cabecera que pone AppAgGridService.defaultColDef.headerClass.
+// Hoy no añade nada al skin de arriba; se conserva para no tocar el servicio
+// ni las 14 grillas que lo usan.
+.aggrid-custom-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Compatibilidad: ver nota de cabecera.
+.ag-grid-transparente {
+  background-color: transparent;
+}
+
+// .zebra-grid: rayado más marcado para las pantallas que lo piden.
+// Antes la fila seleccionada se pintaba de gris oscuro (#666565) y el texto
+// dejaba de leerse; ahora usa el mismo acento que el resto.
+.zebra-grid {
+  --ag-odd-row-background-color: rgba(var(--bs-body-color-rgb), .045);
+}
+
+// ---------- Modo oscuro ----------
+// Las variables con alfa de arriba ya funcionan sobre fondo oscuro (usan
+// --bs-body-color-rgb, que cambia con el tema). Sólo hay que cambiar lo que
+// era opaco: panel de filtros, menús y sombra de la columna fijada.
+[data-bs-theme="dark"] .ag-theme-alpine {
+  --ag-control-panel-background-color: #1e293b;
+  --ag-subheader-background-color: #0f172a;
+  --ag-border-color: #334155;
+  --ag-secondary-border-color: #334155;
+  --ag-header-background-color: rgba(255, 255, 255, .04);
+  --ag-header-foreground-color: #94a3b8;
+
+  .ag-header {
+    border-bottom-color: #334155;
+  }
+
+  .ag-pinned-right-header,
+  .ag-pinned-right-cols-container {
+    box-shadow: -6px 0 10px -6px rgba(0, 0, 0, .45);
+  }
+
+  // Menús y popups de filtro de ag-Grid se montan fuera de la grilla
+  .ag-popup .ag-menu,
+  .ag-popup .ag-filter {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+}
 
 
 

@@ -57,25 +57,8 @@ ul {
 
 /**********lpaa INICIO --> colores botones **********/
 
-.aggrid-custom-header {
-  font-size: 9px !important;
-  font-weight: bold !important;
-  font-style: normal !important;
-  /* color: #000000 !important; */
-  /* background-color: #f1f1f1 !important; */
-  display: flex; 
-  align-items: center;  /* Centra verticalmente */
-  justify-content: center; /* Centra horizontalmente */
-  text-align: center; 
-}
-.ag-header-cell-label {
-  justify-content: center !important;
-  display: flex !important;
-  align-items: center !important;
-  text-align: center !important;
-}
-
-
+/* Los estilos de ag-Grid (cabecera, filas, selección, modo oscuro) están
+   todos juntos en scss/angular.scss, bloque "AG-GRID". */
 
 .btn-square {
   border-radius: 4px !important; /* Hace que el botón sea completamente cuadrado */
@@ -116,25 +99,6 @@ button.btn.btn-delete {
   color: #FA5252 !important;
 } */
 /**********lpaa FIN --> colores botones **********/
-
-
-
-/**********ag-grid**********/
-.ag-theme-alpine {
-  /* customise with CSS variables */
-  /* --ag-grid-size: 4px;*/
-  --ag-font-size: 11px;
-  /*--ag-border-color: rgb(118, 116, 116);*/
-}
-
-.ag-theme-alpine .ag-header {
-  /* or with CSS selectors targeting grid DOM elements */
-  font-style: italic;
-}
-
-.ag-theme-alpine .ag-header-cell {
-  font-size: 11px;
-}
 
 
 

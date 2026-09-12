@@ -10,7 +10,10 @@ export class AppAgGridService {
     filter: true,
     editable: false,
     resizable: true,
-    cellStyle: {  fontSize: '11px', }, 
+    // Sin cellStyle aquí: el tamaño de letra lo fija el skin de ag-Grid
+    // (scss/angular.scss, --ag-font-size). Un cellStyle por defecto se
+    // pierde en cuanto una columna define el suyo (textAlign, etc.), así
+    // que unas celdas salían a 11px y otras a 12px.
     headerClass: 'aggrid-custom-header', // Clase CSS para las cabeceras
   };
 
