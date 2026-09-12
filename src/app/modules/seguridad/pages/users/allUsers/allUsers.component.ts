@@ -61,6 +61,13 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   public userModel: UserModel[] = [];
   /** Fila marcada en la grilla; habilita el botón de auditoría. */
   public selectedRow: UserModel | null = null;
+  /**
+   * true mientras la columna ACCIONES está plegada (sólo se ve su cabecera).
+   * El renderer de la celda lo usa para pintar un único botón que vuelve a
+   * desplegarla: sin eso el usuario no sabe que puede pulsar la cabecera.
+   */
+  public accionesPlegadas = false;
+
 
   public titulo: string;
   public isLoading$ = this._loadingService.isLoading$;
@@ -377,7 +384,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
         resizable: false,
         headerComponentParams: {
           template: `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
               <span>ACCIONES</span>
               <i class="fas fa-arrow-right"></i>
             </div>
@@ -463,22 +470,27 @@ export class AllUsersComponent implements OnInit, OnDestroy {
     if (!actionsCol) { return; }
 
     const estabaPlegada = actionsCol.minWidth === AllUsersComponent.ANCHO_ACCIONES_PLEGADA;
+
+    // Estado para el renderer de la celda: tras este cambio la columna queda
+    // al revés de como estaba.
+    this.accionesPlegadas = !estabaPlegada;
+
     const ancho = estabaPlegada
       ? AllUsersComponent.ANCHO_ACCIONES_ABIERTA
       : AllUsersComponent.ANCHO_ACCIONES_PLEGADA;
 
     actionsCol.minWidth = ancho;
     actionsCol.maxWidth = ancho;
-    actionsCol.cellStyle = estabaPlegada
-      ? { display: 'flex', justifyContent: 'center', alignItems: 'center' }
-      : { display: 'none' };
+    // Las celdas se ven en los dos estados: plegada, la celda muestra el botón
+    // de desplegar (ver renderer al final del fichero), así que ya no se oculta.
+    actionsCol.cellStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center' };
     actionsCol.headerComponentParams = {
       template: estabaPlegada
-        ? `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+        ? `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
             <span>ACCIONES</span>
             <i class="fas fa-arrow-right"></i>
           </div>`
-        : `<div style="display: flex; align-items: center; justify-content: center;">
+        : `<div style="display: flex; align-items: center; justify-content: center;" title="Mostrar los botones de acción">
             <i class="fas fa-bars"></i>
           </div>`
     };
@@ -868,20 +880,41 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   selector: 'app-button-accion-user',
   standalone: false,
   template: `
-    <app-action-buttons
-      [accesoModel]="parent.accesoModel"
-      [buttonCambioClave]="true"
-      [buttonView]="true"
-      [buttonEdit]="true"
-      [buttonClone]="true"
-      [buttonDelete]="true"
-      (cambioClave)="parent.cambioClave(params.data)"
-      (view)="parent.viewUser(params.data)"
-      (edit)="parent.editUser(params.data)"
-      (clone)="parent.clonUser(params.data)"
-      (delete)="parent.deleteUser(params.data)">
-    </app-action-buttons>
+    @if (parent.accionesPlegadas) {
+      <button type="button"
+              class="btn btn-sm btn-outline-primary acciones-desplegar"
+              title="Mostrar los botones de acción"
+              aria-label="Mostrar los botones de acción"
+              (click)="parent.toggleActionsColumn()">
+        <i class="fas fa-bars"></i>
+      </button>
+    } @else {
+      <app-action-buttons
+        [accesoModel]="parent.accesoModel"
+        [buttonCambioClave]="true"
+        [buttonView]="true"
+        [buttonEdit]="true"
+        [buttonClone]="true"
+        [buttonDelete]="true"
+        (cambioClave)="parent.cambioClave(params.data)"
+        (view)="parent.viewUser(params.data)"
+        (edit)="parent.editUser(params.data)"
+        (clone)="parent.clonUser(params.data)"
+        (delete)="parent.deleteUser(params.data)">
+      </app-action-buttons>
+    }
   `,
+  styles: [`
+    .acciones-desplegar {
+      width: 28px;
+      height: 24px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: .25rem;
+    }
+  `],
 })
 export class ButtonAccionUser implements ICellRendererAngularComp {
   public params: any;

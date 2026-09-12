@@ -998,7 +998,11 @@ $form-select-line-height:                 $input-line-height !default;
 $form-select-color:                       $input-color !default;
 $form-select-bg:                          $input-bg !default;
 $form-select-disabled-color:              null !default;
-$form-select-disabled-bg:                 $gray-200 !default;
+// lpaa -> antes $gray-200 (#e9ecef), un gris claro FIJO: en modo oscuro el
+// texto del select pasa a claro y el fondo se quedaba claro, así que no se
+// leía (p. ej. el día en "ver horario"). Ahora usa la misma variable que
+// $input-disabled-bg, que cambia con el tema, igual que .form-control:disabled.
+$form-select-disabled-bg:                 $input-disabled-bg !default;
 $form-select-disabled-border-color:       $input-disabled-border-color !default;
 $form-select-bg-position:                 right $form-select-padding-x center !default;
 $form-select-bg-size:                     16px 12px !default; // In pixels because image dimensions

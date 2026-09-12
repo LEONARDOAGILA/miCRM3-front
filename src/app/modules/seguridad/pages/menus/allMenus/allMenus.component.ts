@@ -40,6 +40,13 @@ export class AllMenusComponent implements OnInit, OnDestroy{
   public accesoModel: AccesoModel;
   public menuModel: MenuModel[] = [];
   public selectedRow: PerfilModel | null = null;
+  /**
+   * true mientras la columna ACCIONES está plegada (sólo se ve su cabecera).
+   * El renderer de la celda lo usa para pintar un único botón que vuelve a
+   * desplegarla: sin eso el usuario no sabe que puede pulsar la cabecera.
+   */
+  public accionesPlegadas = false;
+
 
   private unsubscribe$ = new Subject<void>();
 
@@ -258,7 +265,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
           suppressSizeToFit: false,
           headerComponentParams: {
             template: `
-              <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
                 <span>ACCIONES</span>
                 <i class="fas fa-arrow-right"></i>
               </div>
@@ -285,9 +292,45 @@ export class AllMenusComponent implements OnInit, OnDestroy{
     }
 
 
+    // ================================================================
+    // PAGINACIÓN
+    // ================================================================
+    // La pagina ag-Grid en cliente (todas las filas están cargadas). Se
+    // oculta su panel y se pintan los botones de allUsers; estos contadores
+    // se refrescan en (paginationChanged) leyendo la API de la grilla.
+
+    public paginaActual = 1;
+    public ultimaPagina = 1;
+    public totalRegistros = 0;
+    public registrosPorPagina = 0;
+
+    /** Primer registro mostrado; 0 sin resultados. */
+    public get desde(): number {
+      return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
+    }
+
+    /** Último registro mostrado, sin pasarse del total. */
+    public get hasta(): number {
+      return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
+    }
+
+    /** ag-Grid lo dispara al cambiar de página, de tamaño, de filtro o de datos. */
+    onPaginationChanged(): void {
+      if (!this.gridApi) { return; }
+      this.paginaActual = this.gridApi.paginationGetCurrentPage() + 1;   // la API cuenta desde 0
+      this.ultimaPagina = Math.max(this.gridApi.paginationGetTotalPages(), 1);
+      this.totalRegistros = this.gridApi.paginationGetRowCount();
+      this.registrosPorPagina = this.gridApi.paginationGetPageSize();
+    }
+
+    firstPage(): void { this.gridApi?.paginationGoToFirstPage(); }
+    prevPage(): void  { this.gridApi?.paginationGoToPreviousPage(); }
+    nextPage(): void  { this.gridApi?.paginationGoToNextPage(); }
+    lastPage(): void  { this.gridApi?.paginationGoToLastPage(); }
+
     onGridReady(params: GridReadyEvent): void {
       this.gridApi = params.api;
-      
+
       // Agregar eventos para desktop y móvil
       setTimeout(() => {
         const headerElement = document.querySelector('.ag-header-cell[col-id="actions"]');
@@ -332,20 +375,24 @@ export class AllMenusComponent implements OnInit, OnDestroy{
       
       if (actionsCol) {
         const isCollapsed = actionsCol.minWidth === 50;
+
+      // Estado para el renderer de la celda: tras este cambio la columna queda
+      // al revés de como estaba.
+      this.accionesPlegadas = !isCollapsed;
         
         actionsCol.minWidth = isCollapsed ? 100 : 50;
         actionsCol.maxWidth = isCollapsed ? 100 : 50;
-        actionsCol.cellStyle = isCollapsed ? 
-          { display: 'flex', justifyContent: 'center', alignItems: 'center' } : 
-          { display: 'none', justifyContent: 'left', alignItems: 'left'};
+        // Las celdas se ven en los dos estados: plegada, la celda muestra el botón
+      // de desplegar (ver renderer al final del fichero), así que ya no se oculta.
+      actionsCol.cellStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center' };
 
         actionsCol.headerComponentParams = {
           template: isCollapsed ? 
-            `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+            `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
               <span>ACCIONES</span>
               <i class="fas fa-arrow-right"></i>
             </div>` : 
-            `<div style="display: flex; align-items: center; justify-content: center;">
+            `<div style="display: flex; align-items: center; justify-content: center;" title="Mostrar los botones de acción">
               <i class="fas fa-bars"></i>
             </div>`
         };        
@@ -570,6 +617,15 @@ export class AllMenusComponent implements OnInit, OnDestroy{
   selector: 'app-button-accion',
   standalone: false,
   template: `
+    @if (AllMenusComponent.accionesPlegadas) {
+      <button type="button"
+              class="btn btn-sm btn-outline-primary acciones-desplegar"
+              title="Mostrar los botones de acción"
+              aria-label="Mostrar los botones de acción"
+              (click)="AllMenusComponent.toggleActionsColumn()">
+        <i class="fas fa-bars"></i>
+      </button>
+    } @else {
       <app-action-buttons 
         [accesoModel]="AllMenusComponent.accesoModel"
         [buttonAdd2] = "params.data.level === 3"
@@ -580,7 +636,19 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         (edit)="editMenu()"
         (delete)="deleteMenu()">
       </app-action-buttons>
+    }
   `,
+  styles: [`
+    .acciones-desplegar {
+      width: 28px;
+      height: 24px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: .25rem;
+    }
+  `],
 })
 
 

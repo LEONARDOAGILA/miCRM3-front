@@ -108,13 +108,49 @@
                   [localeText]="_appAgGridService.localeText"
                   [rowSelection]="'single'"
                   [pagination]="true"
-                  [animateRows]="true" 
-                  [cacheQuickFilter]="true" 
-  
+                  [suppressPaginationPanel]="true"
+                  [animateRows]="true"
+                  [cacheQuickFilter]="true"
+
                   class="ag-theme-alpine ag-grid-transparente p-2"
-                  (gridReady)="onGridReady($event)" 
-                  (cellClicked)="onCellClicked($event)" 
+                  (gridReady)="onGridReady($event)"
+                  (cellClicked)="onCellClicked($event)"
+                  (paginationChanged)="onPaginationChanged()"
               ></ag-grid-angular>
+
+              <!-- Paginación: la hace ag-Grid en cliente (todas las filas están
+                   cargadas), pero se oculta su panel (suppressPaginationPanel) y
+                   se pintan los mismos botones que en allUsers, moviendo la
+                   página con la API de la grilla. -->
+              <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+
+                <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+                  <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                          (click)="firstPage()" [disabled]="paginaActual <= 1">
+                    <i class="fa fa-angle-double-left"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                          (click)="prevPage()" [disabled]="paginaActual <= 1">
+                    <i class="fa fa-chevron-left"></i>
+                  </button>
+                  <span class="btn btn-sm btn-white pagination-page-badge disabled">
+                    Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+                  </span>
+                  <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                          (click)="nextPage()" [disabled]="paginaActual >= ultimaPagina">
+                    <i class="fa fa-chevron-right"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" title="Última página"
+                          (click)="lastPage()" [disabled]="paginaActual >= ultimaPagina">
+                    <i class="fa fa-angle-double-right"></i>
+                  </button>
+                </div>
+
+                <div class="pagination-info small text-muted">
+                  Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> registros
+                </div>
+
+              </div>
         
       
 

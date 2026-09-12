@@ -38,6 +38,14 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
   public perfilModel: PerfilModel[] = [];
   public selectedRow: PerfilModel | null = null;
 
+  /**
+   * true mientras la columna ACCIONES está plegada (sólo se ve su cabecera).
+   * La plantilla lo usa para enseñar el botón "Mostrar acciones": si no, el
+   * usuario no tiene forma de saber que hay que pulsar la cabecera para
+   * recuperar los botones.
+   */
+  public accionesPlegadas = false;
+
   public titulo: string;
   public isLoading$ = this._loadingService.isLoading$;
   
@@ -251,23 +259,29 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
       
       if (actionsCol) {
         const isCollapsed = actionsCol.minWidth === 50;
-        
+
+        // Estado para la plantilla: tras este cambio la columna queda al revés
+        // de como estaba.
+        this.accionesPlegadas = !isCollapsed;
+
         actionsCol.minWidth = isCollapsed ? 110 : 50;
         actionsCol.maxWidth = isCollapsed ? 110 : 50;
-        actionsCol.cellStyle = isCollapsed ? 
-          { display: 'flex', justifyContent: 'center', alignItems: 'center' } : 
-          { display: 'none', justifyContent: 'left', alignItems: 'left'};
+        // Las celdas se ven en los dos estados: plegada, la celda muestra el
+        // botón de desplegar (ver ButtonAccionProfile), así que ya no se oculta.
+        actionsCol.cellStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center' };
 
+        // La cabecera plegada lleva title: al menos con el ratón encima se
+        // explica sola. El botón de la barra cubre el caso táctil.
         actionsCol.headerComponentParams = {
-          template: isCollapsed ? 
-            `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+          template: isCollapsed ?
+            `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
               <span>ACCIONES</span>
               <i class="fas fa-arrow-right"></i>
-            </div>` : 
-            `<div style="display: flex; align-items: center; justify-content: center;">
+            </div>` :
+            `<div style="display: flex; align-items: center; justify-content: center;" title="Mostrar los botones de acción">
               <i class="fas fa-bars"></i>
             </div>`
-        };        
+        };
 
         //actionsCol.headerName = isCollapsed ? 'ACCIONES' : '☰';
         // ☰ ⠿ ☷
@@ -587,11 +601,24 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 
 
 // COMPONENTE QUE CONTIENE EL BOTON
+// Con la columna ACCIONES plegada (parent.accionesPlegadas) cada celda muestra
+// un único botón-icono que vuelve a desplegarla; si no, los botones de acción.
+// Así el usuario siempre tiene algo pulsable en la columna, sin depender de
+// saber que la cabecera también responde.
 @Component({
   selector: 'app-button-accion',
   standalone: false,
   template: `
-      <app-action-buttons 
+    @if (AllProfilesComponent.accionesPlegadas) {
+      <button type="button"
+              class="btn btn-sm btn-outline-primary acciones-desplegar"
+              title="Mostrar los botones de acción"
+              aria-label="Mostrar los botones de acción"
+              (click)="AllProfilesComponent.toggleActionsColumn()">
+        <i class="fas fa-bars"></i>
+      </button>
+    } @else {
+      <app-action-buttons
         [accesoModel]="AllProfilesComponent.accesoModel"
         [buttonView] = true
         [buttonEdit] = true
@@ -602,7 +629,19 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
         (clone)="clonProfile()"
         (delete)="deleteProfile()">
       </app-action-buttons>
+    }
   `,
+  styles: [`
+    .acciones-desplegar {
+      width: 28px;
+      height: 24px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: .25rem;
+    }
+  `]
 })
 
 export class ButtonAccionProfile {
