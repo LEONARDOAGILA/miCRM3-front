@@ -1,212 +1,253 @@
-<div class="h-100 d-flex flex-column flex-1">
-  <div>
-    <!-- BEGIN breadcrumb -->
-    <ol class="breadcrumb float-xl-end">
-      <li class="breadcrumb-item"><a href="javascript:;">Home</a></li>
-      <li class="breadcrumb-item"><a href="javascript:;">Extra</a></li>
-      <li class="breadcrumb-item active">File Manager</li>
-    </ol>
-    <!-- END breadcrumb -->
-  </div>
+<!-- ============================================================
+     ADMINISTRADOR DE ARCHIVOS
 
-  
-<!-- INICIO PANEL -->
-<panel 
-    [title]="title"
-    [noButton]="false" 
-    [noButtonCollapse]="true" 
-    (panelReloaded)="refresh()"
-    class="flex-1 d-flex flex-column overflow-hidden" 
-    bodyClass="p-0 flex-1 overflow-hidden" 
-    panelClass="flex-1 m-0 d-flex flex-column overflow-hidden"   >
-  
-    <div class="file-manager h-100" [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled }">
+     Estructura (todo a altura completa, el scroll lo hacen el árbol y
+     la grilla, no la página):
+       1. Miga de pan
+       2. <panel> del tema
+          2a. Barra de herramientas (crear / acciones sobre lo seleccionado)
+          2b. Lateral: buscador + árbol de carpetas
+          2c. Contenido: barra de ubicación + grilla + barra de estado
 
-      <div class="file-manager-toolbar">
-        <button type="button" class="btn shadow-none text-body border-0" (click)="addRaiz()"><i class="fa fa-lg me-1 fa-plus"></i> 📁 Raiz</button>
-        <button type="button" class="btn shadow-none text-body border-0" [disabled]="!selectedNode?.escarpeta" (click)="add('addCarpeta')"><i class="fa fa-lg me-1 fa-plus"></i> 📁 Carpeta</button>
+     Las clases file-manager, file-manager-toolbar, -sidebar y -content
+     son del tema (scss/default/pages/_file-manager.scss); aquí sólo se
+     completan.
+     ============================================================ -->
 
-        <button type="button" class="btn shadow-none text-body border-0" 
-                [disabled]="this.ejecutar_esactivo" 
-                (click)="viewReporteExterno()">
-          <i class="fa fa-lg me-1 fa-play" 
-            [class.text-success]="selectedNode && !this.ejecutar_esactivo"
-            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> EJECUTAR
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb archivos-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/config/home">Configuración</a></li>
+  <li class="breadcrumb-item active">Administrador de archivos</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel
+  [title]="title"
+  [noButton]="false"
+  [noButtonCollapse]="true"
+  (panelReloaded)="refresh()"
+  (panelExpanded)="onResize()"
+  icono="folder"
+  class="flex-1 d-flex flex-column overflow-hidden"
+  bodyClass="p-0 flex-1 overflow-hidden"
+  panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
+
+  <div class="file-manager h-100" [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled }">
+
+    <!-- ---------- 2a. BARRA DE HERRAMIENTAS ----------
+         Dos grupos: crear (depende de la carpeta actual) y acciones sobre
+         el elemento seleccionado (fila de la grilla o, si no hay, la carpeta
+         actual). Cada botón se deshabilita cuando no aplica, y el title dice
+         por qué. En móvil se quedan los iconos. -->
+    <div class="file-manager-toolbar archivos-toolbar">
+
+      <div class="archivos-toolbar__grupo">
+        <button type="button" class="btn btn-sm archivos-btn"
+                title="Crear una carpeta en el primer nivel"
+                (click)="nuevaRaiz()">
+          <i class="fa fa-folder-plus archivos-btn__icono text-warning"></i>
+          <span class="archivos-btn__texto">Nueva raíz</span>
         </button>
 
-        <button type="button" class="btn shadow-none text-body border-0" 
-                [disabled]="!this.ejecutar_esactivo" 
-                (click)="add('addArchivo')">
-          <i class="fa fa-lg me-1 fa-plus" 
-            [class.text-success]="selectedNode && this.ejecutar_esactivo"
-            [class.text-secondary]="!selectedNode || !this.ejecutar_esactivo"></i> 📄 Archivo
+        <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeCrearDentro"
+                [title]="puedeCrearDentro ? 'Crear una carpeta dentro de «' + carpetaActual?.nombre + '»' : 'Entre en una carpeta para crear dentro de ella'"
+                (click)="nuevaCarpeta()">
+          <i class="fa fa-folder-plus archivos-btn__icono text-warning"></i>
+          <span class="archivos-btn__texto">Carpeta</span>
         </button>
 
-        
-        <button type="button" class="btn shadow-none text-body border-0" 
-                [disabled]="this.ejecutar_esactivo" 
-                (click)="viewReporteExterno()">
-          <i class="fa fa-lg me-1 fa-copy" 
-            [class.text-success]="selectedNode && !this.ejecutar_esactivo"
-            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Copiar
+        <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeCrearDentro"
+                [title]="puedeCrearDentro ? 'Crear un archivo dentro de «' + carpetaActual?.nombre + '»' : 'Entre en una carpeta para crear dentro de ella'"
+                (click)="nuevoArchivo()">
+          <i class="fa fa-file-circle-plus archivos-btn__icono text-primary"></i>
+          <span class="archivos-btn__texto">Archivo</span>
         </button>
-
-
-        <button type="button" class="btn shadow-none text-body border-0" 
-                [disabled]="this.ejecutar_esactivo" 
-                (click)="viewReporteExterno()">
-          <i class="fa fa-lg me-1 fa-pen-to-square" 
-            [class.text-success]="selectedNode && !this.ejecutar_esactivo"
-            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Editar
-        </button>
-
-
-        <button type="button" class="btn shadow-none text-body border-0" 
-                [disabled]="this.ejecutar_esactivo" 
-                (click)="viewReporteExterno()">
-          <i class="fa fa-lg me-1 fa-object-ungroup" 
-            [class.text-success]="selectedNode && !this.ejecutar_esactivo"
-            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Mover
-        </button>
-
-        <button type="button" class="btn shadow-none text-body border-0" 
-                [disabled]="this.ejecutar_esactivo" 
-                (click)="viewReporteExterno()">
-          <i class="fa fa-lg me-1 fa-xmark" 
-            [class.text-danger]="selectedNode && !this.ejecutar_esactivo"
-            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Eliminar
-        </button>
-
-        <button type="button" class="btn shadow-none text-body border-0" 
-                [disabled]="this.ejecutar_esactivo" 
-                (click)="viewReporteExterno()">
-          <i class="fa fa-lg me-1 fa fa-eye" 
-            [class.text-warning]="selectedNode && !this.ejecutar_esactivo"
-            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Ver
-        </button>
-
-
-        <button type="button" class="btn shadow-none text-body border-0" 
-                [disabled]="this.ejecutar_esactivo" 
-                (click)="viewReporteExterno()">
-          <i class="fa  fa-users" 
-            [class.text-danger]="selectedNode && !this.ejecutar_esactivo"
-            [class.text-secondary]="!selectedNode || this.ejecutar_esactivo"></i> Permisos
-        </button>
-
-        <button type="button" class="btn shadow-none text-body border-0" 
-                [disabled]="!selectedNode" 
-                (click)="viewReporteExterno()">
-          <i class="fa fa-lg me-1 fa-lock-open" 
-            [class.text-success]="selectedNode"></i> Auditoria
-        </button>
-
-
       </div>
 
-      <div class="file-manager-container">        
-        <div class="file-manager-sidebar">
-          <div class="file-manager-sidebar-mobile-toggler">
-              <button type="button" class="btn" (click)="toggleMobileSidebar()">
-                <i class="far fa-lg fa-folder" style="
-                  color: rgb(81, 22, 1); 
-                  font-size: 10px;
-                  background: #FFE8D6;
-                  padding: 4px;
-                  border-radius: 50%;
-                  width: 32px;
-                  height: 32px;
-                  display: inline-flex;
-                  align-items: center;
-                  justify-content: center;
-                "></i>
-              </button>          
-          </div>
+      <div class="archivos-toolbar__separador"></div>
 
-          <div>
-            <ng-scrollbar> 
-              <div class="p-3 mt-3">
-                <input
-                  type="text"
-                  class="form-control form-control-sm mb-3"
-                  placeholder="Buscar Archivo..."
-                  [(ngModel)]="searchQuery"
-                  (input)="filterNodes()"
-                />
-                <div class="scrollable-container file-tree mb-3" style="height: 350px;">
-                  <app-file-tree-node
-                    *ngFor="let node of nodes"
-                    [node]="node"
-                    [isSelected]="node === selectedNode"
-                    (nodeSelected)="onNodeSelect($event)"
-                    (nodeToggled)="onNodeToggle($event)"
-                  ></app-file-tree-node>
-                </div>
-              </div>
-            </ng-scrollbar>
-          </div>
-        </div>
+      <div class="archivos-toolbar__grupo">
+        <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeEjecutar"
+                [title]="puedeEjecutar ? 'Abrir «' + filaSeleccionada?.nombre + '»' : 'Seleccione un archivo en la lista'"
+                (click)="ejecutar()">
+          <i class="fa fa-play archivos-btn__icono text-success"></i>
+          <span class="archivos-btn__texto">Ejecutar</span>
+        </button>
 
-        <div class="file-manager-content d-flex flex-column">
-          <div class="mb-0 d-flex text-nowrap p-3 border-bottom">
-            <button type="button" class="btn btn-sm btn-white me-2 px-2" (click)="goToRoot()">
-              <i class="fa fa-fw fa-home"></i>
-            </button>
-            <button type="button" class="btn btn-sm btn-white me-2" (click)="goUpOneLevel()" [disabled]="!selectedNode">
-              <i class="fa fa-fw fa-arrow-turn-up ms-n1"></i> Up One Level
-            </button>
+        <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeEditar"
+                [title]="puedeEditar ? 'Modificar «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
+                (click)="editar()">
+          <i class="fa fa-pen-to-square archivos-btn__icono text-info"></i>
+          <span class="archivos-btn__texto">Editar</span>
+        </button>
 
-            <div class="btn-group me-2">
-              <button type="button" class="btn btn-sm btn-white" (click)="goBack()" [disabled]="currentHistoryIndex <= 0">
-                <i class="fa me-1 fa-arrow-left"></i> Back
-              </button>
-              <button type="button" class="btn btn-sm btn-white" 
-                      (click)="goForward()" 
-                      [disabled]="navigationHistory.length === 0 || currentHistoryIndex >= navigationHistory.length - 1">
-                <i class="fa me-1 fa-arrow-right"></i> Forward
-              </button>
-            </div>
-            <button type="button" class="btn btn-sm btn-white me-2 px-2" (click)="refresh()">
-              <i class="fa fa-fw fa-arrows-rotate"></i>
-            </button>
+        <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeEliminar"
+                [title]="puedeEliminar ? 'Eliminar «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
+                (click)="eliminar()">
+          <i class="fa fa-trash archivos-btn__icono text-danger"></i>
+          <span class="archivos-btn__texto">Eliminar</span>
+        </button>
 
-            <div class="btn-group me-2">
-              <button type="button" class="btn btn-sm btn-white" (click)="selectAll()">
-                <i class="fa fa-fw fa-check ms-n1"></i> Select All
-              </button>
-              <button type="button" class="btn btn-sm btn-white" (click)="unselectAll()">
-                <i class="far fa-fw fa-square ms-n1"></i> Unselect All
-              </button>
-            </div>
-          </div>
-
-          <!-- AG-Grid -->
-          <div style="height: calc(100% - 50px);">
-              <ag-grid-angular 
-                [rowData]="selectedNodeChildren" 
-                [columnDefs]="columnDefs"
-                [defaultColDef]="_appAgGridService.defaultColDef" 
-                [sideBar]="_appAgGridService.sideBar" 
-                [rowHeight]="_appAgGridService.rowHeight" 
-                [headerHeight]="_appAgGridService.headerHeight "
-                [localeText]="_appAgGridService.localeText"
-                [rowSelection]="'multiple'"
-                [pagination]="true"
-                [animateRows]="true" 
-                [cacheQuickFilter]="true" 
-                class="ag-theme-alpine zebra-grid ag-grid-transparente p-2 w-100 h-100"
-                (gridReady)="onGridReady($event)" 
-                  (cellDoubleClicked)="onCellDoubleClicked($event)"
-                  (cellClicked)="onCellClicked($event)"
-              ></ag-grid-angular>        
-          </div>
-                <!-- (cellClicked)="onCellClicked($event)"  -->
-
-          
-        </div>
+        <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!objetivo"
+                [title]="objetivo ? 'Historial de cambios de «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
+                (click)="auditoria()">
+          <i class="fa fa-user-secret archivos-btn__icono text-secondary"></i>
+          <span class="archivos-btn__texto">Auditoría</span>
+        </button>
       </div>
 
+      <!-- Qué elemento recibirá las acciones, para que no haya duda -->
+      @if (objetivo) {
+        <div class="archivos-toolbar__objetivo" [title]="'Las acciones se aplican a este elemento'">
+          <i class="fa fa-fw" [ngClass]="objetivo.escarpeta ? 'fa-folder' : 'fa-file'"></i>
+          <span class="text-truncate">{{ objetivo.nombre }}</span>
+        </div>
+      }
     </div>
 
-  </panel>
-</div>
+    <div class="file-manager-container">
+
+      <!-- ---------- 2b. LATERAL: ÁRBOL ---------- -->
+      <div class="file-manager-sidebar archivos-lateral">
+
+        <!-- Pestaña para abrir/cerrar el lateral en móvil (el tema la coloca) -->
+        <div class="file-manager-sidebar-mobile-toggler">
+          <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Carpetas">
+            <i class="fa" [ngClass]="mobileSidebarToggled ? 'fa-chevron-left' : 'fa-folder-tree'"></i>
+          </button>
+        </div>
+
+        <div class="archivos-lateral__cabecera">
+          <span class="archivos-lateral__titulo">
+            <i class="fa fa-folder-tree me-1"></i> Carpetas
+          </span>
+          <button type="button" class="btn btn-xs btn-white" title="Ir a la raíz" (click)="irARaiz()">
+            <i class="fa fa-house"></i>
+          </button>
+        </div>
+
+        <div class="archivos-lateral__buscador">
+          <i class="fa fa-search archivos-lateral__lupa"></i>
+          <input type="text"
+                 class="form-control form-control-sm"
+                 placeholder="Buscar en el árbol…"
+                 [(ngModel)]="searchQuery"
+                 (input)="filterNodes()">
+          @if (searchQuery) {
+            <button type="button" class="archivos-lateral__limpiar" title="Limpiar" (click)="limpiarBusqueda()">&times;</button>
+          }
+        </div>
+
+        <div class="archivos-lateral__arbol">
+          <ng-scrollbar class="h-100">
+            <div class="archivos-arbol">
+              @for (node of nodes; track node.id) {
+                <app-file-tree-node
+                  [node]="node"
+                  [isSelected]="node.isSelected"
+                  (nodeSelected)="onNodeSelect($event)"
+                  (nodeToggled)="onNodeToggle($event)">
+                </app-file-tree-node>
+              } @empty {
+                <div class="archivos-arbol__vacio">
+                  @if (searchQuery) {
+                    <i class="fa fa-search"></i>
+                    <span>Nada coincide con «{{ searchQuery }}»</span>
+                  } @else {
+                    <i class="fa fa-folder-open"></i>
+                    <span>Aún no hay carpetas. Cree una con <b>Nueva raíz</b>.</span>
+                  }
+                </div>
+              }
+            </div>
+          </ng-scrollbar>
+        </div>
+      </div>
+
+      <!-- ---------- 2c. CONTENIDO ---------- -->
+      <div class="file-manager-content archivos-contenido">
+
+        <!-- Barra de ubicación: navegación + ruta pulsable -->
+        <div class="archivos-ubicacion">
+          <div class="btn-group" role="group" aria-label="Navegación">
+            <button type="button" class="btn btn-sm btn-white" title="Atrás"
+                    [disabled]="!puedeAtras" (click)="atras()">
+              <i class="fa fa-arrow-left"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Adelante"
+                    [disabled]="!puedeAdelante" (click)="adelante()">
+              <i class="fa fa-arrow-right"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Subir un nivel"
+                    [disabled]="!carpetaActual" (click)="subirNivel()">
+              <i class="fa fa-arrow-turn-up"></i>
+            </button>
+          </div>
+
+          <nav class="archivos-ruta" aria-label="Ubicación">
+            <button type="button" class="archivos-ruta__tramo" (click)="irARaiz()" title="Raíz">
+              <i class="fa fa-house"></i>
+            </button>
+            @for (tramo of ruta; track tramo.id) {
+              <i class="fa fa-chevron-right archivos-ruta__sep"></i>
+              <button type="button" class="archivos-ruta__tramo"
+                      [class.archivos-ruta__tramo--actual]="tramo.id === carpetaActual?.id"
+                      (click)="irA(tramo)">
+                {{ tramo.nombre }}
+              </button>
+            }
+          </nav>
+
+          <button type="button" class="btn btn-sm btn-white ms-auto" title="Recargar" (click)="refresh()">
+            <i class="fa fa-arrows-rotate"></i>
+          </button>
+        </div>
+
+        <!-- Grilla: contenido de la carpeta actual (o las raíces).
+             Un clic marca la fila; doble clic entra en la carpeta o abre el
+             archivo. Aspecto: skin global de ag-Grid. -->
+        <div class="archivos-grilla">
+          <ag-grid-angular
+            class="ag-theme-alpine ag-grid-transparente w-100 h-100"
+            [rowData]="contenido"
+            [columnDefs]="columnDefs"
+            [defaultColDef]="_appAgGridService.defaultColDef"
+            [rowHeight]="_appAgGridService.rowHeight"
+            [headerHeight]="_appAgGridService.headerHeight"
+            [localeText]="_appAgGridService.localeText"
+            [rowClassRules]="rowClassRules"
+            [rowSelection]="'single'"
+            [pagination]="false"
+            [animateRows]="true"
+            [overlayNoRowsTemplate]="carpetaActual ? '<span>Esta carpeta está vacía</span>' : '<span>No hay carpetas en la raíz</span>'"
+            (gridReady)="onGridReady($event)"
+            (cellClicked)="onCellClicked($event)"
+            (cellDoubleClicked)="onCellDoubleClicked($event)">
+          </ag-grid-angular>
+        </div>
+
+        <!-- Barra de estado -->
+        <div class="archivos-estado">
+          <span>
+            <b>{{ contenido.length }}</b> {{ contenido.length === 1 ? 'elemento' : 'elementos' }}
+            @if (contenido.length) {
+              · {{ numCarpetas }} {{ numCarpetas === 1 ? 'carpeta' : 'carpetas' }}
+              · {{ numArchivos }} {{ numArchivos === 1 ? 'archivo' : 'archivos' }}
+            }
+          </span>
+          <span class="archivos-estado__ayuda d-none d-md-inline">
+            <i class="fa fa-hand-pointer me-1"></i>Clic para seleccionar · doble clic para entrar o abrir
+          </span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</panel>

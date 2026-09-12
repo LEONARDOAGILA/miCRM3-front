@@ -1,87 +1,262 @@
-.color-picker-group {
-    align-items: center;
+/* ============================================================
+   GUARDAR CARPETA / ARCHIVO
+   Mismo lenguaje visual que saveMenu: chips de ubicación, paneles del
+   tema y el selector de iconos en su propio modal. Colores por
+   variables de Bootstrap / Color Admin (claro y oscuro).
+   ============================================================ */
+
+:host {
+  display: block;
 }
 
-.form-control-color {
-    width: 3rem;
-    height: 2.5rem;
-    padding: 0.25rem;
-    cursor: pointer;
+.archivo-modal-body {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  padding: 1rem;
 }
 
-.input-group-text {
-    font-size: 0.875rem;
-    min-width: 6rem;
-    text-align: center;
-    background-color: #f8f9fa;
-}
-
-
-.custom-select {
-  position: relative;
-  width: 100%;
-}
-
-.select-header {
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  cursor: pointer;
+/* ---------- Ubicación en el árbol ---------- */
+.ubicacion {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin-bottom: .75rem;
+}
+
+.chip {
+  display: inline-flex;
   align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
-.select-header:hover {
-  border-color: #86b7fe;
+.chip-muted   { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-info    { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+.chip-carpeta { background-color: rgba(240, 177, 59, .18); color: #a06a00; }
+.chip-archivo { background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .14); color: var(--bs-app-theme, #00acac); }
+
+[data-bs-theme="dark"] .chip-carpeta { color: #F0B13B; }
+
+/* ---------- Cuerpo de los paneles (mismas medidas que saveUser) ---------- */
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .5rem;
 }
 
-.dropdown-arrow {
-  transition: transform 0.2s;
+:host ::ng-deep app-campoTexto,
+:host ::ng-deep app-campoNumeroEntero {
+  display: block;
 }
 
-.select-header.open .dropdown-arrow {
-  transform: rotate(180deg);
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: -.5rem 0 .75rem;      /* se acerca al campo, dentro de su margen */
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
-.select-dropdown {
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ---------- Vista previa ---------- */
+.vista-previa {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+
+  margin-bottom: 1rem;
+  padding: .625rem .75rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.vista-previa__icono {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+}
+
+.vista-previa__nombre {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+/* ---------- Icono (calcado de saveMenu) ---------- */
+.icono-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+}
+
+.icono-campo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.icono-preview {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;                 /* mismo alto que el campo */
+  border: 1px solid var(--bs-component-border-color, #ced4da);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.icono-preview:hover {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+}
+
+.icono-preview.is-empty {
+  color: var(--bs-secondary-color, #adb5bd);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-style: dashed;
+}
+
+.icono-acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin: -.5rem 0 1rem;
+}
+
+.icono-acciones .btn {
+  font-size: .7rem;
+}
+
+/* ---------- Color ---------- */
+.color-bloque__etiqueta {
+  display: block;
+  margin-bottom: .375rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.color-bloque__fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+/* El <input type="color"> nativo es feo y cambia por navegador: se esconde
+   dentro de una muestra redonda y el clic lo abre igual */
+.color-muestra {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--bs-component-bg, #fff);
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.color-muestra input {
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: white;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  margin-top: 4px;
-}
-
-.search-container {
-  padding: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-.dropdown-content {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.dropdown-item {
-  padding: 8px 12px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
   cursor: pointer;
 }
 
-.dropdown-item:hover {
-  background-color: #f8f9fa;
+.color-valor {
+  padding: .1rem .4rem;
+  border-radius: .25rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-body-color, #212529);
+  font-size: .7rem;
 }
 
-.dropdown-item i {
-  margin-right: 8px;
+.color-paleta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  margin-left: auto;
+}
+
+.color-paleta__punto {
   width: 20px;
-  text-align: center;
+  height: 20px;
+  padding: 0;
+  border: 2px solid var(--bs-component-bg, #fff);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+  cursor: pointer;
+  transition: transform .12s ease;
 }
 
+.color-paleta__punto:hover {
+  transform: scale(1.15);
+}
 
+.color-paleta__punto.is-activo {
+  box-shadow: 0 0 0 2px var(--bs-app-theme, #00acac);
+}
 
+/* ---------- Responsive ---------- */
+/* Tablet: las dos columnas se apilan (col-lg) */
+@media (max-width: 991.98px) {
+  .archivo-modal-body .row > [class^="col-"] + [class^="col-"] {
+    margin-top: 1rem;
+  }
+}
 
+@media (max-width: 575.98px) {
+  .archivo-modal-body {
+    padding: .75rem;
+  }
+
+  .form-card__body {
+    padding: .875rem .75rem .5rem;
+  }
+
+  /* Orden y descripción dejan de compartir fila */
+  .archivo-modal-body .col-4,
+  .archivo-modal-body .col-8 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .color-paleta {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icono-preview,
+  .color-paleta__punto {
+    transition: none;
+  }
+}

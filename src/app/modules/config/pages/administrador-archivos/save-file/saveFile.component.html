@@ -1,162 +1,217 @@
-<!-- Spinner -->
-<ng-container *ngIf="(isLoading$ | async)">
-    <div class="loader1" role="status" aria-label="Cargando"></div>
-    <div class="overlay1" aria-hidden="true"></div>
-</ng-container>
+<!-- ============================================================
+     GUARDAR CARPETA / ARCHIVO (modal)
 
-<div class="modal-container">
+     Mismo esquema que saveMenu: chips con la ubicación en el árbol,
+     y dos paneles del tema: datos a la izquierda, apariencia (icono y
+     color) a la derecha. En móvil se apilan.
+     ============================================================ -->
 
-<!-- Cabecera del modal -->
-<app-modal-header 
-    [title]="title"
-    (onClose)="modal.close('Close click')">
+<!-- Spinner y velo mientras guarda -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Guardando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- Cabecera -->
+<app-modal-header
+  [title]="title"
+  (onClose)="modal.dismiss('Close click')">
 </app-modal-header>
 
+<!-- Cuerpo -->
+<div class="modal-body archivo-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
 
-
-    <div class="modal-body">
-        <form [formGroup]="form" class="form-validate form-horizontal" novalidate="">
-            <div class="container-fluid">
-                <!-- Primera fila: Campos principales -->
-                <div class="row g-3 mb-4">
-
-                    <div class="col-md-4">
-                        <app-campoNumeroEntero 
-                            [control]="form.controls['orden']"
-                            label="Orden"
-                            placeholder="Orden"
-                            [maxLength]="100"
-                        ></app-campoNumeroEntero>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="color-picker-container card p-2 shadow-sm">
-                            <div class="d-flex align-items-center gap-2">
-                                <input type="color" 
-                                    class="form-control form-control-color p-1 border" 
-                                    [formControl]="form.controls['color']"
-                                    title="Seleccione un color"
-                                    style="width: 40px; height: 40px; cursor: pointer;">
-                                
-                                <div class="flex-grow-1">
-                                    <span class="color-value d-block text-muted small mb-1">Color:</span>
-                                    <span class="color-value d-block fw-semibold" 
-                                        [style.color]="form.controls['color'].value"
-                                        [class.text-dark]="!form.controls['color'].value">
-                                        {{form.controls['color'].value || 'Ningún color seleccionado'}}
-                                    </span>
-                                </div>
-                                
-                            </div>
-                        </div>
-                    </div>                    
-
-
-                    
-<div class="col-md-4 mb-3">
-  <div class="icon-picker-container border-0">
-    <!-- Contenedor con floating label -->
-    <div class="form-floating position-relative h-100">
-      <!-- Select Header con mayor altura -->
-      <div class="select-header d-flex align-items-center justify-content-between p-3 rounded-2 border cursor-pointer h-100"
-           (click)="toggleDropdown()"
-           [class.border-primary]="isDropdownOpen"
-           style="min-height: 56px">  <!-- Altura aumentada -->
-        
-        <span class="d-flex align-items-center w-100 h-100">
-          @if (form.controls['icono'].value) {
-            <i [class]="form.controls['icono'].value" class="fs-4 me-2"></i>  <!-- Icono más grande -->
-            <span class="text-truncate fs-6">{{getIconName(form.controls['icono'].value)}}</span>  <!-- Texto más grande -->
-          } @else {
-            <span class="text-muted fs-6">Seleccione un icono</span>  <!-- Texto más grande -->
-          }
+    <!-- ---------- Ubicación dentro del árbol ---------- -->
+    <div class="ubicacion">
+      <span class="chip" [ngClass]="esCarpeta ? 'chip-carpeta' : 'chip-archivo'">
+        <i class="fa-solid" [ngClass]="esCarpeta ? 'fa-folder' : 'fa-file'"></i>
+        {{ esCarpeta ? 'Carpeta' : 'Archivo' }}
+      </span>
+      <span class="chip chip-info">
+        <i class="fa-solid fa-layer-group"></i>
+        Nivel {{ form.controls['nivel'].value ?? 0 }}
+      </span>
+      <span class="chip chip-muted">
+        <i class="fa-solid fa-diagram-project"></i>
+        @if (esEdicion) {
+          {{ form.controls['padre'].value ? 'Dentro de la carpeta #' + form.controls['padre'].value : 'En la raíz' }}
+        } @else {
+          {{ nombrePadre ? 'Dentro de «' + nombrePadre + '»' : 'En la raíz' }}
+        }
+      </span>
+      @if (tieneHijos) {
+        <span class="chip chip-muted">
+          <i class="fa-solid fa-sitemap"></i>
+          Tiene contenido
         </span>
-        <i class="fas fa-chevron-down fs-5 transition-all" [class.rotate-180]="isDropdownOpen"></i>  <!-- Flecha más grande -->
-      </div>
-      
-      
-      <!-- Dropdown (se mantiene similar pero con ajustes) -->
-      @if (isDropdownOpen) {
-        <div class="select-dropdown position-absolute w-100 mt-1 shadow-lg rounded-2 overflow-hidden z-3 bg-white">
-          <div class="search-container p-2 bg-light">
-            <input type="text" 
-                   class="form-control form-control-lg border-0 shadow-none" 
-                   placeholder="Buscar icono..."
-                   [formControl]="searchControl">
-          </div>
-          
-          <div class="dropdown-content max-h-300 overflow-y-auto">
-            @for (icon of filteredIcons; track icon.id) {
-              <div class="dropdown-item d-flex align-items-center p-3 hover-bg-light cursor-pointer"
-                   (click)="selectIcon(icon)"
-                   style="min-height: 48px">  <!-- Items más altos -->
-                <i [class]="icon.icon" class="fs-4 me-3 text-muted"></i>  <!-- Iconos más grandes -->
-                <span class="fs-6">{{icon.name}}</span>  <!-- Texto más grande -->
-              </div>
-            }
-            @empty {
-              <div class="p-3 text-center text-muted fs-6">
-                No se encontraron iconos
-              </div>
-            }
-          </div>
-        </div>
       }
     </div>
-  </div>
-</div>
 
+    <div class="row g-3">
 
+      <!-- ============ DATOS ============ -->
+      <div class="col-lg-7">
+        <panel
+          headerClass="bg-gray-800"
+          [title]="esCarpeta ? 'Datos de la carpeta' : 'Datos del archivo'"
+          noButton="true"
+          noBody="true"
+          panelClass="h-100 mb-0"
+          icono="editar"
+          fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+              <div class="row g-0">
+
+                <div class="col-12">
+                  <app-campoTexto
+                    [control]="form.controls['nombre']"
+                    label="NOMBRE"
+                    [placeholder]="esCarpeta ? 'Nombre de la carpeta' : 'Nombre del archivo'"
+                    [maxLength]="100"
+                    [trimEspacios]="true">
+                  </app-campoTexto>
                 </div>
 
-                <!-- Campos de texto largos -->
-                <div class="row g-3">
-                    <div class="col-12">
-                        <app-campoTexto 
-                            [control]="form.controls['nombre']"
-                            label="NOMBRE"
-                            placeholder="NOMBRE"
-                            [maxLength]="100"
-                            [trimEspacios]="true"
-                        ></app-campoTexto>
-                    </div>
+                <!-- Orden y descripción comparten fila: el orden es corto -->
+                <div class="col-4">
+                  <app-campoNumeroEntero
+                    [control]="form.controls['orden']"
+                    label="Orden"
+                    placeholder="Orden"
+                    [maxLength]="100">
+                  </app-campoNumeroEntero>
                 </div>
 
-                <div class="row g-3">
-                    <div class="col-12">
-                        <app-campoTexto 
-                            [control]="form.controls['descripcion']"
-                            label="DESCRIPCIÓN"
-                            placeholder="DESCRIPCIÓN"
-                            [maxLength]="100"
-                        ></app-campoTexto>
-                    </div>
+                <div class="col-8">
+                  <app-campoTexto
+                    [control]="form.controls['descripcion']"
+                    label="DESCRIPCIÓN"
+                    placeholder="Descripción"
+                    [maxLength]="100">
+                  </app-campoTexto>
                 </div>
 
-                <div class="row g-3" *ngIf="this.accion==='addArchivo'">
-                    <div class="col-12">
-                        <app-campoTexto 
-                            [control]="form.controls['url']"
-                            label="URL"
-                            placeholder="URL"
-                            [maxLength]="100"
-                        ></app-campoTexto>
-                    </div>
-                </div>
+                <!-- La url sólo existe en archivos: es el reporte que se abre -->
+                @if (!esCarpeta) {
+                  <div class="col-12">
+                    <app-campoTexto
+                      [control]="form.controls['url']"
+                      label="URL DEL REPORTE"
+                      placeholder="https://…"
+                      [maxLength]="500"
+                      [trimEspacios]="true"
+                      icono="fa-link">
+                    </app-campoTexto>
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Dirección completa del reporte externo. Se abre en un visor a pantalla completa con <b>Ejecutar</b>.
+                    </p>
+                  </div>
+                }
 
+              </div>
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+      <!-- ============ APARIENCIA ============ -->
+      <div class="col-lg-5">
+        <panel
+          headerClass="bg-gray-800"
+          title="Apariencia"
+          noButton="true"
+          noBody="true"
+          panelClass="h-100 mb-0"
+          icono="image"
+          fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <!-- Vista previa grande: así se ve en el árbol y en la grilla -->
+              <div class="vista-previa">
+                <span class="vista-previa__icono" [style.color]="colorActual">
+                  <i [ngClass]="iconoActual || (esCarpeta ? 'fa fa-folder' : 'far fa-file')"></i>
+                </span>
+                <span class="vista-previa__nombre text-truncate">
+                  {{ form.controls['nombre'].value || (esCarpeta ? 'Nueva carpeta' : 'Nuevo archivo') }}
+                </span>
+              </div>
+
+              <!-- ---------- Icono ---------- -->
+              <div class="icono-row">
+                <div class="icono-campo">
+                  <app-campoTexto
+                    [control]="form.controls['icono']"
+                    label="ICONO"
+                    placeholder="fa fa-folder"
+                    [maxLength]="100"
+                    [trimEspacios]="true">
+                  </app-campoTexto>
+                </div>
+                <!-- Abre el selector en su propio modal, para no estirar este formulario -->
+                <button type="button"
+                        class="icono-preview"
+                        [class.is-empty]="!iconoActual"
+                        (click)="abrirSelectorIconos()"
+                        aria-label="Elegir un icono de la lista"
+                        title="Elegir un icono de la lista">
+                  <i [ngClass]="iconoActual || 'fa-regular fa-image'"></i>
+                </button>
+              </div>
+
+              <div class="icono-acciones">
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="abrirSelectorIconos()">
+                  <i class="fa-solid fa-icons"></i>
+                  Elegir icono de la lista
+                </button>
+                @if (iconoActual) {
+                  <button type="button" class="btn btn-sm btn-link text-secondary" (click)="limpiarIcono()">
+                    Quitar
+                  </button>
+                }
+              </div>
+
+              <!-- ---------- Color ---------- -->
+              <div class="color-bloque">
+                <span class="color-bloque__etiqueta">Color</span>
+                <div class="color-bloque__fila">
+                  <!-- Selector nativo disfrazado de muestra -->
+                  <label class="color-muestra" [style.background-color]="colorActual" title="Elegir cualquier color">
+                    <input type="color" formControlName="color" aria-label="Color">
+                  </label>
+                  <code class="color-valor">{{ colorActual || '—' }}</code>
+
+                  <!-- Paleta rápida con los colores del tema -->
+                  <div class="color-paleta">
+                    @for (c of coloresRapidos; track c) {
+                      <button type="button"
+                              class="color-paleta__punto"
+                              [class.is-activo]="c.toLowerCase() === colorActual.toLowerCase()"
+                              [style.background-color]="c"
+                              [title]="c"
+                              (click)="elegirColor(c)"></button>
+                    }
+                  </div>
+                </div>
+              </div>
 
             </div>
-        </form>
+          </ng-container>
+        </panel>
+      </div>
+
     </div>
-
-<!-- Pie del modal -->
-<app-modal-footer
-    [isDisabled]="true"
-    (onClose)="modal.close('Close click')"
-    (click)="onSubmitForm($event)">
-</app-modal-footer>
-
-
-
-
+  </form>
 </div>
+
+<!-- Pie -->
+<app-modal-footer
+  [isDisabled]="!(isLoading$ | async)"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

@@ -26,15 +26,18 @@ export class FileTreeNodeComponent {
   @Output() nodeSelected = new EventEmitter<FileTreeNode>();
   @Output() nodeToggled = new EventEmitter<FileTreeNode>();
 
+  /**
+   * +/−: sólo abre o cierra la rama. No selecciona: antes emitía también
+   * nodeSelected, y quien escuchaba volvía a abrir la rama al seleccionar,
+   * así que el "−" nunca llegaba a cerrarla. Seleccionar es pulsar el nombre.
+   */
   toggleNode(event: Event): void {
     event.stopPropagation();
-    
+
     if (this.node.children) {
       this.node.isOpen = !this.node.isOpen;
       this.nodeToggled.emit(this.node);
     }
-    
-    this.nodeSelected.emit(this.node);
   }
 
   onChildNodeSelected(node: FileTreeNode): void {

@@ -1,0 +1,110 @@
+<!-- Spinner mientras se borra -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarArchivoTitulo"
+     aria-describedby="eliminarArchivoDescripcion">
+
+  <!-- Cabecera -->
+  <div class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarArchivoTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- Cuerpo -->
+  <div class="modal-body">
+
+    <!-- Advertencia -->
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">
+          ¿Está seguro que desea eliminar {{ esCarpeta ? 'esta carpeta' : 'este archivo' }}?
+        </h6>
+        <p class="eliminar-aviso__texto" id="eliminarArchivoDescripcion">
+          Esta acción no se puede deshacer.
+          @if (esCarpeta) {
+            Sólo se puede eliminar una carpeta vacía: si tiene contenido, el sistema lo rechazará.
+          } @else {
+            El reporte al que apunta no se toca; sólo desaparece su acceso desde aquí.
+          }
+          Su historial de auditoría se conserva.
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-fw me-1" [ngClass]="esCarpeta ? 'fa-folder' : 'fa-file'" aria-hidden="true"></i>Nombre
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.nombre || '—' }}</span>
+      </div>
+
+      @if (registro_selected?.descripcion) {
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="eliminar-datos__etiqueta">
+            <i class="fa fa-align-left fa-fw me-1" aria-hidden="true"></i>Descripción
+          </span>
+          <span class="eliminar-datos__valor text-end">{{ registro_selected.descripcion }}</span>
+        </div>
+      }
+
+      @if (!esCarpeta && registro_selected?.url) {
+        <div class="list-group-item">
+          <span class="eliminar-datos__etiqueta d-block mb-1">
+            <i class="fa fa-link fa-fw me-1" aria-hidden="true"></i>URL
+          </span>
+          <span class="eliminar-datos__valor text-break small">{{ registro_selected.url }}</span>
+        </div>
+      }
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-tag fa-fw me-1" aria-hidden="true"></i>Tipo
+        </span>
+        <span class="badge fs-10px" [ngClass]="esCarpeta ? 'bg-warning' : 'bg-secondary'">
+          {{ esCarpeta ? 'CARPETA' : 'ARCHIVO' }}
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Pie -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="eliminar()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+    </button>
+  </div>
+
+</div>

@@ -41,6 +41,7 @@ import { ComboComponent } from '../../components/campos/combo/combo.component';
 import { FileTreeNodeComponent } from '../../components/file-tree-node/file-tree-node.component';
 
 import { ModalReporteExternoComponent } from './pages/administrador-archivos/modalReporteExterno/modalReporteExterno.component';
+import { DeleteFileComponent } from './pages/administrador-archivos/delete-file/deleteFile.component';
 import { ExtraSettingsPage } from './pages/extra-settings-page/extra-settings-page';
 import { ExtraSearchResultsPage } from './pages/extra-search-results/extra-search-results';
 import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
@@ -64,6 +65,7 @@ import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
     FileManagerComponent,
     SaveFileComponent,
     ModalReporteExternoComponent,
+    DeleteFileComponent,
 
 
   ],

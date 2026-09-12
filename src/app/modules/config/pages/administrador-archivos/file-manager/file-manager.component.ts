@@ -1,37 +1,60 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CellClickedEvent, ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
-import { firstValueFrom, Subject, takeUntil } from 'rxjs';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { AgGridAngular } from 'ag-grid-angular';
-
-import { ArchivoModel } from '../../../interfaces/archivoModel';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { CellClickedEvent, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
+import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
+import { ToastrService } from 'ngx-toastr';
 
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { AppSettings } from '../../../../../service/app-settings.service';
-import { ArchivoService } from "../../../services/archivo.service";
+import { ArchivoService } from '../../../services/archivo.service';
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 
 import { SaveFileComponent } from '../save-file/saveFile.component';
+import { DeleteFileComponent } from '../delete-file/deleteFile.component';
 import { ModalReporteExternoComponent } from '../modalReporteExterno/modalReporteExterno.component';
+import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 
-
-
+/**
+ * Nodo del árbol tal como lo devuelve config/archivo/getArchivoTree: la fila
+ * de la tabla `archivo` más `children` (sólo si tiene) y las fechas ya
+ * formateadas. isOpen / isSelected son estado de pantalla, no de la base.
+ */
 export interface FileTreeNode {
   id: number;
+  padre: number;
+  orden: number;
+  nivel: number;
   nombre: string;
-  isOpen?: boolean;
-  isSelected?: boolean;
-  children?: FileTreeNode[];
-  tipo: number;
-  escarpeta: boolean;
+  descripcion?: string;
+  url?: string;
   icono?: string;
   color?: string;
-  created_at?: string;
-  updated_at?: string;
+  tipo?: string | number;
+  escarpeta: boolean;
+  activo?: boolean;
   created_at_formateado?: string;
   updated_at_formateado?: string;
+  children?: FileTreeNode[];
+  isOpen?: boolean;
+  isSelected?: boolean;
 }
 
+/**
+ * Administrador de archivos: árbol de carpetas a la izquierda y contenido de
+ * la carpeta actual en una grilla a la derecha. Un "archivo" es un reporte
+ * externo (una url) que se abre en un visor a pantalla completa.
+ *
+ * Dos selecciones distintas conviven aquí, y conviene tenerlo claro:
+ *   - carpetaActual: la carpeta cuyo contenido muestra la grilla (se elige
+ *     en el árbol o entrando con doble clic desde la grilla).
+ *   - filaSeleccionada: el elemento marcado en la grilla, si lo hay.
+ * Las acciones (ejecutar, editar, eliminar, auditoría) van sobre `objetivo`:
+ * la fila si hay una marcada; si no, la carpeta actual.
+ *
+ * Memoria: los modales se escuchan con escucharModal() (misma técnica que
+ * allUsers), y todo se corta en ngOnDestroy con unsubscribe$ + dismissAll().
+ */
 @Component({
   selector: 'app-file-manager',
   templateUrl: './file-manager.component.html',
@@ -42,566 +65,569 @@ export interface FileTreeNode {
   }
 })
 export class FileManagerComponent implements OnInit, OnDestroy {
-  @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
-  public gridApi!: GridApi;
 
-  mobileSidebarToggled = false;
-  searchQuery = '';
+  public title = 'Administrador de archivos';
+
+  // ---------- Árbol ----------
+  /** Árbol que se pinta (puede estar filtrado por la búsqueda). */
   nodes: FileTreeNode[] = [];
-  originalNodes: FileTreeNode[] = [];
-  selectedNode: FileTreeNode | null = null;
-  selectedNodeChildren: FileTreeNode[] = [];
-  private unsubscribe$ = new Subject<void>();
-  public archivoModel: ArchivoModel[] = [];
-  private expandedNodeIds: Set<number> = new Set();
-  navigationHistory: FileTreeNode[] = [];
-  currentHistoryIndex: number = -1;
-  public title = 'File Manger';
-  public ejecutar_esactivo: boolean = true;
+  /** Árbol completo, para volver a él al limpiar la búsqueda. */
+  private originalNodes: FileTreeNode[] = [];
+  searchQuery = '';
+  mobileSidebarToggled = false;
 
-  // AG-Grid configuration
-  public columnDefs: ColDef[] = [
-    {
-      headerName: '',
-      field: 'icono',
-      width: 50,
-      maxWidth: 50,
-      cellRenderer: (params: any) => {
-        if (params.data.icono) {
-          return `<i class="${params.data.icono}" style="color: ${params.data.color || '#ffc107'}"></i>`;
-        } else if (params.data.escarpeta) {
-          return `<i class="fa fa-folder" style="color: ${params.data.color || '#ffc107'}"></i>`;
-        } else {
-          return '<i class="far fa-file-code fa-lg text-body text-opacity-50"></i>';
-        }
-      },
-      cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-      suppressMenu: true,
-      sortable: false,
-      filter: false
-    },
-    {
-      headerName: 'Nombre',
-      field: 'nombre',
-      flex: 2,
-      minWidth: 150,
-      cellStyle: { textAlign: 'left' },
-      filter: 'agTextColumnFilter'
-    },
-    {
-      headerName: 'Tamaño',
-      field: 'size',
-      width: 100,
-      maxWidth: 100,
-      valueGetter: () => '4 KB',
-      cellStyle: { textAlign: 'right' },
-      suppressMenu: true,
-      sortable: false,
-      filter: false
-    },
-    {
-      headerName: 'Creación',
-      field: 'created_at_formateado',
-      width: 160,
-      maxWidth: 160,
-      // valueGetter: (params) => this.formatDate(params.data.created_at),
-      cellStyle: { textAlign: 'center' },
-      // filter: 'agDateColumnFilter'
-    },
-    {
-      headerName: 'Modificación',
-      field: 'updated_at_formateado',
-      width: 160,
-      maxWidth: 160,
-      // valueGetter: (params) => this.formatDate(params.data.updated_at),
-      cellStyle: { textAlign: 'center' },
-      // filter: 'agDateColumnFilter'
-    },
-    {
-      headerName: 'Tipo',
-      field: 'escarpeta',
-      width: 100,
-      maxWidth: 100,
-      valueGetter: (params) => params.data.escarpeta ? 'Carpeta' : 'Archivo',
-      cellStyle: { textAlign: 'center' },
-      filter: 'agTextColumnFilter'
-    },
-    {
-      headerName: 'Permisos',
-      field: 'permission',
-      width: 100,
-      maxWidth: 100,
-      valueGetter: () => '0755',
-      cellStyle: { textAlign: 'center' },
-      suppressMenu: true,
-      sortable: false,
-      filter: false
-    }
-  ];
+  // ---------- Selección ----------
+  carpetaActual: FileTreeNode | null = null;
+  filaSeleccionada: FileTreeNode | null = null;
+  /** Elementos de la carpeta actual: lo que ve la grilla. */
+  contenido: FileTreeNode[] = [];
+  /** Ruta desde la raíz hasta la carpeta actual, para la barra de ubicación. */
+  ruta: FileTreeNode[] = [];
+
+  // ---------- Historial de navegación (atrás / adelante) ----------
+  private historial: FileTreeNode[] = [];
+  private indiceHistorial = -1;
+
+  // ---------- ag-Grid ----------
+  public gridApi!: GridApi;
+  public columnDefs: ColDef[] = [];
+  public rowClassRules = {
+    'fila-inactiva': (p: RowClassParams) => p.data?.activo === false
+  };
+
+  private readonly unsubscribe$ = new Subject<void>();
 
   constructor(
     public appSettings: AppSettings,
     private _archivoService: ArchivoService,
     private _seguridadService: SeguridadService,
+    private _toastr: ToastrService,
     private modal: NgbModal,
     public _appAgGridService: AppAgGridService
   ) {
+    // Pantalla a altura completa: el panel llena el hueco y el scroll lo
+    // hacen el árbol y la grilla, no la página.
     this.appSettings.appSidebarMinified = true;
     this.appSettings.appHeaderInverse = true;
     this.appSettings.appContentFullHeight = true;
     this.appSettings.appContentClass = 'd-flex flex-column';
   }
 
-  ngOnInit() {
-    this.selectedNodeChildren = [];
+  ngOnInit(): void {
+    this.initializeGrid();
     this.loaddata();
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.appSettings.appSidebarMinified = false;
     this.appSettings.appHeaderInverse = false;
     this.appSettings.appContentFullHeight = false;
     this.appSettings.appContentClass = '';
+
     this.unsubscribe$.next();
     this.unsubscribe$.complete();
+    this.modal.dismissAll();
   }
 
+  // ================================================================
+  // DATOS
+  // ================================================================
 
+  /**
+   * Recarga el árbol conservando qué carpetas estaban abiertas y cuál era la
+   * carpeta actual, para que guardar o borrar no "cierre" todo.
+   */
+  async loaddata(): Promise<void> {
+    const abiertas = this.idsAbiertos(this.nodes);
+    const idCarpeta = this.carpetaActual?.id;
 
-  async loaddata() {
-    const previouslyExpanded = this.getExpandedNodeIds(this.nodes);
-    const selectedNodeId = this.selectedNode?.id;
-
-    await this.getArchivoTree();
-    // await this.allArchivos();
-
-    this.restoreExpandedState(this.nodes, previouslyExpanded);
-
-    if (selectedNodeId) {
-      this.restoreSelection(this.nodes, selectedNodeId);
-    }
-  }
-
-  async allArchivos() {
-    try {
-      let res: any = await firstValueFrom(this._archivoService.allArchivos());
-      if (res?.status === 'success') {
-        this.archivoModel = res.data;
-      } else {
-        this.archivoModel = [];
-        console.error('response -> Error: Respuesta sin status success', res.message);
-      }
-    } catch (error: any) {
-      this.archivoModel = [];
-      console.error('response -> Error en la petición', error);
-    }
-  }
-
-  async getArchivoTree() {
     try {
       const res = await firstValueFrom(this._archivoService.getArchivoTree());
-      if (res?.status === 'success') {
-        this.nodes = this.processNodes(res.data);
-        this.originalNodes = JSON.parse(JSON.stringify(this.nodes));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo cargar el árbol de archivos', 'Error');
+        return;
       }
+      this.originalNodes = this.prepararNodos(res.data ?? []);
+      this.nodes = this.clonar(this.originalNodes);
     } catch (error) {
-      console.error('Error loading files:', error);
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al cargar el árbol de archivos:', error);
+      this.originalNodes = [];
       this.nodes = [];
     }
+
+    this.restaurarAbiertos(this.nodes, abiertas);
+
+    if (idCarpeta != null) {
+      const nodo = this.buscarPorId(this.nodes, idCarpeta);
+      if (nodo) {
+        this.abrirCarpeta(nodo, false);
+        return;
+      }
+    }
+    // Sin carpeta (arranque) o la carpeta ya no existe (borrada)
+    this.irARaiz();
   }
 
-  add(tipoAdd: string) {
-    if (!this._seguridadService.isexpired()) {
-      const expandedNodes = this.getExpandedNodeIds(this.nodes);
-      const selectedNodeId = this.selectedNode?.id;
-
-      const modalRef = this.modal.open(SaveFileComponent, {
-        centered: true,
-        size: "xs",
-        backdrop: "static",
-        keyboard: false,
-      });
-
-      modalRef.componentInstance.registro_selected = this.selectedNode;
-      modalRef.componentInstance.accion = tipoAdd;
-      const maxOrder2 = this.getMaxOrder2ByParent(this.selectedNode.id);
-      modalRef.componentInstance.maxOrder2 = maxOrder2 + 1;
-      let tieneHijos = this.archivoModel.some(item => item.padre === this.selectedNode.id);
-      modalRef.componentInstance.tieneHijos = tieneHijos;
-
-      modalRef.result.then((result) => {
-        this.loaddata().then(() => {
-          if (selectedNodeId) {
-            this.restoreExpandedState(this.nodes, expandedNodes);
-            this.restoreSelection(this.nodes, selectedNodeId);
-          }
-        });
-      }).catch((error) => {
-        if (error !== 'Close click' && error !== 'Escape key press') {
-          console.error('Error al cerrar el modal:', error);
-        }
-      });
-    }
+  /** Marca todos los nodos como cerrados y sin seleccionar. */
+  private prepararNodos(nodes: FileTreeNode[]): FileTreeNode[] {
+    return nodes.map(n => ({
+      ...n,
+      isOpen: false,
+      isSelected: false,
+      children: n.children ? this.prepararNodos(n.children) : undefined
+    }));
   }
 
-  addRaiz() {
-    if (!this._seguridadService.isexpired()) {
-      const expandedNodes = this.getExpandedNodeIds(this.nodes);
-
-      const modalRef = this.modal.open(SaveFileComponent, {
-        centered: true,
-        size: "xs",
-        backdrop: "static",
-        keyboard: false,
-      });
-
-      modalRef.componentInstance.registro_selected = 0;
-      modalRef.componentInstance.accion = 'addNuevaRaiz';
-      const maxOrder2 = this.getMaxOrder2Root();
-      modalRef.componentInstance.maxOrder2 = maxOrder2 + 1;
-
-      modalRef.result.then((result) => {
-        this.loaddata().then(() => {
-          this.restoreExpandedState(this.nodes, expandedNodes);
-        });
-      }).catch((error) => {
-        if (error !== 'Close click' && error !== 'Escape key press') {
-          console.error('Error al cerrar el modal:', error);
-        }
-      });
-
-      modalRef.componentInstance.registrosE.pipe(takeUntil(this.unsubscribe$)).subscribe({
-        next: (response: any) => { this.archivoModel = response; },
-        error: (error: any) => { console.error(error.message); },
-      });
-    }
+  private clonar(nodes: FileTreeNode[]): FileTreeNode[] {
+    return JSON.parse(JSON.stringify(nodes));
   }
 
   refresh(): void {
     this.loaddata();
   }
 
-  viewReporteExterno() {
+  // ================================================================
+  // NAVEGACIÓN
+  // ================================================================
+
+  /** Desde el árbol: una carpeta se abre; un archivo se marca como fila. */
+  onNodeSelect(node: FileTreeNode): void {
+    if (node.escarpeta) {
+      this.abrirCarpeta(node, true);
+    } else {
+      // Un archivo del árbol: se abre su carpeta y se deja el archivo marcado
+      const padre = this.buscarPadre(this.nodes, node.id);
+      if (padre) { this.abrirCarpeta(padre, true); }
+      this.filaSeleccionada = node;
+      this.marcarEnArbol(node);
+    }
+    this.mobileSidebarToggled = false;
+  }
+
+  onNodeToggle(_node: FileTreeNode): void {
+    // El nodo ya cambió su isOpen; no hay nada más que hacer. Se mantiene el
+    // evento por si el árbol quiere avisar de algo en el futuro.
+  }
+
+  /**
+   * Hace de `node` la carpeta actual: grilla, ruta e historial.
+   * @param registrar false al restaurar tras recargar, para no duplicar
+   *                  entradas en el historial.
+   */
+  private abrirCarpeta(node: FileTreeNode, registrar: boolean): void {
+    this.marcarEnArbol(node);
+    this.abrirAncestros(node);
+
+    this.carpetaActual = node;
+    this.filaSeleccionada = null;
+    this.contenido = node.children ?? [];
+    this.ruta = this.rutaHasta(this.nodes, node.id) ?? [node];
+
+    if (registrar) { this.registrarHistorial(node); }
+
+    this.gridApi?.setRowData(this.contenido);
+    this.gridApi?.deselectAll();
+  }
+
+  /** Vista de raíz: la grilla muestra las carpetas de primer nivel. */
+  irARaiz(): void {
+    this.desmarcarTodo(this.nodes);
+    this.carpetaActual = null;
+    this.filaSeleccionada = null;
+    this.contenido = this.nodes;
+    this.ruta = [];
+    this.gridApi?.setRowData(this.contenido);
+    this.gridApi?.deselectAll();
+  }
+
+  subirNivel(): void {
+    if (!this.carpetaActual) { return; }
+    const padre = this.buscarPadre(this.nodes, this.carpetaActual.id);
+    padre ? this.abrirCarpeta(padre, true) : this.irARaiz();
+  }
+
+  /** Clic en un tramo de la barra de ubicación. */
+  irA(node: FileTreeNode): void {
+    this.abrirCarpeta(node, true);
+  }
+
+  private registrarHistorial(node: FileTreeNode): void {
+    const actual = this.historial[this.indiceHistorial];
+    if (actual?.id === node.id) { return; }
+    this.historial = this.historial.slice(0, this.indiceHistorial + 1);
+    this.historial.push(node);
+    this.indiceHistorial = this.historial.length - 1;
+  }
+
+  get puedeAtras(): boolean { return this.indiceHistorial > 0; }
+  get puedeAdelante(): boolean { return this.indiceHistorial < this.historial.length - 1; }
+
+  atras(): void {
+    if (!this.puedeAtras) { return; }
+    this.indiceHistorial--;
+    this.irAHistorial();
+  }
+
+  adelante(): void {
+    if (!this.puedeAdelante) { return; }
+    this.indiceHistorial++;
+    this.irAHistorial();
+  }
+
+  private irAHistorial(): void {
+    // Se busca por id: tras una recarga los objetos del historial ya no son
+    // los del árbol actual.
+    const nodo = this.buscarPorId(this.nodes, this.historial[this.indiceHistorial].id);
+    if (nodo) { this.abrirCarpeta(nodo, false); }
+  }
+
+  // ================================================================
+  // GRILLA
+  // ================================================================
+
+  initializeGrid(): void {
+    this.columnDefs = [
+      {
+        headerName: '',
+        field: 'icono',
+        width: 44,
+        maxWidth: 44,
+        cellRenderer: (p: any) => this.iconoHtml(p.data),
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        suppressMenu: true,
+        sortable: false,
+        filter: false,
+        resizable: false
+      },
+      {
+        headerName: 'Nombre',
+        field: 'nombre',
+        flex: 2,
+        minWidth: 180,
+        cellStyle: { textAlign: 'left' },
+        filter: 'agTextColumnFilter'
+      },
+      {
+        headerName: 'Descripción',
+        field: 'descripcion',
+        flex: 3,
+        minWidth: 160,
+        cellStyle: { textAlign: 'left' },
+        filter: 'agTextColumnFilter'
+      },
+      {
+        headerName: 'Tipo',
+        field: 'escarpeta',
+        width: 100,
+        maxWidth: 110,
+        valueGetter: p => p.data?.escarpeta ? 'Carpeta' : 'Archivo',
+        cellStyle: { textAlign: 'center' },
+        filter: 'agTextColumnFilter'
+      },
+      {
+        headerName: 'Orden',
+        field: 'orden',
+        width: 80,
+        maxWidth: 90,
+        cellStyle: { textAlign: 'center' },
+        filter: false
+      },
+      {
+        headerName: 'Activo',
+        field: 'activo',
+        width: 90,
+        maxWidth: 100,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: (p: any) => p.value === false
+          ? '<span class="badge bg-danger fs-10px">NO</span>'
+          : '<span class="badge bg-teal fs-10px">SÍ</span>',
+        suppressMenu: true,
+        filter: false
+      },
+      {
+        headerName: 'Modificación',
+        field: 'updated_at_formateado',
+        width: 160,
+        maxWidth: 170,
+        cellStyle: { textAlign: 'center' },
+        filter: false
+      }
+    ];
+  }
+
+  /** Icono del elemento con su color, igual en la grilla que en el árbol. */
+  private iconoHtml(n: FileTreeNode | undefined): string {
+    if (!n) { return ''; }
+    const color = n.color || (n.escarpeta ? '#F0B13B' : '#A6A09B');
+    const clase = n.icono || (n.escarpeta ? 'fa fa-folder' : 'far fa-file');
+    return `<i class="${clase}" style="color:${color}"></i>`;
+  }
+
+  onGridReady(params: GridReadyEvent): void {
+    this.gridApi = params.api;
+    this.gridApi.setRowData(this.contenido);
+    this._appAgGridService.ajustarTamanoGrid(this.gridApi);
+  }
+
+  /** Un clic marca la fila (archivo o carpeta) como objetivo de las acciones. */
+  onCellClicked(event: CellClickedEvent): void {
+    this.filaSeleccionada = event.data as FileTreeNode;
+    this.marcarEnArbol(this.filaSeleccionada);
+  }
+
+  /** Doble clic: entrar en la carpeta, o ejecutar el archivo. */
+  onCellDoubleClicked(event: CellClickedEvent): void {
+    const node = event.data as FileTreeNode;
+    if (node.escarpeta) {
+      const enArbol = this.buscarPorId(this.nodes, node.id) ?? node;
+      this.abrirCarpeta(enArbol, true);
+    } else {
+      this.filaSeleccionada = node;
+      this.ejecutar();
+    }
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.gridApi?.sizeColumnsToFit();
+  }
+
+  // ================================================================
+  // ACCIONES
+  // ================================================================
+
+  /** Elemento sobre el que actúan editar / eliminar / auditoría. */
+  get objetivo(): FileTreeNode | null {
+    return this.filaSeleccionada ?? this.carpetaActual;
+  }
+
+  get puedeCrearDentro(): boolean { return !!this.carpetaActual; }
+  get puedeEjecutar(): boolean { return !!this.filaSeleccionada && !this.filaSeleccionada.escarpeta; }
+  get puedeEditar(): boolean { return !!this.objetivo; }
+  get puedeEliminar(): boolean { return !!this.objetivo; }
+
+  // ---- contadores para la barra de estado ----
+  get numCarpetas(): number { return this.contenido.filter(n => n.escarpeta).length; }
+  get numArchivos(): number { return this.contenido.length - this.numCarpetas; }
+
+  nuevaRaiz(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.abrirSaveFile(0, 'addNuevaRaiz', this.siguienteOrden(this.nodes));
+    this.alCerrar(modalRef, () => this.loaddata());
+  }
+
+  nuevaCarpeta(): void {
+    if (!this.carpetaActual || this._seguridadService.isexpired()) { return; }
+    const modalRef = this.abrirSaveFile(this.carpetaActual, 'addCarpeta', this.siguienteOrden(this.contenido));
+    this.alCerrar(modalRef, () => this.loaddata());
+  }
+
+  nuevoArchivo(): void {
+    if (!this.carpetaActual || this._seguridadService.isexpired()) { return; }
+    const modalRef = this.abrirSaveFile(this.carpetaActual, 'addArchivo', this.siguienteOrden(this.contenido));
+    this.alCerrar(modalRef, () => this.loaddata());
+  }
+
+  editar(): void {
+    const objetivo = this.objetivo;
+    if (!objetivo || this._seguridadService.isexpired()) { return; }
+    const modalRef = this.abrirSaveFile(objetivo, 'edit', objetivo.orden);
+    this.alCerrar(modalRef, () => this.loaddata());
+  }
+
+  eliminar(): void {
+    const objetivo = this.objetivo;
+    if (!objetivo || this._seguridadService.isexpired()) { return; }
+
+    const modalRef = this.modal.open(DeleteFileComponent, {
+      centered: true,
+      size: 'md',
+      backdrop: 'static',
+      keyboard: true
+    });
+    modalRef.componentInstance.registro_selected = objetivo;
+
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => {
+      // Si se borró la carpeta actual, loaddata() no la encuentra y sube a raíz
+      if (this.carpetaActual?.id === objetivo.id) { this.carpetaActual = null; }
+      this.loaddata();
+    });
+  }
+
+  /** Abre el reporte externo del archivo seleccionado a pantalla completa. */
+  ejecutar(): void {
+    if (!this.puedeEjecutar || this._seguridadService.isexpired()) { return; }
+    if (!this.filaSeleccionada?.url) {
+      this._toastr.warning('Este archivo no tiene una URL configurada', 'Sin destino');
+      return;
+    }
     const modalRef = this.modal.open(ModalReporteExternoComponent, {
       centered: true,
       size: 'xxl',
       backdrop: 'static',
       keyboard: true,
-      windowClass: "my-class", // JGSJ LPAA CLASE PARA HACER EL MODAL QUE OCUPE TODA LA PANTALLA
+      windowClass: 'my-class'   // modal a pantalla completa (ver estilos globales)
     });
-
-    modalRef.componentInstance.registro_selected = this.selectedNode;
-
-
+    modalRef.componentInstance.registro_selected = this.filaSeleccionada;
   }
 
-
-
-
-
-
-
-
-  private processNodes(nodes: FileTreeNode[]): FileTreeNode[] {
-    return nodes.map(node => ({
-      ...node,
-      isOpen: false,
-      isSelected: false,
-      children: node.children ? this.processNodes(node.children) : undefined
-    }));
-  }
-
-  onGridReady(params: GridReadyEvent): void {
-    this.gridApi = params.api;
-    this._appAgGridService.ajustarTamanoGrid(this.gridApi);
-  }
-
-  onCellClicked(event: CellClickedEvent): void {
-    const node = event.data as FileTreeNode;
-    if (!node.escarpeta) {
-      this.selectNodeFromTable(node);
-      this.ejecutar_esactivo = false;
-    } else {
-      this.ejecutar_esactivo = true;
-    }
-  }
-
-  onCellDoubleClicked(event: CellClickedEvent): void {
-    const node = event.data as FileTreeNode;
-    if (node.escarpeta) {
-      this.selectNodeFromTable(node);
-    } else {
-      this.viewReporteExterno();
-    }
-  }
-
-
-  private formatDate(dateString: string): string {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+  auditoria(): void {
+    const objetivo = this.objetivo;
+    if (!objetivo || this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(AuditoriaModalComponent, {
+      centered: true,
+      size: 'xl',
+      backdrop: 'static',
+      keyboard: true
     });
+    modalRef.componentInstance.tablaNombre = 'archivo';
+    modalRef.componentInstance.registroId = objetivo.id;
   }
 
-  getMaxOrder2ByParent(parentId: number): number {
-    const children = this.archivoModel.filter((item: any) => item.padre === parentId);
-    if (children.length === 0) {
-      return 0;
-    }
-    return Math.max(...children.map((item: any) => item.orden));
-  }
-
-  getMaxOrder2Root(): number {
-    const rootItems = this.archivoModel.filter((item: any) => item.padre === 0);
-    if (rootItems.length === 0) {
-      return 0;
-    }
-    return Math.max(...rootItems.map((item: any) => item.orden));
-  }
-
-
-  @HostListener('window:resize', ['$event'])
-  onResize(event: Event): void {
-    if (this.gridApi) {
-      this.gridApi.sizeColumnsToFit();
-    }
-  }
-
-  private getExpandedNodeIds(nodes: FileTreeNode[]): Set<number> {
-    const ids = new Set<number>();
-    nodes.forEach(node => {
-      if (node.isOpen) {
-        ids.add(node.id);
-        if (node.children) {
-          this.getExpandedNodeIds(node.children).forEach(id => ids.add(id));
-        }
-      }
+  private abrirSaveFile(registro: FileTreeNode | 0, accion: string, orden: number): NgbModalRef {
+    const modalRef = this.modal.open(SaveFileComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: false
     });
-    return ids;
+    modalRef.componentInstance.registro_selected = registro;
+    modalRef.componentInstance.accion = accion;
+    modalRef.componentInstance.maxOrder2 = orden;
+    modalRef.componentInstance.tieneHijos = registro !== 0 && !!registro.children?.length;
+    return modalRef;
   }
 
-  private restoreExpandedState(nodes: FileTreeNode[], expandedIds: Set<number>) {
-    nodes.forEach(node => {
-      node.isOpen = expandedIds.has(node.id);
-      if (node.children) {
-        this.restoreExpandedState(node.children, expandedIds);
-      }
-    });
+  /**
+   * Siguiente número de orden dentro de una lista de hermanos.
+   * Antes se calculaba sobre archivoModel, que nunca se cargaba, y salía
+   * siempre 1; el árbol ya trae `orden`, así que se lee de ahí.
+   */
+  private siguienteOrden(hermanos: FileTreeNode[]): number {
+    if (!hermanos.length) { return 1; }
+    return Math.max(...hermanos.map(n => n.orden ?? 0)) + 1;
   }
 
-  private restoreSelection(nodes: FileTreeNode[], nodeId: number): boolean {
-    for (const node of nodes) {
-      if (node.id === nodeId) {
-        this.onNodeSelect(node);
-        return true;
-      }
-      if (node.children) {
-        const found = this.restoreSelection(node.children, nodeId);
-        if (found) {
-          node.isOpen = true;
-          return true;
-        }
-      }
+  /** Ejecuta `fn` cuando el modal se cierra, se guarde o se cancele. */
+  private alCerrar(modalRef: NgbModalRef, fn: () => void): void {
+    modalRef.result.then(fn).catch(() => fn());
+  }
+
+  /**
+   * Suscribe al @Output de un modal y corta la suscripción cuando el modal se
+   * cierra o cuando esta pantalla se destruye (misma técnica que allUsers).
+   */
+  private escucharModal<T>(modalRef: NgbModalRef, salida: { pipe: any }, alEmitir: (v: T) => void): void {
+    const modalCerrado$ = from(modalRef.result).pipe(catchError(() => of(null)));
+    salida
+      .pipe(takeUntil(merge(this.unsubscribe$, modalCerrado$)))
+      .subscribe({ next: alEmitir, error: (e: any) => console.error('Error en el modal:', e) });
+  }
+
+  // ================================================================
+  // BÚSQUEDA EN EL ÁRBOL
+  // ================================================================
+
+  filterNodes(): void {
+    const q = this.searchQuery.trim().toLowerCase();
+    if (!q) {
+      this.nodes = this.clonar(this.originalNodes);
+      return;
     }
-    return false;
+    this.nodes = this.originalNodes
+      .map(n => this.filtrarNodo(n, q))
+      .filter((n): n is FileTreeNode => n !== null);
+  }
+
+  limpiarBusqueda(): void {
+    this.searchQuery = '';
+    this.filterNodes();
+  }
+
+  /** Devuelve el nodo si él o algún descendiente coincide; abre la rama. */
+  private filtrarNodo(node: FileTreeNode, q: string): FileTreeNode | null {
+    if (node.nombre.toLowerCase().includes(q)) {
+      return { ...node, isOpen: true };
+    }
+    const hijos = (node.children ?? [])
+      .map(h => this.filtrarNodo(h, q))
+      .filter((h): h is FileTreeNode => h !== null);
+    return hijos.length ? { ...node, children: hijos, isOpen: true } : null;
   }
 
   toggleMobileSidebar(): void {
     this.mobileSidebarToggled = !this.mobileSidebarToggled;
   }
 
-  selectNodeFromTable(childNode: FileTreeNode): void {
-    if (childNode.escarpeta) {
-      this.findAndSelectNode(this.nodes, childNode.id);
-    } else {
-      this.deselectAllNodes(this.nodes);
-      childNode.isSelected = true;
-      this.selectedNode = childNode;
+  // ================================================================
+  // UTILIDADES DEL ÁRBOL
+  // ================================================================
+
+  private buscarPorId(nodes: FileTreeNode[], id: number): FileTreeNode | null {
+    for (const n of nodes) {
+      if (n.id === id) { return n; }
+      const hijo = n.children ? this.buscarPorId(n.children, id) : null;
+      if (hijo) { return hijo; }
     }
-  }
-
-  private findAndSelectNode(nodes: FileTreeNode[], nodeId: number): boolean {
-    for (const node of nodes) {
-      if (node.id === nodeId) {
-        this.onNodeSelect(node);
-        return true;
-      }
-      if (node.children) {
-        const found = this.findAndSelectNode(node.children, nodeId);
-        if (found) {
-          node.isOpen = true;
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  private deselectAllNodes(nodes: FileTreeNode[]): void {
-    nodes.forEach(node => {
-      node.isSelected = false;
-      if (node.children) {
-        this.deselectAllNodes(node.children);
-      }
-    });
-  }
-
-  filterNodes(): void {
-    if (!this.searchQuery.trim()) {
-      this.nodes = JSON.parse(JSON.stringify(this.originalNodes));
-      this.collapseAllNodes(this.nodes);
-      return;
-    }
-
-    const query = this.searchQuery.toLowerCase();
-    this.nodes = this.originalNodes
-      .map(node => this.filterNode(node, query))
-      .filter(node => node !== null) as FileTreeNode[];
-  }
-
-  private filterNode(node: FileTreeNode, query: string): FileTreeNode | null {
-    const matches = node.nombre.toLowerCase().includes(query);
-
-    if (matches) {
-      return { ...node, isOpen: true };
-    }
-
-    if (node.children) {
-      const filteredChildren = node.children
-        .map(child => this.filterNode(child, query))
-        .filter(child => child !== null) as FileTreeNode[];
-
-      if (filteredChildren.length > 0) {
-        return { ...node, children: filteredChildren, isOpen: true };
-      }
-    }
-
     return null;
   }
 
-  private collapseAllNodes(nodes: FileTreeNode[]): void {
-    nodes.forEach(node => {
-      node.isOpen = false;
-      if (node.children) {
-        this.collapseAllNodes(node.children);
-      }
+  private buscarPadre(nodes: FileTreeNode[], id: number): FileTreeNode | null {
+    for (const n of nodes) {
+      if (n.children?.some(h => h.id === id)) { return n; }
+      const p = n.children ? this.buscarPadre(n.children, id) : null;
+      if (p) { return p; }
+    }
+    return null;
+  }
+
+  /** Camino raíz → nodo, o null si no está en el árbol. */
+  private rutaHasta(nodes: FileTreeNode[], id: number): FileTreeNode[] | null {
+    for (const n of nodes) {
+      if (n.id === id) { return [n]; }
+      const sub = n.children ? this.rutaHasta(n.children, id) : null;
+      if (sub) { return [n, ...sub]; }
+    }
+    return null;
+  }
+
+  /**
+   * Abre las ramas por encima del nodo para que quede a la vista. El propio
+   * nodo no se toca: su +/− es cosa del usuario, y si se forzara aquí el "−"
+   * no cerraría nunca una carpeta seleccionada.
+   */
+  private abrirAncestros(node: FileTreeNode): void {
+    const ruta = this.rutaHasta(this.nodes, node.id) ?? [];
+    ruta.slice(0, -1).forEach(n => n.isOpen = true);
+  }
+
+  private marcarEnArbol(node: FileTreeNode): void {
+    this.desmarcarTodo(this.nodes);
+    const enArbol = this.buscarPorId(this.nodes, node.id);
+    if (enArbol) { enArbol.isSelected = true; }
+  }
+
+  private desmarcarTodo(nodes: FileTreeNode[]): void {
+    nodes.forEach(n => {
+      n.isSelected = false;
+      if (n.children) { this.desmarcarTodo(n.children); }
     });
   }
 
-  toggleNodeExpand(node: FileTreeNode, event: Event): void {
-    event.stopPropagation();
-    node.isOpen = !node.isOpen;
-
-    if (node.isOpen) {
-      this.expandedNodeIds.add(node.id);
-    } else {
-      this.expandedNodeIds.delete(node.id);
-    }
+  private idsAbiertos(nodes: FileTreeNode[]): Set<number> {
+    const ids = new Set<number>();
+    nodes.forEach(n => {
+      if (n.isOpen) { ids.add(n.id); }
+      if (n.children) { this.idsAbiertos(n.children).forEach(i => ids.add(i)); }
+    });
+    return ids;
   }
 
-  onNodeToggle(node: FileTreeNode): void {
-    if (node.isOpen) {
-      this.expandedNodeIds.add(node.id);
-    } else {
-      this.expandedNodeIds.delete(node.id);
-    }
+  private restaurarAbiertos(nodes: FileTreeNode[], ids: Set<number>): void {
+    nodes.forEach(n => {
+      n.isOpen = ids.has(n.id);
+      if (n.children) { this.restaurarAbiertos(n.children, ids); }
+    });
   }
-
-  onNodeSelect(node: FileTreeNode): void {
-    this.deselectAllNodes(this.nodes);
-    node.isSelected = true;
-    this.selectedNode = node;
-
-    if (!this.navigationHistory[this.currentHistoryIndex] ||
-      this.navigationHistory[this.currentHistoryIndex].id !== node.id) {
-      this.navigationHistory = this.navigationHistory.slice(0, this.currentHistoryIndex + 1);
-      this.navigationHistory.push(node);
-      this.currentHistoryIndex = this.navigationHistory.length - 1;
-    }
-
-    if (node.escarpeta) {
-      this.ejecutar_esactivo = true;
-      this.selectedNodeChildren = node.children || [];
-    } else {
-      this.ejecutar_esactivo = false;
-      this.selectedNodeChildren = [node];
-    }
-
-    if (node.isOpen) {
-      this.expandedNodeIds.add(node.id);
-    } else {
-      this.expandedNodeIds.delete(node.id);
-    }
-
-    if (this.gridApi) {
-      this.gridApi.setRowData(this.selectedNodeChildren);
-    }
-  }
-
-  goToRoot(): void {
-    this.deselectAllNodes(this.nodes);
-    this.selectedNode = null;
-    this.selectedNodeChildren = [];
-    if (this.gridApi) {
-      this.gridApi.setRowData([]);
-    }
-  }
-
-  goUpOneLevel(): void {
-    if (!this.selectedNode) return;
-
-    const findParent = (nodes: FileTreeNode[], targetId: number): FileTreeNode | null => {
-      for (const node of nodes) {
-        if (node.children) {
-          const found = node.children.find(child => child.id === targetId);
-          if (found) return node;
-          const parent = findParent(node.children, targetId);
-          if (parent) return parent;
-        }
-      }
-      return null;
-    };
-
-    const parentNode = findParent(this.nodes, this.selectedNode.id);
-    if (parentNode) {
-      this.onNodeSelect(parentNode);
-    } else {
-      this.goToRoot();
-    }
-  }
-
-  goBack(): void {
-    if (this.currentHistoryIndex > 0) {
-      this.currentHistoryIndex--;
-      const node = this.navigationHistory[this.currentHistoryIndex];
-      this.findAndSelectNode(this.nodes, node.id);
-    }
-  }
-
-  goForward(): void {
-    if (this.currentHistoryIndex < this.navigationHistory.length - 1) {
-      this.currentHistoryIndex++;
-      const node = this.navigationHistory[this.currentHistoryIndex];
-      this.findAndSelectNode(this.nodes, node.id);
-    }
-  }
-
-
-  selectAll(): void {
-    if (this.gridApi) {
-      this.gridApi.selectAll();
-    }
-  }
-
-  unselectAll(): void {
-    if (this.gridApi) {
-      this.gridApi.deselectAll();
-    }
-  }
-
 }

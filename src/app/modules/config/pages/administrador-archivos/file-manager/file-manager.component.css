@@ -1,133 +1,343 @@
-:root {
-  /* Colores para modo claro */
-  --table-bg: #ffffff;
-  --table-header-bg: #ffffff;
-  --table-row-hover: #f8fafc;
-  --table-row-active: #e7f1ff;
-  --table-border: #f0f0f0;
-  --table-text: #212529;
-  --table-shadow: rgba(0, 0, 0, 0.05);
-  --no-data-text: #6c757d;
-  
-  /* Scrollbar */
-  --scrollbar-width: 3px;
-  --scrollbar-track-bg: #f1f1f1;
-  --scrollbar-thumb-bg: #888;
-  --scrollbar-thumb-hover-bg: #555;
-  --scrollbar-border-radius: 1.5px;
-  --scrollbar-padding: 5px;
+/* ============================================================
+   ADMINISTRADOR DE ARCHIVOS
+
+   La estructura (file-manager, -toolbar, -sidebar, -content) es del
+   tema. Aquí va lo propio de esta pantalla: la barra de herramientas
+   con sus grupos, el lateral con buscador y árbol a altura completa,
+   la barra de ubicación y la de estado.
+
+   Todo con variables --bs-* para seguir el modo claro/oscuro sin
+   colores fijos (antes había una paleta propia bajo .dark-mode que no
+   respondía al data-bs-theme de la aplicación).
+   ============================================================ */
+
+:host {
+  display: block;
 }
 
-/* Modo oscuro */
-.dark-mode {
-  --table-bg: #2a3042;
-  --table-header-bg: #2a3042;
-  --table-row-hover: #343a4a;
-  --table-row-active: #3a4466;
-  --table-border: #3a4256;
-  --table-text: #e9ecef;
-  --table-shadow: rgba(0, 0, 0, 0.2);
-  --no-data-text: #adb5bd;
-  
-  /* Scrollbar modo oscuro */
-  --scrollbar-track-bg: #2a3042;
-  --scrollbar-thumb-bg: #4a5068;
-  --scrollbar-thumb-hover-bg: #5a6688;
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida: el panel ya trae su propio hueco. */
+.archivos-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
 }
 
-/* Estilos base */
-.scrollable-container {
-  overflow-y: hidden;
-  padding-right: var(--scrollbar-padding);
+/* ============================================================
+   BARRA DE HERRAMIENTAS
+   ============================================================ */
+.archivos-toolbar {
+  align-items: center;
+  gap: .25rem;
+  padding: .375rem .5rem;
 }
 
-.scrollable-container:hover {
-  overflow-y: auto;
+.archivos-toolbar__grupo {
+  display: flex;
+  align-items: center;
+  gap: .125rem;
 }
 
-.scrollable-container:hover::-webkit-scrollbar {
-  width: var(--scrollbar-width);
+.archivos-toolbar__separador {
+  width: 1px;
+  height: 1.5rem;
+  margin: 0 .375rem;
+  background-color: var(--bs-border-color, #dee2e6);
 }
 
-.scrollable-container:hover::-webkit-scrollbar-track {
-  background: var(--scrollbar-track-bg);
-  border-radius: var(--scrollbar-border-radius);
+/* Botón plano: sólo se dibuja al pasar el ratón */
+.archivos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .3rem .55rem;
+  border: 1px solid transparent;
+  border-radius: .375rem;
+
+  background: transparent;
+  color: var(--bs-body-color, #212529);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  transition: background-color .12s ease, border-color .12s ease;
 }
 
-.scrollable-container:hover::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb-bg);
-  border-radius: var(--scrollbar-border-radius);
+.archivos-btn:hover:not(:disabled),
+.archivos-btn:focus-visible {
+  background-color: var(--bs-component-bg, #fff);
+  border-color: var(--bs-border-color, #dee2e6);
 }
 
-.scrollable-container:hover::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover-bg);
+/* Deshabilitado: el icono pierde el color para que se vea que no aplica */
+.archivos-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 
-.scrollable-container:hover {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb-bg) var(--scrollbar-track-bg);
+.archivos-btn:disabled .archivos-btn__icono {
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
-.file-tree {
-  max-height: 350px;
+.archivos-btn__icono {
+  width: 1rem;
+  text-align: center;
+  font-size: 13px;
 }
 
-/* Estructura principal */
-.file-manager-content {
-  flex: 1;
-  min-height: 0;
+/* Elemento objetivo de las acciones, a la derecha de la barra */
+.archivos-toolbar__objetivo {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+
+  margin-left: auto;
+  max-width: 16rem;
+  padding: .25rem .625rem;
+  border-radius: 2rem;
+
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .10);
+  color: var(--bs-app-theme, #00acac);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   LATERAL: ÁRBOL
+   ============================================================ */
+.archivos-lateral {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.archivos-lateral__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.archivos-lateral__titulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.archivos-lateral__buscador {
+  position: relative;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.archivos-lateral__buscador .form-control {
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+}
+
+.archivos-lateral__lupa {
+  position: absolute;
+  top: 50%;
+  left: 1.3rem;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.archivos-lateral__limpiar {
+  position: absolute;
+  top: 50%;
+  right: 1.1rem;
+  transform: translateY(-50%);
+
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.archivos-lateral__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* El árbol ocupa todo lo que queda; antes tenía 350px fijos y por debajo
+   quedaba un hueco muerto */
+.archivos-lateral__arbol {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.archivos-arbol {
+  padding: .5rem .5rem .5rem .25rem;
+}
+
+.archivos-arbol__vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.archivos-arbol__vacio i {
+  font-size: 1.5rem;
+  opacity: .5;
+}
+
+/* ============================================================
+   CONTENIDO
+   ============================================================ */
+.archivos-contenido {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
 }
 
-/* Mensaje de no datos */
-.no-data-row td {
-  padding: 20px;
-  text-align: center;
-  color: var(--no-data-text);
-  font-style: italic;
+/* ---------- Barra de ubicación ---------- */
+.archivos-ubicacion {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
-/* Estilos responsivos */
-@media (max-width: 768px) {
-  .file-manager-container {
-    position: relative;
+.archivos-ruta {
+  display: flex;
+  align-items: center;
+  gap: .125rem;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.archivos-ruta::-webkit-scrollbar {
+  display: none;
+}
+
+.archivos-ruta__tramo {
+  flex: 0 0 auto;
+
+  padding: .2rem .5rem;
+  border: 0;
+  border-radius: .25rem;
+
+  background: transparent;
+  color: var(--bs-body-color, #212529);
+  font-size: 12px;
+  white-space: nowrap;
+
+  transition: background-color .12s ease;
+}
+
+.archivos-ruta__tramo:hover {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .10);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-ruta__tramo--actual {
+  font-weight: 600;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-ruta__sep {
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: var(--bs-secondary-color, #adb5bd);
+}
+
+/* ---------- Grilla ---------- */
+.archivos-grilla {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .5rem;
+}
+
+/* Elementos inactivos, atenuados (rowClassRules del .ts). ::ng-deep porque
+   la fila la genera ag-Grid fuera de la encapsulación del componente. */
+:host ::ng-deep .archivos-grilla .ag-row.fila-inactiva .ag-cell {
+  opacity: .55;
+}
+
+:host ::ng-deep .archivos-grilla .ag-row {
+  cursor: pointer;
+}
+
+/* ---------- Barra de estado ---------- */
+.archivos-estado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+
+  padding: .375rem .75rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.archivos-estado__ayuda i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+/* Por debajo de lg el tema ya saca el lateral fuera de pantalla y lo
+   muestra con file-manager-sidebar-mobile-toggled; aquí sólo se compacta
+   la barra de herramientas a iconos. */
+@media (max-width: 991.98px) {
+  .archivos-btn__texto {
+    display: none;
   }
 
-  .file-manager-sidebar-mobile-toggler {
-    position: fixed;
-    left: 10px;
-    top: 10px;
-    z-index: 1100;
-    transition: left 0.3s ease;
+  .archivos-btn {
+    padding: .35rem .5rem;
   }
 
-  .file-manager-sidebar-mobile-toggled .file-manager-sidebar-mobile-toggler {
-    left: 240px;
+  .archivos-toolbar__objetivo {
+    max-width: 9rem;
   }
 
-  .file-manager-sidebar {
-    position: fixed;
-    left: -250px;
-    top: 0;
-    width: 250px;
-    height: 100vh;
-    background: var(--table-bg);
-    box-shadow: 2px 0 10px var(--table-shadow);
-    transition: left 0.3s ease;
-    z-index: 1050;
+  .archivos-lateral {
+    box-shadow: 4px 0 12px rgba(0, 0, 0, .12);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .archivos-toolbar__objetivo {
+    display: none;
   }
 
-  .file-manager-sidebar-mobile-toggled .file-manager-sidebar {
-    left: 0;
+  .archivos-ubicacion {
+    flex-wrap: wrap;
   }
+}
 
-  .file-manager-content {
-    transition: margin-left 0.3s ease;
-  }
-
-  .file-manager-sidebar-mobile-toggled .file-manager-content {
-    margin-left: 250px;
+@media (prefers-reduced-motion: reduce) {
+  .archivos-btn,
+  .archivos-ruta__tramo {
+    transition: none;
   }
 }
