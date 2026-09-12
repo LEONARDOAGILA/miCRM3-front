@@ -87,27 +87,35 @@
         ></ag-grid-angular>
 
         <!-- INICIO CONTROLES DE PAGINACIÓN PERSONALIZADOS (mismo orden que perfiles) -->
-        <div class="pagination-controls d-flex justify-content-between align-items-center mt-2 px-2 flex-wrap">
-          <div class="pagination-buttons">
-            <button class="btn btn-sm btn-outline-secondary me-1" (click)="firstPage()" [disabled]="paginaActual === 1">
+        <!-- Paginación: mismo bloque que allUsers (btn-group del tema) -->
+        <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+
+          <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+            <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                    (click)="firstPage()" [disabled]="paginaActual === 1">
               <i class="fa fa-angle-double-left"></i>
             </button>
-            <button class="btn btn-sm btn-outline-secondary me-1" (click)="prevPage()" [disabled]="paginaActual === 1">
+            <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                    (click)="prevPage()" [disabled]="paginaActual === 1">
               <i class="fa fa-chevron-left"></i>
             </button>
-            <span class="pagination-info small mx-1">Página {{ paginaActual }} de {{ ultimaPagina }}</span>
-            <button class="btn btn-sm btn-outline-secondary ms-1" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+            <span class="btn btn-sm btn-white pagination-page-badge disabled">
+              Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+            </span>
+            <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                    (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
               <i class="fa fa-chevron-right"></i>
             </button>
-            <button class="btn btn-sm btn-outline-secondary ms-1" (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
+            <button type="button" class="btn btn-sm btn-white" title="Última página"
+                    (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
               <i class="fa fa-angle-double-right"></i>
             </button>
           </div>
-          <div class="pagination-info small mb-2 mb-sm-0">
-            Mostrando {{ (paginaActual-1)*registrosPorPagina + 1 }} - 
-            {{ paginaActual * registrosPorPagina > totalRegistros ? totalRegistros : paginaActual * registrosPorPagina }}
-            de {{ totalRegistros }} registros
+
+          <div class="pagination-info small text-muted">
+            Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> registros
           </div>
+
         </div>
         <!-- FIN CONTROLES DE PAGINACIÓN PERSONALIZADOS -->
 

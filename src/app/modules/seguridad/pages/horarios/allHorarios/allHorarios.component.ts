@@ -156,6 +156,16 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
   }
 
   // ****** FUNCIONES DE PAGINACIÓN ****** //
+  /** Primer registro mostrado; 0 sin resultados (antes decía "1 - 0 de 0"). */
+  public get desde(): number {
+    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
+  }
+
+  /** Último registro mostrado, sin pasarse del total. */
+  public get hasta(): number {
+    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
+  }
+
   firstPage(): void {
     if (this.paginaActual !== 1) {
       this.goToPage(1);
