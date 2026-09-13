@@ -446,3 +446,17 @@
   height: 1.25rem;
   cursor: pointer;
 }
+
+/* Switch deshabilitado por exclusión (proteger url ↔ ventana nueva) */
+.opcion-switch.is-deshabilitada {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.opcion-switch.is-deshabilitada:hover {
+  border-color: var(--bs-border-color, #dee2e6);
+}
+
+.opcion-switch.is-deshabilitada .form-check-input {
+  cursor: not-allowed;
+}

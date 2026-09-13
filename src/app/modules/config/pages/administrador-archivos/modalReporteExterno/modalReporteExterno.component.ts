@@ -1,6 +1,9 @@
-import { Component, HostListener, Input, OnInit } from '@angular/core';
+import { Component, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { ToastrService } from 'ngx-toastr';
+import { Subject } from 'rxjs';
+import { finalize, takeUntil } from 'rxjs/operators';
 
 import { ArchivoService } from '../../../services/archivo.service';
 import { DefTipoArchivo, defTipo, formatoTamano, tipoPorExtension } from '../../../interfaces/tipoArchivo';
@@ -32,7 +35,7 @@ type Visor = 'iframe' | 'imagen' | 'video' | 'audio' | 'descarga';
   styleUrls: ['./modalReporteExterno.component.css'],
   standalone: false,
 })
-export class ModalReporteExternoComponent implements OnInit {
+export class ModalReporteExternoComponent implements OnInit, OnDestroy {
   @Input() registro_selected: any;
 
   /** Para el iframe (sanitizada). */
@@ -46,12 +49,18 @@ export class ModalReporteExternoComponent implements OnInit {
   esEmbebido = false;
   /** El navegador no pudo reproducir el video/audio (formato no soportado, p. ej. .mkv o .wma). */
   errorMedio = false;
+  /** proteger_url del registro: sin "abrir en pestaña" ni descarga (el back también lo rechaza). */
+  get protegido(): boolean { return !!this.registro_selected?.proteger_url; }
+  /** true mientras se descarga el fichero (botón con spinner). */
+  descargando = false;
+  private readonly destroy$ = new Subject<void>();
   isFullscreen = false;
 
   constructor(
     public modal: NgbActiveModal,
     private sanitizer: DomSanitizer,
-    private _archivoService: ArchivoService
+    private _archivoService: ArchivoService,
+    private _toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
@@ -140,6 +149,56 @@ export class ModalReporteExternoComponent implements OnInit {
   /** El <video> / <audio> no pudo cargar la fuente. */
   onErrorMedio(): void {
     this.errorMedio = true;
+  }
+
+  /**
+   * Descarga el fichero subido. Se pide al back con el token (responseType
+   * blob) y se guarda desde memoria con un <a download> temporal: un enlace
+   * directo a storage está en otra origen y el navegador, en vez de
+   * descargarlo, lo abría en otra pestaña.
+   */
+  descargar(): void {
+    const id = this.registro_selected?.id;
+    if (!id || this.descargando || this.protegido) { return; }
+
+    this.descargando = true;
+    this._archivoService.descargarArchivo(id)
+      .pipe(takeUntil(this.destroy$), finalize(() => { this.descargando = false; }))
+      .subscribe({
+        next: resp => {
+          if (!resp.body) { return; }
+          const enlace = document.createElement('a');
+          const urlBlob = URL.createObjectURL(resp.body);
+          enlace.href = urlBlob;
+          enlace.download = this.nombreDescarga(resp.headers.get('Content-Disposition'));
+          document.body.appendChild(enlace);
+          enlace.click();
+          enlace.remove();
+          // El blob se libera cuando el navegador ya lo ha leído
+          setTimeout(() => URL.revokeObjectURL(urlBlob), 1000);
+        },
+        // El interceptor ya muestra el error HTTP; aquí sólo se cubre un blob vacío o similar
+        error: () => this._toastr.error('No se pudo descargar el archivo', 'Descarga'),
+      });
+  }
+
+  /**
+   * Nombre con el que se guarda: el que manda el back en Content-Disposition
+   * (nombre del registro + extensión); si no llega (CORS sin expose_headers),
+   * el nombre del registro con la extensión del fichero.
+   */
+  private nombreDescarga(disposition: string | null): string {
+    const utf8 = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    if (utf8) { try { return decodeURIComponent(utf8); } catch { /* cae al siguiente */ } }
+    const plano = disposition?.match(/filename="?([^";]+)"?/i)?.[1];
+    if (plano) { return plano; }
+    const ext = this.nombreFichero.split('.').pop() ?? '';
+    return `${this.nombre || 'archivo'}${ext ? '.' + ext : ''}`;
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   toggleFullscreen(): void {

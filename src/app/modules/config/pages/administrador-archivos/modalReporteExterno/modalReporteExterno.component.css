@@ -221,3 +221,16 @@
   width: 100%;
   margin-top: .75rem;
 }
+
+/* Chip "Protegido" (proteger_url): sustituye a Abrir en pestaña / Descargar */
+.visor-chip--protegido {
+  display: inline-flex;
+  align-items: center;
+  padding: .3rem .6rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-app-theme, #00acac);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  cursor: help;
+}

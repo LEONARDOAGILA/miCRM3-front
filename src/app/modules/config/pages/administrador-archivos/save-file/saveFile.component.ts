@@ -146,6 +146,38 @@ export class SaveFileComponent implements OnInit, OnDestroy {
     return this.form.controls['nueva_ventana'] as FormControl;
   }
 
+  /** Control del switch "proteger la URL" (tipado para [formControl]). */
+  get ctrlProtegerUrl(): FormControl {
+    return this.form.controls['proteger_url'] as FormControl;
+  }
+
+  /**
+   * Proteger la url y abrir en otra pestaña se excluyen: en otra pestaña la
+   * url queda a la vista en la barra del navegador. Al activar uno se apaga
+   * el otro (y el switch contrario se deshabilita en la plantilla).
+   */
+  onCambioProtegerUrl(activo: boolean): void {
+    if (activo && this.ctrlNuevaVentana.value) { this.ctrlNuevaVentana.setValue(false); }
+    this.sincronizarExclusion();
+  }
+
+  onCambioNuevaVentana(activo: boolean): void {
+    if (activo && this.ctrlProtegerUrl.value) { this.ctrlProtegerUrl.setValue(false); }
+    this.sincronizarExclusion();
+  }
+
+  /**
+   * Deshabilita el switch contrario al que está activo. Se hace sobre el
+   * control (no con [disabled] en el input) porque así lo pide reactive
+   * forms; al guardar se usa getRawValue(), que incluye los deshabilitados.
+   */
+  private sincronizarExclusion(): void {
+    const proteger = this.ctrlProtegerUrl;
+    const ventana  = this.ctrlNuevaVentana;
+    proteger.value ? ventana.disable({ emitEvent: false })  : ventana.enable({ emitEvent: false });
+    ventana.value  ? proteger.disable({ emitEvent: false }) : proteger.enable({ emitEvent: false });
+  }
+
   get tamanoActual(): string {
     return formatoTamano(this.registro_selected?.tamano);
   }
@@ -162,6 +194,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
 
     this.form = this.construirFormulario();
     this.cargarValoresIniciales();
+    this.sincronizarExclusion();
   }
 
   ngOnDestroy(): void {
@@ -193,6 +226,8 @@ export class SaveFileComponent implements OnInit, OnDestroy {
       activo:      [true],
       // Ejecutar abre en otra pestaña del navegador en vez del visor
       nueva_ventana: [false],
+      // Sin "abrir en pestaña" ni descarga en el visor: la url no se expone
+      proteger_url: [true],
     });
   }
 
@@ -232,6 +267,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
         this.form.patchValue(this.registro_selected);
         // Registros antiguos traen NULL: el switch trabaja con booleanos
         this.form.controls['nueva_ventana'].setValue(!!this.registro_selected?.nueva_ventana);
+        this.form.controls['proteger_url'].setValue(this.registro_selected?.proteger_url !== false);
         // Registros antiguos sin tipo: eran todos enlaces
         this.form.controls['tipo'].setValue(defTipo(this.registro_selected?.tipo, this.registro_selected?.url).id);
         this.modo = this.tipoActual.id === 'link' ? 'link' : 'archivo';
@@ -431,6 +467,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
       if (this.esCarpeta) {
         data.tipo = null;
         data.nueva_ventana = false;
+        data.proteger_url = false;
         data.tamano = null;
       }
 

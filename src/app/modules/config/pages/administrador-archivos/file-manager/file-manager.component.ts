@@ -39,6 +39,8 @@ export interface FileTreeNode {
   activo?: boolean;
   /** true = Ejecutar abre en otra pestaña del navegador, no en el visor */
   nueva_ventana?: boolean;
+  /** true = no se ofrece "abrir en pestaña" ni descargar: la url no sale del visor */
+  proteger_url?: boolean;
   created_at_formateado?: string;
   updated_at_formateado?: string;
   children?: FileTreeNode[];

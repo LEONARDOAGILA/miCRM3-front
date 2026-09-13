@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -64,6 +64,19 @@ export class ArchivoService {
     if (!url) { return ''; }
     if (/^(https?:)?\/\//i.test(url)) { return url; }
     return environment.URL_SERVICIOS + url.replace(/^\/+/, '');
+  }
+
+  /**
+   * Descarga un fichero subido como blob (con el token, por el interceptor).
+   * El back lo devuelve como adjunto con su nombre legible; el visor lo
+   * guarda desde memoria. Un <a download> directo no sirve: el fichero está
+   * en otra origen y el navegador ignora `download` y lo abre en una pestaña.
+   */
+  descargarArchivo(id: number): Observable<HttpResponse<Blob>> {
+    return this._http.get(this.URL_SERVICIOS + 'descargarArchivo/' + id, {
+      responseType: 'blob',
+      observe: 'response'
+    });
   }
 
   // Papelera de reciclaje (borrado lógico en el back)

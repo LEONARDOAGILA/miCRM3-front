@@ -15,11 +15,17 @@
   </div>
 
   <div class="visor-acciones">
-    @if (tipo.id !== 'link') {
-      <a class="btn btn-sm btn-white" [href]="urlTexto" [download]="nombreFichero" target="_blank" rel="noopener" title="Descargar">
-        <i class="fa fa-download"></i>
-        <span class="d-none d-sm-inline ms-1">Descargar</span>
-      </a>
+    <!-- proteger_url: ni abrir fuera ni descargar; sólo un candado que lo dice -->
+    @if (protegido) {
+      <span class="visor-chip visor-chip--protegido" >
+        <i class="fa fa-shield-halved"></i>
+        <span class="d-none d-sm-inline ms-1"></span>
+      </span>
+    } @else if (tipo.id !== 'link') {
+      <button type="button" class="btn btn-sm btn-white" (click)="descargar()" [disabled]="descargando" title="Descargar">
+        <i class="fa" [ngClass]="descargando ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+        <span class="d-none d-sm-inline ms-1">{{ descargando ? 'Descargando…' : 'Descargar' }}</span>
+      </button>
     } @else {
       <a class="btn btn-sm btn-white" [href]="registro_selected?.url" target="_blank" rel="noopener" title="Abrir en una pestaña nueva">
         <i class="fa fa-arrow-up-right-from-square"></i>
@@ -82,12 +88,20 @@
           <i [ngClass]="tipo.icono" [style.color]="tipo.color" class="visor-descarga__icono"></i>
           <div class="visor-descarga__nombre">{{ nombre }}</div>
           <div class="visor-descarga__meta">{{ nombreFichero }} · {{ tamano }}</div>
-          <p class="visor-descarga__texto">
-            Los archivos {{ tipo.etiqueta }} no se pueden ver aquí; descárgalo y ábrelo con su programa.
-          </p>
-          <a class="btn btn-primary" [href]="urlTexto" [download]="nombreFichero" target="_blank" rel="noopener">
-            <i class="fa fa-download me-1"></i> Descargar {{ tipo.etiqueta }}
-          </a>
+          @if (protegido) {
+            <p class="visor-descarga__texto">
+              <i class="fa fa-shield-halved me-1"></i>
+              Los archivos {{ tipo.etiqueta }} no se pueden ver aquí y este archivo está protegido: no se permite descargarlo.
+            </p>
+          } @else {
+            <p class="visor-descarga__texto">
+              Los archivos {{ tipo.etiqueta }} no se pueden ver aquí; descárgalo y ábrelo con su programa.
+            </p>
+            <button type="button" class="btn btn-primary" (click)="descargar()" [disabled]="descargando">
+              <i class="fa me-1" [ngClass]="descargando ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+              {{ descargando ? 'Descargando…' : 'Descargar ' + tipo.etiqueta }}
+            </button>
+          }
         </div>
       </div>
     }
@@ -105,11 +119,19 @@
     <i [ngClass]="tipo.icono" [style.color]="tipo.color" class="visor-descarga__icono"></i>
     <div class="visor-descarga__nombre">{{ nombre }}</div>
     <div class="visor-descarga__meta">{{ nombreFichero }} · {{ tamano }}</div>
-    <p class="visor-descarga__texto">
-      El navegador no puede reproducir este {{ que }} ({{ extension }}). Descárgalo y ábrelo con tu reproductor.
-    </p>
-    <a class="btn btn-primary" [href]="urlTexto" [download]="nombreFichero" target="_blank" rel="noopener">
-      <i class="fa fa-download me-1"></i> Descargar {{ que }}
-    </a>
+    @if (protegido) {
+      <p class="visor-descarga__texto">
+        <i class="fa fa-shield-halved me-1"></i>
+        El navegador no puede reproducir este {{ que }} ({{ extension }}) y el archivo está protegido: no se permite descargarlo.
+      </p>
+    } @else {
+      <p class="visor-descarga__texto">
+        El navegador no puede reproducir este {{ que }} ({{ extension }}). Descárgalo y ábrelo con tu reproductor.
+      </p>
+      <button type="button" class="btn btn-primary" (click)="descargar()" [disabled]="descargando">
+        <i class="fa me-1" [ngClass]="descargando ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+        {{ descargando ? 'Descargando…' : 'Descargar ' + que }}
+      </button>
+    }
   </div>
 </ng-template>

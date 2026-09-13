@@ -16,6 +16,8 @@ export interface ArchivoModel {
   activo?:boolean;
   /** true = Ejecutar abre el enlace/fichero en otra pestaña del navegador */
   nueva_ventana?: boolean;
+  /** true = no se ofrece "abrir en pestaña" ni descargar: la url no sale del visor */
+  proteger_url?: boolean;
   created_at_formateado?: Date;
   updated_at_formateado?: Date;
 

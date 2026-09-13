@@ -175,17 +175,50 @@
                   }
 
                   <!-- ---------- Cómo se abre ----------
-                       nueva_ventana: en vez del visor a pantalla completa, Ejecutar
-                       abre el enlace o fichero en otra pestaña del navegador. -->
+                       proteger_url: el visor no ofrece "abrir en pestaña" ni
+                       descargar; la url no sale del sistema.
+                       nueva_ventana: en vez del visor, Ejecutar abre el enlace o
+                       fichero en otra pestaña del navegador.
+                       Se excluyen entre sí (en otra pestaña la url queda a la vista). -->
                   <div class="col-12">
-                    <label class="opcion-switch" for="archivo-nueva-ventana">
+                    <label class="opcion-switch" for="archivo-proteger-url"
+                           [class.is-deshabilitada]="ctrlProtegerUrl.disabled">
+                      <span class="opcion-switch__icono">
+                        <i class="fa fa-shield-halved"></i>
+                      </span>
+                      <span class="opcion-switch__texto">
+                        <span class="opcion-switch__titulo">Proteger la URL</span>
+                        <span class="opcion-switch__ayuda">
+                          @if (ctrlNuevaVentana.value) {
+                            No aplica si se abre en una ventana nueva: la dirección queda a la vista.
+                          } @else if (ctrlProtegerUrl.value) {
+                            El visor no muestra <b>Abrir en pestaña</b> ni <b>Descargar</b>; sólo se ve dentro del sistema.
+                          } @else {
+                            El visor permite abrir en otra pestaña y descargar el archivo.
+                          }
+                        </span>
+                      </span>
+                      <span class="form-check form-switch opcion-switch__control">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               id="archivo-proteger-url"
+                               [formControl]="ctrlProtegerUrl"
+                               (change)="onCambioProtegerUrl($any($event.target).checked)">
+                      </span>
+                    </label>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="opcion-switch" for="archivo-nueva-ventana"
+                           [class.is-deshabilitada]="ctrlNuevaVentana.disabled">
                       <span class="opcion-switch__icono">
                         <i class="fa fa-arrow-up-right-from-square"></i>
                       </span>
                       <span class="opcion-switch__texto">
                         <span class="opcion-switch__titulo">Abrir en una ventana nueva</span>
                         <span class="opcion-switch__ayuda">
-                          @if (form.controls['nueva_ventana'].value) {
+                          @if (ctrlProtegerUrl.value) {
+                            No disponible con la URL protegida.
+                          } @else if (ctrlNuevaVentana.value) {
                             Al ejecutar se abre en otra pestaña del navegador.
                           } @else {
                             Al ejecutar se abre en el visor, dentro del sistema.
@@ -195,7 +228,8 @@
                       <span class="form-check form-switch opcion-switch__control">
                         <input class="form-check-input" type="checkbox" role="switch"
                                id="archivo-nueva-ventana"
-                               [formControl]="ctrlNuevaVentana">
+                               [formControl]="ctrlNuevaVentana"
+                               (change)="onCambioNuevaVentana($any($event.target).checked)">
                       </span>
                     </label>
                   </div>
