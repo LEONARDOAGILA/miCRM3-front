@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CellClickedEvent, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
@@ -14,6 +14,7 @@ import { SaveFileComponent } from '../save-file/saveFile.component';
 import { DeleteFileComponent } from '../delete-file/deleteFile.component';
 import { ModalReporteExternoComponent } from '../modalReporteExterno/modalReporteExterno.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
 /**
  * Nodo del árbol tal como lo devuelve config/archivo/getArchivoTree: la fila
@@ -94,6 +95,14 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   public rowClassRules = {
     'fila-inactiva': (p: RowClassParams) => p.data?.activo === false
   };
+
+  // ---------- Búsqueda y paginación de la grilla ----------
+  // Todo en cliente: la grilla ya tiene todas las filas de la carpeta.
+  @ViewChild(CampoBusquedaPaginacionComponent) campoBusqueda!: CampoBusquedaPaginacionComponent;
+  public paginaActual = 1;
+  public ultimaPagina = 1;
+  public totalRegistros = 0;
+  public registrosPorPagina = 10;
 
   private readonly unsubscribe$ = new Subject<void>();
 
@@ -228,6 +237,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
     this.gridApi?.setRowData(this.contenido);
     this.gridApi?.deselectAll();
+    this.limpiarFiltroGrilla();   // el filtro es de la carpeta, no viaja a la siguiente
   }
 
   /** Vista de raíz: la grilla muestra las carpetas de primer nivel. */
@@ -239,6 +249,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.ruta = [];
     this.gridApi?.setRowData(this.contenido);
     this.gridApi?.deselectAll();
+    this.limpiarFiltroGrilla();
   }
 
   subirNivel(): void {
@@ -392,6 +403,45 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   onResize(): void {
     this.gridApi?.sizeColumnsToFit();
   }
+
+  // ---------- Búsqueda en la grilla ----------
+
+  /** Filtro rápido de ag-Grid sobre todas las columnas de la carpeta actual. */
+  filtrarGrilla(termino: string): void {
+    this.gridApi?.setQuickFilter(termino ?? '');
+    this.gridApi?.paginationGoToFirstPage();
+  }
+
+  limpiarFiltroGrilla(): void {
+    this.campoBusqueda?.reset();
+    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setFilterModel(null);
+  }
+
+  // ---------- Paginación en cliente (mismos botones que allUsers) ----------
+
+  /** Primer registro mostrado; 0 sin resultados. */
+  get desde(): number {
+    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
+  }
+
+  /** Último registro mostrado, sin pasarse del total. */
+  get hasta(): number {
+    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
+  }
+
+  /** ag-Grid lo dispara al cambiar de página, de filtro o de datos. */
+  onPaginationChanged(): void {
+    if (!this.gridApi) { return; }
+    this.paginaActual = this.gridApi.paginationGetCurrentPage() + 1;   // la API cuenta desde 0
+    this.ultimaPagina = Math.max(this.gridApi.paginationGetTotalPages(), 1);
+    this.totalRegistros = this.gridApi.paginationGetRowCount();       // ya filtrado
+  }
+
+  firstPage(): void { this.gridApi?.paginationGoToFirstPage(); }
+  prevPage(): void  { this.gridApi?.paginationGoToPreviousPage(); }
+  nextPage(): void  { this.gridApi?.paginationGoToNextPage(); }
+  lastPage(): void  { this.gridApi?.paginationGoToLastPage(); }
 
   // ================================================================
   // ACCIONES

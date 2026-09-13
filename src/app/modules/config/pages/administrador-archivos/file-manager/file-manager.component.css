@@ -266,6 +266,24 @@
   color: var(--bs-secondary-color, #adb5bd);
 }
 
+/* ---------- Buscador de la grilla ---------- */
+.archivos-buscador {
+  margin: 0;
+  padding: .5rem .75rem 0;
+}
+
+/* Botón cuadrado a la altura del buscador (igual que allUsers) */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
 /* ---------- Grilla ---------- */
 .archivos-grilla {
   flex: 1 1 auto;
@@ -283,22 +301,41 @@
   cursor: pointer;
 }
 
-/* ---------- Barra de estado ---------- */
+/* ---------- Paginación + resumen (mismo bloque que allUsers) ---------- */
 .archivos-estado {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .5rem;
-
   padding: .375rem .75rem;
   border-top: 1px solid var(--bs-border-color, #dee2e6);
-
-  font-size: 11px;
-  color: var(--bs-secondary-color, #6c757d);
 }
 
-.archivos-estado__ayuda i {
-  color: var(--bs-app-theme, #00acac);
+.pagination-controls {
+  gap: .5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto" */
+.pagination-page-badge.disabled {
+  opacity: 1;
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
 }
 
 /* ============================================================
@@ -339,5 +376,27 @@
   .archivos-btn,
   .archivos-ruta__tramo {
     transition: none;
+  }
+}
+
+/* Paginación en teléfonos: apilada y centrada, como allUsers */
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
   }
 }

@@ -42,6 +42,7 @@ import { FileTreeNodeComponent } from '../../components/file-tree-node/file-tree
 
 import { ModalReporteExternoComponent } from './pages/administrador-archivos/modalReporteExterno/modalReporteExterno.component';
 import { DeleteFileComponent } from './pages/administrador-archivos/delete-file/deleteFile.component';
+import { ModalArrastrableDirective } from '../../components/modal/modal-arrastrable.directive';
 import { ExtraSettingsPage } from './pages/extra-settings-page/extra-settings-page';
 import { ExtraSearchResultsPage } from './pages/extra-search-results/extra-search-results';
 import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
@@ -86,6 +87,7 @@ import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
     CheckboxComponent,
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
+    ModalArrastrableDirective,
     ComboComponent,
     ActionButtonsModule,
     FileTreeNodeComponent,

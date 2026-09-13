@@ -13,7 +13,8 @@
 }
 
 <!-- Cabecera -->
-<app-modal-header
+<!-- appModalArrastrable: el modal se puede mover arrastrándolo por esta cabecera -->
+<app-modal-header appModalArrastrable
   [title]="title"
   (onClose)="modal.dismiss('Close click')">
 </app-modal-header>
