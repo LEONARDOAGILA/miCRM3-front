@@ -173,6 +173,32 @@
                       </p>
                     </div>
                   }
+
+                  <!-- ---------- Cómo se abre ----------
+                       nueva_ventana: en vez del visor a pantalla completa, Ejecutar
+                       abre el enlace o fichero en otra pestaña del navegador. -->
+                  <div class="col-12">
+                    <label class="opcion-switch" for="archivo-nueva-ventana">
+                      <span class="opcion-switch__icono">
+                        <i class="fa fa-arrow-up-right-from-square"></i>
+                      </span>
+                      <span class="opcion-switch__texto">
+                        <span class="opcion-switch__titulo">Abrir en una ventana nueva</span>
+                        <span class="opcion-switch__ayuda">
+                          @if (form.controls['nueva_ventana'].value) {
+                            Al ejecutar se abre en otra pestaña del navegador.
+                          } @else {
+                            Al ejecutar se abre en el visor, dentro del sistema.
+                          }
+                        </span>
+                      </span>
+                      <span class="form-check form-switch opcion-switch__control">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               id="archivo-nueva-ventana"
+                               [formControl]="ctrlNuevaVentana">
+                      </span>
+                    </label>
+                  </div>
                 }
 
               </div>

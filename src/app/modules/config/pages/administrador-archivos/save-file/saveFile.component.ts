@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { HttpEventType } from '@angular/common/http';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
@@ -141,6 +141,11 @@ export class SaveFileComponent implements OnInit, OnDestroy {
     return url ? (url.split('/').pop() ?? url) : null;
   }
 
+  /** Control del switch "abrir en ventana nueva" (tipado para [formControl]). */
+  get ctrlNuevaVentana(): FormControl {
+    return this.form.controls['nueva_ventana'] as FormControl;
+  }
+
   get tamanoActual(): string {
     return formatoTamano(this.registro_selected?.tamano);
   }
@@ -186,6 +191,8 @@ export class SaveFileComponent implements OnInit, OnDestroy {
       color:       [esCarpeta ? '#F0B13B' : '#A6A09B'],
       escarpeta:   [{ value: esCarpeta, disabled: true }],
       activo:      [true],
+      // Ejecutar abre en otra pestaña del navegador en vez del visor
+      nueva_ventana: [false],
     });
   }
 
@@ -223,6 +230,8 @@ export class SaveFileComponent implements OnInit, OnDestroy {
       case 'edit':
         this.title = this.esCarpeta ? 'Modificar carpeta' : 'Modificar archivo';
         this.form.patchValue(this.registro_selected);
+        // Registros antiguos traen NULL: el switch trabaja con booleanos
+        this.form.controls['nueva_ventana'].setValue(!!this.registro_selected?.nueva_ventana);
         // Registros antiguos sin tipo: eran todos enlaces
         this.form.controls['tipo'].setValue(defTipo(this.registro_selected?.tipo, this.registro_selected?.url).id);
         this.modo = this.tipoActual.id === 'link' ? 'link' : 'archivo';
@@ -421,6 +430,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
       // Las carpetas no tienen tipo ni tamaño
       if (this.esCarpeta) {
         data.tipo = null;
+        data.nueva_ventana = false;
         data.tamano = null;
       }
 

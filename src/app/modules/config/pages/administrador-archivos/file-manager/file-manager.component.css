@@ -510,3 +510,11 @@
   font-size: 9px;
   padding: .2em .45em;
 }
+
+/* Marca "se abre en ventana nueva" junto al nombre (cellRenderer del .ts) */
+:host ::ng-deep .archivos-grilla .lista-nueva-ventana {
+  margin-left: .35rem;
+  font-size: .7em;
+  color: var(--bs-app-theme, #00acac);
+  opacity: .8;
+}

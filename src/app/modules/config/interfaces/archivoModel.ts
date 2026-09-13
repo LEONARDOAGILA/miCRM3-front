@@ -14,6 +14,8 @@ export interface ArchivoModel {
   tamano?: number | null;
   escarpeta?:boolean;
   activo?:boolean;
+  /** true = Ejecutar abre el enlace/fichero en otra pestaña del navegador */
+  nueva_ventana?: boolean;
   created_at_formateado?: Date;
   updated_at_formateado?: Date;
 

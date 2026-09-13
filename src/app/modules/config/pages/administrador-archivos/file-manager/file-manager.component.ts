@@ -37,6 +37,8 @@ export interface FileTreeNode {
   tipo?: string | number;
   escarpeta: boolean;
   activo?: boolean;
+  /** true = Ejecutar abre en otra pestaña del navegador, no en el visor */
+  nueva_ventana?: boolean;
   created_at_formateado?: string;
   updated_at_formateado?: string;
   children?: FileTreeNode[];
@@ -499,7 +501,14 @@ export class FileManagerComponent implements OnInit, OnDestroy {
         flex: 2,
         minWidth: 180,
         cellStyle: { textAlign: 'left' },
-        filter: 'agTextColumnFilter'
+        filter: 'agTextColumnFilter',
+        // Los que se abren en otra pestaña llevan una marca al lado del nombre
+        cellRenderer: (p: any) => {
+          const nombre = this.escapeHtml(p.value ?? '');
+          return p.data?.nueva_ventana
+            ? `${nombre} <i class="fa fa-arrow-up-right-from-square lista-nueva-ventana" title="Se abre en una ventana nueva"></i>`
+            : nombre;
+        }
       },
       {
         headerName: 'Descripción',
@@ -561,6 +570,13 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   /** Icono del elemento con su color, igual en la grilla que en el árbol. */
+  /** El nombre va en un cellRenderer con HTML: se escapa para que no inyecte nada. */
+  private escapeHtml(texto: string): string {
+    return String(texto)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   private iconoHtml(n: FileTreeNode | undefined): string {
     if (!n) { return ''; }
     const color = n.color || (n.escarpeta ? '#F0B13B' : '#A6A09B');
@@ -703,13 +719,26 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Abre el reporte externo de un archivo a pantalla completa. */
+  /**
+   * Abre un archivo: en el visor a pantalla completa, o en otra pestaña del
+   * navegador si el registro tiene `nueva_ventana` (se decide en saveFile).
+   */
   ejecutar(archivo: FileTreeNode | null = this.filaSeleccionada): void {
     if (!archivo || archivo.escarpeta || this._seguridadService.isexpired()) { return; }
     if (!archivo.url) {
       this._toastr.warning('Este archivo no tiene una URL configurada', 'Sin destino');
       return;
     }
+
+    if (archivo.nueva_ventana) {
+      // noopener: la pestaña nueva no puede tocar window.opener (seguridad)
+      const ventana = window.open(this._archivoService.urlPublica(archivo.url), '_blank', 'noopener,noreferrer');
+      if (!ventana) {
+        this._toastr.warning('El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio.', 'Ventana bloqueada');
+      }
+      return;
+    }
+
     const modalRef = this.modal.open(ModalReporteExternoComponent, {
       centered: true,
       size: 'xxl',
