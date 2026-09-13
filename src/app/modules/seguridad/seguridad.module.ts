@@ -13,6 +13,7 @@ import { PanelModule } from '../../components/panel/panel.module';
 
 import { ModalFooterComponent } from '../../components/modal/modal-footer/modal-footer.component';
 import { ModalHeaderComponent } from '../../components/modal/modal-header/modal-header.component';
+import { ModalArrastrableDirective } from '../../components/modal/modal-arrastrable.directive';
 import { ActionButtonsModule } from '../../components/botones/action-buttons/action-buttons.module';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
@@ -117,6 +118,7 @@ import { Save2ProfileComponent } from './pages/profiles/save2Profile/save2Profil
     CheckboxComponent,
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
+    ModalArrastrableDirective,
     ComboComponent,
     ActionButtonsModule,
     ModalFooterComponent,

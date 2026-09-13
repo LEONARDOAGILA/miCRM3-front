@@ -1,0 +1,174 @@
+/* ============================================================
+   PAPELERA DE RECICLAJE (modal)
+   Sólo lo propio del modal; la grilla usa el skin global de ag-Grid.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.papelera-body {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  padding: 1rem;
+}
+
+.papelera-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+.papelera-resumen {
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.papelera-resumen b {
+  color: var(--bs-body-color, #212529);
+}
+
+.papelera-acciones {
+  display: flex;
+  gap: .375rem;
+  margin-left: auto;
+}
+
+.papelera-ayuda {
+  margin: 0 0 .5rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.papelera-ayuda i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.papelera-grilla {
+  height: 340px;
+  width: 100%;
+}
+
+/* Fila pulsable. ::ng-deep porque .ag-row lo genera ag-Grid fuera de la
+   encapsulación del componente. */
+:host ::ng-deep .papelera-grilla .ag-row {
+  cursor: pointer;
+}
+
+@media (max-width: 575.98px) {
+  .papelera-body {
+    padding: .75rem;
+  }
+
+  .papelera-acciones {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .papelera-acciones .btn {
+    flex: 1 1 0;
+  }
+}
+
+/* ============================================================
+   MENÚ CONTEXTUAL (clic derecho) — calcado del administrador.
+   z-index por encima del modal de ng-bootstrap (1055).
+   ============================================================ */
+.menu-ctx {
+  position: fixed;
+  z-index: 1080;                 /* por encima del modal (1055) */
+  min-width: 220px;
+  max-width: 280px;
+  padding: .375rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+
+  font-size: 12px;
+  animation: menu-ctx-entrada .1s ease-out;
+}
+
+@keyframes menu-ctx-entrada {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.menu-ctx__cabecera {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .375rem .625rem .5rem;
+  margin-bottom: .25rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.menu-ctx__cabecera--vacio {
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 500;
+}
+
+.menu-ctx__item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  width: 100%;
+  padding: .4rem .625rem;
+  border: 0;
+  border-radius: .375rem;
+
+  background: transparent;
+  color: var(--bs-body-color, #212529);
+  text-align: left;
+  white-space: nowrap;
+
+  transition: background-color .1s ease;
+}
+
+.menu-ctx__item:hover,
+.menu-ctx__item:focus-visible {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  outline: none;
+}
+
+.menu-ctx__item--peligro:hover,
+.menu-ctx__item--peligro:focus-visible {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);
+  color: var(--bs-danger, #dc3545);
+}
+
+.menu-ctx__detalle {
+  margin-left: auto;
+  padding-left: .75rem;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  font-size: 10px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.menu-ctx__sep {
+  height: 1px;
+  margin: .25rem .375rem;
+  background-color: var(--bs-border-color, #dee2e6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-ctx {
+    animation: none;
+  }
+}
+
+.menu-ctx__item:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}

@@ -11,8 +11,8 @@ import { ArchivoService } from '../../../services/archivo.service';
  * Mismo esquema que deleteUser: emite `registrosE` con el registro borrado
  * ANTES de cerrar, para que quien lo abrió refresque el árbol.
  *
- * El back rechaza borrar una carpeta con contenido (409); aquí sólo se
- * muestra el mensaje y se deja el modal abierto.
+ * "Eliminar" es borrado lógico: el back manda el elemento (y su contenido)
+ * a la papelera, desde donde se restaura o se borra de verdad.
  */
 @Component({
   selector: 'app-deleteFile',
@@ -40,7 +40,7 @@ export class DeleteFileComponent implements OnDestroy {
   }
 
   get title(): string {
-    return this.esCarpeta ? 'Eliminar carpeta' : 'Eliminar archivo';
+    return this.esCarpeta ? 'Enviar carpeta a la papelera' : 'Enviar archivo a la papelera';
   }
 
   ngOnDestroy(): void {

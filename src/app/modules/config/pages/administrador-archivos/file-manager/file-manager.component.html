@@ -146,13 +146,15 @@
 
         <div class="archivos-lateral__arbol">
           <ng-scrollbar class="h-100">
-            <div class="archivos-arbol">
+            <!-- (contextmenu): clic derecho en el fondo del árbol; los nodos emiten el suyo -->
+            <div class="archivos-arbol" (contextmenu)="onContextMenuArbol($event)">
               @for (node of nodes; track node.id) {
                 <app-file-tree-node
                   [node]="node"
                   [isSelected]="node.isSelected"
                   (nodeSelected)="onNodeSelect($event)"
-                  (nodeToggled)="onNodeToggle($event)">
+                  (nodeToggled)="onNodeToggle($event)"
+                  (nodeContextMenu)="onContextMenuNodo($event)">
                 </app-file-tree-node>
               } @empty {
                 <div class="archivos-arbol__vacio">
@@ -190,6 +192,19 @@
             </button>
           </div>
 
+          <!-- Papelera de reciclaje: lo eliminado va ahí y se puede restaurar.
+               El contador se actualiza con cada recarga del árbol. -->
+          <button type="button" class="btn btn-sm btn-white archivos-papelera position-relative"
+                  [title]="numPapelera ? 'Papelera de reciclaje: ' + numPapelera + (numPapelera === 1 ? ' elemento' : ' elementos') : 'Papelera de reciclaje (vacía)'"
+                  (click)="abrirPapelera()">
+            <i class="fa" [ngClass]="numPapelera ? 'fa-trash-can' : 'fa-trash-can archivos-papelera--vacia'"></i>
+            @if (numPapelera) {
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger archivos-papelera__badge">
+                {{ numPapelera > 99 ? '99+' : numPapelera }}
+              </span>
+            }
+          </button>
+
           <nav class="archivos-ruta" aria-label="Ubicación">
             <button type="button" class="archivos-ruta__tramo" (click)="irARaiz()" title="Raíz">
               <i class="fa fa-house"></i>
@@ -209,8 +224,8 @@
           </button>
         </div>
 
-        <!-- Buscador: filtra en cliente lo que hay en la carpeta actual (la
-             grilla ya tiene todas las filas). Mismo campo que allUsers. -->
+        <!-- Buscador: filtra EN SERVIDOR dentro de la carpeta actual (nombre o
+             descripción). Mismo campo que allUsers. -->
         <div class="archivos-buscador row g-2 align-items-center">
           <div class="col-auto pe-1">
             <button type="button"
@@ -233,9 +248,15 @@
 
         <!-- Grilla: contenido de la carpeta actual (o las raíces).
              Un clic marca la fila; doble clic entra en la carpeta o abre el
-             archivo. Aspecto: skin global de ag-Grid. Pagina ag-Grid en
-             cliente; su panel se oculta y se usan los botones de abajo. -->
-        <div class="archivos-grilla">
+             archivo. Aspecto: skin global de ag-Grid. Paginación EN SERVIDOR:
+             la grilla sólo tiene la página actual (ver cargarContenido). -->
+        <!-- (contextmenu): clic derecho en una fila o en el fondo de la grilla -->
+        <div class="archivos-grilla position-relative" (contextmenu)="onContextMenuGrilla($event)">
+          <!-- Spinner y velo mientras se pide la página al servidor -->
+          @if (isLoading$ | async) {
+            <div class="loader1" role="status" aria-label="Cargando"></div>
+            <div class="overlay1" aria-hidden="true"></div>
+          }
           <ag-grid-angular
             class="ag-theme-alpine ag-grid-transparente w-100 h-100"
             [rowData]="contenido"
@@ -246,16 +267,12 @@
             [localeText]="_appAgGridService.localeText"
             [rowClassRules]="rowClassRules"
             [rowSelection]="'single'"
-            [pagination]="true"
-            [paginationPageSize]="registrosPorPagina"
-            [suppressPaginationPanel]="true"
-            [cacheQuickFilter]="true"
+            [pagination]="false"
             [animateRows]="true"
             [overlayNoRowsTemplate]="carpetaActual ? '<span>Esta carpeta está vacía</span>' : '<span>No hay carpetas en la raíz</span>'"
             (gridReady)="onGridReady($event)"
             (cellClicked)="onCellClicked($event)"
-            (cellDoubleClicked)="onCellDoubleClicked($event)"
-            (paginationChanged)="onPaginationChanged()">
+            (cellDoubleClicked)="onCellDoubleClicked($event)">
           </ag-grid-angular>
         </div>
 
@@ -299,3 +316,82 @@
 
   </div>
 </panel>
+
+<!-- ================= MENÚ CONTEXTUAL =================
+     Un solo menú para la grilla y el árbol, en position: fixed en el punto
+     del clic. Qué opciones salen depende de lo que había bajo el cursor:
+       - una carpeta:  Abrir · Nueva carpeta / archivo dentro · Modificar · Eliminar · Auditoría
+       - un archivo:   Ejecutar · Modificar · Eliminar · Auditoría
+       - fondo:        Nueva raíz · Nueva carpeta / archivo (en la carpeta actual) · Recargar
+     Se cierra con clic fuera, Escape, scroll o al elegir una opción. -->
+@if (menuCtx.visible) {
+  <div #menuCtxEl
+       class="menu-ctx"
+       role="menu"
+       [style.left.px]="menuCtx.x"
+       [style.top.px]="menuCtx.y"
+       (click)="$event.stopPropagation()"
+       (contextmenu)="$event.preventDefault()">
+
+    <!-- Cabecera: sobre qué elemento actúa -->
+    @if (menuCtx.elemento; as el) {
+      <div class="menu-ctx__cabecera">
+        <i class="fa fa-fw" [ngClass]="el.escarpeta ? 'fa-folder' : 'fa-file'" [style.color]="el.color"></i>
+        <span class="text-truncate">{{ el.nombre }}</span>
+      </div>
+
+      @if (el.escarpeta) {
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); irA(el)">
+          <i class="fa fa-folder-open fa-fw text-warning"></i> Abrir
+        </button>
+      } @else {
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); ejecutar(el)">
+          <i class="fa fa-play fa-fw text-success"></i> Ejecutar
+        </button>
+      }
+      <div class="menu-ctx__sep"></div>
+    } @else {
+      <div class="menu-ctx__cabecera menu-ctx__cabecera--vacio">
+        <i class="fa fa-fw" [ngClass]="menuCtx.dentroDe ? 'fa-folder-open' : 'fa-house'"></i>
+        <span class="text-truncate">{{ menuCtx.dentroDe ? menuCtx.dentroDe.nombre : 'Raíz' }}</span>
+      </div>
+    }
+
+    <!-- Crear -->
+    @if (menuCtx.dentroDe; as carpeta) {
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevaCarpeta(carpeta)">
+        <i class="fa fa-folder-plus fa-fw text-warning"></i> Nueva carpeta
+        <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
+      </button>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevoArchivo(carpeta)">
+        <i class="fa fa-file-circle-plus fa-fw text-primary"></i> Nuevo archivo
+        <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
+      </button>
+    }
+    @if (!menuCtx.elemento || menuCtx.origen === 'arbol') {
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevaRaiz()">
+        <i class="fa fa-folder-plus fa-fw text-warning"></i> Nueva raíz
+      </button>
+    }
+
+    <!-- Sobre el elemento -->
+    @if (menuCtx.elemento; as el) {
+      <div class="menu-ctx__sep"></div>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); editar(el)">
+        <i class="fa fa-pen-to-square fa-fw text-info"></i> Modificar
+      </button>
+      <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminar(el)">
+        <i class="fa fa-trash fa-fw"></i> Eliminar
+      </button>
+      <div class="menu-ctx__sep"></div>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); auditoria(el)">
+        <i class="fa fa-user-secret fa-fw text-secondary"></i> Auditoría
+      </button>
+    } @else {
+      <div class="menu-ctx__sep"></div>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); refresh()">
+        <i class="fa fa-arrows-rotate fa-fw text-secondary"></i> Recargar
+      </button>
+    }
+  </div>
+}

@@ -210,8 +210,10 @@ export class SaveFileComponent implements OnInit, OnDestroy {
   // GUARDAR
   // ================================================================
 
-  async onSubmitForm($ev: Event): Promise<void> {
-    $ev.preventDefault();
+  async onSubmitForm($ev?: Event): Promise<void> {
+    // app-modal-footer emite sin evento: la llamada es opcional. Con
+    // $ev.preventDefault() a secas reventaba aquí y no guardaba nada.
+    $ev?.preventDefault?.();
     Object.values(this.form.controls).forEach(c => c.markAsTouched());
 
     if (this.form.invalid) {

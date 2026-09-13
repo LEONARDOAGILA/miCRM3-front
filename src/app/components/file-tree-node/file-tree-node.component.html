@@ -3,6 +3,7 @@
     class="file-link"
     [class.selected]="isSelected"
     (click)="onNodeClick($event)"
+    (contextmenu)="onNodeContextMenu($event)"
   >
     <!-- Flecha para expandir/colapsar -->
     <span class="file-arrow" *ngIf="node.children" (click)="toggleNode($event)">
@@ -29,6 +30,7 @@
         [isSelected]="child.isSelected"
         (nodeSelected)="onChildNodeSelected($event)"
         (nodeToggled)="nodeToggled.emit($event)"
+        (nodeContextMenu)="nodeContextMenu.emit($event)"
       ></app-file-tree-node>
     </ng-container>
   </div>

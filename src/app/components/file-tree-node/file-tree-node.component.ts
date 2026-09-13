@@ -25,6 +25,8 @@ export class FileTreeNodeComponent {
   @Input() isSelected: boolean = false;
   @Output() nodeSelected = new EventEmitter<FileTreeNode>();
   @Output() nodeToggled = new EventEmitter<FileTreeNode>();
+  /** Clic derecho sobre el nodo: quien escucha decide qué menú mostrar. */
+  @Output() nodeContextMenu = new EventEmitter<{ node: FileTreeNode; event: MouseEvent }>();
 
   /**
    * +/−: sólo abre o cierra la rama. No selecciona: antes emitía también
@@ -38,6 +40,12 @@ export class FileTreeNodeComponent {
       this.node.isOpen = !this.node.isOpen;
       this.nodeToggled.emit(this.node);
     }
+  }
+
+  onNodeContextMenu(event: MouseEvent): void {
+    // No se cancela aquí el menú del navegador: lo hace quien escucha, si
+    // decide mostrar el suyo.
+    this.nodeContextMenu.emit({ node: this.node, event });
   }
 
   onChildNodeSelected(node: FileTreeNode): void {

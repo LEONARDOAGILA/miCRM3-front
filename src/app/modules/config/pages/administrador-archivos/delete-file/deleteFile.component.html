@@ -10,7 +10,7 @@
      aria-describedby="eliminarArchivoDescripcion">
 
   <!-- Cabecera -->
-  <div class="modal-header eliminar-header">
+  <div appModalArrastrable class="modal-header eliminar-header">
     <h5 class="modal-title" id="eliminarArchivoTitulo">
       <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
     </h5>
@@ -30,16 +30,16 @@
       </div>
       <div>
         <h6 class="eliminar-aviso__titulo">
-          ¿Está seguro que desea eliminar {{ esCarpeta ? 'esta carpeta' : 'este archivo' }}?
+          ¿Enviar {{ esCarpeta ? 'esta carpeta' : 'este archivo' }} a la papelera?
         </h6>
         <p class="eliminar-aviso__texto" id="eliminarArchivoDescripcion">
-          Esta acción no se puede deshacer.
+          No se borra: va a la <b>papelera de reciclaje</b>, desde donde puede restaurarlo o
+          eliminarlo definitivamente.
           @if (esCarpeta) {
-            Sólo se puede eliminar una carpeta vacía: si tiene contenido, el sistema lo rechazará.
+            Se envía con todo su contenido, y al restaurarla vuelve completa.
           } @else {
             El reporte al que apunta no se toca; sólo desaparece su acceso desde aquí.
           }
-          Su historial de auditoría se conserva.
         </p>
       </div>
     </div>
@@ -103,7 +103,7 @@
             class="btn btn-danger"
             [disabled]="isLoading"
             (click)="eliminar()">
-      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Enviar a la papelera
     </button>
   </div>
 

@@ -1,0 +1,134 @@
+<!-- ============================================================
+     PAPELERA DE RECICLAJE (modal)
+     Lo eliminado en el administrador de archivos. Selecciona una fila y
+     restáurala o bórrala de verdad; o vacía la papelera entera.
+     ============================================================ -->
+
+<!-- Spinner y velo mientras carga -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- Cabecera (arrastrable: app-modal-header lleva la directiva) -->
+<app-modal-header
+  title="Papelera de reciclaje"
+  (onClose)="modal.dismiss()">
+</app-modal-header>
+
+<!-- Cuerpo -->
+<div class="modal-body papelera-body">
+
+  <!-- Barra: resumen a la izquierda, acciones a la derecha -->
+  <div class="papelera-barra">
+    <div class="papelera-resumen">
+      @if (items.length) {
+        <b>{{ items.length }}</b> {{ items.length === 1 ? 'elemento' : 'elementos' }}
+        · {{ numCarpetas }} {{ numCarpetas === 1 ? 'carpeta' : 'carpetas' }}
+        · {{ numArchivos }} {{ numArchivos === 1 ? 'archivo' : 'archivos' }}
+      } @else {
+        La papelera está vacía
+      }
+    </div>
+
+    <div class="papelera-acciones">
+      <button type="button" class="btn btn-sm btn-success"
+              [disabled]="!seleccionado"
+              [title]="seleccionado ? 'Restaurar «' + seleccionado.nombre + '» a «' + seleccionado.ruta + '»' : 'Seleccione un elemento'"
+              (click)="restaurar()">
+        <i class="fa fa-rotate-left me-1"></i>
+        <span class="d-none d-sm-inline">Restaurar</span>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-danger"
+              [disabled]="!seleccionado"
+              [title]="seleccionado ? 'Borrar «' + seleccionado.nombre + '» para siempre' : 'Seleccione un elemento'"
+              (click)="eliminarDefinitivo()">
+        <i class="fa fa-trash me-1"></i>
+        <span class="d-none d-sm-inline">Eliminar definitivamente</span>
+      </button>
+      <button type="button" class="btn btn-sm btn-danger"
+              [disabled]="!items.length"
+              title="Borrar para siempre todo lo que hay en la papelera"
+              (click)="vaciar()">
+        <i class="fa fa-broom me-1"></i>
+        <span class="d-none d-sm-inline">Vaciar papelera</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Pista -->
+  <p class="papelera-ayuda">
+    <i class="fa fa-circle-info me-1"></i>
+    Al restaurar una carpeta vuelve con todo su contenido; si la carpeta donde estaba también
+    está en la papelera, se restaura con ella.
+  </p>
+
+  <!-- Grilla (skin global de ag-Grid). (contextmenu): clic derecho en una fila
+       o en el fondo abre el menú de acciones, como en el administrador. -->
+  <div class="papelera-grilla-wrap" (contextmenu)="onContextMenuGrilla($event)">
+  <ag-grid-angular
+    class="ag-theme-alpine ag-grid-transparente papelera-grilla"
+    [rowData]="items"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="_appAgGridService.defaultColDef"
+    [localeText]="_appAgGridService.localeText"
+    [rowHeight]="35"
+    [headerHeight]="35"
+    [rowSelection]="'single'"
+    [pagination]="false"
+    [overlayNoRowsTemplate]="'<span>No hay nada en la papelera</span>'"
+    (gridReady)="onGridReady($event)"
+    (cellClicked)="onCellClicked($event)">
+  </ag-grid-angular>
+  </div>
+
+</div>
+
+<!-- Pie -->
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" (click)="modal.dismiss()">
+    <i class="fa fa-times me-1"></i> Cerrar
+  </button>
+</div>
+
+<!-- ================= MENÚ CONTEXTUAL =================
+     Sobre una fila: Restaurar · Eliminar definitivamente.
+     Sobre el fondo: Vaciar papelera · Recargar. -->
+@if (menuCtx.visible) {
+  <div #menuCtxEl
+       class="menu-ctx"
+       role="menu"
+       [style.left.px]="menuCtx.x"
+       [style.top.px]="menuCtx.y"
+       (click)="$event.stopPropagation()"
+       (contextmenu)="$event.preventDefault()">
+
+    @if (menuCtx.elemento; as el) {
+      <div class="menu-ctx__cabecera">
+        <i class="fa fa-fw" [ngClass]="el.escarpeta ? 'fa-folder' : 'fa-file'" [style.color]="el.color"></i>
+        <span class="text-truncate">{{ el.nombre }}</span>
+      </div>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); restaurar()">
+        <i class="fa fa-rotate-left fa-fw text-success"></i> Restaurar
+        <span class="menu-ctx__detalle">a «{{ el.ruta }}»</span>
+      </button>
+      <div class="menu-ctx__sep"></div>
+      <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminarDefinitivo()">
+        <i class="fa fa-trash fa-fw"></i> Eliminar definitivamente
+      </button>
+    } @else {
+      <div class="menu-ctx__cabecera menu-ctx__cabecera--vacio">
+        <i class="fa fa-trash-can fa-fw"></i>
+        <span>Papelera</span>
+      </div>
+      <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem"
+              [disabled]="!items.length" (click)="cerrarMenu(); vaciar()">
+        <i class="fa fa-broom fa-fw"></i> Vaciar papelera
+      </button>
+      <div class="menu-ctx__sep"></div>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); cargar()">
+        <i class="fa fa-arrows-rotate fa-fw text-secondary"></i> Recargar
+      </button>
+    }
+  </div>
+}

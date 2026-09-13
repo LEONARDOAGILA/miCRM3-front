@@ -400,3 +400,113 @@
     font-size: .7rem;
   }
 }
+
+/* ============================================================
+   MENÚ CONTEXTUAL (clic derecho)
+   ============================================================ */
+.menu-ctx {
+  position: fixed;
+  z-index: 1070;                 /* por encima del panel expandido (1054) */
+  min-width: 220px;
+  max-width: 280px;
+  padding: .375rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+
+  font-size: 12px;
+  animation: menu-ctx-entrada .1s ease-out;
+}
+
+@keyframes menu-ctx-entrada {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.menu-ctx__cabecera {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .375rem .625rem .5rem;
+  margin-bottom: .25rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.menu-ctx__cabecera--vacio {
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 500;
+}
+
+.menu-ctx__item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  width: 100%;
+  padding: .4rem .625rem;
+  border: 0;
+  border-radius: .375rem;
+
+  background: transparent;
+  color: var(--bs-body-color, #212529);
+  text-align: left;
+  white-space: nowrap;
+
+  transition: background-color .1s ease;
+}
+
+.menu-ctx__item:hover,
+.menu-ctx__item:focus-visible {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  outline: none;
+}
+
+.menu-ctx__item--peligro:hover,
+.menu-ctx__item--peligro:focus-visible {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);
+  color: var(--bs-danger, #dc3545);
+}
+
+.menu-ctx__detalle {
+  margin-left: auto;
+  padding-left: .75rem;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  font-size: 10px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.menu-ctx__sep {
+  height: 1px;
+  margin: .25rem .375rem;
+  background-color: var(--bs-border-color, #dee2e6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-ctx {
+    animation: none;
+  }
+}
+
+/* ---------- Papelera (barra de ubicación) ---------- */
+.archivos-papelera {
+  flex: 0 0 auto;
+}
+
+/* Vacía: el icono se atenúa para que se vea que no hay nada dentro */
+.archivos-papelera--vacia {
+  opacity: .5;
+}
+
+.archivos-papelera__badge {
+  font-size: 9px;
+  padding: .2em .45em;
+}
