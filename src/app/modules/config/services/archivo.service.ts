@@ -24,7 +24,8 @@ export class ArchivoService {
    * Devuelve data: { data: [...], meta: { total, per_page, current_page,
    * last_page, carpetas, archivos } }.
    */
-  allArchivos(padre: number, page: number = 1, perPage: number = 10, search: string = ''): Observable<any> {
+  /** Contenido de una carpeta. perPage 0 = toda la carpeta, sin paginar. */
+  allArchivos(padre: number, page: number = 1, perPage: number = 0, search: string = ''): Observable<any> {
     let params = new HttpParams()
       .set('padre', String(padre))
       .set('page', String(page))

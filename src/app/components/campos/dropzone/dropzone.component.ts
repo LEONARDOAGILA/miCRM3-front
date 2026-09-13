@@ -38,6 +38,12 @@ export class DropzoneComponent implements OnChanges, OnDestroy {
   @Input() disabled = false;
   /** Texto principal de la zona vacía. */
   @Input() texto = 'Arrastra el archivo aquí o haz clic para elegirlo';
+  /**
+   * Icono y color del tipo de fichero (los pone quien lo usa, que sabe qué
+   * tipo detectó). Sin icono se muestra la extensión en un recuadro.
+   */
+  @Input() icono = '';
+  @Input() color = '';
 
   @Output() archivoSeleccionado = new EventEmitter<File | null>();
 

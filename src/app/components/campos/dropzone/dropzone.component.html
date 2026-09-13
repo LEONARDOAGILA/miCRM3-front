@@ -1,69 +1,109 @@
 <!-- Input real, oculto: el diálogo del navegador lo abre abrirSelector() -->
 <input #input type="file" class="d-none" [accept]="accept" [disabled]="disabled" (change)="onInputChange($event)">
 
-<div class="dropzone"
-     [class.dropzone--activa]="arrastrando"
-     [class.dropzone--con-archivo]="archivo || archivoActual"
-     [class.dropzone--error]="error"
-     [class.dropzone--disabled]="disabled"
-     role="button"
-     tabindex="0"
-     [attr.aria-label]="texto"
-     (click)="abrirSelector()"
-     (keydown.enter)="abrirSelector()"
-     (keydown.space)="abrirSelector(); $event.preventDefault()"
+<!-- La clase raíz NO se llama "dropzone": Color Admin trae reglas globales
+     .dropzone { border/background !important } para el plugin dropzone.js
+     y aplastaban estos estilos. -->
+<div class="zona-archivo"
+     [class.zona-archivo--activa]="arrastrando"
+     [class.zona-archivo--con-archivo]="archivo || archivoActual"
+     [class.zona-archivo--error]="error"
+     [class.zona-archivo--disabled]="disabled"
+     [style.--tipo-color]="color || null"
      (dragover)="onDragOver($event)"
      (dragleave)="onDragLeave()"
      (drop)="onDrop($event)">
 
   @if (archivo) {
     <!-- Fichero elegido, pendiente de subir -->
-    <div class="dropzone__fichero">
+    <div class="zona-archivo__ficha">
       @if (vistaPrevia) {
-        <img class="dropzone__miniatura" [src]="vistaPrevia" alt="">
+        <img class="zona-archivo__miniatura" [src]="vistaPrevia" alt="">
       } @else {
-        <span class="dropzone__ext">{{ extension || 'FILE' }}</span>
+        <span class="zona-archivo__icono-tipo">
+          @if (icono) {
+            <i [ngClass]="icono"></i>
+          } @else {
+            <span class="zona-archivo__ext">{{ extension || 'FILE' }}</span>
+          }
+        </span>
       }
-      <div class="dropzone__datos">
-        <span class="dropzone__nombre text-truncate" [title]="archivo.name">{{ archivo.name }}</span>
-        <span class="dropzone__meta">{{ formato(archivo.size) }} · listo para subir</span>
+
+      <div class="zona-archivo__datos">
+        <span class="zona-archivo__nombre text-truncate" [title]="archivo.name">{{ archivo.name }}</span>
+        <span class="zona-archivo__meta">
+          <span class="zona-archivo__chip">{{ extension || 'FILE' }}</span>
+          {{ formato(archivo.size) }}
+          @if (progreso === null) { · listo para subir }
+        </span>
         @if (progreso !== null) {
-          <div class="dropzone__progreso" role="progressbar" [attr.aria-valuenow]="progreso" aria-valuemin="0" aria-valuemax="100">
-            <div class="dropzone__progreso-barra" [style.width.%]="progreso"></div>
+          <div class="zona-archivo__progreso" role="progressbar" [attr.aria-valuenow]="progreso" aria-valuemin="0" aria-valuemax="100">
+            <div class="zona-archivo__progreso-barra" [style.width.%]="progreso"></div>
           </div>
-          <span class="dropzone__meta">Subiendo… {{ progreso }} %</span>
+          <span class="zona-archivo__meta">Subiendo… {{ progreso }} %</span>
         }
       </div>
-      @if (progreso === null && !disabled) {
-        <button type="button" class="dropzone__quitar" title="Quitar" aria-label="Quitar el archivo" (click)="quitar($event)">&times;</button>
-      }
     </div>
   } @else if (archivoActual) {
     <!-- Edición: lo que ya está guardado; un nuevo fichero lo sustituye -->
-    <div class="dropzone__fichero dropzone__fichero--actual">
-      <span class="dropzone__ext dropzone__ext--actual"><i class="fa fa-check"></i></span>
-      <div class="dropzone__datos">
-        <span class="dropzone__nombre text-truncate" [title]="archivoActual">{{ archivoActual }}</span>
-        <span class="dropzone__meta">Archivo actual · arrastra o haz clic para sustituirlo</span>
+    <div class="zona-archivo__ficha zona-archivo__ficha--actual">
+      <span class="zona-archivo__icono-tipo">
+        @if (icono) {
+          <i [ngClass]="icono"></i>
+        } @else {
+          <i class="fa fa-check"></i>
+        }
+      </span>
+      <div class="zona-archivo__datos">
+        <span class="zona-archivo__nombre text-truncate" [title]="archivoActual">{{ archivoActual }}</span>
+        <span class="zona-archivo__meta">
+          <span class="zona-archivo__chip zona-archivo__chip--ok"><i class="fa fa-check"></i> Guardado</span>
+          arrastra o elige otro para sustituirlo
+        </span>
       </div>
     </div>
   } @else {
-    <!-- Vacía -->
-    <div class="dropzone__vacia">
-      <i class="fa fa-cloud-arrow-up dropzone__icono"></i>
-      <span class="dropzone__texto">{{ texto }}</span>
-      <span class="dropzone__meta">
+    <!-- Vacía: misma zona que el avatar de saveUser -->
+    <div class="zona-archivo__vacia"
+         role="button"
+         tabindex="0"
+         [attr.aria-label]="texto"
+         (click)="abrirSelector()"
+         (keydown.enter)="abrirSelector()"
+         (keydown.space)="abrirSelector(); $event.preventDefault()">
+      <span class="zona-archivo__icono">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+      </span>
+      <p class="zona-archivo__titulo">Seleccionar archivo</p>
+      <p class="zona-archivo__ayuda">{{ texto }}</p>
+      <p class="zona-archivo__ayuda">
         @if (extensiones.length) { {{ extensiones.join(', ').toUpperCase() }} }
         @if (extensiones.length && maxMb > 0) { · }
         @if (maxMb > 0) { máx. {{ maxMb }} MB }
-        @if (!extensiones.length && maxMb <= 0) { Cualquier tipo de archivo }
-      </span>
+        @if (!extensiones.length && maxMb <= 0) { Cualquier tipo de archivo, sin límite de tamaño }
+      </p>
     </div>
   }
 </div>
 
+<!-- Acciones bajo la zona (mismos botones que el avatar de saveUser) -->
+@if (!disabled && progreso === null) {
+  <div class="zona-archivo__acciones">
+    <button type="button" class="btn zona-archivo__btn" (click)="abrirSelector()" title="Buscar en el dispositivo">
+      <i class="fa-solid fa-folder-open"></i>
+      <span>{{ archivo || archivoActual ? 'Cambiar' : 'Buscar' }}</span>
+    </button>
+    @if (archivo) {
+      <button type="button" class="btn zona-archivo__btn zona-archivo__btn--danger" (click)="quitar($event)" title="Quitar el archivo elegido">
+        <i class="fa-solid fa-trash-can"></i>
+        <span>Quitar</span>
+      </button>
+    }
+  </div>
+}
+
 @if (error) {
-  <p class="dropzone__error">
+  <p class="zona-archivo__error">
     <i class="fa fa-triangle-exclamation me-1"></i>{{ error }}
   </p>
 }

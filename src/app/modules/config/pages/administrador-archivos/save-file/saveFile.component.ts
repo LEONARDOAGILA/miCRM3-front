@@ -146,6 +146,11 @@ export class SaveFileComponent implements OnInit, OnDestroy {
     return this.form.controls['nueva_ventana'] as FormControl;
   }
 
+  /** Control del switch "activo" (tipado para [formControl]). */
+  get ctrlActivo(): FormControl {
+    return this.form.controls['activo'] as FormControl;
+  }
+
   /** Control del switch "proteger la URL" (tipado para [formControl]). */
   get ctrlProtegerUrl(): FormControl {
     return this.form.controls['proteger_url'] as FormControl;
@@ -220,6 +225,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
       modulo:      ['', [Validators.maxLength(15)]],
       tipo:        ['link'],
       tamano:      [null],
+      extension_archivo: [null],   // la pone la subida; para reportería
       icono:       [''],
       color:       [esCarpeta ? '#F0B13B' : '#A6A09B'],
       escarpeta:   [{ value: esCarpeta, disabled: true }],
@@ -268,6 +274,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
         // Registros antiguos traen NULL: el switch trabaja con booleanos
         this.form.controls['nueva_ventana'].setValue(!!this.registro_selected?.nueva_ventana);
         this.form.controls['proteger_url'].setValue(this.registro_selected?.proteger_url !== false);
+        this.form.controls['activo'].setValue(this.registro_selected?.activo !== false);
         // Registros antiguos sin tipo: eran todos enlaces
         this.form.controls['tipo'].setValue(defTipo(this.registro_selected?.tipo, this.registro_selected?.url).id);
         this.modo = this.tipoActual.id === 'link' ? 'link' : 'archivo';
@@ -390,9 +397,9 @@ export class SaveFileComponent implements OnInit, OnDestroy {
    * tipo que le asignó el servidor. Va antes de guardar el registro, para
    * que éste ya nazca con su url.
    */
-  private subirFichero(): Promise<{ url: string; tamano: number; tipo: TipoArchivo }> {
+  private subirFichero(): Promise<{ url: string; tamano: number; tipo: TipoArchivo; extension: string }> {
     this.progreso = 0;
-    return new Promise<{ url: string; tamano: number; tipo: TipoArchivo }>((resolve, reject) => {
+    return new Promise<{ url: string; tamano: number; tipo: TipoArchivo; extension: string }>((resolve, reject) => {
       this._archivoService.subirArchivo(this.ficheroNuevo!)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
@@ -409,6 +416,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
                 url:    cuerpo.data.url,
                 tamano: cuerpo.data.tamano,
                 tipo:   defTipo(cuerpo.data.tipo).id,
+                extension: String(cuerpo.data.extension ?? '').toLowerCase(),
               });
             }
           },
@@ -457,11 +465,13 @@ export class SaveFileComponent implements OnInit, OnDestroy {
         data.url = subida.url;
         data.tamano = subida.tamano;
         data.tipo = subida.tipo;
+        data.extension_archivo = subida.extension || null;
       }
       // Un enlace nunca lleva tamaño
       if (!this.esCarpeta && this.esEnlace) {
         data.tipo = 'link';
         data.tamano = null;
+        data.extension_archivo = null;
       }
       // Las carpetas no tienen tipo ni tamaño
       if (this.esCarpeta) {
@@ -469,6 +479,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
         data.nueva_ventana = false;
         data.proteger_url = false;
         data.tamano = null;
+        data.extension_archivo = null;
       }
 
       // 2) Registro

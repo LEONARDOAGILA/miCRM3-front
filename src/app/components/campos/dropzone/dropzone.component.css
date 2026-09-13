@@ -1,150 +1,194 @@
 /* ============================================================
-   DROPZONE — zona para soltar o elegir un fichero
-   Mismo lenguaje que el resto de campos: borde del tema, anillo de foco
-   con el color de acento, variables --bs-* para el modo oscuro.
+   ZONA DE ARCHIVO — soltar o elegir un fichero
+   Calcada de la zona de avatar de saveUser: borde discontinuo, estado
+   vacío con icono redondo + título + ayuda, y una ficha del fichero
+   cuando ya hay uno. Variables --bs-* para el modo oscuro.
+
+   La clase raíz no es ".dropzone" a propósito: Color Admin trae reglas
+   globales .dropzone { … !important } para dropzone.js que lo aplastaban.
    ============================================================ */
 
 :host {
   display: block;
 }
 
-.dropzone {
+.zona-archivo {
   position: relative;
-  min-height: 92px;
-  padding: .875rem 1rem;
-
+  width: 100%;
   border: 2px dashed var(--bs-border-color, #dee2e6);
-  border-radius: .5rem;
-  background-color: var(--bs-component-bg, #fff);
-
-  cursor: pointer;
-  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+  border-radius: .75rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
 }
 
-.dropzone:hover,
-.dropzone:focus-visible {
-  border-color: var(--bs-app-theme, #00acac);
-  outline: none;
-}
-
-.dropzone:focus-visible {
-  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+.zona-archivo:not(.zona-archivo--con-archivo):hover {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
 }
 
 /* Se está arrastrando algo encima */
-.dropzone--activa {
+.zona-archivo--activa {
   border-style: solid;
-  border-color: var(--bs-app-theme, #00acac);
-  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .06);
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
 }
 
-.dropzone--con-archivo {
+.zona-archivo--con-archivo {
   border-style: solid;
+  background-color: var(--bs-component-bg, #fff);
 }
 
-.dropzone--error {
+.zona-archivo--error {
   border-color: var(--bs-danger, #dc3545);
 }
 
-.dropzone--disabled {
-  cursor: not-allowed;
+.zona-archivo--disabled {
   opacity: .6;
 }
 
-/* ---------- Vacía ---------- */
-.dropzone__vacia {
+.zona-archivo--disabled .zona-archivo__vacia {
+  cursor: not-allowed;
+}
+
+/* ---------- Estado vacío (igual que .avatar-empty) ---------- */
+.zona-archivo__vacia {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .25rem;
+  justify-content: center;
   text-align: center;
+  min-height: 170px;
+  padding: 1.25rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
 }
 
-.dropzone__icono {
+.zona-archivo__vacia:focus-visible {
+  box-shadow: inset 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .25);
+  border-radius: .75rem;
+}
+
+.zona-archivo__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: .75rem;
+  border-radius: 50%;
   font-size: 1.5rem;
-  color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  transition: transform .2s ease;
 }
 
-.dropzone__texto {
-  font-size: 12px;
+.zona-archivo__vacia:hover .zona-archivo__icono,
+.zona-archivo--activa .zona-archivo__icono {
+  transform: translateY(-3px);
+}
+
+.zona-archivo__titulo {
+  margin: 0 0 .35rem;
+  font-size: .9375rem;
   font-weight: 600;
   color: var(--bs-body-color, #212529);
 }
 
-.dropzone__meta {
-  font-size: 10.5px;
+.zona-archivo__ayuda {
+  margin: 0;
+  font-size: .75rem;
+  line-height: 1.5;
   color: var(--bs-secondary-color, #6c757d);
 }
 
-/* ---------- Con fichero ---------- */
-.dropzone__fichero {
+/* ---------- Ficha del fichero (elegido o ya guardado) ---------- */
+.zona-archivo__ficha {
   display: flex;
   align-items: center;
-  gap: .75rem;
+  gap: .875rem;
+  padding: .875rem 1rem;
 }
 
-.dropzone__miniatura,
-.dropzone__ext {
+.zona-archivo__miniatura,
+.zona-archivo__icono-tipo {
   flex: 0 0 auto;
-  width: 52px;
-  height: 52px;
-  border-radius: .375rem;
+  width: 64px;
+  height: 64px;
+  border-radius: .625rem;
   object-fit: cover;
 }
 
-.dropzone__ext {
+.zona-archivo__miniatura {
+  background-color: var(--bs-body-bg, #fff);
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+}
+
+/* Icono grande del tipo, en su color (--tipo-color la pone quien usa el componente) */
+.zona-archivo__icono-tipo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.75rem;
+  color: var(--tipo-color, var(--bs-app-theme, #00acac));
+  background-color: color-mix(in srgb, var(--tipo-color, var(--bs-app-theme, #00acac)) 14%, transparent);
+}
 
-  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
-  color: var(--bs-app-theme, #00acac);
-  font-size: 11px;
+.zona-archivo__ficha--actual .zona-archivo__icono-tipo {
+  color: var(--tipo-color, var(--bs-success, #198754));
+  background-color: color-mix(in srgb, var(--tipo-color, var(--bs-success, #198754)) 14%, transparent);
+}
+
+/* Sin icono conocido: la extensión en el recuadro */
+.zona-archivo__ext {
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .04em;
 }
 
-.dropzone__ext--actual {
-  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .12);
-  color: var(--bs-success, #198754);
-  font-size: 1rem;
-}
-
-.dropzone__datos {
+.zona-archivo__datos {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: .15rem;
+  gap: .25rem;
 }
 
-.dropzone__nombre {
-  font-size: 12.5px;
+.zona-archivo__nombre {
+  font-size: 13px;
   font-weight: 600;
   color: var(--bs-body-color, #212529);
 }
 
-.dropzone__quitar {
-  flex: 0 0 auto;
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-
-  background: transparent;
+.zona-archivo__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .375rem;
+  font-size: 11px;
   color: var(--bs-secondary-color, #6c757d);
-  font-size: 18px;
-  line-height: 1;
 }
 
-.dropzone__quitar:hover {
-  color: var(--bs-danger, #dc3545);
-  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .10);
+.zona-archivo__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .05rem .45rem;
+  border-radius: 2rem;
+  background-color: color-mix(in srgb, var(--tipo-color, var(--bs-app-theme, #00acac)) 16%, transparent);
+  color: var(--tipo-color, var(--bs-app-theme, #00acac));
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.zona-archivo__chip--ok {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .14);
+  color: var(--bs-success, #198754);
 }
 
 /* ---------- Progreso ---------- */
-.dropzone__progreso {
+.zona-archivo__progreso {
   height: 6px;
   margin-top: .25rem;
   border-radius: 3px;
@@ -152,22 +196,77 @@
   background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .10);
 }
 
-.dropzone__progreso-barra {
+.zona-archivo__progreso-barra {
   height: 100%;
-  background-color: var(--bs-app-theme, #00acac);
+  background-color: var(--tipo-color, var(--bs-app-theme, #00acac));
   transition: width .2s ease;
 }
 
+/* ---------- Acciones (mismos botones que .btn-avatar de saveUser) ---------- */
+.zona-archivo__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .375rem;
+  width: 100%;
+  padding: .5rem 0 .25rem;
+}
+
+.zona-archivo__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-width: 80px;
+  padding: .375rem .875rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+  background-color: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  font-weight: 400;
+  letter-spacing: .01em;
+  transition: all .15s ease;
+}
+
+.zona-archivo__btn i {
+  font-size: .875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  transition: color .15s ease;
+}
+
+.zona-archivo__btn:hover {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-color: var(--bs-border-color, #ced4da);
+  color: var(--bs-body-color, #212529);
+}
+
+.zona-archivo__btn:hover i {
+  color: var(--bs-body-color, #212529);
+}
+
+.zona-archivo__btn--danger:hover {
+  border-color: var(--bs-danger, #dc3545);
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
+  color: var(--bs-danger, #dc3545);
+}
+
+.zona-archivo__btn--danger:hover i {
+  color: var(--bs-danger, #dc3545);
+}
+
 /* ---------- Error ---------- */
-.dropzone__error {
+.zona-archivo__error {
   margin: .375rem 0 0;
   font-size: 11px;
   color: var(--bs-danger, #dc3545);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dropzone,
-  .dropzone__progreso-barra {
+  .zona-archivo,
+  .zona-archivo__icono,
+  .zona-archivo__progreso-barra,
+  .zona-archivo__btn {
     transition: none;
   }
 }

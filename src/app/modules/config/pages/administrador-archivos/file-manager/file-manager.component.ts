@@ -16,7 +16,6 @@ import { DeleteFileComponent } from '../delete-file/deleteFile.component';
 import { PapeleraComponent } from '../papelera/papelera.component';
 import { ModalReporteExternoComponent } from '../modalReporteExterno/modalReporteExterno.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
-import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { defTipo, formatoTamano } from '../../../interfaces/tipoArchivo';
 
 /**
@@ -104,12 +103,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     'fila-inactiva': (p: RowClassParams) => p.data?.activo === false
   };
 
-  // ---------- Búsqueda y paginación de la grilla (en servidor) ----------
-  @ViewChild(CampoBusquedaPaginacionComponent) campoBusqueda!: CampoBusquedaPaginacionComponent;
-  public paginaActual = 1;
-  public ultimaPagina = 1;
-  public totalRegistros = 0;
-  public registrosPorPagina = 10;
+  // ---------- Búsqueda en la grilla (quick filter de ag-Grid) ----------
+  /** Id del input de búsqueda (app-campoBusqueda), para leerlo y limpiarlo. */
+  readonly idBuscador = 'filter-archivos';
 
   // ---------- Papelera ----------
   /** Elementos en la papelera, para el contador del botón. */
@@ -366,15 +362,10 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
     if (registrar) { this.registrarHistorial(node); }
 
-    if (conservarVista) {
-      // Tras guardar o borrar: misma página y mismo filtro
-      this.cargarContenido(this.paginaActual);
-      return;
-    }
-    // El filtro es de la carpeta, no viaja a la siguiente
-    this.searchTerm = '';
-    this.campoBusqueda?.reset();
-    this.cargarContenido(1);
+    // Tras guardar o borrar (conservarVista) se mantiene el filtro escrito;
+    // al cambiar de carpeta se limpia: el filtro es de la carpeta.
+    if (!conservarVista) { this.limpiarFiltroGrilla(); }
+    this.cargarContenido();
   }
 
   /** Vista de raíz: la grilla muestra las carpetas de primer nivel. */
@@ -383,9 +374,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.carpetaActual = null;
     this.filaSeleccionada = null;
     this.ruta = [];
-    this.searchTerm = '';
-    this.campoBusqueda?.reset();
-    this.cargarContenido(1);
+    this.limpiarFiltroGrilla();
+    this.cargarContenido();
   }
 
   subirNivel(): void {
@@ -405,37 +395,28 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   // ================================================================
-  // CONTENIDO DE LA CARPETA (paginado en servidor)
+  // CONTENIDO DE LA CARPETA
   // ================================================================
-  // La grilla no muestra los hijos del árbol: pide al servidor la página
-  // de la carpeta actual (config/archivo/allArchivos?padre=&page=&search=),
-  // igual que allUsers. Así una carpeta con miles de reportes no pesa.
+  // La grilla pide al servidor la carpeta actual COMPLETA
+  // (config/archivo/allArchivos?padre=&per_page=0): no hay tanta data como
+  // para paginar, y así ag-Grid filtra (quick filter y filtros de columna)
+  // y ordena en el navegador, al instante.
 
-  /** Filtro vigente sobre la carpeta actual; viaja al servidor en cada página. */
-  public searchTerm = '';
-
-  async cargarContenido(page: number = this.paginaActual): Promise<void> {
+  async cargarContenido(): Promise<void> {
     const padre = this.carpetaActual?.id ?? 0;
     try {
       this._loadingService.setLoading(true);
-      const res = await firstValueFrom(
-        this._archivoService.allArchivos(padre, page, this.registrosPorPagina, this.searchTerm)
-      );
+      const res = await firstValueFrom(this._archivoService.allArchivos(padre));
 
       if (res?.status !== 'success') {
         this._toastr.error(res?.message || 'No se pudo obtener el contenido de la carpeta', 'Error');
         this.contenido = [];
-        this.totalRegistros = 0;
-        this.ultimaPagina = 1;
+        this.numCarpetas = this.numArchivos = 0;
       } else {
         this.contenido = res.data?.data ?? [];
         const meta = res.data?.meta ?? {};
-        this.totalRegistros    = meta.total ?? this.contenido.length;
-        this.registrosPorPagina = meta.per_page ?? this.registrosPorPagina;
-        this.paginaActual      = meta.current_page ?? page;
-        this.ultimaPagina      = Math.max(meta.last_page ?? 1, 1);
-        this.numCarpetas       = meta.carpetas ?? 0;
-        this.numArchivos       = meta.archivos ?? 0;
+        this.numCarpetas = meta.carpetas ?? this.contenido.filter(n => n.escarpeta).length;
+        this.numArchivos = meta.archivos ?? this.contenido.filter(n => !n.escarpeta).length;
       }
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
@@ -616,42 +597,25 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.gridApi?.sizeColumnsToFit();
   }
 
-  // ---------- Búsqueda en la grilla (servidor) ----------
+  // ---------- Búsqueda en la grilla (quick filter de ag-Grid) ----------
 
-  /** Nuevo filtro → siempre desde la página 1, o podría caer fuera de rango. */
+  /** Cada tecla filtra al instante sobre todas las columnas (nombre, descripción, tipo…). */
   filtrarGrilla(termino: string): void {
-    this.searchTerm = (termino ?? '').trim();
-    this.cargarContenido(1);
+    this.gridApi?.setQuickFilter((termino ?? '').trim());
   }
 
+  /** Vacía el input y quita el quick filter y los filtros de columna. */
   limpiarFiltroGrilla(): void {
-    this.campoBusqueda?.reset();
-    if (!this.searchTerm) { return; }
-    this.searchTerm = '';
-    this.cargarContenido(1);
+    const input = document.getElementById(this.idBuscador) as HTMLInputElement | null;
+    if (input) { input.value = ''; }
+    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setFilterModel(null);
   }
 
-  // ---------- Paginación en servidor (mismos botones que allUsers) ----------
-
-  /** Primer registro mostrado; 0 sin resultados. */
-  get desde(): number {
-    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
+  /** Filas que pasan el filtro, para el resumen ("3 de 12"). */
+  get filasVisibles(): number {
+    return this.gridApi?.getDisplayedRowCount() ?? this.contenido.length;
   }
-
-  /** Último registro mostrado, sin pasarse del total. */
-  get hasta(): number {
-    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
-  }
-
-  goToPage(page: number): void {
-    if (page < 1 || page > this.ultimaPagina || page === this.paginaActual) { return; }
-    this.cargarContenido(page);
-  }
-
-  firstPage(): void { this.goToPage(1); }
-  prevPage(): void  { this.goToPage(this.paginaActual - 1); }
-  nextPage(): void  { this.goToPage(this.paginaActual + 1); }
-  lastPage(): void  { this.goToPage(this.ultimaPagina); }
 
   // ================================================================
   // ACCIONES

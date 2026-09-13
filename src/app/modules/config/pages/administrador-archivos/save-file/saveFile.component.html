@@ -1,9 +1,10 @@
 <!-- ============================================================
      GUARDAR CARPETA / ARCHIVO (modal)
 
-     Mismo esquema que saveMenu: chips con la ubicación en el árbol,
-     y dos paneles del tema: datos a la izquierda, apariencia (icono y
-     color) a la derecha. En móvil se apilan.
+     Mismo esquema que saveMenu: chips con la ubicación en el árbol y
+     paneles del tema. Fila 1: Datos / Apariencia. Fila 2 (sólo archivos):
+     Contenido (enlace o fichero) / Acceso (proteger url, ventana nueva).
+     En móvil se apilan.
      ============================================================ -->
 
 <!-- Spinner y velo mientras guarda -->
@@ -48,6 +49,7 @@
       }
     </div>
 
+    <!-- Fila 1: datos + apariencia. Fila 2 (sólo archivos): contenido + acceso. -->
     <div class="row g-3">
 
       <!-- ============ DATOS ============ -->
@@ -94,146 +96,32 @@
                   </app-campoTexto>
                 </div>
 
-                <!-- ---------- Enlace o fichero (sólo archivos) ----------
-                     Enlace = una url externa. Fichero = se sube al servidor
-                     (storage/img/file-manager) y su tipo (imagen, pdf, excel,
-                     word, video, otro) se deduce de la extensión: el usuario
-                     no tiene que saberlo. -->
-                @if (!esCarpeta) {
-                  <div class="col-12">
-                    <span class="tipo-etiqueta">¿Qué es?</span>
-                    <div class="tipo-selector" role="radiogroup" aria-label="Enlace o archivo">
-                      @for (m of modos; track m.id) {
-                        <button type="button"
-                                class="tipo-opcion"
-                                role="radio"
-                                [attr.aria-checked]="modo === m.id"
-                                [class.is-activo]="modo === m.id"
-                                [style.--tipo-color]="m.color"
-                                [title]="m.descripcion"
-                                [disabled]="progreso !== null"
-                                (click)="cambiarModo(m.id)">
-                          <i [ngClass]="m.icono"></i>
-                          <span>{{ m.etiqueta }}</span>
-                        </button>
-                      }
-                    </div>
-                  </div>
-
-                  @if (esEnlace) {
-                    <!-- Enlace: la url es el reporte que se abre -->
-                    <div class="col-12">
-                      <app-campoTexto
-                        [control]="form.controls['url']"
-                        label="URL DEL ENLACE"
-                        placeholder="https://…"
-                        [maxLength]="500"
-                        [trimEspacios]="true"
-                        icono="fa-link">
-                      </app-campoTexto>
-                      <p class="campo-hint">
-                        <i class="fa-solid fa-circle-info"></i>
-                        Dirección completa. Se abre en el visor a pantalla completa con <b>Ejecutar</b>.
-                      </p>
-                    </div>
-                  } @else {
-                    <!-- Fichero: se sube al guardar; la url y el tipo los pone el servidor.
-                         Sin filtro de extensión ni de tamaño (manda php.ini). -->
-                    <div class="col-12">
-                      <app-dropzone
-                        [maxMb]="maxMb"
-                        [archivoActual]="nombreArchivoActual"
-                        [progreso]="progreso"
-                        texto="Arrastra el archivo aquí o haz clic para elegirlo"
-                        (archivoSeleccionado)="onFicheroSeleccionado($event)">
-                      </app-dropzone>
-
-                      <!-- Tipo detectado por la extensión (icono y color del tipo) -->
-                      @if (ficheroNuevo || nombreArchivoActual) {
-                        <div class="tipo-detectado" [style.--tipo-color]="tipoActual.color">
-                          <i [ngClass]="tipoActual.icono"></i>
-                          <span class="tipo-detectado__etiqueta">{{ tipoActual.etiqueta }}</span>
-                          <span class="tipo-detectado__texto">
-                            @if (ficheroNuevo) {
-                              · detectado por la extensión <b>.{{ extensionFichero }}</b>
-                            } @else {
-                              · archivo guardado ({{ tamanoActual }})
-                            }
-                          </span>
-                        </div>
-                      }
-
-                      <p class="campo-hint">
-                        <i class="fa-solid fa-circle-info"></i>
-                        @if (nombreArchivoActual && !ficheroNuevo) {
-                          Suelta otro archivo para sustituirlo; el anterior se borra del servidor.
+                <!-- ---------- Activo / inactivo (carpetas y archivos) ----------
+                     Inactivo: sigue en el administrador, atenuado en la grilla
+                     (fila-inactiva), pero no se ofrece a los usuarios. -->
+                <div class="col-12">
+                  <label class="opcion-switch opcion-switch--activo" for="archivo-activo"
+                         [class.is-inactivo]="!ctrlActivo.value">
+                    <span class="opcion-switch__icono">
+                      <i class="fa" [ngClass]="ctrlActivo.value ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+                    </span>
+                    <span class="opcion-switch__texto">
+                      <span class="opcion-switch__titulo">{{ ctrlActivo.value ? 'Activo' : 'Inactivo' }}</span>
+                      <span class="opcion-switch__ayuda">
+                        @if (ctrlActivo.value) {
+                          {{ esCarpeta ? 'La carpeta' : 'El archivo' }} está disponible para los usuarios.
                         } @else {
-                          Imagen, PDF, Excel, Word, video, audio o cualquier otro fichero. Se sube al pulsar <b>Guardar</b> y queda en el servidor.
+                          {{ esCarpeta ? 'La carpeta' : 'El archivo' }} queda oculto para los usuarios; aquí se ve atenuado.
                         }
-                      </p>
-                    </div>
-                  }
-
-                  <!-- ---------- Cómo se abre ----------
-                       proteger_url: el visor no ofrece "abrir en pestaña" ni
-                       descargar; la url no sale del sistema.
-                       nueva_ventana: en vez del visor, Ejecutar abre el enlace o
-                       fichero en otra pestaña del navegador.
-                       Se excluyen entre sí (en otra pestaña la url queda a la vista). -->
-                  <div class="col-12">
-                    <label class="opcion-switch" for="archivo-proteger-url"
-                           [class.is-deshabilitada]="ctrlProtegerUrl.disabled">
-                      <span class="opcion-switch__icono">
-                        <i class="fa fa-shield-halved"></i>
                       </span>
-                      <span class="opcion-switch__texto">
-                        <span class="opcion-switch__titulo">Proteger la URL</span>
-                        <span class="opcion-switch__ayuda">
-                          @if (ctrlNuevaVentana.value) {
-                            No aplica si se abre en una ventana nueva: la dirección queda a la vista.
-                          } @else if (ctrlProtegerUrl.value) {
-                            El visor no muestra <b>Abrir en pestaña</b> ni <b>Descargar</b>; sólo se ve dentro del sistema.
-                          } @else {
-                            El visor permite abrir en otra pestaña y descargar el archivo.
-                          }
-                        </span>
-                      </span>
-                      <span class="form-check form-switch opcion-switch__control">
-                        <input class="form-check-input" type="checkbox" role="switch"
-                               id="archivo-proteger-url"
-                               [formControl]="ctrlProtegerUrl"
-                               (change)="onCambioProtegerUrl($any($event.target).checked)">
-                      </span>
-                    </label>
-                  </div>
-
-                  <div class="col-12">
-                    <label class="opcion-switch" for="archivo-nueva-ventana"
-                           [class.is-deshabilitada]="ctrlNuevaVentana.disabled">
-                      <span class="opcion-switch__icono">
-                        <i class="fa fa-arrow-up-right-from-square"></i>
-                      </span>
-                      <span class="opcion-switch__texto">
-                        <span class="opcion-switch__titulo">Abrir en una ventana nueva</span>
-                        <span class="opcion-switch__ayuda">
-                          @if (ctrlProtegerUrl.value) {
-                            No disponible con la URL protegida.
-                          } @else if (ctrlNuevaVentana.value) {
-                            Al ejecutar se abre en otra pestaña del navegador.
-                          } @else {
-                            Al ejecutar se abre en el visor, dentro del sistema.
-                          }
-                        </span>
-                      </span>
-                      <span class="form-check form-switch opcion-switch__control">
-                        <input class="form-check-input" type="checkbox" role="switch"
-                               id="archivo-nueva-ventana"
-                               [formControl]="ctrlNuevaVentana"
-                               (change)="onCambioNuevaVentana($any($event.target).checked)">
-                      </span>
-                    </label>
-                  </div>
-                }
+                    </span>
+                    <span class="form-check form-switch opcion-switch__control">
+                      <input class="form-check-input" type="checkbox" role="switch"
+                             id="archivo-activo"
+                             [formControl]="ctrlActivo">
+                    </span>
+                  </label>
+                </div>
 
               </div>
             </div>
@@ -327,6 +215,192 @@
           </ng-container>
         </panel>
       </div>
+
+      <!-- ============ CONTENIDO (sólo archivos) ============
+           Enlace = una url externa. Fichero = se sube al servidor
+           (storage/img/file-manager) y su tipo (imagen, pdf, excel, word,
+           video, audio, otro) se deduce de la extensión: el usuario no
+           tiene que saberlo. -->
+      @if (!esCarpeta) {
+        <div class="col-lg-7">
+          <panel
+            headerClass="bg-gray-800"
+            title="Contenido"
+            noButton="true"
+            noBody="true"
+            panelClass="h-100 mb-0"
+            icono="upload"
+            fondoGris="true">
+
+            <ng-container outsideBody>
+              <div class="form-card__body">
+
+                <!-- Selector Enlace / Archivo: dos tarjetas grandes -->
+                <span class="tipo-etiqueta">¿Qué es?</span>
+                <div class="modo-selector" role="radiogroup" aria-label="Enlace o archivo">
+                  @for (m of modos; track m.id) {
+                    <button type="button"
+                            class="modo-opcion"
+                            role="radio"
+                            [attr.aria-checked]="modo === m.id"
+                            [class.is-activo]="modo === m.id"
+                            [style.--tipo-color]="m.color"
+                            [disabled]="progreso !== null"
+                            (click)="cambiarModo(m.id)">
+                      <span class="modo-opcion__icono"><i [ngClass]="m.icono"></i></span>
+                      <span class="modo-opcion__texto">
+                        <span class="modo-opcion__titulo">{{ m.etiqueta }}</span>
+                        <span class="modo-opcion__ayuda">{{ m.descripcion }}</span>
+                      </span>
+                      <i class="fa fa-circle-check modo-opcion__check" aria-hidden="true"></i>
+                    </button>
+                  }
+                </div>
+
+                @if (esEnlace) {
+                  <!-- Enlace: la url es el reporte que se abre -->
+                  <app-campoTexto
+                    [control]="form.controls['url']"
+                    label="URL DEL ENLACE"
+                    placeholder="https://…"
+                    [maxLength]="500"
+                    [trimEspacios]="true"
+                    icono="fa-link">
+                  </app-campoTexto>
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Dirección completa. Se abre en el visor a pantalla completa con <b>Ejecutar</b>;
+                    los videos de YouTube o Vimeo se reproducen dentro.
+                  </p>
+                } @else {
+                  <!-- Fichero: se sube al guardar; la url y el tipo los pone el servidor.
+                       Sin filtro de extensión ni de tamaño (manda php.ini). -->
+                  <app-dropzone
+                    [maxMb]="maxMb"
+                    [archivoActual]="nombreArchivoActual"
+                    [progreso]="progreso"
+                    [icono]="(ficheroNuevo || nombreArchivoActual) ? tipoActual.icono : ''"
+                    [color]="tipoActual.color"
+                    texto="Arrastra el archivo aquí o haz clic para elegirlo"
+                    (archivoSeleccionado)="onFicheroSeleccionado($event)">
+                  </app-dropzone>
+
+                  <!-- Tipo detectado por la extensión (icono y color del tipo) -->
+                  @if (ficheroNuevo || nombreArchivoActual) {
+                    <div class="tipo-detectado" [style.--tipo-color]="tipoActual.color">
+                      <i [ngClass]="tipoActual.icono"></i>
+                      <span class="tipo-detectado__etiqueta">{{ tipoActual.etiqueta }}</span>
+                      <span class="tipo-detectado__texto">
+                        @if (ficheroNuevo) {
+                          · detectado por la extensión <b>.{{ extensionFichero }}</b>
+                        } @else {
+                          · archivo guardado ({{ tamanoActual }})
+                        }
+                      </span>
+                    </div>
+                  }
+
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    @if (nombreArchivoActual && !ficheroNuevo) {
+                      Suelta otro archivo para sustituirlo; el anterior se borra del servidor.
+                    } @else {
+                      Imagen, PDF, Excel, Word, video, audio o cualquier otro fichero. Se sube al pulsar <b>Guardar</b> y queda en el servidor.
+                    }
+                  </p>
+                }
+
+              </div>
+            </ng-container>
+          </panel>
+        </div>
+
+        <!-- ============ ACCESO (sólo archivos) ============
+             proteger_url: el visor no ofrece "abrir en pestaña" ni descargar;
+             la url no sale del sistema.
+             nueva_ventana: en vez del visor, Ejecutar abre el enlace o fichero
+             en otra pestaña del navegador.
+             Se excluyen entre sí (en otra pestaña la url queda a la vista). -->
+        <div class="col-lg-5">
+          <panel
+            headerClass="bg-gray-800"
+            title="Acceso"
+            noButton="true"
+            noBody="true"
+            panelClass="h-100 mb-0"
+            icono="shield"
+            fondoGris="true">
+
+            <ng-container outsideBody>
+              <div class="form-card__body">
+
+                <label class="opcion-switch" for="archivo-proteger-url"
+                       [class.is-deshabilitada]="ctrlProtegerUrl.disabled">
+                  <span class="opcion-switch__icono">
+                    <i class="fa fa-shield-halved"></i>
+                  </span>
+                  <span class="opcion-switch__texto">
+                    <span class="opcion-switch__titulo">Proteger la URL</span>
+                    <span class="opcion-switch__ayuda">
+                      @if (ctrlNuevaVentana.value) {
+                        No aplica si se abre en una ventana nueva: la dirección queda a la vista.
+                      } @else if (ctrlProtegerUrl.value) {
+                        El visor no muestra <b>Abrir en pestaña</b> ni <b>Descargar</b>; sólo se ve dentro del sistema.
+                      } @else {
+                        El visor permite abrir en otra pestaña y descargar el archivo.
+                      }
+                    </span>
+                  </span>
+                  <span class="form-check form-switch opcion-switch__control">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="archivo-proteger-url"
+                           [formControl]="ctrlProtegerUrl"
+                           (change)="onCambioProtegerUrl($any($event.target).checked)">
+                  </span>
+                </label>
+
+                <label class="opcion-switch" for="archivo-nueva-ventana"
+                       [class.is-deshabilitada]="ctrlNuevaVentana.disabled">
+                  <span class="opcion-switch__icono">
+                    <i class="fa fa-arrow-up-right-from-square"></i>
+                  </span>
+                  <span class="opcion-switch__texto">
+                    <span class="opcion-switch__titulo">Abrir en una ventana nueva</span>
+                    <span class="opcion-switch__ayuda">
+                      @if (ctrlProtegerUrl.value) {
+                        No disponible con la URL protegida.
+                      } @else if (ctrlNuevaVentana.value) {
+                        Al ejecutar se abre en otra pestaña del navegador.
+                      } @else {
+                        Al ejecutar se abre en el visor, dentro del sistema.
+                      }
+                    </span>
+                  </span>
+                  <span class="form-check form-switch opcion-switch__control">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="archivo-nueva-ventana"
+                           [formControl]="ctrlNuevaVentana"
+                           (change)="onCambioNuevaVentana($any($event.target).checked)">
+                  </span>
+                </label>
+
+                <!-- Resumen de cómo queda -->
+                <p class="campo-hint acceso-resumen">
+                  <i class="fa-solid" [ngClass]="ctrlProtegerUrl.value ? 'fa-lock' : (ctrlNuevaVentana.value ? 'fa-window-restore' : 'fa-eye')"></i>
+                  @if (ctrlProtegerUrl.value) {
+                    Sólo se ve dentro del sistema; nadie puede copiar la dirección ni descargarlo.
+                  } @else if (ctrlNuevaVentana.value) {
+                    Se abre en otra pestaña; la dirección queda a la vista del usuario.
+                  } @else {
+                    Se ve en el visor y el usuario puede abrirlo fuera o descargarlo.
+                  }
+                </p>
+
+              </div>
+            </ng-container>
+          </panel>
+        </div>
+      }
 
     </div>
   </form>

@@ -12,6 +12,8 @@ export interface ArchivoModel {
   tipo?: string | null;
   /** Peso en bytes del fichero subido; null en enlaces y carpetas */
   tamano?: number | null;
+  /** Extensión del fichero subido en minúsculas (xlsx, pdf, mp4…); null en enlaces y carpetas. Para reportería. */
+  extension_archivo?: string | null;
   escarpeta?:boolean;
   activo?:boolean;
   /** true = Ejecutar abre el enlace/fichero en otra pestaña del navegador */
