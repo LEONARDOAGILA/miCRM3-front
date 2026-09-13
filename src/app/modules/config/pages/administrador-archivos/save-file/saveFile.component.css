@@ -260,3 +260,113 @@
     transition: none;
   }
 }
+
+/* ---------- Tipo de archivo ----------
+   Botones-radio con el icono y el color de cada tipo. El activo se rellena
+   con su color (--tipo-color, que pone la plantilla por botón). */
+.tipo-etiqueta {
+  display: block;
+  margin-bottom: .375rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.tipo-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin-bottom: 1rem;
+}
+
+.tipo-opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .35rem .7rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 2rem;
+
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-body-color, #212529);
+  font-size: 12px;
+  font-weight: 500;
+
+  transition: border-color .12s ease, background-color .12s ease, color .12s ease;
+}
+
+.tipo-opcion i {
+  color: var(--tipo-color, var(--bs-app-theme, #00acac));
+}
+
+.tipo-opcion:hover:not(:disabled) {
+  border-color: var(--tipo-color, var(--bs-app-theme, #00acac));
+}
+
+.tipo-opcion.is-activo {
+  border-color: var(--tipo-color, var(--bs-app-theme, #00acac));
+  background-color: var(--tipo-color, var(--bs-app-theme, #00acac));
+  color: #fff;
+}
+
+.tipo-opcion.is-activo i {
+  color: #fff;
+}
+
+.tipo-opcion:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* El dropzone va seguido de su nota: mismo hueco que los campos */
+:host ::ng-deep app-dropzone {
+  display: block;
+  margin-bottom: .75rem;
+}
+
+/* ---------- Tipo detectado ----------
+   Chip bajo el dropzone con el tipo que da la extensión (imagen, pdf,
+   excel…); --tipo-color lo pone la plantilla con el color del tipo. */
+.tipo-detectado {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+
+  margin: -.25rem 0 .5rem;
+  padding: .35rem .6rem;
+  border-left: 3px solid var(--tipo-color, var(--bs-app-theme, #00acac));
+  border-radius: .25rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .04);
+  font-size: 12px;
+  color: var(--bs-body-color, #212529);
+}
+
+.tipo-detectado i {
+  color: var(--tipo-color, var(--bs-app-theme, #00acac));
+  font-size: 1rem;
+}
+
+.tipo-detectado__etiqueta {
+  padding: .05rem .5rem;
+  border-radius: 2rem;
+  background-color: var(--tipo-color, var(--bs-app-theme, #00acac));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.tipo-detectado__texto {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tipo-opcion {
+    transition: none;
+  }
+}

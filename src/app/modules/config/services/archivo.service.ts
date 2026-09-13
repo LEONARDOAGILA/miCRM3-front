@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -37,6 +37,34 @@ export class ArchivoService {
   addArchivo(data: any) {    return this._http.post(this.URL_SERVICIOS + "addArchivo", data);     }
   deleteArchivo(id: any) {     return this._http.delete(this.URL_SERVICIOS + "deleteArchivo/" + id);      }   // a la papelera
   editArchivo(id: any, data: any) {    return this._http.post(this.URL_SERVICIOS + "editArchivo/" + id, data);      }
+
+  /**
+   * Sube un fichero físico (imagen, pdf, excel, word, video, otro). Devuelve
+   * los eventos HTTP para poder pintar el progreso; el último trae el cuerpo
+   * con { url, nombre_original, tamano, ... }. Se llama ANTES de addArchivo /
+   * editArchivo, que reciben esa url.
+   */
+  subirArchivo(fichero: File): Observable<HttpEvent<any>> {
+    // Sólo el fichero: el back clasifica el tipo por la extensión y lo
+    // devuelve en data.tipo junto con la url y el tamaño
+    const datos = new FormData();
+    datos.append('archivo', fichero, fichero.name);
+    return this._http.post(this.URL_SERVICIOS + 'subirArchivo', datos, {
+      reportProgress: true,
+      observe: 'events'
+    });
+  }
+
+  /**
+   * URL absoluta de un archivo: los enlaces (http...) van tal cual; las
+   * subidas se guardan relativas ("storage/img/file-manager/...") y se
+   * sirven desde la base del back.
+   */
+  urlPublica(url: string | null | undefined): string {
+    if (!url) { return ''; }
+    if (/^(https?:)?\/\//i.test(url)) { return url; }
+    return environment.URL_SERVICIOS + url.replace(/^\/+/, '');
+  }
 
   // Papelera de reciclaje (borrado lógico en el back)
   papelera(): Observable<any>           { return this._http.get(this.URL_SERVICIOS + "papelera"); }

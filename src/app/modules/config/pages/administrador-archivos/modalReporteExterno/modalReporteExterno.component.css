@@ -1,126 +1,223 @@
-/* Estilos base del contenedor del iframe */
-.iframe-container {
-    position: relative;
-    width: 100%;
-    height: 600px;
-    transition: all 0.3s ease;
-    background: white;
-    border-radius: 4px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+/* ============================================================
+   VISOR (modal a pantalla completa)
+   El modal ocupa toda la ventana (windowClass "my-class", abajo). La
+   cabecera es una barra fina; el cuerpo, todo lo demás.
+   ============================================================ */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-/* Estilo para pantalla completa */
-.iframe-container.fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 9999;
-    background: white;
-    border-radius: 0;
-    box-shadow: none;
+/* ---------- Cabecera ---------- */
+.visor-cabecera {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+
+  padding: .5rem .875rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-component-bg, #fff);
 }
 
-.iframe-container.fullscreen .flotante {
-    display: none;
+.visor-titulo {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
 }
 
-/* Estilos del iframe */
-.iframe-container iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
+.visor-titulo i {
+  flex: 0 0 auto;
+  font-size: 1rem;
 }
 
-/* Contenedor de botones en pantalla completa */
-.fullscreen-button-salir-pantalla-completa {
-    position: fixed;
-    top: 0;
-    right: 0;
-    padding: 15px;
-    z-index: 10001;
-    background: rgba(255, 255, 255, 0.9);
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.visor-chip {
+  flex: 0 0 auto;
+  padding: .1rem .45rem;
+  border-radius: 2rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
-/* Barra flotante inferior */
-.flotante {
-    width: 100%;
-    height: 24px;
-    position: absolute;
-    background: #EAEAEA;
-    z-index: 10000;
-    bottom: 0;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 0 10px;
+.visor-meta {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
-/* Estilos para los botones */
-.btn-close-custom,
-.btn-expandir-custom {
-    width: 1.5em;
-    height: 1.5em;
-    font-size: 1.1rem;
-    opacity: 0.8;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    background-color: transparent;
-    border: none;
-    color: #333;
+.visor-acciones {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .375rem;
 }
 
-.btn-close-custom:hover,
-.btn-expandir-custom:hover {
-    opacity: 1;
-    transform: scale(1.1);
-    color: #000;
+/* ---------- Cuerpo ---------- */
+.visor-cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  background-color: var(--bs-tertiary-bg, #f5f6f8);
 }
 
-/* Estilo específico para el botón de expandir */
-.btn-expandir-custom {
-    margin-right: 0;
+.visor-iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background-color: #fff;
 }
 
-/* Estilos para el wrapper del iframe */
-.iframe-wrapper {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    position: relative;
+.visor-centro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  overflow: auto;
 }
 
-/* Ajustes para el modal */
+.visor-imagen {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: .375rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
+  background-color: #fff;
+}
+
+.visor-video {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: .375rem;
+  background-color: #000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
+}
+
+/* Tarjeta de descarga (excel, word, otros) */
+.visor-descarga {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+
+  max-width: 26rem;
+  padding: 2rem 1.5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .75rem;
+  background-color: var(--bs-component-bg, #fff);
+  text-align: center;
+}
+
+.visor-descarga__icono {
+  font-size: 3rem;
+  margin-bottom: .25rem;
+}
+
+.visor-descarga__nombre {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.visor-descarga__meta {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  word-break: break-all;
+}
+
+.visor-descarga__texto {
+  margin: .5rem 0 .75rem;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Modal a pantalla completa (windowClass "my-class") ----------
+   ::ng-deep porque .modal-dialog y .modal-content los genera ng-bootstrap
+   fuera de la encapsulación del componente. */
 ::ng-deep .my-class .modal-dialog {
-    max-width: 100% !important;
-    width: 100% !important;
-    margin: 0 auto;
-    height: calc(100% - 2rem);
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 100%;
+  margin: 0;
 }
 
 ::ng-deep .my-class .modal-content {
-    height: 100%;
-    border: none;
-    border-radius: 0;
+  height: 100%;
+  border: none;
+  border-radius: 0;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .iframe-container {
-        height: 400px;
-    }
-    
-    .fullscreen-button-salir-pantalla-completa {
-        padding: 10px;
-    }
+/* ---------- Video / audio ---------- */
+
+/* El video va sobre fondo oscuro, como un reproductor */
+.visor-centro--oscuro {
+  background-color: #111;
+}
+
+.visor-centro--oscuro .visor-descarga {
+  /* la tarjeta de "no soportado" se lee igual sobre el fondo oscuro */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+}
+
+/* Tarjeta del reproductor de audio */
+.visor-audio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+
+  width: 100%;
+  max-width: 30rem;
+  padding: 2rem 1.5rem 1.5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .75rem;
+  background-color: var(--bs-component-bg, #fff);
+  text-align: center;
+}
+
+/* "Disco" con la nota musical, en el color del tipo */
+.visor-audio__disco {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5rem;
+  height: 5rem;
+  margin-bottom: .5rem;
+  border-radius: 50%;
+  background-color: var(--tipo-color, #f59c1a);
+  color: #fff;
+  font-size: 2rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+}
+
+.visor-audio__nombre {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.visor-audio__meta {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  word-break: break-all;
+}
+
+.visor-audio__player {
+  width: 100%;
+  margin-top: .75rem;
 }

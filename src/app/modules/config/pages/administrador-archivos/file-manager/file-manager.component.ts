@@ -17,6 +17,7 @@ import { PapeleraComponent } from '../papelera/papelera.component';
 import { ModalReporteExternoComponent } from '../modalReporteExterno/modalReporteExterno.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { defTipo, formatoTamano } from '../../../interfaces/tipoArchivo';
 
 /**
  * Nodo del árbol tal como lo devuelve config/archivo/getArchivoTree: la fila
@@ -510,12 +511,23 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       },
       {
         headerName: 'Tipo',
-        field: 'escarpeta',
+        field: 'tipo',
         width: 100,
         maxWidth: 110,
-        valueGetter: p => p.data?.escarpeta ? 'Carpeta' : 'Archivo',
+        // Carpeta, o el tipo de archivo (Enlace, PDF, Imagen…)
+        valueGetter: p => p.data?.escarpeta ? 'Carpeta' : defTipo(p.data?.tipo, p.data?.url).etiqueta,
         cellStyle: { textAlign: 'center' },
         filter: 'agTextColumnFilter'
+      },
+      {
+        headerName: 'Tamaño',
+        field: 'tamano',
+        width: 90,
+        maxWidth: 100,
+        // Sólo los ficheros subidos pesan; enlaces y carpetas van en blanco
+        valueGetter: p => (p.data?.escarpeta || !p.data?.tamano) ? '' : formatoTamano(p.data.tamano),
+        cellStyle: { textAlign: 'right' },
+        filter: false
       },
       {
         headerName: 'Orden',
@@ -552,7 +564,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   private iconoHtml(n: FileTreeNode | undefined): string {
     if (!n) { return ''; }
     const color = n.color || (n.escarpeta ? '#F0B13B' : '#A6A09B');
-    const clase = n.icono || (n.escarpeta ? 'fa fa-folder' : 'far fa-file');
+    // Sin icono propio: el de carpeta, o el del tipo de archivo
+    const clase = n.icono || (n.escarpeta ? 'fa fa-folder' : defTipo(n.tipo as string, n.url as string).icono);
     return `<i class="${clase}" style="color:${color}"></i>`;
   }
 

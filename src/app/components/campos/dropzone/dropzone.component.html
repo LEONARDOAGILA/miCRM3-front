@@ -1,0 +1,69 @@
+<!-- Input real, oculto: el diálogo del navegador lo abre abrirSelector() -->
+<input #input type="file" class="d-none" [accept]="accept" [disabled]="disabled" (change)="onInputChange($event)">
+
+<div class="dropzone"
+     [class.dropzone--activa]="arrastrando"
+     [class.dropzone--con-archivo]="archivo || archivoActual"
+     [class.dropzone--error]="error"
+     [class.dropzone--disabled]="disabled"
+     role="button"
+     tabindex="0"
+     [attr.aria-label]="texto"
+     (click)="abrirSelector()"
+     (keydown.enter)="abrirSelector()"
+     (keydown.space)="abrirSelector(); $event.preventDefault()"
+     (dragover)="onDragOver($event)"
+     (dragleave)="onDragLeave()"
+     (drop)="onDrop($event)">
+
+  @if (archivo) {
+    <!-- Fichero elegido, pendiente de subir -->
+    <div class="dropzone__fichero">
+      @if (vistaPrevia) {
+        <img class="dropzone__miniatura" [src]="vistaPrevia" alt="">
+      } @else {
+        <span class="dropzone__ext">{{ extension || 'FILE' }}</span>
+      }
+      <div class="dropzone__datos">
+        <span class="dropzone__nombre text-truncate" [title]="archivo.name">{{ archivo.name }}</span>
+        <span class="dropzone__meta">{{ formato(archivo.size) }} · listo para subir</span>
+        @if (progreso !== null) {
+          <div class="dropzone__progreso" role="progressbar" [attr.aria-valuenow]="progreso" aria-valuemin="0" aria-valuemax="100">
+            <div class="dropzone__progreso-barra" [style.width.%]="progreso"></div>
+          </div>
+          <span class="dropzone__meta">Subiendo… {{ progreso }} %</span>
+        }
+      </div>
+      @if (progreso === null && !disabled) {
+        <button type="button" class="dropzone__quitar" title="Quitar" aria-label="Quitar el archivo" (click)="quitar($event)">&times;</button>
+      }
+    </div>
+  } @else if (archivoActual) {
+    <!-- Edición: lo que ya está guardado; un nuevo fichero lo sustituye -->
+    <div class="dropzone__fichero dropzone__fichero--actual">
+      <span class="dropzone__ext dropzone__ext--actual"><i class="fa fa-check"></i></span>
+      <div class="dropzone__datos">
+        <span class="dropzone__nombre text-truncate" [title]="archivoActual">{{ archivoActual }}</span>
+        <span class="dropzone__meta">Archivo actual · arrastra o haz clic para sustituirlo</span>
+      </div>
+    </div>
+  } @else {
+    <!-- Vacía -->
+    <div class="dropzone__vacia">
+      <i class="fa fa-cloud-arrow-up dropzone__icono"></i>
+      <span class="dropzone__texto">{{ texto }}</span>
+      <span class="dropzone__meta">
+        @if (extensiones.length) { {{ extensiones.join(', ').toUpperCase() }} }
+        @if (extensiones.length && maxMb > 0) { · }
+        @if (maxMb > 0) { máx. {{ maxMb }} MB }
+        @if (!extensiones.length && maxMb <= 0) { Cualquier tipo de archivo }
+      </span>
+    </div>
+  }
+</div>
+
+@if (error) {
+  <p class="dropzone__error">
+    <i class="fa fa-triangle-exclamation me-1"></i>{{ error }}
+  </p>
+}

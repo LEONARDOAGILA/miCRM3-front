@@ -9,7 +9,9 @@ export interface ArchivoModel {
   url?: string;
   icono?: string;
   color?: string;
-  tipo?: string;
+  tipo?: string | null;
+  /** Peso en bytes del fichero subido; null en enlaces y carpetas */
+  tamano?: number | null;
   escarpeta?:boolean;
   activo?:boolean;
   created_at_formateado?: Date;

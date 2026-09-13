@@ -86,6 +86,12 @@ export class AuthInterceptor implements HttpInterceptor {
           message = this.parseValidationErrors(serverError);
           break;
 
+        case 413: // Payload Too Large -> PHP rechazó la subida por post_max_size / upload_max_filesize
+          title = 'Archivo demasiado grande';
+          message = 'El archivo supera el tamaño máximo que admite el servidor. '
+                  + 'Elija uno más pequeño o pida al administrador que amplíe upload_max_filesize y post_max_size en php.ini.';
+          break;
+
         case 429: // Too Many Requests -> lo devuelve el throttle del login
           title = 'Demasiados intentos';
           message = this.mensajeDemasiadosIntentos(error);

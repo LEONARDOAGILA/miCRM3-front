@@ -44,6 +44,7 @@ import { ModalReporteExternoComponent } from './pages/administrador-archivos/mod
 import { DeleteFileComponent } from './pages/administrador-archivos/delete-file/deleteFile.component';
 import { PapeleraComponent } from './pages/administrador-archivos/papelera/papelera.component';
 import { ModalArrastrableDirective } from '../../components/modal/modal-arrastrable.directive';
+import { DropzoneComponent } from '../../components/campos/dropzone/dropzone.component';
 import { ExtraSettingsPage } from './pages/extra-settings-page/extra-settings-page';
 import { ExtraSearchResultsPage } from './pages/extra-search-results/extra-search-results';
 import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
@@ -90,6 +91,7 @@ import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
     ModalArrastrableDirective,
+    DropzoneComponent,
     ComboComponent,
     ActionButtonsModule,
     FileTreeNodeComponent,

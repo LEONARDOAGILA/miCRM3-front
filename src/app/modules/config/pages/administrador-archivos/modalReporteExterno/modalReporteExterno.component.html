@@ -1,28 +1,115 @@
-<div class="modal-header d-flex">
-    <button type="button" class="btn-close buttonn1" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+<!-- ============================================================
+     VISOR (modal a pantalla completa)
+     Barra superior con el nombre, descarga (ficheros) y cerrar; debajo,
+     el contenido según `visor` (ver resolverVisor() en el .ts).
+     ============================================================ -->
+
+<div class="modal-header visor-cabecera">
+  <div class="visor-titulo">
+    <i [ngClass]="tipo.icono" [style.color]="tipo.color"></i>
+    <span class="text-truncate">{{ nombre }}</span>
+    <span class="visor-chip">{{ esEmbebido ? 'Video' : tipo.etiqueta }}</span>
+    @if (tipo.id !== 'link') {
+      <span class="visor-meta d-none d-sm-inline">{{ tamano }}</span>
+    }
+  </div>
+
+  <div class="visor-acciones">
+    @if (tipo.id !== 'link') {
+      <a class="btn btn-sm btn-white" [href]="urlTexto" [download]="nombreFichero" target="_blank" rel="noopener" title="Descargar">
+        <i class="fa fa-download"></i>
+        <span class="d-none d-sm-inline ms-1">Descargar</span>
+      </a>
+    } @else {
+      <a class="btn btn-sm btn-white" [href]="registro_selected?.url" target="_blank" rel="noopener" title="Abrir en una pestaña nueva">
+        <i class="fa fa-arrow-up-right-from-square"></i>
+        <span class="d-none d-sm-inline ms-1">Abrir en pestaña</span>
+      </a>
+    }
+    <button type="button" class="btn btn-sm btn-white" (click)="toggleFullscreen()" title="Pantalla completa (F11)">
+      <i class="fa fa-expand"></i>
+    </button>
+    <button type="button" class="btn-close ms-1" aria-label="Cerrar" (click)="modal.dismiss('Cross click')"></button>
+  </div>
 </div>
 
-<div class="modal-body">
-    <div>
+<div class="modal-body visor-cuerpo">
+  @switch (visor) {
 
-    <div class="iframe-container" [class.fullscreen]="isFullscreen">
-        <div class="fullscreen-button-salir-pantalla-completa" *ngIf="isFullscreen === true">
-            <button type="button" class="btn-expandir-custom" (click)="toggleFullscreen()">
-                <i class="fas fa-expand"></i> <!-- Icono de expandir -->
-            </button>
-            <button type="button" class="btn-close btn-close-custom" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+    @case ('imagen') {
+      <div class="visor-centro">
+        <img [src]="urlTexto" [alt]="nombre" class="visor-imagen">
+      </div>
+    }
+
+    @case ('video') {
+      <!-- Arranca solo: el clic en Ejecutar ya cuenta como gesto del usuario -->
+      <div class="visor-centro visor-centro--oscuro">
+        @if (!errorMedio) {
+          <video [src]="urlTexto" controls autoplay playsinline preload="metadata"
+                 class="visor-video" (error)="onErrorMedio()">
+          </video>
+        } @else {
+          <ng-container *ngTemplateOutlet="noSoportado; context: { que: 'video' }"></ng-container>
+        }
+      </div>
+    }
+
+    @case ('audio') {
+      <!-- Tarjeta con el icono y el reproductor; arranca solo -->
+      <div class="visor-centro">
+        <div class="visor-audio">
+          <div class="visor-audio__disco" [style.--tipo-color]="tipo.color">
+            <i class="fa fa-music"></i>
+          </div>
+          <div class="visor-audio__nombre">{{ nombre }}</div>
+          <div class="visor-audio__meta">{{ nombreFichero }} · {{ tamano }}</div>
+          @if (!errorMedio) {
+            <audio [src]="urlTexto" controls autoplay preload="metadata"
+                   class="visor-audio__player" (error)="onErrorMedio()">
+            </audio>
+          } @else {
+            <ng-container *ngTemplateOutlet="noSoportado; context: { que: 'audio' }"></ng-container>
+          }
         </div>
-        <!-- <iframe [src]="url_" allowfullscreen="false"></iframe> -->
-<div class="iframe-wrapper" style="height: 100%; overflow: hidden;">
-    <iframe 
-        [src]="url_" 
-        allowfullscreen="false" 
-        style="margin-top: -60px; width: 100%; height: calc(100% + 50px);"
-    ></iframe>
+      </div>
+    }
+
+    @case ('descarga') {
+      <!-- Excel, Word, otros: el navegador no los muestra -->
+      <div class="visor-centro">
+        <div class="visor-descarga">
+          <i [ngClass]="tipo.icono" [style.color]="tipo.color" class="visor-descarga__icono"></i>
+          <div class="visor-descarga__nombre">{{ nombre }}</div>
+          <div class="visor-descarga__meta">{{ nombreFichero }} · {{ tamano }}</div>
+          <p class="visor-descarga__texto">
+            Los archivos {{ tipo.etiqueta }} no se pueden ver aquí; descárgalo y ábrelo con su programa.
+          </p>
+          <a class="btn btn-primary" [href]="urlTexto" [download]="nombreFichero" target="_blank" rel="noopener">
+            <i class="fa fa-download me-1"></i> Descargar {{ tipo.etiqueta }}
+          </a>
+        </div>
+      </div>
+    }
+
+    @default {
+      <!-- Enlace, PDF y videos de YouTube / Vimeo: iframe -->
+      <iframe [src]="url_" class="visor-iframe" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+    }
+  }
 </div>
 
-        <div class="flotante"></div>
-    </div>
-
-    </div>
-</div>
+<!-- El navegador no reproduce ese formato (p. ej. .mkv, .avi, .wma) -->
+<ng-template #noSoportado let-que="que">
+  <div class="visor-descarga">
+    <i [ngClass]="tipo.icono" [style.color]="tipo.color" class="visor-descarga__icono"></i>
+    <div class="visor-descarga__nombre">{{ nombre }}</div>
+    <div class="visor-descarga__meta">{{ nombreFichero }} · {{ tamano }}</div>
+    <p class="visor-descarga__texto">
+      El navegador no puede reproducir este {{ que }} ({{ extension }}). Descárgalo y ábrelo con tu reproductor.
+    </p>
+    <a class="btn btn-primary" [href]="urlTexto" [download]="nombreFichero" target="_blank" rel="noopener">
+      <i class="fa fa-download me-1"></i> Descargar {{ que }}
+    </a>
+  </div>
+</ng-template>

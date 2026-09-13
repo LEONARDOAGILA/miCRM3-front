@@ -94,22 +94,85 @@
                   </app-campoTexto>
                 </div>
 
-                <!-- La url sólo existe en archivos: es el reporte que se abre -->
+                <!-- ---------- Enlace o fichero (sólo archivos) ----------
+                     Enlace = una url externa. Fichero = se sube al servidor
+                     (storage/img/file-manager) y su tipo (imagen, pdf, excel,
+                     word, video, otro) se deduce de la extensión: el usuario
+                     no tiene que saberlo. -->
                 @if (!esCarpeta) {
                   <div class="col-12">
-                    <app-campoTexto
-                      [control]="form.controls['url']"
-                      label="URL DEL REPORTE"
-                      placeholder="https://…"
-                      [maxLength]="500"
-                      [trimEspacios]="true"
-                      icono="fa-link">
-                    </app-campoTexto>
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      Dirección completa del reporte externo. Se abre en un visor a pantalla completa con <b>Ejecutar</b>.
-                    </p>
+                    <span class="tipo-etiqueta">¿Qué es?</span>
+                    <div class="tipo-selector" role="radiogroup" aria-label="Enlace o archivo">
+                      @for (m of modos; track m.id) {
+                        <button type="button"
+                                class="tipo-opcion"
+                                role="radio"
+                                [attr.aria-checked]="modo === m.id"
+                                [class.is-activo]="modo === m.id"
+                                [style.--tipo-color]="m.color"
+                                [title]="m.descripcion"
+                                [disabled]="progreso !== null"
+                                (click)="cambiarModo(m.id)">
+                          <i [ngClass]="m.icono"></i>
+                          <span>{{ m.etiqueta }}</span>
+                        </button>
+                      }
+                    </div>
                   </div>
+
+                  @if (esEnlace) {
+                    <!-- Enlace: la url es el reporte que se abre -->
+                    <div class="col-12">
+                      <app-campoTexto
+                        [control]="form.controls['url']"
+                        label="URL DEL ENLACE"
+                        placeholder="https://…"
+                        [maxLength]="500"
+                        [trimEspacios]="true"
+                        icono="fa-link">
+                      </app-campoTexto>
+                      <p class="campo-hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Dirección completa. Se abre en el visor a pantalla completa con <b>Ejecutar</b>.
+                      </p>
+                    </div>
+                  } @else {
+                    <!-- Fichero: se sube al guardar; la url y el tipo los pone el servidor.
+                         Sin filtro de extensión ni de tamaño (manda php.ini). -->
+                    <div class="col-12">
+                      <app-dropzone
+                        [maxMb]="maxMb"
+                        [archivoActual]="nombreArchivoActual"
+                        [progreso]="progreso"
+                        texto="Arrastra el archivo aquí o haz clic para elegirlo"
+                        (archivoSeleccionado)="onFicheroSeleccionado($event)">
+                      </app-dropzone>
+
+                      <!-- Tipo detectado por la extensión (icono y color del tipo) -->
+                      @if (ficheroNuevo || nombreArchivoActual) {
+                        <div class="tipo-detectado" [style.--tipo-color]="tipoActual.color">
+                          <i [ngClass]="tipoActual.icono"></i>
+                          <span class="tipo-detectado__etiqueta">{{ tipoActual.etiqueta }}</span>
+                          <span class="tipo-detectado__texto">
+                            @if (ficheroNuevo) {
+                              · detectado por la extensión <b>.{{ extensionFichero }}</b>
+                            } @else {
+                              · archivo guardado ({{ tamanoActual }})
+                            }
+                          </span>
+                        </div>
+                      }
+
+                      <p class="campo-hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        @if (nombreArchivoActual && !ficheroNuevo) {
+                          Suelta otro archivo para sustituirlo; el anterior se borra del servidor.
+                        } @else {
+                          Imagen, PDF, Excel, Word, video, audio o cualquier otro fichero. Se sube al pulsar <b>Guardar</b> y queda en el servidor.
+                        }
+                      </p>
+                    </div>
+                  }
                 }
 
               </div>
