@@ -1,0 +1,110 @@
+<!-- ============================================================
+     MOVER A… (modal)
+     Qué se mueve arriba; debajo el árbol de carpetas (sólo carpetas +
+     Raíz) para elegir el destino. La carpeta actual y el propio subárbol
+     salen bloqueados.
+     ============================================================ -->
+
+@if (moviendo) {
+  <div class="loader1" role="status" aria-label="Moviendo"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<app-modal-header title="Mover a…" (onClose)="modal.dismiss('Close click')"></app-modal-header>
+
+<div class="modal-body mover-cuerpo">
+
+  <!-- Qué se mueve -->
+  <div class="mover-elemento">
+    <span class="mover-elemento__icono" [style.color]="elemento.color || (elemento.escarpeta ? '#F0B13B' : '#A6A09B')">
+      <i [ngClass]="elemento.icono || (elemento.escarpeta ? 'fa fa-folder' : 'fa fa-file')"></i>
+    </span>
+    <div class="mover-elemento__texto">
+      <span class="mover-elemento__nombre text-truncate">{{ elemento.nombre }}</span>
+      <span class="mover-elemento__ayuda">
+        @if (elemento.escarpeta) {
+          Se mueve la carpeta con todo su contenido.
+        } @else {
+          Se mueve el archivo a la carpeta que elijas.
+        }
+      </span>
+    </div>
+  </div>
+
+  <!-- Buscador de carpetas -->
+  <div class="mover-buscador">
+    <i class="fa fa-search"></i>
+    <input type="text" class="form-control form-control-sm" placeholder="Buscar carpeta…"
+           [(ngModel)]="filtro" name="filtro" autocomplete="off">
+    @if (filtro) {
+      <button type="button" class="btn btn-sm btn-link text-secondary p-0" title="Limpiar" (click)="filtro = ''">
+        <i class="fa fa-xmark"></i>
+      </button>
+    }
+  </div>
+
+  <!-- Árbol de destino -->
+  <div class="mover-arbol" role="tree" aria-label="Carpeta destino">
+    @for (c of visibles; track c.id) {
+      <div class="mover-nodo"
+           role="treeitem"
+           [attr.aria-selected]="seleccion === c"
+           [attr.aria-disabled]="c.bloqueada || c.actual"
+           [class.is-seleccionada]="seleccion === c"
+           [class.is-bloqueada]="c.bloqueada"
+           [class.is-actual]="c.actual"
+           [style.padding-left.rem]="filtro ? .5 : .5 + c.nivel * 1.1"
+           [title]="c.bloqueada ? 'No se puede mover dentro de sí mismo' : (c.actual ? 'Ya está aquí' : c.ruta)"
+           (click)="elegir(c)"
+           (dblclick)="elegir(c); puedeMover && mover()">
+
+        <!-- +/− sólo sin filtro y si tiene subcarpetas -->
+        @if (!filtro && c.tieneHijas) {
+          <span class="mover-nodo__flecha" (click)="toggle(c, $event)">
+            <i class="fas" [ngClass]="c.abierta ? 'fa-minus' : 'fa-plus'"></i>
+          </span>
+        } @else {
+          <span class="mover-nodo__flecha mover-nodo__flecha--hueca"></span>
+        }
+
+        <i class="mover-nodo__icono" [ngClass]="c.icono" [style.color]="c.color"></i>
+
+        <span class="mover-nodo__nombre text-truncate">{{ c.nombre }}</span>
+        @if (filtro && c.id !== null) {
+          <span class="mover-nodo__ruta text-truncate">{{ c.ruta }}</span>
+        }
+
+        @if (c.actual) {
+          <span class="mover-nodo__chip">Actual</span>
+        } @else if (c.bloqueada) {
+          <span class="mover-nodo__chip mover-nodo__chip--bloq"><i class="fa fa-ban"></i></span>
+        } @else if (seleccion === c) {
+          <i class="fa fa-circle-check mover-nodo__check"></i>
+        }
+      </div>
+    } @empty {
+      <div class="mover-vacio">
+        <i class="fa fa-folder-open"></i>
+        <span>Ninguna carpeta coincide con «{{ filtro }}»</span>
+      </div>
+    }
+  </div>
+
+  <!-- Destino elegido -->
+  <p class="mover-destino">
+    <i class="fa-solid fa-circle-info"></i>
+    @if (seleccion) {
+      Destino: <b>{{ seleccion.ruta }}</b>
+    } @else {
+      Elige la carpeta destino (doble clic mueve directamente).
+    }
+  </p>
+</div>
+
+<div class="modal-footer mover-pie">
+  <button type="button" class="btn btn-white" (click)="modal.dismiss('Close click')">Cancelar</button>
+  <button type="button" class="btn btn-primary" [disabled]="!puedeMover" (click)="mover()">
+    <i class="fa me-1" [ngClass]="moviendo ? 'fa-spinner fa-spin' : 'fa-arrows-up-down-left-right'"></i>
+    Mover aquí
+  </button>
+</div>

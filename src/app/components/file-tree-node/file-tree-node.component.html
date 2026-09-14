@@ -1,9 +1,17 @@
 <div class="file-node">
+  <!-- draggable sólo si el padre lo permite; las carpetas además reciben drops -->
   <div
     class="file-link"
     [class.selected]="isSelected"
+    [class.is-destino]="esDestino"
+    [attr.draggable]="arrastrable ? 'true' : null"
     (click)="onNodeClick($event)"
     (contextmenu)="onNodeContextMenu($event)"
+    (dragstart)="onDragStart($event)"
+    (dragend)="onDragEnd()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
   >
     <!-- Flecha para expandir/colapsar -->
     <span class="file-arrow" *ngIf="node.children" (click)="toggleNode($event)">
@@ -16,7 +24,7 @@
       <i *ngIf="!node.icono && !node.escarpeta" class="far fa-file-code fa-lg text-body text-opacity-50"></i>
       <i *ngIf="!node.icono && node.escarpeta"  class="fa fa-folder" [style.color]="node.color || '#ffc107'"></i>
     </span>
-     
+
     <!-- Nombre del nodo -->
     <span class="file-text">{{ node.nombre }}</span>
   </div>
@@ -28,9 +36,13 @@
         *ngFor="let child of node.children"
         [node]="child"
         [isSelected]="child.isSelected"
+        [arrastrable]="arrastrable"
         (nodeSelected)="onChildNodeSelected($event)"
         (nodeToggled)="nodeToggled.emit($event)"
         (nodeContextMenu)="nodeContextMenu.emit($event)"
+        (nodeDragStart)="nodeDragStart.emit($event)"
+        (nodeDragEnd)="nodeDragEnd.emit()"
+        (nodeDrop)="nodeDrop.emit($event)"
       ></app-file-tree-node>
     </ng-container>
   </div>

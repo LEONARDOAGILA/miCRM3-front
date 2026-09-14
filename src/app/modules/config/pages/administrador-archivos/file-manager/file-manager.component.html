@@ -86,6 +86,14 @@
         </button>
 
         <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeEditar"
+                [title]="puedeEditar ? 'Mover «' + objetivo?.nombre + '» a otra carpeta' : 'Seleccione un elemento'"
+                (click)="mover()">
+          <i class="fa fa-arrows-up-down-left-right archivos-btn__icono text-warning"></i>
+          <span class="archivos-btn__texto">Mover</span>
+        </button>
+
+        <button type="button" class="btn btn-sm archivos-btn"
                 [disabled]="!puedeEliminar"
                 [title]="puedeEliminar ? 'Eliminar «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
                 (click)="eliminar()">
@@ -147,14 +155,24 @@
         <div class="archivos-lateral__arbol">
           <ng-scrollbar class="h-100">
             <!-- (contextmenu): clic derecho en el fondo del árbol; los nodos emiten el suyo -->
-            <div class="archivos-arbol" (contextmenu)="onContextMenuArbol($event)">
+            <!-- (dragover)/(drop) en el fondo: soltar fuera de un nodo = mover a la raíz -->
+            <div class="archivos-arbol"
+                 [class.is-destino-raiz]="dnd.sobreRaizArbol"
+                 (contextmenu)="onContextMenuArbol($event)"
+                 (dragover)="onDragOverArbol($event)"
+                 (dragleave)="dnd.sobreRaizArbol = false"
+                 (drop)="onDropArbol($event)">
               @for (node of nodes; track node.id) {
                 <app-file-tree-node
                   [node]="node"
                   [isSelected]="node.isSelected"
+                  [arrastrable]="true"
                   (nodeSelected)="onNodeSelect($event)"
                   (nodeToggled)="onNodeToggle($event)"
-                  (nodeContextMenu)="onContextMenuNodo($event)">
+                  (nodeContextMenu)="onContextMenuNodo($event)"
+                  (nodeDragStart)="onDragStart($event.node, $event.event)"
+                  (nodeDragEnd)="onDragEnd()"
+                  (nodeDrop)="onDropNodo($event.node, $event.event)">
                 </app-file-tree-node>
               } @empty {
                 <div class="archivos-arbol__vacio">
@@ -252,7 +270,15 @@
              archivo. Aspecto: skin global de ag-Grid. Tiene la carpeta entera:
              busca (quick filter), filtra por columna y ordena en el navegador. -->
         <!-- (contextmenu): clic derecho en una fila o en el fondo de la grilla -->
-        <div class="archivos-grilla position-relative" (contextmenu)="onContextMenuGrilla($event)">
+        <!-- Arrastrar: las filas se arrastran desde la columna Nombre (dndSource);
+             soltar sobre una fila-carpeta la mueve dentro, sobre el fondo la
+             mueve a la carpeta actual. -->
+        <div class="archivos-grilla position-relative"
+             [class.is-destino-fondo]="dnd.sobreFondoGrilla"
+             (contextmenu)="onContextMenuGrilla($event)"
+             (dragover)="onDragOverGrilla($event)"
+             (dragleave)="onDragLeaveGrilla($event)"
+             (drop)="onDropGrilla($event)">
           <!-- Spinner y velo mientras se pide la carpeta al servidor -->
           @if (isLoading$ | async) {
             <div class="loader1" role="status" aria-label="Cargando"></div>
@@ -360,6 +386,9 @@
       <div class="menu-ctx__sep"></div>
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); editar(el)">
         <i class="fa fa-pen-to-square fa-fw text-info"></i> Modificar
+      </button>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); mover(el)">
+        <i class="fa fa-arrows-up-down-left-right fa-fw text-warning"></i> Mover a…
       </button>
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminar(el)">
         <i class="fa fa-trash fa-fw"></i> Eliminar

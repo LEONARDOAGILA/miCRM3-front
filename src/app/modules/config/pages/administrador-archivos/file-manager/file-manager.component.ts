@@ -14,6 +14,7 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import { SaveFileComponent } from '../save-file/saveFile.component';
 import { DeleteFileComponent } from '../delete-file/deleteFile.component';
 import { PapeleraComponent } from '../papelera/papelera.component';
+import { MoverArchivoComponent } from '../mover-archivo/moverArchivo.component';
 import { ModalReporteExternoComponent } from '../modalReporteExterno/modalReporteExterno.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { TIPO_CARPETA, TIPO_LINK, TIPO_UNIDAD, defTipo, extensionDe, formatoTamano, tipoArchivoDeExtension } from '../../../interfaces/tipoArchivo';
@@ -109,6 +110,19 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   // ---------- Búsqueda en la grilla (quick filter de ag-Grid) ----------
   /** Id del input de búsqueda (app-campoBusqueda), para leerlo y limpiarlo. */
   readonly idBuscador = 'filter-archivos';
+
+  // ---------- Arrastrar y soltar (mover) ----------
+  /**
+   * Estado del arrastre en curso. `elemento` es lo que se está moviendo
+   * (viene del árbol o de la grilla); las banderas sólo pintan el destino.
+   */
+  dnd = {
+    elemento: null as FileTreeNode | null,
+    sobreRaizArbol: false,
+    sobreFondoGrilla: false,
+  };
+  /** Fila de la grilla resaltada como destino (para quitarle la clase después). */
+  private filaDestino: HTMLElement | null = null;
 
   // ---------- Papelera ----------
   /** Elementos en la papelera, para el contador del botón. */
@@ -488,6 +502,11 @@ export class FileManagerComponent implements OnInit, OnDestroy {
         minWidth: 180,
         cellStyle: { textAlign: 'left' },
         filter: 'agTextColumnFilter',
+        // Arrastre nativo (HTML5) desde esta celda: así se puede soltar en el
+        // árbol o sobre otra fila. dndSourceOnRowDrag deja el id en dataTransfer
+        // y avisa al componente de qué se está arrastrando.
+        dndSource: true,
+        dndSourceOnRowDrag: (params: any) => this.onDragStart(params.rowNode.data, params.dragEvent),
         // Los que se abren en otra pestaña llevan una marca al lado del nombre
         cellRenderer: (p: any) => {
           const nombre = this.escapeHtml(p.value ?? '');
@@ -766,6 +785,182 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       windowClass: 'my-class'   // modal a pantalla completa (ver estilos globales)
     });
     modalRef.componentInstance.registro_selected = archivo;
+  }
+
+  // ================================================================
+  // MOVER
+  // ================================================================
+  // Dos caminos y el mismo destino: el modal "Mover a…" (botón y menú
+  // contextual) y arrastrar y soltar, desde el árbol o desde la grilla,
+  // sobre una carpeta del árbol, una fila-carpeta de la grilla, el fondo
+  // del árbol (= raíz) o el fondo de la grilla (= carpeta actual). Todo
+  // termina en moverA(), que valida y llama al back.
+
+  /** Abre el modal con el árbol de carpetas para elegir el destino. */
+  mover(objetivo: FileTreeNode | null = this.objetivo): void {
+    if (!objetivo || this._seguridadService.isexpired()) { return; }
+    // El elemento del árbol trae `children`: el modal bloquea su propio subárbol
+    const elemento = this.buscarPorId(this.nodes, objetivo.id) ?? objetivo;
+
+    const modalRef = this.modal.open(MoverArchivoComponent, {
+      centered: true,
+      size: 'md',
+      backdrop: 'static',
+      keyboard: true
+    });
+    modalRef.componentInstance.elemento = elemento;
+    modalRef.componentInstance.arbol = this.nodes;
+    this.escucharModal(modalRef, modalRef.componentInstance.movido, () => this.trasMover(elemento));
+  }
+
+  /**
+   * Mueve `elemento` dentro de `destino` (null = raíz) tras comprobar lo
+   * que se puede comprobar aquí; el back repite las comprobaciones.
+   */
+  private async moverA(elemento: FileTreeNode, destino: FileTreeNode | null): Promise<void> {
+    if (this._seguridadService.isexpired()) { return; }
+    const padreNuevo = destino?.id ?? null;
+    const padreActual = elemento.padre ?? null;
+
+    if (padreNuevo === padreActual) { return; }   // ya está ahí
+    if (destino && !destino.escarpeta) {
+      this._toastr.warning('Sólo se puede soltar sobre una carpeta', 'Mover');
+      return;
+    }
+    if (destino && this.estaDentroDe(destino.id, elemento)) {
+      this._toastr.warning('No se puede mover una carpeta dentro de sí misma', 'Mover');
+      return;
+    }
+
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(this._archivoService.moverArchivo(elemento.id, padreNuevo));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo mover', 'Mover');
+        return;
+      }
+      this._toastr.success(res.message, 'Movido', { closeButton: true });
+      this.trasMover(elemento);
+    } catch (e) {
+      console.error('Error al mover:', e);   // el interceptor ya avisó
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /** true si `id` es el propio elemento o cuelga de él (moverlo ahí crearía un ciclo). */
+  private estaDentroDe(id: number, elemento: FileTreeNode): boolean {
+    const completo = this.buscarPorId(this.nodes, elemento.id) ?? elemento;
+    const recorrer = (n: FileTreeNode): boolean =>
+      n.id === id || (n.children ?? []).some(recorrer);
+    return recorrer(completo);
+  }
+
+  /** Tras mover: si se movió la carpeta abierta, la vista sigue en ella (en su nuevo sitio). */
+  private trasMover(elemento: FileTreeNode): void {
+    this.filaSeleccionada = null;
+    this.loaddata();
+  }
+
+  // ---------- Arrastrar y soltar ----------
+
+  /** Empieza un arrastre (desde el árbol o desde la grilla). */
+  onDragStart(elemento: FileTreeNode, event: DragEvent): void {
+    this.dnd.elemento = elemento;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      // Por si algún día se suelta fuera de este componente
+      event.dataTransfer.setData('application/x-micrm-archivo', String(elemento.id));
+      event.dataTransfer.setData('text/plain', elemento.nombre);
+    }
+  }
+
+  /** Fin del arrastre. A nivel de documento: el de la grilla lo dispara ag-Grid en su celda. */
+  @HostListener('document:dragend')
+  onDragEnd(): void {
+    this.dnd.elemento = null;
+    this.dnd.sobreRaizArbol = false;
+    this.dnd.sobreFondoGrilla = false;
+    this.quitarFilaDestino();
+  }
+
+  /** Soltado sobre una carpeta del árbol. */
+  onDropNodo(destino: FileTreeNode, event: DragEvent): void {
+    event.preventDefault();
+    const elemento = this.dnd.elemento;
+    this.onDragEnd();
+    if (elemento) { this.moverA(elemento, destino); }
+  }
+
+  /** Fondo del árbol (fuera de los nodos): destino = raíz. */
+  onDragOverArbol(event: DragEvent): void {
+    if (!this.dnd.elemento) { return; }
+    // Si el cursor está sobre un nodo, ya lo gestiona el nodo (stopPropagation)
+    event.preventDefault();
+    if (event.dataTransfer) { event.dataTransfer.dropEffect = 'move'; }
+    this.dnd.sobreRaizArbol = true;
+  }
+
+  onDropArbol(event: DragEvent): void {
+    event.preventDefault();
+    const elemento = this.dnd.elemento;
+    this.onDragEnd();
+    if (elemento) { this.moverA(elemento, null); }
+  }
+
+  /**
+   * Sobre la grilla: si el cursor está en una fila-carpeta se resalta esa
+   * fila; si está en el fondo (o sobre un archivo) el destino es la carpeta
+   * actual y se resalta la grilla entera.
+   */
+  onDragOverGrilla(event: DragEvent): void {
+    if (!this.dnd.elemento) { return; }
+    event.preventDefault();
+    if (event.dataTransfer) { event.dataTransfer.dropEffect = 'move'; }
+
+    const fila = this.filaCarpetaBajo(event);
+    if (fila) {
+      if (this.filaDestino !== fila.el) {
+        this.quitarFilaDestino();
+        fila.el.classList.add('fila-destino');
+        this.filaDestino = fila.el;
+      }
+      this.dnd.sobreFondoGrilla = false;
+    } else {
+      this.quitarFilaDestino();
+      this.dnd.sobreFondoGrilla = true;
+    }
+  }
+
+  onDragLeaveGrilla(event: DragEvent): void {
+    const destino = event.relatedTarget as Node | null;
+    if (destino && (event.currentTarget as HTMLElement).contains(destino)) { return; }
+    this.quitarFilaDestino();
+    this.dnd.sobreFondoGrilla = false;
+  }
+
+  onDropGrilla(event: DragEvent): void {
+    event.preventDefault();
+    const elemento = this.dnd.elemento;
+    const fila = this.filaCarpetaBajo(event);
+    this.onDragEnd();
+    if (!elemento) { return; }
+    // Sobre una carpeta de la lista → dentro de ella; si no → carpeta actual (o raíz)
+    this.moverA(elemento, fila ? fila.data : this.carpetaActual);
+  }
+
+  /** Fila-carpeta de la grilla bajo el cursor, si la hay. */
+  private filaCarpetaBajo(event: DragEvent): { el: HTMLElement; data: FileTreeNode } | null {
+    const el = (event.target as HTMLElement).closest('.ag-row') as HTMLElement | null;
+    if (!el) { return null; }
+    const idx = Number(el.getAttribute('row-index'));
+    const data = this.gridApi?.getDisplayedRowAtIndex(idx)?.data as FileTreeNode | undefined;
+    return data?.escarpeta ? { el, data } : null;
+  }
+
+  private quitarFilaDestino(): void {
+    this.filaDestino?.classList.remove('fila-destino');
+    this.filaDestino = null;
   }
 
   auditoria(objetivo: FileTreeNode | null = this.objetivo): void {

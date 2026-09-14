@@ -37,6 +37,10 @@ export class ArchivoService {
   findByIdArchivo(id: any){ return this._http.get(this.URL_SERVICIOS    + 'findByIdArchivo/' + id);  }
   addArchivo(data: any) {    return this._http.post(this.URL_SERVICIOS + "addArchivo", data);     }
   deleteArchivo(id: any) {     return this._http.delete(this.URL_SERVICIOS + "deleteArchivo/" + id);      }   // a la papelera
+  /** Mueve un archivo o carpeta (con su contenido) a otra carpeta; padre null/0 = raíz. */
+  moverArchivo(id: number, padre: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'moverArchivo/' + id, { padre: padre ?? 0 });
+  }
   editArchivo(id: any, data: any) {    return this._http.post(this.URL_SERVICIOS + "editArchivo/" + id, data);      }
 
   /**

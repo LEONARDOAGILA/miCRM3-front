@@ -85,3 +85,18 @@
     transition: none;
   }
 }
+
+/* ---------- Arrastrar y soltar ---------- */
+.file-link[draggable="true"] {
+  cursor: grab;
+}
+
+.file-link[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* Carpeta sobre la que se está a punto de soltar */
+.file-link.is-destino {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .16);
+  box-shadow: inset 0 0 0 1px var(--bs-app-theme, #00acac), inset 3px 0 0 var(--bs-app-theme, #00acac);
+}

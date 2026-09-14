@@ -182,6 +182,7 @@
 }
 
 .archivos-arbol {
+  min-height: 100%;   /* el fondo entero recibe drops (= raíz) */
   padding: .5rem .5rem .5rem .25rem;
 }
 
@@ -469,4 +470,31 @@
   font-size: .7em;
   color: var(--bs-app-theme, #00acac);
   opacity: .8;
+}
+
+/* ---------- Arrastrar y soltar (mover) ---------- */
+/* Fila-carpeta de la grilla sobre la que se va a soltar */
+:host ::ng-deep .archivos-grilla .ag-row.fila-destino .ag-cell {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .16) !important;
+  box-shadow: inset 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+/* Fondo de la grilla = soltar en la carpeta actual */
+.archivos-grilla.is-destino-fondo {
+  outline: 2px dashed var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+  border-radius: .375rem;
+}
+
+/* Fondo del árbol = soltar en la raíz */
+.archivos-arbol.is-destino-raiz {
+  outline: 2px dashed var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+  border-radius: .375rem;
+  min-height: 100%;
+}
+
+/* La celda Nombre se puede coger */
+:host ::ng-deep .archivos-grilla .ag-cell[col-id="nombre"] {
+  cursor: grab;
 }

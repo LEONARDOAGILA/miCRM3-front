@@ -45,6 +45,7 @@ import { DeleteFileComponent } from './pages/administrador-archivos/delete-file/
 import { PapeleraComponent } from './pages/administrador-archivos/papelera/papelera.component';
 import { ModalArrastrableDirective } from '../../components/modal/modal-arrastrable.directive';
 import { DropzoneComponent } from '../../components/campos/dropzone/dropzone.component';
+import { MoverArchivoComponent } from './pages/administrador-archivos/mover-archivo/moverArchivo.component';
 import { ExtraSettingsPage } from './pages/extra-settings-page/extra-settings-page';
 import { ExtraSearchResultsPage } from './pages/extra-search-results/extra-search-results';
 import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
@@ -92,6 +93,7 @@ import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
     CampoBusquedaPaginacionComponent,
     ModalArrastrableDirective,
     DropzoneComponent,
+    MoverArchivoComponent,
     ComboComponent,
     ActionButtonsModule,
     FileTreeNodeComponent,
