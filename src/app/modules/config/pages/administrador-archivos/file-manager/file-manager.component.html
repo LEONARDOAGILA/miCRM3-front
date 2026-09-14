@@ -319,7 +319,25 @@
             }
           </nav>
 
-          <button type="button" class="btn btn-sm btn-white ms-auto" title="Recargar" (click)="refresh()">
+          <!-- Modo de vista: lista (ag-Grid) o cuadrícula (iconos grandes, como Windows) -->
+          <div class="btn-group ms-auto archivos-vista" role="group" aria-label="Modo de vista">
+            <button type="button" class="btn btn-sm btn-white"
+                    [class.active]="vista === 'lista'"
+                    title="Modo lista: tabla con columnas, filtros y orden"
+                    (click)="cambiarVista('lista')">
+              <i class="fa fa-list"></i>
+              <span class="archivos-ubicacion__texto ms-1">Lista</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-white"
+                    [class.active]="vista === 'cuadricula'"
+                    title="Modo cuadrícula: iconos grandes"
+                    (click)="cambiarVista('cuadricula')">
+              <i class="fa fa-grip"></i>
+              <span class="archivos-ubicacion__texto ms-1">Cuadrícula</span>
+            </button>
+          </div>
+
+          <button type="button" class="btn btn-sm btn-white" title="Recargar" (click)="refresh()">
             <i class="fa fa-arrows-rotate"></i>
           </button>
         </div>
@@ -355,6 +373,7 @@
         <!-- Arrastrar: las filas se arrastran desde la columna Nombre (dndSource);
              soltar sobre una fila-carpeta la mueve dentro, sobre el fondo la
              mueve a la carpeta actual. -->
+        @if (vista === 'lista') {
         <div class="archivos-grilla position-relative"
              [class.is-destino-fondo]="dnd.sobreFondoGrilla"
              (contextmenu)="onContextMenuGrilla($event)"
@@ -387,6 +406,100 @@
             (cellDoubleClicked)="onCellDoubleClicked($event)">
           </ag-grid-angular>
         </div>
+        }
+
+        <!-- ---------- Vista CUADRÍCULA (iconos grandes, como el explorador de Windows) ----------
+             Misma data y mismas acciones que la grilla: clic selecciona,
+             Ctrl+clic añade/quita, Mayús+clic rango, doble clic abre/ejecuta,
+             clic derecho = menú contextual, y se arrastra/suelta igual.
+             El buscador filtra por nombre, descripción, tipo y extensión. -->
+        @if (vista === 'cuadricula') {
+          <div class="archivos-cuadricula position-relative"
+               [class.is-destino-fondo]="dnd.sobreFondoGrilla"
+               (click)="onClickFondoCuadricula($event)"
+               (contextmenu)="onContextMenuFondoCuadricula($event)"
+               (dragover)="onDragOverFondoCuadricula($event)"
+               (dragleave)="onDragLeaveGrilla($event)"
+               (drop)="onDropFondoCuadricula($event)">
+
+            @if (isLoading$ | async) {
+              <div class="loader1" role="status" aria-label="Cargando"></div>
+              <div class="overlay1" aria-hidden="true"></div>
+            }
+
+            <ng-scrollbar class="h-100">
+              <div class="archivos-cuadricula__lienzo">
+                @for (el of contenidoFiltrado; track el.id) {
+                  <div class="archivos-tile"
+                       role="option"
+                       tabindex="0"
+                       [attr.aria-selected]="estaSeleccionado(el)"
+                       [class.is-seleccionado]="estaSeleccionado(el)"
+                       [class.is-inactivo]="el.activo === false"
+                       [class.is-destino]="dnd.sobreTile === el.id"
+                       [title]="tituloTile(el)"
+                       draggable="true"
+                       (click)="onClickTile(el, $event)"
+                       (dblclick)="onDobleClickTile(el)"
+                       (keydown.enter)="onDobleClickTile(el)"
+                       (contextmenu)="onContextMenuTile(el, $event)"
+                       (dragstart)="onDragStart(el, $event)"
+                       (dragover)="onDragOverTile(el, $event)"
+                       (dragleave)="onDragLeaveTile(el, $event)"
+                       (drop)="onDropTile(el, $event)">
+
+                    <!-- Icono grande: miniatura si es una imagen; si no, el icono del registro/tipo -->
+                    <div class="archivos-tile__icono">
+                      @if (miniaturaDe(el); as src) {
+                        <img [src]="src" alt="" loading="lazy" class="archivos-tile__miniatura">
+                      } @else {
+                        <i [ngClass]="claseIconoDe(el)" [style.color]="colorDe(el)"></i>
+                      }
+                      @if (el.escarpeta && numHijos(el)) {
+                        <span class="archivos-tile__contador" title="Elementos dentro">{{ numHijos(el) }}</span>
+                      }
+                      @if (!el.escarpeta && el.extension_archivo) {
+                        <span class="archivos-tile__ext">{{ el.extension_archivo | uppercase }}</span>
+                      }
+                      @if (el.proteger_url && !el.escarpeta) {
+                        <i class="fa fa-shield-halved archivos-tile__marca" title="URL protegida"></i>
+                      }
+                      @if (el.nueva_ventana) {
+                        <i class="fa fa-arrow-up-right-from-square archivos-tile__marca archivos-tile__marca--2" title="Se abre en una ventana nueva"></i>
+                      }
+                    </div>
+
+                    <div class="archivos-tile__nombre">{{ el.nombre }}</div>
+                    <div class="archivos-tile__detalle">
+                      @if (el.escarpeta) {
+                        {{ el.padre ? 'Carpeta' : 'Unidad' }}
+                      } @else if (el.tamano) {
+                        {{ formatoTamanoTile(el.tamano) }}
+                      } @else {
+                        {{ el.url?.startsWith('http') ? 'Enlace' : '' }}
+                      }
+                    </div>
+
+                    <!-- Casilla para tocar/seleccionar sin Ctrl -->
+                    <button type="button" class="archivos-tile__check" title="Seleccionar"
+                            (click)="alternarSeleccion(el, $event)">
+                      <i class="fa" [ngClass]="estaSeleccionado(el) ? 'fa-square-check' : 'fa-square'"></i>
+                    </button>
+                  </div>
+                } @empty {
+                  <div class="archivos-cuadricula__vacio">
+                    <i class="fa" [ngClass]="filtroTexto ? 'fa-search' : 'fa-folder-open'"></i>
+                    @if (filtroTexto) {
+                      <span>Nada coincide con «{{ filtroTexto }}»</span>
+                    } @else {
+                      <span>{{ carpetaActual ? 'Esta carpeta está vacía' : 'No hay carpetas en la raíz' }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            </ng-scrollbar>
+          </div>
+        }
 
         <!-- Resumen de la carpeta (y del filtro, si hay) -->
         <div class="archivos-estado d-flex justify-content-between align-items-center flex-wrap">

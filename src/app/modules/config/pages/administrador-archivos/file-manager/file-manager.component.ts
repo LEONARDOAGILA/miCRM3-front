@@ -29,6 +29,8 @@ export interface FileTreeNode {
   id: number;
   /** Carpeta que lo contiene; null en la raíz (FK autorreferencial en core.archivos) */
   padre: number | null;
+  /** Peso en bytes del fichero subido; null/0 en enlaces y carpetas */
+  tamano?: number | null;
   orden: number;
   nivel: number;
   nombre: string;
@@ -139,9 +141,19 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     elementos: [] as FileTreeNode[],
     sobreRaizArbol: false,
     sobreFondoGrilla: false,
+    /** Tile-carpeta de la cuadrícula sobre el que se va a soltar (id). */
+    sobreTile: null as number | null,
   };
   /** Fila de la grilla resaltada como destino (para quitarle la clase después). */
   private filaDestino: HTMLElement | null = null;
+
+  // ---------- Modo de vista: lista (ag-Grid) o cuadrícula (iconos grandes) ----------
+  private readonly CLAVE_VISTA = 'miCRM3.archivos.vista';
+  vista: 'lista' | 'cuadricula' = this.leerVista();
+  /** Texto del buscador; en lista lo aplica ag-Grid, en cuadrícula contenidoFiltrado. */
+  filtroTexto = '';
+  /** Ancla del último clic sin Mayús en la cuadrícula, para seleccionar rangos. */
+  private anclaSeleccion: number | null = null;
 
   // ---------- Papelera ----------
   /** Elementos en la papelera, para el contador del botón. */
@@ -870,19 +882,196 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   /** Cada tecla filtra al instante sobre todas las columnas (nombre, descripción, tipo…). */
   filtrarGrilla(termino: string): void {
-    this.gridApi?.setQuickFilter((termino ?? '').trim());
+    this.filtroTexto = (termino ?? '').trim();
+    this.gridApi?.setQuickFilter(this.filtroTexto);   // la cuadrícula usa contenidoFiltrado
   }
 
   /** Vacía el input y quita el quick filter y los filtros de columna. */
   limpiarFiltroGrilla(): void {
     const input = document.getElementById(this.idBuscador) as HTMLInputElement | null;
     if (input) { input.value = ''; }
+    this.filtroTexto = '';
     this.gridApi?.setQuickFilter('');
     this.gridApi?.setFilterModel(null);
   }
 
+  // ================================================================
+  // VISTA CUADRÍCULA
+  // ================================================================
+  // Misma data que la grilla (contenido) pintada como tiles. La selección
+  // se lleva aquí a mano (seleccion / filaSeleccionada), con el mismo
+  // comportamiento que ag-Grid: clic, Ctrl+clic, Mayús+clic y casilla.
+
+  cambiarVista(v: 'lista' | 'cuadricula'): void {
+    if (this.vista === v) { return; }
+    this.vista = v;
+    this.limpiarSeleccion();   // la selección no viaja entre vistas
+    this.anclaSeleccion = null;
+    try { localStorage.setItem(this.CLAVE_VISTA, v); } catch { /* sin storage */ }
+  }
+
+  private leerVista(): 'lista' | 'cuadricula' {
+    try { return localStorage.getItem(this.CLAVE_VISTA) === 'cuadricula' ? 'cuadricula' : 'lista'; } catch { return 'lista'; }
+  }
+
+  /** Contenido con el texto del buscador aplicado (nombre, descripción, tipo, extensión). */
+  get contenidoFiltrado(): FileTreeNode[] {
+    const q = this.filtroTexto.toLowerCase();
+    if (!q) { return this.contenido; }
+    return this.contenido.filter(n =>
+      [n.nombre, n.descripcion, this.tipoMostrado(n), n.extension_archivo]
+        .some(v => (v ?? '').toString().toLowerCase().includes(q)));
+  }
+
+  estaSeleccionado(el: FileTreeNode): boolean {
+    return this.seleccion.some(s => s.id === el.id);
+  }
+
+  /** Clic en un tile: como en Windows (Ctrl añade/quita, Mayús rango, solo = sólo ése). */
+  onClickTile(el: FileTreeNode, ev: MouseEvent): void {
+    ev.stopPropagation();
+    const lista = this.contenidoFiltrado;
+    const idx = lista.findIndex(n => n.id === el.id);
+
+    if (ev.shiftKey && this.anclaSeleccion !== null) {
+      const [a, b] = [Math.min(this.anclaSeleccion, idx), Math.max(this.anclaSeleccion, idx)];
+      this.seleccion = lista.slice(a, b + 1);
+    } else if (ev.ctrlKey || ev.metaKey) {
+      this.seleccion = this.estaSeleccionado(el)
+        ? this.seleccion.filter(s => s.id !== el.id)
+        : [...this.seleccion, el];
+      this.anclaSeleccion = idx;
+    } else {
+      this.seleccion = [el];
+      this.anclaSeleccion = idx;
+    }
+    this.filaSeleccionada = this.estaSeleccionado(el) ? el : (this.seleccion[this.seleccion.length - 1] ?? null);
+    if (this.filaSeleccionada) { this.marcarEnArbol(this.filaSeleccionada); }
+  }
+
+  /** Casilla del tile: añade/quita sin necesidad de Ctrl (táctil). */
+  alternarSeleccion(el: FileTreeNode, ev: Event): void {
+    ev.stopPropagation();
+    this.seleccion = this.estaSeleccionado(el)
+      ? this.seleccion.filter(s => s.id !== el.id)
+      : [...this.seleccion, el];
+    this.filaSeleccionada = this.seleccion[this.seleccion.length - 1] ?? null;
+    this.anclaSeleccion = this.contenidoFiltrado.findIndex(n => n.id === el.id);
+  }
+
+  onDobleClickTile(el: FileTreeNode): void {
+    if (el.escarpeta) {
+      const enArbol = this.buscarPorId(this.nodes, el.id) ?? el;
+      this.abrirCarpeta(enArbol, true);
+    } else {
+      this.filaSeleccionada = el;
+      this.ejecutar(el);
+    }
+  }
+
+  /** Clic en el fondo (fuera de los tiles): quita la selección. */
+  onClickFondoCuadricula(ev: MouseEvent): void {
+    if ((ev.target as HTMLElement).closest('.archivos-tile')) { return; }
+    this.limpiarSeleccion();
+  }
+
+  /** Clic derecho en un tile: si no estaba seleccionado, pasa a ser el único. */
+  onContextMenuTile(el: FileTreeNode, ev: MouseEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (!this.estaSeleccionado(el)) {
+      this.seleccion = [el];
+      this.anclaSeleccion = this.contenidoFiltrado.findIndex(n => n.id === el.id);
+    }
+    this.filaSeleccionada = el;
+    this.marcarEnArbol(el);
+    this.abrirMenu(ev, el, 'grilla');
+  }
+
+  onContextMenuFondoCuadricula(ev: MouseEvent): void {
+    if ((ev.target as HTMLElement).closest('.archivos-tile')) { return; }
+    ev.preventDefault();
+    this.abrirMenu(ev, null, 'grilla');
+  }
+
+  // ---- arrastrar y soltar en la cuadrícula ----
+
+  onDragOverTile(el: FileTreeNode, ev: DragEvent): void {
+    if (!this.dnd.elementos.length) { return; }
+    ev.stopPropagation();                  // que el fondo no lo tome como "carpeta actual"
+    if (!el.escarpeta) { this.dnd.sobreTile = null; return; }
+    ev.preventDefault();
+    if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'move'; }
+    this.dnd.sobreTile = el.id;
+    this.dnd.sobreFondoGrilla = false;
+  }
+
+  onDragLeaveTile(el: FileTreeNode, ev: DragEvent): void {
+    const destino = ev.relatedTarget as Node | null;
+    if (destino && (ev.currentTarget as HTMLElement).contains(destino)) { return; }
+    if (this.dnd.sobreTile === el.id) { this.dnd.sobreTile = null; }
+  }
+
+  onDropTile(el: FileTreeNode, ev: DragEvent): void {
+    ev.stopPropagation();
+    if (!el.escarpeta) { return; }
+    ev.preventDefault();
+    const lote = this.dnd.elementos;
+    this.onDragEnd();
+    if (lote.length) { this.moverA(lote, el); }
+  }
+
+  onDragOverFondoCuadricula(ev: DragEvent): void {
+    if (!this.dnd.elementos.length) { return; }
+    ev.preventDefault();
+    if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'move'; }
+    this.dnd.sobreFondoGrilla = true;
+  }
+
+  onDropFondoCuadricula(ev: DragEvent): void {
+    ev.preventDefault();
+    const lote = this.dnd.elementos;
+    this.onDragEnd();
+    if (lote.length) { this.moverA(lote, this.carpetaActual); }
+  }
+
+  // ---- aspecto de los tiles ----
+
+  /** Miniatura para imágenes subidas (se sirven desde el back); null para el resto. */
+  miniaturaDe(el: FileTreeNode): string | null {
+    if (el.escarpeta || !el.url) { return null; }
+    return defTipo(el.tipo as string, el.url).id === 'imagen' ? this._archivoService.urlPublica(el.url) : null;
+  }
+
+  claseIconoDe(el: FileTreeNode): string {
+    return el.icono || (el.escarpeta ? 'fa fa-folder' : defTipo(el.tipo as string, el.url).icono);
+  }
+
+  colorDe(el: FileTreeNode): string {
+    return el.color || (el.escarpeta ? '#F0B13B' : defTipo(el.tipo as string, el.url).color);
+  }
+
+  /** Cuántos elementos cuelgan de una carpeta (lo sabe el árbol; la grilla viene sin hijos). */
+  numHijos(el: FileTreeNode): number {
+    return this.buscarPorId(this.nodes, el.id)?.children?.length ?? 0;
+  }
+
+  formatoTamanoTile(bytes: number | null | undefined): string {
+    return formatoTamano(bytes);
+  }
+
+  tituloTile(el: FileTreeNode): string {
+    const partes = [el.nombre];
+    if (el.descripcion) { partes.push(el.descripcion); }
+    partes.push(this.tipoMostrado(el));
+    if (el.tamano) { partes.push(formatoTamano(el.tamano)); }
+    if (el.activo === false) { partes.push('INACTIVO'); }
+    return partes.join('\n');
+  }
+
   /** Filas que pasan el filtro, para el resumen ("3 de 12"). */
   get filasVisibles(): number {
+    if (this.vista === 'cuadricula') { return this.contenidoFiltrado.length; }
     return this.gridApi?.getDisplayedRowCount() ?? this.contenido.length;
   }
 
@@ -1240,6 +1429,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   @HostListener('document:dragend')
   onDragEnd(): void {
     this.dnd.elementos = [];
+    this.dnd.sobreTile = null;
     this.dnd.sobreRaizArbol = false;
     this.dnd.sobreFondoGrilla = false;
     this.quitarFilaDestino();

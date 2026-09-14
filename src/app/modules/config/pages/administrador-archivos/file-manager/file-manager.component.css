@@ -669,3 +669,208 @@
 :host ::ng-deep .archivos-grilla .ag-checkbox-input-wrapper {
   font-size: 14px;
 }
+
+/* ============================================================
+   VISTA CUADRÍCULA (iconos grandes, como el explorador de Windows)
+   ============================================================ */
+.archivos-vista .btn.active {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .14);
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-cuadricula {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .5rem;
+}
+
+.archivos-cuadricula.is-destino-fondo {
+  outline: 2px dashed var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+  border-radius: .375rem;
+}
+
+/* Rejilla de tiles: tantas columnas como quepan de ~120px */
+.archivos-cuadricula__lienzo {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: .5rem;
+  align-content: start;
+  min-height: 100%;
+  padding: .25rem;
+}
+
+.archivos-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .25rem;
+
+  padding: .75rem .5rem .5rem;
+  border: 1px solid transparent;
+  border-radius: .5rem;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+
+  transition: background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+.archivos-tile:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
+  border-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.archivos-tile:focus-visible {
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .25);
+}
+
+.archivos-tile.is-seleccionado {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .14);
+  border-color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-tile.is-inactivo {
+  opacity: .5;
+}
+
+/* Carpeta sobre la que se va a soltar */
+.archivos-tile.is-destino {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: inset 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+/* Icono grande / miniatura */
+.archivos-tile__icono {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.archivos-tile__miniatura {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: .375rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+  background-color: var(--bs-body-bg, #fff);
+}
+
+/* Contador de elementos en carpetas */
+.archivos-tile__contador {
+  position: absolute;
+  right: 4px;
+  bottom: 6px;
+  min-width: 18px;
+  padding: 0 .3rem;
+  border-radius: 2rem;
+  background-color: var(--bs-body-color, #212529);
+  color: var(--bs-body-bg, #fff);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+/* Extensión, como etiqueta sobre el icono del fichero */
+.archivos-tile__ext {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  padding: .05rem .35rem;
+  border-radius: .2rem;
+  background-color: var(--bs-body-color, #212529);
+  color: var(--bs-body-bg, #fff);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+/* Marcas pequeñas: protegido / ventana nueva */
+.archivos-tile__marca {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  font-size: 11px;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-tile__marca--2 {
+  right: auto;
+  left: 2px;
+}
+
+.archivos-tile__nombre {
+  width: 100%;
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--bs-body-color, #212529);
+  /* dos líneas como máximo, con puntos suspensivos */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.archivos-tile.is-seleccionado .archivos-tile__nombre {
+  font-weight: 600;
+}
+
+.archivos-tile__detalle {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+  min-height: 1em;
+}
+
+/* Casilla en la esquina: visible al pasar o si está seleccionado */
+.archivos-tile__check {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--bs-app-theme, #00acac);
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+
+.archivos-tile:hover .archivos-tile__check,
+.archivos-tile.is-seleccionado .archivos-tile__check {
+  opacity: 1;
+}
+
+.archivos-cuadricula__vacio {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 3rem 1rem;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.archivos-cuadricula__vacio i {
+  font-size: 2rem;
+  opacity: .5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archivos-tile,
+  .archivos-tile__check {
+    transition: none;
+  }
+}
