@@ -92,6 +92,18 @@ export class ArchivoService {
     });
   }
 
+  /**
+   * Uno o varios elementos (carpetas con su estructura) en un .zip, como
+   * blob con el token. Cabeceras X-Zip-* con el resumen (ficheros, enlaces,
+   * omitidos por proteger_url).
+   */
+  descargarZip(ids: number[]): Observable<HttpResponse<Blob>> {
+    return this._http.post(this.URL_SERVICIOS + 'descargarZip', { ids }, {
+      responseType: 'blob',
+      observe: 'response'
+    });
+  }
+
   // Papelera de reciclaje (borrado lógico en el back)
   /** Espacio que ocupan las subidas y disco libre/total (pie del árbol). */
   almacenamiento(): Observable<any>     { return this._http.get(this.URL_SERVICIOS + 'almacenamiento'); }

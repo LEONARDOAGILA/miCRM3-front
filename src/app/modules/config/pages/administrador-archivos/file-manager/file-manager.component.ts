@@ -1102,6 +1102,85 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ================================================================
+  // DESCARGAR .ZIP
+  // ================================================================
+
+  /** true mientras el servidor arma el zip y el navegador lo recibe. */
+  descargandoZip = false;
+
+  /** Hay algo seleccionado que pueda ir en un zip (carpeta, fichero no protegido o enlace no protegido). */
+  get puedeDescargar(): boolean {
+    const lote = this.hayVarios ? this.seleccion : (this.objetivo ? [this.objetivo] : []);
+    return lote.some(e => e.escarpeta || (!e.proteger_url && !!e.url));
+  }
+
+  /**
+   * Descarga el lote (o el objetivo) como .zip: el back lo arma con las
+   * carpetas como rutas, los ficheros subidos tal cual y los enlaces como
+   * accesos directos .url; los protegidos (proteger_url) se omiten y se
+   * avisa. El fichero llega como blob con el token y se guarda desde
+   * memoria (misma técnica que Descargar en el visor).
+   */
+  async descargarZip(lote?: FileTreeNode[]): Promise<void> {
+    if (this.descargandoZip || this._seguridadService.isexpired()) { return; }
+    const elementos = lote ?? (this.hayVarios ? this.seleccion : (this.objetivo ? [this.objetivo] : []));
+    if (!elementos.length) { return; }
+
+    this.descargandoZip = true;
+    this._loadingService.setLoading(true);
+    try {
+      const resp = await firstValueFrom(this._archivoService.descargarZip(elementos.map(e => e.id)));
+      if (!resp.body) { return; }
+
+      const enlace = document.createElement('a');
+      const urlBlob = URL.createObjectURL(resp.body);
+      enlace.href = urlBlob;
+      enlace.download = this.nombreDescargaZip(resp.headers.get('Content-Disposition'), elementos);
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      setTimeout(() => URL.revokeObjectURL(urlBlob), 1000);
+
+      const ficheros = Number(resp.headers.get('X-Zip-Ficheros') ?? 0);
+      const enlaces  = Number(resp.headers.get('X-Zip-Enlaces') ?? 0);
+      const omitidos = Number(resp.headers.get('X-Zip-Omitidos') ?? 0);
+      const partes = [];
+      if (ficheros) { partes.push(`${ficheros} ${ficheros === 1 ? 'fichero' : 'ficheros'}`); }
+      if (enlaces)  { partes.push(`${enlaces} ${enlaces === 1 ? 'enlace' : 'enlaces'}`); }
+      const resumen = partes.length ? `Zip con ${partes.join(' y ')}` : 'Zip generado';
+      if (omitidos) {
+        this._toastr.warning(`${resumen}. Se omitieron ${omitidos} ${omitidos === 1 ? 'elemento protegido' : 'elementos protegidos'} (URL protegida).`, 'Descarga', { timeOut: 8000, closeButton: true });
+      } else {
+        this._toastr.success(resumen, 'Descarga', { closeButton: true });
+      }
+    } catch (e: any) {
+      // El interceptor ya avisó del error HTTP; con responseType blob el
+      // mensaje del back viene dentro del blob, así que se muestra aquí
+      if (e?.error instanceof Blob) {
+        try {
+          const cuerpo = JSON.parse(await e.error.text());
+          this._toastr.error(cuerpo?.message || 'No se pudo generar el zip', 'Descarga', { closeButton: true });
+        } catch { /* nada más que decir */ }
+      }
+      console.error('Error al descargar el zip:', e);
+    } finally {
+      this.descargandoZip = false;
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /** Nombre del zip: el que manda el back en Content-Disposition; si no llega, uno razonable. */
+  private nombreDescargaZip(disposition: string | null, elementos: FileTreeNode[]): string {
+    const utf8 = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    if (utf8) { try { return decodeURIComponent(utf8); } catch { /* cae al siguiente */ } }
+    const plano = disposition?.match(/filename="?([^";]+)"?/i)?.[1];
+    if (plano) { return plano; }
+    return elementos.length === 1 && elementos[0].escarpeta
+      ? `${elementos[0].nombre}.zip`
+      : 'archivos.zip';
+  }
+
   /**
    * "Mover a la raíz" del menú contextual: saca el elemento (o el lote) del
    * árbol y lo deja en el primer nivel; una carpeta pasa a ser UNIDAD con

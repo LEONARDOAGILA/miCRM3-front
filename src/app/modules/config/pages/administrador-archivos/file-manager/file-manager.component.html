@@ -98,6 +98,14 @@
         </button>
 
         <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeDescargar || descargandoZip"
+                [title]="hayVarios ? 'Descargar los ' + seleccion.length + ' elementos seleccionados en un .zip' : (objetivo ? 'Descargar «' + objetivo?.nombre + '» como .zip' : 'Seleccione un elemento')"
+                (click)="descargarZip()">
+          <i class="fa archivos-btn__icono text-primary" [ngClass]="descargandoZip ? 'fa-spinner fa-spin' : 'fa-file-zipper'"></i>
+          <span class="archivos-btn__texto">Descargar</span>
+        </button>
+
+        <button type="button" class="btn btn-sm archivos-btn"
                 [disabled]="!puedeEliminar"
                 [title]="hayVarios ? 'Enviar los ' + seleccion.length + ' elementos seleccionados a la papelera' : (puedeEliminar ? 'Eliminar «' + objetivo?.nombre + '»' : 'Seleccione un elemento')"
                 (click)="eliminar()">
@@ -434,6 +442,10 @@
           <span class="menu-ctx__detalle">quedan como unidades</span>
         </button>
       }
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); descargarZip(menuCtx.lote)">
+        <i class="fa fa-file-zipper fa-fw text-primary"></i> Descargar .zip
+        <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} elementos</span>
+      </button>
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminar()">
         <i class="fa fa-trash fa-fw"></i> Eliminar
         <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} elementos</span>
@@ -499,6 +511,10 @@
           <span class="menu-ctx__detalle">{{ el.escarpeta ? 'queda como unidad' : 'con sus datos' }}</span>
         </button>
       }
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); descargarZip([el])">
+        <i class="fa fa-file-zipper fa-fw text-primary"></i> Descargar .zip
+        <span class="menu-ctx__detalle">{{ el.escarpeta ? 'con su contenido' : '' }}</span>
+      </button>
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminar(el)">
         <i class="fa fa-trash fa-fw"></i> Eliminar
       </button>

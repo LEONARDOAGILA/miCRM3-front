@@ -154,7 +154,7 @@ export class PapeleraComponent implements OnInit, OnDestroy {
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         suppressMenu: true, sortable: false, filter: false, resizable: false
       },
-      { headerName: 'Nombre', field: 'nombre', flex: 2, minWidth: 160, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Nombre', field: 'nombre', width: 240, cellStyle: { textAlign: 'left' } },
       {
         headerName: 'Tipo', field: 'escarpeta', width: 100, maxWidth: 110,
         valueGetter: p => p.data?.escarpeta ? 'Carpeta' : 'Archivo',
@@ -167,7 +167,7 @@ export class PapeleraComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'right' }
       },
       {
-        headerName: 'Estaba en', field: 'ruta', flex: 2, minWidth: 160,
+        headerName: 'Estaba en', field: 'ruta', width: 260,
         headerTooltip: 'Carpeta a la que volverá al restaurarlo',
         cellStyle: { textAlign: 'left' }
       },
@@ -181,7 +181,7 @@ export class PapeleraComponent implements OnInit, OnDestroy {
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
     this.gridApi.setRowData(this.items);
-    this._appAgGridService.ajustarTamanoGrid(this.gridApi);
+    // Sin sizeColumnsToFit: columnas de ancho fijo; si no caben, scroll horizontal
   }
 
   onCellClicked(e: CellClickedEvent): void {
