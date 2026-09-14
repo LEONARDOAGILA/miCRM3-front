@@ -428,6 +428,12 @@
         <i class="fa fa-arrows-up-down-left-right fa-fw text-warning"></i> Mover a…
         <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} elementos</span>
       </button>
+      @if (algunoFueraDeRaiz(menuCtx.lote)) {
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); moverARaiz(menuCtx.lote)">
+          <i class="fa fa-house fa-fw text-primary"></i> Mover a la raíz
+          <span class="menu-ctx__detalle">quedan como unidades</span>
+        </button>
+      }
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminar()">
         <i class="fa fa-trash fa-fw"></i> Eliminar
         <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} elementos</span>
@@ -487,6 +493,12 @@
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); mover(el)">
         <i class="fa fa-arrows-up-down-left-right fa-fw text-warning"></i> Mover a…
       </button>
+      @if (el.padre) {
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); moverARaiz([el])">
+          <i class="fa fa-house fa-fw text-primary"></i> Mover a la raíz
+          <span class="menu-ctx__detalle">{{ el.escarpeta ? 'queda como unidad' : 'con sus datos' }}</span>
+        </button>
+      }
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminar(el)">
         <i class="fa fa-trash fa-fw"></i> Eliminar
       </button>

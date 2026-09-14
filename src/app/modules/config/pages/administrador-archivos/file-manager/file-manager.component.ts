@@ -1102,6 +1102,34 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * "Mover a la raíz" del menú contextual: saca el elemento (o el lote) del
+   * árbol y lo deja en el primer nivel; una carpeta pasa a ser UNIDAD con
+   * todo su contenido. Va con confirmación porque cambia la estructura.
+   */
+  async moverARaiz(lote: FileTreeNode[]): Promise<void> {
+    const aMover = lote.filter(e => e.padre != null);
+    if (!aMover.length) { return; }
+    const nombres = aMover.length === 1 ? `«${aMover[0].nombre}»` : `${aMover.length} elementos`;
+    const { isConfirmed } = await Swal.fire({
+      title: `¿Mover ${nombres} a la raíz?`,
+      text: aMover.some(e => e.escarpeta)
+        ? 'Las carpetas pasan a ser unidades de primer nivel, con todo su contenido.'
+        : 'Quedará en el primer nivel, fuera de cualquier carpeta.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, mover a la raíz',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    });
+    if (isConfirmed) { await this.moverA(aMover, null); }
+  }
+
+  /** Para el menú contextual: hay algo en el lote que no está ya en la raíz. */
+  algunoFueraDeRaiz(lote: FileTreeNode[]): boolean {
+    return lote.some(e => e.padre != null);
+  }
+
   /** true si `id` es el propio elemento o cuelga de él (moverlo ahí crearía un ciclo). */
   private estaDentroDe(id: number, elemento: FileTreeNode): boolean {
     const completo = this.buscarPorId(this.nodes, elemento.id) ?? elemento;
