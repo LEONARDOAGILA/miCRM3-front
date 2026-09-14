@@ -74,7 +74,7 @@
 
       <div class="archivos-toolbar__grupo">
         <button type="button" class="btn btn-sm archivos-btn"
-                [disabled]="!puedeEjecutar"
+                [disabled]="!puedeEjecutar || hayVarios"
                 [title]="puedeEjecutar ? 'Abrir «' + filaSeleccionada?.nombre + '»' : 'Seleccione un archivo en la lista'"
                 (click)="ejecutar()">
           <i class="fa fa-play archivos-btn__icono text-success"></i>
@@ -82,7 +82,7 @@
         </button>
 
         <button type="button" class="btn btn-sm archivos-btn"
-                [disabled]="!puedeEditar"
+                [disabled]="!puedeEditar || hayVarios"
                 [title]="puedeEditar ? 'Modificar «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
                 (click)="editar()">
           <i class="fa fa-pen-to-square archivos-btn__icono text-info"></i>
@@ -91,7 +91,7 @@
 
         <button type="button" class="btn btn-sm archivos-btn"
                 [disabled]="!puedeEditar"
-                [title]="puedeEditar ? 'Mover «' + objetivo?.nombre + '» a otra carpeta' : 'Seleccione un elemento'"
+                [title]="hayVarios ? 'Mover los ' + seleccion.length + ' elementos seleccionados' : (puedeEditar ? 'Mover «' + objetivo?.nombre + '» a otra carpeta' : 'Seleccione un elemento')"
                 (click)="mover()">
           <i class="fa fa-arrows-up-down-left-right archivos-btn__icono text-warning"></i>
           <span class="archivos-btn__texto">Mover</span>
@@ -99,14 +99,14 @@
 
         <button type="button" class="btn btn-sm archivos-btn"
                 [disabled]="!puedeEliminar"
-                [title]="puedeEliminar ? 'Eliminar «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
+                [title]="hayVarios ? 'Enviar los ' + seleccion.length + ' elementos seleccionados a la papelera' : (puedeEliminar ? 'Eliminar «' + objetivo?.nombre + '»' : 'Seleccione un elemento')"
                 (click)="eliminar()">
           <i class="fa fa-trash archivos-btn__icono text-danger"></i>
           <span class="archivos-btn__texto">Eliminar</span>
         </button>
 
         <button type="button" class="btn btn-sm archivos-btn"
-                [disabled]="!objetivo"
+                [disabled]="!objetivo || hayVarios"
                 [title]="objetivo ? 'Historial de cambios de «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
                 (click)="auditoria()">
           <i class="fa fa-user-secret archivos-btn__icono text-secondary"></i>
@@ -115,7 +115,16 @@
       </div>
 
       <!-- Qué elemento recibirá las acciones, para que no haya duda -->
-      @if (objetivo) {
+      @if (hayVarios) {
+        <div class="archivos-toolbar__objetivo archivos-toolbar__objetivo--varios"
+             [title]="'Mover y Eliminar se aplican a los ' + seleccion.length + ' elementos seleccionados (Ctrl+clic / Mayús+clic para elegir)'">
+          <i class="fa fa-fw fa-layer-group"></i>
+          <span class="text-truncate">{{ seleccion.length }} seleccionados</span>
+          <button type="button" class="archivos-toolbar__quitar" title="Quitar selección" (click)="limpiarSeleccion()">
+            <i class="fa fa-xmark"></i>
+          </button>
+        </div>
+      } @else if (objetivo) {
         <div class="archivos-toolbar__objetivo" [title]="'Las acciones se aplican a este elemento'">
           <i class="fa fa-fw" [ngClass]="objetivo.escarpeta ? 'fa-folder' : 'fa-file'"></i>
           <span class="text-truncate">{{ objetivo.nombre }}</span>
@@ -358,7 +367,10 @@
             [headerHeight]="_appAgGridService.headerHeight"
             [localeText]="_appAgGridService.localeText"
             [rowClassRules]="rowClassRules"
-            [rowSelection]="'single'"
+            [rowSelection]="'multiple'"
+            [rowMultiSelectWithClick]="false"
+            [suppressRowClickSelection]="false"
+            (selectionChanged)="onSelectionChanged()"
             [pagination]="false"
             [animateRows]="true"
             [overlayNoRowsTemplate]="carpetaActual ? '<span>Esta carpeta está vacía</span>' : '<span>No hay carpetas en la raíz</span>'"
@@ -405,8 +417,27 @@
        (click)="$event.stopPropagation()"
        (contextmenu)="$event.preventDefault()">
 
-    <!-- Cabecera: sobre qué elemento actúa -->
-    @if (menuCtx.elemento; as el) {
+    <!-- Cabecera: sobre qué elemento actúa. Con varios seleccionados (clic
+         derecho sobre uno de ellos) Mover y Eliminar van sobre todos. -->
+    @if (menuCtx.lote.length > 1) {
+      <div class="menu-ctx__cabecera">
+        <i class="fa fa-fw fa-layer-group text-primary"></i>
+        <span class="text-truncate">{{ menuCtx.lote.length }} elementos seleccionados</span>
+      </div>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); mover()">
+        <i class="fa fa-arrows-up-down-left-right fa-fw text-warning"></i> Mover a…
+        <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} elementos</span>
+      </button>
+      <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminar()">
+        <i class="fa fa-trash fa-fw"></i> Eliminar
+        <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} elementos</span>
+      </button>
+      <div class="menu-ctx__sep"></div>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); limpiarSeleccion()">
+        <i class="fa fa-xmark fa-fw text-secondary"></i> Quitar selección
+      </button>
+    } @else if (menuCtx.elemento) {
+      @if (menuCtx.elemento; as el) {
       <div class="menu-ctx__cabecera">
         <i class="fa fa-fw" [ngClass]="el.escarpeta ? 'fa-folder' : 'fa-file'" [style.color]="el.color"></i>
         <span class="text-truncate">{{ el.nombre }}</span>
@@ -422,6 +453,7 @@
         </button>
       }
       <div class="menu-ctx__sep"></div>
+      }
     } @else {
       <div class="menu-ctx__cabecera menu-ctx__cabecera--vacio">
         <i class="fa fa-fw" [ngClass]="menuCtx.dentroDe ? 'fa-folder-open' : 'fa-house'"></i>
@@ -429,8 +461,8 @@
       </div>
     }
 
-    <!-- Crear -->
-    @if (menuCtx.dentroDe; as carpeta) {
+    <!-- Crear (no con varios seleccionados) -->
+    @if (menuCtx.lote.length <= 1 && menuCtx.dentroDe; as carpeta) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevaCarpeta(carpeta)">
         <i class="fa fa-folder-plus fa-fw text-warning"></i> Nueva carpeta
         <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
@@ -440,14 +472,14 @@
         <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
       </button>
     }
-    @if (!menuCtx.elemento || menuCtx.origen === 'arbol') {
+    @if (menuCtx.lote.length <= 1 && (!menuCtx.elemento || menuCtx.origen === 'arbol')) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevaRaiz()">
         <i class="fa fa-folder-plus fa-fw text-warning"></i> Nueva raíz
       </button>
     }
 
     <!-- Sobre el elemento -->
-    @if (menuCtx.elemento; as el) {
+    @if (menuCtx.lote.length <= 1 && menuCtx.elemento; as el) {
       <div class="menu-ctx__sep"></div>
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); editar(el)">
         <i class="fa fa-pen-to-square fa-fw text-info"></i> Modificar
@@ -462,7 +494,7 @@
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); auditoria(el)">
         <i class="fa fa-user-secret fa-fw text-secondary"></i> Auditoría
       </button>
-    } @else {
+    } @else if (menuCtx.lote.length <= 1) {
       <div class="menu-ctx__sep"></div>
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); refresh()">
         <i class="fa fa-arrows-rotate fa-fw text-secondary"></i> Recargar

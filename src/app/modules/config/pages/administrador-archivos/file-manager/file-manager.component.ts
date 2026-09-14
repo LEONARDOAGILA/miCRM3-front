@@ -4,6 +4,7 @@ import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
+import Swal from 'sweetalert2';
 
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { AppSettings } from '../../../../../service/app-settings.service';
@@ -90,7 +91,13 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   // ---------- Selección ----------
   carpetaActual: FileTreeNode | null = null;
+  /** Última fila pulsada: objetivo de las acciones de uno en uno (ejecutar, editar…). */
   filaSeleccionada: FileTreeNode | null = null;
+  /**
+   * Todas las filas marcadas en la grilla (Ctrl+clic / Mayús+clic / casilla).
+   * Con más de una, Mover y Eliminar actúan sobre el lote.
+   */
+  seleccion: FileTreeNode[] = [];
   /** Elementos de la carpeta actual: lo que ve la grilla. */
   contenido: FileTreeNode[] = [];
   /** Ruta desde la raíz hasta la carpeta actual, para la barra de ubicación. */
@@ -128,7 +135,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
    * (viene del árbol o de la grilla); las banderas sólo pintan el destino.
    */
   dnd = {
-    elemento: null as FileTreeNode | null,
+    /** Lo que se arrastra: la selección múltiple si se cogió una fila de ella, o el elemento solo. */
+    elementos: [] as FileTreeNode[],
     sobreRaizArbol: false,
     sobreFondoGrilla: false,
   };
@@ -166,7 +174,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     y: 0,
     elemento: null as FileTreeNode | null,
     dentroDe: null as FileTreeNode | null,
-    origen: 'grilla' as 'grilla' | 'arbol'
+    origen: 'grilla' as 'grilla' | 'arbol',
+    /** Elementos sobre los que actúa: la selección múltiple si el clic cayó en ella, o el elemento solo. */
+    lote: [] as FileTreeNode[],
   };
   @ViewChild('menuCtxEl') menuCtxEl?: ElementRef<HTMLElement>;
 
@@ -229,9 +239,10 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       const idx = Number(fila.getAttribute('row-index'));
       const nodoGrilla = this.gridApi?.getDisplayedRowAtIndex(idx);
       elemento = (nodoGrilla?.data as FileTreeNode) ?? null;
-      // Como en Windows: el clic derecho también selecciona la fila
+      // Como en Windows: el clic derecho también selecciona la fila, salvo
+      // que ya forme parte de la selección múltiple (entonces se conserva)
       if (nodoGrilla) {
-        nodoGrilla.setSelected(true, true);
+        if (!nodoGrilla.isSelected()) { nodoGrilla.setSelected(true, true); }
         this.filaSeleccionada = elemento;
         if (elemento) { this.marcarEnArbol(elemento); }
       }
@@ -262,7 +273,10 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       y: e.clientY,
       elemento,
       dentroDe: elemento?.escarpeta ? elemento : this.carpetaActual,
-      origen
+      origen,
+      // Sólo en la grilla: si el clic derecho cayó sobre una fila de la
+      // selección múltiple, el menú va sobre todas
+      lote: origen === 'grilla' && elemento ? this.loteDe(elemento) : (elemento ? [elemento] : []),
     };
 
     // Ya pintado: si se sale de la ventana, se recoloca hacia dentro
@@ -647,7 +661,12 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       {
         headerName: 'Nombre',
         field: 'nombre',
-        width: 260,
+        width: 280,
+        // Casilla por fila y en la cabecera (todas las visibles): multiselección
+        // también con el ratón/táctil, sin Ctrl ni Mayús
+        checkboxSelection: true,
+        headerCheckboxSelection: true,
+        headerCheckboxSelectionFilteredOnly: true,
         cellStyle: { textAlign: 'left' },
         filter: 'agTextColumnFilter',
         // Arrastre nativo (HTML5) desde esta celda: así se puede soltar en el
@@ -800,6 +819,38 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.marcarEnArbol(this.filaSeleccionada);
   }
 
+  /**
+   * La selección de la grilla cambió (clic, Ctrl+clic, Mayús+clic, casillas).
+   * ag-Grid lleva la selección múltiple como Windows: clic normal = sólo esa
+   * fila; Ctrl = añade/quita; Mayús = rango; la casilla de la cabecera = todas.
+   */
+  onSelectionChanged(): void {
+    this.seleccion = (this.gridApi?.getSelectedRows() ?? []) as FileTreeNode[];
+    if (!this.seleccion.length) {
+      this.filaSeleccionada = null;
+    } else if (!this.filaSeleccionada || !this.seleccion.some(s => s.id === this.filaSeleccionada!.id)) {
+      // La última pulsada ya no está marcada: el objetivo pasa a ser la última de la selección
+      this.filaSeleccionada = this.seleccion[this.seleccion.length - 1];
+    }
+  }
+
+  /** Más de una fila marcada: Mover y Eliminar actúan sobre el lote. */
+  get hayVarios(): boolean { return this.seleccion.length > 1; }
+
+  limpiarSeleccion(): void {
+    this.gridApi?.deselectAll();
+    this.seleccion = [];
+    this.filaSeleccionada = null;
+  }
+
+  /**
+   * Elementos sobre los que actúa una acción pedida para `el`: si hay
+   * selección múltiple y `el` forma parte de ella, todos; si no, sólo `el`.
+   */
+  private loteDe(el: FileTreeNode): FileTreeNode[] {
+    return this.hayVarios && this.seleccion.some(s => s.id === el.id) ? [...this.seleccion] : [el];
+  }
+
   /** Doble clic: entrar en la carpeta, o ejecutar el archivo. */
   onCellDoubleClicked(event: CellClickedEvent): void {
     const node = event.data as FileTreeNode;
@@ -885,8 +936,18 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.alCerrar(modalRef, () => this.loaddata());
   }
 
+  /**
+   * Eliminar (a la papelera). Con varios seleccionados y el objetivo entre
+   * ellos, va el lote entero con una confirmación; si no, el modal de uno.
+   */
   eliminar(objetivo: FileTreeNode | null = this.objetivo): void {
     if (!objetivo || this._seguridadService.isexpired()) { return; }
+
+    const lote = this.loteDe(objetivo);
+    if (lote.length > 1) {
+      this.eliminarVarios(lote);
+      return;
+    }
 
     const modalRef = this.modal.open(DeleteFileComponent, {
       centered: true,
@@ -942,11 +1003,53 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   // del árbol (= raíz) o el fondo de la grilla (= carpeta actual). Todo
   // termina en moverA(), que valida y llama al back.
 
-  /** Abre el modal con el árbol de carpetas para elegir el destino. */
+  /** Varios a la papelera de una vez, con confirmación (SweetAlert, como en la papelera). */
+  private async eliminarVarios(lote: FileTreeNode[]): Promise<void> {
+    const carpetas = lote.filter(e => e.escarpeta).length;
+    const detalle = carpetas
+      ? ` (${carpetas} ${carpetas === 1 ? 'carpeta' : 'carpetas'} con todo su contenido)`
+      : '';
+    const { isConfirmed } = await Swal.fire({
+      title: `¿Enviar ${lote.length} elementos a la papelera?`,
+      html: `<div class="text-start small">${lote.slice(0, 8).map(e => `• ${this.escapeHtml(e.nombre)}`).join('<br>')}`
+          + (lote.length > 8 ? `<br>… y ${lote.length - 8} más` : '') + `</div>`
+          + `<p class="mt-2 mb-0 small text-muted">Podrás restaurarlos desde la papelera${detalle}.</p>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, enviar a la papelera',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+      reverseButtons: true,
+    });
+    if (!isConfirmed) { return; }
+
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(this._archivoService.eliminarArchivos(lote.map(e => e.id)));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudieron eliminar', 'Eliminar');
+        return;
+      }
+      this._toastr.success(res.message, 'Papelera', { closeButton: true });
+      // Si entre lo borrado está la carpeta abierta, loaddata() sube a la raíz
+      if (this.carpetaActual && lote.some(e => e.id === this.carpetaActual!.id)) { this.carpetaActual = null; }
+      this.limpiarSeleccion();
+      this.loaddata();
+    } catch (e) {
+      console.error('Error al eliminar varios:', e);   // el interceptor ya avisó
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /**
+   * Abre el modal con el árbol de carpetas para elegir el destino. Con
+   * varios seleccionados (y el objetivo entre ellos) se mueven todos.
+   */
   mover(objetivo: FileTreeNode | null = this.objetivo): void {
     if (!objetivo || this._seguridadService.isexpired()) { return; }
-    // El elemento del árbol trae `children`: el modal bloquea su propio subárbol
-    const elemento = this.buscarPorId(this.nodes, objetivo.id) ?? objetivo;
+    // Los elementos del árbol traen `children`: el modal bloquea sus subárboles
+    const lote = this.loteDe(objetivo).map(e => this.buscarPorId(this.nodes, e.id) ?? e);
 
     const modalRef = this.modal.open(MoverArchivoComponent, {
       centered: true,
@@ -954,39 +1057,44 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       backdrop: 'static',
       keyboard: true
     });
-    modalRef.componentInstance.elemento = elemento;
+    modalRef.componentInstance.elemento = lote[0];
+    modalRef.componentInstance.elementos = lote.length > 1 ? lote : [];
     modalRef.componentInstance.arbol = this.nodes;
-    this.escucharModal(modalRef, modalRef.componentInstance.movido, () => this.trasMover(elemento));
+    this.escucharModal(modalRef, modalRef.componentInstance.movido, () => this.trasMover());
   }
 
   /**
-   * Mueve `elemento` dentro de `destino` (null = raíz) tras comprobar lo
-   * que se puede comprobar aquí; el back repite las comprobaciones.
+   * Mueve `lote` dentro de `destino` (null = raíz) tras comprobar lo que se
+   * puede comprobar aquí; el back repite las comprobaciones. Uno solo →
+   * moverArchivo; varios → moverArchivos (una transacción).
    */
-  private async moverA(elemento: FileTreeNode, destino: FileTreeNode | null): Promise<void> {
-    if (this._seguridadService.isexpired()) { return; }
+  private async moverA(lote: FileTreeNode[], destino: FileTreeNode | null): Promise<void> {
+    if (!lote.length || this._seguridadService.isexpired()) { return; }
     const padreNuevo = destino?.id ?? null;
-    const padreActual = elemento.padre ?? null;
 
-    if (padreNuevo === padreActual) { return; }   // ya está ahí
     if (destino && !destino.escarpeta) {
       this._toastr.warning('Sólo se puede soltar sobre una carpeta', 'Mover');
       return;
     }
-    if (destino && this.estaDentroDe(destino.id, elemento)) {
-      this._toastr.warning('No se puede mover una carpeta dentro de sí misma', 'Mover');
+    const aMover = lote.filter(e => (e.padre ?? null) !== padreNuevo);   // los que no están ya ahí
+    if (!aMover.length) { return; }
+    const conflicto = destino ? aMover.find(e => this.estaDentroDe(destino.id, e)) : undefined;
+    if (conflicto) {
+      this._toastr.warning(`«${conflicto.nombre}»: no se puede mover una carpeta dentro de sí misma`, 'Mover');
       return;
     }
 
     try {
       this._loadingService.setLoading(true);
-      const res = await firstValueFrom(this._archivoService.moverArchivo(elemento.id, padreNuevo));
+      const res = await firstValueFrom(aMover.length === 1
+        ? this._archivoService.moverArchivo(aMover[0].id, padreNuevo)
+        : this._archivoService.moverArchivos(aMover.map(e => e.id), padreNuevo));
       if (res?.status !== 'success') {
         this._toastr.error(res?.message || 'No se pudo mover', 'Mover');
         return;
       }
       this._toastr.success(res.message, 'Movido', { closeButton: true });
-      this.trasMover(elemento);
+      this.trasMover();
     } catch (e) {
       console.error('Error al mover:', e);   // el interceptor ya avisó
     } finally {
@@ -1003,8 +1111,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   /** Tras mover: si se movió la carpeta abierta, la vista sigue en ella (en su nuevo sitio). */
-  private trasMover(elemento: FileTreeNode): void {
-    this.filaSeleccionada = null;
+  private trasMover(): void {
+    this.limpiarSeleccion();
     this.loaddata();
   }
 
@@ -1012,19 +1120,19 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   /** Empieza un arrastre (desde el árbol o desde la grilla). */
   onDragStart(elemento: FileTreeNode, event: DragEvent): void {
-    this.dnd.elemento = elemento;
+    this.dnd.elementos = this.loteDe(elemento);
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
       // Por si algún día se suelta fuera de este componente
       event.dataTransfer.setData('application/x-micrm-archivo', String(elemento.id));
-      event.dataTransfer.setData('text/plain', elemento.nombre);
+      event.dataTransfer.setData('text/plain', this.dnd.elementos.map(e => e.nombre).join(', '));
     }
   }
 
   /** Fin del arrastre. A nivel de documento: el de la grilla lo dispara ag-Grid en su celda. */
   @HostListener('document:dragend')
   onDragEnd(): void {
-    this.dnd.elemento = null;
+    this.dnd.elementos = [];
     this.dnd.sobreRaizArbol = false;
     this.dnd.sobreFondoGrilla = false;
     this.quitarFilaDestino();
@@ -1033,14 +1141,14 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   /** Soltado sobre una carpeta del árbol. */
   onDropNodo(destino: FileTreeNode, event: DragEvent): void {
     event.preventDefault();
-    const elemento = this.dnd.elemento;
+    const lote = this.dnd.elementos;
     this.onDragEnd();
-    if (elemento) { this.moverA(elemento, destino); }
+    if (lote.length) { this.moverA(lote, destino); }
   }
 
   /** Fondo del árbol (fuera de los nodos): destino = raíz. */
   onDragOverArbol(event: DragEvent): void {
-    if (!this.dnd.elemento) { return; }
+    if (!this.dnd.elementos.length) { return; }
     // Si el cursor está sobre un nodo, ya lo gestiona el nodo (stopPropagation)
     event.preventDefault();
     if (event.dataTransfer) { event.dataTransfer.dropEffect = 'move'; }
@@ -1049,9 +1157,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   onDropArbol(event: DragEvent): void {
     event.preventDefault();
-    const elemento = this.dnd.elemento;
+    const lote = this.dnd.elementos;
     this.onDragEnd();
-    if (elemento) { this.moverA(elemento, null); }
+    if (lote.length) { this.moverA(lote, null); }
   }
 
   /**
@@ -1060,7 +1168,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
    * actual y se resalta la grilla entera.
    */
   onDragOverGrilla(event: DragEvent): void {
-    if (!this.dnd.elemento) { return; }
+    if (!this.dnd.elementos.length) { return; }
     event.preventDefault();
     if (event.dataTransfer) { event.dataTransfer.dropEffect = 'move'; }
 
@@ -1087,12 +1195,12 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   onDropGrilla(event: DragEvent): void {
     event.preventDefault();
-    const elemento = this.dnd.elemento;
+    const lote = this.dnd.elementos;
     const fila = this.filaCarpetaBajo(event);
     this.onDragEnd();
-    if (!elemento) { return; }
+    if (!lote.length) { return; }
     // Sobre una carpeta de la lista → dentro de ella; si no → carpeta actual (o raíz)
-    this.moverA(elemento, fila ? fila.data : this.carpetaActual);
+    this.moverA(lote, fila ? fila.data : this.carpetaActual);
   }
 
   /** Fila-carpeta de la grilla bajo el cursor, si la hay. */

@@ -635,3 +635,37 @@
     display: none;
   }
 }
+
+/* ---------- Multiselección ---------- */
+/* Chip "N seleccionados" en la barra, con su botón para quitar la selección */
+.archivos-toolbar__objetivo--varios {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+.archivos-toolbar__quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: .25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 11px;
+  opacity: .7;
+}
+
+.archivos-toolbar__quitar:hover {
+  opacity: 1;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .2);
+}
+
+/* Casilla de selección de ag-Grid, un poco más discreta */
+:host ::ng-deep .archivos-grilla .ag-checkbox-input-wrapper {
+  font-size: 14px;
+}

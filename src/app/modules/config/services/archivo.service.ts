@@ -41,6 +41,14 @@ export class ArchivoService {
   moverArchivo(id: number, padre: number | null): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'moverArchivo/' + id, { padre: padre ?? 0 });
   }
+  /** Varios a la vez a la misma carpeta (una transacción). */
+  moverArchivos(ids: number[], padre: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'moverArchivos', { ids, padre: padre ?? 0 });
+  }
+  /** Varios a la papelera de una vez (una transacción). */
+  eliminarArchivos(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'eliminarArchivos', { ids });
+  }
   editArchivo(id: any, data: any) {    return this._http.post(this.URL_SERVICIOS + "editArchivo/" + id, data);      }
 
   /**

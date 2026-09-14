@@ -58,6 +58,8 @@ export class MoverArchivoComponent implements OnInit {
 
   /** Lo que se mueve (archivo o carpeta, con su subárbol si es carpeta). */
   @Input() elemento!: NodoMover & { padre?: number | null };
+  /** Varios a la vez (multiselección): si viene, manda sobre `elemento`. */
+  @Input() elementos: (NodoMover & { padre?: number | null })[] = [];
   /** Árbol completo del administrador (raíces con children). */
   @Input() arbol: NodoMover[] = [];
 
@@ -74,26 +76,46 @@ export class MoverArchivoComponent implements OnInit {
     private _toastr: ToastrService
   ) {}
 
+  /** Lo que de verdad se mueve: la lista, o el único elemento. */
+  get lote(): (NodoMover & { padre?: number | null })[] {
+    return this.elementos.length ? this.elementos : (this.elemento ? [this.elemento] : []);
+  }
+
+  get esLote(): boolean { return this.lote.length > 1; }
+
+  /** Todos los nombres, uno por línea (tooltip). Las plantillas no admiten arrow functions. */
+  get nombresLote(): string { return this.lote.map(e => e.nombre).join('\n'); }
+
+  /** Los tres primeros nombres y "…" si hay más. */
+  get resumenLote(): string {
+    const n = this.lote.slice(0, 3).map(e => e.nombre).join(', ');
+    return this.lote.length > 3 ? `${n}…` : n;
+  }
+
   ngOnInit(): void {
-    const bloqueados = new Set<number>(this.idsDelSubarbol(this.elemento));
-    const padreActual = this.elemento.padre ?? null;
+    if (!this.elemento && this.elementos.length) { this.elemento = this.elementos[0]; }
+    // No se puede soltar dentro de ninguno de los que se mueven ni de sus subcarpetas
+    const bloqueados = new Set<number>(this.lote.flatMap(e => this.idsDelSubarbol(e)));
+    // "Actual" sólo si todos están en la misma carpeta
+    const padres = new Set(this.lote.map(e => e.padre ?? null));
+    const padreActual = padres.size === 1 ? [...padres][0] : undefined;
 
     // Raíz como primera opción
     this.carpetas = [{
       id: null, nombre: 'Raíz', nivel: 0, icono: 'fa fa-house', color: '#727cb6',
-      ruta: 'Raíz', bloqueada: false, actual: padreActual === null,
+      ruta: 'Raíz', bloqueada: false, actual: padreActual === null,   // undefined (varios padres) → no marca
       abierta: true, tieneHijas: this.arbol.some(n => n.escarpeta), padreId: null,
     }];
     this.aplanar(this.arbol, 1, [], bloqueados, padreActual, null);
 
     // Se abre el camino hasta la carpeta actual, para verla sin buscar
-    this.abrirHasta(padreActual);
+    this.abrirHasta(padreActual ?? null);
   }
 
   // ---------- Árbol plano ----------
 
   private aplanar(nodos: NodoMover[], nivel: number, camino: string[], bloqueados: Set<number>,
-                  padreActual: number | null, padreId: number | null): void {
+                  padreActual: number | null | undefined, padreId: number | null): void {
     for (const n of nodos) {
       if (!n.escarpeta) { continue; }
       const hijas = (n.children ?? []).filter(h => h.escarpeta);
@@ -171,7 +193,9 @@ export class MoverArchivoComponent implements OnInit {
     if (!this.puedeMover) { return; }
     this.moviendo = true;
     try {
-      const res = await firstValueFrom(this._archivoService.moverArchivo(this.elemento.id, this.seleccion!.id));
+      const res = await firstValueFrom(this.esLote
+        ? this._archivoService.moverArchivos(this.lote.map(e => e.id), this.seleccion!.id)
+        : this._archivoService.moverArchivo(this.elemento.id, this.seleccion!.id));
       if (res?.status !== 'success') {
         this._toastr.error(res?.message || 'No se pudo mover', 'Mover');
         return;

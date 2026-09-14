@@ -15,21 +15,36 @@
 <div class="modal-body mover-cuerpo">
 
   <!-- Qué se mueve -->
-  <div class="mover-elemento">
-    <span class="mover-elemento__icono" [style.color]="elemento.color || (elemento.escarpeta ? '#F0B13B' : '#A6A09B')">
-      <i [ngClass]="elemento.icono || (elemento.escarpeta ? 'fa fa-folder' : 'fa fa-file')"></i>
-    </span>
-    <div class="mover-elemento__texto">
-      <span class="mover-elemento__nombre text-truncate">{{ elemento.nombre }}</span>
-      <span class="mover-elemento__ayuda">
-        @if (elemento.escarpeta) {
-          Se mueve la carpeta con todo su contenido.
-        } @else {
-          Se mueve el archivo a la carpeta que elijas.
-        }
+  @if (esLote) {
+    <!-- Varios elementos (multiselección): cuántos y sus nombres en el tooltip -->
+    <div class="mover-elemento" [title]="nombresLote">
+      <span class="mover-elemento__icono text-primary">
+        <i class="fa fa-layer-group"></i>
       </span>
+      <div class="mover-elemento__texto">
+        <span class="mover-elemento__nombre text-truncate">{{ lote.length }} elementos seleccionados</span>
+        <span class="mover-elemento__ayuda text-truncate">
+          {{ resumenLote }} — las carpetas van con todo su contenido.
+        </span>
+      </div>
     </div>
-  </div>
+  } @else {
+    <div class="mover-elemento">
+      <span class="mover-elemento__icono" [style.color]="elemento.color || (elemento.escarpeta ? '#F0B13B' : '#A6A09B')">
+        <i [ngClass]="elemento.icono || (elemento.escarpeta ? 'fa fa-folder' : 'fa fa-file')"></i>
+      </span>
+      <div class="mover-elemento__texto">
+        <span class="mover-elemento__nombre text-truncate">{{ elemento.nombre }}</span>
+        <span class="mover-elemento__ayuda">
+          @if (elemento.escarpeta) {
+            Se mueve la carpeta con todo su contenido.
+          } @else {
+            Se mueve el archivo a la carpeta que elijas.
+          }
+        </span>
+      </div>
+    </div>
+  }
 
   <!-- Buscador de carpetas -->
   <div class="mover-buscador">
