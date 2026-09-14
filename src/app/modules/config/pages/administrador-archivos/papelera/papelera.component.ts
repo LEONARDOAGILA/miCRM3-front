@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { ArchivoService } from '../../../services/archivo.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
+import { formatoTamano } from '../../../interfaces/tipoArchivo';
 
 /** Elemento en la papelera: la fila de `archivo` más la ruta donde estaba. */
 interface ItemPapelera {
@@ -18,6 +19,9 @@ interface ItemPapelera {
   icono?: string;
   color?: string;
   ruta: string;
+  /** Bytes del fichero subido; 0/null en enlaces y carpetas */
+  tamano?: number | null;
+  url?: string;
   deleted_at_formateado?: string;
 }
 
@@ -118,6 +122,18 @@ export class PapeleraComponent implements OnInit, OnDestroy {
   get numCarpetas(): number { return this.items.filter(i => i.escarpeta).length; }
   get numArchivos(): number { return this.items.length - this.numCarpetas; }
 
+  /** Bytes que siguen ocupando en disco los ficheros subidos que hay en la papelera. */
+  get bytesOcupados(): number {
+    return this.items.reduce((s, i) => s + (this.esSubida(i) ? Number(i.tamano || 0) : 0), 0);
+  }
+
+  get tamanoOcupado(): string { return formatoTamano(this.bytesOcupados); }
+
+  /** Fichero subido al servidor (los enlaces y carpetas no ocupan disco). */
+  private esSubida(i: ItemPapelera): boolean {
+    return !i.escarpeta && !!i.url && i.url.startsWith('storage/');
+  }
+
   // ================================================================
   // GRILLA
   // ================================================================
@@ -143,6 +159,12 @@ export class PapeleraComponent implements OnInit, OnDestroy {
         headerName: 'Tipo', field: 'escarpeta', width: 100, maxWidth: 110,
         valueGetter: p => p.data?.escarpeta ? 'Carpeta' : 'Archivo',
         cellStyle: { textAlign: 'center' }
+      },
+      {
+        headerName: 'Tamaño', field: 'tamano', width: 90, maxWidth: 100,
+        headerTooltip: 'Espacio que sigue ocupando en el servidor hasta borrarlo definitivamente',
+        valueGetter: p => this.esSubida(p.data) ? formatoTamano(Number(p.data.tamano || 0)) : '',
+        cellStyle: { textAlign: 'right' }
       },
       {
         headerName: 'Estaba en', field: 'ruta', flex: 2, minWidth: 160,
@@ -243,7 +265,9 @@ export class PapeleraComponent implements OnInit, OnDestroy {
 
     const confirmado = await this.confirmar(
       '¿Vaciar la papelera?',
-      `Se borrarán de forma permanente ${this.items.length} ${this.items.length === 1 ? 'elemento' : 'elementos'}. Esta acción no se puede deshacer.`
+      `Se borrarán de forma permanente ${this.items.length} ${this.items.length === 1 ? 'elemento' : 'elementos'}`
+      + (this.bytesOcupados > 0 ? ` y se liberarán ${this.tamanoOcupado} en el servidor` : '')
+      + '. Esta acción no se puede deshacer.'
     );
     if (!confirmado) { return; }
 

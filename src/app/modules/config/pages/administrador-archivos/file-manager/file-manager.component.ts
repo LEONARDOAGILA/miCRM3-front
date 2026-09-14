@@ -111,6 +111,17 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   /** Id del input de búsqueda (app-campoBusqueda), para leerlo y limpiarlo. */
   readonly idBuscador = 'filter-archivos';
 
+  // ---------- Ancho del lateral (divisor arrastrable) ----------
+  /** Ancho por defecto del tema (--bs-file-manager-sidebar-width = 250px). */
+  readonly ANCHO_LATERAL_DEFECTO = 250;
+  private readonly ANCHO_LATERAL_MIN = 180;
+  private readonly ANCHO_LATERAL_MAX = 640;
+  private readonly CLAVE_ANCHO_LATERAL = 'miCRM3.archivos.anchoLateral';
+  /** Ancho actual en px; se recuerda por navegador. */
+  anchoLateral = this.leerAnchoLateral();
+  /** true mientras se arrastra el divisor (quita transiciones y selección de texto). */
+  redimensionando = false;
+
   // ---------- Arrastrar y soltar (mover) ----------
   /**
    * Estado del arrastre en curso. `elemento` es lo que se está moviendo
@@ -127,6 +138,20 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   // ---------- Papelera ----------
   /** Elementos en la papelera, para el contador del botón. */
   public numPapelera = 0;
+
+  // ---------- Almacenamiento (pie del árbol) ----------
+  /** Lo que ocupan los ficheros subidos y el disco del servidor, ya formateado. */
+  almacen = {
+    cargando: false,
+    subidos: '—',
+    subidosPapelera: '',
+    ficheros: 0,
+    discoLibre: '',
+    discoTotal: '',
+    /** % de disco ocupado (todo el disco, no sólo las subidas) para la barra. */
+    porcentajeDisco: 0,
+    tooltip: 'Espacio que ocupan los archivos subidos. Clic para actualizar.',
+  };
 
   // ---------- Menú contextual (clic derecho) ----------
   /**
@@ -280,6 +305,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       }
       this.originalNodes = this.prepararNodos(res.data ?? []);
       this.nodes = this.clonar(this.originalNodes);
+      // Si había una búsqueda en el árbol, se vuelve a aplicar sobre los datos nuevos
+      if (this.searchQuery.trim()) { this.filterNodes(); }
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar el árbol de archivos:', error);
@@ -289,16 +316,17 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
     this.restaurarAbiertos(this.nodes, abiertas);
     this.contarPapelera();
+    this.cargarAlmacenamiento();   // pie del árbol: cambia al subir, borrar o vaciar la papelera
 
     if (idCarpeta != null) {
       const nodo = this.buscarPorId(this.nodes, idCarpeta);
       if (nodo) {
-        this.abrirCarpeta(nodo, false, true);
+        await this.abrirCarpeta(nodo, false, true);   // también recarga la grilla
         return;
       }
     }
     // Sin carpeta (arranque) o la carpeta ya no existe (borrada)
-    this.irARaiz();
+    await this.irARaiz();
   }
 
   /** Marca todos los nodos como cerrados y sin seleccionar. */
@@ -315,8 +343,61 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     return JSON.parse(JSON.stringify(nodes));
   }
 
-  refresh(): void {
-    this.loaddata();
+  /**
+   * Botones "Recargar" (barra de ubicación, menú contextual y cabecera del
+   * panel): vuelve a pedir el árbol y el contenido de la carpeta actual al
+   * servidor, más el contador de la papelera y el pie de almacenamiento.
+   * Conserva la carpeta abierta, las ramas desplegadas y el filtro escrito.
+   */
+  async refresh(): Promise<void> {
+    this.recargando = true;
+    try {
+      await this.loaddata();
+      this._toastr.info('Árbol y contenido actualizados', 'Recargar', { timeOut: 1500 });
+    } finally {
+      this.recargando = false;
+    }
+  }
+
+  /** true mientras se recarga desde el botón: velo sobre el árbol (la grilla ya tiene el suyo). */
+  recargando = false;
+
+  /**
+   * Pie del árbol: bytes de los ficheros subidos (vivos y en papelera),
+   * cuántos son, y disco libre/total del servidor. El desglose por tipo
+   * (ARCHIVO PDF: 3 · 1,2 MB…) va al tooltip.
+   */
+  async cargarAlmacenamiento(): Promise<void> {
+    if (this.almacen.cargando) { return; }
+    this.almacen.cargando = true;
+    try {
+      const res = await firstValueFrom(this._archivoService.almacenamiento());
+      if (res?.status !== 'success') { return; }
+      const d = res.data;
+      const libre = Number(d.disco?.libre ?? 0);
+      const total = Number(d.disco?.total ?? 0);
+
+      this.almacen.subidos = formatoTamano(Number(d.subidos ?? 0));
+      this.almacen.subidosPapelera = d.subidos_papelera > 0 ? formatoTamano(Number(d.subidos_papelera)) : '';
+      this.almacen.ficheros = Number(d.ficheros ?? 0);
+      this.almacen.discoLibre = total ? formatoTamano(libre) : '';
+      this.almacen.discoTotal = total ? formatoTamano(total) : '';
+      this.almacen.porcentajeDisco = total ? Math.round(100 * (total - libre) / total) : 0;
+
+      const porTipo = (d.por_tipo ?? [])
+        .map((t: any) => `${t.tipo}: ${t.unidades} · ${formatoTamano(Number(t.bytes))}`)
+        .join('\n');
+      this.almacen.tooltip =
+        `Archivos subidos: ${this.almacen.subidos} en ${this.almacen.ficheros}` +
+        (porTipo ? `\n${porTipo}` : '') +
+        `\nEnlaces: ${d.enlaces ?? 0} · Carpetas: ${d.carpetas ?? 0}` +
+        (total ? `\nDisco del servidor: ${this.almacen.discoLibre} libres de ${this.almacen.discoTotal} (${this.almacen.porcentajeDisco} % usado)` : '') +
+        `\nClic para actualizar.`;
+    } catch {
+      // el pie no merece un toast; el interceptor ya avisa si es un error HTTP
+    } finally {
+      this.almacen.cargando = false;
+    }
   }
 
   /** Cuántos elementos hay en la papelera (sólo para el contador del botón). */
@@ -364,12 +445,80 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     // evento por si el árbol quiere avisar de algo en el futuro.
   }
 
+  // ---------- Divisor: ancho del lateral ----------
+
+  /**
+   * Arrastre del divisor entre el árbol y la grilla. Se usan pointer events
+   * con captura: el propio divisor recibe los movimientos aunque el cursor
+   * se salga de él (o de la ventana), y suelta solo al levantar el botón.
+   */
+  iniciarRedimension(ev: PointerEvent): void {
+    if (ev.button !== 0) { return; }
+    ev.preventDefault();
+    const divisor = ev.currentTarget as HTMLElement;
+    const xInicial = ev.clientX;
+    const anchoInicial = this.anchoLateral;
+    this.redimensionando = true;
+    divisor.setPointerCapture(ev.pointerId);
+
+    const mover = (e: PointerEvent) => {
+      const nuevo = anchoInicial + (e.clientX - xInicial);
+      this.anchoLateral = Math.min(this.ANCHO_LATERAL_MAX, Math.max(this.ANCHO_LATERAL_MIN, Math.round(nuevo)));
+    };
+    const soltar = (e: PointerEvent) => {
+      divisor.removeEventListener('pointermove', mover);
+      divisor.removeEventListener('pointerup', soltar);
+      divisor.removeEventListener('pointercancel', soltar);
+      divisor.releasePointerCapture(e.pointerId);
+      this.redimensionando = false;
+      this.guardarAnchoLateral();
+    };
+    divisor.addEventListener('pointermove', mover);
+    divisor.addEventListener('pointerup', soltar);
+    divisor.addEventListener('pointercancel', soltar);
+  }
+
+  guardarAnchoLateral(): void {
+    try { localStorage.setItem(this.CLAVE_ANCHO_LATERAL, String(this.anchoLateral)); } catch { /* sin storage */ }
+  }
+
+  private leerAnchoLateral(): number {
+    try {
+      const v = Number(localStorage.getItem(this.CLAVE_ANCHO_LATERAL));
+      if (v >= this.ANCHO_LATERAL_MIN && v <= this.ANCHO_LATERAL_MAX) { return v; }
+    } catch { /* sin storage */ }
+    return this.ANCHO_LATERAL_DEFECTO;
+  }
+
+  /** Abre todas las ramas del árbol (el que se ve: filtrado o completo). */
+  expandirTodo(): void {
+    this.abrirCerrarTodo(this.nodes, true);
+  }
+
+  /**
+   * Cierra todas las ramas. Si hay una carpeta abierta en la grilla, se
+   * vuelve a abrir el camino hasta ella para no perderla de vista.
+   */
+  contraerTodo(): void {
+    this.abrirCerrarTodo(this.nodes, false);
+    if (this.carpetaActual) { this.abrirAncestros(this.carpetaActual); }
+  }
+
+  private abrirCerrarTodo(nodes: FileTreeNode[], abrir: boolean): void {
+    nodes.forEach(n => {
+      if (n.children?.length) {
+        n.isOpen = abrir;
+        this.abrirCerrarTodo(n.children, abrir);
+      }
+    });
+  }
+
   /**
    * Hace de `node` la carpeta actual: grilla, ruta e historial.
    * @param registrar false al restaurar tras recargar, para no duplicar
    *                  entradas en el historial.
    */
-  private abrirCarpeta(node: FileTreeNode, registrar: boolean, conservarVista = false): void {
+  private abrirCarpeta(node: FileTreeNode, registrar: boolean, conservarVista = false): Promise<void> {
     this.marcarEnArbol(node);
     this.abrirAncestros(node);
 
@@ -382,17 +531,17 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     // Tras guardar o borrar (conservarVista) se mantiene el filtro escrito;
     // al cambiar de carpeta se limpia: el filtro es de la carpeta.
     if (!conservarVista) { this.limpiarFiltroGrilla(); }
-    this.cargarContenido();
+    return this.cargarContenido();
   }
 
   /** Vista de raíz: la grilla muestra las carpetas de primer nivel. */
-  irARaiz(): void {
+  irARaiz(): Promise<void> {
     this.desmarcarTodo(this.nodes);
     this.carpetaActual = null;
     this.filaSeleccionada = null;
     this.ruta = [];
     this.limpiarFiltroGrilla();
-    this.cargarContenido();
+    return this.cargarContenido();
   }
 
   subirNivel(): void {
@@ -498,8 +647,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       {
         headerName: 'Nombre',
         field: 'nombre',
-        flex: 2,
-        minWidth: 180,
+        width: 260,
         cellStyle: { textAlign: 'left' },
         filter: 'agTextColumnFilter',
         // Arrastre nativo (HTML5) desde esta celda: así se puede soltar en el
@@ -518,8 +666,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       {
         headerName: 'Descripción',
         field: 'descripcion',
-        flex: 3,
-        minWidth: 160,
+        width: 280,
         cellStyle: { textAlign: 'left' },
         filter: 'agTextColumnFilter'
       },
@@ -643,7 +790,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
     this.gridApi.setRowData(this.contenido);
-    this._appAgGridService.ajustarTamanoGrid(this.gridApi);
+    // Sin sizeColumnsToFit: las columnas tienen ancho fijo y, si no caben,
+    // la grilla hace scroll horizontal (en vez de encoger las celdas).
   }
 
   /** Un clic marca la fila (archivo o carpeta) como objetivo de las acciones. */
@@ -664,10 +812,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     }
   }
 
-  @HostListener('window:resize')
-  onResize(): void {
-    this.gridApi?.sizeColumnsToFit();
-  }
+  /** Columnas de ancho fijo: al cambiar el tamaño no hay nada que reajustar. */
+  onResize(): void { }
 
   // ---------- Búsqueda en la grilla (quick filter de ag-Grid) ----------
 

@@ -172,3 +172,9 @@
   opacity: .45;
   cursor: not-allowed;
 }
+
+/* Espacio que ocupan los ficheros en la papelera (resumen) */
+.papelera-resumen__tamano i {
+  margin: 0 .15rem 0 .1rem;
+  color: var(--bs-warning, #f59c1a);
+}

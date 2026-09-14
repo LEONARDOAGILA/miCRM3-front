@@ -1,3 +1,15 @@
+/** "1,2 MB", "340 KB", "3,5 GB", "—" */
+export function formatoTamano(bytes?: number | null): string {
+  if (bytes == null || isNaN(bytes)) { return '—'; }
+  const KB = 1024, MB = KB * 1024, GB = MB * 1024, TB = GB * 1024;
+  const con1 = (n: number) => n.toFixed(1).replace('.', ',');
+  if (bytes < KB) { return `${Math.round(bytes)} B`; }
+  if (bytes < MB) { return `${(bytes / KB).toFixed(0)} KB`; }
+  if (bytes < GB) { return `${con1(bytes / MB)} MB`; }
+  if (bytes < TB) { return `${con1(bytes / GB)} GB`; }
+  return `${con1(bytes / TB)} TB`;
+}
+
 /**
  * Tipos de "archivo" del administrador de archivos (columna `tipo` de la
  * tabla archivo). Un enlace apunta a una url externa; el resto son ficheros
@@ -119,10 +131,3 @@ export function tipoPorExtension(nombre?: string | null): TipoArchivo {
   return categoriaDeExtension(extensionDe(nombre));
 }
 
-/** "1,2 MB", "340 KB", "—" */
-export function formatoTamano(bytes?: number | null): string {
-  if (bytes == null || isNaN(bytes)) { return '—'; }
-  if (bytes < 1024) { return `${bytes} B`; }
-  if (bytes < 1024 * 1024) { return `${(bytes / 1024).toFixed(0)} KB`; }
-  return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`;
-}

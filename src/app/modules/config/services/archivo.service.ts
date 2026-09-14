@@ -85,6 +85,8 @@ export class ArchivoService {
   }
 
   // Papelera de reciclaje (borrado lógico en el back)
+  /** Espacio que ocupan las subidas y disco libre/total (pie del árbol). */
+  almacenamiento(): Observable<any>     { return this._http.get(this.URL_SERVICIOS + 'almacenamiento'); }
   papelera(): Observable<any>           { return this._http.get(this.URL_SERVICIOS + "papelera"); }
   restaurarArchivo(id: any)             { return this._http.post(this.URL_SERVICIOS + "restaurarArchivo/" + id, {}); }
   eliminarDefinitivo(id: any)           { return this._http.delete(this.URL_SERVICIOS + "eliminarDefinitivo/" + id); }

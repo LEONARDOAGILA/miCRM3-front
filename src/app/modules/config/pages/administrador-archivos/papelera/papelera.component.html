@@ -26,6 +26,11 @@
         <b>{{ items.length }}</b> {{ items.length === 1 ? 'elemento' : 'elementos' }}
         · {{ numCarpetas }} {{ numCarpetas === 1 ? 'carpeta' : 'carpetas' }}
         · {{ numArchivos }} {{ numArchivos === 1 ? 'archivo' : 'archivos' }}
+        @if (bytesOcupados > 0) {
+          <span class="papelera-resumen__tamano" title="Espacio que siguen ocupando los ficheros subidos hasta borrarlos definitivamente">
+            · <i class="fa fa-hard-drive"></i> ocupan <b>{{ tamanoOcupado }}</b>
+          </span>
+        }
       } @else {
         La papelera está vacía
       }

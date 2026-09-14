@@ -32,7 +32,11 @@
   bodyClass="p-0 flex-1 overflow-hidden"
   panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
 
-  <div class="file-manager h-100" [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled }">
+  <!-- Ancho del lateral: variable del tema, ajustable con el divisor (se recuerda en localStorage) -->
+  <div class="file-manager h-100"
+       [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled, 'is-redimensionando': redimensionando }"
+       [style.--bs-file-manager-sidebar-width]="anchoLateral + 'px'"
+       [style.--bs-file-manager-mobile-sidebar-margin]="(-anchoLateral) + 'px'">
 
     <!-- ---------- 2a. BARRA DE HERRAMIENTAS ----------
          Dos grupos: crear (depende de la carpeta actual) y acciones sobre
@@ -135,9 +139,18 @@
           <span class="archivos-lateral__titulo">
             <i class="fa fa-folder-tree me-1"></i> Carpetas
           </span>
-          <button type="button" class="btn btn-xs btn-white" title="Ir a la raíz" (click)="irARaiz()">
-            <i class="fa fa-house"></i>
-          </button>
+          <!-- Expandir / contraer todo el árbol, y volver a la raíz -->
+          <div class="btn-group archivos-lateral__acciones" role="group" aria-label="Árbol">
+            <button type="button" class="btn btn-xs btn-white" title="Expandir todo" (click)="expandirTodo()">
+              <i class="fa fa-angles-down"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-white" title="Contraer todo" (click)="contraerTodo()">
+              <i class="fa fa-angles-up"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-white" title="Ir a la raíz" (click)="irARaiz()">
+              <i class="fa fa-house"></i>
+            </button>
+          </div>
         </div>
 
         <div class="archivos-lateral__buscador">
@@ -152,7 +165,11 @@
           }
         </div>
 
-        <div class="archivos-lateral__arbol">
+        <div class="archivos-lateral__arbol position-relative">
+          @if (recargando) {
+            <div class="loader1" role="status" aria-label="Recargando"></div>
+            <div class="overlay1" aria-hidden="true"></div>
+          }
           <ng-scrollbar class="h-100">
             <!-- (contextmenu): clic derecho en el fondo del árbol; los nodos emiten el suyo -->
             <!-- (dragover)/(drop) en el fondo: soltar fuera de un nodo = mover a la raíz -->
@@ -188,6 +205,52 @@
             </div>
           </ng-scrollbar>
         </div>
+
+        <!-- Pie: cuánto ocupan los ficheros subidos y cuánto disco queda
+             (mismo bloque "SSD Storage" de la plantilla). Se recalcula al
+             recargar; el desglose por tipo va en el tooltip. -->
+        <div class="file-manager-sidebar-footer archivos-almacen"
+             [title]="almacen.tooltip"
+             (click)="cargarAlmacenamiento()">
+          <div class="archivos-almacen__icono">
+            <i class="fa fa-hard-drive"></i>
+          </div>
+          <div class="archivos-almacen__texto">
+            <div class="archivos-almacen__titulo">
+              Almacenamiento
+              @if (almacen.cargando) { <i class="fa fa-spinner fa-spin ms-1"></i> }
+            </div>
+            <div class="progress archivos-almacen__barra" role="progressbar"
+                 [attr.aria-valuenow]="almacen.porcentajeDisco" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar progress-bar-striped"
+                   [ngClass]="almacen.porcentajeDisco >= 90 ? 'bg-danger' : (almacen.porcentajeDisco >= 75 ? 'bg-warning' : 'bg-inverse')"
+                   [style.width.%]="almacen.porcentajeDisco"></div>
+            </div>
+            <div class="archivos-almacen__linea">
+              <b>{{ almacen.subidos }}</b> en <b>{{ almacen.ficheros }}</b> {{ almacen.ficheros === 1 ? 'archivo' : 'archivos' }}
+              @if (almacen.subidosPapelera) {
+                <span class="archivos-almacen__papelera" title="Ficheros en la papelera: siguen ocupando disco">
+                  · +{{ almacen.subidosPapelera }} en papelera
+                </span>
+              }
+            </div>
+            @if (almacen.discoTotal) {
+              <div class="archivos-almacen__linea archivos-almacen__linea--disco">
+                <b>{{ almacen.discoLibre }}</b> libres de <b>{{ almacen.discoTotal }}</b>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Divisor arrastrable: cambia el ancho del lateral (sólo escritorio) -->
+      <div class="archivos-divisor"
+           role="separator"
+           aria-orientation="vertical"
+           [attr.aria-valuenow]="anchoLateral"
+           title="Arrastra para cambiar el ancho del árbol (doble clic: ancho por defecto)"
+           (pointerdown)="iniciarRedimension($event)"
+           (dblclick)="anchoLateral = ANCHO_LATERAL_DEFECTO; guardarAnchoLateral()">
       </div>
 
       <!-- ---------- 2c. CONTENIDO ---------- -->
@@ -216,6 +279,7 @@
                   [title]="numPapelera ? 'Papelera de reciclaje: ' + numPapelera + (numPapelera === 1 ? ' elemento' : ' elementos') : 'Papelera de reciclaje (vacía)'"
                   (click)="abrirPapelera()">
             <i class="fa" [ngClass]="numPapelera ? 'fa-trash-can' : 'fa-trash-can archivos-papelera--vacia'"></i>
+            <span class="archivos-ubicacion__texto ms-1">Papelera</span>
             @if (numPapelera) {
               <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger archivos-papelera__badge">
                 {{ numPapelera > 99 ? '99+' : numPapelera }}
@@ -226,6 +290,7 @@
           <nav class="archivos-ruta" aria-label="Ubicación">
             <button type="button" class="archivos-ruta__tramo" (click)="irARaiz()" title="Raíz">
               <i class="fa fa-house"></i>
+              <span class="archivos-ubicacion__texto ms-1">Raíz</span>
             </button>
             @for (tramo of ruta; track tramo.id) {
               <i class="fa fa-chevron-right archivos-ruta__sep"></i>
