@@ -16,7 +16,7 @@ import { DeleteFileComponent } from '../delete-file/deleteFile.component';
 import { PapeleraComponent } from '../papelera/papelera.component';
 import { ModalReporteExternoComponent } from '../modalReporteExterno/modalReporteExterno.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
-import { defTipo, formatoTamano } from '../../../interfaces/tipoArchivo';
+import { TIPO_CARPETA, TIPO_LINK, TIPO_UNIDAD, defTipo, extensionDe, formatoTamano, tipoArchivoDeExtension } from '../../../interfaces/tipoArchivo';
 
 /**
  * Nodo del árbol tal como lo devuelve config/archivo/getArchivoTree: la fila
@@ -25,7 +25,8 @@ import { defTipo, formatoTamano } from '../../../interfaces/tipoArchivo';
  */
 export interface FileTreeNode {
   id: number;
-  padre: number;
+  /** Carpeta que lo contiene; null en la raíz (FK autorreferencial en core.archivos) */
+  padre: number | null;
   orden: number;
   nivel: number;
   nombre: string;
@@ -40,6 +41,8 @@ export interface FileTreeNode {
   nueva_ventana?: boolean;
   /** true = no se ofrece "abrir en pestaña" ni descargar: la url no sale del visor */
   proteger_url?: boolean;
+  /** Extensión del fichero subido (xlsx, pdf…); null en enlaces y carpetas */
+  extension_archivo?: string | null;
   created_at_formateado?: string;
   updated_at_formateado?: string;
   children?: FileTreeNode[];
@@ -403,7 +406,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   // y ordena en el navegador, al instante.
 
   async cargarContenido(): Promise<void> {
-    const padre = this.carpetaActual?.id ?? 0;
+    const padre = this.carpetaActual?.id ?? 0;   // 0 → el back lo trata como raíz (padre IS NULL)
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(this._archivoService.allArchivos(padre));
@@ -507,7 +510,19 @@ export class FileManagerComponent implements OnInit, OnDestroy {
         width: 100,
         maxWidth: 110,
         // Carpeta, o el tipo de archivo (Enlace, PDF, Imagen…)
-        valueGetter: p => p.data?.escarpeta ? 'Carpeta' : defTipo(p.data?.tipo, p.data?.url).etiqueta,
+        // El valor grabado: UNIDAD, CARPETA, LINK, ARCHIVO PDF, ARCHIVO MP4…
+        // (registros antiguos sin tipo o con categoría: se muestra normalizado)
+        valueGetter: p => this.tipoMostrado(p.data),
+        cellStyle: { textAlign: 'center' },
+        filter: 'agTextColumnFilter'
+      },
+      {
+        // extension_archivo: la graba la subida (minúsculas, sin punto). Vacía en enlaces y carpetas.
+        headerName: 'Ext.',
+        field: 'extension_archivo',
+        width: 80,
+        maxWidth: 90,
+        valueGetter: p => (p.data?.extension_archivo ?? '').toUpperCase(),
         cellStyle: { textAlign: 'center' },
         filter: 'agTextColumnFilter'
       },
@@ -542,6 +557,30 @@ export class FileManagerComponent implements OnInit, OnDestroy {
         filter: false
       },
       {
+        // proteger_url: sin "abrir en pestaña" ni descarga en el visor. Sólo archivos.
+        headerName: 'URL protegida',
+        field: 'proteger_url',
+        width: 110,
+        maxWidth: 120,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: (p: any) => {
+          if (p.data?.escarpeta) { return ''; }
+          return p.value
+            ? '<span class="badge bg-teal fs-10px" title="Sólo se ve dentro del sistema"><i class="fa fa-shield-halved me-1"></i>SÍ</span>'
+            : '<span class="badge bg-secondary fs-10px" title="Se puede abrir fuera y descargar">NO</span>';
+        },
+        suppressMenu: true,
+        filter: false
+      },
+      {
+        headerName: 'Creación',
+        field: 'created_at_formateado',
+        width: 160,
+        maxWidth: 170,
+        cellStyle: { textAlign: 'center' },
+        filter: false
+      },
+      {
         headerName: 'Modificación',
         field: 'updated_at_formateado',
         width: 160,
@@ -553,6 +592,20 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   /** Icono del elemento con su color, igual en la grilla que en el árbol. */
+  /**
+   * Texto de la columna Tipo: lo grabado en `tipo` (UNIDAD, CARPETA, LINK,
+   * ARCHIVO PDF…). Los registros anteriores al formato actual (sin tipo, o
+   * con la categoría "imagen"/"pdf") se muestran ya normalizados.
+   */
+  private tipoMostrado(n: FileTreeNode | undefined): string {
+    if (!n) { return ''; }
+    if (n.escarpeta) { return n.padre ? TIPO_CARPETA : TIPO_UNIDAD; }
+    const t = String(n.tipo ?? '').trim().toUpperCase();
+    if (t.startsWith('ARCHIVO') || t === TIPO_LINK) { return t; }
+    const ext = n.extension_archivo || (n.url?.startsWith('storage/') ? extensionDe(n.url) : '');
+    return ext ? tipoArchivoDeExtension(ext) : TIPO_LINK;
+  }
+
   /** El nombre va en un cellRenderer con HTML: se escapa para que no inyecte nada. */
   private escapeHtml(texto: string): string {
     return String(texto)
@@ -723,7 +776,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       backdrop: 'static',
       keyboard: true
     });
-    modalRef.componentInstance.tablaNombre = 'archivo';
+    modalRef.componentInstance.tablaNombre = 'archivos';   // core.archivos: lo que graba el trigger en logs_cambios
     modalRef.componentInstance.registroId = objetivo.id;
   }
 

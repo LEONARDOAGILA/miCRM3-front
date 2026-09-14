@@ -57,16 +57,41 @@ export const TIPOS_ARCHIVO: DefTipoArchivo[] = [
 export const MAX_MB_ARCHIVO = 0;
 
 /**
- * Definición de un tipo, con tolerancia a registros antiguos: los que no
- * tenían `tipo` (o lo tenían en mayúsculas) eran todos enlaces.
- *
- * Si se pasa también la `url`, un registro grabado como 'otro' (o sin tipo
- * reconocible) se reclasifica por la extensión del fichero: así un .mp3
- * subido antes de que existiera el tipo audio se reproduce igual.
+ * Valores que se graban en la columna `tipo` de core.archivos:
+ *   - carpetas:  'UNIDAD' (raíz) o 'CARPETA'
+ *   - enlaces:   'LINK'
+ *   - ficheros:  'ARCHIVO <EXT>' → 'ARCHIVO PDF', 'ARCHIVO XLSX', 'ARCHIVO MP4'…
+ * Aquí (front) se trabaja con la CATEGORÍA (imagen, pdf, excel…), que sale
+ * de la extensión; estas funciones traducen en los dos sentidos.
+ */
+export const TIPO_LINK = 'LINK';
+export const TIPO_UNIDAD = 'UNIDAD';
+export const TIPO_CARPETA = 'CARPETA';
+
+/** 'ARCHIVO PDF', 'ARCHIVO MP4'… a partir de la extensión (sin punto). */
+export function tipoArchivoDeExtension(extension?: string | null): string {
+  const ext = (extension ?? '').trim().replace(/^\./, '').toUpperCase();
+  return ext ? `ARCHIVO ${ext}` : 'ARCHIVO';
+}
+
+/**
+ * Definición (categoría) de un registro a partir de su `tipo` y, si hace
+ * falta, de su `url`. Entiende todos los formatos que ha habido:
+ *   - 'ARCHIVO <EXT>' (actual): categoría por la extensión
+ *   - 'link' / 'LINK' / sin tipo (registros antiguos): enlace
+ *   - 'imagen', 'pdf', 'excel'… (categorías, formato intermedio)
+ *   - 'otro' o desconocido: se intenta por la extensión de la url
  */
 export function defTipo(tipo?: string | null, url?: string | null): DefTipoArchivo {
-  const id = (tipo ?? '').toLowerCase();
-  const def = TIPOS_ARCHIVO.find(t => t.id === id);
+  const t = (tipo ?? '').trim().toLowerCase();
+
+  // Formato actual: "ARCHIVO <EXT>"
+  if (t.startsWith('archivo')) {
+    const ext = t.slice('archivo'.length).trim();
+    if (ext) { return defTipo(categoriaDeExtension(ext)); }
+  }
+
+  const def = TIPOS_ARCHIVO.find(x => x.id === t);
   if (def && def.id !== 'otro') { return def; }
 
   if (url) {
@@ -74,6 +99,12 @@ export function defTipo(tipo?: string | null, url?: string | null): DefTipoArchi
     if (porExtension !== 'otro') { return defTipo(porExtension); }
   }
   return def ?? TIPOS_ARCHIVO[0];
+}
+
+/** Categoría (imagen, pdf, excel…) de una extensión sin punto; 'otro' si no se reconoce. */
+export function categoriaDeExtension(extension?: string | null): TipoArchivo {
+  const ext = (extension ?? '').trim().replace(/^\./, '').toLowerCase();
+  return TIPOS_ARCHIVO.find(t => t.extensiones.includes(ext))?.id ?? 'otro';
 }
 
 /** Extensión en minúsculas de un nombre de fichero ('' si no tiene). */
@@ -85,8 +116,7 @@ export function extensionDe(nombre?: string | null): string {
 
 /** Tipo que corresponde a un nombre de fichero por su extensión ('otro' si no se reconoce). */
 export function tipoPorExtension(nombre?: string | null): TipoArchivo {
-  const ext = extensionDe(nombre);
-  return TIPOS_ARCHIVO.find(t => t.extensiones.includes(ext))?.id ?? 'otro';
+  return categoriaDeExtension(extensionDe(nombre));
 }
 
 /** "1,2 MB", "340 KB", "—" */

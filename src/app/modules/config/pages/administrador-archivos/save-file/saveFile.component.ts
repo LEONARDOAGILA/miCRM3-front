@@ -13,7 +13,7 @@ import { SelectorIconosComponent } from '../../../../../components/selector-icon
 import { DropzoneComponent } from '../../../../../components/campos/dropzone/dropzone.component';
 
 import { ArchivoModel } from '../../../interfaces/archivoModel';
-import { DefTipoArchivo, MAX_MB_ARCHIVO, TipoArchivo, defTipo, extensionDe, formatoTamano, tipoPorExtension } from '../../../interfaces/tipoArchivo';
+import { DefTipoArchivo, MAX_MB_ARCHIVO, TIPO_CARPETA, TIPO_LINK, TIPO_UNIDAD, TipoArchivo, defTipo, extensionDe, formatoTamano, tipoArchivoDeExtension, tipoPorExtension } from '../../../interfaces/tipoArchivo';
 
 /** Acciones con las que se abre el modal desde el administrador de archivos. */
 type AccionArchivo = 'addNuevaRaiz' | 'addCarpeta' | 'addArchivo' | 'edit';
@@ -45,7 +45,7 @@ type ModoArchivo = 'link' | 'archivo';
 })
 export class SaveFileComponent implements OnInit, OnDestroy {
 
-  /** Carpeta padre (al crear dentro), el registro a editar, o 0 para una raíz. */
+  /** Carpeta padre (al crear dentro), el registro a editar, o null para una raíz. */
   @Input() registro_selected: any = {};
   @Input() accion: AccionArchivo;
   /** Siguiente número de orden entre los hermanos, calculado por quien abre el modal. */
@@ -215,7 +215,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
   private construirFormulario(): FormGroup {
     const esCarpeta = this.esCarpeta;
     return this.fb.group({
-      padre:       [{ value: 0, disabled: true }],
+      padre:       [{ value: null, disabled: true }],   // null = raíz (FK en core.archivos)
       nivel:       [{ value: 0, disabled: true }],
       orden:       [0, [Validators.required]],
       nombre:      ['', [Validators.required, Validators.maxLength(100)]],
@@ -242,7 +242,7 @@ export class SaveFileComponent implements OnInit, OnDestroy {
       case 'addNuevaRaiz':
         this.title = 'Nueva carpeta raíz';
         this.form.patchValue({
-          padre: 0, nivel: 0, orden: this.maxOrder2,
+          padre: null, nivel: 0, orden: this.maxOrder2,
           nombre: '', icono: 'fa fa-folder', escarpeta: true
         });
         break;
@@ -464,18 +464,18 @@ export class SaveFileComponent implements OnInit, OnDestroy {
         const subida = await this.subirFichero();
         data.url = subida.url;
         data.tamano = subida.tamano;
-        data.tipo = subida.tipo;
+        data.tipo = tipoArchivoDeExtension(subida.extension);   // 'ARCHIVO PDF', 'ARCHIVO MP4'…
         data.extension_archivo = subida.extension || null;
       }
       // Un enlace nunca lleva tamaño
       if (!this.esCarpeta && this.esEnlace) {
-        data.tipo = 'link';
+        data.tipo = TIPO_LINK;
         data.tamano = null;
         data.extension_archivo = null;
       }
-      // Las carpetas no tienen tipo ni tamaño
+      // Carpetas: tipo UNIDAD en la raíz, CARPETA dentro de otra; sin tamaño
       if (this.esCarpeta) {
-        data.tipo = null;
+        data.tipo = data.padre ? TIPO_CARPETA : TIPO_UNIDAD;
         data.nueva_ventana = false;
         data.proteger_url = false;
         data.tamano = null;

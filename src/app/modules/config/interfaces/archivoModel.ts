@@ -1,6 +1,7 @@
 export interface ArchivoModel {
   id?: number;
-  padre?: number;
+  /** Carpeta que lo contiene; null = raíz */
+  padre?: number | null;
   orden?: number;
   nivel?: number;
   nombre?: string;
