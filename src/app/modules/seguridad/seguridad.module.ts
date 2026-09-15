@@ -45,6 +45,7 @@ import { CampoClaveComponent } from '../../components/campos/campoClave/campoCla
 import { AllHorariosComponent, ButtonAccionHorario } from './pages/horarios/allHorarios/allHorarios.component';
 import { DeleteHorarioComponent } from './pages/horarios/delete-horario/delete-horario.component';
 import { ListHorariosComponent } from './pages/horarios/listHorarios/listHorarios.component';
+import { ListUsersComponent } from './pages/users/listUsers/listUsers.component';
 import { SaveHorarioComponent } from './pages/horarios/save-horario/save-horario.component';
 import { AllProfilesComponent, ButtonAccionProfile } from './pages/profiles/allProfiles/allProfiles.component';
 import { DeleteProfileComponent } from './pages/profiles/deleteProfile/deleteProfile.component';
@@ -78,6 +79,7 @@ import { Save2ProfileComponent } from './pages/profiles/save2Profile/save2Profil
 
     AllHorariosComponent,
     ListHorariosComponent,
+    ListUsersComponent,
     SaveHorarioComponent,
     DeleteHorarioComponent,
     ButtonAccionHorario,

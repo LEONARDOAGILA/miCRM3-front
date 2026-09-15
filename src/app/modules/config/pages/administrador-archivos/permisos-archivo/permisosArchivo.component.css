@@ -1,31 +1,72 @@
 /* ============================================================
-   PERMISOS DE UN ARCHIVO — pestaña "Seguridad" de Windows
-   Variables --bs-* para claro/oscuro, mismo lenguaje que el resto del
-   administrador (chips, avatares, tabla compacta).
+   PERMISOS DE UN ARCHIVO - Estilos del modal
+   Mismo lenguaje visual que save2Profile (paneles del tema, chips,
+   grilla con casillas) y allProfiles (columna ACCIONES plegable).
+   Colores por variables de Bootstrap / Color Admin: claro y oscuro.
+   El interruptor .estado-miswitch es global (scss/angular.scss).
    ============================================================ */
 
 :host {
   display: block;
 }
 
-.permisos-cuerpo {
+.perfil-modal-body {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
 }
 
-/* ---------- Cabecera: elemento + público ---------- */
-.permisos-cabecera {
+/* ============================================================
+   TARJETAS
+   ============================================================ */
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .5rem;
+}
+
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+/* ============================================================
+   CHIPS
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip-muted   { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-info    { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+.chip-warning { background-color: rgba(var(--bs-warning-rgb, 245, 156, 26), .18); color: var(--bs-warning-text-emphasis, #8a5a00); }
+
+/* ============================================================
+   DATOS DEL ELEMENTO
+   ============================================================ */
+/* Ficha: icono grande + etiqueta / nombre / ayuda (misma altura que el interruptor) */
+.elemento-ficha {
   display: flex;
   align-items: center;
   gap: .75rem;
+  min-height: 58px;
   margin-bottom: .75rem;
-  padding: .625rem .75rem;
+  padding: .5rem .75rem;
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .5rem;
   background-color: var(--bs-component-bg, #fff);
 }
 
-.permisos-cabecera__icono {
+.elemento-ficha__icono {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -35,370 +76,318 @@
   font-size: 1.5rem;
 }
 
-.permisos-cabecera__texto {
-  flex: 1 1 auto;
-  min-width: 0;
+.elemento-ficha__icono--sm {
+  width: 34px;
+  height: 34px;
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-app-theme, #00acac);
+  font-size: 1rem;
 }
 
-.permisos-cabecera__nombre {
+.elemento-ficha__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.elemento-ficha__etiqueta {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.elemento-ficha__nombre {
   font-size: 13px;
   font-weight: 600;
   color: var(--bs-body-color, #212529);
 }
 
-.permisos-cabecera__ayuda {
-  font-size: 11px;
+.elemento-ficha__ayuda {
+  font-size: 10.5px;
   color: var(--bs-secondary-color, #6c757d);
 }
 
-.permisos-publico {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .4rem .6rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .5rem;
-  cursor: pointer;
-  user-select: none;
+.estado-miswitch {
+  min-height: 58px;
+  margin-bottom: .75rem;
 }
 
-.permisos-publico.is-activo {
-  border-color: var(--bs-app-theme, #00acac);
-  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
-}
-
-.permisos-publico.is-bloqueado {
-  cursor: not-allowed;
+.estado-miswitch.is-bloqueado {
   opacity: .7;
 }
 
-.permisos-publico__icono {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: .375rem;
-  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.permisos-publico.is-activo .permisos-publico__icono {
-  background-color: var(--bs-app-theme, #00acac);
-  color: #fff;
-}
-
-.permisos-publico__texto {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-
-.permisos-publico__titulo {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--bs-body-color, #212529);
-}
-
-.permisos-publico__ayuda {
-  font-size: 10.5px;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-/* ---------- Pestañas ---------- */
-.permisos-tabs {
-  margin-bottom: .5rem;
-}
-
-.permisos-tabs .nav-link {
-  padding: .35rem .75rem;
-  font-size: 12px;
-}
-
-/* ---------- Buscador de usuarios ---------- */
-.permisos-buscador {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-bottom: .5rem;
-}
-
-.permisos-buscador > i {
-  position: absolute;
-  left: .6rem;
-  font-size: 12px;
-  color: var(--bs-app-theme, #00acac);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.permisos-buscador .form-control {
-  padding-left: 1.9rem;
-  font-size: 12px;
-}
-
-.permisos-sugerencias {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 5;
-  max-height: 240px;
-  overflow: auto;
-  margin-top: .2rem;
-  padding: .25rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .5rem;
-  background-color: var(--bs-component-bg, #fff);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .16);
-}
-
-.permisos-sugerencia {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  width: 100%;
-  padding: .35rem .5rem;
-  border: 0;
-  border-radius: .375rem;
-  background: transparent;
-  text-align: left;
-  color: var(--bs-body-color, #212529);
-}
-
-.permisos-sugerencia:hover {
-  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .10);
-}
-
-.permisos-sugerencia__texto {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.permisos-sugerencia__nombre {
-  font-size: 12px;
+.estado-miswitch__switch .form-check-label {
+  font-size: 11px;
   font-weight: 600;
 }
 
-.permisos-sugerencia__login {
-  font-size: 10.5px;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-/* ---------- Avatar con iniciales ---------- */
-.permisos-avatar {
-  flex: 0 0 auto;
-  display: inline-flex;
+/* ============================================================
+   PERMISOS (cabecera del panel, grilla, leyenda) — como save2Profile
+   ============================================================ */
+/* Barra sobre la grilla: buscador | contadores + Agregar usuario */
+.permisos-toolbar {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .16);
-  color: var(--bs-app-theme, #00acac);
-  font-size: 10.5px;
-  font-weight: 700;
-}
-
-.permisos-avatar--gris {
-  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-/* ---------- Tabla ---------- */
-.permisos-tabla-envoltorio {
-  max-height: 46vh;
-  overflow: auto;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .5rem;
-  background-color: var(--bs-component-bg, #fff);
-}
-
-.permisos-tabla {
-  margin: 0;
-  font-size: 12px;
-}
-
-.permisos-tabla thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  flex-wrap: wrap;
+  gap: .5rem .75rem;
+  padding: .5rem .875rem;
   background-color: var(--bs-component-bg, #fff);
   border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: .03em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color, #6c757d);
-  vertical-align: bottom;
 }
 
-.permisos-th-bandera,
-.permisos-td-bandera {
-  width: 62px;
-  text-align: center;
-}
-
-.permisos-th-bandera i {
-  display: block;
-  margin-bottom: .15rem;
-  font-size: 12px;
-  color: var(--bs-app-theme, #00acac);
-}
-
-.permisos-th-vence i {
-  display: block;
-  margin-bottom: .15rem;
-  color: var(--bs-app-theme, #00acac);
-}
-
-.permisos-td-usuario {
+.permisos-toolbar__derecha {
   display: flex;
   align-items: center;
   gap: .5rem;
-  min-width: 200px;
+  margin-left: auto;
 }
 
-.permisos-usuario {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.chip__sep {
+  margin: 0 .1rem;
+  opacity: .6;
 }
 
-.permisos-usuario__nombre {
-  font-weight: 600;
-  color: var(--bs-body-color, #212529);
+.permisos-buscador {
+  flex: 1 1 220px;
+  max-width: 320px;
 }
 
-.permisos-usuario__login {
-  font-size: 10.5px;
+.permisos-buscador ::ng-deep .form-control {
+  height: 32px;
+  font-size: .75rem;
+}
+
+.permisos-buscador ::ng-deep .btn {
+  padding: 0 .5rem;
+  height: 32px;
   color: var(--bs-secondary-color, #6c757d);
 }
 
-.permisos-usuario__login .badge {
-  font-size: 9px;
-  margin-left: .25rem;
-}
-
-.permisos-fila td {
-  vertical-align: middle;
-}
-
-.permisos-fila.is-cambiada td {
-  background-color: rgba(var(--bs-warning-rgb, 245, 156, 26), .08);
-}
-
-.permisos-fila.is-denegada .permisos-usuario__nombre {
-  color: var(--bs-danger, #dc3545);
-}
-
-.permisos-fila.is-caducada .permisos-usuario__nombre {
-  text-decoration: line-through;
-}
-
-.permisos-fila--heredada td {
-  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.permisos-fila--heredada .permisos-usuario__nombre {
-  color: var(--bs-secondary-color, #6c757d);
-  font-weight: 500;
-}
-
-/* Casilla-botón de cada bandera */
-.permisos-casilla {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--bs-secondary-color, #adb5bd);
-  font-size: 17px;
-  line-height: 1;
-  transition: color .1s ease, transform .1s ease;
-}
-
-.permisos-casilla:hover:not(:disabled) {
-  transform: scale(1.12);
-  color: var(--bs-app-theme, #00acac);
-}
-
-.permisos-casilla.is-si {
-  color: var(--bs-app-theme, #00acac);
-}
-
-.permisos-casilla--denegar.is-si {
-  color: var(--bs-danger, #dc3545);
-}
-
-.permisos-casilla:disabled {
-  opacity: .45;
-  cursor: not-allowed;
-}
-
-/* Marcas de sólo lectura (heredados) */
-.permisos-marca {
-  font-size: 15px;
-  color: var(--bs-secondary-color, #adb5bd);
-}
-
-.permisos-marca.fa-square-check {
-  color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .6);
-}
-
-.permisos-fecha {
-  width: 130px;
-  font-size: 11px;
-  padding: .15rem .35rem;
-}
-
-.permisos-td-acciones {
-  text-align: right;
+.permisos-agregar {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
   white-space: nowrap;
 }
 
-.permisos-td-acciones .btn {
-  padding: .15rem .45rem;
-  font-size: 11px;
+.perfil-grid {
+  height: clamp(260px, 40vh, 420px);
+  padding: .5rem;
 }
 
-.permisos-vacio {
-  padding: 1.5rem 1rem !important;
-  text-align: center;
-  font-size: 12px;
-  color: var(--bs-secondary-color, #6c757d);
+.perfil-grid--accesos {
+  height: clamp(160px, 24vh, 240px);
 }
 
-.permisos-vacio i {
-  display: block;
-  margin-bottom: .4rem;
-  font-size: 1.5rem;
-  opacity: .5;
+/* Panel expandido: el grid crece (ver explicación en save2Profile.css) */
+:host ::ng-deep .panel.panel-expand > .perfil-grid {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .panel.panel-expand > .permisos-leyenda,
+:host ::ng-deep .panel.panel-expand > .permisos-toolbar {
+  flex: 0 0 auto;
 }
 
 .permisos-leyenda {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
   gap: .4rem;
-  margin: .5rem 0 0;
-  font-size: 11px;
-  line-height: 1.4;
+  padding: .5rem .875rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  font-size: .7rem;
   color: var(--bs-secondary-color, #6c757d);
 }
 
 .permisos-leyenda i {
-  margin-top: .15rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.permisos-leyenda__ayuda {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+/* ------------------------------------------------------------
+   Grid: usuario, casillas de permiso, filas heredadas, ACCIONES
+   ::ng-deep porque las celdas las genera ag-Grid fuera de la
+   encapsulación; :host lo acota a este modal.
+   ------------------------------------------------------------ */
+:host ::ng-deep .permiso-usuario {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  line-height: 1.25;
+}
+
+:host ::ng-deep .permiso-usuario__login {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--bs-body-color, #212529);
+}
+
+:host ::ng-deep .permiso-usuario__login .badge {
+  margin-left: .3rem;
+  vertical-align: 1px;
+}
+
+:host ::ng-deep .permiso-usuario__nombre {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+:host ::ng-deep .permiso-usuario__origen {
+  font-size: 10px;
+  font-style: italic;
   color: var(--bs-app-theme, #00acac);
 }
 
-.permisos-pie {
-  padding: .625rem 1rem;
+/* Casillas de permiso dentro del grid (idénticas a save2Profile) */
+:host ::ng-deep .permiso-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+}
+
+:host ::ng-deep .permiso-check input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+  pointer-events: none; /* el clic lo gestiona la celda del grid */
+}
+
+:host ::ng-deep .permiso-check input:disabled {
+  cursor: default;
+  opacity: .5;
+}
+
+/* Denegar: la casilla marcada se pinta en rojo */
+:host ::ng-deep .permiso-check--denegar input:checked {
+  background-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger, #dc3545);
+}
+
+/* Filas heredadas: atenuadas, en cursiva el origen */
+:host ::ng-deep .ag-row.fila-heredada .ag-cell {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .035);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Filas con cambios sin guardar: fondo ámbar suave */
+:host ::ng-deep .ag-row.fila-cambiada .ag-cell {
+  background-color: rgba(var(--bs-warning-rgb, 245, 156, 26), .10);
+}
+
+:host ::ng-deep .ag-row.fila-denegada .permiso-usuario__login {
+  color: var(--bs-danger, #dc3545);
+}
+
+:host ::ng-deep .ag-row.fila-caducada .permiso-usuario__login {
+  text-decoration: line-through;
+}
+
+/* Cabecera de ACCIONES: se ve pulsable (pliega / despliega) */
+:host ::ng-deep .ag-header-cell[col-id="actions"] {
+  cursor: pointer;
+}
+
+/* Botones de la celda ACCIONES: mismos btn-icon que app-action-buttons */
+:host ::ng-deep .permiso-acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+:host ::ng-deep .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+
+:host ::ng-deep .btn-icon:hover:not(:disabled) {
+  color: #fff;
+}
+
+:host ::ng-deep .btn-icon:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+:host ::ng-deep .btn-todo:hover:not(:disabled)    { background-color: var(--bs-teal, #00acac);     border-color: var(--bs-teal, #00acac); }
+:host ::ng-deep .btn-nada:hover:not(:disabled)    { background-color: var(--bs-secondary, #6c757d); border-color: var(--bs-secondary, #6c757d); }
+:host ::ng-deep .btn-guardar:not(:disabled)       { background-color: var(--bs-primary, #348fe2);  border-color: var(--bs-primary, #348fe2); color: #fff; }
+:host ::ng-deep .btn-quitar:hover:not(:disabled)  { background-color: var(--bs-danger, #dc3545);   border-color: var(--bs-danger, #dc3545); }
+:host ::ng-deep .btn-ajustar:hover:not(:disabled) { background-color: var(--bs-warning, #f59c1a);  border-color: var(--bs-warning, #f59c1a); }
+
+/* Botón ☰ con la columna plegada (mismo que allProfiles) */
+:host ::ng-deep .acciones-desplegar {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .25rem;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .perfil-modal-body {
+    padding: .75rem;
+  }
+
+  .permisos-toolbar {
+    padding: .5rem;
+  }
+
+  .permisos-buscador {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .permisos-toolbar__derecha {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .permisos-leyenda__ayuda {
+    display: none;
+  }
+
+  .perfil-grid {
+    height: clamp(240px, 38vh, 360px);
+    padding: .25rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .permisos-casilla {
+  :host ::ng-deep .btn-icon {
     transition: none;
   }
 }
