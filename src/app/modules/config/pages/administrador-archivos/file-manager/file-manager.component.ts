@@ -520,7 +520,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.modal.open(PapeleraComponent, {
       centered: true,
-      size: 'lg',
+      size: 'xl',   // la grilla tiene 7 columnas de ancho fijo: en 'lg' hacía scroll horizontal
       backdrop: 'static',
       keyboard: true
     });

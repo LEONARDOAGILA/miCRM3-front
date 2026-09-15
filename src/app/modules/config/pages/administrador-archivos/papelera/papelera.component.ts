@@ -162,7 +162,7 @@ export class PapeleraComponent implements OnInit, OnDestroy {
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         suppressMenu: true, sortable: false, filter: false, resizable: false
       },
-      { headerName: 'Nombre', field: 'nombre', width: 240, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Nombre', field: 'nombre', width: 270, cellStyle: { textAlign: 'left' } },
       {
         headerName: 'Tipo', field: 'escarpeta', width: 100, maxWidth: 110,
         valueGetter: p => p.data?.escarpeta ? 'Carpeta' : 'Archivo',
@@ -175,7 +175,7 @@ export class PapeleraComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'right' }
       },
       {
-        headerName: 'Estaba en', field: 'ruta', width: 260,
+        headerName: 'Estaba en', field: 'ruta', width: 300,
         headerTooltip: 'Carpeta a la que volverá al restaurarlo',
         cellStyle: { textAlign: 'left' }
       },

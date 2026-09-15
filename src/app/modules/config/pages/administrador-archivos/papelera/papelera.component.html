@@ -19,7 +19,7 @@
 <!-- Cuerpo -->
 <div class="modal-body papelera-body">
 
-  <!-- Barra: resumen a la izquierda, acciones a la derecha -->
+  <!-- Barra: resumen (las acciones van en el pie del modal) -->
   <div class="papelera-barra">
     <div class="papelera-resumen">
       @if (items.length) {
@@ -36,32 +36,12 @@
       }
     </div>
 
-    <div class="papelera-acciones">
-      <button type="button" class="btn btn-sm btn-success"
-              [disabled]="!seleccionado"
-              [title]="seleccionado ? 'Restaurar «' + seleccionado.nombre + '» a «' + seleccionado.ruta + '»' : 'Seleccione un elemento'"
-              (click)="restaurar()">
-        <i class="fa fa-rotate-left me-1"></i>
-        <span class="d-none d-sm-inline">Restaurar</span>
-      </button>
-      <!-- Borrar para siempre: sólo administradores (soloRestaurar = false) -->
-      @if (!soloRestaurar) {
-      <button type="button" class="btn btn-sm btn-outline-danger"
-              [disabled]="!seleccionado"
-              [title]="seleccionado ? 'Borrar «' + seleccionado.nombre + '» para siempre' : 'Seleccione un elemento'"
-              (click)="eliminarDefinitivo()">
-        <i class="fa fa-trash me-1"></i>
-        <span class="d-none d-sm-inline">Eliminar definitivamente</span>
-      </button>
-      <button type="button" class="btn btn-sm btn-danger"
-              [disabled]="!items.length"
-              title="Borrar para siempre todo lo que hay en la papelera"
-              (click)="vaciar()">
-        <i class="fa fa-broom me-1"></i>
-        <span class="d-none d-sm-inline">Vaciar papelera</span>
-      </button>
-      }
-    </div>
+    @if (seleccionado) {
+      <span class="papelera-seleccion text-truncate" [title]="'Estaba en «' + seleccionado.ruta + '»'">
+        <i class="fa fa-fw" [ngClass]="seleccionado.escarpeta ? 'fa-folder' : 'fa-file'" [style.color]="seleccionado.color"></i>
+        {{ seleccionado.nombre }}
+      </span>
+    }
   </div>
 
   <!-- Pista -->
@@ -93,11 +73,40 @@
 
 </div>
 
-<!-- Pie -->
-<div class="modal-footer">
-  <button type="button" class="btn btn-default" (click)="modal.dismiss()">
-    <i class="fa fa-times me-1"></i> Cerrar
+<!-- Pie: acciones sobre lo seleccionado a la derecha; vaciar (todo) a la izquierda -->
+<div class="modal-footer papelera-pie">
+  <!-- Borrar para siempre: sólo administradores (soloRestaurar = false) -->
+  @if (!soloRestaurar) {
+  <button type="button" class="btn btn-danger papelera-pie__vaciar"
+          [disabled]="!items.length"
+          title="Borrar para siempre todo lo que hay en la papelera"
+          (click)="vaciar()">
+    <i class="fa fa-broom me-1"></i>
+    <span class="d-none d-sm-inline">Vaciar papelera</span>
   </button>
+  }
+
+  <div class="papelera-pie__derecha">
+    <button type="button" class="btn btn-success"
+            [disabled]="!seleccionado"
+            [title]="seleccionado ? 'Restaurar «' + seleccionado.nombre + '» a «' + seleccionado.ruta + '»' : 'Seleccione un elemento'"
+            (click)="restaurar()">
+      <i class="fa fa-rotate-left me-1"></i>
+      <span class="d-none d-sm-inline">Restaurar</span>
+    </button>
+    @if (!soloRestaurar) {
+    <button type="button" class="btn btn-outline-danger"
+            [disabled]="!seleccionado"
+            [title]="seleccionado ? 'Borrar «' + seleccionado.nombre + '» para siempre' : 'Seleccione un elemento'"
+            (click)="eliminarDefinitivo()">
+      <i class="fa fa-trash me-1"></i>
+      <span class="d-none d-sm-inline">Eliminar definitivamente</span>
+    </button>
+    }
+    <button type="button" class="btn btn-default" (click)="modal.dismiss()">
+      <i class="fa fa-times me-1"></i> Cerrar
+    </button>
+  </div>
 </div>
 
 <!-- ================= MENÚ CONTEXTUAL =================
