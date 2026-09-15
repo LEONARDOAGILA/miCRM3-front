@@ -198,6 +198,9 @@ export class PapeleraComponent implements OnInit, OnDestroy {
     // Sin sizeColumnsToFit: columnas de ancho fijo; si no caben, scroll horizontal
   }
 
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.seleccionado = fila);
+
   onCellClicked(e: CellClickedEvent): void {
     this.seleccionado = e.data as ItemPapelera;
   }

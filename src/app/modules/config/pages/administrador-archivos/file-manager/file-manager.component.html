@@ -155,9 +155,11 @@
       } @else if (objetivo) {
         <div class="archivos-toolbar__objetivo" [title]="'Las acciones se aplican a este elemento'">
           <i class="fa fa-fw" [ngClass]="objetivo.escarpeta ? 'fa-folder' : 'fa-file'"></i>
-          <span class="text-truncate">{{ objetivo.nombre }}</span>
+          <span class="text-truncate">{{ seleccion.length }} seleccionados</span>
+          <!-- <span class="text-truncate">{{ objetivo.nombre }}</span> -->
         </div>
       }
+
     </div>
 
     <div class="file-manager-container">
@@ -425,9 +427,11 @@
             [pagination]="false"
             [animateRows]="true"
             [overlayNoRowsTemplate]="carpetaActual ? '<span>Esta carpeta está vacía</span>' : '<span>No hay carpetas en la raíz</span>'"
+            [navigateToNextCell]="navegarConTeclado"
             (gridReady)="onGridReady($event)"
             (cellClicked)="onCellClicked($event)"
-            (cellDoubleClicked)="onCellDoubleClicked($event)">
+            (cellDoubleClicked)="onCellDoubleClicked($event)"
+            (cellKeyDown)="onCellKeyDown($event)">
           </ag-grid-angular>
         </div>
         }

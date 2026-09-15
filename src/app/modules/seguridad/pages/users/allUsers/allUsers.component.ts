@@ -539,6 +539,9 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   }
 
   /** Guarda la fila pulsada: es lo que usa el botón de auditoría. */
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
+
   onCellClicked(e: CellClickedEvent): void {
     this.selectedRow = e.data;
   }

@@ -118,6 +118,7 @@
           [rowSelection]="'single'"
           [pagination]="false"
           [animateRows]="true"
+          [navigateToNextCell]="navegarConTeclado"
           (gridReady)="onGridReady($event)"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>

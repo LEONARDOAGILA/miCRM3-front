@@ -143,6 +143,7 @@
                 [cacheQuickFilter]="true"
                 [context]="{ componentParent: this }"
                 class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+                [navigateToNextCell]="navegarConTeclado"
                 (gridReady)="onGridReady($event)"
                 (cellClicked)="onCellClicked($event)">
             </ag-grid-angular>

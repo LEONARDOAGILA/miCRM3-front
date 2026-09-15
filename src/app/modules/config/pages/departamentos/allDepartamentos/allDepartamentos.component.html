@@ -93,6 +93,7 @@
           [animateRows]="true" 
           [cacheQuickFilter]="true" 
           class="ag-theme-alpine zebra-grid ag-grid-transparente p-2 "
+          [navigateToNextCell]="navegarConTeclado"
           (gridReady)="onGridReady($event)" 
           (cellClicked)="onCellClicked($event)" 
         ></ag-grid-angular>

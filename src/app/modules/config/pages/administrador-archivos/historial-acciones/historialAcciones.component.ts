@@ -196,6 +196,9 @@ export class HistorialAccionesComponent implements OnInit {
     ];
   }
 
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas();
+
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);

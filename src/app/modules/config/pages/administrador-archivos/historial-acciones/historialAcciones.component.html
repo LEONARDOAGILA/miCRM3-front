@@ -112,6 +112,8 @@
         [enableBrowserTooltips]="true"
         [overlayNoRowsTemplate]="'<span>Nadie lo ha abierto ni descargado' + (hayFiltro ? ' con estos filtros' : ' todavía') + '</span>'"
         class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+        [navigateToNextCell]="navegarConTeclado"
+        [rowSelection]="'single'"
         (gridReady)="onGridReady($event)">
       </ag-grid-angular>
     </div>

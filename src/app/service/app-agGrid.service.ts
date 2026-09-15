@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ColDef, GridApi, SideBarDef } from 'ag-grid-community';
+import { CellPosition, ColDef, GridApi, NavigateToNextCellParams, RowNode, SideBarDef } from 'ag-grid-community';
 
 @Injectable({
   providedIn: 'root', // Proporciona el servicio a nivel de raíz
@@ -111,6 +111,38 @@ export class AppAgGridService {
     if (gridApi) {
       gridApi.sizeColumnsToFit();
     }
+  }
+
+  /**
+   * Navegación con el teclado como en el explorador de Windows: al moverse
+   * con ↑ / ↓ (también Inicio, Fin, Re Pág, Av Pág) la fila a la que se
+   * llega queda SELECCIONADA, igual que con un clic; con Mayús se extiende
+   * la selección (si la grilla es `rowSelection: 'multiple'`). ← / → sólo
+   * mueven el foco entre celdas.
+   *
+   * Uso en el componente:
+   *   navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
+   * y en la plantilla:
+   *   [navigateToNextCell]="navegarConTeclado"
+   *
+   * `alSeleccionar` recibe la fila (data) para que el componente haga lo
+   * mismo que en su onCellClicked. Requiere `rowSelection` en la grilla.
+   */
+  navegacionConFlechas(alSeleccionar?: (fila: any, nodo: RowNode) => void): (p: NavigateToNextCellParams) => CellPosition | null {
+    return (params: NavigateToNextCellParams): CellPosition | null => {
+      const siguiente = params.nextCellPosition;
+      if (!siguiente) { return null; }                                                          // ya en el borde
+      if (siguiente.rowIndex === params.previousCellPosition?.rowIndex) { return siguiente; }  // ← / →: sólo el foco
+
+      const nodo = params.api?.getDisplayedRowAtIndex(siguiente.rowIndex);
+      if (!nodo?.data) { return siguiente; }
+
+      const extender = !!params.event?.shiftKey;
+      nodo.setSelected(true, !extender);   // sin Mayús: sólo esta fila
+      params.api.ensureIndexVisible(siguiente.rowIndex);
+      alSeleccionar?.(nodo.data, nodo);
+      return siguiente;
+    };
   }
   
   aplicarFiltro(gridApi: GridApi, filterValue: string): void {

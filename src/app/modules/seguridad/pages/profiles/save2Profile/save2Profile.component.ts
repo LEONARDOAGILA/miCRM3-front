@@ -403,6 +403,9 @@ export class Save2ProfileComponent implements OnInit  {
 
   
 
+ /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+ navegarConTeclado = this._appAgGridService.navegacionConFlechas();
+
  onCellClicked(e: CellClickedEvent): void {
   if (!this.isdisabled) {
     const field = e.column.getColId();

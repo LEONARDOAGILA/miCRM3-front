@@ -90,6 +90,7 @@
               [animateRows]="true" 
               class="ag-theme-alpine ag-grid-transparente p-2 ag-grid-responsive"
               style="height: 360.4px; --ag-line-height: 30px;margin-top: -10px;"
+              [navigateToNextCell]="navegarConTeclado"
               (gridReady)="onGridReady($event)" 
               (cellClicked)="onCellClicked($event)"                 
               ></ag-grid-angular>

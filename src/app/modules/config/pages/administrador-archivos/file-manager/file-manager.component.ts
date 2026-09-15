@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CellClickedEvent, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
+import { CellClickedEvent, CellKeyDownEvent, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
@@ -954,6 +954,38 @@ export class FileManagerComponent implements OnInit, OnDestroy {
    */
   private loteDe(el: FileTreeNode): FileTreeNode[] {
     return this.hayVarios && this.seleccion.some(s => s.id === el.id) ? [...this.seleccion] : [el];
+  }
+
+  // ---------- Teclado en la grilla (como el explorador de Windows) ----------
+
+  /**
+   * ↑ / ↓ (y Inicio / Fin, Re Pág / Av Pág) seleccionan la fila como un clic
+   * y la marcan en el árbol; Mayús extiende (AppAgGridService.navegacionConFlechas).
+   */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas((fila: FileTreeNode) => {
+    this.filaSeleccionada = fila;
+    this.marcarEnArbol(fila);
+  });
+
+  /**
+   * Teclas sobre la fila enfocada: Enter = abrir (carpeta o archivo),
+   * Retroceso = subir un nivel, Supr = eliminar.
+   */
+  onCellKeyDown(event: CellKeyDownEvent): void {
+    const tecla = (event.event as KeyboardEvent)?.key;
+    const node = event.data as FileTreeNode | undefined;
+    switch (tecla) {
+      case 'Enter':
+        if (node) { this.onCellDoubleClicked(event as unknown as CellClickedEvent); }
+        break;
+      case 'Backspace':
+        this.subirNivel();
+        break;
+      case 'Delete':
+        if (this.puedeEliminar) { this.eliminar(); }
+        break;
+      // Espacio (marcar / desmarcar la fila) ya lo hace ag-Grid por su cuenta
+    }
   }
 
   /** Doble clic: entrar en la carpeta, o ejecutar el archivo. */

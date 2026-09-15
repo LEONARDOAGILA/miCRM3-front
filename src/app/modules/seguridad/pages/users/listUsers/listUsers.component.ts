@@ -1,7 +1,7 @@
 import { Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { GridApi, GridReadyEvent, CellClickedEvent, RowClassParams } from 'ag-grid-community';
+import { GridApi, GridReadyEvent, CellClickedEvent, CellKeyDownEvent, RowClassParams } from 'ag-grid-community';
 
 import { UserService } from '../../../services/user.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
@@ -178,6 +178,14 @@ export class ListUsersComponent implements OnInit {
   }
 
   /** Un clic en cualquier celda elige la fila (salvo excluidas): emite el usuario y cierra. */
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas();
+
+  /** Enter sobre la fila enfocada = elegirla (igual que el clic). */
+  onCellKeyDown(event: CellKeyDownEvent): void {
+    if ((event.event as KeyboardEvent)?.key === 'Enter') { this.onCellClicked(event as unknown as CellClickedEvent); }
+  }
+
   onCellClicked(event: CellClickedEvent): void {
     if (!event.data || this.estaExcluido(event.data.id)) { return; }
     this.seleccionado.emit(event.data);

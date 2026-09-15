@@ -445,6 +445,9 @@ export class AllMenusComponent implements OnInit, OnDestroy{
     clearSelection(): void {
       this._appAgGridService.limpiarSeleccion(this.gridApi); // Usa el método del servicio
     }
+   /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+   navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
+
    onCellClicked(e: CellClickedEvent): void {
       this.selectedRow = e.data;
       //console.log('cliked', e.data)

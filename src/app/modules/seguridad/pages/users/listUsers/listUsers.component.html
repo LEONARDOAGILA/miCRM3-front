@@ -71,6 +71,8 @@
     [rowSelection]="'single'"
     [pagination]="false"
     [enableCellTextSelection]="true"
+    [navigateToNextCell]="navegarConTeclado"
+    (cellKeyDown)="onCellKeyDown($event)"
     (gridReady)="onGridReady($event)"
     (cellClicked)="onCellClicked($event)">
   </ag-grid-angular>

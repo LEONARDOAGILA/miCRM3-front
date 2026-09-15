@@ -324,6 +324,9 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
    * Clic en una celda: en las columnas de banderas alterna la casilla (como
    * save2Profile); en ACCIONES ejecuta el botón pulsado (data-accion).
    */
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas();
+
   onCellClicked(e: CellClickedEvent): void {
     const f: FilaPermiso = e.data;
     const field = e.column.getColId();

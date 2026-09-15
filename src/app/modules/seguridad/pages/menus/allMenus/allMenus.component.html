@@ -113,6 +113,7 @@
                   [cacheQuickFilter]="true"
 
                   class="ag-theme-alpine ag-grid-transparente p-2"
+                  [navigateToNextCell]="navegarConTeclado"
                   (gridReady)="onGridReady($event)"
                   (cellClicked)="onCellClicked($event)"
                   (paginationChanged)="onPaginationChanged()"
