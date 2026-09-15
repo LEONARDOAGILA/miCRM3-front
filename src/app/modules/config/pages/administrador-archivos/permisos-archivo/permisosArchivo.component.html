@@ -55,9 +55,9 @@
             </div>
           </div>
 
-          <!-- Propietario -->
+          <!-- Propietario (+ ceder la propiedad, como Google Drive) -->
           <div class="col-12 col-md-6 col-lg-3">
-            <div class="elemento-ficha">
+            <div class="elemento-ficha elemento-ficha--propietario" [class.is-cedible]="puedeTransferir">
               <span class="elemento-ficha__icono elemento-ficha__icono--sm"><i class="fa fa-user-tie"></i></span>
               <div class="elemento-ficha__texto">
                 <span class="elemento-ficha__etiqueta">Propietario</span>
@@ -69,6 +69,15 @@
                   <span class="elemento-ficha__ayuda">Sin propietario registrado</span>
                 }
               </div>
+              @if (puedeTransferir) {
+                <button type="button" class="btn btn-sm btn-outline-primary elemento-ficha__boton"
+                        [disabled]="transfiriendo"
+                        [title]="archivo?.propietario ? 'Ceder la propiedad a otro usuario' : 'Asignar un propietario'"
+                        (click)="transferirPropiedad()">
+                  <i class="fa fa-right-left"></i>
+                  <span class="d-none d-xl-inline ms-1">{{ archivo?.propietario ? 'Ceder' : 'Asignar' }}</span>
+                </button>
+              }
             </div>
           </div>
 

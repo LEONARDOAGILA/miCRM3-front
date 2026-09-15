@@ -87,6 +87,9 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
   public title = 'Permisos';
 
   puedeAdministrar = false;
+  /** Ceder la propiedad: sólo el propietario actual o un administrador (lo decide el back). */
+  puedeTransferir = false;
+  transfiriendo = false;
   archivo: { id: number; nombre: string; escarpeta: boolean; publico: boolean; padre: number | null;
              propietario: { id: number; login_user: string; name: string; surname: string } | null } | null = null;
   /** Filas de la grilla: directas primero, heredadas después. */
@@ -422,6 +425,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       }
       this.archivo = res.data.archivo;
       this.puedeAdministrar = !!res.data.puedeAdministrar;
+      this.puedeTransferir = !!res.data.puedeTransferir;
       const directos: FilaPermiso[] = (res.data.directos ?? []).map((f: FilaPermiso) => this.conOriginal(f));
       const heredados: FilaPermiso[] = res.data.heredados ?? [];
       this.filas = [...directos, ...heredados];
@@ -468,6 +472,95 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       console.error('Error al cambiar público:', e);
     } finally {
       this.guardandoPublico = false;
+    }
+  }
+
+  // ---------- Ceder la propiedad (como "Transferir la propiedad" de Google Drive) ----------
+
+  /**
+   * 1) Elegir el nuevo propietario en listUsers (el actual queda excluido).
+   * 2) Confirmar con Swal: en carpetas, si incluye el contenido; y si el
+   *    propietario saliente conserva acceso como editor.
+   * 3) Llamar al back y recargar (el nuevo dueño ya no necesita fila directa;
+   *    el saliente aparece como editor si se conservó).
+   */
+  transferirPropiedad(): void {
+    if (!this.puedeTransferir || !this.archivo || this.transfiriendo) { return; }
+    const modalRef = this.modalService.open(ListUsersComponent, {
+      size: 'lg',
+      centered: true,
+      backdrop: 'static',
+      keyboard: true,
+    });
+    modalRef.componentInstance.usuariosExcluidos = this.archivo.propietario ? [this.archivo.propietario.id] : [];
+    modalRef.componentInstance.usuarioSeleccionadoId = this.archivo.propietario?.id;
+    modalRef.componentInstance.ayuda = this.archivo.propietario
+      ? 'Haz clic sobre el usuario que pasará a ser el propietario.'
+      : 'Haz clic sobre el usuario que será el propietario.';
+
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(merge(this.destroy$, from(modalRef.result).pipe(catchError(() => of(null))))))
+      .subscribe((u: any) => this.confirmarTransferencia(u));
+  }
+
+  private async confirmarTransferencia(u: any): Promise<void> {
+    if (!this.archivo) { return; }
+    if (u.isactive === false) {
+      this._toastr.warning('El usuario está inactivo: no puede ser propietario', 'Propietario');
+      return;
+    }
+    const nuevo = this.nombreCompleto(u) || u.login_user;
+    const saliente = this.archivo.propietario ? (this.nombreCompleto(this.archivo.propietario) || this.archivo.propietario.login_user) : null;
+    const esCarpeta = this.archivo.escarpeta;
+
+    const r = await Swal.fire({
+      title: saliente ? 'Ceder la propiedad' : 'Asignar propietario',
+      icon: 'question',
+      html: `
+        <div class="text-start" style="font-size:13px">
+          <p class="mb-2"><b>${nuevo}</b> pasará a ser el propietario de
+            <b>«${this.archivo.nombre}»</b> y tendrá todos los permisos sobre ${esCarpeta ? 'la carpeta' : 'el archivo'}.</p>
+          ${esCarpeta ? `
+          <div class="form-check mb-1">
+            <input class="form-check-input" type="checkbox" id="sw-contenido" checked>
+            <label class="form-check-label" for="sw-contenido">Incluir todo lo que hay dentro de la carpeta</label>
+          </div>` : ''}
+          ${saliente ? `
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="sw-acceso" checked>
+            <label class="form-check-label" for="sw-acceso"><b>${saliente}</b> conserva el acceso como editor (todo menos administrar)</label>
+          </div>` : ''}
+          ${saliente ? '<p class="mt-2 mb-0 text-muted" style="font-size:11px">Sólo el nuevo propietario o un administrador podrán volver a cederla.</p>' : ''}
+        </div>`,
+      showCancelButton: true,
+      confirmButtonText: saliente ? 'Ceder la propiedad' : 'Asignar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#348fe2',
+      focusCancel: true,
+      preConfirm: () => ({
+        incluir_contenido: (document.getElementById('sw-contenido') as HTMLInputElement | null)?.checked ?? true,
+        conservar_acceso:  (document.getElementById('sw-acceso') as HTMLInputElement | null)?.checked ?? true,
+      }),
+    });
+    if (!r.isConfirmed) { return; }
+    const opciones: { incluir_contenido: boolean; conservar_acceso: boolean } = r.value ?? { incluir_contenido: true, conservar_acceso: true };
+
+    this.transfiriendo = true;
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(this._archivoService.transferirPropietario(this.archivo.id, { user_id: u.id, ...opciones })) as any;
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo ceder la propiedad', 'Propietario');
+        return;
+      }
+      this._toastr.success(res.message, 'Propietario', { timeOut: 4000 });
+      await this.cargar();   // nuevo propietario, puedeTransferir/puedeAdministrar y la fila del saliente
+      this.cambio.emit();
+    } catch (e) {
+      console.error('Error al ceder la propiedad:', e);   // el interceptor ya avisó
+    } finally {
+      this.transfiriendo = false;
+      this._loadingService.setLoading(false);
     }
   }
 

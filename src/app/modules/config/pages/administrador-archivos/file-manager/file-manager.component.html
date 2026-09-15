@@ -440,6 +440,7 @@
              Misma data y mismas acciones que la grilla: clic selecciona,
              Ctrl+clic añade/quita, Mayús+clic rango, doble clic abre/ejecuta,
              clic derecho = menú contextual, y se arrastra/suelta igual.
+             Teclado: flechas / Inicio / Fin mueven la selección (onTecladoTile).
              El buscador filtra por nombre, descripción, tipo y extensión. -->
         @if (vista === 'cuadricula') {
           <div class="archivos-cuadricula position-relative"
@@ -456,7 +457,7 @@
             }
 
             <ng-scrollbar class="h-100">
-              <div class="archivos-cuadricula__lienzo">
+              <div class="archivos-cuadricula__lienzo" #lienzoCuadricula>
                 @for (el of contenidoFiltrado; track el.id) {
                   <div class="archivos-tile"
                        role="option"
@@ -470,6 +471,7 @@
                        (click)="onClickTile(el, $event)"
                        (dblclick)="onDobleClickTile(el)"
                        (keydown.enter)="onDobleClickTile(el)"
+                       (keydown)="onTecladoTile(el, $event)"
                        (contextmenu)="onContextMenuTile(el, $event)"
                        (dragstart)="onDragStart(el, $event)"
                        (dragover)="onDragOverTile(el, $event)"

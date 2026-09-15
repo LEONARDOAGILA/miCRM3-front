@@ -111,6 +111,20 @@
   color: var(--bs-secondary-color, #6c757d);
 }
 
+/* Propietario: el texto cede sitio al botón "Ceder" (a la derecha) */
+.elemento-ficha--propietario .elemento-ficha__texto {
+  flex: 1 1 auto;
+}
+
+.elemento-ficha__boton {
+  flex: 0 0 auto;
+  margin-left: auto;
+  height: 28px;
+  padding: 0 .5rem;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .estado-miswitch {
   min-height: 58px;
   margin-bottom: .75rem;

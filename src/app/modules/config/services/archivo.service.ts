@@ -110,6 +110,10 @@ export class ArchivoService {
   /** Crea o actualiza la fila de un usuario sobre el nodo. */
   guardarPermisoArchivo(id: number, datos: any): Observable<any> { return this._http.post(this.URL_SERVICIOS + 'permisosArchivo/' + id, datos); }
   quitarPermisoArchivo(id: number, userId: number): Observable<any> { return this._http.delete(this.URL_SERVICIOS + 'permisosArchivo/' + id + '/' + userId); }
+  /** Cede la propiedad a otro usuario (carpetas: opcionalmente todo el contenido); el saliente puede quedar como editor. */
+  transferirPropietario(id: number, datos: { user_id: number; incluir_contenido?: boolean; conservar_acceso?: boolean }): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'transferirPropietario/' + id, datos);
+  }
   /** Usuarios activos para el selector (login, nombre, apellido, email). */
   usuariosParaPermisos(search: string): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'usuariosParaPermisos', { params: new HttpParams().set('search', search ?? '') });

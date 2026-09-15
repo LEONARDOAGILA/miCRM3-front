@@ -220,6 +220,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     lote: [] as FileTreeNode[],
   };
   @ViewChild('menuCtxEl') menuCtxEl?: ElementRef<HTMLElement>;
+  /** Lienzo de la cuadrícula (para contar columnas y enfocar tiles con el teclado). */
+  @ViewChild('lienzoCuadricula') lienzoCuadricula?: ElementRef<HTMLElement>;
 
   /** Cierra el menú si el usuario hace scroll en cualquier sitio (capturado). */
   private readonly cerrarMenuPorScroll = () => this.cerrarMenu();
@@ -1072,6 +1074,70 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     }
     this.filaSeleccionada = this.estaSeleccionado(el) ? el : (this.seleccion[this.seleccion.length - 1] ?? null);
     if (this.filaSeleccionada) { this.marcarEnArbol(this.filaSeleccionada); }
+  }
+
+  /**
+   * Teclado sobre un tile (como el explorador de Windows en vista de iconos):
+   * ← → ↑ ↓ mueven la selección (↑ ↓ saltan una fila entera, según las
+   * columnas que quepan ahora), Inicio / Fin van al primero / último, Mayús
+   * extiende el rango desde el ancla; Retroceso sube un nivel y Supr elimina.
+   * Enter lo maneja (keydown.enter) en la plantilla.
+   */
+  onTecladoTile(el: FileTreeNode, ev: KeyboardEvent): void {
+    const lista = this.contenidoFiltrado;
+    const idx = lista.findIndex(n => n.id === el.id);
+    if (idx < 0) { return; }
+
+    let destino: number;
+    switch (ev.key) {
+      case 'ArrowRight': destino = idx + 1; break;
+      case 'ArrowLeft':  destino = idx - 1; break;
+      case 'ArrowDown':  destino = idx + this.columnasCuadricula(); break;
+      case 'ArrowUp':    destino = idx - this.columnasCuadricula(); break;
+      case 'Home':       destino = 0; break;
+      case 'End':        destino = lista.length - 1; break;
+      case 'Backspace':  ev.preventDefault(); this.subirNivel(); return;
+      case 'Delete':     if (this.puedeEliminar) { this.eliminar(); } return;
+      default: return;
+    }
+    ev.preventDefault();   // que el scroll no se mueva por su cuenta
+
+    // ↓ en la última fila incompleta va al último; ↑ desde la primera fila, al primero
+    if (destino >= lista.length) { destino = ev.key === 'ArrowDown' ? lista.length - 1 : idx; }
+    if (destino < 0)             { destino = ev.key === 'ArrowUp'   ? 0 : idx; }
+    if (destino === idx) { return; }
+
+    const obj = lista[destino];
+    if (ev.shiftKey) {
+      const ancla = this.anclaSeleccion ?? idx;
+      const [a, b] = [Math.min(ancla, destino), Math.max(ancla, destino)];
+      this.seleccion = lista.slice(a, b + 1);
+      this.anclaSeleccion = ancla;
+    } else {
+      this.seleccion = [obj];
+      this.anclaSeleccion = destino;
+    }
+    this.filaSeleccionada = obj;
+    this.marcarEnArbol(obj);
+    this.enfocarTile(destino);
+  }
+
+  /** Tiles que caben por fila ahora mismo (los que comparten el offsetTop del primero). */
+  private columnasCuadricula(): number {
+    const tiles = this.lienzoCuadricula?.nativeElement.querySelectorAll<HTMLElement>('.archivos-tile');
+    if (!tiles?.length) { return 1; }
+    const top = tiles[0].offsetTop;
+    let n = 0;
+    while (n < tiles.length && tiles[n].offsetTop === top) { n++; }
+    return Math.max(1, n);
+  }
+
+  /** Pone el foco en el tile `idx` (para seguir con el teclado) y lo deja a la vista. */
+  private enfocarTile(idx: number): void {
+    const tile = this.lienzoCuadricula?.nativeElement.querySelectorAll<HTMLElement>('.archivos-tile')[idx];
+    if (!tile) { return; }
+    tile.focus({ preventScroll: true });
+    tile.scrollIntoView({ block: 'nearest' });
   }
 
   /** Casilla del tile: añade/quita sin necesidad de Ctrl (táctil). */
