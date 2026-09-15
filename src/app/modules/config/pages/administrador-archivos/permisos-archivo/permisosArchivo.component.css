@@ -391,3 +391,64 @@
     transition: none;
   }
 }
+
+/* ============================================================
+   VENCE: fecha con calendario (FechaCellEditorComponent)
+   ============================================================ */
+:host ::ng-deep .permiso-fecha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  height: 100%;
+  font-size: 11.5px;
+  line-height: 1;
+}
+
+:host ::ng-deep .permiso-fecha--editable {
+  cursor: pointer;
+}
+
+:host ::ng-deep .permiso-fecha__icono {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+:host ::ng-deep .permiso-fecha--editable:hover .permiso-fecha__icono {
+  color: var(--bs-primary, #348fe2);
+}
+
+:host ::ng-deep .permiso-fecha__valor {
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+:host ::ng-deep .permiso-fecha__vacio {
+  color: var(--bs-secondary-color, #6c757d);
+  font-style: italic;
+}
+
+:host ::ng-deep .permiso-fecha__limpiar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+:host ::ng-deep .permiso-fecha__limpiar:hover {
+  background-color: var(--bs-danger, #dc3545);
+  color: #fff;
+}
+
+/* La celda en edición ocupa todo el alto para que el input se vea completo */
+:host ::ng-deep .ag-cell-inline-editing[col-id="vigente_hasta"] {
+  padding: 2px 4px;
+  height: 100%;
+}

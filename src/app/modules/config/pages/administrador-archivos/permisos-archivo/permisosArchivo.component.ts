@@ -17,6 +17,7 @@ import { ModalHeaderComponent } from '../../../../../components/modal/modal-head
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
 import { ListUsersComponent } from '../../../../seguridad/pages/users/listUsers/listUsers.component';
+import { FechaCellEditorComponent } from '../../../../../components/campos/fechaCellEditor/fechaCellEditor.component';
 
 /** Banderas que se conceden; mismo orden que en el back (PermisoArchivo::BANDERAS). */
 export const BANDERAS_PERMISO = [
@@ -220,11 +221,25 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       {
         headerName: 'Vence',
         field: 'vigente_hasta',
-        headerTooltip: 'Caducidad del permiso (AAAA-MM-DD; vacío = sin caducidad). Doble clic para editar',
+        headerTooltip: 'Caducidad del permiso (vacío = sin caducidad). Clic para elegir la fecha en el calendario',
         cellStyle: { textAlign: 'center' },
-        minWidth: 110, maxWidth: 110, sortable: false, filter: false,
-        editable: (p: any) => this.puedeAdministrar && p.data?.origen === 'DIRECTO',
-        valueFormatter: (p: any) => p.value || '—',
+        minWidth: 130, maxWidth: 130, sortable: false, filter: false,
+        editable: (p: any) => this.editaVence(p.data),
+        // Calendario nativo (un clic abre el editor: ver onCellClicked)
+        cellEditor: FechaCellEditorComponent,
+        cellEditorParams: () => ({ min: this.hoyIso() }),
+        cellRenderer: (params: any) => {
+          const editable = this.editaVence(params.data);
+          const fecha = params.value
+            ? `<span class="permiso-fecha__valor${params.data?.caducado ? ' text-danger' : ''}">${this.formatoFecha(params.value)}</span>`
+            : `<span class="permiso-fecha__vacio">${editable ? 'Sin caducidad' : '—'}</span>`;
+          const limpiar = (editable && params.value)
+            ? `<button type="button" class="permiso-fecha__limpiar" data-accion="limpiar-fecha" title="Quitar la caducidad"><i class="fa fa-times"></i></button>`
+            : '';
+          return `<div class="permiso-fecha${editable ? ' permiso-fecha--editable' : ''}">
+                    <i class="fa-regular fa-calendar permiso-fecha__icono"></i>${fecha}${limpiar}
+                  </div>`;
+        },
         valueSetter: (p: any) => {
           const v = String(p.newValue ?? '').trim();
           if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) {
@@ -232,6 +247,8 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
             return false;
           }
           p.data.vigente_hasta = v || null;
+          p.data.caducado = !!v && new Date(v) < new Date(new Date().toDateString());
+          setTimeout(() => this.refrescarFila(p.data));   // tras cerrar el editor: fila-cambiada / badge
           return true;
         },
       },
@@ -337,6 +354,20 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     const field = e.column.getColId();
     if (!f) { return; }
 
+    // Vence: la × quita la fecha; cualquier otro punto de la celda abre el calendario
+    if (field === 'vigente_hasta') {
+      if (!this.editaVence(f)) { return; }
+      const accion = ((e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement)?.dataset['accion'];
+      if (accion === 'limpiar-fecha') {
+        f.vigente_hasta = null;
+        f.caducado = false;
+        this.refrescarFila(f);
+      } else {
+        this.gridApi.startEditingCell({ rowIndex: e.rowIndex!, colKey: 'vigente_hasta' });
+      }
+      return;
+    }
+
     if (field === 'actions') {
       const accion = ((e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement)?.dataset['accion'];
       switch (accion) {
@@ -369,6 +400,23 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       return;
     }
     this.refrescarFila(f);
+  }
+
+  /** Sólo se edita la caducidad de un permiso directo y si se puede administrar. */
+  private editaVence(f?: FilaPermiso): boolean {
+    return this.puedeAdministrar && f?.origen === 'DIRECTO';
+  }
+
+  /** Hoy en AAAA-MM-DD (mínimo del calendario). */
+  private hoyIso(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  /** AAAA-MM-DD → DD/MM/AAAA para mostrar. */
+  private formatoFecha(iso: string): string {
+    const m = /^(d{4})-(d{2})-(d{2})/.exec(iso);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
   }
 
   private refrescarFila(f: FilaPermiso): void {
