@@ -106,7 +106,7 @@
     noButtonReload="true"
     noButtonRemove="true"
     noBody="true"
-    panelClass="mb-3"
+    panelClass="mb-0"
     (panelExpanded)="ajustarTamanoGrid()"
     icono="clave"
     fondoGris="true">
@@ -176,45 +176,6 @@
           <i class="fa-solid fa-hand-pointer"></i>
           Haz clic sobre una casilla para activar o desactivar el permiso. <strong>Manda la fila más cercana</strong>: lo que pongas aquí
           sustituye lo que herede de sus carpetas; <strong>Denegar</strong> bloquea todo en este elemento.
-        </span>
-      </div>
-    </ng-container>
-  </panel>
-
-  <!-- ---------- Accesos (quién lo abrió o descargó) ---------- -->
-  <panel
-    headerClass="bg-gray-800"
-    title="Accesos"
-    noButtonReload="true"
-    noButtonRemove="true"
-    noButtonExpand="true"
-    noBody="true"
-    panelClass="mb-0"
-    icono="clock"
-    fondoGris="true">
-
-    <div header class="panel-acciones">
-      <span class="chip chip-muted"><i class="fa-solid fa-clock-rotate-left"></i> Últimos 200</span>
-    </div>
-
-    <ng-container outsideBody>
-      <div class="perfil-grid perfil-grid--accesos">
-        <ag-grid-angular
-          [rowData]="accesos"
-          [columnDefs]="columnDefsAccesos"
-          [defaultColDef]="_appAgGridService.defaultColDef"
-          [rowHeight]="_appAgGridService.rowHeight"
-          [headerHeight]="_appAgGridService.headerHeight"
-          [localeText]="_appAgGridService.localeText"
-          [pagination]="false"
-          [overlayNoRowsTemplate]="'<span>Nadie lo ha abierto ni descargado todavía</span>'"
-          class="ag-theme-alpine ag-grid-transparente h-100 w-100">
-        </ag-grid-angular>
-      </div>
-      <div class="permisos-leyenda">
-        <span class="permisos-leyenda__ayuda">
-          <i class="fa-solid fa-circle-info"></i>
-          Se registran las aperturas desde <strong>Mis archivos</strong> y las descargas (fichero o zip).
         </span>
       </div>
     </ng-container>

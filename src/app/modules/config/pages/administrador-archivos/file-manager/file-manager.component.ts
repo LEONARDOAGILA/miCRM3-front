@@ -20,6 +20,7 @@ import { MoverArchivoComponent } from '../mover-archivo/moverArchivo.component';
 import { PermisosArchivoComponent } from '../permisos-archivo/permisosArchivo.component';
 import { ModalReporteExternoComponent } from '../modalReporteExterno/modalReporteExterno.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { HistorialAccionesComponent } from '../historial-acciones/historialAcciones.component';
 import { TIPO_CARPETA, TIPO_LINK, TIPO_UNIDAD, defTipo, extensionDe, formatoTamano, tipoArchivoDeExtension } from '../../../interfaces/tipoArchivo';
 
 /**
@@ -1276,24 +1277,23 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Modo usuario: el back vuelve a comprobar `ejecutar` y deja rastro
-    // (core.archivos_accesos); el visor respeta `descargar`
+    // Siempre por el back: vuelve a comprobar `ejecutar` (los administradores
+    // pasan) y deja rastro en el historial (core.archivos_accesos); en modo
+    // usuario el visor además respeta `descargar`
     let permiso: PermisoEfectivo | null = null;
-    if (this.modoUsuario) {
-      try {
-        this._loadingService.setLoading(true);
-        const res = await firstValueFrom(this._archivoService.abrirArchivo(archivo.id));
-        if (res?.status !== 'success') {
-          this._toastr.error(res?.message || 'No se pudo abrir', 'Mis archivos');
-          return;
-        }
-        permiso = res.data?.permiso ?? this.p(archivo);
-      } catch (e) {
-        console.error('Error al abrir:', e);   // el interceptor ya avisó
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(this._archivoService.abrirArchivo(archivo.id));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo abrir', this.modoUsuario ? 'Mis archivos' : 'Archivos');
         return;
-      } finally {
-        this._loadingService.setLoading(false);
       }
+      if (this.modoUsuario) { permiso = res.data?.permiso ?? this.p(archivo); }
+    } catch (e) {
+      console.error('Error al abrir:', e);   // el interceptor ya avisó
+      return;
+    } finally {
+      this._loadingService.setLoading(false);
     }
 
     // En otra pestaña sólo si además puede descargar (la url queda a la vista)
@@ -1686,6 +1686,18 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     });
     modalRef.componentInstance.tablaNombre = 'archivos';   // core.archivos: lo que graba el trigger en logs_cambios
     modalRef.componentInstance.registroId = objetivo.id;
+  }
+
+  /** Historial de acciones: quién abrió / descargó el elemento (o lo que cuelga de la carpeta). */
+  historialAcciones(objetivo: FileTreeNode | null = this.objetivo): void {
+    if (!objetivo || this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(HistorialAccionesComponent, {
+      centered: true,
+      size: 'xl',
+      backdrop: 'static',
+      keyboard: true
+    });
+    modalRef.componentInstance.elemento = objetivo;
   }
 
   private abrirSaveFile(registro: FileTreeNode | 0, accion: string, orden: number): NgbModalRef {

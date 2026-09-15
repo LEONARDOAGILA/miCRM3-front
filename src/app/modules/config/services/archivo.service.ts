@@ -114,8 +114,16 @@ export class ArchivoService {
   usuariosParaPermisos(search: string): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'usuariosParaPermisos', { params: new HttpParams().set('search', search ?? '') });
   }
-  /** Últimos accesos (quién abrió / descargó) a un archivo. */
-  accesosArchivo(id: number): Observable<any> { return this._http.get(this.URL_SERVICIOS + 'accesosArchivo/' + id); }
+  /**
+   * Historial de acciones (quién abrió / descargó) de un archivo o de todo lo
+   * que cuelga de una carpeta. Filtros: accion (EJECUTAR | DESCARGAR), desde /
+   * hasta (YYYY-MM-DD), limit. Devuelve { filas, totales: { ejecutar, descargar } }.
+   */
+  accesosArchivo(id: number, filtros: { accion?: string; desde?: string; hasta?: string; limit?: number } = {}): Observable<any> {
+    let params = new HttpParams();
+    Object.entries(filtros).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') { params = params.set(k, String(v)); } });
+    return this._http.get(this.URL_SERVICIOS + 'accesosArchivo/' + id, { params });
+  }
 
   // ---------- Usuario final: Mis archivos ----------
   /** Árbol con lo que el usuario puede ver, con `permiso` en cada nodo. */

@@ -1,0 +1,133 @@
+<!-- ============================================================
+     HISTORIAL DE ACCIONES de un archivo / carpeta (modal)
+     Hermano de la Auditoría general: aquí sólo el USO (quién lo abrió,
+     quién lo descargó). Mismo esquema: panel del tema + filtros + listado.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<panel title="Historial de Acciones"
+       headerClass="bg-cyan-700"
+       [noButtonCollapse]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       icono="clock"
+       (panelRemovedModal)="activeModal.dismiss()"
+       (panelReloaded)="cargar()"
+       (panelExpanded)="ajustarTamanoGrid()">
+
+  <div class="hist-modal">
+
+    <!-- ===================== ELEMENTO ===================== -->
+    <div class="hist-elemento">
+      <span class="hist-elemento__icono" [style.color]="elemento.color || (elemento.escarpeta ? '#F0B13B' : '#A6A09B')">
+        <i [ngClass]="elemento.icono || (elemento.escarpeta ? 'fa fa-folder' : 'fa fa-file')"></i>
+      </span>
+      <div class="hist-elemento__texto">
+        <span class="hist-elemento__etiqueta">{{ elemento.escarpeta ? 'Carpeta' : 'Archivo' }}</span>
+        <span class="hist-elemento__nombre text-truncate">{{ elemento.nombre }}</span>
+        @if (elemento.escarpeta) {
+          <span class="hist-elemento__ayuda">Incluye las acciones sobre todo lo que hay dentro.</span>
+        }
+      </div>
+
+      <!-- Resumen -->
+      <div class="hist-resumen">
+        <button type="button" class="hist-chip" [class.activo]="filtro.accion === ''" (click)="filtrarAccion('')" title="Ver todo">
+          <i class="fa-solid fa-list"></i> Todas <b>{{ total }}</b>
+        </button>
+        <button type="button" class="hist-chip hist-chip--abrio" [class.activo]="filtro.accion === 'EJECUTAR'" (click)="filtrarAccion('EJECUTAR')" title="Sólo quién lo abrió">
+          <i class="fa fa-play"></i> Abrió <b>{{ filtro.accion === 'DESCARGAR' ? '·' : totales.ejecutar }}</b>
+        </button>
+        <button type="button" class="hist-chip hist-chip--descargo" [class.activo]="filtro.accion === 'DESCARGAR'" (click)="filtrarAccion('DESCARGAR')" title="Sólo quién lo descargó">
+          <i class="fa fa-download"></i> Descargó <b>{{ filtro.accion === 'EJECUTAR' ? '·' : totales.descargar }}</b>
+        </button>
+        <span class="hist-chip hist-chip--muted d-none d-md-inline-flex" title="Usuarios distintos en lo que se muestra">
+          <i class="fa-solid fa-users"></i> {{ usuariosDistintos }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ===================== FILTROS ===================== -->
+    <div class="hist-filtros">
+
+      <div class="hist-filtros__campo hist-filtros__campo--rango">
+        <label class="hist-label" for="hist-rango">Rango de fechas</label>
+        <div class="ngx-daterangepicker-action date-range-input">
+          <i class="fa fa-calendar fa-fw" aria-hidden="true"></i>
+          <input id="hist-rango"
+                 type="text"
+                 class="form-control form-control-sm shadow-none"
+                 readonly
+                 placeholder="Todo el historial"
+                 ngxDaterangepickerMd
+                 [locale]="locale"
+                 [ranges]="ranges"
+                 [opens]="'right'"
+                 [alwaysShowCalendars]="alwaysShowCalendars"
+                 [showDropdowns]="true"
+                 [showCustomRangeLabel]="true"
+                 [showClearButton]="true"
+                 [showCancel]="true"
+                 [(ngModel)]="selected"
+                 (ngModelChange)="onRangoChange($event)" />
+        </div>
+      </div>
+
+      <div class="hist-filtros__campo hist-filtros__campo--buscar">
+        <label class="hist-label" for="filter-text-box-historial">Buscar</label>
+        <app-campoBusqueda
+          [id]="'filter-text-box-historial'"
+          [placeholder]="'Usuario, archivo, IP...'"
+          [iconClass]="'fa fa-search'"
+          [containerClass]="'w-100'"
+          (searchChange)="onFilterTextBoxChanged()">
+        </app-campoBusqueda>
+      </div>
+
+      <div class="hist-filtros__acciones">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()"
+                [disabled]="!hayFiltro" aria-label="Limpiar filtros" title="Limpiar filtros">
+          <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== LISTADO ===================== -->
+    <div class="hist-grid">
+      <ag-grid-angular
+        [rowData]="filas"
+        [columnDefs]="columnDefs"
+        [defaultColDef]="_appAgGridService.defaultColDef"
+        [rowHeight]="40"
+        [headerHeight]="_appAgGridService.headerHeight"
+        [localeText]="_appAgGridService.localeText"
+        [pagination]="false"
+        [animateRows]="true"
+        [cacheQuickFilter]="true"
+        [enableBrowserTooltips]="true"
+        [overlayNoRowsTemplate]="'<span>Nadie lo ha abierto ni descargado' + (hayFiltro ? ' con estos filtros' : ' todavía') + '</span>'"
+        class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+        (gridReady)="onGridReady($event)">
+      </ag-grid-angular>
+    </div>
+
+    <div class="hist-pie">
+      <span class="hist-pie__ayuda">
+        <i class="fa-solid fa-circle-info"></i>
+        Se registra cada vez que alguien <strong>abre</strong> el archivo en el visor y cada <strong>descarga</strong> (fichero suelto o dentro de un zip).
+        Los cambios de datos (nombre, carpeta, permisos…) están en la <strong>Auditoría</strong>.
+      </span>
+      @if (filas.length >= LIMITE) {
+        <span class="hist-chip hist-chip--muted" title="Acota el rango de fechas para ver el resto">
+          Mostrando los últimos {{ LIMITE }}
+        </span>
+      }
+    </div>
+
+  </div>
+</panel>

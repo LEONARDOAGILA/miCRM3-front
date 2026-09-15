@@ -54,10 +54,6 @@ export interface FilaPermiso {
   _original?: string;
 }
 
-interface Acceso {
-  id: number; accion: 'EJECUTAR' | 'DESCARGAR'; usuario_login: string; name?: string; surname?: string;
-  ip_address?: string; fecha: string;
-}
 
 /**
  * Modal "Permisos" de un archivo o carpeta. Mismo esquema que save2Profile:
@@ -111,10 +107,6 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     'fila-caducada': (p: RowClassParams) => !!p.data?.caducado,
   };
 
-  // ---------- ag-Grid accesos ----------
-  accesos: Acceso[] = [];
-  accesosCargados = false;
-  public columnDefsAccesos: any[] = [];
 
   private readonly destroy$ = new Subject<void>();
 
@@ -131,7 +123,6 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     this.title = `Permisos de «${this.elemento?.nombre ?? ''}»`;
     this.initializeGrid();
     this.cargar();
-    this.cargarAccesos();
   }
 
   ngOnDestroy(): void {
@@ -267,22 +258,6 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
         // HTML en cadena (no plantilla Angular): el clic se resuelve en onCellClicked
         cellRenderer: (params: any) => this.botonesAccion(params.data),
       },
-    ];
-
-    this.columnDefsAccesos = [
-      { headerName: 'Fecha', field: 'fecha', minWidth: 150, maxWidth: 160, cellStyle: { textAlign: 'center' } },
-      {
-        headerName: 'Usuario', minWidth: 200, cellStyle: { textAlign: 'left' },
-        valueGetter: (p: any) => `${p.data?.name ?? ''} ${p.data?.surname ?? ''}`.trim() + ` (${p.data?.usuario_login ?? ''})`,
-      },
-      {
-        headerName: 'Acción', field: 'accion', minWidth: 110, maxWidth: 110,
-        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        cellRenderer: (p: any) => p.value === 'DESCARGAR'
-          ? '<span class="badge bg-primary fs-10px"><i class="fa fa-download me-1"></i>Descargó</span>'
-          : '<span class="badge bg-teal fs-10px"><i class="fa fa-play me-1"></i>Abrió</span>',
-      },
-      { headerName: 'IP', field: 'ip_address', minWidth: 120, maxWidth: 140, cellStyle: { textAlign: 'center' } },
     ];
   }
 
@@ -602,19 +577,6 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       this.cambio.emit();
     } catch (e) {
       console.error('Error al quitar permiso:', e);
-    }
-  }
-
-  // ---------- Accesos ----------
-
-  async cargarAccesos(): Promise<void> {
-    if (this.accesosCargados) { return; }
-    try {
-      const res = await firstValueFrom(this._archivoService.accesosArchivo(this.elemento.id));
-      this.accesos = res?.status === 'success' ? res.data : [];
-      this.accesosCargados = true;
-    } catch (e) {
-      console.error('Error al cargar accesos:', e);
     }
   }
 

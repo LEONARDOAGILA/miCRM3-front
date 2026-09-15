@@ -1,0 +1,356 @@
+/* ============================================================
+   HISTORIAL DE ACCIONES - Estilos del modal
+   Mismo lenguaje visual que auditoria-modal (panel del tema, bloque de
+   filtros con el daterangepicker, chips) y grilla ag-Grid como el resto
+   del administrador de archivos. Colores por variables de Bootstrap /
+   Color Admin: claro y oscuro.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.hist-modal {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+/* ============================================================
+   ELEMENTO + RESUMEN
+   ============================================================ */
+.hist-elemento {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.hist-elemento__icono {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+}
+
+.hist-elemento__texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 200px;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.hist-elemento__etiqueta {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.hist-elemento__nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.hist-elemento__ayuda {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.hist-resumen {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-left: auto;
+}
+
+/* Chips: los de acción son botones que filtran */
+.hist-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 999px;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: default;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+
+.hist-chip b {
+  font-weight: 700;
+  color: var(--bs-body-color, #212529);
+}
+
+button.hist-chip {
+  cursor: pointer;
+}
+
+button.hist-chip:hover {
+  border-color: var(--bs-secondary, #6c757d);
+}
+
+.hist-chip.activo {
+  background-color: var(--bs-app-theme, #00acac);
+  border-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+}
+
+.hist-chip--abrio.activo    { background-color: var(--bs-teal, #00acac);    border-color: var(--bs-teal, #00acac); }
+.hist-chip--descargo.activo { background-color: var(--bs-primary, #348fe2); border-color: var(--bs-primary, #348fe2); }
+
+.hist-chip.activo b {
+  color: #fff;
+}
+
+.hist-chip--muted {
+  border-style: dashed;
+}
+
+/* ============================================================
+   FILTROS (mismo bloque que auditoria-modal)
+   ============================================================ */
+.hist-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .5rem .75rem;
+  padding: .625rem .75rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+}
+
+.hist-filtros__campo {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.hist-filtros__campo--rango {
+  flex: 2 1 230px;
+  max-width: 320px;
+}
+
+.hist-filtros__campo--buscar {
+  flex: 2 1 220px;
+}
+
+.hist-filtros__acciones {
+  flex: 0 0 auto;
+  display: flex;
+  gap: .375rem;
+}
+
+.hist-filtros__acciones .btn {
+  height: 31px;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.hist-label {
+  display: block;
+  margin-bottom: .2rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.hist-filtros .form-control {
+  font-size: .75rem;
+}
+
+.hist-filtros__campo--buscar ::ng-deep .form-control {
+  height: 31px;
+  font-size: .75rem;
+}
+
+.hist-filtros__campo--buscar ::ng-deep .btn {
+  padding: 0 .5rem;
+  height: 31px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Date range picker (copiado de auditoria-modal) ---------- */
+.date-range-input {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: 0 .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius, .375rem);
+}
+
+.date-range-input > i {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+.date-range-input .form-control {
+  width: 100%;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 1.25rem;
+  border: none;
+  cursor: pointer;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 16px 12px;
+}
+
+:host-context([data-bs-theme='dark']) .date-range-input .form-control {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23dee2e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* El calendario es un overlay: tiene que ganarle al backdrop del modal */
+:host ::ng-deep .md-drppicker.shown {
+  z-index: 1060;
+}
+
+/* Modo oscuro: el calendario es claro por dentro; sus <select> nativos también */
+:host ::ng-deep .md-drppicker {
+  color-scheme: light;
+}
+
+:host ::ng-deep .md-drppicker .dropdowns,
+:host ::ng-deep .md-drppicker .dropdowns select,
+:host ::ng-deep .md-drppicker select.monthselect,
+:host ::ng-deep .md-drppicker select.yearselect {
+  color-scheme: light;
+  background-color: #fff;
+  color: #2d353c;
+}
+
+:host ::ng-deep .md-drppicker .dropdowns option {
+  background-color: #fff;
+  color: #2d353c;
+}
+
+/* ============================================================
+   GRILLA
+   ============================================================ */
+.hist-grid {
+  height: clamp(280px, 48vh, 520px);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  overflow: hidden;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+/* Panel expandido a pantalla completa: la grilla ocupa lo que sobra */
+:host ::ng-deep .panel.panel-expand .hist-modal {
+  height: 100%;
+}
+
+:host ::ng-deep .panel.panel-expand .hist-grid {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .hist-fecha__hora {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+:host ::ng-deep .hist-usuario {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  line-height: 1.25;
+}
+
+:host ::ng-deep .hist-usuario__login {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--bs-body-color, #212529);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:host ::ng-deep .hist-usuario__login .badge {
+  margin-left: .3rem;
+  vertical-align: 1px;
+}
+
+:host ::ng-deep .hist-usuario__nombre {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
+   PIE
+   ============================================================ */
+.hist-pie {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem .75rem;
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.hist-pie__ayuda {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  flex: 1 1 300px;
+}
+
+.hist-pie__ayuda i {
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .hist-resumen {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .hist-filtros__campo--rango {
+    max-width: none;
+  }
+
+  .hist-grid {
+    height: clamp(240px, 42vh, 420px);
+  }
+
+  .hist-pie__ayuda {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hist-chip {
+    transition: none;
+  }
+}

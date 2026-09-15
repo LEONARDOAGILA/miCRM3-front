@@ -127,6 +127,14 @@
 
         <button type="button" class="btn btn-sm archivos-btn"
                 [disabled]="!puedeAdministrarPermisos || hayVarios"
+                [title]="objetivo ? 'Quién abrió o descargó «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
+                (click)="historialAcciones()">
+          <i class="fa fa-clock-rotate-left archivos-btn__icono text-cyan"></i>
+          <span class="archivos-btn__texto">Historial</span>
+        </button>
+
+        <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeAdministrarPermisos || hayVarios"
                 [title]="objetivo ? 'Quién puede ver y usar «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
                 (click)="permisos()">
           <i class="fa fa-user-shield archivos-btn__icono text-teal"></i>
@@ -665,6 +673,11 @@
       @if (esAdministrador) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); auditoria(el)">
         <i class="fa fa-user-secret fa-fw text-secondary"></i> Auditoría
+      </button>
+      }
+      @if (p(el).administrar) {
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); historialAcciones(el)">
+        <i class="fa fa-clock-rotate-left fa-fw text-cyan"></i> Historial de acciones
       </button>
       }
       @if (p(el).administrar) {

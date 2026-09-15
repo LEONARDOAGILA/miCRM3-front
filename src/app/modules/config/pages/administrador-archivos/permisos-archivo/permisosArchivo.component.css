@@ -179,10 +179,6 @@
   padding: .5rem;
 }
 
-.perfil-grid--accesos {
-  height: clamp(160px, 24vh, 240px);
-}
-
 /* Panel expandido: el grid crece (ver explicación en save2Profile.css) */
 :host ::ng-deep .panel.panel-expand > .perfil-grid {
   flex: 1 1 auto;
