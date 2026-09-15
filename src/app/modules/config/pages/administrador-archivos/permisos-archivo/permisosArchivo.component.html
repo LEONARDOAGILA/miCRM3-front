@@ -1,0 +1,276 @@
+<!-- ============================================================
+     PERMISOS DE UN ARCHIVO / CARPETA (modal)
+     Cabecera con el elemento, propietario y "Público". Pestañas:
+       Permisos → tabla usuario × banderas (directos editables, heredados en gris)
+       Accesos  → quién lo abrió o descargó
+     ============================================================ -->
+
+@if (cargando) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<app-modal-header [title]="'Permisos de «' + elemento.nombre + '»'" (onClose)="cerrar()"></app-modal-header>
+
+<div class="modal-body permisos-cuerpo">
+
+  <!-- ---------- Elemento + propietario + público ---------- -->
+  <div class="permisos-cabecera">
+    <span class="permisos-cabecera__icono" [style.color]="elemento.color || (elemento.escarpeta ? '#F0B13B' : '#A6A09B')">
+      <i [ngClass]="elemento.icono || (elemento.escarpeta ? 'fa fa-folder' : 'fa fa-file')"></i>
+    </span>
+    <div class="permisos-cabecera__texto">
+      <div class="permisos-cabecera__nombre text-truncate">{{ elemento.nombre }}</div>
+      <div class="permisos-cabecera__ayuda">
+        @if (archivo?.propietario; as p) {
+          Propietario: <b>{{ nombreCompleto(p) }}</b> ({{ p.login_user }}) — siempre tiene todos los permisos.
+        } @else {
+          Sin propietario registrado.
+        }
+        @if (elemento.escarpeta) {
+          Los permisos con <b>hereda</b> valen para todo lo que hay dentro.
+        }
+      </div>
+    </div>
+
+    <!-- Público: lo ven y abren todos los usuarios logueados -->
+    <label class="permisos-publico" [class.is-activo]="archivo?.publico" [class.is-bloqueado]="!puedeAdministrar" title="Lo ven y abren todos los usuarios logueados (sin descargar), sin dar permisos uno a uno">
+      <span class="permisos-publico__icono"><i class="fa" [ngClass]="archivo?.publico ? 'fa-globe' : 'fa-lock'"></i></span>
+      <span class="permisos-publico__texto">
+        <span class="permisos-publico__titulo">{{ archivo?.publico ? 'Público' : 'Restringido' }}</span>
+        <span class="permisos-publico__ayuda">{{ archivo?.publico ? 'Todos lo ven' : 'Sólo con permiso' }}</span>
+      </span>
+      <span class="form-check form-switch m-0">
+        <input class="form-check-input" type="checkbox" role="switch"
+               [checked]="archivo?.publico"
+               [disabled]="!puedeAdministrar || guardandoPublico"
+               (change)="cambiarPublico($any($event.target).checked)">
+      </span>
+    </label>
+  </div>
+
+  @if (!puedeAdministrar && !cargando) {
+    <div class="alert alert-warning py-2 small mb-2">
+      <i class="fa fa-lock me-1"></i> Puedes ver quién tiene acceso, pero no cambiarlo: necesitas el permiso <b>Administrar</b> sobre este elemento.
+    </div>
+  }
+
+  <!-- ---------- Pestañas ---------- -->
+  <ul class="nav nav-tabs permisos-tabs">
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="pestana === 'permisos'" href="javascript:;" (click)="pestana = 'permisos'">
+        <i class="fa fa-users me-1"></i> Usuarios
+        <span class="badge bg-secondary ms-1">{{ directos.length + heredados.length }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="pestana === 'accesos'" href="javascript:;" (click)="verAccesos()">
+        <i class="fa fa-clock-rotate-left me-1"></i> Accesos
+      </a>
+    </li>
+  </ul>
+
+  <!-- ================= PESTAÑA USUARIOS ================= -->
+  @if (pestana === 'permisos') {
+
+    <!-- Buscador para añadir -->
+    @if (puedeAdministrar) {
+      <div class="permisos-buscador">
+        <i class="fa" [ngClass]="buscando ? 'fa-spinner fa-spin' : 'fa-user-plus'"></i>
+        <input type="text" class="form-control form-control-sm" placeholder="Añadir usuario: escribe login, nombre o correo…"
+               [ngModel]="busqueda" (ngModelChange)="onBuscar($event)" name="busqueda" autocomplete="off">
+        @if (sugerencias.length) {
+          <div class="permisos-sugerencias">
+            @for (u of sugerencias; track u.id) {
+              <button type="button" class="permisos-sugerencia" (click)="agregarUsuario(u)">
+                <span class="permisos-avatar">{{ iniciales(u) }}</span>
+                <span class="permisos-sugerencia__texto">
+                  <span class="permisos-sugerencia__nombre">{{ nombreCompleto(u) }}</span>
+                  <span class="permisos-sugerencia__login">{{ u.login_user }} · {{ tiposUsuario[u.type_user] || u.type_user }}</span>
+                </span>
+                @if (esAdmin(u)) {
+                  <span class="badge bg-secondary" title="Los administradores ya lo ven todo">admin</span>
+                }
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Tabla usuario × banderas -->
+    <div class="permisos-tabla-envoltorio">
+      <table class="table table-sm permisos-tabla">
+        <thead>
+          <tr>
+            <th class="permisos-th-usuario">Usuario</th>
+            @for (b of banderas; track b.id) {
+              <th class="permisos-th-bandera" [title]="b.ayuda">
+                <i class="fa" [ngClass]="b.icono"></i>
+                <span>{{ b.etiqueta }}</span>
+              </th>
+            }
+            <th class="permisos-th-bandera" title="En carpetas: el permiso vale para todo el subárbol">
+              <i class="fa fa-sitemap"></i><span>Hereda</span>
+            </th>
+            <th class="permisos-th-bandera" title="Regla de exclusión: bloquea todo cuando esta fila es la que manda (la más cercana al elemento)">
+              <i class="fa fa-ban"></i><span>Denegar</span>
+            </th>
+            <th class="permisos-th-vence" title="Caducidad del permiso (vacío = sin caducidad)">
+              <i class="fa fa-calendar-xmark"></i><span>Vence</span>
+            </th>
+            <th class="permisos-th-acciones"></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- Directos: editables -->
+          @for (f of directos; track f.user_id) {
+            <tr class="permisos-fila" [class.is-cambiada]="cambiada(f)" [class.is-denegada]="f.denegar" [class.is-caducada]="f.caducado">
+              <td class="permisos-td-usuario">
+                <span class="permisos-avatar">{{ iniciales(f) }}</span>
+                <span class="permisos-usuario">
+                  <span class="permisos-usuario__nombre text-truncate">{{ nombreCompleto(f) }}</span>
+                  <span class="permisos-usuario__login">
+                    {{ f.login_user }}
+                    @if (f.nueva) { <span class="badge bg-primary">nuevo</span> }
+                    @if (f.caducado) { <span class="badge bg-danger">caducado</span> }
+                    @if (!f.isactive) { <span class="badge bg-secondary">inactivo</span> }
+                  </span>
+                </span>
+              </td>
+              @for (b of banderas; track b.id) {
+                <td class="permisos-td-bandera">
+                  <button type="button" class="permisos-casilla"
+                          [class.is-si]="f[b.id]" [disabled]="!puedeAdministrar || f.denegar"
+                          [title]="b.ayuda" (click)="alternar(f, b.id)">
+                    <i class="fa" [ngClass]="f[b.id] ? 'fa-square-check' : 'fa-square'"></i>
+                  </button>
+                </td>
+              }
+              <td class="permisos-td-bandera">
+                <button type="button" class="permisos-casilla" [class.is-si]="f.hereda"
+                        [disabled]="!puedeAdministrar || !elemento.escarpeta" (click)="f.hereda = !f.hereda"
+                        [title]="elemento.escarpeta ? 'Vale para todo el subárbol' : 'Sólo aplica a carpetas'">
+                  <i class="fa" [ngClass]="f.hereda ? 'fa-square-check' : 'fa-square'"></i>
+                </button>
+              </td>
+              <td class="permisos-td-bandera">
+                <button type="button" class="permisos-casilla permisos-casilla--denegar" [class.is-si]="f.denegar"
+                        [disabled]="!puedeAdministrar" (click)="alternarDenegar(f)" title="Denegar todo en este elemento (y en lo que herede de él)">
+                  <i class="fa" [ngClass]="f.denegar ? 'fa-square-xmark' : 'fa-square'"></i>
+                </button>
+              </td>
+              <td class="permisos-td-vence">
+                <input type="date" class="form-control form-control-sm permisos-fecha"
+                       [(ngModel)]="f.vigente_hasta" [name]="'vence' + f.user_id" [min]="hoy" [disabled]="!puedeAdministrar">
+              </td>
+              <td class="permisos-td-acciones">
+                @if (puedeAdministrar) {
+                  <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-white" title="Todo" (click)="todo(f, true)" [disabled]="f.denegar"><i class="fa fa-check-double"></i></button>
+                    <button type="button" class="btn btn-white" title="Nada" (click)="todo(f, false)" [disabled]="f.denegar"><i class="fa fa-eraser"></i></button>
+                    <button type="button" class="btn btn-primary" title="Guardar" (click)="guardar(f)" [disabled]="!cambiada(f) || f.guardando">
+                      <i class="fa" [ngClass]="f.guardando ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+                    </button>
+                    <button type="button" class="btn btn-white text-danger" title="Quitar" (click)="quitar(f)"><i class="fa fa-trash"></i></button>
+                  </div>
+                }
+              </td>
+            </tr>
+          }
+
+          <!-- Heredados: en gris, no editables aquí -->
+          @for (h of heredados; track h.user_id) {
+            <tr class="permisos-fila permisos-fila--heredada" [class.is-denegada]="h.denegar" [class.is-caducada]="h.caducado">
+              <td class="permisos-td-usuario">
+                <span class="permisos-avatar permisos-avatar--gris">{{ iniciales(h) }}</span>
+                <span class="permisos-usuario">
+                  <span class="permisos-usuario__nombre text-truncate">{{ nombreCompleto(h) }}</span>
+                  <span class="permisos-usuario__login">
+                    <i class="fa fa-arrow-turn-up fa-flip-horizontal me-1"></i>heredado de «{{ h.desde?.nombre }}»
+                    @if (h.caducado) { <span class="badge bg-danger">caducado</span> }
+                  </span>
+                </span>
+              </td>
+              @for (b of banderas; track b.id) {
+                <td class="permisos-td-bandera">
+                  <i class="fa permisos-marca" [ngClass]="h[b.id] ? 'fa-square-check' : 'fa-square'"></i>
+                </td>
+              }
+              <td class="permisos-td-bandera"><i class="fa permisos-marca fa-square-check"></i></td>
+              <td class="permisos-td-bandera"><i class="fa permisos-marca" [ngClass]="h.denegar ? 'fa-square-xmark text-danger' : 'fa-square'"></i></td>
+              <td class="permisos-td-vence"><span class="small text-muted">{{ h.vigente_hasta || '—' }}</span></td>
+              <td class="permisos-td-acciones">
+                @if (puedeAdministrar) {
+                  <button type="button" class="btn btn-sm btn-white" title="Copiar aquí para ajustarlo en este elemento" (click)="ajustarAqui(h)">
+                    <i class="fa fa-sliders me-1"></i>Ajustar aquí
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+
+          @if (!directos.length && !heredados.length && !cargando) {
+            <tr>
+              <td [attr.colspan]="banderas.length + 5" class="permisos-vacio">
+                <i class="fa fa-user-lock"></i>
+                @if (archivo?.publico) {
+                  Es público: lo ven todos los usuarios. Añade filas sólo para dar más (descargar, editar…) o para denegar a alguien.
+                } @else {
+                  Nadie tiene permiso todavía (salvo el propietario y los administradores). Busca un usuario arriba para añadirlo.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="permisos-leyenda">
+      <i class="fa fa-circle-info"></i>
+      <b>Manda la fila más cercana</b>, como en Windows: lo que pongas en este elemento sustituye por completo lo que herede de sus carpetas (para dar o para quitar); entre carpetas, la más cercana gana.
+      <b>Ver</b> es la base: sin él no aparece en su árbol. <b>Denegar</b> en la fila que manda lo bloquea todo (una fila propia en un archivo puede volver a permitirlo).
+    </p>
+  }
+
+  <!-- ================= PESTAÑA ACCESOS ================= -->
+  @if (pestana === 'accesos') {
+    <div class="permisos-tabla-envoltorio">
+      <table class="table table-sm permisos-tabla">
+        <thead>
+          <tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>IP</th></tr>
+        </thead>
+        <tbody>
+          @for (a of accesos; track a.id) {
+            <tr>
+              <td class="text-nowrap">{{ a.fecha }}</td>
+              <td>{{ nombreCompleto(a) }} <span class="text-muted small">({{ a.usuario_login }})</span></td>
+              <td>
+                <span class="badge" [ngClass]="a.accion === 'DESCARGAR' ? 'bg-primary' : 'bg-teal'">
+                  <i class="fa me-1" [ngClass]="a.accion === 'DESCARGAR' ? 'fa-download' : 'fa-play'"></i>{{ a.accion === 'DESCARGAR' ? 'Descargó' : 'Abrió' }}
+                </span>
+              </td>
+              <td class="text-muted small">{{ a.ip_address || '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="permisos-vacio"><i class="fa fa-clock-rotate-left"></i> Nadie lo ha abierto ni descargado todavía.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="permisos-leyenda"><i class="fa fa-circle-info"></i> Se registran las aperturas desde <b>Mis archivos</b> y las descargas (fichero o zip). Últimos 200.</p>
+  }
+</div>
+
+<div class="modal-footer permisos-pie">
+  @if (hayCambios) {
+    <span class="me-auto small text-warning"><i class="fa fa-triangle-exclamation me-1"></i>Hay filas sin guardar</span>
+  }
+  <button type="button" class="btn btn-white" (click)="cerrar()">Cerrar</button>
+  @if (puedeAdministrar) {
+    <button type="button" class="btn btn-primary" [disabled]="!hayCambios" (click)="guardarTodo()">
+      <i class="fa fa-floppy-disk me-1"></i> Guardar cambios
+    </button>
+  }
+</div>

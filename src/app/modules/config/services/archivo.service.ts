@@ -104,6 +104,26 @@ export class ArchivoService {
     });
   }
 
+  // ---------- Permisos por archivo (por usuario) ----------
+  /** Filas del nodo + heredadas + público/propietario + si el que consulta puede administrar. */
+  permisosArchivo(id: number): Observable<any> { return this._http.get(this.URL_SERVICIOS + 'permisosArchivo/' + id); }
+  /** Crea o actualiza la fila de un usuario sobre el nodo. */
+  guardarPermisoArchivo(id: number, datos: any): Observable<any> { return this._http.post(this.URL_SERVICIOS + 'permisosArchivo/' + id, datos); }
+  quitarPermisoArchivo(id: number, userId: number): Observable<any> { return this._http.delete(this.URL_SERVICIOS + 'permisosArchivo/' + id + '/' + userId); }
+  /** Usuarios activos para el selector (login, nombre, apellido, email). */
+  usuariosParaPermisos(search: string): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'usuariosParaPermisos', { params: new HttpParams().set('search', search ?? '') });
+  }
+  /** Últimos accesos (quién abrió / descargó) a un archivo. */
+  accesosArchivo(id: number): Observable<any> { return this._http.get(this.URL_SERVICIOS + 'accesosArchivo/' + id); }
+
+  // ---------- Usuario final: Mis archivos ----------
+  /** Árbol con lo que el usuario puede ver, con `permiso` en cada nodo. */
+  misArchivos(): Observable<any> { return this._http.get(this.URL_SERVICIOS + 'misArchivos'); }
+  miPermisoArchivo(id: number): Observable<any> { return this._http.get(this.URL_SERVICIOS + 'miPermisoArchivo/' + id); }
+  /** Autoriza `ejecutar`, registra el acceso y devuelve el registro con sus banderas. */
+  abrirArchivo(id: number): Observable<any> { return this._http.post(this.URL_SERVICIOS + 'abrirArchivo/' + id, {}); }
+
   // Papelera de reciclaje (borrado lógico en el back)
   /** Espacio que ocupan las subidas y disco libre/total (pie del árbol). */
   almacenamiento(): Observable<any>     { return this._http.get(this.URL_SERVICIOS + 'almacenamiento'); }

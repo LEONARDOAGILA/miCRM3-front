@@ -17,7 +17,7 @@
 <!-- ================= 1. MIGA DE PAN ================= -->
 <ol class="breadcrumb archivos-breadcrumb">
   <li class="breadcrumb-item"><a routerLink="/config/home">Configuración</a></li>
-  <li class="breadcrumb-item active">Administrador de archivos</li>
+  <li class="breadcrumb-item active">{{ modoUsuario ? 'Mis archivos' : 'Administrador de archivos' }}</li>
 </ol>
 
 <!-- ================= 2. PANEL ================= -->
@@ -46,12 +46,14 @@
     <div class="file-manager-toolbar archivos-toolbar">
 
       <div class="archivos-toolbar__grupo">
+        @if (puedeNuevaRaiz) {
         <button type="button" class="btn btn-sm archivos-btn"
                 title="Crear una carpeta en el primer nivel"
                 (click)="nuevaRaiz()">
           <i class="fa fa-folder-plus archivos-btn__icono text-warning"></i>
           <span class="archivos-btn__texto">Nueva raíz</span>
         </button>
+        }
 
         <button type="button" class="btn btn-sm archivos-btn"
                 [disabled]="!puedeCrearDentro"
@@ -90,7 +92,7 @@
         </button>
 
         <button type="button" class="btn btn-sm archivos-btn"
-                [disabled]="!puedeEditar"
+                [disabled]="!puedeMover"
                 [title]="hayVarios ? 'Mover los ' + seleccion.length + ' elementos seleccionados' : (puedeEditar ? 'Mover «' + objetivo?.nombre + '» a otra carpeta' : 'Seleccione un elemento')"
                 (click)="mover()">
           <i class="fa fa-arrows-up-down-left-right archivos-btn__icono text-warning"></i>
@@ -113,12 +115,22 @@
           <span class="archivos-btn__texto">Eliminar</span>
         </button>
 
+        @if (esAdministrador) {
         <button type="button" class="btn btn-sm archivos-btn"
                 [disabled]="!objetivo || hayVarios"
                 [title]="objetivo ? 'Historial de cambios de «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
                 (click)="auditoria()">
           <i class="fa fa-user-secret archivos-btn__icono text-secondary"></i>
           <span class="archivos-btn__texto">Auditoría</span>
+        </button>
+        }
+
+        <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeAdministrarPermisos || hayVarios"
+                [title]="objetivo ? 'Quién puede ver y usar «' + objetivo?.nombre + '»' : 'Seleccione un elemento'"
+                (click)="permisos()">
+          <i class="fa fa-user-shield archivos-btn__icono text-teal"></i>
+          <span class="archivos-btn__texto">Permisos</span>
         </button>
       </div>
 
@@ -215,7 +227,7 @@
                     <span>Nada coincide con «{{ searchQuery }}»</span>
                   } @else {
                     <i class="fa fa-folder-open"></i>
-                    <span>Aún no hay carpetas. Cree una con <b>Nueva raíz</b>.</span>
+                    <span>{{ modoUsuario ? 'Todavía no tienes archivos compartidos.' : 'Aún no hay carpetas. Cree una con Nueva raíz.' }}</span>
                   }
                 </div>
               }
@@ -226,6 +238,7 @@
         <!-- Pie: cuánto ocupan los ficheros subidos y cuánto disco queda
              (mismo bloque "SSD Storage" de la plantilla). Se recalcula al
              recargar; el desglose por tipo va en el tooltip. -->
+        @if (esAdministrador) {
         <div class="file-manager-sidebar-footer archivos-almacen"
              [title]="almacen.tooltip"
              (click)="cargarAlmacenamiento()">
@@ -258,6 +271,7 @@
             }
           </div>
         </div>
+        }
       </div>
 
       <!-- Divisor arrastrable: cambia el ancho del lateral (sólo escritorio) -->
@@ -292,6 +306,7 @@
 
           <!-- Papelera de reciclaje: lo eliminado va ahí y se puede restaurar.
                El contador se actualiza con cada recarga del árbol. -->
+          @if (puedeVerPapelera) {
           <button type="button" class="btn btn-sm btn-white archivos-papelera position-relative"
                   [title]="numPapelera ? 'Papelera de reciclaje: ' + numPapelera + (numPapelera === 1 ? ' elemento' : ' elementos') : 'Papelera de reciclaje (vacía)'"
                   (click)="abrirPapelera()">
@@ -303,6 +318,7 @@
               </span>
             }
           </button>
+          }
 
           <nav class="archivos-ruta" aria-label="Ubicación">
             <button type="button" class="archivos-ruta__tramo" (click)="irARaiz()" title="Raíz">
@@ -545,11 +561,13 @@
         <i class="fa fa-fw fa-layer-group text-primary"></i>
         <span class="text-truncate">{{ menuCtx.lote.length }} elementos seleccionados</span>
       </div>
+      @if (puedeMover) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); mover()">
         <i class="fa fa-arrows-up-down-left-right fa-fw text-warning"></i> Mover a…
         <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} elementos</span>
       </button>
-      @if (algunoFueraDeRaiz(menuCtx.lote)) {
+      }
+      @if (puedeNuevaRaiz && puedeMover && algunoFueraDeRaiz(menuCtx.lote)) {
         <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); moverARaiz(menuCtx.lote)">
           <i class="fa fa-house fa-fw text-primary"></i> Mover a la raíz
           <span class="menu-ctx__detalle">quedan como unidades</span>
@@ -559,10 +577,12 @@
         <i class="fa fa-file-zipper fa-fw text-primary"></i> Descargar .zip
         <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} elementos</span>
       </button>
+      @if (puedeEliminar) {
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminar()">
         <i class="fa fa-trash fa-fw"></i> Eliminar
         <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} elementos</span>
       </button>
+      }
       <div class="menu-ctx__sep"></div>
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); limpiarSeleccion()">
         <i class="fa fa-xmark fa-fw text-secondary"></i> Quitar selección
@@ -579,9 +599,11 @@
           <i class="fa fa-folder-open fa-fw text-warning"></i> Abrir
         </button>
       } @else {
+        @if (p(el).ejecutar) {
         <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); ejecutar(el)">
           <i class="fa fa-play fa-fw text-success"></i> Ejecutar
         </button>
+        }
       }
       <div class="menu-ctx__sep"></div>
       }
@@ -593,7 +615,7 @@
     }
 
     <!-- Crear (no con varios seleccionados) -->
-    @if (menuCtx.lote.length <= 1 && menuCtx.dentroDe; as carpeta) {
+    @if (menuCtx.lote.length <= 1 && menuCtx.dentroDe && p(menuCtx.dentroDe).crear; as carpeta) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevaCarpeta(carpeta)">
         <i class="fa fa-folder-plus fa-fw text-warning"></i> Nueva carpeta
         <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
@@ -603,7 +625,7 @@
         <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
       </button>
     }
-    @if (menuCtx.lote.length <= 1 && (!menuCtx.elemento || menuCtx.origen === 'arbol')) {
+    @if (puedeNuevaRaiz && menuCtx.lote.length <= 1 && (!menuCtx.elemento || menuCtx.origen === 'arbol')) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevaRaiz()">
         <i class="fa fa-folder-plus fa-fw text-warning"></i> Nueva raíz
       </button>
@@ -612,29 +634,44 @@
     <!-- Sobre el elemento -->
     @if (menuCtx.lote.length <= 1 && menuCtx.elemento; as el) {
       <div class="menu-ctx__sep"></div>
+      @if (p(el).editar) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); editar(el)">
         <i class="fa fa-pen-to-square fa-fw text-info"></i> Modificar
       </button>
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); mover(el)">
         <i class="fa fa-arrows-up-down-left-right fa-fw text-warning"></i> Mover a…
       </button>
-      @if (el.padre) {
+      }
+      @if (el.padre && puedeNuevaRaiz && p(el).editar) {
         <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); moverARaiz([el])">
           <i class="fa fa-house fa-fw text-primary"></i> Mover a la raíz
           <span class="menu-ctx__detalle">{{ el.escarpeta ? 'queda como unidad' : 'con sus datos' }}</span>
         </button>
       }
+      @if (el.escarpeta || p(el).descargar) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); descargarZip([el])">
         <i class="fa fa-file-zipper fa-fw text-primary"></i> Descargar .zip
         <span class="menu-ctx__detalle">{{ el.escarpeta ? 'con su contenido' : '' }}</span>
       </button>
+      }
+      @if (p(el).eliminar) {
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminar(el)">
         <i class="fa fa-trash fa-fw"></i> Eliminar
       </button>
+      }
+      @if (esAdministrador || p(el).administrar) {
       <div class="menu-ctx__sep"></div>
+      }
+      @if (esAdministrador) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); auditoria(el)">
         <i class="fa fa-user-secret fa-fw text-secondary"></i> Auditoría
       </button>
+      }
+      @if (p(el).administrar) {
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); permisos(el)">
+        <i class="fa fa-user-shield fa-fw text-teal"></i> Permisos
+      </button>
+      }
     } @else if (menuCtx.lote.length <= 1) {
       <div class="menu-ctx__sep"></div>
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); refresh()">

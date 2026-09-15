@@ -17,9 +17,9 @@
   <div class="visor-acciones">
     <!-- proteger_url: ni abrir fuera ni descargar; sólo un candado que lo dice -->
     @if (protegido) {
-      <span class="visor-chip visor-chip--protegido" >
+      <span class="visor-chip visor-chip--protegido" [title]="motivoProtegido">
         <i class="fa fa-shield-halved"></i>
-        <span class="d-none d-sm-inline ms-1"></span>
+        <span class="d-none d-sm-inline ms-1">Protegido</span>
       </span>
     } @else if (tipo.id !== 'link') {
       <button type="button" class="btn btn-sm btn-white" (click)="descargar()" [disabled]="descargando" title="Descargar">

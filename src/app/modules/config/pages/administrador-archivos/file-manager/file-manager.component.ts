@@ -2,6 +2,7 @@ import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } fro
 import { CellClickedEvent, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
+import { ActivatedRoute } from '@angular/router';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
@@ -16,6 +17,7 @@ import { SaveFileComponent } from '../save-file/saveFile.component';
 import { DeleteFileComponent } from '../delete-file/deleteFile.component';
 import { PapeleraComponent } from '../papelera/papelera.component';
 import { MoverArchivoComponent } from '../mover-archivo/moverArchivo.component';
+import { PermisosArchivoComponent } from '../permisos-archivo/permisosArchivo.component';
 import { ModalReporteExternoComponent } from '../modalReporteExterno/modalReporteExterno.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { TIPO_CARPETA, TIPO_LINK, TIPO_UNIDAD, defTipo, extensionDe, formatoTamano, tipoArchivoDeExtension } from '../../../interfaces/tipoArchivo';
@@ -52,7 +54,21 @@ export interface FileTreeNode {
   children?: FileTreeNode[];
   isOpen?: boolean;
   isSelected?: boolean;
+  /** Sólo en modo usuario (misArchivos): permiso efectivo que resolvió el back. */
+  permiso?: PermisoEfectivo;
 }
+
+/** Banderas efectivas de un usuario sobre un nodo (seguridad.fn_permiso_archivo). */
+export interface PermisoEfectivo {
+  ver: boolean; ejecutar: boolean; descargar: boolean; crear: boolean;
+  editar: boolean; eliminar: boolean; administrar: boolean; restaurar: boolean;
+  origen: 'ADMIN' | 'PROPIETARIO' | 'DENEGADO' | 'DIRECTO' | 'HEREDADO' | 'PUBLICO' | 'NINGUNO' | 'PASO';
+}
+
+/** En el administrador (modo admin) todo está permitido: el menú de acceso ya lo protege. */
+const PERMISO_TOTAL: PermisoEfectivo = {
+  ver: true, ejecutar: true, descargar: true, crear: true, editar: true, eliminar: true, administrar: true, restaurar: true, origen: 'ADMIN',
+};
 
 /**
  * Administrador de archivos: árbol de carpetas a la izquierda y contenido de
@@ -82,6 +98,18 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   public title = 'Administrador de archivos';
   public isLoading$ = this._loadingService.isLoading$;
+
+  // ---------- Modo ----------
+  /**
+   * false = administrador (ruta filemanager): ve y puede todo; el acceso lo
+   *         protege el menú.
+   * true  = "Mis archivos" (ruta misArchivos): el árbol sólo trae lo que el
+   *         usuario puede ver y cada acción se habilita con el permiso
+   *         efectivo del nodo (`permiso`), que también valida el back.
+   */
+  modoUsuario = false;
+  /** Tipo del usuario logueado: 1 super, 2 admin (ven todo, incluso en modo usuario). */
+  private tipoUsuario = 0;
 
   // ---------- Árbol ----------
   /** Árbol que se pinta (puede estar filtrado por la búsqueda). */
@@ -204,7 +232,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     private _toastr: ToastrService,
     private modal: NgbModal,
     private _loadingService: LoadingService,
-    public _appAgGridService: AppAgGridService
+    public _appAgGridService: AppAgGridService,
+    private _route: ActivatedRoute
   ) {
     // Pantalla a altura completa: el panel llena el hueco y el scroll lo
     // hacen el árbol y la grilla, no la página.
@@ -212,6 +241,52 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.appSettings.appHeaderInverse = true;
     this.appSettings.appContentFullHeight = true;
     this.appSettings.appContentClass = 'd-flex flex-column';
+
+    // La ruta decide el modo (config-routing: data.modo = 'mio')
+    this.modoUsuario = this._route.snapshot.data?.['modo'] === 'mio';
+    if (this.modoUsuario) { this.title = 'Mis archivos'; }
+    this.tipoUsuario = Number(this._seguridadService.getUserLogin()?.type_user ?? 0);
+  }
+
+  // ================================================================
+  // PERMISOS (modo usuario)
+  // ================================================================
+
+  /** Permiso efectivo sobre un nodo; en modo admin, todo. */
+  p(el: FileTreeNode | null | undefined): PermisoEfectivo {
+    if (!this.modoUsuario) { return PERMISO_TOTAL; }
+    return el?.permiso ?? { ...PERMISO_TOTAL, ver: false, ejecutar: false, descargar: false, crear: false, editar: false, eliminar: false, administrar: false, restaurar: false, origen: 'NINGUNO' };
+  }
+
+  /** Crear en la raíz: sólo administradores (en modo usuario, tipo 1 y 2). */
+  get puedeNuevaRaiz(): boolean {
+    return !this.modoUsuario || this.tipoUsuario === 1 || this.tipoUsuario === 2;
+  }
+
+  /** Almacenamiento y auditoría: cosas de administrador. */
+  get esAdministrador(): boolean {
+    return this.puedeNuevaRaiz;
+  }
+
+  /**
+   * Papelera: administradores, o quien tenga `restaurar` en algún nodo
+   * visible (el back sólo le enseña lo que puede restaurar).
+   */
+  get puedeVerPapelera(): boolean {
+    if (this.esAdministrador) { return true; }
+    const alguno = (nodos: FileTreeNode[]): boolean =>
+      nodos.some(n => !!n.permiso?.restaurar || alguno(n.children ?? []));
+    return alguno(this.nodes);
+  }
+
+  /** Carpeta "de paso" (modo usuario): sólo sirve para llegar a lo visible. */
+  esDePaso(el: FileTreeNode | null | undefined): boolean {
+    return this.modoUsuario && el?.permiso?.origen === 'PASO';
+  }
+
+  /** Mover `el` a `destino` (null = raíz): editar sobre él y crear en el destino. */
+  puedeMoverA(el: FileTreeNode, destino: FileTreeNode | null): boolean {
+    return this.p(el).editar && (destino ? this.p(destino).crear : this.puedeNuevaRaiz);
   }
 
   ngOnInit(): void {
@@ -324,7 +399,10 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     const idCarpeta = this.carpetaActual?.id;
 
     try {
-      const res = await firstValueFrom(this._archivoService.getArchivoTree());
+      // Modo usuario: el back sólo manda lo visible, con `permiso` en cada nodo
+      const res = await firstValueFrom(this.modoUsuario
+        ? this._archivoService.misArchivos()
+        : this._archivoService.getArchivoTree());
       if (res?.status !== 'success') {
         this._toastr.error(res?.message || 'No se pudo cargar el árbol de archivos', 'Error');
         return;
@@ -341,8 +419,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     }
 
     this.restaurarAbiertos(this.nodes, abiertas);
-    this.contarPapelera();
-    this.cargarAlmacenamiento();   // pie del árbol: cambia al subir, borrar o vaciar la papelera
+    if (this.puedeVerPapelera) { this.contarPapelera(); }
+    if (this.esAdministrador) { this.cargarAlmacenamiento(); }   // pie del árbol: cambia al subir, borrar o vaciar la papelera
 
     if (idCarpeta != null) {
       const nodo = this.buscarPorId(this.nodes, idCarpeta);
@@ -445,6 +523,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       backdrop: 'static',
       keyboard: true
     });
+    modalRef.componentInstance.soloRestaurar = !this.esAdministrador;   // sin borrar definitivo ni vaciar
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.loaddata());
   }
 
@@ -595,6 +674,19 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   // y ordena en el navegador, al instante.
 
   async cargarContenido(): Promise<void> {
+    // Modo usuario: el árbol ya trae todo lo visible (con permisos); la
+    // grilla son los hijos de la carpeta actual, sin ir al servidor
+    if (this.modoUsuario) {
+      const lista = this.carpetaActual ? (this.carpetaActual.children ?? []) : this.nodes;
+      this.contenido = [...lista].sort((a, b) =>
+        Number(b.escarpeta) - Number(a.escarpeta) || (a.orden - b.orden) || a.nombre.localeCompare(b.nombre));
+      this.numCarpetas = this.contenido.filter(n => n.escarpeta).length;
+      this.numArchivos = this.contenido.length - this.numCarpetas;
+      this.gridApi?.setRowData(this.contenido);
+      this.gridApi?.deselectAll();
+      return;
+    }
+
     const padre = this.carpetaActual?.id ?? 0;   // 0 → el back lo trata como raíz (padre IS NULL)
     try {
       this._loadingService.setLoading(true);
@@ -1084,10 +1176,21 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     return this.filaSeleccionada ?? this.carpetaActual;
   }
 
-  get puedeCrearDentro(): boolean { return !!this.carpetaActual; }
-  get puedeEjecutar(): boolean { return !!this.filaSeleccionada && !this.filaSeleccionada.escarpeta; }
-  get puedeEditar(): boolean { return !!this.objetivo; }
-  get puedeEliminar(): boolean { return !!this.objetivo; }
+  // En modo admin p() devuelve todo true, así que estas reglas se reducen a
+  // "hay algo seleccionado"; en modo usuario mandan las banderas del nodo.
+  get puedeCrearDentro(): boolean { return !!this.carpetaActual && this.p(this.carpetaActual).crear; }
+  get puedeEjecutar(): boolean { return !!this.filaSeleccionada && !this.filaSeleccionada.escarpeta && this.p(this.filaSeleccionada).ejecutar; }
+  get puedeEditar(): boolean { return !!this.objetivo && this.p(this.objetivo).editar; }
+  get puedeEliminar(): boolean {
+    const lote = this.hayVarios ? this.seleccion : (this.objetivo ? [this.objetivo] : []);
+    return lote.length > 0 && lote.every(e => this.p(e).eliminar);
+  }
+  /** Mover: editar sobre todo el lote (el destino se comprueba al soltar / en el modal). */
+  get puedeMover(): boolean {
+    const lote = this.hayVarios ? this.seleccion : (this.objetivo ? [this.objetivo] : []);
+    return lote.length > 0 && lote.every(e => this.p(e).editar);
+  }
+  get puedeAdministrarPermisos(): boolean { return !!this.objetivo && this.p(this.objetivo).administrar; }
 
   // ---- contadores para la barra de estado ----
   /** Totales de la carpeta (no de la página): los manda el servidor en meta. */
@@ -1099,13 +1202,13 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   // elemento que hay bajo el cursor, como en el explorador de Windows.
 
   nuevaRaiz(): void {
-    if (this._seguridadService.isexpired()) { return; }
+    if (!this.puedeNuevaRaiz || this._seguridadService.isexpired()) { return; }
     const modalRef = this.abrirSaveFile(0, 'addNuevaRaiz', this.siguienteOrden(this.nodes));
     this.alCerrar(modalRef, () => this.loaddata());
   }
 
   nuevaCarpeta(dentroDe: FileTreeNode | null = this.carpetaActual): void {
-    if (!dentroDe?.escarpeta || this._seguridadService.isexpired()) { return; }
+    if (!dentroDe?.escarpeta || !this.p(dentroDe).crear || this._seguridadService.isexpired()) { return; }
     // Las filas de la grilla vienen del servidor sin hijos: el orden se lee del árbol
     const carpeta = this.buscarPorId(this.nodes, dentroDe.id) ?? dentroDe;
     const modalRef = this.abrirSaveFile(carpeta, 'addCarpeta', this.siguienteOrden(carpeta.children ?? []));
@@ -1113,14 +1216,14 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   nuevoArchivo(dentroDe: FileTreeNode | null = this.carpetaActual): void {
-    if (!dentroDe?.escarpeta || this._seguridadService.isexpired()) { return; }
+    if (!dentroDe?.escarpeta || !this.p(dentroDe).crear || this._seguridadService.isexpired()) { return; }
     const carpeta = this.buscarPorId(this.nodes, dentroDe.id) ?? dentroDe;
     const modalRef = this.abrirSaveFile(carpeta, 'addArchivo', this.siguienteOrden(carpeta.children ?? []));
     this.alCerrar(modalRef, () => this.loaddata());
   }
 
   editar(objetivo: FileTreeNode | null = this.objetivo): void {
-    if (!objetivo || this._seguridadService.isexpired()) { return; }
+    if (!objetivo || !this.p(objetivo).editar || this._seguridadService.isexpired()) { return; }
     const modalRef = this.abrirSaveFile(objetivo, 'edit', objetivo.orden);
     this.alCerrar(modalRef, () => this.loaddata());
   }
@@ -1133,6 +1236,11 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     if (!objetivo || this._seguridadService.isexpired()) { return; }
 
     const lote = this.loteDe(objetivo);
+    const sinPermiso = lote.find(e => !this.p(e).eliminar);
+    if (sinPermiso) {
+      this._toastr.warning(`«${sinPermiso.nombre}»: no tienes permiso para eliminarlo`, 'Eliminar');
+      return;
+    }
     if (lote.length > 1) {
       this.eliminarVarios(lote);
       return;
@@ -1157,14 +1265,39 @@ export class FileManagerComponent implements OnInit, OnDestroy {
    * Abre un archivo: en el visor a pantalla completa, o en otra pestaña del
    * navegador si el registro tiene `nueva_ventana` (se decide en saveFile).
    */
-  ejecutar(archivo: FileTreeNode | null = this.filaSeleccionada): void {
+  async ejecutar(archivo: FileTreeNode | null = this.filaSeleccionada): Promise<void> {
     if (!archivo || archivo.escarpeta || this._seguridadService.isexpired()) { return; }
     if (!archivo.url) {
       this._toastr.warning('Este archivo no tiene una URL configurada', 'Sin destino');
       return;
     }
+    if (!this.p(archivo).ejecutar) {
+      this._toastr.warning('No tienes permiso para abrir este archivo', 'Mis archivos');
+      return;
+    }
 
-    if (archivo.nueva_ventana) {
+    // Modo usuario: el back vuelve a comprobar `ejecutar` y deja rastro
+    // (core.archivos_accesos); el visor respeta `descargar`
+    let permiso: PermisoEfectivo | null = null;
+    if (this.modoUsuario) {
+      try {
+        this._loadingService.setLoading(true);
+        const res = await firstValueFrom(this._archivoService.abrirArchivo(archivo.id));
+        if (res?.status !== 'success') {
+          this._toastr.error(res?.message || 'No se pudo abrir', 'Mis archivos');
+          return;
+        }
+        permiso = res.data?.permiso ?? this.p(archivo);
+      } catch (e) {
+        console.error('Error al abrir:', e);   // el interceptor ya avisó
+        return;
+      } finally {
+        this._loadingService.setLoading(false);
+      }
+    }
+
+    // En otra pestaña sólo si además puede descargar (la url queda a la vista)
+    if (archivo.nueva_ventana && (!permiso || (permiso.descargar && !archivo.proteger_url))) {
       // noopener: la pestaña nueva no puede tocar window.opener (seguridad)
       const ventana = window.open(this._archivoService.urlPublica(archivo.url), '_blank', 'noopener,noreferrer');
       if (!ventana) {
@@ -1181,6 +1314,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       windowClass: 'my-class'   // modal a pantalla completa (ver estilos globales)
     });
     modalRef.componentInstance.registro_selected = archivo;
+    modalRef.componentInstance.permiso = permiso;   // null en modo admin = puede todo
   }
 
   // ================================================================
@@ -1237,6 +1371,10 @@ export class FileManagerComponent implements OnInit, OnDestroy {
    */
   mover(objetivo: FileTreeNode | null = this.objetivo): void {
     if (!objetivo || this._seguridadService.isexpired()) { return; }
+    if (this.loteDe(objetivo).some(e => !this.p(e).editar)) {
+      this._toastr.warning('No tienes permiso para mover alguno de los elementos', 'Mover');
+      return;
+    }
     // Los elementos del árbol traen `children`: el modal bloquea sus subárboles
     const lote = this.loteDe(objetivo).map(e => this.buscarPorId(this.nodes, e.id) ?? e);
 
@@ -1249,6 +1387,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.elemento = lote[0];
     modalRef.componentInstance.elementos = lote.length > 1 ? lote : [];
     modalRef.componentInstance.arbol = this.nodes;
+    modalRef.componentInstance.puedeCrearEn = (c: FileTreeNode | null) => c ? this.p(c).crear : this.puedeNuevaRaiz;
     this.escucharModal(modalRef, modalRef.componentInstance.movido, () => this.trasMover());
   }
 
@@ -1267,6 +1406,11 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     }
     const aMover = lote.filter(e => (e.padre ?? null) !== padreNuevo);   // los que no están ya ahí
     if (!aMover.length) { return; }
+    const sinPermiso = aMover.find(e => !this.puedeMoverA(e, destino));
+    if (sinPermiso) {
+      this._toastr.warning(`«${sinPermiso.nombre}»: no tienes permiso para moverlo ahí (hace falta editar sobre él y crear en el destino)`, 'Mover');
+      return;
+    }
     const conflicto = destino ? aMover.find(e => this.estaDentroDe(destino.id, e)) : undefined;
     if (conflicto) {
       this._toastr.warning(`«${conflicto.nombre}»: no se puede mover una carpeta dentro de sí misma`, 'Mover');
@@ -1301,7 +1445,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   /** Hay algo seleccionado que pueda ir en un zip (carpeta, fichero no protegido o enlace no protegido). */
   get puedeDescargar(): boolean {
     const lote = this.hayVarios ? this.seleccion : (this.objetivo ? [this.objetivo] : []);
-    return lote.some(e => e.escarpeta || (!e.proteger_url && !!e.url));
+    return lote.some(e => e.escarpeta || (!e.proteger_url && !!e.url && this.p(e).descargar));
   }
 
   /**
@@ -1512,6 +1656,24 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   private quitarFilaDestino(): void {
     this.filaDestino?.classList.remove('fila-destino');
     this.filaDestino = null;
+  }
+
+  /**
+   * Permisos por usuario del elemento (modal "Seguridad"). Si cambia algo
+   * (público, filas) se recarga el árbol para que la grilla refleje `publico`.
+   */
+  permisos(objetivo: FileTreeNode | null = this.objetivo): void {
+    if (!objetivo || !this.p(objetivo).administrar || this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(PermisosArchivoComponent, {
+      centered: true,
+      size: 'xl',
+      backdrop: 'static',
+      keyboard: false
+    });
+    modalRef.componentInstance.elemento = objetivo;
+    let cambio = false;
+    this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => { cambio = true; });
+    this.alCerrar(modalRef, () => { if (cambio) { this.loaddata(); } });
   }
 
   auditoria(objetivo: FileTreeNode | null = this.objetivo): void {

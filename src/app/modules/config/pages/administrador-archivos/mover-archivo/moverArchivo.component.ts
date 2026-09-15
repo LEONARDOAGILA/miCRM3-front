@@ -62,6 +62,11 @@ export class MoverArchivoComponent implements OnInit {
   @Input() elementos: (NodoMover & { padre?: number | null })[] = [];
   /** Árbol completo del administrador (raíces con children). */
   @Input() arbol: NodoMover[] = [];
+  /**
+   * Modo usuario: dice si se puede crear dentro de una carpeta (null = raíz).
+   * Las que devuelven false salen bloqueadas. Sin función, todo permitido.
+   */
+  @Input() puedeCrearEn: ((carpeta: NodoMover | null) => boolean) | null = null;
 
   @Output() movido = new EventEmitter<any>();
 
@@ -103,7 +108,8 @@ export class MoverArchivoComponent implements OnInit {
     // Raíz como primera opción
     this.carpetas = [{
       id: null, nombre: 'Raíz', nivel: 0, icono: 'fa fa-house', color: '#727cb6',
-      ruta: 'Raíz', bloqueada: false, actual: padreActual === null,   // undefined (varios padres) → no marca
+      ruta: 'Raíz', bloqueada: this.puedeCrearEn ? !this.puedeCrearEn(null) : false,
+      actual: padreActual === null,   // undefined (varios padres) → no marca
       abierta: true, tieneHijas: this.arbol.some(n => n.escarpeta), padreId: null,
     }];
     this.aplanar(this.arbol, 1, [], bloqueados, padreActual, null);
@@ -127,7 +133,7 @@ export class MoverArchivoComponent implements OnInit {
         icono: n.icono || 'fa fa-folder',
         color: n.color || '#F0B13B',
         ruta: 'Raíz / ' + ruta.join(' / '),
-        bloqueada: bloqueados.has(n.id),
+        bloqueada: bloqueados.has(n.id) || (this.puedeCrearEn ? !this.puedeCrearEn(n) : false),
         actual: n.id === padreActual,
         abierta: false,
         tieneHijas: hijas.length > 0,

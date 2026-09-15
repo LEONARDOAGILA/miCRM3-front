@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellClickedEvent, ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
@@ -23,6 +23,8 @@ interface ItemPapelera {
   tamano?: number | null;
   url?: string;
   deleted_at_formateado?: string;
+  /** Login de quien lo envió a la papelera */
+  deleted_by?: string | null;
 }
 
 /**
@@ -45,6 +47,12 @@ export class PapeleraComponent implements OnInit, OnDestroy {
 
   /** Algo se restauró o se borró: el árbol del administrador ya no es fiel. */
   @Output() cambio = new EventEmitter<void>();
+  /**
+   * Modo usuario (permiso `restaurar`): sólo ve lo que puede restaurar y no
+   * puede borrar definitivamente ni vaciar (eso es de administrador; el back
+   * también lo rechaza).
+   */
+  @Input() soloRestaurar = false;
 
   public isLoading$ = this._loadingService.isLoading$;
   public items: ItemPapelera[] = [];
@@ -174,6 +182,12 @@ export class PapeleraComponent implements OnInit, OnDestroy {
       {
         headerName: 'Eliminado', field: 'deleted_at_formateado', width: 160, maxWidth: 170,
         cellStyle: { textAlign: 'center' }
+      },
+      {
+        headerName: 'Eliminado por', field: 'deleted_by', width: 130, maxWidth: 160,
+        headerTooltip: 'Usuario que lo envió a la papelera',
+        valueGetter: p => p.data?.deleted_by || '—',
+        cellStyle: { textAlign: 'left' }
       }
     ];
   }

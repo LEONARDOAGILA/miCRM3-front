@@ -50,7 +50,23 @@ export class ModalReporteExternoComponent implements OnInit, OnDestroy {
   /** El navegador no pudo reproducir el video/audio (formato no soportado, p. ej. .mkv o .wma). */
   errorMedio = false;
   /** proteger_url del registro: sin "abrir en pestaña" ni descarga (el back también lo rechaza). */
-  get protegido(): boolean { return !!this.registro_selected?.proteger_url; }
+  /**
+   * Permiso efectivo del usuario (lo manda "Mis archivos" tras abrirArchivo).
+   * Sin él (administrador) se asume que puede todo; el back vuelve a
+   * comprobar al descargar.
+   */
+  @Input() permiso: { descargar?: boolean } | null = null;
+
+  /** Sin "abrir en pestaña" ni descarga: URL protegida o usuario sin permiso `descargar`. */
+  get protegido(): boolean {
+    return !!this.registro_selected?.proteger_url || (this.permiso != null && !this.permiso.descargar);
+  }
+
+  /** Motivo del candado, para el tooltip. */
+  get motivoProtegido(): string {
+    if (this.registro_selected?.proteger_url) { return 'URL protegida: sólo se puede ver dentro del sistema'; }
+    return 'No tienes permiso para descargar este archivo';
+  }
   /** true mientras se descarga el fichero (botón con spinner). */
   descargando = false;
   private readonly destroy$ = new Subject<void>();

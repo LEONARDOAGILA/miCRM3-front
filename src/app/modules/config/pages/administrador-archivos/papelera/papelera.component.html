@@ -44,6 +44,8 @@
         <i class="fa fa-rotate-left me-1"></i>
         <span class="d-none d-sm-inline">Restaurar</span>
       </button>
+      <!-- Borrar para siempre: sólo administradores (soloRestaurar = false) -->
+      @if (!soloRestaurar) {
       <button type="button" class="btn btn-sm btn-outline-danger"
               [disabled]="!seleccionado"
               [title]="seleccionado ? 'Borrar «' + seleccionado.nombre + '» para siempre' : 'Seleccione un elemento'"
@@ -58,6 +60,7 @@
         <i class="fa fa-broom me-1"></i>
         <span class="d-none d-sm-inline">Vaciar papelera</span>
       </button>
+      }
     </div>
   </div>
 
@@ -117,20 +120,24 @@
         <i class="fa fa-rotate-left fa-fw text-success"></i> Restaurar
         <span class="menu-ctx__detalle">a «{{ el.ruta }}»</span>
       </button>
+      @if (!soloRestaurar) {
       <div class="menu-ctx__sep"></div>
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminarDefinitivo()">
         <i class="fa fa-trash fa-fw"></i> Eliminar definitivamente
       </button>
+      }
     } @else {
       <div class="menu-ctx__cabecera menu-ctx__cabecera--vacio">
         <i class="fa fa-trash-can fa-fw"></i>
         <span>Papelera</span>
       </div>
+      @if (!soloRestaurar) {
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem"
               [disabled]="!items.length" (click)="cerrarMenu(); vaciar()">
         <i class="fa fa-broom fa-fw"></i> Vaciar papelera
       </button>
       <div class="menu-ctx__sep"></div>
+      }
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); cargar()">
         <i class="fa fa-arrows-rotate fa-fw text-secondary"></i> Recargar
       </button>

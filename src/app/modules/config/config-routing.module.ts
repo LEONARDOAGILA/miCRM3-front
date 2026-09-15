@@ -26,6 +26,8 @@ const routes: Routes = [
 
         { path: 'allDepartamentos',component:AllDepartamentosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'filemanager',component:FileManagerComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        // Mismo componente en modo usuario: sólo lo que puede ver, acciones según su permiso
+        { path: 'misArchivos', component: FileManagerComponent, data: { modo: 'mio' }, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         { path: 'extra-settings', component: ExtraSettingsPage},
         { path: 'extra-search-results', component: ExtraSearchResultsPage },

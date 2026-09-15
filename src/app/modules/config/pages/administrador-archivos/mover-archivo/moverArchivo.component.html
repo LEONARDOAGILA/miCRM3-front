@@ -69,7 +69,7 @@
            [class.is-bloqueada]="c.bloqueada"
            [class.is-actual]="c.actual"
            [style.padding-left.rem]="filtro ? .5 : .5 + c.nivel * 1.1"
-           [title]="c.bloqueada ? 'No se puede mover dentro de sí mismo' : (c.actual ? 'Ya está aquí' : c.ruta)"
+           [title]="c.bloqueada ? 'No se puede mover aquí (es el propio elemento, una subcarpeta suya, o no tienes permiso para crear dentro)' : (c.actual ? 'Ya está aquí' : c.ruta)"
            (click)="elegir(c)"
            (dblclick)="elegir(c); puedeMover && mover()">
 

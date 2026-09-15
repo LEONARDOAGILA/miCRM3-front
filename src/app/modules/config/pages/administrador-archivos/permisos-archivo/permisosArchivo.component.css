@@ -1,0 +1,404 @@
+/* ============================================================
+   PERMISOS DE UN ARCHIVO — pestaña "Seguridad" de Windows
+   Variables --bs-* para claro/oscuro, mismo lenguaje que el resto del
+   administrador (chips, avatares, tabla compacta).
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.permisos-cuerpo {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  padding: 1rem;
+}
+
+/* ---------- Cabecera: elemento + público ---------- */
+.permisos-cabecera {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .75rem;
+  padding: .625rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.permisos-cabecera__icono {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+}
+
+.permisos-cabecera__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.permisos-cabecera__nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.permisos-cabecera__ayuda {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.permisos-publico {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .4rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.permisos-publico.is-activo {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+}
+
+.permisos-publico.is-bloqueado {
+  cursor: not-allowed;
+  opacity: .7;
+}
+
+.permisos-publico__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.permisos-publico.is-activo .permisos-publico__icono {
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+}
+
+.permisos-publico__texto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.permisos-publico__titulo {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.permisos-publico__ayuda {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Pestañas ---------- */
+.permisos-tabs {
+  margin-bottom: .5rem;
+}
+
+.permisos-tabs .nav-link {
+  padding: .35rem .75rem;
+  font-size: 12px;
+}
+
+/* ---------- Buscador de usuarios ---------- */
+.permisos-buscador {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: .5rem;
+}
+
+.permisos-buscador > i {
+  position: absolute;
+  left: .6rem;
+  font-size: 12px;
+  color: var(--bs-app-theme, #00acac);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.permisos-buscador .form-control {
+  padding-left: 1.9rem;
+  font-size: 12px;
+}
+
+.permisos-sugerencias {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: 240px;
+  overflow: auto;
+  margin-top: .2rem;
+  padding: .25rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .16);
+}
+
+.permisos-sugerencia {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  padding: .35rem .5rem;
+  border: 0;
+  border-radius: .375rem;
+  background: transparent;
+  text-align: left;
+  color: var(--bs-body-color, #212529);
+}
+
+.permisos-sugerencia:hover {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .10);
+}
+
+.permisos-sugerencia__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.permisos-sugerencia__nombre {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.permisos-sugerencia__login {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Avatar con iniciales ---------- */
+.permisos-avatar {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .16);
+  color: var(--bs-app-theme, #00acac);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.permisos-avatar--gris {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Tabla ---------- */
+.permisos-tabla-envoltorio {
+  max-height: 46vh;
+  overflow: auto;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.permisos-tabla {
+  margin: 0;
+  font-size: 12px;
+}
+
+.permisos-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--bs-component-bg, #fff);
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+  vertical-align: bottom;
+}
+
+.permisos-th-bandera,
+.permisos-td-bandera {
+  width: 62px;
+  text-align: center;
+}
+
+.permisos-th-bandera i {
+  display: block;
+  margin-bottom: .15rem;
+  font-size: 12px;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.permisos-th-vence i {
+  display: block;
+  margin-bottom: .15rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.permisos-td-usuario {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 200px;
+}
+
+.permisos-usuario {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.permisos-usuario__nombre {
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.permisos-usuario__login {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.permisos-usuario__login .badge {
+  font-size: 9px;
+  margin-left: .25rem;
+}
+
+.permisos-fila td {
+  vertical-align: middle;
+}
+
+.permisos-fila.is-cambiada td {
+  background-color: rgba(var(--bs-warning-rgb, 245, 156, 26), .08);
+}
+
+.permisos-fila.is-denegada .permisos-usuario__nombre {
+  color: var(--bs-danger, #dc3545);
+}
+
+.permisos-fila.is-caducada .permisos-usuario__nombre {
+  text-decoration: line-through;
+}
+
+.permisos-fila--heredada td {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.permisos-fila--heredada .permisos-usuario__nombre {
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 500;
+}
+
+/* Casilla-botón de cada bandera */
+.permisos-casilla {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--bs-secondary-color, #adb5bd);
+  font-size: 17px;
+  line-height: 1;
+  transition: color .1s ease, transform .1s ease;
+}
+
+.permisos-casilla:hover:not(:disabled) {
+  transform: scale(1.12);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.permisos-casilla.is-si {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.permisos-casilla--denegar.is-si {
+  color: var(--bs-danger, #dc3545);
+}
+
+.permisos-casilla:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+/* Marcas de sólo lectura (heredados) */
+.permisos-marca {
+  font-size: 15px;
+  color: var(--bs-secondary-color, #adb5bd);
+}
+
+.permisos-marca.fa-square-check {
+  color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .6);
+}
+
+.permisos-fecha {
+  width: 130px;
+  font-size: 11px;
+  padding: .15rem .35rem;
+}
+
+.permisos-td-acciones {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.permisos-td-acciones .btn {
+  padding: .15rem .45rem;
+  font-size: 11px;
+}
+
+.permisos-vacio {
+  padding: 1.5rem 1rem !important;
+  text-align: center;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.permisos-vacio i {
+  display: block;
+  margin-bottom: .4rem;
+  font-size: 1.5rem;
+  opacity: .5;
+}
+
+.permisos-leyenda {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .5rem 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.permisos-leyenda i {
+  margin-top: .15rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.permisos-pie {
+  padding: .625rem 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .permisos-casilla {
+    transition: none;
+  }
+}
