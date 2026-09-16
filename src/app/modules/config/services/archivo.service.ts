@@ -42,6 +42,10 @@ export class ArchivoService {
     return this._http.post(this.URL_SERVICIOS + 'moverArchivo/' + id, { padre: padre ?? 0 });
   }
   /** Varios a la vez a la misma carpeta (una transacción). */
+  /** Orden manual entre hermanos: coloca `ids` delante de `antesDe` (null = al final) dentro de `padre`. */
+  reordenarArchivos(ids: number[], antesDe: number | null, padre: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'reordenarArchivos', { ids, antes_de: antesDe, padre: padre ?? 0 });
+  }
   moverArchivos(ids: number[], padre: number | null): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'moverArchivos', { ids, padre: padre ?? 0 });
   }

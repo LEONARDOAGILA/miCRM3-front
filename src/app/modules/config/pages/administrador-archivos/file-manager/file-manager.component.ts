@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CellClickedEvent, CellKeyDownEvent, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
+import { CellClickedEvent, CellKeyDownEvent, ColDef, ColumnApi, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
@@ -140,6 +140,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   // ---------- ag-Grid ----------
   public gridApi!: GridApi;
+  private columnApi?: ColumnApi;
   public columnDefs: ColDef[] = [];
   public rowClassRules = {
     'fila-inactiva': (p: RowClassParams) => p.data?.activo === false
@@ -172,6 +173,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     sobreFondoGrilla: false,
     /** Tile-carpeta de la cuadrícula sobre el que se va a soltar (id). */
     sobreTile: null as number | null,
+    /** Reordenar: hueco donde se va a insertar (antes / después del elemento `id`). */
+    insertar: null as { id: number; pos: 'antes' | 'despues' } | null,
   };
   /** Fila de la grilla resaltada como destino (para quitarle la clase después). */
   private filaDestino: HTMLElement | null = null;
@@ -915,6 +918,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
+    this.columnApi = params.columnApi;
     this.gridApi.setRowData(this.contenido);
     // Sin sizeColumnsToFit: las columnas tienen ancho fijo y, si no caben,
     // la grilla hace scroll horizontal (en vez de encoger las celdas).
@@ -1190,6 +1194,19 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   onDragOverTile(el: FileTreeNode, ev: DragEvent): void {
     if (!this.dnd.elementos.length) { return; }
     ev.stopPropagation();                  // que el fondo no lo tome como "carpeta actual"
+
+    // Reordenar: borde izquierdo / derecho del tile = hueco; centro de una carpeta = dentro
+    const hueco = this.huecoEnTile(el, ev);
+    if (hueco) {
+      ev.preventDefault();
+      if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'move'; }
+      this.dnd.insertar = { id: el.id, pos: hueco };
+      this.dnd.sobreTile = null;
+      this.dnd.sobreFondoGrilla = false;
+      return;
+    }
+    this.dnd.insertar = null;
+
     if (!el.escarpeta) { this.dnd.sobreTile = null; return; }
     ev.preventDefault();
     if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'move'; }
@@ -1197,19 +1214,36 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.dnd.sobreFondoGrilla = false;
   }
 
+  /** Hueco de reordenación en un tile: tercio izquierdo / derecho (archivos: mitad y mitad). */
+  private huecoEnTile(el: FileTreeNode, ev: DragEvent): 'antes' | 'despues' | null {
+    if (!this.puedeReordenar() || this.dnd.elementos.some(e => e.id === el.id)) { return null; }
+    const r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = (ev.clientX - r.left) / r.width;
+    if (el.escarpeta) {
+      if (x < .3) { return 'antes'; }
+      if (x > .7) { return 'despues'; }
+      return null;
+    }
+    return x < .5 ? 'antes' : 'despues';
+  }
+
   onDragLeaveTile(el: FileTreeNode, ev: DragEvent): void {
     const destino = ev.relatedTarget as Node | null;
     if (destino && (ev.currentTarget as HTMLElement).contains(destino)) { return; }
     if (this.dnd.sobreTile === el.id) { this.dnd.sobreTile = null; }
+    if (this.dnd.insertar?.id === el.id) { this.dnd.insertar = null; }
   }
 
   onDropTile(el: FileTreeNode, ev: DragEvent): void {
     ev.stopPropagation();
-    if (!el.escarpeta) { return; }
+    const hueco = this.huecoEnTile(el, ev);
+    if (!hueco && !el.escarpeta) { return; }
     ev.preventDefault();
     const lote = this.dnd.elementos;
     this.onDragEnd();
-    if (lote.length) { this.moverA(lote, el); }
+    if (!lote.length) { return; }
+    if (hueco) { this.reordenar(lote, el, hueco, this.contenidoFiltrado); }
+    else { this.moverA(lote, el); }
   }
 
   onDragOverFondoCuadricula(ev: DragEvent): void {
@@ -1222,8 +1256,11 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   onDropFondoCuadricula(ev: DragEvent): void {
     ev.preventDefault();
     const lote = this.dnd.elementos;
+    const alFinal = this.puedeReordenar();   // fondo de su propia carpeta: al final
     this.onDragEnd();
-    if (lote.length) { this.moverA(lote, this.carpetaActual); }
+    if (!lote.length) { return; }
+    if (alFinal) { this.reordenar(lote, null, 'despues', []); }
+    else { this.moverA(lote, this.carpetaActual); }
   }
 
   // ---- aspecto de los tiles ----
@@ -1672,6 +1709,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   onDragEnd(): void {
     this.dnd.elementos = [];
     this.dnd.sobreTile = null;
+    this.dnd.insertar = null;
     this.dnd.sobreRaizArbol = false;
     this.dnd.sobreFondoGrilla = false;
     this.quitarFilaDestino();
@@ -1711,9 +1749,25 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     event.preventDefault();
     if (event.dataTransfer) { event.dataTransfer.dropEffect = 'move'; }
 
+    // Reordenar (los arrastrados son de esta carpeta): borde superior /
+    // inferior de cualquier fila = hueco; el centro de una carpeta = dentro
+    const hueco = this.huecoEnFila(event);
+    if (hueco) {
+      const clase = hueco.pos === 'antes' ? 'fila-insertar-antes' : 'fila-insertar-despues';
+      if (this.filaDestino !== hueco.el || !hueco.el.classList.contains(clase)) {
+        this.quitarFilaDestino();
+        hueco.el.classList.add(clase);
+        this.filaDestino = hueco.el;
+      }
+      this.dnd.insertar = { id: hueco.data.id, pos: hueco.pos };
+      this.dnd.sobreFondoGrilla = false;
+      return;
+    }
+    this.dnd.insertar = null;
+
     const fila = this.filaCarpetaBajo(event);
     if (fila) {
-      if (this.filaDestino !== fila.el) {
+      if (this.filaDestino !== fila.el || !fila.el.classList.contains('fila-destino')) {
         this.quitarFilaDestino();
         fila.el.classList.add('fila-destino');
         this.filaDestino = fila.el;
@@ -1723,6 +1777,46 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       this.quitarFilaDestino();
       this.dnd.sobreFondoGrilla = true;
     }
+  }
+
+  /**
+   * Hueco de reordenación bajo el cursor en la grilla, si procede: los
+   * arrastrados son hijos de la carpeta actual y el cursor está en el
+   * tercio superior / inferior de una fila (en un archivo, mitad y mitad:
+   * sobre un archivo no hay "dentro").
+   */
+  private huecoEnFila(event: DragEvent): { el: HTMLElement; data: FileTreeNode; pos: 'antes' | 'despues' } | null {
+    if (!this.puedeReordenar()) { return null; }
+    const el = (event.target as HTMLElement).closest('.ag-row') as HTMLElement | null;
+    if (!el) { return null; }
+    const data = this.gridApi?.getDisplayedRowAtIndex(Number(el.getAttribute('row-index')))?.data as FileTreeNode | undefined;
+    if (!data) { return null; }
+    const r = el.getBoundingClientRect();
+    const y = (event.clientY - r.top) / r.height;
+    if (data.escarpeta) {
+      if (y < .3) { return { el, data, pos: 'antes' }; }
+      if (y > .7) { return { el, data, pos: 'despues' }; }
+      return null;   // centro: dentro de la carpeta
+    }
+    return { el, data, pos: y < .5 ? 'antes' : 'despues' };
+  }
+
+  /** Sólo se reordena lo que ya está en la carpeta abierta. */
+  private puedeReordenar(): boolean {
+    const padre = this.carpetaActual?.id ?? null;
+    return this.dnd.elementos.length > 0 && this.dnd.elementos.every(e => (e.padre ?? null) === padre);
+  }
+
+  /** La grilla tiene una columna ordenada: el arrastre no puede reflejar el orden manual. */
+  private grillaOrdenadaPorColumna(): boolean {
+    return (this.columnApi?.getColumnState() ?? []).some(c => !!c.sort);
+  }
+
+  /** Filas de la grilla tal como se ven (filtro y orden aplicados), todas, no sólo las renderizadas. */
+  private filasGrillaVisibles(): FileTreeNode[] {
+    const out: FileTreeNode[] = [];
+    this.gridApi?.forEachNodeAfterFilterAndSort(n => { if (n.data) { out.push(n.data as FileTreeNode); } });
+    return out;
   }
 
   onDragLeaveGrilla(event: DragEvent): void {
@@ -1735,11 +1829,81 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   onDropGrilla(event: DragEvent): void {
     event.preventDefault();
     const lote = this.dnd.elementos;
-    const fila = this.filaCarpetaBajo(event);
+    const hueco = this.huecoEnFila(event);
+    const fila = hueco ? null : this.filaCarpetaBajo(event);
+    const reordenarAlFinal = !hueco && !fila && this.puedeReordenar();
     this.onDragEnd();
     if (!lote.length) { return; }
+    if (hueco) {
+      this.reordenar(lote, hueco.data, hueco.pos, this.filasGrillaVisibles());
+      return;
+    }
+    if (reordenarAlFinal) {
+      this.reordenar(lote, null, 'despues', []);   // fondo de su propia carpeta: al final
+      return;
+    }
     // Sobre una carpeta de la lista → dentro de ella; si no → carpeta actual (o raíz)
     this.moverA(lote, fila ? fila.data : this.carpetaActual);
+  }
+
+  /**
+   * Orden manual (columna `orden`): coloca `lote` antes / después de
+   * `referencia` entre sus hermanos. `visibles` es la lista tal como se ve
+   * (para resolver "después de X" = "antes del siguiente de X"); el back
+   * renumera a todos los hermanos con las carpetas primero.
+   */
+  private async reordenar(lote: FileTreeNode[], referencia: FileTreeNode | null, pos: 'antes' | 'despues', visibles: FileTreeNode[]): Promise<void> {
+    if (!lote.length || this._seguridadService.isexpired()) { return; }
+    if (this.vista === 'lista' && this.grillaOrdenadaPorColumna()) {
+      this._toastr.info('Quita el orden de la columna (clic en su cabecera) para ordenar arrastrando', 'Ordenar', { timeOut: 4000 });
+      return;
+    }
+    const sinPermiso = lote.find(e => !this.p(e).editar);
+    if (sinPermiso) {
+      this._toastr.warning(`«${sinPermiso.nombre}»: no tienes permiso para moverlo`, 'Ordenar');
+      return;
+    }
+
+    // antes_de: la referencia (antes) o el siguiente visible que no se esté moviendo (después)
+    let antesDe: number | null = null;
+    if (referencia) {
+      if (pos === 'antes') {
+        antesDe = referencia.id;
+      } else {
+        const lista = visibles.length ? visibles : this.contenidoFiltrado;
+        const i = lista.findIndex(n => n.id === referencia.id);
+        const siguiente = lista.slice(i + 1).find(n => !lote.some(l => l.id === n.id));
+        antesDe = siguiente?.id ?? null;
+      }
+      if (antesDe !== null && lote.some(l => l.id === antesDe)) { return; }   // soltado sobre sí mismo
+    }
+
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(this._archivoService.reordenarArchivos(lote.map(e => e.id), antesDe, this.carpetaActual?.id ?? null));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo cambiar el orden', 'Ordenar');
+        return;
+      }
+      if (res.data?.cambiados) { this._toastr.success(res.message, 'Ordenar', { timeOut: 2000 }); }
+      const ids = lote.map(e => e.id);
+      await this.loaddata();   // árbol y grilla con el orden nuevo
+      this.reseleccionar(ids);
+    } catch (e) {
+      console.error('Error al reordenar:', e);   // el interceptor ya avisó
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /** Tras recargar, vuelve a marcar los mismos elementos (por id). */
+  private reseleccionar(ids: number[]): void {
+    const lista = this.contenido.filter(n => ids.includes(n.id));
+    this.seleccion = lista;
+    this.filaSeleccionada = lista[lista.length - 1] ?? null;
+    if (this.gridApi) {
+      this.gridApi.forEachNode(n => n.setSelected(ids.includes(n.data?.id), false));
+    }
   }
 
   /** Fila-carpeta de la grilla bajo el cursor, si la hay. */
@@ -1752,7 +1916,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   private quitarFilaDestino(): void {
-    this.filaDestino?.classList.remove('fila-destino');
+    this.filaDestino?.classList.remove('fila-destino', 'fila-insertar-antes', 'fila-insertar-despues');
     this.filaDestino = null;
   }
 

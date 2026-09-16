@@ -484,6 +484,15 @@
   box-shadow: inset 0 0 0 1px var(--bs-app-theme, #00acac);
 }
 
+/* Reordenar: hueco antes / después de una fila (línea de inserción) */
+:host ::ng-deep .archivos-grilla .ag-row.fila-insertar-antes .ag-cell {
+  box-shadow: inset 0 3px 0 0 var(--bs-primary, #348fe2);
+}
+
+:host ::ng-deep .archivos-grilla .ag-row.fila-insertar-despues .ag-cell {
+  box-shadow: inset 0 -3px 0 0 var(--bs-primary, #348fe2);
+}
+
 /* Fondo de la grilla = soltar en la carpeta actual */
 .archivos-grilla.is-destino-fondo {
   outline: 2px dashed var(--bs-app-theme, #00acac);
@@ -736,6 +745,22 @@
 .archivos-tile.is-inactivo {
   opacity: .5;
 }
+
+/* Reordenar: barra vertical de inserción a la izquierda / derecha del tile */
+.archivos-tile.is-insertar-antes::before,
+.archivos-tile.is-insertar-despues::before {
+  content: '';
+  position: absolute;
+  top: .25rem;
+  bottom: .25rem;
+  width: 3px;
+  border-radius: 2px;
+  background-color: var(--bs-primary, #348fe2);
+  pointer-events: none;
+}
+
+.archivos-tile.is-insertar-antes::before  { left: -.35rem; }
+.archivos-tile.is-insertar-despues::before { right: -.35rem; }
 
 /* Carpeta sobre la que se va a soltar */
 .archivos-tile.is-destino {

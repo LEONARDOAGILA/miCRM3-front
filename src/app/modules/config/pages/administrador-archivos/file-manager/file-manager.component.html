@@ -440,6 +440,7 @@
              Misma data y mismas acciones que la grilla: clic selecciona,
              Ctrl+clic añade/quita, Mayús+clic rango, doble clic abre/ejecuta,
              clic derecho = menú contextual, y se arrastra/suelta igual.
+             Arrastrar al borde izquierdo/derecho de otro tile = cambiar el orden.
              Teclado: flechas / Inicio / Fin mueven la selección (onTecladoTile).
              El buscador filtra por nombre, descripción, tipo y extensión. -->
         @if (vista === 'cuadricula') {
@@ -466,6 +467,8 @@
                        [class.is-seleccionado]="estaSeleccionado(el)"
                        [class.is-inactivo]="el.activo === false"
                        [class.is-destino]="dnd.sobreTile === el.id"
+                       [class.is-insertar-antes]="dnd.insertar?.id === el.id && dnd.insertar?.pos === 'antes'"
+                       [class.is-insertar-despues]="dnd.insertar?.id === el.id && dnd.insertar?.pos === 'despues'"
                        [title]="tituloTile(el)"
                        draggable="true"
                        (click)="onClickTile(el, $event)"
