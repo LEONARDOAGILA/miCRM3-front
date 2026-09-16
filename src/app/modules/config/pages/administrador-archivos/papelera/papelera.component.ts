@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellClickedEvent, ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
@@ -66,21 +66,25 @@ export class PapeleraComponent implements OnInit, OnDestroy {
   // punto del clic, con opciones según haya una fila debajo o no.
   menuCtx = { visible: false, x: 0, y: 0, elemento: null as ItemPapelera | null };
   @ViewChild('menuCtxEl') menuCtxEl?: ElementRef<HTMLElement>;
-  private readonly cerrarMenuPorScroll = () => this.cerrarMenu();
+  // Fuera de la zona de Angular (ver file-manager): sólo entra si hay menú que cerrar
+  private readonly cerrarMenuPorScroll = () => {
+    if (this.menuCtx.visible) { this.ngZone.run(() => this.cerrarMenu()); }
+  };
 
   constructor(
     public modal: NgbActiveModal,
     private _archivoService: ArchivoService,
     private _toastr: ToastrService,
     private _loadingService: LoadingService,
-    public _appAgGridService: AppAgGridService
+    public _appAgGridService: AppAgGridService,
+    private ngZone: NgZone
   ) {}
 
   ngOnInit(): void {
     this.initializeGrid();
     this.cargar();
     // capture:true — el scroll de la grilla no burbujea a window
-    document.addEventListener('scroll', this.cerrarMenuPorScroll, true);
+    this.ngZone.runOutsideAngular(() => document.addEventListener('scroll', this.cerrarMenuPorScroll, true));
   }
 
   ngOnDestroy(): void {

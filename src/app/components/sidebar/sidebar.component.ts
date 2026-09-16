@@ -270,12 +270,22 @@ appSidebarSearch(e: any) {
     }
   }
 
+  /** true cuando ya se devolvió el menú a la posición guardada (sólo hace falta una vez). */
+  private scrollRestaurado = false;
+
+  /**
+   * Devuelve el menú a la posición de scroll guardada (localStorage) cuando
+   * el menú ya está pintado. UNA sola vez: antes se hacía en cada detección
+   * de cambios y, en pantallas que disparan muchas (administrador de
+   * archivos), pisaba el scroll del usuario en mitad del gesto: el menú se
+   * quedaba "trabado".
+   */
   ngAfterViewChecked() {
-    if (typeof(Storage) !== 'undefined' && localStorage.sidebarScroll) {
-      if (this.sidebarScrollbar && this.sidebarScrollbar.nativeElement) {
-        this.sidebarScrollbar.nativeElement.scrollTop = localStorage.sidebarScroll;
-      }
-    }
+    if (this.scrollRestaurado || typeof(Storage) === 'undefined' || !localStorage.sidebarScroll) { return; }
+    const el = this.sidebarScrollbar && this.sidebarScrollbar.nativeElement;
+    if (!el || el.scrollHeight <= el.clientHeight) { return; }   // el menú aún no da para hacer scroll
+    el.scrollTop = localStorage.sidebarScroll;
+    this.scrollRestaurado = true;
   }
 
 

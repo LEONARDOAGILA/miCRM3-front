@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CellClickedEvent, CellKeyDownEvent, ColDef, ColumnApi, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
@@ -226,8 +226,17 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   /** Lienzo de la cuadrícula (para contar columnas y enfocar tiles con el teclado). */
   @ViewChild('lienzoCuadricula') lienzoCuadricula?: ElementRef<HTMLElement>;
 
-  /** Cierra el menú si el usuario hace scroll en cualquier sitio (capturado). */
-  private readonly cerrarMenuPorScroll = () => this.cerrarMenu();
+  /**
+   * Cierra el menú si el usuario hace scroll en cualquier sitio (capturado).
+   * Se registra FUERA de la zona de Angular: si no, cada evento de scroll
+   * (también el del menú lateral) disparaba una detección de cambios en
+   * medio del scroll, y el sidebar (ngAfterViewChecked) devolvía su scroll
+   * a la posición guardada: el menú se quedaba "trabado" en esta pantalla.
+   * Sólo entra en la zona cuando de verdad hay un menú que cerrar.
+   */
+  private readonly cerrarMenuPorScroll = () => {
+    if (this.menuCtx.visible) { this.ngZone.run(() => this.cerrarMenu()); }
+  };
 
   private readonly unsubscribe$ = new Subject<void>();
 
@@ -239,7 +248,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     private modal: NgbModal,
     private _loadingService: LoadingService,
     public _appAgGridService: AppAgGridService,
-    private _route: ActivatedRoute
+    private _route: ActivatedRoute,
+    private ngZone: NgZone
   ) {
     // Pantalla a altura completa: el panel llena el hueco y el scroll lo
     // hacen el árbol y la grilla, no la página.
@@ -299,7 +309,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.initializeGrid();
     this.loaddata();
     // capture:true — el scroll de la grilla y del árbol no burbujea a window
-    document.addEventListener('scroll', this.cerrarMenuPorScroll, true);
+    this.ngZone.runOutsideAngular(() => document.addEventListener('scroll', this.cerrarMenuPorScroll, true));
   }
 
   ngOnDestroy(): void {
