@@ -12,6 +12,8 @@ import { ECHO_PUSHER } from "../../config/config";
 import { SeguridadService } from "../../modules/seguridad/services/seguridad.service";
 import { WebsocketNotificationService } from '../../service/websocket-notification.service';
 import { AppStateService } from '../../service/app-state.service';
+import { StorageService } from '../../modules/seguridad/services/storage.service';
+import { UserService } from '../../modules/seguridad/services/user.service';
 
 interface Acceso {
   user_id: number;
@@ -72,6 +74,12 @@ export class HomePage implements OnInit, OnDestroy {
   public mensajes: string[] = [];
   public modulosPermitidos: ModuloCard[] = [];
 
+  // ---------- Usuario logueado (cabecera de perfil, igual que el sidebar) ----------
+  /** Lo que guardó el login en localStorage (`user`): name, surname, full_name, login_user, email, avatar, perfil. */
+  public usuarioLogeado: any = null;
+  /** URL de la foto (getImagenUsuario/{id}) o la imagen por defecto si no tiene o no carga. */
+  public imagenUsuario: string = '/assets/img/user/default.png';
+
   // ---------- Pestañas MÉTRICAS ----------
   // Cada bandera dispara el @defer (when ...) de su pestaña. Se ponen a true
   // al pulsar la pestaña y no vuelven a false: @defer carga una vez y el
@@ -113,7 +121,9 @@ export class HomePage implements OnInit, OnDestroy {
     public appSettings: AppSettings,
     private _seguridadService: SeguridadService,
     private _wsNotifService: WebsocketNotificationService,
-    private appStateService: AppStateService
+    private appStateService: AppStateService,
+    private _storeService: StorageService,
+    private _userService: UserService
   ) {
     this.appSettings.appContentFullHeight = true;
     this.appSettings.appContentClass = 'p-0 ';
@@ -127,6 +137,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.appSettings.appThemePanelNone = false;
+    this.cargarUsuarioLogeado();
     
     // Cargar módulos permitidos
     this.cargarModulosPermitidos();
@@ -165,6 +176,42 @@ export class HomePage implements OnInit, OnDestroy {
     this.appSettings.appContentFullHeight = false;
     this.appSettings.appContentClass = '';
     this.appSettings.appClass = '';
+  }
+
+  /** Nombre a mostrar: "Nombre Apellido" (o el full_name del login, o el login). */
+  get nombreUsuario(): string {
+    const u = this.usuarioLogeado;
+    if (!u) { return ''; }
+    const n = `${u.name ?? ''} ${u.surname ?? ''}`.trim();
+    return n || u.full_name || u.login_user || '';
+  }
+
+  /** Saludo según la hora: Buenos días / tardes / noches. */
+  get saludo(): string {
+    const h = new Date().getHours();
+    return h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
+  }
+
+  /**
+   * Usuario y foto para la cabecera: mismo criterio que el sidebar. La foto
+   * se pide al back (getImagenUsuario/{id}) y, si no existe o falla, queda
+   * la imagen por defecto.
+   */
+  private async cargarUsuarioLogeado(): Promise<void> {
+    const user: any = this._storeService.getStorageItem('user');
+    this.usuarioLogeado = user || null;
+    if (!user?.avatar) { return; }
+    const url = this._userService.getUserImage(user.id, true);
+    if (await this.existeImagen(url)) { this.imagenUsuario = url; }
+  }
+
+  private existeImagen(url: string): Promise<boolean> {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
   }
 
   actualizarHora(): void {

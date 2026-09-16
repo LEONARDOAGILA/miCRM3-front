@@ -99,7 +99,7 @@ export class ThemePanelComponent implements OnInit {
 			localStorage['appHeaderFixed'] = e.srcElement.checked;
 		}
 		if (!e.srcElement.checked && this.appSettings.appSidebarFixed === true) {
-			alert('Default Header with Fixed Sidebar option is not supported. Proceed with Default Header with Default Sidebar.');
+			alert('La cabecera normal no admite el menú lateral fijo. Se aplica cabecera normal con menú lateral normal.');
 			this.appSettings.appSidebarFixed = false;
 			this.appSidebarFixedCheckbox = false;
 			if (localStorage) {
@@ -122,7 +122,7 @@ export class ThemePanelComponent implements OnInit {
 			localStorage['appSidebarFixed'] = e.srcElement.checked;
 		}
 		if (e.srcElement.checked && this.appSettings.appHeaderFixed !== true) {
-			alert('Default Header with Fixed Sidebar option is not supported. Proceed with Fixed Header with Fixed Sidebar.');
+			alert('El menú lateral fijo necesita la cabecera fija. Se activa también la cabecera fija.');
 			this.appSettings.appHeaderFixed = true;
 			this.appHeaderFixedCheckbox = true;
 			if (localStorage) {

@@ -2,7 +2,7 @@
 	<a href="javascript:;" (click)="toggleThemePanel()" class="theme-collapse-btn"><i class="fa fa-cog"></i></a>
 	<ng-scrollbar class="h-100">
 		<div class="theme-panel-content">
-		<h5>App Settings</h5>
+		<h5>Ajustes de la aplicación</h5>
 		
 		<!-- BEGIN theme-list -->
 		<div class="theme-list">
@@ -22,7 +22,7 @@
 		
 		<div class="row mt-10px">
 			<div class="col-8 control-label text-dark fw-bold">
-				<div class="d-flex">Modo Oscuro <span class="badge bg-primary ms-1 py-2px position-relative d-flex align-items-center">NEW</span></div>
+				<div class="d-flex">Modo oscuro <span class="badge bg-primary ms-1 py-2px position-relative d-flex align-items-center">NUEVO</span></div>
 				<div class="lh-14">
 					<!-- <small class="text-dark opacity-50">
 						Adjust the appearance to reduce glare and give your eyes a break.
@@ -41,7 +41,7 @@
 		
 		<!-- BEGIN theme-switch -->
 		<div class="row mt-10px align-items-center">
-			<div class="col-8 control-label text-dark fw-bold">Header Fixed</div>
+			<div class="col-8 control-label text-dark fw-bold">Cabecera fija</div>
 			<div class="col-4 d-flex">
 				<div class="form-check form-switch ms-auto mb-0">
 					<input type="checkbox" class="form-check-input" name="app-header-fixed" id="appHeaderFixed" value="1" (change)="toggleHeaderFixed($event)" [checked]="appHeaderFixedCheckbox" />
@@ -50,7 +50,7 @@
 			</div>
 		</div>
 		<div class="row mt-10px align-items-center">
-			<div class="col-8 control-label text-dark fw-bold">Header Inverse</div>
+			<div class="col-8 control-label text-dark fw-bold">Cabecera oscura</div>
 			<div class="col-4 d-flex">
 				<div class="form-check form-switch ms-auto mb-0">
 					<input type="checkbox" class="form-check-input" name="app-header-inverse" id="appHeaderInverse" (change)="toggleHeaderInverse($event)" value="1" [checked]="appHeaderInverseCheckbox" />
@@ -59,7 +59,7 @@
 			</div>
 		</div>
 		<div class="row mt-10px align-items-center">
-			<div class="col-8 control-label text-dark fw-bold">Sidebar Fixed</div>
+			<div class="col-8 control-label text-dark fw-bold">Menú lateral fijo</div>
 			<div class="col-4 d-flex">
 				<div class="form-check form-switch ms-auto mb-0">
 					<input type="checkbox" class="form-check-input" name="app-sidebar-fixed" id="appSidebarFixed" (change)="toggleSidebarFixed($event)" value="1" [checked]="appSidebarFixedCheckbox" />
@@ -68,7 +68,7 @@
 			</div>
 		</div>
 		<div class="row mt-10px align-items-center">
-			<div class="col-8 control-label text-dark fw-bold">Sidebar Grid</div>
+			<div class="col-8 control-label text-dark fw-bold">Menú lateral con líneas</div>
 			<div class="col-4 d-flex">
 				<div class="form-check form-switch ms-auto mb-0">
 					<input type="checkbox" class="form-check-input" name="app-sidebar-grid" id="appSidebarGrid" (change)="toggleSidebarGrid($event)" value="1" [checked]="appSidebarGridCheckbox" />
@@ -77,7 +77,7 @@
 			</div>
 		</div>
 		<div class="row mt-10px align-items-center">
-			<div class="col-md-8 control-label text-dark fw-bold">Gradient Enabled</div>
+			<div class="col-md-8 control-label text-dark fw-bold">Degradados</div>
 			<div class="col-md-4 d-flex">
 				<div class="form-check form-switch ms-auto mb-0">
 					<input type="checkbox" class="form-check-input" name="app-gradient-enabled" id="appGradientEnabled" (change)="toggleGradientEnabled($event)" value="1" [checked]="appGradientEnabledCheckbox" />
@@ -86,7 +86,7 @@
 			</div>
 		</div>
 		<div class="row mt-10px align-items-center">
-			<div class="col-md-8 control-label text-dark fw-bold d-flex">RTL Enabled <span class="badge bg-primary ms-1 position-relative d-flex align-items-center">NEW</span></div>
+			<div class="col-md-8 control-label text-dark fw-bold d-flex">Escritura de derecha a izquierda (RTL) <span class="badge bg-primary ms-1 position-relative d-flex align-items-center">NUEVO</span></div>
 			<div class="col-md-4 d-flex">
 				<div class="form-check form-switch ms-auto mb-0">
 					<input type="checkbox" class="form-check-input" name="app-rtl-enabled" id="appRtlEnabled" (change)="toggleRtlEnabled($event)" value="1" [checked]="appRtlEnabledCheckbox" />
@@ -98,7 +98,7 @@
 		
 		<div class="theme-panel-divider"></div>
 		
-		<h5>Admin Design (6)</h5>
+		<h5>Diseños de administración (6)</h5>
 		<!-- BEGIN theme-version -->
 		<div class="theme-version">
 			<div class="theme-version-item">
@@ -136,7 +136,7 @@
 		
 		<div class="theme-panel-divider"></div>
 		
-		<h5>Language Version (9)</h5>
+		<h5>Versiones por lenguaje (9)</h5>
 		<!-- BEGIN theme-version -->
 		<div class="theme-version">
 			<div class="theme-version-item">
@@ -199,7 +199,7 @@
 		
 		<div class="theme-panel-divider"></div>
 		
-		<h5>Frontend Design (5)</h5>
+		<h5>Diseños de sitio web (5)</h5>
 		<!-- BEGIN theme-version -->
 		<div class="theme-version">
 			<div class="theme-version-item">
@@ -232,8 +232,8 @@
 		
 		<div class="theme-panel-divider"></div>
 		
-		<a href="https://seantheme.com/color-admin/documentation/" class="btn btn-dark d-block w-100 rounded-pill mb-10px" target="_blank"><b>Documentation</b></a>
-		<a href="javascript:;" class="btn btn-default d-block w-100 rounded-pill" data-toggle="reset-local-storage"><b>Reset Local Storage</b></a>
+		<a href="https://seantheme.com/color-admin/documentation/" class="btn btn-dark d-block w-100 rounded-pill mb-10px" target="_blank"><b>Documentación</b></a>
+		<a href="javascript:;" class="btn btn-default d-block w-100 rounded-pill" data-toggle="reset-local-storage"><b>Restablecer ajustes</b></a>
 		</div>
 	</ng-scrollbar>
 </div>

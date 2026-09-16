@@ -21,14 +21,28 @@
 		<!-- Portada: sólo desde tablet; en móvil roba demasiada altura -->
 		<div class="profile-header-cover d-none d-sm-block"></div>
 
-		<!-- Avatar y saludo: mismo corte que la portada -->
+		<!-- Avatar y saludo del usuario logueado (misma fuente que el sidebar:
+		     `user` de localStorage + getImagenUsuario/{id}) -->
 		<div class="profile-header-content d-none d-sm-flex">
 			<div class="profile-header-img">
-				<img src="/assets/img/user/user-13.jpg" alt="" />
+				<img [src]="imagenUsuario" [alt]="nombreUsuario" />
 			</div>
 			<div class="profile-header-info">
-				<h4 class="mt-0 mb-1">Bienvenido</h4>
-				<p class="mb-2">Agila Astudillo Leonardo Patricio</p>
+				<h4 class="mt-0 mb-1">{{ saludo }}, </h4>
+				<p class="mb-1">
+					<strong>{{ nombreUsuario }}</strong>
+					@if (usuarioLogeado?.login_user) {
+						<span class="text-white opacity-75"> · {{ usuarioLogeado.login_user }}</span>
+					}
+				</p>
+				<p class="mb-2 fs-12px text-white opacity-75">
+					@if (usuarioLogeado?.perfil?.nombre) {
+						<span><i class="fa fa-id-badge me-1"></i>{{ usuarioLogeado.perfil.nombre }}</span>
+					}
+					@if (usuarioLogeado?.email) {
+						<span class="ms-2"><i class="fa fa-envelope me-1"></i>{{ usuarioLogeado.email }}</span>
+					}
+				</p>
 				<a href="#" class="btn btn-xs btn-yellow">Ayuda</a>
 			</div>
 		</div>
