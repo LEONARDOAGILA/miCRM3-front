@@ -8,6 +8,7 @@
 		<div class="theme-list">
 			<div class="theme-list-item" *ngFor="let theme of themes; index as i;" [ngClass]="{'active': selectedTheme === theme}">
 				<a href="javascript:;" class="theme-list-link" 
+					[title]="nombresColor[theme] || theme"
 					[ngClass]="'active bg-' + theme" 
 					(click)="toggleTheme(theme)"
 					[attr.data-bs-title]="((theme === 'teal') ? 'Default' : theme.charAt(0).toUpperCase() + theme.slice(1))"
@@ -85,7 +86,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="row mt-10px align-items-center">
+		<!-- <div class="row mt-10px align-items-center">
 			<div class="col-md-8 control-label text-dark fw-bold d-flex">Escritura de derecha a izquierda (RTL) <span class="badge bg-primary ms-1 position-relative d-flex align-items-center">NUEVO</span></div>
 			<div class="col-md-4 d-flex">
 				<div class="form-check form-switch ms-auto mb-0">
@@ -93,7 +94,7 @@
 					<label class="form-check-label" for="appRtlEnabled"></label>
 				</div>
 			</div>
-		</div>
+		</div> -->
 		<!-- END theme-switch -->
 		
 		<div class="theme-panel-divider"></div>

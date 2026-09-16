@@ -2045,3 +2045,78 @@ body {
 		display: none;
 	}
 }
+
+/* ============================================================
+   PALETA EXTRA DEL PANEL DE AJUSTES (theme-panel)
+   Colores adicionales para elegir como color del tema. Cada uno recibe lo
+   mismo que los del tema (mixin helper-color): .theme-<nombre> con todas
+   las variables --bs-app-theme*, .bg-<nombre>-100…900, .text-<nombre>-*,
+   .hover-bg-<nombre> y .bg-gradient-<nombre>; más .bg-/.text-<nombre>, las
+   variables --bs-<nombre> / --bs-<nombre>-rgb y su degradado (Degradados).
+   Se añaden a la lista `themes` de theme-panel.component.ts.
+   ============================================================ */
+$paleta-extra: (
+	"vino":      #a31545,
+	"coral":     #ff7043,
+	"ambar":     #ffb300,
+	"oliva":     #7cb342,
+	"esmeralda": #00a884,
+	"turquesa":  #1abc9c,
+	"celeste":   #38bdf8,
+	"acero":     #4a6fa5,
+	"marino":    #1e3a8a,
+	"violeta":   #9c27b0,
+	"lavanda":   #7e57c2,
+	"fucsia":    #e040fb,
+	"cafe":      #8d6e63,
+	"grafito":   #455a64,
+	"negro":     #1c1f24
+);
+
+/* Con qué se combina cada uno en "Degradados" (135deg: color → destino) */
+$paleta-extra-gradiente: (
+	"vino":      "coral",
+	"coral":     "ambar",
+	"ambar":     "coral",
+	"oliva":     "esmeralda",
+	"esmeralda": "turquesa",
+	"turquesa":  "celeste",
+	"celeste":   "acero",
+	"acero":     "marino",
+	"marino":    "violeta",
+	"violeta":   "fucsia",
+	"lavanda":   "celeste",
+	"fucsia":    "lavanda",
+	"cafe":      "ambar",
+	"grafito":   "acero",
+	"negro":     "grafito"
+);
+
+:root {
+	@each $nombre, $valor in $paleta-extra {
+		--#{$prefix}#{$nombre}:     #{$valor};
+		--#{$prefix}#{$nombre}-rgb: #{to-rgb($valor)};
+	}
+}
+
+@each $nombre, $valor in $paleta-extra {
+	@include helper-color($nombre, $valor);
+
+	.bg-#{$nombre} {
+		--#{$prefix}bg-opacity: 1;
+		background-color: rgba(var(--#{$prefix}#{$nombre}-rgb), var(--#{$prefix}bg-opacity)) !important;
+	}
+	.text-#{$nombre} {
+		--#{$prefix}text-opacity: 1;
+		color: rgba(var(--#{$prefix}#{$nombre}-rgb), var(--#{$prefix}text-opacity)) !important;
+	}
+	.theme-#{$nombre} {
+		--#{$prefix}app-theme-gradient: linear-gradient(135deg, var(--#{$prefix}#{$nombre}), var(--#{$prefix}#{map-get($paleta-extra-gradiente, $nombre)}));
+	}
+}
+
+/* Los colores del tema que ya existen pero no estaban en el panel (negro, gris oscuro…) */
+.theme-black,
+.theme-gray-800 {
+	--#{$prefix}app-theme-gradient: linear-gradient(135deg, var(--#{$prefix}gray-800), var(--#{$prefix}gray-600));
+}

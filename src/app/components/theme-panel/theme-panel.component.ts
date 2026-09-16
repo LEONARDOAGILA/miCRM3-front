@@ -27,7 +27,21 @@ export class ThemePanelComponent implements OnInit {
 	appRtlEnabledCheckbox: boolean = false;
 	
 	selectedTheme = 'teal';
-	themes = ['red','pink','orange','yellow','lime','green','teal','cyan','blue','purple','indigo','gray-500'];
+	// Los 12 del tema + la paleta extra definida en scss/angular.scss ($paleta-extra)
+	themes = [
+		'red', 'pink', 'orange', 'yellow', 'lime', 'green', 'teal', 'cyan', 'blue', 'purple', 'indigo', 'gray-500',
+		'vino', 'coral', 'ambar', 'oliva', 'esmeralda', 'turquesa', 'celeste', 'acero', 'marino', 'violeta', 'lavanda', 'fucsia',
+		'cafe', 'grafito', 'gray-800', 'negro',
+	];
+
+	/** Nombre legible de cada color (tooltip de la muestra). */
+	nombresColor: { [k: string]: string } = {
+		red: 'Rojo', pink: 'Rosa', orange: 'Naranja', yellow: 'Amarillo', lime: 'Lima', green: 'Verde', teal: 'Verde azulado',
+		cyan: 'Cian', blue: 'Azul', purple: 'Púrpura', indigo: 'Índigo', 'gray-500': 'Gris',
+		vino: 'Vino', coral: 'Coral', ambar: 'Ámbar', oliva: 'Oliva', esmeralda: 'Esmeralda', turquesa: 'Turquesa', celeste: 'Celeste',
+		acero: 'Azul acero', marino: 'Azul marino', violeta: 'Violeta', lavanda: 'Lavanda', fucsia: 'Fucsia',
+		cafe: 'Café', grafito: 'Grafito', 'gray-800': 'Gris oscuro', negro: 'Negro',
+	};
 	
 	toggleThemePanel() {
 		if (localStorage) {
