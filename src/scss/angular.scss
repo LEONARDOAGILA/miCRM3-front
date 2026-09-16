@@ -1969,3 +1969,79 @@ body {
 //     display: none !important;    
 //   } 
 // }
+/* ============================================================
+   SIDEBAR: botón de ocultar / mostrar el menú como pestaña flotante
+   El botón (.app-sidebar-minify-btn) vive fuera del ng-scrollbar, en
+   .app-sidebar-minify-tab, ANTES del scroll y dentro de .app-sidebar:
+   - sticky con top: 50vh → siempre a media altura de la ventana, tanto con
+     el sidebar fijo como cuando hace scroll con la página;
+   - margin-inline-start: 100% → sale por el borde derecho REAL del sidebar,
+     mida lo que mida (normal, ancho o minimizado). No se usan las variables
+     -sidebar-width porque el tema las reasigna a 300px en
+     layout/_app-sidebar-end-mobile-*.scss y ya no valen aquí.
+   El menú y su scroll no cambian (la pestaña mide 0 de alto en el flujo).
+   ============================================================ */
+.app-sidebar .app-sidebar-minify-tab {
+	position: sticky;
+	top: 50vh;
+	z-index: $app-sidebar-zindex + 1;
+	display: flex;          /* flex: los márgenes del botón no se fugan (colapsan) al sidebar y desplazan el menú */
+	width: 18px;
+	height: 0;
+	margin: 0 0 0 100%;
+	margin-inline-start: 100%;
+	overflow: visible;
+	pointer-events: none;
+
+	& .app-sidebar-minify-btn {
+		pointer-events: auto;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 48px;
+		margin: 0;
+		transform: translateY(-50%);   /* centrado sobre la línea de 50vh, sin márgenes negativos */
+		padding: 0 !important;
+		border-radius: 0 $border-radius * 2 $border-radius * 2 0;
+		background: var(--bs-app-sidebar-minify-btn-bg);
+		color: var(--bs-app-sidebar-component-color);
+		box-shadow: 2px 0 6px rgba(0, 0, 0, .18);
+		opacity: .85;
+		transition: width .12s ease, opacity .12s ease;
+
+		& i {
+			margin: 0 !important;
+			font-size: 12px;
+		}
+
+		&:hover,
+		&:focus {
+			width: 22px;
+			opacity: 1;
+			background: var(--bs-app-theme);
+			color: var(--bs-app-theme-color, #fff);
+
+			& i { color: inherit; }
+		}
+	}
+}
+
+/* Sidebar FIJO (position: fixed): un sticky dentro de un contenedor fijo no
+   tiene scroll al que pegarse y se queda arriba. Aquí el sidebar mide lo que
+   la ventana, así que basta con absoluto al 50% de su alto y pegado a su
+   borde derecho (mismo resultado visual que el sticky del modo no fijo). */
+.app-sidebar-fixed .app-sidebar .app-sidebar-minify-tab {
+	position: absolute;
+	top: 50%;
+	inset-inline-end: 0;
+	margin: 0;
+	transform: translateX(100%);
+}
+
+/* En pantallas pequeñas el sidebar es un panel deslizante: no aplica minimizar */
+@include media-breakpoint-down(md) {
+	.app-sidebar .app-sidebar-minify-tab {
+		display: none;
+	}
+}
