@@ -16,7 +16,7 @@
     <span class="icon-bar"></span>
   </button>
   <a href="/" class="navbar-brand"><span class="navbar-logo"></span> <b class="me-2">IUNIX</b></a>
-	<span class="badge bg-success bg-opacity-10 text-success small navbar-logo" style="font-size: 0.75rem; border: 1px solid rgba(40, 167, 69, 0.3);">Versión 3.0</span>
+	<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-12px navbar-logo">Versión 3.0</span>
 
   <button type="button" class="navbar-mobile-toggler" (click)="toggleAppTopMenuMobile()" *ngIf="this.appSettings.appTopMenu && !this.appSettings.appSidebarNone">
     <span class="fa-stack fa-lg text-inverse">
@@ -176,50 +176,65 @@
 					<i class="fa fa-user"></i>
 				</div>
 
-				<span style="margin-right: 5px;">
-					<i *ngIf="iconoActivoInactivo; else iconoInactivoTemplate" class="fa fa-circle"
-						style="color: green;" aria-hidden="true"></i>
-					<ng-template #iconoInactivoTemplate>
-						<i class="fa fa-circle" style="color: red" aria-hidden="true"></i>
-					</ng-template>
+				<!-- Estado en línea / fuera de línea: colores del tema (success / danger), no fijos -->
+				<span class="me-1" [title]="iconoActivoInactivo ? 'En línea' : 'Fuera de línea'">
+					<i class="fa fa-circle" [ngClass]="iconoActivoInactivo ? 'text-success' : 'text-danger'" aria-hidden="true"></i>
 				</span>
         
 <div>
   <span class="d-none d-md-inline">
     <span class="d-none d-sm-inline" *ngIf="usuarioLogeado">{{usuarioLogeado.login_user}}</span>
   </span>
-  <i class="fa fa-caret-down ms-1" style="font-size: 1rem; opacity: 0.7;"></i>
+  <i class="fa fa-caret-down ms-1 fs-16px opacity-75"></i>
 </div>
 
 
 
       </a>
-      <div class="dropdown-menu dropdown-menu-end me-1">
-        <a routerLink="/home" class="dropdown-item menu-link" >🏠︎&nbsp;&nbsp;Inicio</a>
-        <a routerLink="config/extra-profile" class="dropdown-item menu-link" >🪪&nbsp;&nbsp;Editar Perfil</a>
-				<a href="javascript:;" class="dropdown-item d-flex align-items-center">📧&nbsp;&nbsp;Inbox
-					<span class="badge bg-danger rounded-pill ms-auto pb-4px">2</span>
-				</a>
-				<a href="javascript:;" class="dropdown-item menu-link" >📅&nbsp;&nbsp;Calendario</a>
-				<a routerLink="config/extra-settings" class="dropdown-item">⚙️&nbsp;&nbsp;Ajustes</a>
-        <a routerLink="config/extra-search-results" class="dropdown-item">❓&nbsp;&nbsp;Ayuda</a>
-				<div class="dropdown-divider"></div>
+      <!-- Menú del usuario: cabecera con foto y datos, opciones con iconos del
+           tema (fa-fw para que alineen), estado en línea como un solo item que
+           alterna, y salir en rojo. Sin emojis ni colores fijos. -->
+      <div class="dropdown-menu dropdown-menu-end me-1 usuario-menu">
 
-				<a (click)="editActivoInactivo(usuarioLogeado.id, false);" style="cursor:pointer;" class="dropdown-item"
-					*ngIf="activoInactivo; else inactivoTemplate">
-					<i class="fa fa-circle" style="color: green;" aria-hidden="true"></i>&nbsp;&nbsp;En linea
-				</a>
-				<ng-template #inactivoTemplate>
-					<a (click)="editActivoInactivo(usuarioLogeado.id, true);" style="cursor:pointer;"
-						class="dropdown-item">
-						Fuera de linea <i class="fa fa-circle" style="color: red" aria-hidden="true"></i>
-					</a>
-				</ng-template>
+        <!-- Cabecera: quién soy -->
+        <div class="usuario-menu__cabecera" *ngIf="usuarioLogeado">
+          <div class="usuario-menu__foto">
+            <img *ngIf="imagenUsuario" [src]="imagenUsuario" alt="" />
+            <i *ngIf="!imagenUsuario" class="fa fa-user"></i>
+            <span class="usuario-menu__estado" [ngClass]="activoInactivo ? 'bg-success' : 'bg-danger'"></span>
+          </div>
+          <div class="usuario-menu__texto">
+            <div class="usuario-menu__nombre text-truncate">{{ usuarioLogeado.full_name || usuarioLogeado.login_user }}</div>
+            <div class="usuario-menu__detalle text-truncate">
+              {{ usuarioLogeado.login_user }}<ng-container *ngIf="usuarioLogeado.perfil?.nombre"> · {{ usuarioLogeado.perfil.nombre }}</ng-container>
+            </div>
+            <div class="usuario-menu__detalle text-truncate" *ngIf="usuarioLogeado.email">{{ usuarioLogeado.email }}</div>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
 
-        
-        <a (click)="fun_salir();" style="cursor:pointer;" class="dropdown-item">❌&nbsp;&nbsp;Cerrar Sesión</a>
+        <a routerLink="/home" class="dropdown-item"><i class="fa fa-house fa-fw me-2 text-theme"></i>Inicio</a>
+        <a routerLink="config/extra-profile" class="dropdown-item"><i class="fa fa-id-card fa-fw me-2 text-theme"></i>Editar perfil</a>
+        <a href="javascript:;" class="dropdown-item d-flex align-items-center">
+          <i class="fa fa-envelope fa-fw me-2 text-theme"></i>Bandeja de entrada
+          <span class="badge bg-danger rounded-pill ms-auto">2</span>
+        </a>
+        <a href="javascript:;" class="dropdown-item"><i class="fa fa-calendar-days fa-fw me-2 text-theme"></i>Calendario</a>
+        <a routerLink="config/extra-settings" class="dropdown-item"><i class="fa fa-gear fa-fw me-2 text-theme"></i>Ajustes</a>
+        <a routerLink="config/extra-search-results" class="dropdown-item"><i class="fa fa-circle-question fa-fw me-2 text-theme"></i>Ayuda</a>
+        <div class="dropdown-divider"></div>
 
-			</div>
+        <!-- Estado: un solo item que alterna (el punto y el texto salen del estado actual) -->
+        <a (click)="editActivoInactivo(usuarioLogeado.id, !activoInactivo)" class="dropdown-item cursor-pointer d-flex align-items-center"
+           [title]="activoInactivo ? 'Pasar a fuera de línea' : 'Pasar a en línea'">
+          <i class="fa fa-circle fa-fw me-2" [ngClass]="activoInactivo ? 'text-success' : 'text-danger'" aria-hidden="true"></i>
+          {{ activoInactivo ? 'En línea' : 'Fuera de línea' }}
+          <span class="usuario-menu__cambiar ms-auto">cambiar</span>
+        </a>
+        <div class="dropdown-divider"></div>
+
+        <a (click)="fun_salir();" class="dropdown-item cursor-pointer text-danger"><i class="fa fa-right-from-bracket fa-fw me-2"></i>Cerrar sesión</a>
+      </div>
     </div>
 
 

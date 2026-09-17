@@ -31,7 +31,7 @@ export class HeaderComponent implements OnDestroy {
 	// inicio lpaa
 	msgNotificacion: Notificaciones = new Notificaciones();
 	private unsubscribe$ = new Subject<void>();
-	usuarioLogeado: boolean = false;
+	usuarioLogeado: any = false;   // el usuario de localStorage (false si no hay sesión)
 	ban: any = false;
 	activoInactivo: any = true;
 	iconoActivoInactivo: any = true;
@@ -141,13 +141,13 @@ export class HeaderComponent implements OnDestroy {
 
 	fun_salir() {
 		Swal.fire({
-			title: "Seguro desea salir?",
-			text: "Se terminara la sesion actual.",
+			title: "¿Seguro que desea salir?",
+			text: "Se cerrará la sesión actual.",
 			icon: "warning",
 			showCancelButton: true,
 			confirmButtonColor: "#3085d6",
 			cancelButtonColor: "#d33",
-			confirmButtonText: "Si, Salir!",
+			confirmButtonText: "Sí, salir",
 			cancelButtonText: "Cancelar",
 		}).then((result) => {
 			if (result.isConfirmed) {

@@ -162,3 +162,79 @@ html, body {
 .app-content {
   flex: 1;
 }
+/* ============================================================
+   MENÚ DEL USUARIO (dropdown de la cabecera)
+   Colores por variables del tema (claro / oscuro / color del tema).
+   ============================================================ */
+.usuario-menu {
+  min-width: 260px;
+  padding-top: 0;
+}
+
+.usuario-menu__cabecera {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .875rem 1rem;
+  background-color: rgba(var(--bs-app-theme-rgb), .08);
+  border-radius: var(--bs-dropdown-border-radius, .375rem) var(--bs-dropdown-border-radius, .375rem) 0 0;
+}
+
+.usuario-menu__foto {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: visible;
+  background-color: var(--bs-gray-800);
+  color: var(--bs-gray-500);
+  font-size: 1.25rem;
+}
+
+.usuario-menu__foto img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Punto de estado sobre la foto (en línea / fuera de línea) */
+.usuario-menu__estado {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--bs-dropdown-bg, var(--bs-component-bg, #fff));
+}
+
+.usuario-menu__texto {
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.usuario-menu__nombre {
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+.usuario-menu__detalle {
+  font-size: 11px;
+  color: var(--bs-secondary-color, var(--bs-gray-600));
+}
+
+.usuario-menu__cambiar {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--bs-secondary-color, var(--bs-gray-600));
+}
+
+.usuario-menu .dropdown-item:hover .usuario-menu__cambiar {
+  color: inherit;
+}
