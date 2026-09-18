@@ -98,6 +98,13 @@
               </div>
 
         
+            <!-- Arrastrar y soltar (mover / cambiar el orden): el asa ⋮⋮ de la
+                 columna Nombre inicia el arrastre; aquí se resuelve dónde se suelta
+                 (tercio superior/inferior = antes/después, centro = dentro). -->
+            <div class="menus-grilla-wrap"
+                 (dragover)="onDragOverGrilla($event)"
+                 (dragleave)="onDragLeaveGrilla($event)"
+                 (drop)="onDropGrilla($event)">
             <ag-grid-angular 
                   [rowData]="menuModel" 
                   [columnDefs]="columnDefs"
@@ -118,6 +125,15 @@
                   (cellClicked)="onCellClicked($event)"
                   (paginationChanged)="onPaginationChanged()"
               ></ag-grid-angular>
+            </div>
+
+            @if (accesoModel.editar === true) {
+              <p class="menus-ayuda-dnd small text-muted mb-0 mt-1 px-2">
+                <i class="fa fa-hand-pointer me-1"></i>
+                Arrastra una fila desde <b>⋮⋮</b>: suéltala en el <b>borde superior o inferior</b> de otra para cambiar el orden,
+                o <b>en el centro</b> de otra para meterla dentro (máximo 4 niveles).
+              </p>
+            }
 
               <!-- Paginación: la hace ag-Grid en cliente (todas las filas están
                    cargadas), pero se oculta su panel (suppressPaginationPanel) y

@@ -25,6 +25,10 @@ export class MenuService {
   addMenu(data: any) {    return this._http.post(this.URL_SERVICIOS + "addMenu", data);     }
   deleteMenu(id: any) {     return this._http.delete(this.URL_SERVICIOS + "deleteMenu/" + id);      }
   editMenu(id: any, data: any) {    return this._http.post(this.URL_SERVICIOS + "editMenu/" + id, data);      }
+  /** Arrastrar y soltar en allMenus: a otro padre (null = raíz) y/o delante de un hermano (antes_de null = al final). */
+  moverMenu(id: number, padreId: number | null, antesDe: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'moverMenu/' + id, { padre_id: padreId, antes_de: antesDe });
+  }
 
 
 }

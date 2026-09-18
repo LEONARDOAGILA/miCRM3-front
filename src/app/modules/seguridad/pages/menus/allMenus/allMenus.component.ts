@@ -22,6 +22,7 @@ import { AppExportExcelService } from '../../../../../service/app-exportExcel.se
 import { AppExportCsvService } from '../../../../../service/app-exportCsv.service';
 import { PerfilModel } from '../../../interfaces/perfilModel';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { ToastrService } from 'ngx-toastr';
 
 
 @Component({
@@ -62,24 +63,16 @@ export class AllMenusComponent implements OnInit, OnDestroy{
   onResize(event: Event): void { this._appAgGridService.ajustarTamanoGrid(this.gridApi); }
   private resizeTimeoutId: any; // Almacena el ID del timeout 
 
-  private styles = {
-    level0: { color: 'black', fontSize: '12px', textAlign: 'center' },
-    level1: { color: '#2874a6', fontSize: '12px', textAlign: 'center' },
-    level2: { color: 'green', fontSize: '12px', textAlign: 'center' },
-    level3: { color: 'purple', fontSize: '12px', textAlign: 'center' },
-    default: { color: 'gray', fontSize: '12px', textAlign: 'center' },
-    module: { color: 'black', fontSize: '12px', textAlign: 'center' },
-    noModule: { color: 'gray', fontSize: '12px', textAlign: 'center' },
-  };
-  private styles2 = {
-    level0: { color: 'black', fontSize: '12px', textAlign: 'left' },
-    level1: { color: '#2874a6', fontSize: '12px', textAlign: 'left' },
-    level2: { color: 'green', fontSize: '12px', textAlign: 'left' },
-    level3: { color: 'purple', fontSize: '12px', textAlign: 'left' },
-    default: { color: 'gray', fontSize: '12px', textAlign: 'left' },
-    module: { color: 'black', fontSize: '12px', textAlign: 'left' },
-    noModule: { color: 'gray', fontSize: '12px', textAlign: 'left' },
-  };
+  /**
+   * Clase de la celda según el nivel del menú (nivel-0 … nivel-3): el color
+   * lo ponen las variables del tema en allMenus.component.css, así se lee
+   * bien en claro y en oscuro. Antes eran colores fijos (black, green…)
+   * que en modo oscuro casi no se veían.
+   */
+  private claseNivel = (params: any): string => 'celda-nivel nivel-' + Math.min(Math.max(Number(params?.data?.nivel ?? 0), 0), 3);
+  private readonly centrado = { textAlign: 'center' };
+  private readonly izquierda = { textAlign: 'left' };
+
 
     constructor(
       private modal: NgbModal,
@@ -96,6 +89,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
 
       private _menuService: MenuService,
       private _seguridadService: SeguridadService, 
+      private _toastr: ToastrService,
 
     ) {
       this.title = 'Lista de Menús';
@@ -138,7 +132,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'Icono',
           field: 'icono',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },
+          cellClass: this.claseNivel, cellStyle: this.izquierda,
           cellRenderer: (params) => this.renderIcon(params),
           minWidth: 40,  // Reducido porque los iconos ocupan menos espacio
           maxWidth: 40,  // Reducido porque los iconos ocupan menos espacio
@@ -148,20 +142,25 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'Nombre',
           field: 'nombre',
-          cellStyle: (params) => { return this.styles2[`level${params.data.nivel}`] || this.styles2.default; },
+          cellClass: this.claseNivel, cellStyle: this.izquierda,
           cellRenderer: (params) => {
             const indentation = '&nbsp;'.repeat(params.data.nivel * 6); // Ajusta el número de espacios según necesites
             return `${indentation}${params.value}`;
           },
           minWidth: 280,
           maxWidth: 400, 
-          sortable: false,        
+          sortable: false,
+          // Arrastrar la fila (asa ⋮⋮) para moverla a otro padre o cambiar su
+          // orden: mismo esquema que el administrador de archivos. Sólo con
+          // permiso de editar.
+          dndSource: this.accesoModel?.editar === true,
+          dndSourceOnRowDrag: (params: any) => this.onDragStart(params.rowNode.data, params.dragEvent),
         },
 
         {
           headerName: 'Orden',
           field: 'orden',
-          cellStyle: (params) => { return this.styles[`level${params.data.level}`] || this.styles.default; },     
+          cellClass: this.claseNivel, cellStyle: this.centrado,
           minWidth: 90,
           maxWidth: 90, 
           sortable: false,
@@ -170,7 +169,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'Nivel',
           field: 'nivel',
-          cellStyle: (params) => { return this.styles[`level${params.data.level}`] || this.styles.default; },     
+          cellClass: this.claseNivel, cellStyle: this.centrado,
           minWidth: 90,
           maxWidth: 90, 
           sortable: false,
@@ -179,7 +178,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'URL',
           field: 'url',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },           
+          cellClass: this.claseNivel, cellStyle: this.izquierda,           
           minWidth: 150,
           maxWidth: 1200,          
           sortable: false,
@@ -188,7 +187,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'Etiqueta',
           field: 'etiqueta',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },           
+          cellClass: this.claseNivel, cellStyle: this.izquierda,           
           minWidth: 100,
           maxWidth: 150,  
           sortable: false,        
@@ -198,7 +197,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'Descripción',
           field: 'descripcion',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },           
+          cellClass: this.claseNivel, cellStyle: this.izquierda,           
           minWidth: 150,
           maxWidth: 1200,   
           sortable: false,       
@@ -207,7 +206,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'Creado',
           field: 'created_at',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },           
+          cellClass: this.claseNivel, cellStyle: this.izquierda,           
           minWidth: 180,
           maxWidth: 180,
           sortable: false,
@@ -215,7 +214,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'Actualizado',
           field: 'updated_at',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },           
+          cellClass: this.claseNivel, cellStyle: this.izquierda,           
           minWidth: 180,
           maxWidth: 180,
           sortable: false,
@@ -224,7 +223,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'Creado por',
           field: 'created_by',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },           
+          cellClass: this.claseNivel, cellStyle: this.izquierda,           
           minWidth: 150,
           maxWidth: 1200, 
           sortable: false,         
@@ -233,7 +232,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'Actualizado por',
           field: 'updated_by',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },           
+          cellClass: this.claseNivel, cellStyle: this.izquierda,           
           minWidth: 150,
           maxWidth: 1200, 
           sortable: false,         
@@ -242,7 +241,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         {
           headerName: 'path',
           field: 'path',
-          cellStyle: (params) => { return this.styles2[`level${params.data.level}`] || this.styles2.default; },           
+          cellClass: this.claseNivel, cellStyle: this.izquierda,           
           minWidth: 350,
           maxWidth: 2200,   
           sortable: false,
@@ -535,6 +534,132 @@ export class AllMenusComponent implements OnInit, OnDestroy{
       }
     }
       
+    // ================================================================
+    // ARRASTRAR Y SOLTAR: mover de padre / cambiar el orden
+    // Como en el administrador de archivos: el tercio superior o inferior
+    // de una fila es un hueco ("antes de" / "después de", mismo padre que
+    // esa fila); el centro de una fila es "dentro de" (pasa a ser su hijo,
+    // al final). Lo demás (ciclos, nivel máximo 3, renumerar) lo decide el
+    // back (seguridad.fn_menus_mover).
+    // ================================================================
+
+    /** Menú que se está arrastrando. */
+    private arrastrando: any = null;
+    /** Fila resaltada como destino y la clase que lleva (para quitarla después). */
+    private filaDestino: HTMLElement | null = null;
+
+    onDragStart(menu: any, ev: DragEvent): void {
+      this.arrastrando = menu;
+      if (ev.dataTransfer) {
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.dataTransfer.setData('text/plain', menu?.nombre ?? '');
+      }
+    }
+
+    @HostListener('document:dragend')
+    onDragEnd(): void {
+      this.arrastrando = null;
+      this.quitarFilaDestino();
+    }
+
+    /** Fila y zona (antes / dentro / despues) bajo el cursor, si es un destino válido. */
+    private destinoBajo(ev: DragEvent): { el: HTMLElement; data: any; zona: 'antes' | 'dentro' | 'despues' } | null {
+      if (!this.arrastrando) { return null; }
+      const el = (ev.target as HTMLElement).closest('.ag-row') as HTMLElement | null;
+      if (!el) { return null; }
+      const data = this.gridApi?.getDisplayedRowAtIndex(Number(el.getAttribute('row-index')))?.data;
+      if (!data || data.id === this.arrastrando.id || this.esDescendiente(data.id, this.arrastrando.id)) { return null; }
+      const r = el.getBoundingClientRect();
+      const y = (ev.clientY - r.top) / r.height;
+      const zona = y < .3 ? 'antes' : (y > .7 ? 'despues' : 'dentro');
+      return { el, data, zona };
+    }
+
+    /** true si `id` cuelga (a cualquier profundidad) de `ancestroId`. */
+    private esDescendiente(id: number, ancestroId: number): boolean {
+      let actual = this.menuModel.find((m: any) => m.id === id) as any;
+      while (actual?.padre_id != null) {
+        if (actual.padre_id === ancestroId) { return true; }
+        actual = this.menuModel.find((m: any) => m.id === actual.padre_id);
+      }
+      return false;
+    }
+
+    onDragOverGrilla(ev: DragEvent): void {
+      if (!this.arrastrando) { return; }
+      ev.preventDefault();
+      if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'move'; }
+      const d = this.destinoBajo(ev);
+      const clase = d ? ({ antes: 'fila-insertar-antes', dentro: 'fila-destino', despues: 'fila-insertar-despues' })[d.zona] : '';
+      if (!d || this.filaDestino !== d.el || !d.el.classList.contains(clase)) {
+        this.quitarFilaDestino();
+        if (d) { d.el.classList.add(clase); this.filaDestino = d.el; }
+      }
+    }
+
+    onDragLeaveGrilla(ev: DragEvent): void {
+      const a = ev.relatedTarget as Node | null;
+      if (a && (ev.currentTarget as HTMLElement).contains(a)) { return; }
+      this.quitarFilaDestino();
+    }
+
+    onDropGrilla(ev: DragEvent): void {
+      ev.preventDefault();
+      const menu = this.arrastrando;
+      const d = this.destinoBajo(ev);
+      this.onDragEnd();
+      if (!menu || !d) { return; }
+
+      let padreId: number | null;
+      let antesDe: number | null;
+      if (d.zona === 'dentro') {
+        padreId = d.data.id;
+        antesDe = null;                                  // al final de sus hijos
+      } else {
+        padreId = d.data.padre_id ?? null;               // hermano de la fila destino
+        antesDe = d.zona === 'antes' ? d.data.id : this.siguienteHermano(d.data, menu.id);
+      }
+      // Soltado donde ya estaba: nada que hacer
+      if (padreId === (menu.padre_id ?? null) && antesDe === this.siguienteHermano(menu, menu.id)) { return; }
+      this.moverMenu(menu, padreId, antesDe);
+    }
+
+    /** id del hermano que sigue a `m` (sin contar `excluir`); null si es el último. */
+    private siguienteHermano(m: any, excluir: number): number | null {
+      const hermanos = this.menuModel
+        .filter((x: any) => (x.padre_id ?? null) === (m.padre_id ?? null) && x.id !== excluir)
+        .sort((a: any, b: any) => (a.orden - b.orden) || String(a.nombre).localeCompare(String(b.nombre)));
+      const i = hermanos.findIndex((x: any) => x.id === m.id);
+      return i >= 0 ? (hermanos[i + 1]?.id ?? null) : null;
+    }
+
+    private quitarFilaDestino(): void {
+      this.filaDestino?.classList.remove('fila-destino', 'fila-insertar-antes', 'fila-insertar-despues');
+      this.filaDestino = null;
+    }
+
+    private async moverMenu(menu: any, padreId: number | null, antesDe: number | null): Promise<void> {
+      if (this._seguridadService.isexpired()) { return; }
+      try {
+        this._loadingService.setLoading(true);
+        const res: any = await firstValueFrom(this._menuService.moverMenu(menu.id, padreId, antesDe));
+        if (res?.status !== 'success') {
+          this._toastr.error(res?.message || 'No se pudo mover el menú', 'Mover');
+          return;
+        }
+        this._toastr.success(`«${menu.nombre}»: ${res.message}`, 'Menús', { timeOut: 2500 });
+        await this.allMenus();
+        // Vuelve a marcar la fila movida
+        this.gridApi?.forEachNode(n => n.setSelected(n.data?.id === menu.id));
+        this.selectedRow = this.menuModel.find((m: any) => m.id === menu.id) as any ?? null;
+      } catch (e: any) {
+        // El AuthInterceptor ya muestra los errores HTTP; el back responde 400 con el motivo (ciclo, nivel máximo…)
+        console.error('Error al mover el menú:', e);
+      } finally {
+        this._loadingService.setLoading(false);
+      }
+    }
+
     //   ******   ORDENAR COMO ARBOL   ******  //
     getMaxOrder2ByParent(parentId: number): number {
       // Filtrar elementos que tienen el mismo parent

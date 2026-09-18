@@ -71,3 +71,85 @@
   border-color: var(--bs-border-color, #334155);
   color: var(--bs-body-color, #e2e8f0);
 }
+
+/* ---------- Arrastrar y soltar (mover / cambiar el orden) ----------
+   Mismas marcas que el administrador de archivos. ::ng-deep porque las
+   filas las genera ag-Grid fuera de la encapsulación del componente. */
+
+/* Asa de arrastre (ag-Grid la pinta en la columna Nombre): que se vea pulsable */
+:host ::ng-deep .ag-row .ag-drag-handle {
+  cursor: grab;
+  opacity: .55;
+}
+
+:host ::ng-deep .ag-row:hover .ag-drag-handle {
+  opacity: 1;
+}
+
+/* Centro de una fila = dentro de ese menú */
+:host ::ng-deep .ag-row.fila-destino .ag-cell {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .16) !important;
+  box-shadow: inset 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+/* Borde superior / inferior = línea de inserción (antes / después) */
+:host ::ng-deep .ag-row.fila-insertar-antes .ag-cell {
+  box-shadow: inset 0 3px 0 0 var(--bs-primary, #348fe2);
+}
+
+:host ::ng-deep .ag-row.fila-insertar-despues .ag-cell {
+  box-shadow: inset 0 -3px 0 0 var(--bs-primary, #348fe2);
+}
+
+.menus-ayuda-dnd i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* ---------- Color del texto por nivel del menú ----------
+   Colores del tema (variables de Bootstrap / Color Admin), no fijos: en
+   modo oscuro cambian solos. Raíz en negrita con el color del texto;
+   cada nivel más profundo con un tono del tema y algo menos de peso. */
+:host ::ng-deep .ag-cell.celda-nivel {
+  font-size: 12px;
+}
+
+:host ::ng-deep .ag-cell.nivel-0 {
+  color: var(--bs-body-color, #212529);
+  font-weight: 600;
+}
+
+:host ::ng-deep .ag-cell.nivel-1 {
+  color: var(--bs-app-theme, var(--bs-primary, #348fe2));
+}
+
+:host ::ng-deep .ag-cell.nivel-2 {
+  color: var(--bs-teal, #00acac);
+}
+
+:host ::ng-deep .ag-cell.nivel-3 {
+  color: var(--bs-purple, #727cb6);
+}
+
+/* Fechas, autores y URL: secundarios en todos los niveles, que no compitan con el nombre */
+:host ::ng-deep .ag-cell[col-id="created_at"].celda-nivel,
+:host ::ng-deep .ag-cell[col-id="updated_at"].celda-nivel,
+:host ::ng-deep .ag-cell[col-id="created_by"].celda-nivel,
+:host ::ng-deep .ag-cell[col-id="updated_by"].celda-nivel,
+:host ::ng-deep .ag-cell[col-id="url"].celda-nivel,
+:host ::ng-deep .ag-cell[col-id="path"].celda-nivel {
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 400;
+}
+
+/* Modo oscuro: los tonos del tema suben un punto de luminosidad para leerse sobre fondo oscuro */
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-cell.nivel-1 {
+  color: color-mix(in srgb, var(--bs-app-theme, #348fe2) 70%, #fff);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-cell.nivel-2 {
+  color: color-mix(in srgb, var(--bs-teal, #00acac) 70%, #fff);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-cell.nivel-3 {
+  color: color-mix(in srgb, var(--bs-purple, #727cb6) 65%, #fff);
+}
