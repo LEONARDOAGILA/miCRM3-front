@@ -1,0 +1,665 @@
+/* ============================================================
+   SUBIR VARIOS ARCHIVOS
+   Mismo lenguaje visual que saveFile (chips, paneles del tema, switches,
+   paleta de color) más la zona múltiple y la cola de subida. Colores por
+   variables de Bootstrap / Color Admin (claro y oscuro).
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.archivo-modal-body {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  padding: 1rem;
+}
+
+/* ---------- Ubicación en el árbol ---------- */
+.ubicacion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin-bottom: .25rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip-muted   { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-info    { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+.chip-carpeta { background-color: rgba(240, 177, 59, .18); color: #a06a00; }
+.chip-archivo { background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .14); color: var(--bs-app-theme, #00acac); }
+
+[data-bs-theme="dark"] .chip-carpeta { color: #F0B13B; }
+
+/* ---------- Cuerpo de los paneles (mismas medidas que saveUser) ---------- */
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .5rem;
+}
+
+:host ::ng-deep app-campoTexto,
+:host ::ng-deep app-campoNumeroEntero {
+  display: block;
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: -.5rem 0 .75rem;      /* se acerca al campo, dentro de su margen */
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ---------- Color ---------- */
+.color-bloque__etiqueta {
+  display: block;
+  margin-bottom: .375rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.color-bloque__fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+/* El <input type="color"> nativo es feo y cambia por navegador: se esconde
+   dentro de una muestra redonda y el clic lo abre igual */
+.color-muestra {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--bs-component-bg, #fff);
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.color-muestra input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.color-valor {
+  padding: .1rem .4rem;
+  border-radius: .25rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-body-color, #212529);
+  font-size: .7rem;
+}
+
+.color-paleta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  margin-left: auto;
+}
+
+.color-paleta__punto {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid var(--bs-component-bg, #fff);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+  cursor: pointer;
+  transition: transform .12s ease;
+}
+
+.color-paleta__punto:hover {
+  transform: scale(1.15);
+}
+
+.color-paleta__punto.is-activo {
+  box-shadow: 0 0 0 2px var(--bs-app-theme, #00acac);
+}
+
+
+/* ---------- Cómo se abre (switch "ventana nueva") ----------
+   Fila-tarjeta: icono, título + ayuda y el switch a la derecha. Toda la
+   fila es la <label>, así se cambia pulsando en cualquier parte. */
+.opcion-switch {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+
+  margin: .25rem 0 .75rem;
+  padding: .6rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  cursor: pointer;
+  transition: border-color .12s ease;
+}
+
+.opcion-switch:hover {
+  border-color: var(--bs-app-theme, #00acac);
+}
+
+.opcion-switch:has(.form-check-input:checked) {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .06);
+}
+
+.opcion-switch__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .9rem;
+}
+
+.opcion-switch:has(.form-check-input:checked) .opcion-switch__icono {
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+}
+
+.opcion-switch__texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.opcion-switch__titulo {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.opcion-switch__ayuda {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.opcion-switch__control {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+.opcion-switch__control .form-check-input {
+  margin: 0;
+  width: 2.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+}
+
+/* Switch deshabilitado por exclusión (proteger url ↔ ventana nueva) */
+.opcion-switch.is-deshabilitada {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.opcion-switch.is-deshabilitada:hover {
+  border-color: var(--bs-border-color, #dee2e6);
+}
+
+.opcion-switch.is-deshabilitada .form-check-input {
+  cursor: not-allowed;
+}
+
+/* Switch "activo": verde cuando está activo, rojo apagado cuando no */
+.opcion-switch--activo .opcion-switch__icono {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .12);
+  color: var(--bs-success, #198754);
+}
+
+.opcion-switch--activo:has(.form-check-input:checked) {
+  border-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.opcion-switch--activo:has(.form-check-input:checked) .opcion-switch__icono {
+  background-color: var(--bs-success, #198754);
+  color: #fff;
+}
+
+.opcion-switch--activo.is-inactivo {
+  border-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .5);
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .05);
+}
+
+.opcion-switch--activo.is-inactivo .opcion-switch__icono {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);
+  color: var(--bs-danger, #dc3545);
+}
+
+.opcion-switch--activo.is-inactivo .opcion-switch__titulo {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* ============================================================
+   CHIPS DE ESTADO (cabecera del panel Archivos)
+   ============================================================ */
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  margin-left: auto;
+}
+
+.chip-ok    { background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .14); color: var(--bs-success, #198754); }
+.chip-error { background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .14); color: var(--bs-danger, #dc3545); }
+
+.form-card__body--cola {
+  padding-bottom: .875rem;
+}
+
+/* ============================================================
+   ZONA MÚLTIPLE (soltar varios)
+   No se llama "dropzone": Color Admin trae reglas globales para ese nombre.
+   ============================================================ */
+.zona-multi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 1.5rem 1rem;
+  border: 2px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .625rem;
+  background-color: var(--bs-component-bg, #fff);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.zona-multi:hover,
+.zona-multi:focus-visible,
+.zona-multi--activa {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .06);
+  outline: none;
+}
+
+.zona-multi--activa {
+  border-style: solid;
+}
+
+.zona-multi--disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.zona-multi__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  transition: transform .2s ease;
+}
+
+.zona-multi:hover .zona-multi__icono,
+.zona-multi--activa .zona-multi__icono {
+  transform: translateY(-3px);
+}
+
+.zona-multi__titulo {
+  margin: 0 0 .25rem;
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.zona-multi__ayuda {
+  margin: 0;
+  font-size: .75rem;
+  line-height: 1.5;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Con ficheros en la cola la zona se hace una franja: icono + texto en línea */
+.zona-multi--compacta {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: .75rem;
+  padding: .625rem .875rem;
+  margin-bottom: .75rem;
+  text-align: left;
+}
+
+.zona-multi--compacta .zona-multi__icono {
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+}
+
+.zona-multi--compacta .zona-multi__titulo {
+  font-size: .8125rem;
+  margin-bottom: 0;
+}
+
+.zona-multi--compacta .zona-multi__ayuda {
+  font-size: .6875rem;
+}
+
+/* ============================================================
+   COLA DE SUBIDA
+   ============================================================ */
+.cola {
+  display: flex;
+  flex-direction: column;
+  max-height: clamp(220px, 46vh, 460px);
+  overflow-y: auto;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.cola__cabecera,
+.cola__fila {
+  display: grid;
+  grid-template-columns: 34px 44px minmax(0, 1fr) 96px 120px 76px;
+  align-items: center;
+  gap: .5rem;
+  padding: .4rem .625rem;
+}
+
+.cola__cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cola__cabecera .cola__col--acciones {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: .6875rem;
+}
+
+.cola__fila + .cola__fila {
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cola__fila.is-activa { background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .06); }
+.cola__fila.is-ok     { background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .05); }
+.cola__fila.is-error  { background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .05); }
+
+.cola__col {
+  min-width: 0;
+}
+
+.cola__col--orden {
+  font-size: .75rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Icono grande / miniatura en el color del tipo (--tipo-color por fila) */
+.cola__icono,
+.cola__miniatura {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: .5rem;
+  object-fit: cover;
+}
+
+.cola__icono {
+  font-size: 1.2rem;
+  color: var(--tipo-color, var(--bs-app-theme, #00acac));
+  background-color: color-mix(in srgb, var(--tipo-color, var(--bs-app-theme, #00acac)) 14%, transparent);
+}
+
+.cola__miniatura {
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+}
+
+.cola__col--nombre {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+}
+
+.cola__input {
+  height: 28px;
+  padding: .15rem .45rem;
+  font-size: 12px;
+}
+
+.cola__nombre {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.cola__original {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cola__col--meta {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  align-items: flex-start;
+}
+
+.cola__ext {
+  padding: .05rem .4rem;
+  border-radius: .25rem;
+  font-size: .625rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--tipo-color, var(--bs-secondary-color, #6c757d));
+  background-color: color-mix(in srgb, var(--tipo-color, var(--bs-secondary-color, #6c757d)) 14%, transparent);
+}
+
+.cola__tamano {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cola__col--estado {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.estado--pendiente { color: var(--bs-secondary-color, #6c757d); }
+.estado--activo    { color: var(--bs-app-theme, #00acac); }
+.estado--ok        { color: var(--bs-success, #198754); }
+.estado--error     { color: var(--bs-danger, #dc3545); }
+
+.cola__progreso {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  overflow: hidden;
+}
+
+.cola__progreso-barra {
+  display: block;
+  height: 100%;
+  background-color: var(--bs-app-theme, #00acac);
+  transition: width .15s linear;
+}
+
+.cola__col--acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: .15rem;
+}
+
+.btn-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.btn-icono:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.btn-icono--quitar:hover:not(:disabled) {
+  border-color: var(--bs-danger, #dc3545);
+  background-color: var(--bs-danger, #dc3545);
+  color: #fff;
+}
+
+.btn-icono:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+/* Muestra de color en modo "automático" (varita) */
+.color-muestra.is-auto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(#ff5b57, #f59c1a, #00acac, #348fe2, #727cb6, #ff5b57);
+  color: #fff;
+  font-size: .8rem;
+}
+
+.color-muestra.is-auto i {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 0 3px rgba(0, 0, 0, .5);
+  pointer-events: none;
+}
+
+/* ============================================================
+   PIE: progreso global
+   ============================================================ */
+.pie-masivo {
+  gap: .5rem;
+}
+
+.pie-masivo__progreso {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  flex: 1 1 200px;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.pie-masivo__progreso-texto {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pie-masivo__barra {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  overflow: hidden;
+}
+
+.pie-masivo__barra-relleno {
+  display: block;
+  height: 100%;
+  background-color: var(--bs-success, #198754);
+  transition: width .2s ease;
+}
+
+.pie-masivo__barra-relleno.is-error {
+  background-color: var(--bs-warning, #f59c1a);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .archivo-modal-body {
+    padding: .75rem;
+  }
+
+  .cola__cabecera {
+    display: none;
+  }
+
+  .cola__fila {
+    grid-template-columns: 34px minmax(0, 1fr) 76px;
+    grid-template-areas:
+      "icono nombre acciones"
+      "meta  estado estado";
+  }
+
+  .cola__col--orden    { display: none; }
+  .cola__col--icono    { grid-area: icono; }
+  .cola__col--nombre   { grid-area: nombre; }
+  .cola__col--meta     { grid-area: meta; flex-direction: row; align-items: center; gap: .4rem; }
+  .cola__col--estado   { grid-area: estado; }
+  .cola__col--acciones { grid-area: acciones; }
+
+  .pie-masivo__progreso {
+    flex-basis: 100%;
+    margin-right: 0;
+  }
+}

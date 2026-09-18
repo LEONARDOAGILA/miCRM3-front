@@ -131,3 +131,38 @@ export function tipoPorExtension(nombre?: string | null): TipoArchivo {
   return categoriaDeExtension(extensionDe(nombre));
 }
 
+
+/**
+ * Icono y color "que más se parece" a una extensión concreta, más fino que
+ * la categoría: dentro de "otro" distingue comprimidos, PowerPoint, texto,
+ * código…; y dentro de Excel, el CSV. Si no hay uno específico, devuelve
+ * el de la categoría (defTipo). Lo usa la subida masiva (saveFiles2).
+ */
+const ICONO_POR_EXTENSION: { extensiones: string[]; icono: string; color: string }[] = [
+  { extensiones: ['zip', 'rar', '7z', 'gz', 'tgz', 'tar', 'bz2', 'xz'],         icono: 'fa fa-file-zipper',     color: '#b08d57' },
+  { extensiones: ['ppt', 'pptx', 'pps', 'ppsx', 'odp', 'key'],                  icono: 'fa fa-file-powerpoint', color: '#d24726' },
+  { extensiones: ['csv'],                                                         icono: 'fa fa-file-csv',        color: '#1d6f42' },
+  { extensiones: ['txt', 'md', 'log', 'rtf', 'nfo', 'ini', 'cfg', 'conf'],      icono: 'fa fa-file-lines',      color: '#6c757d' },
+  { extensiones: ['js', 'ts', 'html', 'htm', 'css', 'scss', 'json', 'xml', 'sql', 'php', 'py', 'java', 'cs', 'c', 'cpp', 'h', 'sh', 'bat', 'ps1', 'yml', 'yaml'],
+                                                                                  icono: 'fa fa-file-code',       color: '#5b6ee1' },
+  { extensiones: ['exe', 'msi', 'apk', 'dmg', 'deb', 'rpm', 'jar'],             icono: 'fa fa-cube',            color: '#495057' },
+  { extensiones: ['ttf', 'otf', 'woff', 'woff2', 'eot'],                         icono: 'fa fa-font',            color: '#8d6e63' },
+  { extensiones: ['psd', 'ai', 'xd', 'fig', 'sketch', 'eps'],                    icono: 'fa fa-pen-ruler',       color: '#31a8ff' },
+  { extensiones: ['dwg', 'dxf', 'skp', 'stl', 'obj', '3ds'],                     icono: 'fa fa-cubes',           color: '#e67e22' },
+  { extensiones: ['torrent'],                                                     icono: 'fa fa-magnet',          color: '#6c757d' },
+  { extensiones: ['ics', 'vcs'],                                                  icono: 'fa fa-calendar-days',   color: '#348fe2' },
+  { extensiones: ['vcf'],                                                         icono: 'fa fa-address-card',    color: '#348fe2' },
+  { extensiones: ['eml', 'msg'],                                                  icono: 'fa fa-envelope',        color: '#348fe2' },
+  { extensiones: ['url', 'webloc', 'lnk'],                                       icono: 'fa fa-link',            color: '#348fe2' },
+  { extensiones: ['db', 'sqlite', 'mdb', 'accdb', 'bak'],                        icono: 'fa fa-database',        color: '#727cb6' },
+  { extensiones: ['iso', 'img', 'vhd', 'vmdk'],                                  icono: 'fa fa-compact-disc',    color: '#495057' },
+];
+
+export function iconoPorExtension(extension?: string | null): { icono: string; color: string; tipo: TipoArchivo } {
+  const ext = (extension ?? '').trim().replace(/^\./, '').toLowerCase();
+  const tipo = categoriaDeExtension(ext);
+  const fino = ICONO_POR_EXTENSION.find(d => d.extensiones.includes(ext));
+  if (fino) { return { icono: fino.icono, color: fino.color, tipo }; }
+  const def = defTipo(tipo);
+  return { icono: def.icono, color: def.color, tipo };
+}

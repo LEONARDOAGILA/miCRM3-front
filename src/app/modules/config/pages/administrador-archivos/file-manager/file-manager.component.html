@@ -70,6 +70,14 @@
           <i class="fa fa-file-circle-plus archivos-btn__icono text-primary"></i>
           <span class="archivos-btn__texto">Archivo</span>
         </button>
+
+        <button type="button" class="btn btn-sm archivos-btn"
+                [disabled]="!puedeCrearDentro"
+                [title]="puedeCrearDentro ? 'Subir varios archivos a «' + carpetaActual?.nombre + '» (también puedes arrastrarlos aquí)' : 'Entre en una carpeta para subir dentro de ella'"
+                (click)="subirVarios()">
+          <i class="fa fa-cloud-arrow-up archivos-btn__icono text-teal"></i>
+          <span class="archivos-btn__texto">Subir varios</span>
+        </button>
       </div>
 
       <div class="archivos-toolbar__separador"></div>
@@ -639,6 +647,10 @@
       </button>
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevoArchivo(carpeta)">
         <i class="fa fa-file-circle-plus fa-fw text-primary"></i> Nuevo archivo
+        <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
+      </button>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); subirVarios(carpeta)">
+        <i class="fa fa-cloud-arrow-up fa-fw text-teal"></i> Subir varios archivos
         <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
       </button>
     }

@@ -14,6 +14,7 @@ import { ArchivoService } from '../../../services/archivo.service';
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 
 import { SaveFileComponent } from '../save-file/saveFile.component';
+import { SaveFiles2Component } from '../save-files2/saveFiles2.component';
 import { DeleteFileComponent } from '../delete-file/deleteFile.component';
 import { PapeleraComponent } from '../papelera/papelera.component';
 import { MoverArchivoComponent } from '../mover-archivo/moverArchivo.component';
@@ -1257,7 +1258,14 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   onDragOverFondoCuadricula(ev: DragEvent): void {
-    if (!this.dnd.elementos.length) { return; }
+    if (!this.dnd.elementos.length) {
+      if (this.puedeCrearDentro && ev.dataTransfer?.types.includes('Files')) {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = 'copy';
+        this.dnd.sobreFondoGrilla = true;
+      }
+      return;
+    }
     ev.preventDefault();
     if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'move'; }
     this.dnd.sobreFondoGrilla = true;
@@ -1265,6 +1273,12 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   onDropFondoCuadricula(ev: DragEvent): void {
     ev.preventDefault();
+    const externos = this.ficherosExternos(ev);
+    if (externos.length) {
+      this.onDragEnd();
+      this.subirVarios(this.carpetaActual, externos);
+      return;
+    }
     const lote = this.dnd.elementos;
     const alFinal = this.puedeReordenar();   // fondo de su propia carpeta: al final
     this.onDragEnd();
@@ -1366,6 +1380,33 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     const carpeta = this.buscarPorId(this.nodes, dentroDe.id) ?? dentroDe;
     const modalRef = this.abrirSaveFile(carpeta, 'addArchivo', this.siguienteOrden(carpeta.children ?? []));
     this.alCerrar(modalRef, () => this.loaddata());
+  }
+
+  /**
+   * Subida masiva: varios ficheros a la carpeta abierta (o a la que se
+   * indique). `ficheros` viene relleno cuando se sueltan ficheros del
+   * escritorio sobre la grilla o la cuadrícula.
+   */
+  subirVarios(dentroDe: FileTreeNode | null = this.carpetaActual, ficheros: File[] = []): void {
+    if (!dentroDe?.escarpeta || !this.p(dentroDe).crear || this._seguridadService.isexpired()) { return; }
+    const carpeta = this.buscarPorId(this.nodes, dentroDe.id) ?? dentroDe;
+    const modalRef = this.modal.open(SaveFiles2Component, {
+      centered: true,
+      size: 'xl',
+      backdrop: 'static',
+      keyboard: false,
+    });
+    modalRef.componentInstance.registro_selected = carpeta;
+    modalRef.componentInstance.maxOrder2 = this.siguienteOrden(carpeta.children ?? []);
+    modalRef.componentInstance.ficherosIniciales = ficheros;
+    // Se recarga tanto al cerrar con subidos como al salir tras subir alguno
+    this.alCerrar(modalRef, () => this.loaddata());
+  }
+
+  /** Ficheros del escritorio (dataTransfer.files) soltados sobre la grilla / cuadrícula: abre la subida masiva. */
+  private ficherosExternos(ev: DragEvent): File[] {
+    if (this.dnd.elementos.length) { return []; }   // es un arrastre interno (mover)
+    return Array.from(ev.dataTransfer?.files ?? []);
   }
 
   editar(objetivo: FileTreeNode | null = this.objetivo): void {
@@ -1755,7 +1796,15 @@ export class FileManagerComponent implements OnInit, OnDestroy {
    * actual y se resalta la grilla entera.
    */
   onDragOverGrilla(event: DragEvent): void {
-    if (!this.dnd.elementos.length) { return; }
+    // Ficheros del escritorio: se aceptan si se puede crear en la carpeta abierta
+    if (!this.dnd.elementos.length) {
+      if (this.puedeCrearDentro && event.dataTransfer?.types.includes('Files')) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+        this.dnd.sobreFondoGrilla = true;
+      }
+      return;
+    }
     event.preventDefault();
     if (event.dataTransfer) { event.dataTransfer.dropEffect = 'move'; }
 
@@ -1838,6 +1887,14 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   onDropGrilla(event: DragEvent): void {
     event.preventDefault();
+    // Ficheros del escritorio: subida masiva a la carpeta abierta (o a la carpeta bajo el cursor)
+    const externos = this.ficherosExternos(event);
+    if (externos.length) {
+      const fila = this.filaCarpetaBajo(event);
+      this.onDragEnd();
+      this.subirVarios(fila ? fila.data : this.carpetaActual, externos);
+      return;
+    }
     const lote = this.dnd.elementos;
     const hueco = this.huecoEnFila(event);
     const fila = hueco ? null : this.filaCarpetaBajo(event);
