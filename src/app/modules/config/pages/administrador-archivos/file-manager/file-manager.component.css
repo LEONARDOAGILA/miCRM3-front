@@ -216,6 +216,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  border-inline-start: 0 !important;  /* la línea la pinta el divisor (el tema pone otra y se veían dos) */
 }
 
 /* ---------- Barra de ubicación ---------- */
@@ -568,41 +569,69 @@
 }
 
 /* ============================================================
-   DIVISOR ÁRBOL | GRILLA (ancho del lateral)
-   Franja de 6px con una línea en medio; se ilumina al pasar y al
-   arrastrar. En móvil el lateral es un panel superpuesto: sin divisor.
+   DIVISOR ÁRBOL | GRILLA (ancho del lateral), al estilo de VS Code:
+   en reposo es sólo una línea de 1px con un asa de tres puntos en
+   medio; la zona de agarre es más ancha (8px) pero invisible, y al
+   pasar el ratón (con un pequeño retardo, como en VS Code) o al
+   arrastrar se vuelve una barra de 4px del color del tema.
+   En móvil el lateral es un panel superpuesto: sin divisor.
    ============================================================ */
 .archivos-divisor {
   position: relative;
-  flex: 0 0 6px;
+  flex: 0 0 10px;                     /* franja entre árbol y grilla */
+  box-sizing: border-box;
+  background-color: var(--bs-body-bg, #e4e7e8);   /* mismo fondo que hay detrás del panel (claro / oscuro) */
+  border-left: 1px solid var(--bs-border-color, #dee2e6);    /* las dos líneas, una a cada lado */
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
   cursor: col-resize;
-  background-color: var(--bs-border-color, #dee2e6);
-  transition: background-color .12s ease;
   touch-action: none;                 /* que el dedo no haga scroll al arrastrar */
-  z-index: 1;
+  z-index: 2;
 }
 
-/* Asa central */
+/* Barra de 4px en el centro, invisible en reposo; al pasar el ratón (con
+   retardo, como VS Code) o al arrastrar toma el color del tema */
+.archivos-divisor::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background-color: transparent;
+  transition: background-color .1s ease .25s;   /* retardo como VS Code */
+}
+
+/* Asa: tres puntos verticales en el centro, muy tenues */
 .archivos-divisor::after {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 2px;
-  height: 28px;
+  width: 3px;
+  height: 15px;
   transform: translate(-50%, -50%);
   border-radius: 2px;
-  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .25);
+  background-image: radial-gradient(circle, rgba(var(--bs-body-color-rgb, 33, 37, 41), .45) 1.1px, transparent 1.4px);
+  background-size: 3px 5px;
+  background-repeat: repeat-y;
+  background-position: center;
+  transition: opacity .1s ease .25s;
+  pointer-events: none;
 }
 
-.archivos-divisor:hover,
-.file-manager.is-redimensionando .archivos-divisor {
+.archivos-divisor:hover::before,
+.file-manager.is-redimensionando .archivos-divisor::before {
   background-color: var(--bs-app-theme, #00acac);
+}
+
+.file-manager.is-redimensionando .archivos-divisor::before {
+  transition-delay: 0s;
 }
 
 .archivos-divisor:hover::after,
 .file-manager.is-redimensionando .archivos-divisor::after {
-  background-color: #fff;
+  opacity: 0;
 }
 
 /* Mientras se arrastra: sin transiciones ni selección de texto, cursor en todo */
