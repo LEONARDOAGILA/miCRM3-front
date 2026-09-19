@@ -736,10 +736,8 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
     const modalRef = this.modal.open(SaveGrupoComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: false });
     modalRef.componentInstance.registro_selected = g;
     modalRef.componentInstance.accion = 'edit';
-    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, async () => {
-      await this.cargarGrupos();
-      if (this.seleccionId === g.id) { this.cargarUsuarios(this.paginaActual); }
-    });
+    // Se recarga también la grilla: con «aplicar a los usuarios» cambian su perfil / horario / tipo
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => this.recargar());
   }
 
   verGrupo(g: GrupoModel): void {

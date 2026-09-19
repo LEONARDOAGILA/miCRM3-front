@@ -116,8 +116,13 @@ export class SaveGrupoComponent implements OnInit, OnDestroy {
       es_administrador: [{ value: false, disabled: this.isdisabled }],
       tipo_acceso:      [{ value: 'SISTEMA', disabled: this.isdisabled }, [Validators.required]],
       activo:           [{ value: true, disabled: this.isdisabled }],
+      /** Sólo al modificar: aplicar perfil, horario y tipo del grupo a todos sus usuarios */
+      aplicar_usuarios: [{ value: false, disabled: this.isdisabled }],
     });
   }
+
+  /** Usuarios que están directamente en el grupo (para el texto del check). */
+  get numUsuarios(): number { return this.grupoModel?.num_usuarios ?? 0; }
 
   private async findByIdGrupo(id: number): Promise<void> {
     try {
@@ -269,6 +274,7 @@ export class SaveGrupoComponent implements OnInit, OnDestroy {
       return;
     }
     const payload = this.form.getRawValue();
+    if (this.accion !== 'edit') { delete payload.aplicar_usuarios; }
     payload.padre_id = payload.padre_id || null;
     payload.perfil_id = payload.perfil_id || null;
     payload.chorario_id = payload.chorario_id || null;

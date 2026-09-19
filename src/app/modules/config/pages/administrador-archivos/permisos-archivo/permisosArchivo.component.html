@@ -148,21 +148,21 @@
           }
           @if (puedeAdministrar) {
             <!-- Marcar / desmarcar toda la grilla (filas directas visibles) -->
-            <div class="btn-group permisos-masivo" role="group">
+            <!-- <div class="btn-group permisos-masivo" role="group">
               <button type="button" class="btn btn-sm btn-white" title="Marcar todos los permisos de todos los usuarios de la lista" (click)="marcarTodo(true)">
                 <i class="fa fa-check-double text-success"></i><span class="d-none d-md-inline ms-1">Marcar todo</span>
               </button>
               <button type="button" class="btn btn-sm btn-white" title="Desmarcar todos los permisos de todos los usuarios de la lista" (click)="marcarTodo(false)">
                 <i class="fa fa-xmark text-danger"></i><span class="d-none d-md-inline ms-1">Desmarcar todo</span>
               </button>
-            </div>
+            </div> -->
             <!-- Quitar todos los permisos directos (el propietario conserva el suyo) -->
             <button type="button" class="btn btn-sm btn-outline-danger permisos-agregar"
                     [disabled]="!quitables.length"
                     [title]="quitables.length ? 'Quitar el permiso a los ' + quitables.length + ' usuario(s) de la lista (el propietario lo conserva)' : 'No hay permisos directos que quitar'"
                     (click)="quitarTodos()">
               <i class="fa fa-user-minus"></i>
-              <span class="d-none d-sm-inline ms-1">Quitar todos</span>
+              <span class="d-none d-sm-inline ms-1">Quitar todos los usuarios</span>
             </button>
             <div class="btn-group permisos-agregar" role="group">
               <button type="button" class="btn btn-sm btn-primary" (click)="agregarUsuario()" title="Añadir un usuario a la lista">

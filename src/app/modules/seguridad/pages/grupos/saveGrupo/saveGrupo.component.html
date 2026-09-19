@@ -206,6 +206,28 @@
                 <span>{{ resumenHerencia }}</span>
               </div>
 
+              <!-- Sólo al modificar: aplicar estos valores a los usuarios que ya están en el grupo -->
+              @if (accion === 'edit') {
+                <div class="estado-miswitch mt-3" [class.is-on]="form.controls['aplicar_usuarios'].value">
+                  <span class="estado-miswitch__icon"><i class="fa-solid fa-users-gear"></i></span>
+                  <div class="estado-miswitch__text">
+                    <span class="estado-miswitch__label">Aplicar a los usuarios del grupo</span>
+                    <span class="estado-miswitch__hint">
+                      @if (form.controls['aplicar_usuarios'].value) {
+                        Al guardar, {{ numUsuarios }} usuario(s) recibirán este perfil, horario y tipo
+                      } @else {
+                        Sólo cambia el grupo; los {{ numUsuarios }} usuario(s) actuales quedan como están
+                      }
+                    </span>
+                  </div>
+                  <app-checkbox class="estado-miswitch__switch"
+                    [control]="form.controls['aplicar_usuarios']"
+                    [label]="form.controls['aplicar_usuarios'].value ? 'Sí' : 'No'"
+                    [id]="'ck-grupo-aplicar'">
+                  </app-checkbox>
+                </div>
+              }
+
             </div>
           </ng-container>
         </panel>
