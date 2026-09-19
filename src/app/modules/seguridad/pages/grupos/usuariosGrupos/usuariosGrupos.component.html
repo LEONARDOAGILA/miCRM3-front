@@ -187,7 +187,7 @@
 
         <!-- Pie: incluir subgrupos -->
         <div class="file-manager-sidebar-footer ug-lateral__pie">
-          <label class="ug-switch" title="Mostrar también los usuarios de los subgrupos del grupo seleccionado">
+          <label class="ug-switch" title="Con la casilla marcada se ven también los usuarios de los subgrupos del grupo seleccionado; sin marcar, sólo los que están directamente en él">
             <input type="checkbox" class="form-check-input" [checked]="incluirSubgrupos" (change)="toggleIncluirSubgrupos()">
             <span>Incluir subgrupos</span>
           </label>
@@ -230,8 +230,8 @@
                 <button type="button" class="ug-ruta__tramo" (click)="seleccionar(g.id)">{{ g.nombre }}</button>
               }
             }
-            @if (incluirSubgrupos && grupoActual) {
-              <span class="ug-ruta__nota">+ subgrupos</span>
+            @if (grupoActual && (grupoActual.num_hijos || 0) > 0) {
+              <span class="ug-ruta__nota" [title]="incluirSubgrupos ? 'Se muestran también los usuarios de los subgrupos' : 'Sólo los usuarios que están directamente en este grupo'">{{ incluirSubgrupos ? '+ subgrupos' : 'sólo directos' }}</span>
             }
           </nav>
 

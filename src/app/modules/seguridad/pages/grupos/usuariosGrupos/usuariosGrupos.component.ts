@@ -81,8 +81,8 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
   private abiertos = new Set<number>([NODO_TODOS]);
   /** Nodo seleccionado: NODO_TODOS, NODO_SIN_GRUPO o el id de un grupo. */
   public seleccionId: number = NODO_TODOS;
-  /** La grilla incluye los usuarios de los subgrupos del seleccionado. */
-  public incluirSubgrupos = false;
+  /** La grilla incluye los usuarios de los subgrupos del seleccionado (por defecto sí: un grupo «contiene» a sus subgrupos). */
+  public incluirSubgrupos = true;
   public sinGrupo = 0;
   public totalUsuarios = 0;
   /** Usuarios en la papelera de reciclaje (contador del botón). */

@@ -222,9 +222,12 @@
 }
 
 .permisos-leyenda__ayuda {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
+  display: inline;          /* texto corrido: con flex cada <strong> quedaba como una columna */
+  line-height: 1.4;
+}
+
+.permisos-leyenda__ayuda i {
+  margin-right: .3rem;
 }
 
 /* ------------------------------------------------------------
@@ -461,4 +464,37 @@
 :host ::ng-deep .ag-cell-inline-editing[col-id="vigente_hasta"] {
   padding: 2px 4px;
   height: 100%;
+}
+
+/* ---------- Marcar / desmarcar en bloque (como save2Profile) ---------- */
+.permisos-masivo .btn {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .cabecera-permiso {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+}
+
+:host ::ng-deep .cabecera-permiso .col-check {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+}
+
+:host ::ng-deep .cabecera-permiso .col-check:disabled {
+  cursor: default;
+  opacity: .5;
+}
+
+/* Fila con sólo parte de los permisos: la casilla «Todos» a medias */
+:host ::ng-deep .permiso-check--todos input[data-medias] {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .35);
+  border-color: var(--bs-app-theme, #00acac);
 }

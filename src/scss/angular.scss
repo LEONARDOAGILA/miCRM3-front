@@ -248,9 +248,10 @@
    del tema (--bs-*): así hereda el color de acento (--bs-app-theme) y
    el modo oscuro sin repetir colores.
 
-   Fondo transparente a propósito: la grilla siempre va dentro de un
-   <panel>, y es el panel quien pone el fondo. Por eso las filas se
-   pintan con colores con alfa, que valen sobre blanco o sobre gris.
+   Fondo: el gris suave de los paneles «fondoGris» (--bs-component-secondary-bg,
+   el mismo que se ve en el editor de perfiles), que cambia solo con el modo
+   oscuro. Las filas se pintan con colores con alfa por encima, así que
+   valen sobre ese gris o sobre cualquier otro fondo.
 
    La clase .ag-grid-transparente se mantiene por compatibilidad (la
    llevan 14 grillas) pero ya no hace nada: todo cuelga de
@@ -264,7 +265,9 @@
   --ag-foreground-color: var(--bs-body-color);
   --ag-data-color: var(--bs-body-color);
   --ag-secondary-foreground-color: var(--bs-secondary-color);
-  --ag-background-color: transparent;
+  // En claro el gris va con alfa sobre el fondo del panel (más suave que el
+  // color pleno); en oscuro se usa el color pleno (ver bloque de abajo).
+  --ag-background-color: rgba(var(--bs-component-secondary-bg-rgb, 222, 226, 230), .45);
 
   // Color de acento: ordenación, checkboxes, foco, rango
   --ag-alpine-active-color: var(--bs-app-theme);
@@ -308,6 +311,15 @@
 
   border-radius: .5rem;
   overflow: hidden;
+
+  // Esquinas redondeadas de verdad: el marco (borde) lo pinta .ag-root-wrapper,
+  // no el elemento <ag-grid-angular>; sin esto el radio de arriba sólo
+  // recortaba y la esquina del borde seguía a 90°.
+  --ag-border-radius: .3rem;
+  .ag-root-wrapper {
+    border-radius: .3rem;
+    overflow: hidden;
+  }
 
   // Cabecera: mayúsculas pequeñas, sin cursiva, línea inferior marcada
   .ag-header {
@@ -362,20 +374,40 @@
     font-size: 12px;
   }
 
-  // Barras de scroll finas, del color del texto atenuado
+  // Barras de scroll del color del texto atenuado. La horizontal va más
+  // alta (12px) y con la pista visible: con 7px casi no se veía ni se
+  // podía coger con el ratón.
   .ag-body-horizontal-scroll-viewport,
   .ag-body-viewport {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(var(--bs-body-color-rgb), .25) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(var(--bs-body-color-rgb), .35) rgba(var(--bs-body-color-rgb), .06);
 
     &::-webkit-scrollbar {
-      width: 7px;
-      height: 7px;
+      width: 9px;
+      height: 12px;
+    }
+    &::-webkit-scrollbar-track {
+      background: rgba(var(--bs-body-color-rgb), .06);
     }
     &::-webkit-scrollbar-thumb {
-      background: rgba(var(--bs-body-color-rgb), .25);
-      border-radius: 4px;
+      background: rgba(var(--bs-body-color-rgb), .35);
+      border-radius: 6px;
+      border: 2px solid transparent;   // margen alrededor del pulgar
+      background-clip: padding-box;
     }
+    &::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(var(--bs-body-color-rgb), .55);
+    }
+  }
+
+  // ag-Grid reserva el alto de la barra horizontal a partir del tamaño
+  // nativo: se lo fijamos para que coincida con el nuestro.
+  .ag-body-horizontal-scroll,
+  .ag-body-horizontal-scroll-viewport,
+  .ag-body-horizontal-scroll-container {
+    height: 12px !important;
+    min-height: 12px !important;
+    max-height: 12px !important;
   }
 }
 
@@ -405,6 +437,8 @@
 // --bs-body-color-rgb, que cambia con el tema). Sólo hay que cambiar lo que
 // era opaco: panel de filtros, menús y sombra de la columna fijada.
 [data-bs-theme="dark"] .ag-theme-alpine {
+  // lpaa fondo de ag-grid Un punto más claro que el panel: velo blanco tenue sobre el fondo oscuro
+  --ag-background-color: rgba(71, 70, 70, 0.11);
   --ag-control-panel-background-color: #1e293b;
   --ag-subheader-background-color: #0f172a;
   --ag-border-color: #334155;

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -124,6 +124,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     private _loadingService: LoadingService,
     public _appAgGridService: AppAgGridService,
     private _userService: UserService,
+    private host: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit(): void {
@@ -153,17 +154,107 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
             </div>`;
   }
 
+  // ================================================================
+  // MARCAR / DESMARCAR EN BLOQUE (mismos atajos que save2Profile)
+  //   - casilla en la CABECERA de cada bandera: toda la columna;
+  //   - columna «Todos» al inicio: todas las banderas de la fila;
+  //   - botones Marcar todo / Desmarcar todo: toda la grilla.
+  // Sólo actúan sobre las filas editables (permiso directo, sin Denegar) que
+  // estén visibles (respetan el buscador). Las cabeceras se pintan a mano
+  // porque son HTML de ag-Grid.
+  // ================================================================
+
+  /** Filas sobre las que actúan los atajos: directas, sin Denegar y visibles. */
+  private filasEditables(): FilaPermiso[] {
+    const filas: FilaPermiso[] = [];
+    this.gridApi?.forEachNodeAfterFilter(n => {
+      const f = n.data as FilaPermiso;
+      if (f && f.origen === 'DIRECTO' && !f.denegar) { filas.push(f); }
+    });
+    return filas;
+  }
+
+  /** Casilla de la fila «Todos»: marcada con todas las banderas; a medias con alguna. */
+  private checkboxTodosRenderer(params: any): string {
+    const f: FilaPermiso = params.data;
+    const soloLectura = (!this.puedeAdministrar || f?.origen === 'HEREDADO' || f?.denegar) ? 'disabled' : '';
+    const n = this.banderas.filter(b => f?.[b.id] === true).length;
+    const marcado = n === this.banderas.length ? 'checked' : '';
+    const medias = n > 0 && n < this.banderas.length ? 'data-medias="1"' : '';
+    return `<div class="permiso-check permiso-check--todos" title="Marcar / desmarcar todos los permisos de este usuario">
+              <input class="form-check-input" type="checkbox" ${marcado} ${medias} ${soloLectura} />
+            </div>`;
+  }
+
+  /** Cabecera con casilla (toda la columna) + el título. */
+  private cabeceraConCasilla(field: string): any {
+    return {
+      template: `
+        <div class="ag-cell-label-container" role="presentation">
+          <div ref="eLabel" class="ag-header-cell-label cabecera-permiso" role="presentation">
+            <input type="checkbox" class="form-check-input col-check" data-col="${field}" title="Marcar / desmarcar toda la columna">
+            <span ref="eText" class="ag-header-cell-text"></span>
+          </div>
+        </div>`
+    };
+  }
+
+  /** Toda la columna `b` de las filas editables a `valor` (marcar implica Ver; quitar Ver quita todo). */
+  marcarColumna(b: BanderaPermiso, valor: boolean): void {
+    if (!this.puedeAdministrar) { return; }
+    this.filasEditables().forEach(f => {
+      f[b] = valor;
+      if (valor && b !== 'ver') { f.ver = true; }
+      if (!valor && b === 'ver') { this.banderas.forEach(x => f[x.id] = false); }
+    });
+    this.refrescarTodo();
+  }
+
+  /** Toda la grilla (filas editables) a `valor`. */
+  marcarTodo(valor: boolean): void {
+    if (!this.puedeAdministrar) { return; }
+    const filas = this.filasEditables();
+    filas.forEach(f => this.banderas.forEach(x => f[x.id] = valor));
+    this.refrescarTodo();
+    if (filas.length) {
+      this._toastr.info(`${valor ? 'Marcados' : 'Desmarcados'} todos los permisos de ${filas.length} usuario(s). Pulsa Guardar para aplicarlos.`, 'Permisos', { timeOut: 3000 });
+    } else {
+      this._toastr.info('No hay filas editables (los heredados se ajustan primero con «Ajustar aquí»)', 'Permisos', { timeOut: 3000 });
+    }
+  }
+
+  private refrescarTodo(): void {
+    this.gridApi?.refreshCells({ force: true });
+    this.gridApi?.redrawRows();
+    this.actualizarCabeceras();
+  }
+
+  /** Casillas de cabecera: marcada si todas las filas editables visibles la tienen; a medias si sólo parte. */
+  actualizarCabeceras(): void {
+    const filas = this.filasEditables();
+    this.host.nativeElement.querySelectorAll<HTMLInputElement>('input.col-check').forEach(input => {
+      const col = input.dataset['col']!;
+      const tiene = (f: FilaPermiso) => col === 'todos' ? this.banderas.every(b => f[b.id] === true) : (f as any)[col] === true;
+      const n = filas.filter(tiene).length;
+      input.checked = filas.length > 0 && n === filas.length;
+      input.indeterminate = n > 0 && n < filas.length;
+      input.disabled = !this.puedeAdministrar || filas.length === 0;
+    });
+  }
+
   initializeGrid(): void {
     const colBandera = (id: BanderaPermiso, etiqueta: string, ayuda: string) => ({
       headerName: etiqueta,
       field: id,
       headerTooltip: ayuda,
       cellStyle: { textAlign: 'center' },
-      minWidth: 88,
-      maxWidth: 88,
+      minWidth: 104,   // con la casilla de cabecera, 88 recortaba el título
+      maxWidth: 104,
       sortable: false,
       filter: false,
+      suppressMenu: true,
       cellRenderer: (params: any) => this.checkboxCellRenderer(params),
+      headerComponentParams: this.cabeceraConCasilla(id),
     });
 
     this.columnDefs = [
@@ -190,6 +281,15 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
                     ${origen}
                   </div>`;
         }
+      },
+      {
+        headerName: 'Todos',
+        field: 'todos',
+        headerTooltip: 'Marcar / desmarcar todos los permisos del usuario',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 90, maxWidth: 90, sortable: false, filter: false, suppressMenu: true,
+        cellRenderer: (params: any) => this.checkboxTodosRenderer(params),
+        headerComponentParams: this.cabeceraConCasilla('todos'),
       },
       ...this.banderas.map(b => colBandera(b.id, b.etiqueta, b.ayuda)),
       {
@@ -298,12 +398,16 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
   }
 
+  /** Cabeceras y datos ya pintados (también tras cada setRowData / filtro): estado de las casillas de columna. */
+  onModelUpdated(): void { setTimeout(() => this.actualizarCabeceras()); }
+
   ajustarTamanoGrid(): void {
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
   }
 
   onFilterTextBoxChanged(): void {
     this.gridApi?.setQuickFilter((document.getElementById('filter-text-box-permisos') as HTMLInputElement)?.value ?? '');
+    setTimeout(() => this.actualizarCabeceras());
   }
 
   /** Plegar / desplegar la columna ACCIONES (mismo mecanismo que allProfiles). */
@@ -321,8 +425,22 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     this.gridApi.refreshCells({ force: true, columns: ['actions'] });
   }
 
-  /** Clic en la cabecera de ACCIONES (ag-Grid no lo expone por columna: se mira el target). */
+  /** Clic en la cabecera: casilla de columna (marcar en bloque) o ACCIONES (plegar). Se mira el target. */
   onHeaderClicked(ev: MouseEvent): void {
+    const input = (ev.target as HTMLElement).closest('input.col-check') as HTMLInputElement | null;
+    if (input) {
+      ev.stopPropagation();
+      const col = input.dataset['col']!;
+      const filas = this.filasEditables();
+      if (col === 'todos') {
+        const todas = filas.length > 0 && filas.every(f => this.banderas.every(b => f[b.id] === true));
+        this.marcarTodo(!todas);
+      } else {
+        const todas = filas.length > 0 && filas.every(f => (f as any)[col] === true);
+        this.marcarColumna(col as BanderaPermiso, !todas);   // a medias → marca todo
+      }
+      return;
+    }
     const th = (ev.target as HTMLElement).closest('.ag-header-cell') as HTMLElement | null;
     if (th?.getAttribute('col-id') === 'actions') { this.toggleActionsColumn(); }
   }
@@ -368,6 +486,12 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
 
     if (!this.puedeAdministrar || f.origen === 'HEREDADO') { return; }
 
+    if (field === 'todos') {
+      if (f.denegar) { return; }
+      this.todo(f, !this.banderas.every(b => f[b.id] === true));   // a medias → marca todo
+      return;
+    }
+
     const banderas = this.banderas.map(b => b.id as string);
     if (banderas.includes(field)) {
       if (f.denegar) { return; }
@@ -410,6 +534,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       this.gridApi.refreshCells({ force: true, rowNodes: [nodo] });
       this.gridApi.redrawRows({ rowNodes: [nodo] });   // para que rowClassRules (fila-cambiada) se recalculen
     }
+    this.actualizarCabeceras();
   }
 
   /** getRowId: el usuario identifica la fila (así refrescamos por nodo). */
@@ -695,6 +820,59 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       f.guardando = false;
       this.refrescarFila(f);
     }
+  }
+
+  /** Filas directas que se pueden quitar en bloque: todas menos la del propietario. */
+  get quitables(): FilaPermiso[] {
+    const dueno = this.archivo?.propietario?.id;
+    return this.directos.filter(f => f.user_id !== dueno);
+  }
+
+  /**
+   * Quita todos los permisos directos del elemento (menos el del propietario).
+   * Las filas nuevas sólo se descartan; las guardadas se borran en el back una
+   * a una (mismo endpoint que Quitar) y al final se recarga: puede que algún
+   * usuario reaparezca como heredado de una carpeta de arriba.
+   */
+  async quitarTodos(): Promise<void> {
+    if (!this.puedeAdministrar) { return; }
+    const lote = this.quitables;
+    if (!lote.length) { return; }
+    const guardadas = lote.filter(f => !f.nueva);
+    const dueno = this.archivo?.propietario;
+    const { isConfirmed } = await Swal.fire({
+      title: `¿Quitar el permiso a ${lote.length === 1 ? lote[0].name + ' ' + lote[0].surname : 'los ' + lote.length + ' usuarios'}?`,
+      text: (dueno ? `El propietario (${dueno.login_user}) conserva su acceso. ` : '')
+        + (this.archivo?.escarpeta
+          ? 'Dejarán de ver este elemento y todo lo que hay dentro (salvo que lo hereden de una carpeta de arriba o tengan otro permiso más abajo).'
+          : 'Dejarán de ver este elemento (salvo que lo hereden de una carpeta de arriba o sea público).'),
+      icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, quitar todos', cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545', reverseButtons: true,
+    });
+    if (!isConfirmed) { return; }
+
+    // Las nuevas (sin guardar) se descartan sin ir al back
+    this.filas = this.filas.filter(f => !(f.nueva && lote.includes(f)));
+    this.gridApi?.setRowData(this.filas);
+
+    let quitados = 0;
+    try {
+      this._loadingService.setLoading(true);
+      for (const f of guardadas) {
+        const res = await firstValueFrom(this._archivoService.quitarPermisoArchivo(this.elemento.id, f.user_id));
+        if (res?.status === 'success') { quitados++; }
+        else { this._toastr.error(res?.message || `No se pudo quitar a ${f.login_user}`, 'Permisos'); }
+      }
+    } catch (e) {
+      console.error('Error al quitar permisos:', e);   // el interceptor ya avisó
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+    if (guardadas.length) {
+      await this.cargar();   // pueden reaparecer como heredados
+      this.cambio.emit();
+    }
+    this._toastr.success(`Permisos quitados a ${quitados + (lote.length - guardadas.length)} usuario(s)`, 'Permisos', { timeOut: 3000 });
   }
 
   /** Pie "Guardar": todas las filas con cambios, una a una. */
