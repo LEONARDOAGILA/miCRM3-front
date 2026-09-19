@@ -639,3 +639,10 @@
     letter-spacing: .05em;
   }
 }
+
+/* Quitar (grupo): en rojo al pasar */
+.btn-lookup--quitar:hover,
+.btn-lookup--quitar:focus {
+  background-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger, #dc3545);
+}

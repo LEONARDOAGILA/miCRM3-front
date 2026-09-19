@@ -1,0 +1,471 @@
+<!-- ============================================================
+     USUARIOS Y GRUPOS (estilo "Usuarios y equipos de Active Directory")
+
+     Misma estructura que el administrador de archivos (clases del tema
+     file-manager, -toolbar, -sidebar, -content):
+       1. Miga de pan
+       2. <panel>
+          2a. Barra de herramientas
+          2b. Lateral: buscador + árbol de grupos
+          2c. Contenido: ruta del grupo + grilla de usuarios + paginación
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb ug-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home()">Seguridad</a></li>
+  <li class="breadcrumb-item active">Usuarios y grupos</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel
+  [title]="titulo"
+  [noButton]="false"
+  [noButtonCollapse]="true"
+  (panelReloaded)="recargar()"
+  (panelExpanded)="onResize()"
+  [closeRoute]="'/seguridad'"
+  icono="usuarios"
+  class="flex-1 d-flex flex-column overflow-hidden"
+  bodyClass="p-0 flex-1 overflow-hidden"
+  panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
+
+  <div class="file-manager h-100 ug"
+       [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled, 'is-redimensionando': redimensionando }"
+       [style.--bs-file-manager-sidebar-width]="anchoLateral + 'px'"
+       [style.--bs-file-manager-mobile-sidebar-margin]="(-anchoLateral) + 'px'">
+
+    <!-- ---------- 2a. BARRA DE HERRAMIENTAS ---------- -->
+    <div class="file-manager-toolbar ug-toolbar">
+
+      <div class="ug-toolbar__grupo">
+        <button type="button" class="btn btn-sm ug-btn"
+                [disabled]="accesoModel?.crear === false"
+                [title]="grupoActual ? 'Crear un subgrupo dentro de «' + grupoActual.nombre + '»' : 'Crear un grupo de primer nivel'"
+                (click)="nuevoGrupo()">
+          <i class="fa fa-folder-plus ug-btn__icono text-warning"></i>
+          <span class="ug-btn__texto">{{ grupoActual ? 'Nuevo subgrupo' : 'Nuevo grupo' }}</span>
+        </button>
+
+        <button type="button" class="btn btn-sm ug-btn"
+                [disabled]="accesoModel?.crear === false"
+                [title]="grupoActual ? 'Crear un usuario en «' + grupoActual.nombre + '» (hereda perfil, horario y tipo del grupo)' : 'Crear un usuario sin grupo'"
+                (click)="addUser()">
+          <i class="fa fa-user-plus ug-btn__icono text-primary"></i>
+          <span class="ug-btn__texto">Nuevo usuario</span>
+        </button>
+      </div>
+
+      <div class="ug-toolbar__separador"></div>
+
+      <div class="ug-toolbar__grupo">
+        <button type="button" class="btn btn-sm ug-btn"
+                [disabled]="!haySeleccionados || accesoModel?.editar === false"
+                title="Mover los usuarios seleccionados a otro grupo (también puede arrastrarlos al árbol)"
+                (click)="moverSeleccionA()">
+          <i class="fa fa-arrows-up-down-left-right ug-btn__icono text-warning"></i>
+          <span class="ug-btn__texto">Mover a…</span>
+        </button>
+
+        @if (grupoActual) {
+          <button type="button" class="btn btn-sm ug-btn"
+                  [disabled]="accesoModel?.editar === false"
+                  title="Modificar el grupo seleccionado"
+                  (click)="editarGrupo(grupoActual)">
+            <i class="fa fa-pen ug-btn__icono text-success"></i>
+            <span class="ug-btn__texto">Modificar grupo</span>
+          </button>
+          <button type="button" class="btn btn-sm ug-btn"
+                  [disabled]="accesoModel?.eliminar === false"
+                  title="Eliminar el grupo seleccionado (debe estar vacío)"
+                  (click)="eliminarGrupo(grupoActual)">
+            <i class="fa fa-trash ug-btn__icono text-danger"></i>
+            <span class="ug-btn__texto">Eliminar grupo</span>
+          </button>
+        }
+
+        <!-- Papelera de reciclaje: lo eliminado va ahí y se puede restaurar -->
+        <button type="button" class="btn btn-sm ug-btn position-relative"
+                [title]="enPapelera ? 'Papelera de reciclaje: ' + enPapelera + (enPapelera === 1 ? ' usuario' : ' usuarios') : 'Papelera de reciclaje (vacía)'"
+                (click)="abrirPapelera()">
+          <i class="fa fa-trash-can ug-btn__icono text-secondary"></i>
+          <span class="ug-btn__texto">Papelera</span>
+          @if (enPapelera) {
+            <span class="badge rounded-pill bg-danger ug-btn__badge">{{ enPapelera }}</span>
+          }
+        </button>
+
+        @if (accesoModel?.auditar === true) {
+          <button type="button" class="btn btn-sm ug-btn"
+                  [disabled]="!selectedRow"
+                  title="Historial de auditoría del usuario seleccionado"
+                  (click)="auditoria()">
+            <i class="fa fa-user-secret ug-btn__icono text-warning"></i>
+            <span class="ug-btn__texto">Auditoría</span>
+          </button>
+        }
+      </div>
+
+      <!-- Con qué se está trabajando -->
+      <span class="ug-toolbar__objetivo" [title]="grupoActual?.ruta || nombreSeleccion">
+        <i class="fa" [ngClass]="seleccionId === NODO_TODOS ? 'fa-building' : (seleccionId === NODO_SIN_GRUPO ? 'fa-user-slash' : 'fa-users')"></i>
+        <span class="text-truncate">{{ nombreSeleccion }}</span>
+        <span class="ug-toolbar__contador">{{ totalRegistros }}</span>
+      </span>
+    </div>
+
+    <div class="file-manager-container">
+
+      <!-- ---------- 2b. LATERAL: ÁRBOL DE GRUPOS ---------- -->
+      <div class="file-manager-sidebar ug-lateral">
+
+        <div class="file-manager-sidebar-mobile-toggler">
+          <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Grupos">
+            <i class="fa" [ngClass]="mobileSidebarToggled ? 'fa-chevron-left' : 'fa-sitemap'"></i>
+          </button>
+        </div>
+
+        <div class="ug-lateral__cabecera">
+          <span class="ug-lateral__titulo"><i class="fa fa-sitemap me-1"></i> Grupos</span>
+          <div class="btn-group ug-lateral__acciones" role="group" aria-label="Árbol">
+            <button type="button" class="btn btn-xs btn-white" title="Expandir todo" (click)="expandirTodo()">
+              <i class="fa fa-angles-down"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-white" title="Contraer todo" (click)="contraerTodo()">
+              <i class="fa fa-angles-up"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-white" title="Todos los usuarios" (click)="seleccionar(NODO_TODOS)">
+              <i class="fa fa-house"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="ug-lateral__buscador">
+          <i class="fa fa-search ug-lateral__lupa"></i>
+          <input type="text" class="form-control form-control-sm" placeholder="Buscar grupo…"
+                 [(ngModel)]="searchQuery" (input)="filterNodes()">
+          @if (searchQuery) {
+            <button type="button" class="ug-lateral__limpiar" title="Limpiar" (click)="limpiarBusqueda()">&times;</button>
+          }
+        </div>
+
+        <div class="ug-lateral__arbol position-relative">
+          @if (recargandoArbol) {
+            <div class="loader1" role="status" aria-label="Recargando"></div>
+            <div class="overlay1" aria-hidden="true"></div>
+          }
+          <ng-scrollbar class="h-100">
+            <!-- Soltar en el fondo del árbol (fuera de un nodo) = grupo a la raíz -->
+            <div class="ug-arbol"
+                 [class.is-destino-raiz]="dnd.sobreRaizArbol"
+                 (contextmenu)="onContextMenuArbol($event)"
+                 (dragover)="onDragOverArbol($event)"
+                 (dragleave)="dnd.sobreRaizArbol = false"
+                 (drop)="onDropArbol($event)">
+              @for (node of nodes; track node.id) {
+                <app-file-tree-node
+                  [node]="node"
+                  [isSelected]="node.isSelected"
+                  [arrastrable]="true"
+                  (nodeSelected)="onNodeSelect($event)"
+                  (nodeToggled)="onNodeToggle($event)"
+                  (nodeContextMenu)="onContextMenuNodo($event)"
+                  (nodeDragStart)="onDragStartGrupo($event.node, $event.event)"
+                  (nodeDragEnd)="onDragEnd()"
+                  (nodeDrop)="onDropNodo($event.node, $event.event)">
+                </app-file-tree-node>
+              } @empty {
+                <div class="ug-arbol__vacio">
+                  <i class="fa fa-search"></i>
+                  <span>Nada coincide con «{{ searchQuery }}»</span>
+                </div>
+              }
+            </div>
+          </ng-scrollbar>
+        </div>
+
+        <!-- Pie: incluir subgrupos -->
+        <div class="file-manager-sidebar-footer ug-lateral__pie">
+          <label class="ug-switch" title="Mostrar también los usuarios de los subgrupos del grupo seleccionado">
+            <input type="checkbox" class="form-check-input" [checked]="incluirSubgrupos" (change)="toggleIncluirSubgrupos()">
+            <span>Incluir subgrupos</span>
+          </label>
+          <span class="ug-lateral__ayuda" title="Arrastre usuarios de la lista a un grupo del árbol para moverlos; arrastre un grupo sobre otro para colgarlo de él">
+            <i class="fa fa-hand-pointer"></i>
+          </span>
+        </div>
+      </div>
+
+      <!-- Divisor arrastrable (mismo que el administrador de archivos) -->
+      <div class="ug-divisor"
+           role="separator"
+           aria-orientation="vertical"
+           title="Arrastra para cambiar el ancho del árbol (doble clic: ancho por defecto)"
+           (pointerdown)="iniciarRedimension($event)"
+           (dblclick)="anchoLateral = ANCHO_LATERAL_DEFECTO; guardarAnchoLateral(); ajustarTamanoGrid()">
+      </div>
+
+      <!-- ---------- 2c. CONTENIDO: USUARIOS DEL GRUPO ---------- -->
+      <div class="file-manager-content ug-contenido">
+
+        <!-- Ruta del grupo (pulsable) + buscador -->
+        <div class="ug-ubicacion">
+          <nav class="ug-ruta" aria-label="Grupo">
+            <button type="button" class="ug-ruta__tramo" [class.is-actual]="seleccionId === NODO_TODOS" (click)="seleccionar(NODO_TODOS)">
+              <i class="fa fa-building"></i> Todos
+            </button>
+            @if (seleccionId === NODO_SIN_GRUPO) {
+              <span class="ug-ruta__sep">/</span>
+              <span class="ug-ruta__tramo is-actual"><i class="fa fa-user-slash"></i> Sin grupo</span>
+            }
+            @for (g of rutaSeleccion; track g.id; let ultimo = $last) {
+              <span class="ug-ruta__sep">/</span>
+              @if (ultimo) {
+                <span class="ug-ruta__tramo is-actual" [title]="g.descripcion || ''">
+                  <i class="fa fa-users"></i> {{ g.nombre }}
+                  @if (!g.activo) { <span class="badge bg-secondary ms-1">inactivo</span> }
+                </span>
+              } @else {
+                <button type="button" class="ug-ruta__tramo" (click)="seleccionar(g.id)">{{ g.nombre }}</button>
+              }
+            }
+            @if (incluirSubgrupos && grupoActual) {
+              <span class="ug-ruta__nota">+ subgrupos</span>
+            }
+          </nav>
+
+          <div class="ug-buscador">
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="Limpiar filtros" (click)="clearAllFilters()">
+              <i class="fas fa-filter-circle-xmark"></i>
+            </button>
+            <app-campoBusquedaPaginacion
+              [id]="'ug-filter'"
+              [placeholder]="'Buscar usuario'"
+              [iconClass]="'fa fa-search fa-lg'"
+              [containerClass]="'position-relative w-100'"
+              (buscar)="onFilterTextBoxChanged($event)">
+            </app-campoBusquedaPaginacion>
+          </div>
+        </div>
+
+        <!-- Grilla. (contextmenu): clic derecho en una fila o en el fondo -->
+        <div class="ug-grilla" (contextmenu)="onContextMenuGrilla($event)">
+          <ag-grid-angular
+            class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+            [rowData]="usuarios"
+            [columnDefs]="columnDefs"
+            [enableCellTextSelection]="true"
+            [defaultColDef]="_appAgGridService.defaultColDef"
+            [rowHeight]="_appAgGridService.rowHeight"
+            [headerHeight]="_appAgGridService.headerHeight"
+            [localeText]="_appAgGridService.localeText"
+            [rowSelection]="'multiple'"
+            [rowMultiSelectWithClick]="false"
+            [suppressRowClickSelection]="false"
+            [pagination]="false"
+            [animateRows]="true"
+            [overlayNoRowsTemplate]="'<span>No hay usuarios en «' + nombreSeleccion + '». Cree uno con <b>Nuevo usuario</b> o arrastre usuarios desde otro grupo.</span>'"
+            [navigateToNextCell]="navegarConTeclado"
+            (gridReady)="onGridReady($event)"
+            (cellClicked)="onCellClicked($event)">
+          </ag-grid-angular>
+        </div>
+
+        <!-- Paginación -->
+        <div class="ug-paginacion">
+          <div class="btn-group" role="group" aria-label="Paginación">
+            <button type="button" class="btn btn-sm btn-white" title="Primera página" (click)="firstPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-angle-double-left"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Página anterior" (click)="prevPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-chevron-left"></i>
+            </button>
+            <span class="btn btn-sm btn-white disabled">Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b></span>
+            <button type="button" class="btn btn-sm btn-white" title="Página siguiente" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-chevron-right"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Última página" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-angle-double-right"></i>
+            </button>
+          </div>
+          <div class="small text-muted">
+            Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> usuarios
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</panel>
+
+<!-- ================= MENÚ CONTEXTUAL DEL ÁRBOL ================= -->
+@if (menuCtx.visible) {
+  <div #menuCtxEl class="menu-ctx" role="menu"
+       [style.left.px]="menuCtx.x" [style.top.px]="menuCtx.y"
+       (click)="$event.stopPropagation()" (contextmenu)="$event.preventDefault()">
+
+    @if (menuCtx.origen === 'grilla') {
+      <!-- ---- Sobre la grilla de usuarios ---- -->
+      @if (menuCtx.usuario; as u) {
+        @if (menuCtx.lote.length > 1) {
+          <div class="menu-ctx__cabecera">
+            <i class="fa fa-fw fa-layer-group text-primary"></i>
+            <span class="text-truncate">{{ menuCtx.lote.length }} usuarios seleccionados</span>
+          </div>
+          @if (accesoModel?.editar !== false) {
+            <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); moverSeleccionA(menuCtx.lote)">
+              <i class="fa fa-arrows-up-down-left-right fa-fw text-warning"></i> Mover a otro grupo…
+              <span class="menu-ctx__detalle">{{ menuCtx.lote.length }} usuarios</span>
+            </button>
+            @if (seleccionId !== NODO_SIN_GRUPO) {
+              <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); moverUsuarios(menuCtx.lote, null)">
+                <i class="fa fa-user-slash fa-fw text-secondary"></i> Quitar del grupo
+              </button>
+            }
+          }
+          <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); gridApi?.deselectAll()">
+            <i class="fa fa-square fa-fw text-secondary"></i> Quitar la selección
+          </button>
+        } @else {
+          <div class="menu-ctx__cabecera">
+            <i class="fa fa-fw fa-user text-primary"></i>
+            <span class="text-truncate">{{ u.login_user }}</span>
+            <span class="menu-ctx__detalle">{{ u.grupo_nombre || 'sin grupo' }}</span>
+          </div>
+          <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); viewUser(u)">
+            <i class="fa fa-eye fa-fw text-info"></i> Ver
+          </button>
+          @if (accesoModel?.editar !== false) {
+            <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); editUser(u)">
+              <i class="fa fa-pen fa-fw text-success"></i> Modificar
+            </button>
+            <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); cambioClave(u)">
+              <i class="fa fa-key fa-fw text-warning"></i> Cambiar clave
+            </button>
+            <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); moverSeleccionA([u])">
+              <i class="fa fa-arrows-up-down-left-right fa-fw text-warning"></i> Mover a otro grupo…
+            </button>
+            @if (u.grupo_id) {
+              <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); moverUsuarios([u], null)">
+                <i class="fa fa-user-slash fa-fw text-secondary"></i> Quitar del grupo
+              </button>
+            }
+          }
+          @if (accesoModel?.crear !== false) {
+            <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); clonUser(u)">
+              <i class="fa fa-clone fa-fw text-primary"></i> Clonar
+            </button>
+          }
+          @if (accesoModel?.auditar === true) {
+            <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); auditoria(u)">
+              <i class="fa fa-user-secret fa-fw text-warning"></i> Auditoría
+            </button>
+          }
+          @if (accesoModel?.eliminar !== false) {
+            <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); deleteUser(u)">
+              <i class="fa fa-trash fa-fw"></i> Eliminar
+            </button>
+          }
+        }
+      } @else {
+        <!-- Fondo de la grilla -->
+        <div class="menu-ctx__cabecera menu-ctx__cabecera--vacio">
+          <i class="fa fa-fw" [ngClass]="seleccionId === NODO_TODOS ? 'fa-building' : (seleccionId === NODO_SIN_GRUPO ? 'fa-user-slash' : 'fa-users')"></i>
+          <span class="text-truncate">{{ nombreSeleccion }}</span>
+          <span class="menu-ctx__detalle">{{ totalRegistros }} usuario(s)</span>
+        </div>
+        @if (accesoModel?.crear !== false) {
+          <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); addUser()">
+            <i class="fa fa-user-plus fa-fw text-primary"></i> Nuevo usuario
+            @if (grupoActual) { <span class="menu-ctx__detalle">en {{ grupoActual.nombre }}</span> }
+          </button>
+          @if (grupoActual && accesoModel?.crear !== false) {
+            <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevoGrupo(grupoActual)">
+              <i class="fa fa-folder-plus fa-fw text-warning"></i> Nuevo subgrupo
+            </button>
+          }
+        }
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); gridApi?.selectAll()">
+          <i class="fa fa-check-double fa-fw text-secondary"></i> Seleccionar todos
+        </button>
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); recargar()">
+          <i class="fa fa-rotate fa-fw text-secondary"></i> Recargar
+        </button>
+      }
+    } @else {
+    @if (grupoMenu; as g) {
+      <div class="menu-ctx__cabecera">
+        <i class="fa fa-fw fa-users text-primary"></i>
+        <span class="text-truncate" [title]="g.ruta">{{ g.nombre }}</span>
+        <span class="menu-ctx__detalle">{{ g.num_usuarios }} usuario(s)</span>
+      </div>
+      @if (accesoModel?.crear !== false) {
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevoGrupo(g)">
+          <i class="fa fa-folder-plus fa-fw text-warning"></i> Nuevo subgrupo
+        </button>
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); addUser(g)">
+          <i class="fa fa-user-plus fa-fw text-primary"></i> Nuevo usuario aquí
+          <span class="menu-ctx__detalle">hereda del grupo</span>
+        </button>
+      }
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); seleccionar(g.id)">
+        <i class="fa fa-list fa-fw text-secondary"></i> Ver usuarios
+      </button>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); verGrupo(g)">
+        <i class="fa fa-eye fa-fw text-info"></i> Ver grupo
+      </button>
+      @if (accesoModel?.editar !== false) {
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); editarGrupo(g)">
+          <i class="fa fa-pen fa-fw text-success"></i> Modificar grupo
+        </button>
+      }
+      @if (accesoModel?.auditar === true) {
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); auditoriaGrupo(g)">
+          <i class="fa fa-user-secret fa-fw text-warning"></i> Auditoría del grupo
+        </button>
+      }
+      @if (accesoModel?.eliminar !== false) {
+        <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminarGrupo(g)">
+          <i class="fa fa-trash fa-fw"></i> Eliminar grupo
+          @if ((g.num_usuarios || 0) > 0 || (g.num_hijos || 0) > 0) {
+            <span class="menu-ctx__detalle">no está vacío</span>
+          }
+        </button>
+      }
+    } @else if (menuCtx.node?.id === NODO_SIN_GRUPO) {
+      <div class="menu-ctx__cabecera">
+        <i class="fa fa-fw fa-user-slash text-secondary"></i>
+        <span>Sin grupo</span>
+        <span class="menu-ctx__detalle">{{ sinGrupo }} usuario(s)</span>
+      </div>
+      @if (accesoModel?.crear !== false) {
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); addUser(null)">
+          <i class="fa fa-user-plus fa-fw text-primary"></i> Nuevo usuario sin grupo
+        </button>
+      }
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); seleccionar(NODO_SIN_GRUPO)">
+        <i class="fa fa-list fa-fw text-secondary"></i> Ver usuarios
+      </button>
+    } @else {
+      <div class="menu-ctx__cabecera">
+        <i class="fa fa-fw fa-building text-primary"></i>
+        <span>Todos los usuarios</span>
+        <span class="menu-ctx__detalle">{{ totalUsuarios }} usuario(s)</span>
+      </div>
+      @if (accesoModel?.crear !== false) {
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevoGrupo(null)">
+          <i class="fa fa-folder-plus fa-fw text-warning"></i> Nuevo grupo de primer nivel
+        </button>
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); addUser(null)">
+          <i class="fa fa-user-plus fa-fw text-primary"></i> Nuevo usuario sin grupo
+        </button>
+      }
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); expandirTodo()">
+        <i class="fa fa-angles-down fa-fw text-secondary"></i> Expandir todo
+      </button>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); contraerTodo()">
+        <i class="fa fa-angles-up fa-fw text-secondary"></i> Contraer todo
+      </button>
+    }
+    }
+  </div>
+}

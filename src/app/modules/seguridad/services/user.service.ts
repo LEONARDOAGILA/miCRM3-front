@@ -43,6 +43,37 @@ allUsers(page: number = 1, perPage: number = 10, search: string = ''): Observabl
 }
 
 
+  //   ******   USUARIOS DE UN GRUPO (árbol de grupos + grilla)   ******  //
+  /** grupoId null = todos; 0 = sin grupo; n = del grupo (y subgrupos si se pide). Misma respuesta que allUsers. */
+  usuariosPorGrupo(grupoId: number | null, subgrupos: boolean, page: number = 1, perPage: number = 10, search: string = ''): Observable<any> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('per_page', perPage.toString())
+      .set('subgrupos', subgrupos ? '1' : '0');
+    if (grupoId !== null && grupoId !== undefined) { params = params.set('grupo_id', String(grupoId)); }
+    if (search) { params = params.set('search', search); }
+    return this._http.get<any>(this.URL_SERVICIOS + 'usuariosPorGrupo', { params, observe: 'response' });
+  }
+
+  /** Mueve usuarios a un grupo (null = dejarlos sin grupo). */
+  moverGrupo(ids: number[], grupoId: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'moverGrupo', { ids, grupo_id: grupoId });
+  }
+
+  //   ******   PAPELERA DE RECICLAJE (deleteUser es borrado lógico)   ******  //
+  papelera(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'papelera');
+  }
+  restaurarUsuarios(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'restaurarUsuarios', { ids });
+  }
+  eliminarDefinitivo(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'eliminarDefinitivo', { ids });
+  }
+  vaciarPapelera(): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera');
+  }
+
   //   ******   LISTADO SIMPLE (SIN PAGINACIÓN)   ******  //
   listUsers(): Observable<any> { 
     return this._http.get(this.URL_SERVICIOS + 'listUsers'); 

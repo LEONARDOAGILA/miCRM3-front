@@ -1,0 +1,74 @@
+<!-- ===================== SPINNER ===================== -->
+@if (cargando) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header [title]="titulo" (onClose)="activeModal.dismiss('Cross click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body selector-grupos">
+
+  <!-- Buscador -->
+  <div class="selector-grupos__buscador">
+    <i class="fa fa-search selector-grupos__lupa"></i>
+    <input type="text"
+           class="form-control form-control-sm"
+           placeholder="Buscar grupo…"
+           [(ngModel)]="searchQuery"
+           (input)="filterNodes()">
+    @if (searchQuery) {
+      <button type="button" class="selector-grupos__limpiar" title="Limpiar" (click)="limpiarBusqueda()">&times;</button>
+    }
+  </div>
+
+  @if (actual) {
+    <div class="selector-grupos__actual">
+      <i class="fa fa-check-circle text-success"></i>
+      Actual: <b>{{ actual.ruta || actual.nombre }}</b>
+    </div>
+  }
+
+  <!-- Árbol: se pulsa el nombre para elegir -->
+  <div class="selector-grupos__arbol">
+    <ng-scrollbar class="h-100">
+      <div class="selector-grupos__nodos">
+        @if (permitirNinguno) {
+          <button type="button" class="selector-grupos__ninguno" (click)="ninguno()">
+            <i class="fa fa-user-slash fa-fw"></i> Sin grupo
+          </button>
+        }
+        @for (node of nodes; track node.id) {
+          <app-file-tree-node
+            [node]="node"
+            [isSelected]="node.isSelected"
+            (nodeSelected)="onNodeSelect($event)">
+          </app-file-tree-node>
+        } @empty {
+          <div class="selector-grupos__vacio">
+            @if (searchQuery) {
+              <i class="fa fa-search"></i>
+              <span>Nada coincide con «{{ searchQuery }}»</span>
+            } @else {
+              <i class="fa fa-users"></i>
+              <span>Aún no hay grupos. Créelos en <b>Usuarios y grupos</b>.</span>
+            }
+          </div>
+        }
+      </div>
+    </ng-scrollbar>
+  </div>
+
+  <div class="selector-grupos__ayuda">
+    <i class="fa fa-hand-pointer"></i> Pulse el nombre de un grupo para seleccionarlo.
+  </div>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<div class="modal-footer">
+  <button type="button" class="btn btn-outline-secondary" (click)="activeModal.dismiss('Close click')">
+    <i class="fa fa-times fa-fw me-1"></i>Cancelar
+  </button>
+</div>

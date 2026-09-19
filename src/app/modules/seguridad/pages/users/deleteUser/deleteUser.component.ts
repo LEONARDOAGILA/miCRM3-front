@@ -27,7 +27,7 @@ export class DeleteUserComponent implements OnInit, OnDestroy {
     private _toastr: ToastrService,
     public _userService: UserService,
   ) {
-    this.title = 'Eliminar Usuario';
+    this.title = 'Enviar usuario a la papelera';
     this.isLoading = false;
   }
 

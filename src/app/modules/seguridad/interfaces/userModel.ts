@@ -18,6 +18,12 @@ export interface UserModel {
   perfil_nombre?: string;
   chorario_id?: number;
   chorario_nombre?: string;
+  /** Grupo (seguridad.grupos) al que pertenece; null = sin grupo */
+  grupo_id?: number | null;
+  grupo_nombre?: string | null;
+  /** En la papelera de reciclaje (borrado lógico); null = vigente */
+  deleted_at?: string | null;
+  deleted_by?: string | null;
   path?: string;
   created_at?: Date;
   updated_at?: Date;

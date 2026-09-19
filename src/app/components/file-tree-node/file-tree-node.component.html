@@ -5,6 +5,7 @@
     [class.selected]="isSelected"
     [class.is-destino]="esDestino"
     [attr.draggable]="arrastrable ? 'true' : null"
+    [attr.title]="node.titulo || null"
     (click)="onNodeClick($event)"
     (contextmenu)="onNodeContextMenu($event)"
     (dragstart)="onDragStart($event)"
@@ -27,6 +28,9 @@
 
     <!-- Nombre del nodo -->
     <span class="file-text">{{ node.nombre }}</span>
+
+    <!-- Contador opcional (usuarios de un grupo, etc.) -->
+    <span class="file-badge" *ngIf="node.badge !== undefined && node.badge !== null && node.badge !== ''">{{ node.badge }}</span>
   </div>
 
   <!-- Subárbol de nodos hijos -->

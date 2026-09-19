@@ -1,0 +1,113 @@
+/* Selector de grupo: buscador + árbol a altura fija con scroll */
+.selector-grupos {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .75rem;
+}
+
+.selector-grupos__buscador {
+  position: relative;
+}
+
+.selector-grupos__buscador .form-control {
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+}
+
+.selector-grupos__lupa {
+  position: absolute;
+  top: 50%;
+  left: .6rem;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.selector-grupos__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .4rem;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.selector-grupos__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+.selector-grupos__actual {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.selector-grupos__arbol {
+  height: 320px;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  overflow: hidden;
+}
+
+.selector-grupos__nodos {
+  width: max-content;
+  min-width: 100%;
+  padding: .5rem .75rem .5rem .25rem;
+}
+
+.selector-grupos__ninguno {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  width: 100%;
+  margin-bottom: .25rem;
+  padding: .3rem .5rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 12px;
+  text-align: left;
+}
+
+.selector-grupos__ninguno:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+  color: var(--bs-body-color, #212529);
+}
+
+.selector-grupos__vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.selector-grupos__vacio i {
+  font-size: 1.5rem;
+  opacity: .5;
+}
+
+.selector-grupos__ayuda {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.selector-grupos__ayuda i {
+  color: var(--bs-app-theme, #00acac);
+}

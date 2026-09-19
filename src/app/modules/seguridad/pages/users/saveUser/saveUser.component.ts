@@ -20,6 +20,8 @@ import { HorarioService } from '../../../../seguridad/services/horario.service';
 import { UserModel } from "../../../interfaces/userModel";
 import { ListProfileComponent } from '../../profiles/listProfile/listProfile.component';
 import { ListHorariosComponent } from '../../horarios/listHorarios/listHorarios.component';
+import { ListGruposComponent } from '../../grupos/listGrupos/listGrupos.component';
+import { GrupoModel, typeUserDeGrupo } from '../../../interfaces/grupoModel';
 
 @Component({
   selector: 'app-saveUser',
@@ -30,6 +32,8 @@ import { ListHorariosComponent } from '../../horarios/listHorarios/listHorarios.
 export class SaveUserComponent implements OnInit, OnDestroy {
   @Input() registro_selected: any = {};
   @Input() accion: any = {};
+  /** Al crear desde el árbol de grupos: grupo ya puesto, con sus valores por defecto. */
+  @Input() grupoInicial: GrupoModel | null = null;
   @Output() registrosE: EventEmitter<any> = new EventEmitter();
 
   public form: FormGroup;
@@ -47,6 +51,7 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   // Controles independientes para Perfil y Horario
   public perfilNombreControl = new FormControl({ value: '', disabled: true });
   public horarioNombreControl = new FormControl({ value: '', disabled: true });
+  public grupoNombreControl = new FormControl({ value: '', disabled: true });
 
   public tipoUsuario = [
     { id: 1, name: 'SUPER USUARIO' },
@@ -251,6 +256,7 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       case 'add':
         this.esNuevo = true;
         this.titulo = "Nuevo Usuario";
+        if (this.grupoInicial) { this.aplicarGrupo(this.grupoInicial, true); }
         break;
 
       case 'edit':
@@ -290,6 +296,7 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       type_user: [{ value: null, disabled: this.isdisabled }, [Validators.required]],
       perfil_id: [{ value: null, disabled: this.isdisabled }, [Validators.required]],
       chorario_id: [{ value: null, disabled: this.isdisabled }, [Validators.required]],
+      grupo_id: [{ value: null, disabled: this.isdisabled }],
     };
 
     const specificFields = this.esNuevo || this.esClon
@@ -304,6 +311,63 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       ...baseFields,
       ...specificFields
     });
+  }
+
+  //   ******   GRUPO (unidad organizativa)   ******  //
+
+  /**
+   * Pone el grupo y, si el usuario es nuevo o el campo está vacío, los valores
+   * por defecto del grupo: perfil, horario y tipo (administrador / sistema / web).
+   * Al cambiar de grupo en un usuario existente sólo se rellena lo que falte.
+   */
+  private aplicarGrupo(g: GrupoModel, esNuevo: boolean): void {
+    this.form.patchValue({ grupo_id: g.id });
+    this.grupoNombreControl.setValue(g.ruta || g.nombre);
+
+    const aplicados: string[] = [];
+    if (g.perfil_id && (esNuevo || !this.form.get('perfil_id')?.value)) {
+      this.form.patchValue({ perfil_id: g.perfil_id });
+      this.perfilNombreControl.setValue(g.perfil_nombre || '');
+      aplicados.push('perfil ' + (g.perfil_nombre || g.perfil_id));
+    }
+    if (g.chorario_id && (esNuevo || !this.form.get('chorario_id')?.value)) {
+      this.form.patchValue({ chorario_id: g.chorario_id });
+      this.horarioNombreControl.setValue(g.chorario_nombre || '');
+      aplicados.push('horario ' + (g.chorario_nombre || g.chorario_id));
+    }
+    if (esNuevo || !this.form.get('type_user')?.value) {
+      const tipo = typeUserDeGrupo(g);
+      this.form.patchValue({ type_user: tipo });
+      aplicados.push(this.tipoUsuario.find(t => t.id === tipo)?.name?.toLowerCase() || '');
+    }
+    if (aplicados.length) {
+      this._toastr.info(`Del grupo «${g.nombre}»: ${aplicados.filter(Boolean).join(', ')}`, 'Valores heredados', { timeOut: 5000 });
+    }
+  }
+
+  abrirModalGrupos() {
+    if (this.isdisabled) return;
+
+    const modalRef = this.modalService.open(ListGruposComponent, {
+      size: 'md',
+      centered: true,
+      backdrop: 'static'
+    });
+    modalRef.componentInstance.titulo = 'Grupo del usuario';
+    modalRef.componentInstance.grupoSeleccionadoId = this.form.get('grupo_id')?.value;
+    modalRef.componentInstance.permitirNinguno = true;
+
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(this.hastaQueCierre(modalRef)))
+      .subscribe((g: GrupoModel | null) => {
+        if (g) { this.aplicarGrupo(g, this.esNuevo); } else { this.limpiarGrupo(); }
+      });
+  }
+
+  limpiarGrupo() {
+    if (this.isdisabled) return;
+    this.form.patchValue({ grupo_id: null });
+    this.grupoNombreControl.setValue('');
   }
 
   //   ******   PERFILES   ******  //
@@ -498,11 +562,13 @@ export class SaveUserComponent implements OnInit, OnDestroy {
           type_user: this.userModel.type_user,
           isactive: this.userModel.isactive,
           perfil_id: this.userModel.perfil_id,
-          chorario_id: this.userModel.chorario_id
+          chorario_id: this.userModel.chorario_id,
+          grupo_id: this.userModel.grupo_id ?? null
         });
         
         this.perfilNombreControl.setValue(this.userModel.perfil_nombre || '');
         this.horarioNombreControl.setValue(this.userModel.chorario_nombre || '');
+        this.grupoNombreControl.setValue(this.userModel.grupo_nombre || '');
 
         if (this.userModel.avatar) {
           this.imagen_previzualiza = this._userService.getUserImage(id, true);
@@ -683,6 +749,8 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     
     if (this.form.valid) {
       const payload = this.form.getRawValue();
+      // Sin grupo se manda null: en edición el back lo toma como «quitar del grupo»
+      payload.grupo_id = payload.grupo_id || null;
 
       // En edición el backend ignora la contraseña (fn_usuarios_modificar no la
       // recibe). Enviar un password vacío solo es ruido y un riesgo latente.

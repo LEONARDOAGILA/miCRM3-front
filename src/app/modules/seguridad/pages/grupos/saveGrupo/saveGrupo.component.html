@@ -1,0 +1,220 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header [title]="titulo" (onClose)="activeModal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body grupo-modal-body" tabindex="0" role="dialog">
+  <form [formGroup]="form" (ngSubmit)="onSubmitForm($event)" novalidate>
+    <div class="row g-3">
+
+      <!-- -------- Datos del grupo -------- -->
+      <div class="col-lg-6">
+        <panel
+          headerClass="bg-gray-800"
+          title="Datos del grupo"
+          noButton="true"
+          noBody="true"
+          panelClass="h-100 mb-3 mb-lg-0"
+          icono="usuarios"
+          fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <!-- Estado -->
+              <div class="estado-miswitch mb-3" [class.is-on]="form.controls['activo'].value">
+                <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-miswitch__text">
+                  <span class="estado-miswitch__label">Estado del grupo</span>
+                  <span class="estado-miswitch__hint">
+                    {{ form.controls['activo'].value ? 'Disponible para asignar usuarios' : 'Inactivo: no se asignan usuarios nuevos' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-miswitch__switch"
+                  [control]="form.controls['activo']"
+                  [label]="form.controls['activo'].value ? 'Activo' : 'Inactivo'"
+                  [id]="'ck-grupo-activo'">
+                </app-checkbox>
+              </div>
+
+              <!-- Nombre -->
+              <div class="campo">
+                <app-campoTexto
+                  [control]="form.controls['nombre']"
+                  label="Nombre del grupo"
+                  placeholder="Ej.: Sistemas, Ventas, Sucursal Norte"
+                  [maxLength]="100"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+              </div>
+
+              <!-- Grupo padre (lookup) -->
+              <div class="campo campo-lookup">
+                <div class="row g-2 flex-nowrap">
+                  <div class="col">
+                    <app-campoTexto
+                      [control]="padreNombreControl"
+                      label="Dentro de (grupo padre)"
+                      placeholder="Raíz (sin grupo padre)">
+                    </app-campoTexto>
+                  </div>
+                  @if (!esView) {
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-lookup" (click)="abrirModalPadre()" title="Elegir el grupo padre">
+                        <i class="fa fa-sitemap"></i>
+                      </button>
+                    </div>
+                    @if (form.controls['padre_id'].value) {
+                      <div class="col-auto">
+                        <button type="button" class="btn btn-lookup btn-lookup--quitar" (click)="limpiarPadre()" title="Dejarlo en la raíz">
+                          <i class="fa fa-times"></i>
+                        </button>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+
+              <!-- Descripción -->
+              <div class="campo">
+                <app-campoTextoArea
+                  [control]="form.controls['descripcion']"
+                  label="Descripción"
+                  placeholder="Para qué es este grupo"
+                  [maxLength]="1000">
+                </app-campoTextoArea>
+              </div>
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+      <!-- -------- Valores por defecto de sus usuarios -------- -->
+      <div class="col-lg-6">
+        <panel
+          headerClass="bg-gray-800"
+          title="Lo que heredan sus usuarios"
+          noButton="true"
+          noBody="true"
+          panelClass="h-100 mb-0"
+          icono="perfil"
+          fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <p class="herencia-ayuda">
+                <i class="fa fa-info-circle"></i>
+                Al crear un usuario dentro de este grupo se le proponen estos valores
+                (perfil y horario se pueden cambiar en cada usuario).
+              </p>
+
+              <!-- Administrador -->
+              <div class="estado-miswitch mb-3" [class.is-on]="form.controls['es_administrador'].value">
+                <span class="estado-miswitch__icon"><i class="fa-solid fa-user-shield"></i></span>
+                <div class="estado-miswitch__text">
+                  <span class="estado-miswitch__label">Administradores</span>
+                  <span class="estado-miswitch__hint">
+                    {{ form.controls['es_administrador'].value ? 'Sus usuarios administran (archivos, permisos…)' : 'Usuarios normales' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-miswitch__switch"
+                  [control]="form.controls['es_administrador']"
+                  [label]="form.controls['es_administrador'].value ? 'Sí' : 'No'"
+                  [id]="'ck-grupo-admin'">
+                </app-checkbox>
+              </div>
+
+              <!-- Tipo de acceso -->
+              <div class="campo campo-combo">
+                <app-combo
+                  formControlName="tipo_acceso"
+                  [items]="tiposAcceso"
+                  [label]="'Tipo de acceso'"
+                  bindLabel="name"
+                  bindValue="id">
+                </app-combo>
+              </div>
+
+              <!-- Perfil por defecto -->
+              <div class="campo campo-lookup">
+                <div class="row g-2 flex-nowrap">
+                  <div class="col-4">
+                    <app-campoNumeroEntero
+                      [control]="form.controls['perfil_id']"
+                      label="ID Perfil"
+                      placeholder="ID"
+                      [maxLength]="10"
+                      (blur)="cargarPerfilPorId()">
+                    </app-campoNumeroEntero>
+                  </div>
+                  <div class="col">
+                    <app-campoTexto
+                      [control]="perfilNombreControl"
+                      label="Perfil por defecto"
+                      placeholder="Ninguno">
+                    </app-campoTexto>
+                  </div>
+                  @if (!esView) {
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-lookup" (click)="abrirModalPerfiles()" title="Buscar perfil">
+                        <i class="fa fa-search"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Horario por defecto -->
+              <div class="campo campo-lookup">
+                <div class="row g-2 flex-nowrap">
+                  <div class="col-4">
+                    <app-campoNumeroEntero
+                      [control]="form.controls['chorario_id']"
+                      label="ID Horario"
+                      placeholder="ID"
+                      [maxLength]="10"
+                      (blur)="cargarHorarioPorId()">
+                    </app-campoNumeroEntero>
+                  </div>
+                  <div class="col">
+                    <app-campoTexto
+                      [control]="horarioNombreControl"
+                      label="Horario por defecto"
+                      placeholder="Ninguno">
+                    </app-campoTexto>
+                  </div>
+                  @if (!esView) {
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-lookup" (click)="abrirModalHorarios()" title="Buscar horario">
+                        <i class="fa fa-search"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="herencia-resumen">
+                <i class="fa fa-arrow-turn-down fa-rotate-90"></i>
+                <span>{{ resumenHerencia }}</span>
+              </div>
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer [isDisabled]="!isdisabled" (onClose)="activeModal.close('Close click')" (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

@@ -1,0 +1,135 @@
+<!-- ============================================================
+     PAPELERA DE RECICLAJE DE USUARIOS (modal)
+     Los usuarios "eliminados" (borrado lógico). Marca uno o varios y
+     restáuralos o bórralos de verdad; o vacía la papelera entera.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<app-modal-header
+  title="Papelera de reciclaje de usuarios"
+  (onClose)="modal.dismiss()">
+</app-modal-header>
+
+<div class="modal-body papelera-body">
+
+  <div class="papelera-barra">
+    <div class="papelera-resumen">
+      @if (items.length) {
+        <b>{{ items.length }}</b> {{ items.length === 1 ? 'usuario' : 'usuarios' }} en la papelera
+      } @else {
+        La papelera está vacía
+      }
+    </div>
+
+    @if (lote.length) {
+      <span class="papelera-seleccion text-truncate">
+        <i class="fa fa-fw" [ngClass]="lote.length > 1 ? 'fa-layer-group' : 'fa-user'"></i>
+        {{ lote.length > 1 ? lote.length + ' seleccionados' : lote[0].login_user }}
+      </span>
+    }
+  </div>
+
+  <p class="papelera-ayuda">
+    <i class="fa fa-circle-info me-1"></i>
+    Un usuario en la papelera no puede iniciar sesión ni aparece en los listados. Al restaurarlo
+    vuelve a su grupo tal como estaba. Eliminar definitivamente borra también su foto; la auditoría se conserva.
+  </p>
+
+  <div class="papelera-grilla-wrap" (contextmenu)="onContextMenuGrilla($event)">
+    <ag-grid-angular
+      class="ag-theme-alpine ag-grid-transparente papelera-grilla"
+      [rowData]="items"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="_appAgGridService.defaultColDef"
+      [localeText]="_appAgGridService.localeText"
+      [rowHeight]="35"
+      [headerHeight]="35"
+      [rowSelection]="'multiple'"
+      [rowMultiSelectWithClick]="false"
+      [suppressRowClickSelection]="false"
+      [pagination]="false"
+      [overlayNoRowsTemplate]="'<span>No hay usuarios en la papelera</span>'"
+      [navigateToNextCell]="navegarConTeclado"
+      (gridReady)="onGridReady($event)"
+      (cellClicked)="onCellClicked($event)">
+    </ag-grid-angular>
+  </div>
+
+</div>
+
+<div class="modal-footer papelera-pie">
+  <button type="button" class="btn btn-danger papelera-pie__vaciar"
+          [disabled]="!items.length"
+          title="Borrar para siempre todos los usuarios de la papelera"
+          (click)="vaciar()">
+    <i class="fa fa-broom me-1"></i>
+    <span class="d-none d-sm-inline">Vaciar papelera</span>
+  </button>
+
+  <div class="papelera-pie__derecha">
+    <button type="button" class="btn btn-success"
+            [disabled]="!lote.length"
+            [title]="lote.length ? 'Restaurar ' + (lote.length > 1 ? lote.length + ' usuarios' : '«' + lote[0].login_user + '»') : 'Seleccione un usuario'"
+            (click)="restaurar()">
+      <i class="fa fa-rotate-left me-1"></i>
+      <span class="d-none d-sm-inline">Restaurar</span>
+    </button>
+    <button type="button" class="btn btn-outline-danger"
+            [disabled]="!lote.length"
+            title="Borrar para siempre lo seleccionado"
+            (click)="eliminarDefinitivo()">
+      <i class="fa fa-trash me-1"></i>
+      <span class="d-none d-sm-inline">Eliminar definitivamente</span>
+    </button>
+    <button type="button" class="btn btn-default" (click)="modal.dismiss()">
+      <i class="fa fa-times me-1"></i> Cerrar
+    </button>
+  </div>
+</div>
+
+<!-- ================= MENÚ CONTEXTUAL ================= -->
+@if (menuCtx.visible) {
+  <div #menuCtxEl
+       class="menu-ctx"
+       role="menu"
+       [style.left.px]="menuCtx.x"
+       [style.top.px]="menuCtx.y"
+       (click)="$event.stopPropagation()"
+       (contextmenu)="$event.preventDefault()">
+
+    @if (menuCtx.elemento; as el) {
+      <div class="menu-ctx__cabecera">
+        <i class="fa fa-fw" [ngClass]="menuCtx.lote.length > 1 ? 'fa-layer-group' : 'fa-user'"></i>
+        <span class="text-truncate">{{ menuCtx.lote.length > 1 ? menuCtx.lote.length + ' usuarios seleccionados' : el.login_user }}</span>
+      </div>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); restaurar(menuCtx.lote)">
+        <i class="fa fa-rotate-left fa-fw text-success"></i> Restaurar
+        <span class="menu-ctx__detalle">{{ menuCtx.lote.length > 1 ? menuCtx.lote.length + ' usuarios' : 'a «' + (el.grupo_nombre || 'Sin grupo') + '»' }}</span>
+      </button>
+      <div class="menu-ctx__sep"></div>
+      <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminarDefinitivo(menuCtx.lote)">
+        <i class="fa fa-trash fa-fw"></i> Eliminar definitivamente
+      </button>
+    } @else {
+      <div class="menu-ctx__cabecera menu-ctx__cabecera--vacio">
+        <i class="fa fa-trash-can fa-fw"></i>
+        <span>Papelera</span>
+      </div>
+      <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem"
+              [disabled]="!items.length" (click)="cerrarMenu(); vaciar()">
+        <i class="fa fa-broom fa-fw"></i> Vaciar papelera
+      </button>
+      <div class="menu-ctx__sep"></div>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); gridApi?.selectAll()">
+        <i class="fa fa-check-double fa-fw text-secondary"></i> Seleccionar todos
+      </button>
+      <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); cargar()">
+        <i class="fa fa-arrows-rotate fa-fw text-secondary"></i> Recargar
+      </button>
+    }
+  </div>
+}

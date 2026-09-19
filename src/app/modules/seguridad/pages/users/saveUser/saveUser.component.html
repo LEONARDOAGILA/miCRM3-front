@@ -206,6 +206,34 @@
                         </app-campoClave>
                       </div>
 
+                      <!-- Grupo (unidad organizativa): al elegirlo se proponen
+                           perfil, horario y tipo del grupo -->
+                      <div class="campo campo-lookup">
+                        <div class="row g-2 flex-nowrap">
+                          <div class="col">
+                            <app-campoTexto
+                              [control]="grupoNombreControl"
+                              label="Grupo"
+                              placeholder="Sin grupo">
+                            </app-campoTexto>
+                          </div>
+                          @if (!esView) {
+                            <div class="col-auto">
+                              <button type="button" class="btn btn-lookup" (click)="abrirModalGrupos()" title="Elegir el grupo del usuario">
+                                <i class="fa fa-sitemap"></i>
+                              </button>
+                            </div>
+                            @if (form.controls['grupo_id'].value) {
+                              <div class="col-auto">
+                                <button type="button" class="btn btn-lookup btn-lookup--quitar" (click)="limpiarGrupo()" title="Quitar del grupo">
+                                  <i class="fa fa-times"></i>
+                                </button>
+                              </div>
+                            }
+                          }
+                        </div>
+                      </div>
+
                       <!-- Tipo de usuario -->
                       <div class="campo campo-combo">
                         <app-combo

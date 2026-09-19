@@ -24,6 +24,7 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { SaveUserComponent } from '../saveUser/saveUser.component';
 import { DeleteUserComponent } from '../deleteUser/deleteUser.component';
 import { ChangePasswordComponent } from '../change-password/change-password.component';
+import { PapeleraUsuariosComponent } from '../../grupos/papeleraUsuarios/papeleraUsuarios.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
@@ -314,6 +315,14 @@ export class AllUsersComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'left' },
         minWidth: 120,
         maxWidth: 150,
+      },
+      {
+        headerName: 'Grupo',
+        field: 'grupo_nombre',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 120,
+        maxWidth: 200,
+        valueFormatter: (p: any) => p.value || 'Sin grupo',
       },
 
       {
@@ -834,6 +843,13 @@ export class AllUsersComponent implements OnInit, OnDestroy {
       this.userModel.splice(index, 1);
       this.gridApi?.applyTransaction({ remove: [registro] });
     });
+  }
+
+  /** Papelera de reciclaje: los usuarios eliminados se restauran o se borran de verdad desde ahí. */
+  abrirPapelera(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(PapeleraUsuariosComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
+    this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.allUsers(this.paginaActual));
   }
 
   cambioClave(registro: any): void {

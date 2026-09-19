@@ -11,6 +11,10 @@ export interface FileTreeNode {
   escarpeta: boolean;
   icono?: string;
   color?: string;
+  /** Texto pequeño a la derecha del nombre (p. ej. cuántos usuarios tiene un grupo). */
+  badge?: string | number | null;
+  /** Tooltip del nodo. */
+  titulo?: string;
 }
 
 /** Evento de arrastre sobre un nodo: el nodo y el DragEvent nativo. */
