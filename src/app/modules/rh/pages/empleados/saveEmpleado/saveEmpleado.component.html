@@ -1,0 +1,503 @@
+<!-- ============================================================
+     GUARDAR EMPLEADO (modal)
+     Calcado de saveUser: columna izquierda con la foto (arrastrar, galería,
+     cámara, pegar, ampliar) y a la derecha los paneles de datos personales,
+     laborales (cargo / departamento / jefe con selector, como perfil y
+     horario en usuarios) y contacto.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+<ng-container *ngIf="(isLoading$ | async)">
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+</ng-container>
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header [title]="titulo" (onClose)="activeModal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body empleado-modal-body" tabindex="0" role="dialog" aria-labelledby="modalTitle">
+  <div class="row g-3">
+
+    <!-- ============ COLUMNA IZQUIERDA: AVATAR ============ -->
+    <div class="col-lg-4">
+        <panel 
+          headerClass="bg-gray-800"
+          title="Foto del empleado" 
+          noButton="true" 
+          noBody="true"
+          panelClass="h-100 mb-3 mb-md-0" 
+          icono="usuario" 
+          fondoGris="true">
+          
+          <ng-container outsideBody>
+            <div class="form-card__body">
+            <!-- ---------- Zona de imagen / drop ---------- -->
+            <div class="avatar-dropzone"
+                [class.drag-over]="isDragOver"
+                [class.is-empty]="!imagen_previzualiza"
+                (drop)="onDrop($event)"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)">
+
+              <!-- Con imagen -->
+              <div class="avatar-preview" *ngIf="imagen_previzualiza">
+                <img [src]="imagen_previzualiza"
+                    alt="Foto del empleado"
+                    (error)="handleImageError($event)"
+                    (click)="openFullscreen()">
+
+                <div class="avatar-preview__overlay">
+                  <button type="button" class="avatar-action" (click)="openFullscreen()" title="Ampliar imagen">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                  </button>
+                  <ng-container *ngIf="!esView">
+                    <button type="button" class="avatar-action" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
+                      <i class="fa-solid fa-paste"></i>
+                    </button>
+                    <button type="button" class="avatar-action avatar-action--danger" (click)="clearImage()" title="Quitar imagen">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                  </ng-container>
+                </div>
+              </div>
+
+              <!-- Sin imagen -->
+              <div class="avatar-empty" *ngIf="!imagen_previzualiza"
+                  [class.is-disabled]="esView"
+                  (click)="openGallery()">
+                <span class="avatar-empty__icon">
+                  <i class="fa-solid" [ngClass]="esView ? 'fa-user-slash' : 'fa-cloud-arrow-up'"></i>
+                </span>
+                <p class="avatar-empty__title">{{ esView ? 'Sin imagen' : 'Seleccionar imagen' }}</p>
+                <p class="avatar-empty__hint" *ngIf="!esView">
+                  Arrastra y suelta una imagen o haz clic para buscarla
+                </p>
+                <p class="avatar-empty__hint" *ngIf="!esView">
+                  También puedes pegarla con <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                </p>
+              </div>
+            </div>
+
+            <!-- ---------- Acciones de imagen ---------- -->
+            <div class="avatar-actions mt-2" *ngIf="!esView">
+              <button type="button" class="btn btn-avatar btn-avatar-camera" (click)="openCamera()" title="Tomar foto">
+                <i class="fa-solid fa-camera"></i>
+                <span>Cámara</span>
+              </button>
+              <button type="button" class="btn btn-avatar btn-avatar-gallery" (click)="openGallery()" title="Buscar en el dispositivo">
+                <i class="fa-solid fa-image"></i>
+                <span>Galería</span>
+              </button>
+              <button type="button" class="btn btn-avatar btn-avatar-paste" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
+                <i class="fa-solid fa-paste"></i>
+                <span>Pegar</span>
+              </button>
+            </div>
+
+
+
+
+            <!-- ---------- Inputs auxiliares ---------- -->
+            <input #galleryInput type="file" id="gallery-input" class="d-none" accept="image/*" (change)="processFile($event)">
+            <input #pasteInput id="paste-input" class="d-none" [formControl]="form.controls['foto']" (paste)="onPaste($event)">
+          </div>
+          </ng-container>
+        </panel>
+    </div>
+
+    <!-- ============ COLUMNA DERECHA: FORMULARIO ============ -->
+    <div class="col-lg-8">
+      <form [formGroup]="form" class="user-details-form" autocomplete="off">
+        <div class="row g-3">
+
+          <!-- -------- Datos personales -------- -->
+          <div class="col-md-6">
+            <panel
+              headerClass="bg-gray-800"
+              title="Datos personales"
+              noButton="true"
+              noBody="true"
+              panelClass="h-100 mb-3 mb-md-0"
+              icono="usuario"
+              fondoGris="true">
+
+              <ng-container outsideBody>
+                <div class="form-card__body">
+
+                  <!-- Estado activo / inactivo -->
+                  <div class="estado-miswitch" [class.is-on]="ctrlActivo.value">
+                    <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>
+                    <div class="estado-miswitch__text">
+                      <span class="estado-miswitch__label">Registro</span>
+                      <span class="estado-miswitch__hint">
+                        {{ ctrlActivo.value ? 'Empleado activo en el sistema' : 'Empleado dado de baja' }}
+                      </span>
+                    </div>
+                    <app-checkbox class="estado-miswitch__switch"
+                      [control]="ctrlActivo"
+                      [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
+                      [id]="'ck-empleado-activo'">
+                    </app-checkbox>
+                  </div>
+
+                  <!-- Identificación -->
+                  <div class="campo campo-lookup">
+                    <div class="row g-2 flex-nowrap">
+                      <div class="col-5 campo-combo">
+                        <app-combo
+                          formControlName="tipo_identificacion"
+                          [items]="tiposIdentificacion"
+                          [label]="'Tipo'"
+                          bindLabel="name"
+                          bindValue="id">
+                        </app-combo>
+                      </div>
+                      <div class="col">
+                        <app-campoTexto
+                          [control]="form.controls['numero_identificacion']"
+                          label="Nº identificación"
+                          placeholder="Ej: 0102030405"
+                          [maxLength]="20"
+                          [trimEspacios]="true"
+                          [noEspacios]="true">
+                        </app-campoTexto>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="campo">
+                    <app-campoTexto
+                      [control]="form.controls['apellidos']"
+                      label="Apellidos"
+                      placeholder="Apellidos"
+                      [maxLength]="100"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+                  </div>
+
+                  <div class="campo">
+                    <app-campoTexto
+                      [control]="form.controls['nombres']"
+                      label="Nombres"
+                      placeholder="Nombres"
+                      [maxLength]="100"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+                  </div>
+
+                  <div class="campo campo-lookup">
+                    <div class="row g-2 flex-nowrap">
+                      <div class="col-6">
+                        <app-campoTexto
+                          [control]="form.controls['fecha_nacimiento']"
+                          label="Nacimiento"
+                          placeholder="AAAA-MM-DD"
+                          type="date">
+                        </app-campoTexto>
+                      </div>
+                      <div class="col-6 campo-combo">
+                        <app-combo
+                          formControlName="genero"
+                          [items]="generos"
+                          [label]="'Género'"
+                          bindLabel="name"
+                          bindValue="id">
+                        </app-combo>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </ng-container>
+            </panel>
+          </div>
+
+          <!-- -------- Datos laborales: cargo, departamento y jefe con selector -------- -->
+          <div class="col-md-6">
+            <panel
+              headerClass="bg-gray-800"
+              title="Datos laborales"
+              noButton="true"
+              noBody="true"
+              panelClass="h-100 mb-3 mb-md-0"
+              icono="briefcase"
+              fondoGris="true">
+
+              <ng-container outsideBody>
+                <div class="form-card__body">
+
+                  <!-- Cargo (ID + nombre + lupa, como el perfil en saveUser) -->
+                  <div class="campo campo-lookup">
+                    <div class="row g-2 flex-nowrap">
+                      <div class="col-4">
+                        <app-campoNumeroEntero
+                          [control]="form.controls['cargo_id']"
+                          label="ID Cargo"
+                          placeholder="ID"
+                          [maxLength]="10"
+                          (blur)="cargarCargoPorId()">
+                        </app-campoNumeroEntero>
+                      </div>
+                      <div class="col">
+                        <app-campoTexto
+                          [control]="cargoNombreControl"
+                          label="Cargo"
+                          placeholder="Cargo del empleado">
+                        </app-campoTexto>
+                      </div>
+                      @if (!esView) {
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-lookup" (click)="abrirModalCargos()" title="Buscar cargo">
+                            <i class="fa fa-search"></i>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Departamento -->
+                  <div class="campo campo-lookup">
+                    <div class="row g-2 flex-nowrap">
+                      <div class="col-4">
+                        <app-campoNumeroEntero
+                          [control]="form.controls['departamento_id']"
+                          label="ID Depto."
+                          placeholder="ID"
+                          [maxLength]="10"
+                          (blur)="cargarDepartamentoPorId()">
+                        </app-campoNumeroEntero>
+                      </div>
+                      <div class="col">
+                        <app-campoTexto
+                          [control]="departamentoNombreControl"
+                          label="Departamento"
+                          placeholder="Departamento del empleado">
+                        </app-campoTexto>
+                      </div>
+                      @if (!esView) {
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-lookup" (click)="abrirModalDepartamentos()" title="Buscar departamento">
+                            <i class="fa fa-search"></i>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Jefe directo (opcional) -->
+                  <div class="campo campo-lookup">
+                    <div class="row g-2 flex-nowrap">
+                      <div class="col-4">
+                        <app-campoNumeroEntero
+                          [control]="form.controls['jefe_id']"
+                          label="ID Jefe"
+                          placeholder="ID"
+                          [maxLength]="10"
+                          (blur)="cargarJefePorId()">
+                        </app-campoNumeroEntero>
+                      </div>
+                      <div class="col">
+                        <app-campoTexto
+                          [control]="jefeNombreControl"
+                          label="Jefe directo (opcional)"
+                          placeholder="Sin jefe asignado">
+                        </app-campoTexto>
+                      </div>
+                      @if (!esView) {
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-lookup" (click)="abrirModalJefes()" title="Buscar jefe">
+                            <i class="fa fa-search"></i>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="campo campo-lookup">
+                    <div class="row g-2 flex-nowrap">
+                      <div class="col-6">
+                        <app-campoTexto
+                          [control]="form.controls['fecha_ingreso']"
+                          label="Ingreso"
+                          placeholder="AAAA-MM-DD"
+                          type="date">
+                        </app-campoTexto>
+                      </div>
+                      <div class="col-6">
+                        <app-campoTexto
+                          [control]="form.controls['fecha_salida']"
+                          label="Salida"
+                          placeholder="AAAA-MM-DD"
+                          type="date">
+                        </app-campoTexto>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="campo campo-lookup">
+                    <div class="row g-2 flex-nowrap">
+                      <div class="col-6 campo-combo">
+                        <app-combo
+                          formControlName="tipo_contrato"
+                          [items]="tiposContrato"
+                          [label]="'Contrato'"
+                          bindLabel="name"
+                          bindValue="id">
+                        </app-combo>
+                      </div>
+                      <div class="col-6 campo-combo">
+                        <app-combo
+                          formControlName="estado"
+                          [items]="estados"
+                          [label]="'Situación'"
+                          bindLabel="name"
+                          bindValue="id">
+                        </app-combo>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="campo">
+                    <app-campoTexto
+                      [control]="form.controls['salario']"
+                      label="Salario"
+                      placeholder="0.00"
+                      type="number"
+                      [maxLength]="12"
+                      icono="fa-dollar-sign">
+                    </app-campoTexto>
+                  </div>
+
+                </div>
+              </ng-container>
+            </panel>
+          </div>
+
+          <!-- -------- Contacto -------- -->
+          <div class="col-12">
+            <panel
+              headerClass="bg-gray-800"
+              title="Contacto"
+              noButton="true"
+              noBody="true"
+              panelClass="mb-0"
+              icono="phone"
+              fondoGris="true">
+
+              <ng-container outsideBody>
+                <div class="form-card__body">
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <div class="campo">
+                        <app-campoEmail
+                          [control]="form.controls['email']"
+                          label="Correo corporativo"
+                          placeholder="nombre@empresa.com"
+                          [maxLength]="150"
+                          [required]="true"
+                          [trimEspacios]="true"
+                          [sinEspacios]="true">
+                        </app-campoEmail>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="campo">
+                        <app-campoEmail
+                          [control]="form.controls['email_personal']"
+                          label="Correo personal (opcional)"
+                          placeholder="nombre@correo.com"
+                          [maxLength]="150"
+                          [required]="false"
+                          [trimEspacios]="true"
+                          [sinEspacios]="true">
+                        </app-campoEmail>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="campo">
+                        <app-campoTelefono
+                          [control]="form.controls['celular']"
+                          label="Celular"
+                          placeholder="Ej: 0987654321"
+                          [maxLength]="20"
+                          [required]="false"
+                          [pais]="'ecuador'"
+                          [tipoTelefono]="'celular'">
+                        </app-campoTelefono>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="campo">
+                        <app-campoTelefono
+                          [control]="form.controls['telefono']"
+                          label="Teléfono fijo"
+                          placeholder="Ej: 072345678"
+                          [maxLength]="20"
+                          [required]="false"
+                          [pais]="'ninguno'"
+                          [tipoTelefono]="'ambos'">
+                        </app-campoTelefono>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <div class="campo">
+                        <app-campoTexto
+                          [control]="form.controls['direccion']"
+                          label="Dirección"
+                          placeholder="Calle, número, ciudad"
+                          [maxLength]="1000"
+                          [trimEspacios]="true">
+                        </app-campoTexto>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </panel>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer [isDisabled]="!isdisabled" (onClose)="activeModal.close('Close click')" (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>
+
+<!-- ===================== IMAGEN EN PANTALLA COMPLETA ===================== -->
+<div class="fullscreen-overlay" *ngIf="showFullscreenImage" (click)="closeFullscreen()">
+  <div class="fullscreen-box">
+    <img [src]="imagen_previzualiza" class="fullscreen-image" alt="Foto en pantalla completa">
+  </div>
+  <button type="button" class="btn-close-fullscreen" (click)="closeFullscreen()" title="Cerrar (Esc)">
+    <i class="fa-solid fa-xmark"></i>
+  </button>
+</div>
+
+<!-- ===================== CÁMARA ===================== -->
+<div class="camera-modal-overlay" *ngIf="showCameraModal">
+  <div class="camera-container">
+    <div class="camera-preview">
+      <video #cameraPreview id="cameraPreview" autoplay playsinline></video>
+    </div>
+    <div class="camera-controls">
+      <button type="button" class="btn-switch-camera" (click)="switchCamera()" title="Cambiar cámara">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+      <button type="button" class="btn-capture" (click)="capturePhoto()" title="Tomar foto">
+        <i class="fa-solid fa-camera"></i>
+      </button>
+      <button type="button" class="btn-close-camera" (click)="closeCamera()" title="Cerrar cámara">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+  </div>
+  <div class="camera-status">
+    {{ cameraError || 'Cámara ' + (isUsingFrontCamera ? 'frontal' : 'trasera') + ' activa' }}
+  </div>
+</div>

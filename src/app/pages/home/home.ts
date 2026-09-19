@@ -110,7 +110,7 @@ export class HomePage implements OnInit, OnDestroy {
     { url: '/tesoreria', label: 'Tesorería', icon: 'fa-money-bill-wave', color: 'bg-pink', descripcion: 'Flujo de caja, bancos, conciliación' },
     { url: '/activos-fijos', label: 'Activos Fijos', icon: 'fa-building', color: 'bg-secondary', descripcion: 'Depreciaciones, bajas, control' },
     { url: '/logistica', label: 'Logística', icon: 'fa-truck', color: 'bg-teal', descripcion: 'Transporte, rutas, entregas' },
-    { url: '/rrhh', label: 'RRHH', icon: 'fa-users-gear', color: 'bg-orange', descripcion: 'Empleados, nómina, reclutamiento' },
+    { url: '/rh', label: 'RRHH', icon: 'fa-users-gear', color: 'bg-orange', descripcion: 'Cargos, empleados, nómina, reclutamiento' },
     { url: '/reportes', label: 'Reportes', icon: 'fa-chart-pie', color: 'bg-indigo', descripcion: 'Dashboards, BI, análisis' },
     { url: '', label: 'Seguridad', icon: 'fa-shield-alt', color: 'bg-dark', descripcion: 'Roles, permisos, auditoría', action: 'seguridad' }
   ];

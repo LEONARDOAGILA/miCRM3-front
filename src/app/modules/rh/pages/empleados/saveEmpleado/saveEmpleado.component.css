@@ -1,0 +1,641 @@
+
+:host {
+  display: block;
+  --su-radius: .5rem;
+
+  /* Único hueco vertical entre campos. El mensaje de validación se posiciona
+     DENTRO de este espacio, así que tiene que caber una línea de 12px.
+     Antes cada campo reservaba además su propia línea, y entre los dos
+     sumaban ~44px de separación: el formulario ocupaba el doble de alto. */
+  --su-gap: 1.25rem;
+
+  --su-field-h: 45px;               /* alto real de un campo */
+}
+
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .5rem;
+}
+
+/* ---------- Cuerpo del modal ---------- */
+.empleado-modal-body {
+  background-color: var(--bs-tertiary-bg, #f5f6f8);
+  padding: 1rem;
+}
+
+/* ============================================================
+   AVATAR
+   ============================================================ */
+.avatar-dropzone {
+  position: relative;
+  width: 100%;
+  border: 2px dashed var(--bs-border-color, #dee2e6);
+  border-radius: var(--su-radius);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.avatar-dropzone.is-empty:hover {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.avatar-dropzone.drag-over {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
+}
+
+/* ----- Vista previa ----- */
+.avatar-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--su-radius) - 2px);
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.avatar-preview img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  cursor: zoom-in;
+  padding: .5rem;
+}
+
+.avatar-preview__overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: center;
+  gap: .5rem;
+  padding: .625rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, .65), rgba(0, 0, 0, 0));
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.avatar-preview:hover .avatar-preview__overlay,
+.avatar-preview:focus-within .avatar-preview__overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.avatar-action {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, .9);
+  color: #212529;
+  font-size: .875rem;
+  cursor: pointer;
+  transition: transform .15s ease, background-color .15s ease;
+}
+
+.avatar-action:hover {
+  transform: scale(1.1);
+  background-color: #fff;
+}
+
+.avatar-action--danger:hover {
+  background-color: var(--bs-danger, #dc3545);
+  color: #fff;
+}
+
+/* ----- Estado vacío ----- */
+.avatar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 210px;
+  padding: 1.25rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.avatar-empty.is-disabled {
+  cursor: default;
+  opacity: .7;
+}
+
+.avatar-empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: .75rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .1);
+  transition: transform .2s ease;
+}
+
+.avatar-empty:not(.is-disabled):hover .avatar-empty__icon {
+  transform: translateY(-3px);
+}
+
+.avatar-empty__title {
+  margin: 0 0 .35rem;
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.avatar-empty__hint {
+  margin: 0;
+  font-size: .75rem;
+  line-height: 1.5;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.avatar-empty kbd {
+  padding: .1rem .3rem;
+  font-size: .7rem;
+  border-radius: .2rem;
+}
+
+/* ============================================================
+   AVATAR ACTIONS - ESTILO PROFESIONAL
+   ============================================================ */
+
+.avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.25rem 0;
+}
+
+.btn-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: transparent;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+  letter-spacing: 0.01em;
+  min-width: 80px;
+}
+
+.btn-avatar i {
+  font-size: 0.875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  transition: color 0.15s ease;
+}
+
+.btn-avatar span {
+  line-height: 1.2;
+}
+
+.btn-avatar:hover {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-color: var(--bs-border-color, #ced4da);
+  color: var(--bs-body-color, #212529);
+}
+
+.btn-avatar:hover i {
+  color: var(--bs-body-color, #212529);
+}
+
+.btn-avatar:active,
+.btn-avatar:focus-visible {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb, 13, 110, 253), 0.15);
+}
+
+.btn-avatar:active i,
+.btn-avatar:focus-visible i {
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ----- Resumen ----- */
+.avatar-summary {
+  width: 100%;
+  text-align: center;
+  padding-top: .75rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+.avatar-summary__name {
+  margin: 0;
+  font-size: .9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--bs-body-color, #212529);
+  word-break: break-word;
+}
+
+.avatar-summary__login {
+  margin: .1rem 0 0;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  word-break: break-all;
+}
+
+.avatar-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .35rem;
+  margin-top: .5rem;
+}
+
+/* ============================================================
+   CHIPS / ETIQUETAS
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: none;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip > i {
+  font-size: .5rem;
+}
+
+.chip-success { background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15); color: var(--bs-success, #198754); }
+.chip-danger  { background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .15);  color: var(--bs-danger, #dc3545); }
+.chip-info    { background-color: rgba(var(--bs-info-rgb, 13, 202, 240), .18);   color: var(--bs-info-text-emphasis, #087990); }
+
+/* ============================================================
+   CAMPOS DEL FORMULARIO
+   ============================================================ */
+/* Cada campo ya trae su propio hueco (margin-bottom en el componente), y ahí
+   dentro cae su mensaje de validación. Añadir otro margen aquí era lo que
+   duplicaba la separación entre filas. Sólo lo llevan los bloques que NO son
+   un campo, como el generador de contraseña. */
+.campo {
+  margin-bottom: 0;
+}
+
+.campo:last-child {
+  margin-bottom: 0;
+}
+
+:host ::ng-deep app-campoTexto,
+:host ::ng-deep app-campoClave,
+:host ::ng-deep app-campoEmail,
+:host ::ng-deep app-campoTelefono,
+:host ::ng-deep app-campoNumeroEntero,
+:host ::ng-deep app-combo {
+  display: block;
+}
+
+/* Aquí había cuatro reglas ::ng-deep que tapaban el <label> vacío y el
+   .input-group.with-focus que los campos usaban para sus mensajes. Esa
+   estructura ya no existe: ahora el mensaje va posicionado dentro del hueco
+   que deja --su-gap, así que las reglas sobraban. */
+
+/* ---------- Campos con búsqueda (ID + nombre + lupa) ---------- */
+.campo-lookup .row {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.btn-lookup {
+  width: 42px;
+  height: var(--su-field-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #ced4da);
+  border-radius: .375rem;
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  color: var(--bs-body-color, #212529);
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+  flex-shrink: 0;
+}
+
+.btn-lookup:hover,
+.btn-lookup:focus {
+  background-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  color: #fff;
+}
+
+:host ::ng-deep .campo-lookup .form-control:disabled,
+:host ::ng-deep .campo-lookup .form-control[readonly] {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+}
+
+/* ============================================================
+   IMAGEN EN PANTALLA COMPLETA
+   ============================================================ */
+.fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+  background-color: rgba(0, 0, 0, .85);
+  cursor: zoom-out;
+  animation: suFadeIn .18s ease-out;
+}
+
+.fullscreen-box {
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fullscreen-image {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: .5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+}
+
+.btn-close-fullscreen {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 42px;
+  height: 42px;
+  z-index: 1081;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, .15);
+  color: #fff;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background-color .2s ease, transform .2s ease;
+}
+
+.btn-close-fullscreen:hover {
+  background-color: var(--bs-danger, #dc3545);
+  transform: scale(1.08);
+}
+
+@keyframes suFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ============================================================
+   CÁMARA
+   ============================================================ */
+.camera-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, .9);
+  animation: suFadeIn .18s ease-out;
+}
+
+.camera-container {
+  width: 100%;
+  max-width: 500px;
+  background: #1e1e1e;
+  border-radius: .75rem;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .45);
+}
+
+.camera-preview {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 75%;
+  overflow: hidden;
+  background: #000;
+}
+
+.camera-preview video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.125rem;
+  background: #2c2c2c;
+}
+
+.btn-capture,
+.btn-close-camera,
+.btn-switch-camera {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  transition: transform .2s ease, background-color .2s ease;
+}
+
+.btn-capture {
+  width: 66px;
+  height: 66px;
+  font-size: 1.5rem;
+  background-color: var(--bs-success, #28a745);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, .15);
+}
+
+.btn-capture:hover { background-color: #218838; transform: scale(1.05); }
+
+.btn-close-camera,
+.btn-switch-camera {
+  width: 48px;
+  height: 48px;
+  font-size: 1.125rem;
+}
+
+.btn-close-camera { background-color: var(--bs-danger, #dc3545); }
+.btn-close-camera:hover { background-color: #c82333; transform: scale(1.05); }
+
+.btn-switch-camera { background-color: #495057; }
+.btn-switch-camera:hover { background-color: #17a2b8; transform: scale(1.05); }
+
+.camera-status {
+  margin-top: 1rem;
+  color: rgba(255, 255, 255, .85);
+  text-align: center;
+  font-size: .875rem;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 991.98px) {
+  .avatar-empty {
+    min-height: 170px;
+  }
+  .avatar-preview img {
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .empleado-modal-body {
+    padding: .75rem;
+  }
+  .avatar-actions .btn {
+    min-width: 0;
+  }
+  .btn-lookup {
+    height: 58px !important;
+  }
+  .campo-lookup .btn-lookup {
+    height: 42px;
+  }
+}
+
+@media (max-width: 400px) {
+  .btn-avatar span {
+    display: none;
+  }
+  
+  .btn-avatar {
+    min-width: 40px;
+    padding: 0.3rem 0.5rem;
+  }
+}
+
+/* Reduce animaciones si el usuario lo pide */
+@media (prefers-reduced-motion: reduce) {
+  .avatar-preview__overlay,
+  .avatar-action,
+  .avatar-empty__icon,
+  .btn-lookup,
+  .btn-capture,
+  .btn-close-camera,
+  .btn-switch-camera,
+  .btn-close-fullscreen {
+    transition: none;
+  }
+  .fullscreen-overlay,
+  .camera-modal-overlay {
+    animation: none;
+  }
+}
+
+/* ============ GENERADOR DE CLAVE ============ */
+/* Mismos estilos que change-password: el bloque se ve igual en las dos
+   pantallas que entregan una contraseña al operador. */
+
+.clave-generar {
+  margin-bottom: .625rem;
+  font-weight: 600;
+}
+
+.clave-generada {
+  margin-bottom: .625rem;
+  padding: .625rem .75rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-left: 3px solid var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, var(--bs-body-bg, #fff));
+}
+
+.clave-generada__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .375rem;
+}
+
+.clave-generada__etiqueta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.clave-generada__copiar {
+  flex: 0 0 auto;
+  padding: .125rem .5rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  background-color: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.clave-generada__copiar:hover {
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* La clave tiene que poder leerse entera para dictarla o teclearla.
+   word-break evita que 16 caracteres sin espacios desborden la caja, y
+   el color explícito anula el rosa que <code> hereda de --bs-code-color. */
+.clave-generada__valor {
+  display: block;
+  font-family: var(--bs-font-monospace, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: .08em;
+  word-break: break-all;
+  color: var(--bs-body-color, #212529);
+  -webkit-user-select: all;
+  user-select: all;                 /* un clic selecciona la clave completa */
+}
+
+.clave-generada__aviso {
+  margin-top: .375rem;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.clave-manual {
+  margin-bottom: .625rem;
+  font-size: 11px;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+@media (max-width: 767.98px) {
+  .clave-generada__valor {
+    font-size: 15px;
+    letter-spacing: .05em;
+  }
+}

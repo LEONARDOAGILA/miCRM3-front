@@ -20,6 +20,7 @@ const routes: Routes = [
   { path: 'demo', loadChildren: () => import('./modules/demo/demo.module').then( m => m.DemoModule)},
   { path: 'config', loadChildren: () => import('./modules/config/config.module').then( m => m.ConfigModule)},
   { path: 'seguridad', loadChildren: () => import('./modules/seguridad/seguridad.module').then( m => m.SeguridadModule)},
+  { path: 'rh', loadChildren: () => import('./modules/rh/rh.module').then( m => m.RhModule)},
   { path: 'clientes', loadChildren: () => import('./modules/clientes/cliente.module').then( m => m.ClienteModule)},
   { path: 'inventarios', loadChildren: () => import('./modules/inventarios/inventario.module').then( m => m.InventarioModule)},
   { path: 'reportes', loadChildren: () => import('./modules/reportes/reportes.module').then( m => m.ReportesModule)},

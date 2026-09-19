@@ -639,8 +639,12 @@
       </div>
     }
 
-    <!-- Crear (no con varios seleccionados) -->
-    @if (menuCtx.lote.length <= 1 && menuCtx.dentroDe && p(menuCtx.dentroDe).crear; as carpeta) {
+    <!-- Crear (no con varios seleccionados).
+         OJO: "as carpeta" toma el valor de TODA la expresión; con
+         "x && y && p(x).crear; as carpeta" llegaba `true` en vez de la carpeta y
+         los botones no hacían nada. Por eso el alias va en su propio @if. -->
+    @if (menuCtx.dentroDe; as carpeta) {
+      @if (menuCtx.lote.length <= 1 && p(carpeta).crear) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevaCarpeta(carpeta)">
         <i class="fa fa-folder-plus fa-fw text-warning"></i> Nueva carpeta
         <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
@@ -653,6 +657,7 @@
         <i class="fa fa-cloud-arrow-up fa-fw text-teal"></i> Subir varios archivos
         <span class="menu-ctx__detalle">en «{{ carpeta.nombre }}»</span>
       </button>
+      }
     }
     @if (puedeNuevaRaiz && menuCtx.lote.length <= 1 && (!menuCtx.elemento || menuCtx.origen === 'arbol')) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); nuevaRaiz()">
@@ -661,7 +666,8 @@
     }
 
     <!-- Sobre el elemento -->
-    @if (menuCtx.lote.length <= 1 && menuCtx.elemento; as el) {
+    @if (menuCtx.lote.length <= 1) {
+    @if (menuCtx.elemento; as el) {
       <div class="menu-ctx__sep"></div>
       @if (p(el).editar) {
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); editar(el)">
@@ -706,11 +712,12 @@
         <i class="fa fa-user-shield fa-fw text-teal"></i> Permisos
       </button>
       }
-    } @else if (menuCtx.lote.length <= 1) {
+    } @else {
       <div class="menu-ctx__sep"></div>
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); refresh()">
         <i class="fa fa-arrows-rotate fa-fw text-secondary"></i> Recargar
       </button>
+    }
     }
   </div>
 }

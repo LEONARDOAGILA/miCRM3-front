@@ -1,0 +1,153 @@
+<!-- ============================================================
+     GUARDAR CARGO (modal)
+
+     Mismo esquema que save-horario / saveUser: cabecera, cuerpo con
+     paneles del tema (datos + descripción) y pie con Guardar.
+     En 'view' el formulario va deshabilitado y sin botón de guardar.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body cargo-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- ---------- Datos del cargo ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos del cargo"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="id-badge"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        @if (esView) {
+          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+        }
+        @if (!esNuevo && numEmpleados > 0) {
+          <span class="chip chip-info" title="Empleados que tienen este cargo">
+            <i class="fa-solid fa-users"></i> {{ numEmpleados }} {{ numEmpleados === 1 ? 'empleado' : 'empleados' }}
+          </span>
+        }
+      </div>
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <!-- Nombre -->
+            <div class="col-12 col-md-7">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="NOMBRE DEL CARGO"
+                placeholder="Nombre del cargo"
+                [maxLength]="100"
+                [minLength]="3"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+            <!-- Estado -->
+            <div class="col-12 col-md-5">
+              <div class="estado-cargo" [class.is-on]="ctrlActivo.value">
+                <span class="estado-cargo__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-cargo__text">
+                  <span class="estado-cargo__label">Estado</span>
+                  <span class="estado-cargo__hint">
+                    {{ ctrlActivo.value ? 'Se puede asignar a empleados' : 'No se ofrece al asignar cargos' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-cargo__switch"
+                  [control]="ctrlActivo"
+                  [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
+                  [id]="'ck-cargo-activo'">
+                </app-checkbox>
+              </div>
+            </div>
+
+            <!-- Nivel jerárquico -->
+            <div class="col-12 col-md-6">
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="nivel"
+                  [items]="niveles"
+                  [label]="'Nivel jerárquico'"
+                  bindLabel="name"
+                  bindValue="id">
+                </app-combo>
+              </div>
+            </div>
+
+            <!-- Salario base -->
+            <div class="col-12 col-md-6">
+              <app-campoTexto
+                [control]="form.controls['salario_base']"
+                label="SALARIO BASE"
+                placeholder="0.00"
+                type="number"
+                [maxLength]="12"
+                icono="fa-dollar-sign">
+              </app-campoTexto>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                Referencial: el salario real se fija en cada empleado. Vacío si no aplica.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Descripción ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Descripción"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="editar"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <app-campoTextoArea
+            [control]="form.controls['descripcion']"
+            label="DESCRIPCIÓN / FUNCIONES"
+            placeholder="Responsabilidades y funciones principales del cargo (opcional)"
+            [maxLength]="1000"
+            [alto]="110">
+          </app-campoTextoArea>
+
+          @if (!esNuevo && cargoModel) {
+            <div class="cargo-meta">
+              <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ cargoModel.created_at }} por <b>{{ cargoModel.created_by || '—' }}</b></span>
+              <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ cargoModel.updated_at }} por <b>{{ cargoModel.updated_by || '—' }}</b></span>
+            </div>
+          }
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>
