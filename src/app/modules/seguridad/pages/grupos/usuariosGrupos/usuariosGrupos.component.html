@@ -83,7 +83,8 @@
           </button>
         }
 
-        <!-- Papelera de reciclaje: lo eliminado va ahí y se puede restaurar -->
+        <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
+        @if (accesoModel?.papelera === true) {
         <button type="button" class="btn btn-sm ug-btn position-relative"
                 [title]="enPapelera ? 'Papelera de reciclaje: ' + enPapelera + (enPapelera === 1 ? ' usuario' : ' usuarios') : 'Papelera de reciclaje (vacía)'"
                 (click)="abrirPapelera()">
@@ -93,6 +94,7 @@
             <span class="badge rounded-pill bg-danger ug-btn__badge">{{ enPapelera }}</span>
           }
         </button>
+        }
 
         @if (accesoModel?.auditar === true) {
           <button type="button" class="btn btn-sm ug-btn"

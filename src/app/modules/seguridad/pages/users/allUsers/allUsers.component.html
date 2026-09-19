@@ -81,15 +81,17 @@
             </button>
           </div>
 
-          <!-- Papelera de reciclaje: lo eliminado va ahí y se puede restaurar -->
-          <div class="col-auto">
-            <button type="button"
-                    class="btn btn-outline-secondary lista-barra__btn"
-                    title="Papelera de reciclaje de usuarios"
-                    (click)="abrirPapelera()">
-              <i class="fa fa-trash-can"></i>
-            </button>
-          </div>
+          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
+          @if (accesoModel?.papelera === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-outline-secondary lista-barra__btn"
+                      title="Papelera de reciclaje de usuarios"
+                      (click)="abrirPapelera()">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          }
 
           <!-- Auditoría de la fila seleccionada: sólo con permiso de auditar,
                y deshabilitado hasta que se pulse una fila -->

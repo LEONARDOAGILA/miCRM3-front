@@ -64,6 +64,13 @@
   <div class="selector-grupos__ayuda">
     <i class="fa fa-hand-pointer"></i> Pulse el nombre de un grupo para seleccionarlo.
   </div>
+
+  @if (opcionSubgrupos) {
+    <label class="selector-grupos__switch" title="Tomar también los usuarios de los grupos que cuelgan del elegido">
+      <input type="checkbox" class="form-check-input" [(ngModel)]="incluirSubgrupos">
+      <span>Incluir los usuarios de los subgrupos</span>
+    </label>
+  }
 </div>
 
 <!-- ===================== PIE ===================== -->

@@ -17,6 +17,9 @@ import { ModalHeaderComponent } from '../../../../../components/modal/modal-head
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
 import { ListUsersComponent } from '../../../../seguridad/pages/users/listUsers/listUsers.component';
+import { ListGruposComponent } from '../../../../seguridad/pages/grupos/listGrupos/listGrupos.component';
+import { UserService } from '../../../../seguridad/services/user.service';
+import { GrupoModel } from '../../../../seguridad/interfaces/grupoModel';
 import { FechaCellEditorComponent } from '../../../../../components/campos/fechaCellEditor/fechaCellEditor.component';
 
 /** Banderas que se conceden; mismo orden que en el back (PermisoArchivo::BANDERAS). */
@@ -119,7 +122,8 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     private _archivoService: ArchivoService,
     private _toastr: ToastrService,
     private _loadingService: LoadingService,
-    public _appAgGridService: AppAgGridService
+    public _appAgGridService: AppAgGridService,
+    private _userService: UserService,
   ) {}
 
   ngOnInit(): void {
@@ -583,8 +587,61 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       .subscribe((u: any) => this.agregarFila(u));
   }
 
+  // ---------- Añadir todos los usuarios de un grupo (árbol de grupos) ----------
+
+  agregarGrupo(): void {
+    if (!this.puedeAdministrar) { return; }
+    const modalRef = this.modalService.open(ListGruposComponent, {
+      size: 'md',
+      centered: true,
+      backdrop: 'static',
+      keyboard: true,
+    });
+    modalRef.componentInstance.titulo = 'Agregar los usuarios de un grupo';
+    modalRef.componentInstance.opcionSubgrupos = true;
+
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(merge(this.destroy$, from(modalRef.result).pipe(catchError(() => of(null))))))
+      .subscribe((g: GrupoModel | null) => {
+        if (g) { this.agregarUsuariosDeGrupo(g, modalRef.componentInstance.incluirSubgrupos); }
+      });
+  }
+
+  /**
+   * Trae los usuarios del grupo (y de sus subgrupos si se pidió) y añade una
+   * fila nueva por cada uno que no esté ya; los inactivos se saltan. Las
+   * filas quedan pendientes de guardar, como al añadir uno a uno.
+   */
+  private async agregarUsuariosDeGrupo(g: GrupoModel, conSubgrupos: boolean): Promise<void> {
+    try {
+      this._loadingService.setLoading(true);
+      const res: any = await firstValueFrom(this._userService.usuariosPorGrupo(g.id, conSubgrupos, 1, 1000, ''));
+      const usuarios: any[] = res.body?.status === 'success' ? (res.body.data?.data ?? []) : [];
+      let anadidos = 0, yaEstaban = 0, inactivos = 0;
+      for (const u of usuarios) {
+        if (u.isactive === false) { inactivos++; continue; }
+        if (this.filas.some(f => f.user_id === u.id)) { yaEstaban++; continue; }
+        this.agregarFila(u, true);
+        anadidos++;
+      }
+      this.gridApi?.setRowData(this.filas);
+      const detalle = [yaEstaban ? `${yaEstaban} ya estaba(n)` : '', inactivos ? `${inactivos} inactivo(s) omitido(s)` : ''].filter(Boolean).join(', ');
+      if (!usuarios.length) {
+        this._toastr.info(`El grupo «${g.nombre}» no tiene usuarios${conSubgrupos ? ' (ni sus subgrupos)' : ''}`, 'Permisos');
+      } else if (!anadidos) {
+        this._toastr.info(`Nada que añadir de «${g.nombre}»: ${detalle}`, 'Permisos');
+      } else {
+        this._toastr.success(`${anadidos} usuario(s) de «${g.nombre}» añadido(s)${detalle ? ' (' + detalle + ')' : ''}. Revisa los permisos y pulsa Guardar.`, 'Permisos', { timeOut: 6000, closeButton: true });
+      }
+    } catch (e) {
+      console.error('Error al traer los usuarios del grupo:', e);
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
   /** Fila nueva (aún sin guardar) con Ver + Abrir, el default de la tabla. */
-  private agregarFila(u: any): void {
+  private agregarFila(u: any, silencioso = false): void {
     if (this.filas.some(f => f.user_id === u.id)) { return; }
     const fila: FilaPermiso = {
       user_id: u.id, login_user: u.login_user, name: u.name, surname: u.surname, type_user: u.type_user, isactive: u.isactive !== false,
@@ -593,6 +650,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       origen: 'DIRECTO', desde: null, nueva: true,
     };
     this.filas = [fila, ...this.filas];
+    if (silencioso) { return; }   // en lote: la grilla y el aviso los pone quien llama
     this.gridApi?.setRowData(this.filas);
     if (u.type_user === 1 || u.type_user === 2) {
       this._toastr.info('Los administradores ya lo ven todo; la fila sólo sirve para dejarlo explícito.', 'Permisos', { timeOut: 4000 });

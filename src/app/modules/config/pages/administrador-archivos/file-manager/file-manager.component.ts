@@ -12,6 +12,7 @@ import { AppSettings } from '../../../../../service/app-settings.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ArchivoService } from '../../../services/archivo.service';
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
+import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 
 import { SaveFileComponent } from '../save-file/saveFile.component';
 import { SaveFiles2Component } from '../save-files2/saveFiles2.component';
@@ -261,6 +262,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
     // La ruta decide el modo (config-routing: data.modo = 'mio')
     this.modoUsuario = this._route.snapshot.data?.['modo'] === 'mio';
+    // Accesos del perfil sobre esta pantalla (resolver de la ruta): la papelera
+    // sólo se muestra con el acceso «papelera»
+    this.accesoModel = this._route.snapshot.data?.['access'] ?? null;
     if (this.modoUsuario) { this.title = 'Mis archivos'; }
     this.tipoUsuario = Number(this._seguridadService.getUserLogin()?.type_user ?? 0);
   }
@@ -285,11 +289,16 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     return this.puedeNuevaRaiz;
   }
 
+  /** Accesos del perfil sobre esta pantalla (crear, auditar, papelera…). */
+  public accesoModel: AccesoModel | null = null;
+
   /**
-   * Papelera: administradores, o quien tenga `restaurar` en algún nodo
-   * visible (el back sólo le enseña lo que puede restaurar).
+   * Papelera: hace falta el acceso «papelera» del perfil y, además, ser
+   * administrador o tener `restaurar` en algún nodo visible (el back sólo
+   * le enseña lo que puede restaurar).
    */
   get puedeVerPapelera(): boolean {
+    if (this.accesoModel?.papelera !== true) { return false; }
     if (this.esAdministrador) { return true; }
     const alguno = (nodos: FileTreeNode[]): boolean =>
       nodos.some(n => !!n.permiso?.restaurar || alguno(n.children ?? []));

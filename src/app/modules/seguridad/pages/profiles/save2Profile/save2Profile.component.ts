@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { firstValueFrom, } from 'rxjs';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -78,6 +78,121 @@ export class Save2ProfileComponent implements OnInit  {
             </div>`;
   }
 
+  // ================================================================
+  // MARCAR / DESMARCAR EN BLOQUE
+  // Tres atajos para no ir casilla por casilla:
+  //   - casilla en la CABECERA de cada columna: toda la columna (de las
+  //     filas visibles, si hay filtro);
+  //   - columna «Todos» al inicio: todos los permisos de esa fila;
+  //   - botones Marcar todo / Desmarcar todo: toda la grilla visible.
+  // El estado de las casillas de cabecera (marcada / a medias) se pinta a
+  // mano en el DOM porque la cabecera es una plantilla HTML de ag-Grid.
+  // ================================================================
+
+  /** Campos de permiso, en el orden de las columnas. */
+  readonly camposPermiso = ['ejecutar', 'listar', 'ver', 'crear', 'editar', 'eliminar', 'reporte', 'auditar', 'papelera'];
+
+  /** Casilla de la fila «Todos»: marcada si tiene todos los permisos; a medias si tiene alguno. */
+  private checkboxTodosRenderer(params: any): string {
+    const soloLectura = params.context?.componentParent?.isdisabled ? 'disabled' : '';
+    const n = this.camposPermiso.filter(c => params.data?.[c] === true).length;
+    const marcado = n === this.camposPermiso.length ? 'checked' : '';
+    const medias = n > 0 && n < this.camposPermiso.length ? 'data-medias="1"' : '';
+    return `<div class="permiso-check permiso-check--todos" title="Marcar / desmarcar todos los permisos de este menú">
+              <input class="form-check-input" type="checkbox" ${marcado} ${medias} ${soloLectura} />
+            </div>`;
+  }
+
+  /** Cabecera con casilla (toda la columna) + el título. */
+  private cabeceraConCasilla(field: string): any {
+    return {
+      template: `
+        <div class="ag-cell-label-container" role="presentation">
+          <div ref="eLabel" class="ag-header-cell-label cabecera-permiso" role="presentation">
+            <input type="checkbox" class="form-check-input col-check" data-col="${field}" title="Marcar / desmarcar toda la columna">
+            <span ref="eText" class="ag-header-cell-text"></span>
+          </div>
+        </div>`
+    };
+  }
+
+  /** Filas sobre las que actúan los atajos: las visibles (respeta el filtro). */
+  private filasVisibles(): any[] {
+    const filas: any[] = [];
+    this.gridApi?.forEachNodeAfterFilter(n => { if (n.data) { filas.push(n.data); } });
+    return filas.length ? filas : (this.profile?.acceso ?? []);
+  }
+
+  /** Pone un permiso en una fila y lo refleja en el FormArray (sin propagar). */
+  private ponerPermiso(fila: any, field: string, valor: boolean): void {
+    fila[field] = valor;
+    const control = this.acceso.controls.find(c => c.value.menu_id === fila.menu.id);
+    control?.patchValue({ [field]: valor }, { emitEvent: false });
+  }
+
+  /** Toda la columna `field` (filas visibles) a `valor`. */
+  marcarColumna(field: string, valor: boolean): void {
+    if (this.isdisabled) { return; }
+    this.filasVisibles().forEach(f => this.ponerPermiso(f, field, valor));
+    this.refrescarPermisos();
+  }
+
+  /** Todos los permisos de una fila a `valor`. */
+  marcarFila(fila: any, valor: boolean): void {
+    if (this.isdisabled) { return; }
+    this.camposPermiso.forEach(c => this.ponerPermiso(fila, c, valor));
+    this.refrescarPermisos();
+  }
+
+  /** Toda la grilla visible a `valor` (botones Marcar todo / Desmarcar todo). */
+  marcarTodo(valor: boolean): void {
+    if (this.isdisabled) { return; }
+    const filas = this.filasVisibles();
+    filas.forEach(f => this.camposPermiso.forEach(c => this.ponerPermiso(f, c, valor)));
+    this.refrescarPermisos();
+    this._toastr.info(`${valor ? 'Marcados' : 'Desmarcados'} todos los permisos de ${filas.length} menú(s)${this.filtroActivo ? ' (los filtrados)' : ''}`, 'Permisos', { timeOut: 2500 });
+  }
+
+  get filtroActivo(): boolean {
+    return !!(document.getElementById('filter-text-box22') as HTMLInputElement | null)?.value;
+  }
+
+  /** Repinta casillas y cabeceras tras un cambio en bloque. */
+  private refrescarPermisos(): void {
+    this.gridApi?.refreshCells({ force: true, columns: [...this.camposPermiso, 'todos'] });
+    this.actualizarCabeceras();
+  }
+
+  /** Casillas de cabecera: marcada si toda la columna visible lo está; a medias si sólo parte. */
+  actualizarCabeceras(): void {
+    const filas = this.filasVisibles();
+    this.host.nativeElement.querySelectorAll<HTMLInputElement>('input.col-check').forEach(input => {
+      const field = input.dataset['col']!;
+      const tiene = (f: any) => field === 'todos' ? this.camposPermiso.every(c => f[c] === true) : f[field] === true;
+      const n = filas.filter(tiene).length;
+      input.checked = filas.length > 0 && n === filas.length;
+      input.indeterminate = n > 0 && n < filas.length;
+      input.disabled = this.isdisabled;
+    });
+  }
+
+  /** Clic en una casilla de cabecera (se mira el target: la cabecera es HTML de ag-Grid). */
+  onHeaderClicked(ev: MouseEvent): void {
+    const input = (ev.target as HTMLElement).closest('input.col-check') as HTMLInputElement | null;
+    if (!input) { return; }
+    ev.stopPropagation();
+    const field = input.dataset['col']!;
+    // Con la columna a medias, el primer clic marca todo
+    const filas = this.filasVisibles();
+    if (field === 'todos') {
+      const todas = filas.length > 0 && filas.every(f => this.camposPermiso.every(c => f[c] === true));
+      this.marcarTodo(!todas);
+      return;
+    }
+    const todas = filas.length > 0 && filas.every(f => f[field] === true);
+    this.marcarColumna(field, !todas);
+  }
+
 
   constructor(
       private fb: FormBuilder,
@@ -88,7 +203,7 @@ export class Save2ProfileComponent implements OnInit  {
       private _toastr: ToastrService,
       public  _appAgGridService: AppAgGridService,
       private _loadingService: LoadingService,
-
+      private host: ElementRef<HTMLElement>,
   ){      
       this.isdisabled = false;
       this.textoClon = "";
@@ -192,76 +307,45 @@ export class Save2ProfileComponent implements OnInit  {
   
 
         {
+          headerName: 'Todos',
+          field: 'todos',
+          headerTooltip: 'Marcar / desmarcar todos los permisos del menú',
+          cellStyle: { textAlign: 'center' },
+          minWidth: 80,
+          maxWidth: 80,
+          sortable: false,
+          suppressMenu: true,
+          cellRenderer: (params: any) => this.checkboxTodosRenderer(params),
+          headerComponentParams: this.cabeceraConCasilla('todos'),
+        },
+
+        {
           headerName: 'Ejecutar',
           field: 'ejecutar',
           cellStyle: { textAlign: 'center' },
           minWidth: 95,
           maxWidth: 95,
-          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
+          sortable: false,
+          suppressMenu: true,
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params),
+          headerComponentParams: this.cabeceraConCasilla('ejecutar'),
         },
         
 
-        {
-          headerName: 'Listar',
-          field: 'listar',
+        ...[
+          ['listar', 'Listar', 95], ['ver', 'Ver', 95], ['crear', 'Crear', 95], ['editar', 'Modificar', 105],
+          ['eliminar', 'Eliminar', 95], ['reporte', 'Imprimir', 95], ['auditar', 'Auditoria', 105], ['papelera', 'Papelera', 105],
+        ].map(([field, headerName, ancho]) => ({
+          headerName, field,
+          headerTooltip: field === 'papelera' ? 'Puede abrir la papelera de reciclaje del componente (restaurar / borrar definitivamente)' : undefined,
           cellStyle: { textAlign: 'center' },
-          minWidth: 95,
-          maxWidth: 95,
-          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
-        },
-        {
-          headerName: 'Ver',
-          field: 'ver',
-          cellStyle: { textAlign: 'center' },
-          minWidth: 95,
-          maxWidth: 95,
-          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
-        },
-
-        {
-          headerName: 'Crear',
-          field: 'crear',
-          cellStyle: { textAlign: 'center' },
-          minWidth: 95,
-          maxWidth: 95,
-          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
-        },
-
-        {
-          headerName: 'Modificar',
-          field: 'editar',
-          cellStyle: { textAlign: 'center' },
-          minWidth: 100,
-          maxWidth: 100,
-          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
-        },
-
-        {
-          headerName: 'Eliminar',
-          field: 'eliminar',
-          cellStyle: { textAlign: 'center' },
-          minWidth: 95,
-          maxWidth: 95,
-          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
-        },
-
-        {
-          headerName: 'Imprimir',
-          field: 'reporte',
-          cellStyle: { textAlign: 'center' },
-          minWidth: 95,
-          maxWidth: 95,
-          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
-        },
-
-        {
-          headerName: 'Auditoria',
-          field: 'auditar',
-          cellStyle: { textAlign: 'center' },
-          minWidth: 95,
-          maxWidth: 95,
-          cellRenderer: (params: any) => this.checkboxCellRenderer(params)
-        },       
+          minWidth: ancho,
+          maxWidth: ancho,
+          sortable: false,
+          suppressMenu: true,
+          cellRenderer: (params: any) => this.checkboxCellRenderer(params),
+          headerComponentParams: this.cabeceraConCasilla(field as string),
+        })),
         
         {
           headerName: 'path',
@@ -273,25 +357,25 @@ export class Save2ProfileComponent implements OnInit  {
         },
         
     // Columna de Acciones (botón a la derecha)
-    {
-      headerName: 'Acciones',
-      cellStyle: { textAlign: 'center' },
-      minWidth: 120,
-      maxWidth: 120,
-      // El HTML del cellRenderer es una cadena, no una plantilla de Angular:
-      // el clic se gestiona en onCellClicked, más abajo.
-      cellRenderer: (params: any) => {
-        const soloLectura = params.context?.componentParent?.isdisabled ? 'disabled' : '';
-        return `<button type="button" class="btn-mas-permisos" ${soloLectura} title="Más permisos">
-                  <i class="bi bi-gear"></i> Más permisos
-                </button>`;
-      },
-      onCellClicked: (event: CellClickedEvent) => {
-        if (!this.isdisabled) {
-          this.onActionButtonClick(event.data);
-        }
-      }
-    },
+    // {
+    //   headerName: 'Acciones',
+    //   cellStyle: { textAlign: 'center' },
+    //   minWidth: 120,
+    //   maxWidth: 120,
+    //   // El HTML del cellRenderer es una cadena, no una plantilla de Angular:
+    //   // el clic se gestiona en onCellClicked, más abajo.
+    //   cellRenderer: (params: any) => {
+    //     const soloLectura = params.context?.componentParent?.isdisabled ? 'disabled' : '';
+    //     return `<button type="button" class="btn-mas-permisos" ${soloLectura} title="Más permisos">
+    //               <i class="bi bi-gear"></i> Más permisos
+    //             </button>`;
+    //   },
+    //   onCellClicked: (event: CellClickedEvent) => {
+    //     if (!this.isdisabled) {
+    //       this.onActionButtonClick(event.data);
+    //     }
+    //   }
+    // },
 
         
       ];
@@ -306,7 +390,12 @@ export class Save2ProfileComponent implements OnInit  {
     onGridReady(params: GridReadyEvent): void {
       this.gridApi = params.api;
       this._appAgGridService.ajustarTamanoGrid(this.gridApi); // Usa el método del servicio
+      // La cabecera se pinta después: estado inicial de las casillas de columna
+      setTimeout(() => this.actualizarCabeceras(), 300);
     }
+
+    /** Las cabeceras se recrean al cambiar columnas o datos: volver a pintar su estado. */
+    onFirstDataRendered(): void { setTimeout(() => this.actualizarCabeceras()); }
     
     ajustarTamanoGrid(){
       if (this.gridApi) {      
@@ -320,6 +409,7 @@ export class Save2ProfileComponent implements OnInit  {
       if (this.gridApi && this.gridApi.setQuickFilter) {
         const filterText = (document.getElementById('filter-text-box22') as HTMLInputElement).value;
         this.gridApi.setQuickFilter(filterText);
+        setTimeout(() => this.actualizarCabeceras());   // las casillas de cabecera miran las filas visibles
       }    
     }
     
@@ -351,7 +441,8 @@ export class Save2ProfileComponent implements OnInit  {
             eliminar: existingAccess?.eliminar || false,
             reporte: existingAccess?.reporte || false,
             ejecutar: existingAccess?.ejecutar || false,
-            auditar: existingAccess?.auditar || false
+            auditar: existingAccess?.auditar || false,
+            papelera: existingAccess?.papelera || false
           };
         });
   
@@ -409,7 +500,13 @@ export class Save2ProfileComponent implements OnInit  {
  onCellClicked(e: CellClickedEvent): void {
   if (!this.isdisabled) {
     const field = e.column.getColId();
-    const allowedFields = ['ejecutar', 'listar', 'ver', 'crear', 'editar', 'eliminar', 'reporte', 'auditar'];
+    if (field === 'todos') {
+      const rowData = e.data;
+      const todas = this.camposPermiso.every(c => rowData[c] === true);
+      this.marcarFila(rowData, !todas);   // a medias → marca todo
+      return;
+    }
+    const allowedFields = this.camposPermiso;
     if (allowedFields.includes(field)) {
       const rowData = e.data;
       rowData[field] = !rowData[field];
@@ -422,8 +519,9 @@ export class Save2ProfileComponent implements OnInit  {
         this.updateChildren(rowData.menu.id, field, rowData[field]);
         this.updateParentState(rowData.menu.padre_id, field);
       }
-      // 🔥 Forzar refresco de la celda clickeada
-      this.gridApi.refreshCells({ force: true, columns: [field] });
+      // 🔥 Forzar refresco de la celda clickeada (y la casilla «Todos» de la fila y la cabecera)
+      this.gridApi.refreshCells({ force: true, columns: [field, 'todos'] });
+      this.actualizarCabeceras();
     }
   }
 }
@@ -489,6 +587,7 @@ export class Save2ProfileComponent implements OnInit  {
             reporte: [{value: false, disabled: this.isdisabled}],
             ejecutar: [{value: false, disabled: this.isdisabled}],
             auditar: [{value: false, disabled: this.isdisabled}],
+            papelera: [{value: false, disabled: this.isdisabled}],
         });
         this.acceso.push(control);
     }
@@ -542,7 +641,8 @@ export class Save2ProfileComponent implements OnInit  {
                   eliminar: currentRow.eliminar,
                   reporte: currentRow.reporte,
                   ejecutar: currentRow.ejecutar,
-                  auditar: currentRow.auditar
+                  auditar: currentRow.auditar,
+                  papelera: currentRow.papelera
               }, { emitEvent: false });
           }
       });

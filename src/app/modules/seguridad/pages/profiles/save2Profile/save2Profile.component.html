@@ -113,6 +113,16 @@
 
         <div header class="panel-acciones permisos-header">
 
+            <!-- Marcar / desmarcar toda la grilla (lo filtrado, si hay filtro) -->
+            <!-- <div class="btn-group permisos-masivo me-2" role="group" *ngIf="!isdisabled">
+                <button type="button" class="btn btn-xs btn-white" title="Marcar todos los permisos de todos los menús visibles" (click)="marcarTodo(true)">
+                    <i class="fa fa-check-double text-success"></i> <span class="d-none d-md-inline">Marcar todo</span>
+                </button>
+                <button type="button" class="btn btn-xs btn-white" title="Desmarcar todos los permisos de todos los menús visibles" (click)="marcarTodo(false)">
+                    <i class="fa fa-xmark text-danger"></i> <span class="d-none d-md-inline">Desmarcar todo</span>
+                </button>
+            </div> -->
+
             <div class="permisos-buscador me-4">
                 <app-campoBusqueda
                     [id]="'filter-text-box22'"
@@ -128,7 +138,8 @@
 
         <!-- El ag-grid se mantiene tal cual: mismas columnas, mismo contexto
              y los mismos manejadores de gridReady/cellClicked. -->
-        <div class="perfil-grid">
+        <!-- (click): las casillas de cabecera son HTML de ag-Grid, se atienden aquí -->
+        <div class="perfil-grid" (click)="onHeaderClicked($event)">
             <ag-grid-angular
                 [rowData]="profile.acceso"
                 [columnDefs]="columnDefs"
@@ -145,6 +156,8 @@
                 class="ag-theme-alpine ag-grid-transparente h-100 w-100"
                 [navigateToNextCell]="navegarConTeclado"
                 (gridReady)="onGridReady($event)"
+                (firstDataRendered)="onFirstDataRendered()"
+                (modelUpdated)="onFirstDataRendered()"
                 (cellClicked)="onCellClicked($event)">
             </ag-grid-angular>
         </div>
@@ -158,8 +171,8 @@
                  ocultar la ayuda en móvil y dejar el contador. -->
             <span class="permisos-leyenda__ayuda">
                 <i class="fa-solid fa-hand-pointer"></i>
-                Haz clic sobre una casilla para activar o desactivar el permiso.
-                Al marcar <strong>Ejecutar</strong> en un menú padre se propaga a sus hijos.
+                Haz clic sobre una casilla para activar o desactivar el permiso; la casilla de la <strong>cabecera</strong> marca toda la columna
+                y la columna <strong>Todos</strong> marca toda la fila. Al marcar <strong>Ejecutar</strong> en un menú padre se propaga a sus hijos.
             </span>
 
         </div>

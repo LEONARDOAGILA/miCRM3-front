@@ -147,10 +147,16 @@
             </span>
           }
           @if (puedeAdministrar) {
-            <button type="button" class="btn btn-sm btn-primary permisos-agregar" (click)="agregarUsuario()" title="Añadir un usuario a la lista">
-              <i class="fa fa-user-plus"></i>
-              <span class="d-none d-sm-inline ms-1">Agregar usuario</span>
-            </button>
+            <div class="btn-group permisos-agregar" role="group">
+              <button type="button" class="btn btn-sm btn-primary" (click)="agregarUsuario()" title="Añadir un usuario a la lista">
+                <i class="fa fa-user-plus"></i>
+                <span class="d-none d-sm-inline ms-1">Agregar usuario</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-primary" (click)="agregarGrupo()" title="Añadir de golpe todos los usuarios de un grupo (opcionalmente con sus subgrupos)">
+                <i class="fa fa-users"></i>
+                <span class="d-none d-sm-inline ms-1">Agregar grupo</span>
+              </button>
+            </div>
           }
         </div>
       </div>

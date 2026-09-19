@@ -29,6 +29,9 @@ export class ListGruposComponent implements OnInit {
   @Input() excluirId?: number | null;
   @Input() permitirNinguno = false;
   @Input() titulo = 'Seleccionar grupo';
+  /** Muestra el interruptor «Incluir subgrupos» (quien abre el modal lee incluirSubgrupos al recibir el grupo). */
+  @Input() opcionSubgrupos = false;
+  public incluirSubgrupos = true;
   @Output() seleccionado = new EventEmitter<GrupoModel | null>();
 
   public grupos: GrupoModel[] = [];
