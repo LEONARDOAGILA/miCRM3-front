@@ -2,6 +2,8 @@ import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, On
 import { firstValueFrom, from, merge, of, Observable, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { CellClickedEvent, CellValueChangedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
+import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
@@ -14,7 +16,7 @@ import { LoadingService } from '../../../../../service/loading.service';
 import { ComprimirImagen } from '../../../../../service/comprimirImagen';
 
 // Modelos y selectores
-import { EmpleadoModel, ESTADOS_EMPLEADO, GENEROS, TIPOS_CONTRATO, TIPOS_IDENTIFICACION } from '../../../interfaces/empleadoModel';
+import { ContactoEmergencia, EmpleadoModel, ESTADOS_EMPLEADO, GENEROS, PARENTESCOS, TIPOS_CONTRATO, TIPOS_IDENTIFICACION } from '../../../interfaces/empleadoModel';
 import { ListCargosComponent } from '../../cargos/listCargos/listCargos.component';
 import { ListDepartamentosComponent } from '../../departamentos/listDepartamentos/listDepartamentos.component';
 import { ListEmpleadosComponent } from '../listEmpleados/listEmpleados.component';
@@ -109,7 +111,237 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     private _empleadoService: EmpleadoService,
     private _cargoService: CargoService,
     private _departamentoService: DepartamentoService,
+    public _appAgGridService: AppAgGridService,
   ) {}
+
+  // ================================================================
+  // CONTACTOS DE EMERGENCIA (grilla editable, al estilo de permisos-archivo)
+  // Las celdas de texto se editan con un clic (singleClickEdit); Activo se
+  // alterna pulsando la casilla (onCellClicked, como save2Profile); ACCIONES
+  // plegable con clic en su cabecera. Se guardan TODOS con el empleado
+  // (guardarContactos sincroniza: inserta, actualiza y borra los quitados).
+  // ================================================================
+
+  public contactos: ContactoEmergencia[] = [];
+  /** Copia de lo cargado, para saber si hay cambios que mandar. */
+  private contactosOriginal = '[]';
+  public gridApi!: GridApi;
+  public columnDefsContactos: any[] = [];
+  public accionesPlegadas = false;
+  private readonly ANCHO_ACCIONES_ABIERTA = 70;
+  private readonly ANCHO_ACCIONES_PLEGADA = 50;
+  private claveContacto = 0;
+  public parentescos = PARENTESCOS;
+
+  public rowClassRulesContactos = {
+    'fila-inactiva': (p: RowClassParams) => p.data?.activo === false,
+    'fila-incompleta': (p: RowClassParams) => !!p.data && !this.contactoCompleto(p.data),
+  };
+
+  /** Cada fila necesita nombres, parentesco y teléfono para poder guardarse. */
+  contactoCompleto(c: ContactoEmergencia): boolean {
+    return !!(c.nombres?.trim() && c.parentesco?.trim() && c.telefono?.trim());
+  }
+
+  get hayContactosIncompletos(): boolean { return this.contactos.some(c => !this.contactoCompleto(c)); }
+  get contactosCambiados(): boolean { return JSON.stringify(this.normalizarContactos()) !== this.contactosOriginal; }
+
+  /** Casilla (misma que permisos): el clic lo gestiona onCellClicked, por eso el input no es interactivo. */
+  private checkboxCellRenderer(params: any): string {
+    const marcado = params.value === true ? 'checked' : '';
+    const soloLectura = this.esView ? 'disabled' : '';
+    return `<div class="permiso-check"><input class="form-check-input" type="checkbox" ${marcado} ${soloLectura} /></div>`;
+  }
+
+  initializeGridContactos(): void {
+    const editable = !this.esView;
+    const texto = (field: string, headerName: string, minWidth: number, maxWidth?: number, extra: any = {}) => ({
+      field, headerName, minWidth, maxWidth, editable, sortable: false, filter: false,
+      cellStyle: { textAlign: 'left' },
+      cellClass: (p: any) => (['nombres', 'parentesco', 'telefono'].includes(field) && !String(p.value ?? '').trim()) ? 'celda-obligatoria' : '',
+      ...extra,
+    });
+
+    this.columnDefsContactos = [
+      {
+        headerName: '#', field: 'prioridad', headerTooltip: 'Orden en que se debe llamar (1 = primero)',
+        minWidth: 60, maxWidth: 60, editable, sortable: false, filter: false,
+        cellStyle: { textAlign: 'center', fontWeight: '600' },
+        cellEditor: 'agTextCellEditor',
+        valueSetter: (p: any) => {
+          const n = parseInt(p.newValue, 10);
+          if (!n || n < 1) { this._toastr.warning('La prioridad debe ser 1 o mayor', 'Contactos'); return false; }
+          p.data.prioridad = n; return true;
+        },
+      },
+      texto('nombres', 'Nombres y apellidos', 200),
+      {
+        ...texto('parentesco', 'Parentesco', 130, 150),
+        cellEditor: 'agSelectCellEditor',
+        cellEditorParams: { values: this.parentescos },
+      },
+      texto('telefono', 'Teléfono', 120, 140),
+      texto('telefono_alterno', 'Tel. alterno', 120, 140),
+      texto('email', 'Correo', 180),
+      {
+        headerName: 'Activo', field: 'activo', minWidth: 76, maxWidth: 76, sortable: false, filter: false,
+        cellStyle: { textAlign: 'center' },
+        cellRenderer: (p: any) => this.checkboxCellRenderer(p),
+      },
+      {
+        headerName: 'ACCIONES', field: 'actions', pinned: 'right',
+        minWidth: this.ANCHO_ACCIONES_ABIERTA, maxWidth: this.ANCHO_ACCIONES_ABIERTA,
+        suppressMenu: true, sortable: false, filter: false, resizable: false,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        headerComponentParams: { template: this.plantillaCabeceraAcciones(false) },
+        cellRenderer: () => this.botonesAccionContacto(),
+        hide: this.esView,
+      },
+    ];
+  }
+
+  private plantillaCabeceraAcciones(plegada: boolean): string {
+    return plegada
+      ? `<div style="display:flex;align-items:center;justify-content:center;" title="Mostrar los botones de acción"><i class="fas fa-bars"></i></div>`
+      : `<div style="display:flex;align-items:center;justify-content:center;gap:5px;" title="Ocultar los botones de acción"><span>ACCIONES</span><i class="fas fa-arrow-right"></i></div>`;
+  }
+
+  private botonesAccionContacto(): string {
+    if (this.accionesPlegadas) {
+      return `<button type="button" class="btn btn-sm btn-outline-primary acciones-desplegar" data-accion="desplegar" title="Mostrar los botones de acción"><i class="fas fa-bars"></i></button>`;
+    }
+    return `<div class="permiso-acciones">
+              <button type="button" class="btn-icon btn-subir" data-accion="subir" title="Subir en la prioridad"><i class="fa fa-chevron-up"></i></button>
+              <button type="button" class="btn-icon btn-quitar" data-accion="quitar" title="Quitar de la lista"><i class="fa fa-times"></i></button>
+            </div>`;
+  }
+
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas();
+
+  onGridContactosReady(params: GridReadyEvent): void {
+    this.gridApi = params.api;
+    this._appAgGridService.ajustarTamanoGrid(this.gridApi);
+  }
+
+  toggleActionsColumn(): void {
+    const columnDefs = this.gridApi.getColumnDefs() as any[];
+    const actionsCol = columnDefs.find(col => col.field === 'actions');
+    if (!actionsCol) { return; }
+    this.accionesPlegadas = !this.accionesPlegadas;
+    const ancho = this.accionesPlegadas ? this.ANCHO_ACCIONES_PLEGADA : this.ANCHO_ACCIONES_ABIERTA;
+    actionsCol.minWidth = ancho;
+    actionsCol.maxWidth = ancho;
+    actionsCol.headerComponentParams = { template: this.plantillaCabeceraAcciones(this.accionesPlegadas) };
+    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.refreshHeader();
+    this.gridApi.refreshCells({ force: true, columns: ['actions'] });
+  }
+
+  /** Clic en la cabecera de ACCIONES (se mira el target, como en permisos). */
+  onHeaderContactosClicked(ev: MouseEvent): void {
+    const th = (ev.target as HTMLElement).closest('.ag-header-cell') as HTMLElement | null;
+    if (th?.getAttribute('col-id') === 'actions') { this.toggleActionsColumn(); }
+  }
+
+  onCellContactoClicked(e: CellClickedEvent): void {
+    const c: ContactoEmergencia = e.data;
+    const field = e.column.getColId();
+    if (!c) { return; }
+    if (field === 'actions') {
+      const accion = ((e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement)?.dataset['accion'];
+      switch (accion) {
+        case 'desplegar': this.toggleActionsColumn(); break;
+        case 'subir':     this.subirContacto(c); break;
+        case 'quitar':    this.quitarContacto(c); break;
+      }
+      return;
+    }
+    if (field === 'activo' && !this.esView) {
+      c.activo = !c.activo;
+      this.refrescarContacto(c);
+    }
+  }
+
+  onCellContactoChanged(_e: CellValueChangedEvent): void {
+    this.refrescarContacto(_e.data);
+  }
+
+  private refrescarContacto(c: ContactoEmergencia): void {
+    const nodo = this.gridApi?.getRowNode(String((c as any)._clave));
+    if (nodo) {
+      this.gridApi.refreshCells({ force: true, rowNodes: [nodo] });
+      this.gridApi.redrawRows({ rowNodes: [nodo] });
+    }
+  }
+
+  getRowIdContacto = (p: any) => String(p.data._clave);
+
+  /** Fila nueva al final; entra directamente en edición del nombre. */
+  agregarContacto(): void {
+    if (this.esView) { return; }
+    const nuevo: ContactoEmergencia & { _clave: number } = {
+      _clave: ++this.claveContacto, id: null, nombres: '', parentesco: '', telefono: '', telefono_alterno: '', email: '',
+      prioridad: this.contactos.length + 1, activo: true,
+    };
+    this.contactos = [...this.contactos, nuevo];
+    this.gridApi?.setRowData(this.contactos);
+    setTimeout(() => {
+      const idx = this.contactos.length - 1;
+      this.gridApi?.ensureIndexVisible(idx);
+      this.gridApi?.startEditingCell({ rowIndex: idx, colKey: 'nombres' });
+    });
+  }
+
+  quitarContacto(c: ContactoEmergencia): void {
+    if (this.esView) { return; }
+    this.contactos = this.contactos.filter(x => x !== c);
+    this.renumerarPrioridad();
+    this.gridApi?.setRowData(this.contactos);
+  }
+
+  /** Lo mueve un puesto arriba en la prioridad (intercambia con el anterior). */
+  subirContacto(c: ContactoEmergencia): void {
+    const i = this.contactos.indexOf(c);
+    if (i <= 0) { return; }
+    [this.contactos[i - 1], this.contactos[i]] = [this.contactos[i], this.contactos[i - 1]];
+    this.contactos = [...this.contactos];
+    this.renumerarPrioridad();
+    this.gridApi?.setRowData(this.contactos);
+  }
+
+  private renumerarPrioridad(): void {
+    this.contactos.forEach((c, i) => c.prioridad = i + 1);
+  }
+
+  /** Lista tal como se manda al back (sin la clave interna, vacíos a null). */
+  private normalizarContactos(): any[] {
+    return this.contactos.map(c => ({
+      id: c.id ?? null,
+      nombres: (c.nombres ?? '').trim(),
+      parentesco: (c.parentesco ?? '').trim(),
+      telefono: (c.telefono ?? '').trim(),
+      telefono_alterno: (c.telefono_alterno ?? '').trim() || null,
+      email: (c.email ?? '').trim() || null,
+      prioridad: c.prioridad || 1,
+      activo: c.activo !== false,
+    }));
+  }
+
+  private cargarContactos(lista: any[]): void {
+    // Al clonar se copian sin id: se crean para el empleado nuevo
+    this.contactos = (lista ?? []).map((c: any) => ({ ...c, id: this.esClon ? null : c.id, _clave: ++this.claveContacto }));
+    this.contactosOriginal = this.esClon ? '[]' : JSON.stringify(this.normalizarContactos());
+    this.gridApi?.setRowData(this.contactos);
+  }
+
+  private async guardarContactos(): Promise<void> {
+    if (!this.empleadoId) { return; }
+    if (!this.contactosCambiados) { return; }
+    const res: any = await firstValueFrom(this._empleadoService.guardarContactos(this.empleadoId, this.normalizarContactos()));
+    if (res?.status === 'success') {
+      this.cargarContactos(res.data);
+    }
+  }
 
   // ================================================================
   // CICLO DE VIDA
@@ -126,6 +358,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     this.esClon = this.accion === 'clon';
     this.isdisabled = this.esView;
     this.initializeForm();
+    this.initializeGridContactos();
 
     switch (this.accion) {
       case 'add':
@@ -378,6 +611,14 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
       this.departamentoNombreControl.setValue(m.departamento_nombre || '');
       this.jefeNombreControl.setValue(m.jefe_nombre || '');
 
+      // Contactos de emergencia del empleado
+      try {
+        const rc: any = await firstValueFrom(this._empleadoService.listContactos(id));
+        this.cargarContactos(rc?.status === 'success' ? rc.data : []);
+      } catch (e) {
+        console.error('Error al cargar contactos:', e);
+      }
+
       if (m.foto) {
         this.imagen_previzualiza = this._empleadoService.getEmpleadoImage(id, true);
         if (this.esClon) {
@@ -420,6 +661,11 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
       this._toastr.error('Revise los campos del formulario.', 'No se puede Guardar', { timeOut: 20000, closeButton: true });
       return;
     }
+    this.gridApi?.stopEditing();
+    if (this.hayContactosIncompletos) {
+      this._toastr.error('Cada contacto de emergencia necesita nombres, parentesco y teléfono (o quítelo de la lista).', 'Contactos de emergencia', { timeOut: 8000, closeButton: true });
+      return;
+    }
 
     const payload = this.form.getRawValue();
     delete payload.foto;   // la foto va aparte (addImagen)
@@ -456,6 +702,15 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
       if (this.cambioImagen && this.imagen_file) {
         await this.grabarImagen();
         this.response.data.foto = this.nuevaFoto || this.response.data.foto;
+      }
+
+      // 3) Contactos de emergencia (la lista completa; el back sincroniza)
+      try {
+        await this.guardarContactos();
+      } catch (e) {
+        // El interceptor ya avisó; el empleado quedó guardado, se informa y se sigue
+        console.error('Error al guardar contactos:', e);
+        this._toastr.warning('El empleado se guardó, pero los contactos de emergencia no. Vuelva a abrirlo e inténtelo de nuevo.', 'Contactos', { timeOut: 8000, closeButton: true });
       }
 
       this.registrosE.emit(this.response.data);

@@ -68,6 +68,16 @@ export class EmpleadoService {
     return this._http.get(this.URL_SERVICIOS + 'findByIdEmpleado/' + id);
   }
 
+  //   ******   CONTACTOS DE EMERGENCIA   ******  //
+  listContactos(empleadoId: any): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'listContactos/' + empleadoId);
+  }
+
+  /** Manda la lista completa: el back inserta, actualiza y elimina lo que falte. */
+  guardarContactos(empleadoId: any, contactos: any[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'guardarContactos/' + empleadoId, { contactos });
+  }
+
   //   ******   AGREGAR FOTO   ******  //
   addImagen(data: FormData): Observable<ApiResponseFoto> {
     return this._http.post<ApiResponseFoto>(this.URL_SERVICIOS + 'addImagen', data);

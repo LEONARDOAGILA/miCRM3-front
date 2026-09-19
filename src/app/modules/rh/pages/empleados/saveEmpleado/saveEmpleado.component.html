@@ -458,6 +458,70 @@
             </panel>
           </div>
 
+          <!-- -------- Contactos de emergencia (grilla editable, estilo permisos) -------- -->
+          <div class="col-12">
+            <panel
+              headerClass="bg-gray-800"
+              title="Contactos de emergencia"
+              noButton="true"
+              noBody="true"
+              panelClass="mb-0"
+              icono="phone"
+              fondoGris="true">
+
+              <ng-container header>
+                @if (!esView) {
+                  <div class="contactos-toolbar">
+                    <button type="button" class="btn btn-sm btn-primary" (click)="agregarContacto()" title="Añadir una fila y escribir los datos del contacto">
+                      <i class="fa fa-plus me-1"></i>Agregar contacto
+                    </button>
+                  </div>
+                }
+              </ng-container>
+
+              <ng-container outsideBody>
+                <div class="form-card__body">
+                  <!-- Las celdas se editan con un clic; Activo se alterna en la
+                       celda (onCellContactoClicked); ACCIONES plegable con clic
+                       en su cabecera (onHeaderContactosClicked). -->
+                  <div class="contactos-grid" (click)="onHeaderContactosClicked($event)">
+                    <ag-grid-angular
+                      [rowData]="contactos"
+                      [columnDefs]="columnDefsContactos"
+                      [defaultColDef]="_appAgGridService.defaultColDef"
+                      [rowHeight]="36"
+                      [headerHeight]="_appAgGridService.headerHeight"
+                      [localeText]="_appAgGridService.localeText"
+                      [rowClassRules]="rowClassRulesContactos"
+                      [getRowId]="getRowIdContacto"
+                      [rowSelection]="'single'"
+                      [pagination]="false"
+                      [animateRows]="true"
+                      [singleClickEdit]="true"
+                      [stopEditingWhenCellsLoseFocus]="true"
+                      [suppressRowClickSelection]="true"
+                      [overlayNoRowsTemplate]="esView ? '<span>Sin contactos de emergencia.</span>' : '<span>Sin contactos todavía. Usa <b>Agregar contacto</b> y escribe directamente en las celdas.</span>'"
+                      [context]="{ componentParent: this }"
+                      class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+                      [navigateToNextCell]="navegarConTeclado"
+                      (gridReady)="onGridContactosReady($event)"
+                      (cellClicked)="onCellContactoClicked($event)"
+                      (cellValueChanged)="onCellContactoChanged($event)">
+                    </ag-grid-angular>
+                  </div>
+
+                  @if (!esView) {
+                    <div class="contactos-leyenda">
+                      <i class="fa-solid fa-hand-pointer"></i>
+                      Haz clic en una celda para escribir. <strong>Nombres, parentesco y teléfono</strong> son obligatorios (las celdas en rojo faltan).
+                      La columna <strong>#</strong> es el orden en que se debe llamar. Se guardan junto con el empleado.
+                    </div>
+                  }
+                </div>
+              </ng-container>
+            </panel>
+          </div>
+
         </div>
       </form>
     </div>

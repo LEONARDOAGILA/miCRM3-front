@@ -67,3 +67,20 @@ export const ESTADOS_EMPLEADO = [
   { id: 'INACTIVO',   name: 'Inactivo' },
   { id: 'RETIRADO',   name: 'Retirado' },
 ];
+
+/** Contacto de emergencia (rh.contactos_emergencia). id null = fila nueva aún sin guardar. */
+export interface ContactoEmergencia {
+  id?: number | null;
+  empleado_id?: number;
+  nombres: string;
+  parentesco: string;
+  telefono: string;
+  telefono_alterno?: string | null;
+  email?: string | null;
+  prioridad: number;
+  activo: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const PARENTESCOS = ['Cónyuge', 'Pareja', 'Madre', 'Padre', 'Hijo/a', 'Hermano/a', 'Abuelo/a', 'Tío/a', 'Primo/a', 'Amigo/a', 'Otro'];

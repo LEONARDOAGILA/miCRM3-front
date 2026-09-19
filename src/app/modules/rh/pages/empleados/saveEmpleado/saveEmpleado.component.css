@@ -639,3 +639,136 @@
     letter-spacing: .05em;
   }
 }
+
+/* ======================================================================
+   Contactos de emergencia: grilla editable (estilo permisos-archivo)
+   ====================================================================== */
+.contactos-toolbar {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.contactos-grid {
+  height: 220px;
+  min-height: 160px;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.contactos-leyenda {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.contactos-leyenda i {
+  margin-top: 2px;
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Celdas editables: se nota que se puede escribir */
+:host ::ng-deep .contactos-grid .ag-cell[col-id]:not([col-id='actions']):not([col-id='activo']) {
+  cursor: text;
+}
+
+:host ::ng-deep .contactos-grid .ag-cell-inline-editing {
+  padding: 0 4px;
+  height: 100%;
+}
+
+:host ::ng-deep .contactos-grid .ag-cell-inline-editing .ag-input-field-input,
+:host ::ng-deep .contactos-grid .ag-cell-inline-editing .ag-picker-field-wrapper {
+  height: 28px;
+  font-size: 12px;
+}
+
+/* Obligatorias vacías: en rojo suave */
+:host ::ng-deep .contactos-grid .ag-cell.celda-obligatoria {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
+  box-shadow: inset 0 0 0 1px rgba(var(--bs-danger-rgb, 220, 53, 69), .35);
+}
+
+/* Contacto desactivado: atenuado */
+:host ::ng-deep .contactos-grid .ag-row.fila-inactiva .ag-cell:not([col-id='activo']):not([col-id='actions']) {
+  color: var(--bs-secondary-color, #6c757d);
+  text-decoration: line-through;
+  opacity: .75;
+}
+
+/* Casillas (idénticas a permisos-archivo) */
+:host ::ng-deep .permiso-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+}
+
+:host ::ng-deep .permiso-check input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+  pointer-events: none; /* el clic lo gestiona la celda del grid */
+}
+
+:host ::ng-deep .permiso-check input:disabled {
+  cursor: default;
+  opacity: .5;
+}
+
+/* Botones de la celda ACCIONES */
+:host ::ng-deep .permiso-acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+:host ::ng-deep .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+
+:host ::ng-deep .btn-icon:hover:not(:disabled) {
+  color: #fff;
+}
+
+:host ::ng-deep .btn-subir:hover:not(:disabled)  { background-color: var(--bs-primary, #348fe2); border-color: var(--bs-primary, #348fe2); }
+:host ::ng-deep .btn-quitar:hover:not(:disabled) { background-color: var(--bs-danger, #dc3545);  border-color: var(--bs-danger, #dc3545); }
+
+:host ::ng-deep .acciones-desplegar {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .25rem;
+}
+
+/* Cabecera ACCIONES: se ve que es clicable */
+:host ::ng-deep .contactos-grid .ag-header-cell[col-id='actions'] {
+  cursor: pointer;
+}
+
+@media (max-width: 767.98px) {
+  .contactos-grid { height: 260px; }
+}
