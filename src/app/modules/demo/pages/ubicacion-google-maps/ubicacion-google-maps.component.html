@@ -18,6 +18,7 @@
   [noButton]="false"
   [noButtonReload]="true"
   [noButtonCollapse]="true"
+  (panelExpanded)="alExpandirPanel($event)"
   [closeRoute]="'/demo/home-demo'"
   icono="map"
   bodyClass="p-0"
@@ -53,10 +54,10 @@
         <button type="button" class="btn btn-sm btn-white gm-btn" [disabled]="!lugar" title="Cómo llegar (desde mi posición si la hay)" (click)="comoLlegar()">
           <i class="fa fa-diamond-turn-right"></i><span class="gm-btn__texto">Cómo llegar</span>
         </button>
-        <button type="button" class="btn btn-sm btn-white gm-btn" [disabled]="estadoApi !== 'listo'"
+        <!-- <button type="button" class="btn btn-sm btn-white gm-btn" [disabled]="estadoApi !== 'listo'"
                 [title]="lugar ? 'Compartir el enlace del lugar' : 'Compartir el enlace de esta vista'" (click)="compartir()">
           <i class="fa fa-share-nodes"></i><span class="gm-btn__texto">Compartir</span>
-        </button>
+        </button> -->
         <button type="button" class="btn btn-sm btn-white gm-btn" [disabled]="estadoApi !== 'listo' || capturando"
                 title="Tomar una captura del mapa con la Maps Static API de Google (se factura)" (click)="capturarMapa()">
           @if (capturando) {
@@ -66,7 +67,7 @@
           }
           <span class="gm-btn__texto">Capturar</span>
         </button>
-        <button type="button" class="btn btn-sm btn-white gm-btn" [disabled]="estadoApi !== 'listo' || capturandoPantalla"
+        <!-- <button type="button" class="btn btn-sm btn-white gm-btn" [disabled]="estadoApi !== 'listo' || capturandoPantalla"
                 title="Capturar la tarjeta del mapa tal como se ve, sin llamar a Google (no factura)" (click)="capturarCard()">
           @if (capturandoPantalla) {
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -74,7 +75,7 @@
             <i class="fa fa-crop-simple"></i>
           }
           <span class="gm-btn__texto">Captura-card</span>
-        </button>
+        </button> -->
         <button type="button" class="btn btn-sm btn-white gm-btn" [disabled]="!lugar && !busqueda" title="Quitar el lugar" (click)="limpiar()">
           <i class="fa fa-eraser"></i><span class="gm-btn__texto">Limpiar</span>
         </button>
@@ -216,12 +217,12 @@
               <div class="gm-compartir">
                 <div class="gm-compartir__titulo"><i class="fa fa-share-nodes"></i> Compartir</div>
 
-                <div class="btn-group gm-compartir__tipos" role="group" aria-label="Tipo de enlace">
+                <!-- <div class="btn-group gm-compartir__tipos" role="group" aria-label="Tipo de enlace">
                   <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'lugar' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'lugar'">Lugar</button>
                   <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'vista' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'vista'">Vista</button>
                   <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'pantalla' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'pantalla'">Esta pantalla</button>
                   <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'insertar' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'insertar'">Insertar</button>
-                </div>
+                </div> -->
 
                 <div class="gm-compartir__caja">
                   @if (formatoEnlace === 'insertar') {
@@ -237,18 +238,39 @@
                   </button>
                 </div>
 
-                <div class="gm-compartir__pie">
-                  <small>{{ ayudaCompartir }}</small>
-                  @if (formatoEnlace !== 'insertar') {
-                    <a class="gm-compartir__probar" [href]="textoCompartir" target="_blank" rel="noopener">Abrir en google Maps <i class="fa fa-arrow-up-right-from-square"></i></a>
-                  }
-                </div>
+                @if (ayudaCompartir) {
+                  <div class="gm-compartir__pie"><small>{{ ayudaCompartir }}</small></div>
+                }
 
-                @if (puedeCompartirNativo) {
-                  <button type="button" class="btn btn-sm btn-white w-100 mt-2" (click)="compartir()">
-                    <i class="fa fa-share-nodes me-1"></i> Compartir con otra app…
+                @if (formatoEnlace !== 'insertar') {
+                  <button type="button" class="btn btn-sm btn-white w-100 mt-2" [title]="textoBotonAbrir" (click)="abrirEnlace()">
+                    <i class="fa fa-arrow-up-right-from-square me-1"></i> {{ textoBotonAbrir }}
                   </button>
                 }
+
+                <!-- Enviar a otras apps, como la hoja de compartir de Google Maps -->
+                <div class="gm-redes">
+                  <button type="button" class="btn btn-sm gm-red gm-red--whatsapp" title="Enviar por WhatsApp" (click)="compartirEn('whatsapp')">
+                    <i class="fab fa-whatsapp"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm gm-red gm-red--telegram" title="Enviar por Telegram" (click)="compartirEn('telegram')">
+                    <i class="fab fa-telegram"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm gm-red gm-red--correo" title="Enviar por correo" (click)="compartirEn('correo')">
+                    <i class="fa fa-envelope"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm gm-red gm-red--facebook" title="Compartir en Facebook" (click)="compartirEn('facebook')">
+                    <i class="fab fa-facebook-f"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm gm-red gm-red--x" title="Compartir en X" (click)="compartirEn('x')">
+                    <i class="fab fa-x-twitter"></i>
+                  </button>
+                  @if (puedeCompartirNativo) {
+                    <button type="button" class="btn btn-sm gm-red gm-red--mas" title="Compartir con otra app del dispositivo" (click)="compartir()">
+                      <i class="fa fa-ellipsis"></i>
+                    </button>
+                  }
+                </div>
               </div>
             } @else if (!resolviendoClic) {
               <div class="gm-ayuda">

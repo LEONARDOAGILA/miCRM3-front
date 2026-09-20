@@ -249,6 +249,19 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
     this.sincronizarUrl();
   }
 
+  /**
+   * Botón de expandir del <panel>: al pasar a pantalla completa (y al volver)
+   * el mapa cambia de tamaño, así que se le avisa y se recupera el centro.
+   */
+  alExpandirPanel(_expandido: boolean): void {
+    const centro = this.mapa?.getCenter?.();
+    setTimeout(() => {
+      if (!this.mapa) { return; }
+      this.gm?.event?.trigger(this.mapa, 'resize');
+      if (centro) { this.mapa.setCenter(centro); }
+    }, 300);
+  }
+
   alternarPanel(): void {
     this.panelOculto = !this.panelOculto;
     try { localStorage.setItem('miCRM3.gmaps.panelOculto', this.panelOculto ? '1' : '0'); } catch { /* sin storage */ }
@@ -571,6 +584,45 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  /** El enlace que se está compartiendo (en la pestaña «Insertar» se usa el del lugar). */
+  get enlaceActivo(): string {
+    return this.formatoEnlace === 'insertar' ? this.urlLugar : this.textoCompartir;
+  }
+
+  get textoBotonAbrir(): string {
+    return this.formatoEnlace === 'pantalla' ? 'Abrir esta pantalla' : 'Abrir en Google Maps';
+  }
+
+  abrirEnlace(): void {
+    const url = this.enlaceActivo;
+    if (url) { window.open(url, '_blank', 'noopener'); }
+  }
+
+  /** Mensaje que acompaña al enlace: nombre del lugar y dirección. */
+  private get mensajeCompartir(): string {
+    if (!this.lugar) { return 'Ubicación en el mapa'; }
+    return this.lugar.direccion ? `${this.lugar.nombre} — ${this.lugar.direccion}` : this.lugar.nombre;
+  }
+
+  /** Abre la app o la web de la red elegida con el enlace ya puesto. */
+  compartirEn(red: 'whatsapp' | 'telegram' | 'correo' | 'facebook' | 'x'): void {
+    const url = this.enlaceActivo;
+    if (!url) { return; }
+    const texto = this.mensajeCompartir;
+    const u = encodeURIComponent(url);
+    const t = encodeURIComponent(texto);
+    const todo = encodeURIComponent(`${texto}\n${url}`);
+
+    const destinos: Record<string, string> = {
+      whatsapp: `https://wa.me/?text=${todo}`,
+      telegram: `https://t.me/share/url?url=${u}&text=${t}`,
+      correo:   `mailto:?subject=${t}&body=${todo}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+      x:        `https://twitter.com/intent/tweet?text=${t}&url=${u}`,
+    };
+    window.open(destinos[red], '_blank', 'noopener');
+  }
+
   /** Rehace el enlace a esta pantalla y lo deja también en la barra del navegador. */
   private sincronizarUrl(): void {
     const c = this.mapa?.getCenter?.();
@@ -621,11 +673,11 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
 
   /** Botón de la barra: diálogo del sistema en el móvil, copiar en el escritorio. */
   async compartir(): Promise<void> {
-    const url = this.lugar ? this.urlLugar : this.urlVista;
+    const url = this.lugar ? this.enlaceActivo || this.urlLugar : this.urlVista;
     const titulo = this.lugar?.nombre ?? 'Ubicación';
     if (this.puedeCompartirNativo) {
       try {
-        await (navigator as any).share({ title: titulo, text: this.lugar?.direccion ?? titulo, url });
+        await (navigator as any).share({ title: titulo, text: this.mensajeCompartir, url });
         return;
       } catch (e: any) {
         if (e?.name === 'AbortError') { return; }   // lo cerró el usuario

@@ -479,16 +479,6 @@ textarea.gm-compartir__texto {
   color: var(--bs-secondary-color, #6c757d);
 }
 
-.gm-compartir__probar {
-  flex: 0 0 auto;
-  font-size: 10.5px;
-  text-decoration: none;
-  color: var(--bs-app-theme, #00acac);
-}
-
-.gm-compartir__probar:hover {
-  text-decoration: underline;
-}
 
 /* ---------- Coordenadas (misma caja que los enlaces) ---------- */
 .gm-dato {
@@ -762,4 +752,59 @@ textarea.gm-compartir__texto {
 
 .gm-ficha::-webkit-scrollbar-thumb:hover {
   background: rgba(var(--bs-body-color-rgb, 33, 37, 41), .45);
+}
+
+/* ---------- Enviar a otras apps ---------- */
+.gm-redes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  margin-top: .4rem;
+}
+
+.gm-red {
+  flex: 1 1 0;
+  min-width: 34px;
+  padding: .25rem 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.gm-red:hover {
+  color: #fff;
+  filter: brightness(1.08);
+}
+
+.gm-red--whatsapp { background-color: #25d366; border-color: #25d366; }
+.gm-red--telegram { background-color: #229ed9; border-color: #229ed9; }
+.gm-red--correo   { background-color: #6c757d; border-color: #6c757d; }
+.gm-red--facebook { background-color: #1877f2; border-color: #1877f2; }
+.gm-red--x        { background-color: #000; border-color: #000; }
+
+.gm-red--mas {
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-body-color, #212529);
+}
+
+.gm-red--mas:hover {
+  color: var(--bs-body-color, #212529);
+}
+
+/* ---------- Panel expandido (botón de expandir del <panel>) ----------
+   El panel pasa a pantalla completa y su cuerpo es un flex: la barra queda
+   arriba y la tarjeta de información y el mapa llenan lo que sobra. */
+:host ::ng-deep .panel.panel-expand > .panel-body {
+  overflow: hidden;
+}
+
+:host ::ng-deep .panel.panel-expand .gm {
+  height: 100%;
+}
+
+:host ::ng-deep .panel.panel-expand .gm-cuerpo {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
 }
