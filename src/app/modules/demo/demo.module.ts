@@ -60,6 +60,7 @@ import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/ca
 import { AllProductosComponent } from './pages/facturas/all-productos/all-productos.component';
 
 import { UbicacionGpsComponent } from './pages/ubicacion-gps/ubicacion-gps.component';
+import { UbicacionGoogleMapsComponent } from './pages/ubicacion-google-maps/ubicacion-google-maps.component';
 import { DetectaRostroComponent } from './pages/detecta-rostro/detecta-rostro.component';
 import { DetectaIPComponent } from './pages/detecta-ip/detecta-ip.component';
 import { WebsocketSendComponent } from './pages/websocket-send/websocket-send.component';
@@ -87,6 +88,7 @@ import { WebsocketRecivedComponent } from './pages/websocket-recived/websocket-r
     AllClientesComponent,
     AllProductosComponent,
     UbicacionGpsComponent,
+    UbicacionGoogleMapsComponent,
     DetectaRostroComponent,
     DetectaIPComponent,
     WebsocketSendComponent,

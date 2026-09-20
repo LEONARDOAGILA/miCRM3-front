@@ -90,6 +90,58 @@
 
     <!-- ---------- 2b. ESTADO + FICHA ---------- -->
     <div class="gps-ficha" [attr.aria-hidden]="panelOculto">
+
+      <!-- Buscar una dirección o lugar (Nominatim): sugerencias mientras se escribe -->
+      <div class="gps-buscar">
+        <div class="gps-buscar__caja">
+          <i class="fa gps-buscar__lupa" [ngClass]="buscando ? 'fa-spinner fa-spin' : 'fa-search'"></i>
+          <input type="text" class="form-control"
+                 placeholder="Buscar dirección o lugar en Ecuador…"
+                 autocomplete="off"
+                 [(ngModel)]="busqueda"
+                 (input)="onBusquedaCambia()"
+                 (keydown)="onBusquedaTecla($event)">
+          @if (busqueda) {
+            <button type="button" class="gps-buscar__limpiar" title="Quitar la búsqueda" (click)="limpiarBusqueda()">&times;</button>
+          }
+        </div>
+
+        @if (sugerencias.length) {
+          <ul class="gps-sugerencias" role="listbox">
+            @for (s of sugerencias; track s.id; let i = $index) {
+              <li class="gps-sugerencia" role="option"
+                  [class.is-activa]="i === sugerenciaActiva"
+                  (mouseenter)="sugerenciaActiva = i"
+                  (click)="irALugar(s)">
+                <i class="fa fa-location-dot"></i>
+                <span class="gps-sugerencia__texto">
+                  <span class="gps-sugerencia__nombre">{{ s.nombre }}</span>
+                  <span class="gps-sugerencia__detalle">{{ s.detalle }}</span>
+                </span>
+                @if (s.tipo) { <span class="gps-sugerencia__tipo">{{ s.tipo }}</span> }
+              </li>
+            }
+          </ul>
+        } @else if (!buscando && busqueda.trim().length >= 3 && !lugar) {
+          <div class="gps-buscar__nada">Sin resultados para «{{ busqueda }}»</div>
+        }
+
+        <!-- Lugar elegido -->
+        @if (lugar; as l) {
+          <div class="gps-lugar">
+            <i class="fa fa-location-dot gps-lugar__pin"></i>
+            <div class="gps-lugar__texto">
+              <span class="gps-lugar__nombre">{{ l.nombre }}</span>
+              <span class="gps-lugar__detalle">{{ l.detalle }}</span>
+              <span class="gps-lugar__coord">{{ l.lat.toFixed(6) }}, {{ l.lng.toFixed(6) }}@if (distanciaAlLugar) { · a {{ distanciaAlLugar }} de ti }</span>
+            </div>
+            <button type="button" class="btn btn-xs btn-primary gps-lugar__ruta" title="Cómo llegar (Google Maps)" (click)="abrirRutaEnMaps()">
+              <i class="fa fa-diamond-turn-right"></i>
+            </button>
+          </div>
+        }
+      </div>
+
       <div class="gps-estado" [ngClass]="'gps-estado--' + estado">
         <span class="gps-estado__punto"></span>
         @switch (estado) {

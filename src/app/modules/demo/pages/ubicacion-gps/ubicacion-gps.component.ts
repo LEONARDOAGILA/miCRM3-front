@@ -32,6 +32,18 @@ interface Lectura {
 
 type Estado = 'sin' | 'obteniendo' | 'ubicado' | 'siguiendo';
 
+/** Resultado de la búsqueda de direcciones (Nominatim). */
+interface Lugar {
+  id: number;
+  nombre: string;
+  detalle: string;
+  tipo: string;
+  lat: number;
+  lng: number;
+  /** [sur, norte, oeste, este] para encuadrar */
+  caja: [number, number, number, number] | null;
+}
+
 /**
  * Ubicación GPS (demo).
  *
@@ -71,6 +83,18 @@ export class UbicacionGpsComponent implements AfterViewInit, OnDestroy {
   esNativo = Capacitor.isNativePlatform();
   /** Panel de información plegado (pestaña en el borde, como Google Maps); se recuerda por navegador. */
   panelOculto = this.leerPanelOculto();
+
+  // ---------- Búsqueda de direcciones ----------
+  busqueda = '';
+  sugerencias: Lugar[] = [];
+  buscando = false;
+  /** Índice resaltado con las flechas */
+  sugerenciaActiva = -1;
+  /** Lugar elegido (marcador rojo en el mapa) */
+  lugar: Lugar | null = null;
+  private marcadorLugar: L.Marker | null = null;
+  private timerBusqueda: any = null;
+  private abortBusqueda: AbortController | null = null;
   private readonly CLAVE_PANEL = 'miCRM3.gps.panelOculto';
 
   // ---------- Mapa ----------
@@ -95,6 +119,8 @@ export class UbicacionGpsComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.detenerSeguimiento();
+    clearTimeout(this.timerBusqueda);
+    this.abortBusqueda?.abort();
     this.timeouts.forEach(t => clearTimeout(t));
     this.mapa?.remove();
     this.mapa = null;
@@ -357,6 +383,7 @@ export class UbicacionGpsComponent implements AfterViewInit, OnDestroy {
 
   limpiar(): void {
     this.detenerSeguimiento();
+    this.limpiarBusqueda();
     this.actual = null;
     this.direccion = null;
     this.error = null;
@@ -365,6 +392,136 @@ export class UbicacionGpsComponent implements AfterViewInit, OnDestroy {
     this.estado = 'sin';
     [this.marcador, this.circulo, this.linea].forEach(c => c && this.mapa?.removeLayer(c));
     this.marcador = this.circulo = this.linea = null;
+  }
+
+  // ================================================================
+  // BUSCAR UNA DIRECCIÓN (Nominatim, sin clave). Como Google Maps: se
+  // escribe y van saliendo sugerencias (con 400 ms de espera para no
+  // saturar el servicio); al elegir una, el mapa se encuadra en ella.
+  // ================================================================
+
+  onBusquedaCambia(): void {
+    clearTimeout(this.timerBusqueda);
+    const q = this.busqueda.trim();
+    if (q.length < 3) { this.sugerencias = []; this.sugerenciaActiva = -1; return; }
+    this.timerBusqueda = setTimeout(() => this.buscarLugares(q), 400);
+  }
+
+  private async buscarLugares(q: string): Promise<void> {
+    this.abortBusqueda?.abort();
+    const ctrl = new AbortController();
+    this.abortBusqueda = ctrl;
+    this.buscando = true;
+    try {
+      // Se prefieren resultados cerca de lo que se ve en el mapa (viewbox, sin limitar)
+      let cerca = '';
+      if (this.mapa) {
+        const b = this.mapa.getBounds();
+        cerca = `&viewbox=${b.getWest()},${b.getNorth()},${b.getEast()},${b.getSouth()}`;
+      }
+      // Sólo Ecuador (countrycodes=ec): lo de fuera del país no sale
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=7&accept-language=es&countrycodes=ec&q=${encodeURIComponent(q)}${cerca}`;
+      const r = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: ctrl.signal });
+      const lista: any[] = await r.json();
+      this.zone.run(() => {
+        this.sugerencias = (lista ?? []).map(x => this.aLugar(x));
+        this.sugerenciaActiva = this.sugerencias.length ? 0 : -1;
+      });
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        console.error('Error al buscar la dirección:', e);
+        this.zone.run(() => { this.sugerencias = []; });
+      }
+    } finally {
+      if (this.abortBusqueda === ctrl) { this.zone.run(() => { this.buscando = false; }); }
+    }
+  }
+
+  private aLugar(x: any): Lugar {
+    const nombre = x.name || x.display_name?.split(',')[0] || '';
+    // Todo es Ecuador: el país al final sobra en el detalle
+    if (typeof x.display_name === 'string') { x.display_name = x.display_name.replace(/,\s*Ecuador\s*$/i, ''); }
+    // Sin el nombre al principio (display_name lo repite); se escapa para el RegExp
+    const esc = nombre.replace(/[.*+?^${}()|[\]\\]/g, (c: string) => '\\' + c);
+    const detalle = String(x.display_name ?? '').replace(new RegExp('^' + esc + ',?\\s*'), '');
+    const bb = x.boundingbox?.map(Number);
+    return {
+      id: Number(x.place_id),
+      nombre,
+      detalle,
+      tipo: String(x.type ?? x.category ?? '').replace(/_/g, ' '),
+      lat: Number(x.lat),
+      lng: Number(x.lon),
+      caja: bb && bb.length === 4 ? [bb[0], bb[1], bb[2], bb[3]] : null,
+    };
+  }
+
+  /** Teclado en el buscador: ↑ ↓ recorren, Enter elige, Esc cierra. */
+  onBusquedaTecla(ev: KeyboardEvent): void {
+    if (!this.sugerencias.length) {
+      if (ev.key === 'Enter') { ev.preventDefault(); this.buscarLugares(this.busqueda.trim()); }
+      return;
+    }
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); this.sugerenciaActiva = (this.sugerenciaActiva + 1) % this.sugerencias.length; }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); this.sugerenciaActiva = (this.sugerenciaActiva - 1 + this.sugerencias.length) % this.sugerencias.length; }
+    else if (ev.key === 'Enter') { ev.preventDefault(); if (this.sugerenciaActiva >= 0) { this.irALugar(this.sugerencias[this.sugerenciaActiva]); } }
+    else if (ev.key === 'Escape') { this.sugerencias = []; this.sugerenciaActiva = -1; }
+  }
+
+  /** Muestra el lugar en el mapa (marcador rojo, encuadre por su caja) y lo deja en la ficha. */
+  irALugar(l: Lugar): void {
+    this.lugar = l;
+    this.busqueda = l.nombre ? `${l.nombre}${l.detalle ? ', ' + l.detalle : ''}` : this.busqueda;
+    this.sugerencias = [];
+    this.sugerenciaActiva = -1;
+    if (!this.mapa) { return; }
+
+    const punto: L.LatLngExpression = [l.lat, l.lng];
+    // Chincheta roja con Font Awesome (sin imágenes externas); la azul es «yo»
+    const icono = L.divIcon({
+      className: 'gps-pin-lugar',
+      html: '<i class="fa fa-location-dot"></i>',
+      iconSize: [30, 40], iconAnchor: [15, 38], popupAnchor: [0, -34],
+    });
+    if (this.marcadorLugar) { this.marcadorLugar.setLatLng(punto).setIcon(icono); }
+    else { this.marcadorLugar = L.marker(punto, { icon: icono, zIndexOffset: 500 }).addTo(this.mapa); }
+    this.marcadorLugar.bindPopup(`<div class="gps-popup"><b>${l.nombre}</b><br>${l.detalle}<br><small>${l.lat.toFixed(6)}, ${l.lng.toFixed(6)}</small></div>`).openPopup();
+
+    if (l.caja) {
+      // Calles y ciudades traen su extensión: se encuadra; un punto suelto se acerca
+      const bounds = L.latLngBounds([l.caja[0], l.caja[2]], [l.caja[1], l.caja[3]]);
+      this.mapa.fitBounds(bounds, { padding: [40, 40], maxZoom: 17, animate: true });
+    } else {
+      this.mapa.setView(punto, 16, { animate: true });
+    }
+  }
+
+  limpiarBusqueda(): void {
+    clearTimeout(this.timerBusqueda);
+    this.abortBusqueda?.abort();
+    this.busqueda = '';
+    this.sugerencias = [];
+    this.sugerenciaActiva = -1;
+    this.buscando = false;
+    this.lugar = null;
+    if (this.marcadorLugar) { this.mapa?.removeLayer(this.marcadorLugar); this.marcadorLugar = null; }
+  }
+
+  /** Distancia en línea recta desde mi posición hasta el lugar buscado. */
+  get distanciaAlLugar(): string {
+    if (!this.actual || !this.lugar) { return ''; }
+    const m = this.distanciaM(this.actual, { ...this.lugar, precision: null, altitud: null, velocidad: null, rumbo: null, fecha: new Date() });
+    return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
+  }
+
+  /** Cómo llegar en Google Maps, desde mi posición si la hay. */
+  abrirRutaEnMaps(): void {
+    if (!this.lugar) { return; }
+    const destino = `${this.lugar.lat},${this.lugar.lng}`;
+    const url = this.actual
+      ? `https://www.google.com/maps/dir/?api=1&origin=${this.actual.lat},${this.actual.lng}&destination=${destino}`
+      : `https://www.google.com/maps/search/?api=1&query=${destino}`;
+    window.open(url, '_blank', 'noopener');
   }
 
   // ================================================================
@@ -378,7 +535,7 @@ export class UbicacionGpsComponent implements AfterViewInit, OnDestroy {
         headers: { 'Accept': 'application/json' },
       });
       const j = await r.json();
-      this.zone.run(() => { this.direccion = j?.display_name ?? null; });
+      this.zone.run(() => { this.direccion = (j?.display_name ?? null)?.replace(/,\s*Ecuador\s*$/i, '') ?? null; });
     } catch {
       this.zone.run(() => { this.direccion = null; });   // sin internet o bloqueado: no pasa nada
     } finally {
