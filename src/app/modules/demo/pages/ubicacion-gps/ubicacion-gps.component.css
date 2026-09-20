@@ -1,57 +1,362 @@
-.ubicacion-container {
+/* ============================================================
+   UBICACIÓN GPS
+   Barra de acciones, ficha con la lectura y el mapa a toda la altura
+   que quede. Colores por variables del tema (claro / oscuro).
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.gps {
   display: flex;
   flex-direction: column;
+}
+
+/* ---------- Barra ---------- */
+.gps-toolbar {
+  display: flex;
   align-items: center;
-  padding: 16px;
-  text-align: center;
-  width: 100%;
-  box-sizing: border-box;
+  flex-wrap: wrap;
+  gap: .25rem .375rem;
+  padding: .375rem .5rem;
+  background-color: var(--bs-light, #f8f9fa);
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
-button {
-  padding: 10px 20px;
-  border: none;
-  background-color: #007bff;
-  color: white;
-  font-size: 16px;
-  border-radius: 8px;
+.gps-toolbar__grupo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.gps-toolbar__sep {
+  width: 1px;
+  height: 1.5rem;
+  margin: 0 .25rem;
+  background-color: var(--bs-border-color, #dee2e6);
+}
+
+.gps-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  white-space: nowrap;
+}
+
+.gps-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin: 0 0 0 .25rem;
+  font-size: 11.5px;
   cursor: pointer;
-  margin-bottom: 10px;
-
-  &:disabled {
-    background-color: #ccc;
-  }
+  user-select: none;
 }
 
-.resultado {
-  background-color: #f7f7f7;
-  padding: 10px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-  margin-bottom: 10px;
+.gps-switch .form-check-input {
+  margin: 0;
+  cursor: pointer;
 }
 
-.error {
-  color: red;
-  font-weight: bold;
+.gps-capas .btn {
+  font-size: 11px;
 }
 
-.mapa-wrapper {
-  width: 100%;
-  max-width: 600px;
-  height: 350px;
-  margin-top: 10px;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+/* ---------- Cuerpo: información a la izquierda, mapa a la derecha (como Google Maps) ---------- */
+.gps-cuerpo {
+  display: flex;
+  align-items: stretch;
+  min-height: clamp(360px, calc(100vh - 235px), 900px);   /* hasta el pie de la ventana */
+}
+
+/* ---------- Estado y ficha (columna izquierda) ---------- */
+.gps-ficha {
+  flex: 0 0 340px;
+  max-width: 340px;
+  padding: .75rem;
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-component-bg, #fff);
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: flex-basis .25s ease, max-width .25s ease, padding .25s ease, opacity .2s ease;
+}
+
+/* Plegado: el panel se cierra y el mapa ocupa todo */
+.gps-cuerpo.is-panel-oculto .gps-ficha {
+  flex-basis: 0;
+  max-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Pestaña en el borde izquierdo del mapa (como la flecha de Google Maps) */
+.gps-pestana {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 700;                 /* sobre los controles de Leaflet (400-600) */
+  width: 22px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 0;
+  border-radius: 0 .5rem .5rem 0;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, .18);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease;
+}
+
+.gps-pestana:hover,
+.gps-pestana:focus-visible {
+  background-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme-color, #fff);
+  outline: none;
+}
+
+.gps-estado {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gps-estado__punto {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--bs-secondary-color, #6c757d);
+  flex: 0 0 auto;
+}
+
+.gps-estado--obteniendo .gps-estado__punto {
+  background-color: var(--bs-warning, #f59c1a);
+  animation: gps-latido 1s ease-in-out infinite;
+}
+
+.gps-estado--ubicado .gps-estado__punto {
+  background-color: var(--bs-success, #00acac);
+}
+
+.gps-estado--siguiendo .gps-estado__punto {
+  background-color: var(--bs-danger, #dc3545);
+  animation: gps-latido 1.2s ease-in-out infinite;
+}
+
+@keyframes gps-latido {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.5); opacity: .55; }
+}
+
+.gps-estado__nota {
+  margin-left: auto;
+  padding: .1rem .5rem;
+  border-radius: 2rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+  font-size: 10.5px;
+}
+
+.gps-error {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  margin-top: .5rem;
+  padding: .5rem .75rem;
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .10);
+  color: var(--bs-danger-text-emphasis, #b02a37);
+  font-size: 12px;
+}
+
+.gps-error i {
+  margin-top: 2px;
+}
+
+/* Datos de la lectura: tarjetas apiladas (dos por fila las cortas) */
+.gps-datos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .5rem;
+  margin-top: .75rem;
+}
+
+.gps-dato {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  padding: .45rem .65rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary-color, #6c757d);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .025);
+  min-width: 0;
+}
+
+.gps-dato--coord {
+  grid-column: 1 / -1;
+  border-left-color: var(--bs-app-theme, #00acac);
+  cursor: copy;
+}
+
+.gps-dato--direccion {
+  grid-column: 1 / -1;
+  border-left-color: var(--bs-primary, #348fe2);
+}
+
+.gps-dato--buena   { border-left-color: var(--bs-success, #00acac); }
+.gps-dato--regular { border-left-color: var(--bs-warning, #f59c1a); }
+.gps-dato--mala    { border-left-color: var(--bs-danger, #dc3545); }
+
+.gps-dato__etiqueta {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gps-dato__valor {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.gps-dato--direccion .gps-dato__valor {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.gps-dato__ayuda {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Mapa (columna derecha, todo lo que quede) ---------- */
+.gps-mapa-wrap {
   position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 320px;
 }
 
-.mapa {
-  width: 100%;
-  height: 100%;
+.gps-mapa {
   position: absolute;
   inset: 0;
   z-index: 0;
+}
+
+/* Aviso sobre el mapa mientras no hay posición */
+.gps-mapa__aviso {
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  z-index: 500;                 /* sobre los tiles, bajo los popups (600+) */
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .4rem .8rem;
+  border-radius: 2rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+  color: var(--bs-body-color, #212529);
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.gps-mapa__aviso i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Popup del marcador (lo pinta Leaflet fuera de la encapsulación) */
+:host ::ng-deep .gps-popup {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+:host ::ng-deep .leaflet-control-scale-line {
+  font-size: 10px;
+}
+
+/* Panel expandido: el cuerpo llena lo que quede */
+:host ::ng-deep .panel.panel-expand .gps {
+  height: 100%;
+}
+
+:host ::ng-deep .panel.panel-expand .gps-cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Modo oscuro: los tiles de calles se atenúan para no deslumbrar */
+:host-context([data-bs-theme="dark"]) .gps-toolbar {
+  background-color: rgba(255, 255, 255, .04);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .leaflet-tile-pane {
+  filter: brightness(.85) contrast(1.05);
+}
+
+/* ---------- Móvil: sólo iconos en la barra, tarjetas en dos columnas ---------- */
+@media (max-width: 767.98px) {
+  .gps-btn__texto {
+    display: none;
+  }
+
+  .gps-toolbar__sep {
+    display: none;
+  }
+
+  /* En móvil se apilan: la información arriba y el mapa debajo */
+  .gps-cuerpo {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .gps-ficha {
+    flex: 0 0 auto;
+    max-width: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    overflow: visible;
+  }
+
+  /* Plegado en móvil: se esconde por altura, y la pestaña apunta arriba/abajo */
+  .gps-cuerpo.is-panel-oculto .gps-ficha {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
+    overflow: hidden;
+  }
+
+  .gps-pestana {
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%) rotate(90deg);
+    transform-origin: center;
+    margin-top: 15px;
+  }
+
+  .gps-mapa-wrap {
+    height: clamp(280px, 50vh, 480px);
+    min-height: 280px;
+  }
+
+  .gps-estado__nota {
+    display: none;
+  }
 }

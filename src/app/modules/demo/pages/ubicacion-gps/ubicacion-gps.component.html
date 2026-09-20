@@ -1,18 +1,181 @@
-<div class="ubicacion-container">
-  <h2>📍 Obtener Ubicación GPS</h2>
+<!-- ============================================================
+     UBICACIÓN GPS (demo)
+       1. Miga de pan
+       2. <panel> del tema
+          2a. Barra: obtener / seguir / centrar / copiar / abrir / compartir / limpiar
+          2b. Estado + ficha de la lectura (lat, lng, precisión, altitud…)
+          2c. Mapa Leaflet (calles / satélite / topo) con marcador, círculo
+              de precisión y recorrido
+     ============================================================ -->
 
-  <button (click)="obtenerUbicacion()" [disabled]="cargando">
-    {{ cargando ? 'Obteniendo...' : 'Obtener ubicación' }}
-  </button>
 
-  <div *ngIf="latitud && longitud" class="resultado">
-    <p><strong>Latitud:</strong> {{ latitud }}</p>
-    <p><strong>Longitud:</strong> {{ longitud }}</p>
+<panel
+  title="Ubicación GPS"
+  [noButton]="false"
+  [noButtonReload]="true"
+  [noButtonCollapse]="true"
+  (panelExpanded)="ajustarMapa()"
+  [closeRoute]="'/demo/home-demo'"
+  icono="map"
+  bodyClass="p-0"
+  panelClass="mb-0">
+
+  <div class="gps">
+
+    <!-- ---------- 2a. BARRA ---------- -->
+    <div class="gps-toolbar">
+      <div class="gps-toolbar__grupo">
+        <button type="button" class="btn btn-sm btn-primary gps-btn"
+                [disabled]="estado === 'obteniendo'"
+                title="Leer la posición actual una vez"
+                (click)="obtenerUbicacion()">
+          @if (estado === 'obteniendo') {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          } @else {
+            <i class="fa fa-location-crosshairs"></i>
+          }
+          <span class="gps-btn__texto">{{ estado === 'obteniendo' ? 'Obteniendo…' : 'Obtener ubicación' }}</span>
+        </button>
+
+        <button type="button" class="btn btn-sm gps-btn"
+                [ngClass]="estado === 'siguiendo' ? 'btn-danger' : 'btn-success'"
+                [title]="estado === 'siguiendo' ? 'Dejar de seguir la posición' : 'Seguir la posición en vivo y dibujar el recorrido'"
+                (click)="alternarSeguimiento()">
+          <i class="fa" [ngClass]="estado === 'siguiendo' ? 'fa-stop' : 'fa-satellite-dish'"></i>
+          <span class="gps-btn__texto">{{ estado === 'siguiendo' ? 'Detener' : 'Seguir en vivo' }}</span>
+        </button>
+
+        @if (estado === 'siguiendo') {
+          <label class="gps-switch" title="Mover el mapa con cada lectura nueva">
+            <input type="checkbox" class="form-check-input" [(ngModel)]="seguirCentrado">
+            <span>Centrar</span>
+          </label>
+        }
+      </div>
+
+      <div class="gps-toolbar__sep"></div>
+
+      <div class="gps-toolbar__grupo">
+        <button type="button" class="btn btn-sm btn-white gps-btn" [disabled]="!actual" title="Centrar el mapa en la posición" (click)="centrar()">
+          <i class="fa fa-bullseye"></i><span class="gps-btn__texto">Centrar</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-white gps-btn" [disabled]="recorrido.length < 2" title="Ver todo el recorrido" (click)="verRecorrido()">
+          <i class="fa fa-route"></i><span class="gps-btn__texto">Recorrido</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-white gps-btn" [disabled]="!actual" title="Copiar la coordenada" (click)="copiarCoordenada()">
+          <i class="fa fa-copy"></i><span class="gps-btn__texto">Copiar</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-white gps-btn" [disabled]="!actual" title="Abrir en Google Maps" (click)="abrirEnMaps()">
+          <i class="fa fa-map-location-dot"></i><span class="gps-btn__texto">Google Maps</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-white gps-btn" [disabled]="!actual" title="Compartir la ubicación" (click)="compartir()">
+          <i class="fa fa-share-nodes"></i><span class="gps-btn__texto">Compartir</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-white gps-btn" [disabled]="!actual && !error" title="Quitar la posición y el recorrido" (click)="limpiar()">
+          <i class="fa fa-eraser"></i><span class="gps-btn__texto">Limpiar</span>
+        </button>
+      </div>
+
+      <!-- Capa del mapa -->
+      <div class="btn-group gps-capas ms-auto" role="group" aria-label="Capa del mapa">
+        <button type="button" class="btn btn-xs" [ngClass]="capa === 'calles' ? 'btn-primary' : 'btn-white'" (click)="cambiarCapa('calles')" title="Mapa de calles (OpenStreetMap)">Calles</button>
+        <button type="button" class="btn btn-xs" [ngClass]="capa === 'satelite' ? 'btn-primary' : 'btn-white'" (click)="cambiarCapa('satelite')" title="Imagen de satélite">Satélite</button>
+        <button type="button" class="btn btn-xs" [ngClass]="capa === 'topo' ? 'btn-primary' : 'btn-white'" (click)="cambiarCapa('topo')" title="Mapa topográfico">Relieve</button>
+      </div>
+    </div>
+
+    <!-- Como Google Maps: panel de información a la izquierda (plegable con la
+         pestaña del borde), mapa a la derecha -->
+    <div class="gps-cuerpo" [class.is-panel-oculto]="panelOculto">
+
+    <!-- ---------- 2b. ESTADO + FICHA ---------- -->
+    <div class="gps-ficha" [attr.aria-hidden]="panelOculto">
+      <div class="gps-estado" [ngClass]="'gps-estado--' + estado">
+        <span class="gps-estado__punto"></span>
+        @switch (estado) {
+          @case ('sin') { Sin ubicación. Pulsa <b>Obtener ubicación</b> o <b>Seguir en vivo</b>. }
+          @case ('obteniendo') { Obteniendo la posición del dispositivo… }
+          @case ('ubicado') { Ubicado a las {{ actual?.fecha | date:'HH:mm:ss' }} }
+          @case ('siguiendo') { Siguiendo en vivo · {{ recorrido.length }} punto(s) · {{ distanciaTexto }} recorridos }
+        }
+        @if (!esNativo) {
+          <span class="gps-estado__nota" title="En el navegador la ubicación la da el sistema; en la app se usa el GPS del teléfono">
+            <i class="fa fa-globe"></i> navegador
+          </span>
+        }
+      </div>
+
+      @if (error) {
+        <div class="gps-error">
+          <i class="fa fa-triangle-exclamation"></i> {{ error }}
+        </div>
+      }
+
+      @if (actual) {
+        <div class="gps-datos">
+          <div class="gps-dato gps-dato--coord" title="Latitud, longitud (grados decimales) — clic para copiar" (click)="copiarCoordenada()">
+            <span class="gps-dato__etiqueta">Coordenada</span>
+            <span class="gps-dato__valor">{{ coordenadaTexto }}</span>
+            <span class="gps-dato__ayuda">{{ coordenadaGms }}</span>
+          </div>
+          <div class="gps-dato" [ngClass]="calidadPrecision ? 'gps-dato--' + calidadPrecision : ''" title="Radio dentro del que está el dispositivo con un 95 % de probabilidad">
+            <span class="gps-dato__etiqueta">Precisión</span>
+            <span class="gps-dato__valor">{{ precisionTexto }}</span>
+            <span class="gps-dato__ayuda">
+              @switch (calidadPrecision) {
+                @case ('buena') { buena }
+                @case ('regular') { regular }
+                @case ('mala') { baja (¿sin GPS?) }
+                @default { — }
+              }
+            </span>
+          </div>
+          <div class="gps-dato" title="Altitud sobre el nivel del mar (sólo con GPS)">
+            <span class="gps-dato__etiqueta">Altitud</span>
+            <span class="gps-dato__valor">{{ altitudTexto }}</span>
+          </div>
+          <div class="gps-dato" title="Velocidad de desplazamiento (sólo en movimiento)">
+            <span class="gps-dato__etiqueta">Velocidad</span>
+            <span class="gps-dato__valor">{{ velocidadTexto }}</span>
+          </div>
+          <div class="gps-dato" title="Dirección del movimiento respecto al norte">
+            <span class="gps-dato__etiqueta">Rumbo</span>
+            <span class="gps-dato__valor">{{ rumboTexto }}</span>
+          </div>
+          <div class="gps-dato gps-dato--direccion" title="Dirección aproximada (OpenStreetMap / Nominatim)">
+            <span class="gps-dato__etiqueta">Dirección</span>
+            <span class="gps-dato__valor">
+              @if (buscandoDireccion) {
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> buscando…
+              } @else {
+                {{ direccion || 'No disponible' }}
+              }
+            </span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- ---------- 2c. MAPA ---------- -->
+    <div class="gps-mapa-wrap">
+      <div #mapContainer class="gps-mapa"></div>
+
+      <!-- Pestaña para plegar / desplegar el panel (borde izquierdo del mapa) -->
+      <button type="button" class="gps-pestana"
+              [title]="panelOculto ? 'Mostrar el panel de información' : 'Ocultar el panel de información'"
+              [attr.aria-expanded]="!panelOculto"
+              (click)="alternarPanel()">
+        <i class="fa" [ngClass]="panelOculto ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+      </button>
+      @if (!actual && estado !== 'obteniendo') {
+        <div class="gps-mapa__aviso">
+          <i class="fa fa-location-dot"></i>
+          <span>El mapa se centrará en tu posición al obtenerla</span>
+        </div>
+      }
+    </div>
+
+    </div><!-- /gps-cuerpo -->
+
   </div>
-
-  <p *ngIf="error" class="error">{{ error }}</p>
-
-  <div class="mapa-wrapper">
-    <div #mapContainer class="mapa"></div>
-  </div>
-</div>
+</panel>

@@ -1,140 +1,480 @@
-import { AfterViewInit, Component, ElementRef, NgZone, ViewChild } from '@angular/core';
-import { Geolocation } from '@capacitor/geolocation';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation, type Position } from '@capacitor/geolocation';
+import { ToastrService } from 'ngx-toastr';
 import * as L from 'leaflet';
 
-// Configurar íconos por defecto de Leaflet
-const iconRetinaUrl = '/assets/leaflet/marker-icon-2x.png';
-const iconUrl = '/assets/leaflet/marker-icon.png';
-const shadowUrl = '/assets/leaflet/marker-shadow.png';
+// Íconos por defecto de Leaflet (los suyos apuntan a rutas que el bundle no sirve)
 const DefaultIcon = L.icon({
-  iconRetinaUrl,
-  iconUrl,
-  shadowUrl,
+  iconRetinaUrl: '/assets/leaflet/marker-icon-2x.png',
+  iconUrl: '/assets/leaflet/marker-icon.png',
+  shadowUrl: '/assets/leaflet/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
-L.Marker.prototype.options.icon = DefaultIcon; 
+L.Marker.prototype.options.icon = DefaultIcon;
 
+/** Una lectura del GPS, tal como la muestra la ficha y la guarda el recorrido. */
+interface Lectura {
+  lat: number;
+  lng: number;
+  /** Radio de error en metros */
+  precision: number | null;
+  altitud: number | null;
+  /** m/s */
+  velocidad: number | null;
+  /** grados desde el norte */
+  rumbo: number | null;
+  fecha: Date;
+}
 
+type Estado = 'sin' | 'obteniendo' | 'ubicado' | 'siguiendo';
+
+/**
+ * Ubicación GPS (demo).
+ *
+ * Mapa Leaflet (OpenStreetMap / satélite / topográfico) con la posición del
+ * dispositivo: obtenerla una vez o seguirla en vivo (watchPosition) dibujando
+ * el recorrido y la distancia. En el navegador usa navigator.geolocation; en
+ * la app nativa (Capacitor) el plugin de Geolocation con permisos.
+ *
+ * Muestra latitud, longitud, precisión (círculo en el mapa), altitud,
+ * velocidad, rumbo y la dirección aproximada (Nominatim, sin clave). Se puede
+ * copiar la coordenada, abrirla en Google Maps o compartirla.
+ */
 @Component({
   selector: 'app-ubicacion-gps',
   templateUrl: './ubicacion-gps.component.html',
   styleUrls: ['./ubicacion-gps.component.css'],
   standalone: false,
 })
-export class UbicacionGpsComponent implements AfterViewInit {
+export class UbicacionGpsComponent implements AfterViewInit, OnDestroy {
 
-   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef<HTMLDivElement>;
 
-  latitud: number | null = null;
-  longitud: number | null = null;
-  cargando = false;
+  // ---------- Estado ----------
+  estado: Estado = 'sin';
   error: string | null = null;
+  actual: Lectura | null = null;
+  /** Dirección aproximada de la última lectura (Nominatim) */
+  direccion: string | null = null;
+  buscandoDireccion = false;
+  /** Puntos del recorrido mientras se sigue en vivo */
+  recorrido: Lectura[] = [];
+  /** Metros recorridos (suma de tramos) */
+  distancia = 0;
+  /** Centrar el mapa en cada lectura nueva mientras se sigue */
+  seguirCentrado = true;
+  capa: 'calles' | 'satelite' | 'topo' = 'calles';
+  esNativo = Capacitor.isNativePlatform();
+  /** Panel de información plegado (pestaña en el borde, como Google Maps); se recuerda por navegador. */
+  panelOculto = this.leerPanelOculto();
+  private readonly CLAVE_PANEL = 'miCRM3.gps.panelOculto';
+
+  // ---------- Mapa ----------
   private mapa: L.Map | null = null;
   private marcador: L.Marker | null = null;
-  
-  
+  private circulo: L.Circle | null = null;
+  private linea: L.Polyline | null = null;
+  private capas: Record<string, L.TileLayer> = {};
+  private idWatchNavegador: number | null = null;
+  private idWatchNativo: string | null = null;
+  private timeouts = new Set<any>();
 
-  constructor(private zone: NgZone) {}
+  constructor(
+    private zone: NgZone,
+    private _toastr: ToastrService,
+  ) {}
 
-  ngAfterViewInit() {
-    // Esperar a que el contenedor tenga tamaño real
-    setTimeout(() => this.inicializarMapa(), 700);
+  ngAfterViewInit(): void {
+    // El contenedor necesita su tamaño real (el panel se pinta después)
+    this.programar(() => this.inicializarMapa(), 300);
   }
 
-  private inicializarMapa() {
+  ngOnDestroy(): void {
+    this.detenerSeguimiento();
+    this.timeouts.forEach(t => clearTimeout(t));
+    this.mapa?.remove();
+    this.mapa = null;
+  }
 
-navigator.geolocation.getCurrentPosition(
-  pos => console.log(pos.coords.latitude, pos.coords.longitude),
-  err => console.error(err)
-);
+  private programar(fn: () => void, ms: number): void {
+    const id = setTimeout(() => { this.timeouts.delete(id); fn(); }, ms);
+    this.timeouts.add(id);
+  }
 
+  @HostListener('window:resize')
+  onResize(): void { this.mapa?.invalidateSize(); }
 
+  /** El panel se expande / recarga: el mapa recalcula su tamaño */
+  ajustarMapa(): void { this.programar(() => this.mapa?.invalidateSize(true), 350); }
 
-    const container = this.mapContainer.nativeElement;
+  /** Pliega / despliega el panel de información; el mapa ocupa el hueco (la transición dura 250 ms). */
+  alternarPanel(): void {
+    this.panelOculto = !this.panelOculto;
+    try { localStorage.setItem(this.CLAVE_PANEL, this.panelOculto ? '1' : '0'); } catch { /* sin storage */ }
+    this.programar(() => this.mapa?.invalidateSize(true), 300);
+  }
 
-    // Si ya existe un mapa, lo removemos (soluciona render doble)
-    if (this.mapa) {
-      this.mapa.remove();
-    }
+  private leerPanelOculto(): boolean {
+    try { return localStorage.getItem('miCRM3.gps.panelOculto') === '1'; } catch { return false; }
+  }
 
-    this.mapa = L.map(container, {
-      center: [0, 0],
-      zoom: 2,
+  // ================================================================
+  // MAPA
+  // ================================================================
+
+  private inicializarMapa(): void {
+    if (this.mapa) { this.mapa.remove(); }
+
+    this.capas = {
+      calles: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '© OpenStreetMap',
+      }),
+      satelite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19, attribution: '© Esri, Maxar, Earthstar Geographics',
+      }),
+      topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17, attribution: '© OpenTopoMap (CC-BY-SA)',
+      }),
+    };
+
+    this.mapa = L.map(this.mapContainer.nativeElement, {
+      center: [-1.8312, -78.1834],   // Ecuador, hasta que haya una lectura
+      zoom: 6,
       zoomControl: true,
-      attributionControl: true
+      attributionControl: true,
+      layers: [this.capas[this.capa]],
     });
+    L.control.scale({ metric: true, imperial: false }).addTo(this.mapa);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(this.mapa);
-
-    // 🔧 Recalcular tamaño real después de render
-    setTimeout(() => this.mapa?.invalidateSize(true), 1000);
+    this.programar(() => this.mapa?.invalidateSize(true), 400);
   }
 
-
-
-
-async obtenerUbicacion() {
-  if (window.navigator && window.navigator.geolocation) {
-    // ⚡ navegador
-    window.navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        this.latitud = pos.coords.latitude;
-        this.longitud = pos.coords.longitude;
-        this.actualizarMapa(this.latitud, this.longitud);
-      },
-      (err) => {
-        this.error = 'No se pudo obtener la ubicación en el navegador.';
-        console.error(err);
-      },
-      { enableHighAccuracy: true }
-    );
-  } else {
-
-    this.cargando = true;
-    this.error = null;
-
-    try {
-      await Geolocation.requestPermissions();
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true
-      });
-
-      this.latitud = position.coords.latitude;
-      this.longitud = position.coords.longitude;
-
-      this.actualizarMapa(this.latitud, this.longitud);
-
-    } catch (err: any) {
-      console.error('Error al obtener ubicación', err);
-      this.error = 'No se pudo obtener la ubicación. Activa el GPS y permite el acceso.';
-    } finally {
-      this.cargando = false;
-    }
-
-
+  cambiarCapa(capa: 'calles' | 'satelite' | 'topo'): void {
+    if (!this.mapa || capa === this.capa) { return; }
+    this.mapa.removeLayer(this.capas[this.capa]);
+    this.capas[capa].addTo(this.mapa);
+    this.capa = capa;
   }
-}
 
-
-  private actualizarMapa(lat: number, lng: number) {
-    if (!this.mapa) return;
-
-    this.mapa.setView([lat, lng], 15);
+  private pintar(l: Lectura): void {
+    if (!this.mapa) { return; }
+    const punto: L.LatLngExpression = [l.lat, l.lng];
 
     if (this.marcador) {
-      this.marcador.setLatLng([lat, lng]);
+      this.marcador.setLatLng(punto);
     } else {
-      this.marcador = L.marker([lat, lng]).addTo(this.mapa)
-        .bindPopup(`📍 Lat: ${lat.toFixed(5)}<br>Lng: ${lng.toFixed(5)}`)
-        .openPopup();
+      this.marcador = L.marker(punto).addTo(this.mapa);
+    }
+    this.marcador.bindPopup(this.popupHtml(l));
+
+    // Círculo de precisión
+    if (l.precision) {
+      if (this.circulo) {
+        this.circulo.setLatLng(punto).setRadius(l.precision);
+      } else {
+        this.circulo = L.circle(punto, {
+          radius: l.precision, color: '#00acac', weight: 1, fillColor: '#00acac', fillOpacity: .12,
+        }).addTo(this.mapa);
+      }
     }
 
-    // Recalcula el tamaño final del mapa después de reposicionar
-    setTimeout(() => this.mapa?.invalidateSize(true), 500);
+    // Recorrido (sólo al seguir)
+    if (this.estado === 'siguiendo' && this.recorrido.length > 1) {
+      const puntos = this.recorrido.map(p => [p.lat, p.lng] as L.LatLngExpression);
+      if (this.linea) { this.linea.setLatLngs(puntos); }
+      else { this.linea = L.polyline(puntos, { color: '#348fe2', weight: 4, opacity: .8 }).addTo(this.mapa); }
+    }
+
+    if (this.estado !== 'siguiendo' || this.seguirCentrado) {
+      const zoom = Math.max(this.mapa.getZoom(), this.zoomPorPrecision(l.precision));
+      this.mapa.setView(punto, zoom, { animate: true });
+    }
+    if (this.estado !== 'siguiendo') { this.marcador.openPopup(); }
+  }
+
+  /** Cuanto más precisa la lectura, más cerca se mira. */
+  private zoomPorPrecision(precision: number | null): number {
+    if (!precision) { return 15; }
+    if (precision < 30) { return 18; }
+    if (precision < 150) { return 16; }
+    if (precision < 1000) { return 14; }
+    return 12;
+  }
+
+  private popupHtml(l: Lectura): string {
+    return `<div class="gps-popup">
+      <b>📍 ${l.lat.toFixed(6)}, ${l.lng.toFixed(6)}</b><br>
+      ${l.precision ? `Precisión ± ${Math.round(l.precision)} m<br>` : ''}
+      <small>${l.fecha.toLocaleTimeString()}</small>
+    </div>`;
+  }
+
+  centrar(): void {
+    if (!this.actual || !this.mapa) { return; }
+    this.mapa.setView([this.actual.lat, this.actual.lng], Math.max(this.mapa.getZoom(), 16), { animate: true });
+    this.marcador?.openPopup();
+  }
+
+  /** Encuadra todo el recorrido */
+  verRecorrido(): void {
+    if (!this.mapa || this.recorrido.length < 2) { return; }
+    this.mapa.fitBounds(L.latLngBounds(this.recorrido.map(p => [p.lat, p.lng] as L.LatLngExpression)), { padding: [30, 30] });
+  }
+
+  // ================================================================
+  // GPS
+  // ================================================================
+
+  private aLectura(pos: GeolocationPosition | Position): Lectura {
+    const c = pos.coords;
+    return {
+      lat: c.latitude,
+      lng: c.longitude,
+      precision: c.accuracy ?? null,
+      altitud: c.altitude ?? null,
+      velocidad: c.speed ?? null,
+      rumbo: c.heading ?? null,
+      fecha: new Date(pos.timestamp),
+    };
+  }
+
+  /** Una lectura, y a pintarla (y a buscar la dirección si se movió). */
+  private recibir(pos: GeolocationPosition | Position): void {
+    this.zone.run(() => {
+      const l = this.aLectura(pos);
+      const anterior = this.actual;
+      this.actual = l;
+      this.error = null;
+      if (this.estado === 'siguiendo') {
+        // Sólo se suma si se movió más que el error de la lectura (evita "temblor")
+        const ultimo = this.recorrido[this.recorrido.length - 1];
+        if (!ultimo || this.distanciaM(ultimo, l) > Math.min(l.precision ?? 10, 25)) {
+          if (ultimo) { this.distancia += this.distanciaM(ultimo, l); }
+          this.recorrido.push(l);
+        }
+      } else {
+        this.estado = 'ubicado';
+      }
+      this.pintar(l);
+      // Dirección: sólo si es la primera o se movió > 50 m (Nominatim pide moderación)
+      if (!anterior || this.distanciaM(anterior, l) > 50) { this.buscarDireccion(l); }
+    });
+  }
+
+  private fallo(err: any): void {
+    this.zone.run(() => {
+      console.error('Error de geolocalización:', err);
+      const codigo = err?.code;
+      const msg = String(err?.message ?? '').toLowerCase();
+      if (codigo === 1 || msg.includes('denied') || msg.includes('permission')) {
+        this.error = 'Permiso denegado. Permite el acceso a la ubicación en el navegador o en los ajustes del dispositivo.';
+      } else if (codigo === 2 || msg.includes('unavailable')) {
+        this.error = 'Ubicación no disponible. Activa el GPS o la ubicación del dispositivo e inténtalo de nuevo.';
+      } else if (codigo === 3 || msg.includes('timeout')) {
+        this.error = 'Se agotó el tiempo de espera. Prueba al aire libre o con el GPS activado.';
+      } else if (!window.isSecureContext) {
+        this.error = 'El navegador sólo da la ubicación en páginas seguras (https o localhost).';
+      } else {
+        this.error = 'No se pudo obtener la ubicación.';
+      }
+      if (this.estado === 'obteniendo') { this.estado = this.actual ? 'ubicado' : 'sin'; }
+      if (this.estado === 'siguiendo') {
+        // Siguiendo: un fallo puntual (sin señal, tiempo agotado) no corta el
+        // seguimiento, el GPS vuelve a dar lecturas; sólo el permiso denegado lo para.
+        if (codigo === 1) { this.detenerSeguimiento(); this._toastr.error(this.error, 'Ubicación'); }
+        else { this._toastr.warning(this.error, 'Ubicación', { timeOut: 3000 }); }
+        return;
+      }
+      this._toastr.error(this.error, 'Ubicación');
+    });
+  }
+
+  /** Una sola lectura. */
+  async obtenerUbicacion(): Promise<void> {
+    if (this.estado === 'obteniendo') { return; }
+    if (this.estado === 'siguiendo') { this.detenerSeguimiento(); }
+    this.estado = 'obteniendo';
+    this.error = null;
+
+    const opciones = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+    if (this.esNativo) {
+      try {
+        await Geolocation.requestPermissions();
+        this.recibir(await Geolocation.getCurrentPosition(opciones));
+      } catch (e) { this.fallo(e); }
+      return;
+    }
+    if (!navigator.geolocation) {
+      this.fallo({ message: 'unavailable' });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(p => this.recibir(p), e => this.fallo(e), opciones);
+  }
+
+  /** Seguimiento en vivo: cada lectura nueva mueve el marcador y alarga el recorrido. */
+  async iniciarSeguimiento(): Promise<void> {
+    if (this.estado === 'siguiendo') { return; }
+    this.estado = 'siguiendo';
+    this.error = null;
+    this.recorrido = this.actual ? [this.actual] : [];
+    this.distancia = 0;
+    if (this.linea) { this.mapa?.removeLayer(this.linea); this.linea = null; }
+
+    const opciones = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
+    if (this.esNativo) {
+      try {
+        await Geolocation.requestPermissions();
+        this.idWatchNativo = await Geolocation.watchPosition(opciones, (pos, err) => {
+          if (err) { this.fallo(err); } else if (pos) { this.recibir(pos); }
+        });
+      } catch (e) { this.fallo(e); }
+      return;
+    }
+    if (!navigator.geolocation) { this.fallo({ message: 'unavailable' }); return; }
+    this.idWatchNavegador = navigator.geolocation.watchPosition(p => this.recibir(p), e => this.fallo(e), opciones);
+    this._toastr.info('Siguiendo tu ubicación en vivo', 'Ubicación', { timeOut: 2500 });
+  }
+
+  detenerSeguimiento(): void {
+    if (this.idWatchNavegador !== null) {
+      navigator.geolocation.clearWatch(this.idWatchNavegador);
+      this.idWatchNavegador = null;
+    }
+    if (this.idWatchNativo !== null) {
+      Geolocation.clearWatch({ id: this.idWatchNativo }).catch(() => { /* ya cerrado */ });
+      this.idWatchNativo = null;
+    }
+    if (this.estado === 'siguiendo') { this.estado = this.actual ? 'ubicado' : 'sin'; }
+  }
+
+  alternarSeguimiento(): void {
+    if (this.estado === 'siguiendo') { this.detenerSeguimiento(); } else { this.iniciarSeguimiento(); }
+  }
+
+  limpiar(): void {
+    this.detenerSeguimiento();
+    this.actual = null;
+    this.direccion = null;
+    this.error = null;
+    this.recorrido = [];
+    this.distancia = 0;
+    this.estado = 'sin';
+    [this.marcador, this.circulo, this.linea].forEach(c => c && this.mapa?.removeLayer(c));
+    this.marcador = this.circulo = this.linea = null;
+  }
+
+  // ================================================================
+  // DIRECCIÓN (Nominatim, sin clave), COPIAR, ABRIR, COMPARTIR
+  // ================================================================
+
+  private async buscarDireccion(l: Lectura): Promise<void> {
+    this.buscandoDireccion = true;
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${l.lat}&lon=${l.lng}&accept-language=es`, {
+        headers: { 'Accept': 'application/json' },
+      });
+      const j = await r.json();
+      this.zone.run(() => { this.direccion = j?.display_name ?? null; });
+    } catch {
+      this.zone.run(() => { this.direccion = null; });   // sin internet o bloqueado: no pasa nada
+    } finally {
+      this.zone.run(() => { this.buscandoDireccion = false; });
+    }
+  }
+
+  get coordenadaTexto(): string {
+    return this.actual ? `${this.actual.lat.toFixed(6)}, ${this.actual.lng.toFixed(6)}` : '';
+  }
+
+  get urlGoogleMaps(): string {
+    return this.actual ? `https://www.google.com/maps?q=${this.actual.lat},${this.actual.lng}` : '';
+  }
+
+  async copiarCoordenada(): Promise<void> {
+    if (!this.actual) { return; }
+    try {
+      await navigator.clipboard.writeText(this.coordenadaTexto);
+      this._toastr.success('Coordenada copiada al portapapeles', 'Ubicación', { timeOut: 2000 });
+    } catch {
+      this._toastr.warning('No se pudo copiar; selecciona el texto y cópialo a mano', 'Ubicación');
+    }
+  }
+
+  abrirEnMaps(): void {
+    if (this.actual) { window.open(this.urlGoogleMaps, '_blank', 'noopener'); }
+  }
+
+  async compartir(): Promise<void> {
+    if (!this.actual) { return; }
+    const texto = `Mi ubicación: ${this.coordenadaTexto}${this.direccion ? ' — ' + this.direccion : ''}`;
+    const nav: any = navigator;
+    if (nav.share) {
+      try { await nav.share({ title: 'Mi ubicación', text: texto, url: this.urlGoogleMaps }); } catch { /* cancelado */ }
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(texto + ' ' + this.urlGoogleMaps)}`, '_blank', 'noopener');
+    }
+  }
+
+  // ================================================================
+  // UTILIDADES DE PRESENTACIÓN
+  // ================================================================
+
+  /** Distancia en metros entre dos lecturas (haversine). */
+  private distanciaM(a: Lectura, b: Lectura): number {
+    const R = 6371000;
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+
+  get distanciaTexto(): string {
+    return this.distancia >= 1000 ? `${(this.distancia / 1000).toFixed(2)} km` : `${Math.round(this.distancia)} m`;
+  }
+
+  get velocidadTexto(): string {
+    const v = this.actual?.velocidad;
+    return v === null || v === undefined || isNaN(v) ? '—' : `${(v * 3.6).toFixed(1)} km/h`;
+  }
+
+  get rumboTexto(): string {
+    const r = this.actual?.rumbo;
+    if (r === null || r === undefined || isNaN(r)) { return '—'; }
+    const puntos = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+    return `${Math.round(r)}° ${puntos[Math.round(r / 45) % 8]}`;
+  }
+
+  get precisionTexto(): string {
+    const p = this.actual?.precision;
+    return p ? `± ${Math.round(p)} m` : '—';
+  }
+
+  /** Semáforo de la precisión: buena < 30 m, regular < 150 m, mala el resto */
+  get calidadPrecision(): 'buena' | 'regular' | 'mala' | '' {
+    const p = this.actual?.precision;
+    if (!p) { return ''; }
+    return p < 30 ? 'buena' : (p < 150 ? 'regular' : 'mala');
+  }
+
+  get altitudTexto(): string {
+    const a = this.actual?.altitud;
+    return a === null || a === undefined || isNaN(a) ? '—' : `${Math.round(a)} m`;
+  }
+
+  /** Coordenada en grados, minutos y segundos (para quien la prefiera así). */
+  get coordenadaGms(): string {
+    if (!this.actual) { return ''; }
+    const gms = (v: number, pos: string, neg: string) => {
+      const abs = Math.abs(v);
+      const g = Math.floor(abs);
+      const m = Math.floor((abs - g) * 60);
+      const s = ((abs - g - m / 60) * 3600).toFixed(1);
+      return `${g}° ${m}' ${s}" ${v >= 0 ? pos : neg}`;
+    };
+    return `${gms(this.actual.lat, 'N', 'S')}  ${gms(this.actual.lng, 'E', 'O')}`;
   }
 }
