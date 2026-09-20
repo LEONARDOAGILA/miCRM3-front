@@ -251,7 +251,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     private _loadingService: LoadingService,
     public _appAgGridService: AppAgGridService,
     private _route: ActivatedRoute,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private host: ElementRef<HTMLElement>,
   ) {
     // Pantalla a altura completa: el panel llena el hueco y el scroll lo
     // hacen el árbol y la grilla, no la página.
@@ -2155,10 +2156,28 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     ruta.slice(0, -1).forEach(n => n.isOpen = true);
   }
 
+  /**
+   * Marca el elemento en el árbol y lo deja a la vista: abre las carpetas
+   * que lo contienen y desplaza el árbol hasta él (como el Explorador de
+   * Windows al pulsar un archivo en la lista).
+   */
   private marcarEnArbol(node: FileTreeNode): void {
     this.desmarcarTodo(this.nodes);
     const enArbol = this.buscarPorId(this.nodes, node.id);
-    if (enArbol) { enArbol.isSelected = true; }
+    if (!enArbol) { return; }
+    enArbol.isSelected = true;
+    this.abrirAncestros(enArbol);
+    // Ya pintado (las ramas recién abiertas aún no están en el DOM): scroll hasta el nodo
+    setTimeout(() => {
+      const el = this.host.nativeElement.querySelector('.archivos-arbol .file-link.selected') as HTMLElement | null;
+      if (!el) { return; }
+      // Sólo en vertical: scrollIntoView también desplazaba a la derecha para
+      // ver el nombre entero y se perdía el principio del árbol (sangría y +/-).
+      const viewport = el.closest('ng-scrollbar') as HTMLElement | null;
+      const scrollLeft = viewport?.scrollLeft ?? 0;
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      if (viewport) { viewport.scrollLeft = scrollLeft; }
+    });
   }
 
   private desmarcarTodo(nodes: FileTreeNode[]): void {

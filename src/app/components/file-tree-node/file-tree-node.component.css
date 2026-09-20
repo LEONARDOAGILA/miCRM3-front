@@ -73,10 +73,11 @@
   font-size: 13px;
 }
 
+/* El nombre no se recorta: el árbol crece a lo ancho y quien lo contiene
+   (ng-scrollbar) pone la barra horizontal, como el Explorador de Windows.
+   Antes iba con ellipsis y nunca había nada que desplazar. */
 .file-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 

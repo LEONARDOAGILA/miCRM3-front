@@ -20,7 +20,7 @@ import { FloatSubMenuComponent }           from './components/float-sub-menu/flo
 import { ThemePanelComponent }             from './components/theme-panel/theme-panel.component';
 
 // Component Module
-import { NgScrollbarModule, NG_SCROLLBAR_OPTIONS } from 'ngx-scrollbar';
+import { NgScrollbarModule, provideScrollbarOptions } from 'ngx-scrollbar';
 import { PanelModule } from './components/panel/panel.module';
 import { ToastrModule } from 'ngx-toastr';
 import { LoadingBarModule } from '@ngx-loading-bar/core';
@@ -71,12 +71,15 @@ registerLocaleData(localeEs, 'es');
       provide: LOCALE_ID,
       useValue: 'es' // Configurar idioma español por defecto
     },
-    {
-      provide: NG_SCROLLBAR_OPTIONS,
-      useValue: {
-        visibility: 'hover'
-      }
-    },
+    // provideScrollbarOptions MEZCLA con los valores por defecto de la librería.
+    // Antes se daba NG_SCROLLBAR_OPTIONS con useValue: { visibility } a secas, y
+    // eso SUSTITUÍA todos los defaults: sin `orientation` ngx-scrollbar no
+    // pintaba ninguna barra (ni vertical ni horizontal) en toda la aplicación.
+    provideScrollbarOptions({
+      orientation: 'auto',     // vertical y horizontal según haga falta
+      appearance: 'compact',   // la barra flota sobre el contenido, no le quita sitio
+      visibility: 'hover',     // se ve al pasar el ratón (y siempre en táctil)
+    }),
     provideHighlightOptions({
       fullLibraryLoader: () => import('highlight.js'),
       lineNumbersLoader: () => import('ngx-highlightjs/line-numbers'),
