@@ -50,20 +50,26 @@
 }
 
 /* ---------- Cuerpo ---------- */
+/* Alto fijo: así el panel de la izquierda se desplaza por dentro en vez de
+   estirar la página, y el mapa siempre queda a la vista */
 .gm-cuerpo {
   display: flex;
   align-items: stretch;
-  min-height: clamp(360px, calc(100vh - 235px), 900px);
+  height: clamp(360px, calc(100vh - 235px), 900px);
 }
 
 .gm-ficha {
   flex: 0 0 340px;
   max-width: 340px;
+  min-height: 0;
   padding: .75rem;
   border-right: 1px solid var(--bs-border-color, #dee2e6);
   background-color: var(--bs-component-bg, #fff);
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .28) transparent;
   transition: flex-basis .25s ease, max-width .25s ease, padding .25s ease, opacity .2s ease;
 }
 
@@ -109,12 +115,13 @@
   opacity: .35;
 }
 
-/* Pestaña para plegar el panel (borde izquierdo del mapa) */
+/* Pestaña para plegar el panel (borde izquierdo del mapa).
+   Va pegada (sticky) a media pantalla: aunque el panel sea largo o la página
+   esté desplazada, la pestaña sigue a la vista sin salirse del mapa. */
 .gm-pestana {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  position: sticky;
+  float: left;
+  top: calc(50vh - 26px);
   z-index: 5;
   width: 22px;
   height: 52px;
@@ -303,12 +310,11 @@
   color: var(--bs-secondary-color, #6c757d);
 }
 
-.gm-lugar__coord {
+.gm-lugar__distancia {
   margin-top: .15rem;
   font-size: 10.5px;
   color: var(--bs-secondary-color, #6c757d);
   font-variant-numeric: tabular-nums;
-  cursor: copy;
 }
 
 .gm-acciones {
@@ -355,6 +361,7 @@
 
   .gm-cuerpo {
     flex-direction: column;
+    height: auto;
     min-height: 0;
   }
 
@@ -378,7 +385,10 @@
     height: clamp(280px, 55vh, 520px);
   }
 
+  /* En móvil el panel va arriba del mapa: la pestaña vuelve a su sitio, girada */
   .gm-pestana {
+    position: absolute;
+    float: none;
     left: 50%;
     top: 0;
     transform: translateX(-50%) rotate(90deg);
@@ -392,4 +402,364 @@
   justify-content: flex-end;
   width: 100%;
   margin: -20px 0 0;
+}
+
+/* ---------- Compartir ---------- */
+.gm-compartir {
+  margin-top: .75rem;
+  padding: .55rem .6rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+}
+
+.gm-compartir__titulo {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .45rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-compartir__titulo i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gm-compartir__tipos {
+  display: flex;
+  width: 100%;
+  margin-bottom: .45rem;
+}
+
+.gm-compartir__tipos .btn {
+  flex: 1 1 0;
+  padding: .15rem .25rem;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.gm-compartir__caja {
+  display: flex;
+  align-items: stretch;
+  gap: .35rem;
+}
+
+.gm-compartir__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 10.5px;
+  line-height: 1.45;
+  background-color: var(--bs-component-bg, #fff);
+  cursor: text;
+}
+
+textarea.gm-compartir__texto {
+  resize: vertical;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.gm-compartir__copiar {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.gm-compartir__pie {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-top: .35rem;
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-compartir__probar {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  text-decoration: none;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gm-compartir__probar:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Coordenadas (misma caja que los enlaces) ---------- */
+.gm-dato {
+  margin-top: .5rem;
+  padding: .55rem .6rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+}
+
+.gm-dato__titulo {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .45rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-dato__titulo i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gm-dato__caja {
+  display: flex;
+  align-items: stretch;
+  gap: .35rem;
+}
+
+.gm-dato__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  background-color: var(--bs-component-bg, #fff);
+  cursor: text;
+}
+
+.gm-dato__copiar {
+  flex: 0 0 auto;
+}
+
+/* En columna: el panel es estrecho y los seis decimales no entran de lado a lado */
+.gm-dato__partes {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  margin-top: .35rem;
+}
+
+.gm-dato__parte {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: .25rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.gm-dato__parte > span {
+  flex: 0 0 58px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-dato__parte .btn {
+  flex: 0 0 auto;
+  padding: .15rem .35rem;
+}
+
+
+/* ---------- Ficha del marcador (InfoWindow de Google) ----------
+   El contenido lo inyectamos con setContent(), así que no lleva los atributos
+   de Angular: hay que llegar a él con ::ng-deep. En modo oscuro la burbuja de
+   Google sigue siendo blanca y el texto heredaba el color claro del sistema,
+   por eso no se leía. */
+:host ::ng-deep .gm-info {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #202124;
+}
+
+:host ::ng-deep .gm-info small {
+  color: #5f6368;
+  font-variant-numeric: tabular-nums;
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-c,
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-d,
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-tc::after {
+  background-color: #2b3035;
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-c {
+  box-shadow: 0 2px 7px 1px rgba(0, 0, 0, .5);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-info {
+  color: #e9ecef;
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-info small {
+  color: #adb5bd;
+}
+
+/* La «x» de cerrar es un icono pintado con background-color */
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-c button.gm-ui-hover-effect > span {
+  background-color: #adb5bd;
+}
+
+/* Las barras de desplazamiento de la ficha: en oscuro el carril blanco de
+   Google se veía como dos franjas claras al borde de la burbuja */
+:host ::ng-deep .gm-style .gm-style-iw-d {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, .25) transparent;
+}
+
+:host ::ng-deep .gm-style .gm-style-iw-d::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+:host ::ng-deep .gm-style .gm-style-iw-d::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:host ::ng-deep .gm-style .gm-style-iw-d::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .25);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-d {
+  scrollbar-color: rgba(255, 255, 255, .28) transparent;
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-d::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .28);
+}
+
+/* ---------- Capturas del mapa ---------- */
+.gm-capturas {
+  margin-top: .75rem;
+  padding: .55rem .6rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+}
+
+.gm-capturas__titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4rem;
+  margin-bottom: .45rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-capturas__titulo i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gm-capturas__titulo .btn i {
+  color: var(--bs-danger, #dc3545);
+}
+
+.gm-captura + .gm-captura {
+  margin-top: .5rem;
+}
+
+.gm-captura__img {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  cursor: zoom-in;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.gm-captura__pie {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin-top: .3rem;
+}
+
+.gm-captura__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.gm-captura__nombre {
+  overflow: hidden;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--bs-body-color, #212529);
+}
+
+.gm-captura__detalle {
+  font-size: 10px;
+  color: var(--bs-secondary-color, #6c757d);
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-captura__acciones {
+  display: flex;
+  flex: 0 0 auto;
+  gap: .2rem;
+}
+
+.gm-captura__fallo {
+  display: flex;
+  align-items: flex-start;
+  gap: .45rem;
+  padding: .5rem .55rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .10);
+}
+
+.gm-captura__fallo i {
+  margin-top: 2px;
+  color: var(--bs-warning, #ffc107);
+}
+
+/* Etiqueta de dónde salió la captura (Google factura, pantalla no) */
+.gm-captura__origen {
+  display: inline-block;
+  margin-left: .25rem;
+  padding: 0 .3rem;
+  border-radius: 999px;
+  font-size: 9px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-body-color, #212529);
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .25);
+}
+
+.gm-captura__origen.is-pantalla {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .22);
+}
+
+/* Barra de desplazamiento del panel, discreta como la del resto del sistema */
+.gm-ficha::-webkit-scrollbar {
+  width: 8px;
+}
+
+.gm-ficha::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gm-ficha::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(var(--bs-body-color-rgb, 33, 37, 41), .28);
+}
+
+.gm-ficha::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--bs-body-color-rgb, 33, 37, 41), .45);
 }
