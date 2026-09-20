@@ -9,6 +9,8 @@ import { HomeComponent } from './pages/home/home.component';
 import { AllCargosComponent } from './pages/cargos/allCargos/allCargos.component';
 import { AllDepartamentosComponent } from './pages/departamentos/allDepartamentos/allDepartamentos.component';
 import { AllEmpleadosComponent } from './pages/empleados/allEmpleados/allEmpleados.component';
+import { AllMarcacionesComponent } from './pages/marcaciones/allMarcaciones/allMarcaciones.component';
+import { KioscoMarcacionComponent } from './pages/marcaciones/kiosco/kioscoMarcacion.component';
 
 const routes: Routes = [
 {
@@ -19,6 +21,8 @@ const routes: Routes = [
         { path: 'allCargos', component: AllCargosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'allDepartamentos', component: AllDepartamentosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'allEmpleados', component: AllEmpleadosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        { path: 'allMarcaciones', component: AllMarcacionesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        { path: 'kioscoMarcacion', component: KioscoMarcacionComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         { path: 'home-rh', component: HomeComponent, data: { title: 'Recursos Humanos' }, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
         { path: '**', component: ErrorPage },

@@ -1,0 +1,64 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg" role="alertdialog" aria-labelledby="eliminarMarcacionTitulo">
+
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarMarcacionTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button" class="btn-close btn-close-white" aria-label="Cerrar" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i></div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar esta marcación?</h6>
+        <p class="eliminar-aviso__texto">
+          Esta acción no se puede deshacer y afectará al cálculo de horas del día.
+          Si sólo hay que corregir la hora o el tipo, use <b>Corregir marcación</b>. El historial de auditoría se conserva.
+        </p>
+      </div>
+    </div>
+
+    <div class="list-group list-group-flush eliminar-datos">
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-user fa-fw me-1"></i>Empleado</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.empleado }}</span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-calendar fa-fw me-1"></i>Fecha y hora</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.fecha }} {{ registro_selected?.hora }}</span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-right-to-bracket fa-fw me-1"></i>Tipo</span>
+        <span class="badge fs-10px" [ngClass]="registro_selected?.tipo === 'ENTRADA' ? 'bg-teal' : 'bg-danger'">
+          {{ registro_selected?.tipo }}
+        </span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-camera fa-fw me-1"></i>Origen</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.origen }}</span>
+      </div>
+    </div>
+
+    @if (fotoUrl; as url) {
+      <div class="text-center mt-2">
+        <img [src]="url" alt="Foto de la marcación" class="eliminar-foto" onerror="this.style.display='none'">
+      </div>
+    }
+  </div>
+
+  <div class="modal-footer eliminar-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1"></i>Cancelar
+    </button>
+    <button type="button" class="btn btn-danger" [disabled]="isLoading" (click)="deleteMarcacion()">
+      <i class="fa fa-trash fa-fw me-1"></i>Sí, eliminar
+    </button>
+  </div>
+</div>

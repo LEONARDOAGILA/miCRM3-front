@@ -1,4 +1,270 @@
-<div class="video-container" style="position: relative; width: 320px; height: 240px;">
-  <video #video width="320" height="240" autoplay muted playsinline></video>
-  <canvas #canvas width="320" height="240" style="position: absolute; top: 0; left: 0;"></canvas>
-</div>
+<!-- ============================================================
+     MARCACIÓN DE EMPLEADOS POR RECONOCIMIENTO FACIAL (demo)
+       1. Miga de pan
+       2. <panel>
+          2a. Barra: cámara, modo, captura de rostro, exportar
+          2b. Izquierda: cámara en vivo con las cajas de los rostros
+          2c. Derecha: ajustes, rostros registrados y marcaciones del día
+     ============================================================ -->
+
+<ol class="breadcrumb rostro-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/demo/home-demo">Demo</a></li>
+  <li class="breadcrumb-item active">Marcación facial</li>
+</ol>
+
+<panel
+  title="Marcación de empleados (reconocimiento facial)"
+  [noButton]="false"
+  [noButtonReload]="true"
+  [noButtonCollapse]="true"
+  [closeRoute]="'/demo/home-demo'"
+  icono="usuarios"
+  bodyClass="p-0"
+  panelClass="mb-0">
+
+  <div class="rostro">
+
+    <!-- ---------- 2a. BARRA ---------- -->
+    <div class="rostro-toolbar">
+      <div class="rostro-toolbar__grupo">
+        <button type="button" class="btn btn-sm rostro-btn"
+                [ngClass]="camaraEncendida ? 'btn-danger' : 'btn-primary'"
+                [disabled]="estado !== 'listo'"
+                [title]="camaraEncendida ? 'Apagar la cámara' : 'Encender la cámara'"
+                (click)="alternarCamara()">
+          <i class="fa" [ngClass]="camaraEncendida ? 'fa-video-slash' : 'fa-video'"></i>
+          <span class="rostro-btn__texto">{{ camaraEncendida ? 'Apagar cámara' : 'Encender cámara' }}</span>
+        </button>
+
+        @if (camaras.length > 1) {
+          <select class="form-select form-select-sm rostro-select" [(ngModel)]="camaraId" (change)="cambiarCamara()" title="Elegir cámara">
+            @for (c of camaras; track c.deviceId; let i = $index) {
+              <option [value]="c.deviceId">{{ c.label || 'Cámara ' + (i + 1) }}</option>
+            }
+          </select>
+        }
+
+        <label class="rostro-switch" title="Ver la imagen como en un espejo">
+          <input type="checkbox" class="form-check-input" [(ngModel)]="espejo">
+          <span>Espejo</span>
+        </label>
+      </div>
+
+      <div class="rostro-toolbar__sep"></div>
+
+      <div class="btn-group rostro-modos" role="group" aria-label="Modo">
+        <button type="button" class="btn btn-sm" [ngClass]="modo === 'marcacion' ? 'btn-primary' : 'btn-white'"
+                title="Reconocer y registrar entradas / salidas" (click)="modo = 'marcacion'">
+          <i class="fa fa-fingerprint me-1"></i>Marcación
+        </button>
+        <button type="button" class="btn btn-sm" [ngClass]="modo === 'deteccion' ? 'btn-primary' : 'btn-white'"
+                title="Sólo detectar rostros, sin registrar nada" (click)="modo = 'deteccion'">
+          <i class="fa fa-eye me-1"></i>Sólo detectar
+        </button>
+      </div>
+
+      <div class="rostro-toolbar__estado ms-auto">
+        <span class="rostro-punto" [ngClass]="{ 'is-on': camaraEncendida && estado === 'listo' }"></span>
+        {{ textoEstado }}
+        @if (camaraEncendida) { <span class="rostro-fps" title="Fotogramas por segundo">{{ fps }} fps</span> }
+      </div>
+    </div>
+
+    <div class="rostro-cuerpo">
+
+      <!-- ---------- 2b. CÁMARA ---------- -->
+      <div class="rostro-video-col">
+        <div class="rostro-video" [class.is-espejo]="espejo">
+          <video #video autoplay muted playsinline></video>
+          <canvas #canvas></canvas>
+
+          @if (estado === 'cargando') {
+            <div class="rostro-velo">
+              <span class="spinner-border text-light"></span>
+              <span>Cargando los modelos de reconocimiento…</span>
+            </div>
+          } @else if (estado === 'error') {
+            <div class="rostro-velo rostro-velo--error">
+              <i class="fa fa-triangle-exclamation"></i>
+              <span>{{ mensajeError }}</span>
+            </div>
+          } @else if (!camaraEncendida) {
+            <div class="rostro-velo">
+              <i class="fa fa-video-slash"></i>
+              <span>Cámara apagada</span>
+              <button type="button" class="btn btn-sm btn-primary" (click)="encenderCamara()">Encender cámara</button>
+            </div>
+          }
+
+          <!-- Cartel de la última marcación -->
+          @if (ultimoAviso; as a) {
+            <div class="rostro-aviso" [class.is-ok]="a.ok">
+              <i class="fa" [ngClass]="a.ok ? 'fa-circle-check' : 'fa-eye'"></i>
+              <div>
+                <b>{{ a.nombre }}</b>
+                <span>{{ a.tipo }}@if (a.hora) { · {{ a.hora }} }</span>
+              </div>
+            </div>
+          }
+
+          <!-- Progreso de la captura de muestras -->
+          @if (capturando) {
+            <div class="rostro-captura">
+              <span>Capturando {{ capturasHechas }}/{{ CAPTURAS_NECESARIAS }} — mueve un poco la cabeza</span>
+              <div class="rostro-captura__barra"><span [style.width.%]="capturasHechas / CAPTURAS_NECESARIAS * 100"></span></div>
+              <button type="button" class="btn btn-xs btn-white" (click)="cancelarCaptura()">Cancelar</button>
+            </div>
+          }
+        </div>
+
+        <p class="rostro-ayuda">
+          <i class="fa fa-circle-info"></i>
+          Sitúate a un metro de la cámara, con buena luz y de frente. La marcación se registra sola al reconocerte
+          @if (exigirParpadeo) { <b>tras un parpadeo</b> (para que no valga una foto) } y alterna entrada / salida.
+        </p>
+      </div>
+
+      <!-- ---------- 2c. PANEL DERECHO ---------- -->
+      <div class="rostro-panel">
+
+        <!-- Registrar un rostro -->
+        <div class="rostro-bloque">
+          <div class="rostro-bloque__titulo"><i class="fa fa-user-plus"></i> Registrar rostro</div>
+
+          <select class="form-select form-select-sm mb-2" [(ngModel)]="empleadoSeleccionado" (focus)="cargarEmpleados()" [disabled]="capturando">
+            <option [ngValue]="null">— Empleado de RRHH (opcional) —</option>
+            @for (e of empleados; track e.id) {
+              <option [ngValue]="e.id">{{ e.nombre_completo || e.nombres + ' ' + e.apellidos }}</option>
+            }
+          </select>
+
+          @if (!empleadoSeleccionado) {
+            <input type="text" class="form-control form-control-sm mb-2" placeholder="…o escribe un nombre"
+                   [(ngModel)]="nombreManual" [disabled]="capturando">
+          }
+
+          <div class="rostro-bloque__acciones">
+            <button type="button" class="btn btn-sm btn-success" [disabled]="capturando || !camaraEncendida" (click)="iniciarCaptura()">
+              <i class="fa fa-camera me-1"></i>Capturar {{ CAPTURAS_NECESARIAS }} muestras
+            </button>
+            <button type="button" class="btn btn-sm btn-white" [disabled]="importando" title="Registrar a todos los empleados que tengan foto en RRHH" (click)="importarDesdeFotos()">
+              @if (importando) { <span class="spinner-border spinner-border-sm me-1"></span> } @else { <i class="fa fa-file-import me-1"></i> }
+              Desde fotos de RRHH
+            </button>
+          </div>
+        </div>
+
+        <!-- Rostros registrados -->
+        <div class="rostro-bloque">
+          <div class="rostro-bloque__titulo">
+            <i class="fa fa-id-card"></i> Rostros registrados
+            <span class="rostro-contador">{{ rostros.length }}</span>
+          </div>
+
+          @if (rostros.length) {
+            <ul class="rostro-lista">
+              @for (r of rostros; track r.id) {
+                <li class="rostro-item">
+                  @if (r.foto) {
+                    <img [src]="r.foto" alt="" class="rostro-item__foto" onerror="this.style.visibility='hidden'">
+                  } @else {
+                    <span class="rostro-item__foto rostro-item__foto--vacia"><i class="fa fa-user"></i></span>
+                  }
+                  <span class="rostro-item__texto">
+                    <span class="rostro-item__nombre">{{ r.nombre }}</span>
+                    <span class="rostro-item__detalle">
+                      {{ r.muestras.length }} muestra(s)@if (r.empleadoId) { · empleado #{{ r.empleadoId }} }
+                    </span>
+                  </span>
+                  <button type="button" class="btn btn-xs btn-white" title="Marcar a mano (sin cámara)" (click)="marcarAMano(r)">
+                    <i class="fa fa-fingerprint"></i>
+                  </button>
+                  <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar el rostro registrado" (click)="quitarRostro(r)">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="rostro-vacio">Todavía no hay rostros registrados. Captura muestras o impórtalos de RRHH.</div>
+          }
+        </div>
+
+        <!-- Ajustes -->
+        <div class="rostro-bloque">
+          <div class="rostro-bloque__titulo"><i class="fa fa-sliders"></i> Ajustes</div>
+
+          <label class="rostro-ajuste">
+            <span>Exigencia al comparar <b>{{ umbral | number:'1.2-2' }}</b></span>
+            <input type="range" class="form-range" min="0.35" max="0.7" step="0.01" [(ngModel)]="umbral" (change)="onUmbralCambia()">
+            <small>Menor = más estricto (menos confusiones, más «desconocido»)</small>
+          </label>
+
+          <label class="rostro-ajuste">
+            <span>Fotogramas para confirmar <b>{{ confirmaciones }}</b></span>
+            <input type="range" class="form-range" min="2" max="15" step="1" [(ngModel)]="confirmaciones">
+          </label>
+
+          <label class="rostro-ajuste">
+            <span>Espera entre marcaciones <b>{{ esperaSegundos }} s</b></span>
+            <input type="range" class="form-range" min="10" max="300" step="10" [(ngModel)]="esperaSegundos">
+          </label>
+
+          <label class="rostro-switch">
+            <input type="checkbox" class="form-check-input" [(ngModel)]="exigirParpadeo">
+            <span>Exigir parpadeo (prueba de vida)</span>
+          </label>
+        </div>
+
+        <!-- Marcaciones de hoy -->
+        <div class="rostro-bloque">
+          <div class="rostro-bloque__titulo">
+            <i class="fa fa-clipboard-list"></i> Marcaciones de hoy
+            <span class="rostro-contador">{{ marcacionesHoy.length }}</span>
+          </div>
+
+          <div class="rostro-resumen">
+            <span><b>{{ resumenHoy.personas }}</b> persona(s)</span>
+            <span class="text-success"><b>{{ resumenHoy.entradas }}</b> entradas</span>
+            <span class="text-danger"><b>{{ resumenHoy.salidas }}</b> salidas</span>
+          </div>
+
+          @if (marcacionesHoy.length) {
+            <ul class="rostro-lista rostro-lista--marcaciones">
+              @for (m of marcacionesHoy; track m.id) {
+                <li class="rostro-item">
+                  @if (m.foto) { <img [src]="m.foto" alt="" class="rostro-item__foto"> }
+                  <span class="rostro-item__texto">
+                    <span class="rostro-item__nombre">{{ m.nombre }}</span>
+                    <span class="rostro-item__detalle">{{ m.fecha | date:'HH:mm:ss' }} · {{ m.similitud * 100 | number:'1.0-0' }}%</span>
+                  </span>
+                  <span class="rostro-tipo" [ngClass]="m.tipo === 'ENTRADA' ? 'is-entrada' : 'is-salida'">
+                    {{ m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }}
+                  </span>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="rostro-vacio">Sin marcaciones hoy.</div>
+          }
+
+          <div class="rostro-bloque__acciones">
+            <button type="button" class="btn btn-sm btn-white" [disabled]="!marcaciones.length" (click)="exportarCsv()">
+              <i class="fa fa-file-csv me-1"></i>Exportar CSV
+            </button>
+            <button type="button" class="btn btn-sm btn-white text-danger" [disabled]="!marcaciones.length" (click)="limpiarMarcaciones()">
+              <i class="fa fa-eraser me-1"></i>Borrar
+            </button>
+          </div>
+
+          <p class="rostro-nota">
+            <i class="fa fa-database"></i>
+            Demo: los rostros y las marcaciones se guardan en este navegador. En producción irían al servidor
+            (tabla de marcaciones ligada a <code>rh.empleados</code>).
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</panel>

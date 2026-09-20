@@ -1,0 +1,269 @@
+/* ============================================================
+   LISTADO DE CARGOS
+
+   Lo que va aquí es sólo lo propio de esta pantalla. Las clases del
+   spinner (content-container1, overlay1, loader1), .inactivo y
+   .ag-grid-transparente son globales y viven en scss/angular.scss.
+   ============================================================ */
+
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida 20px: el tema deja un hueco entre la
+   cabecera de la aplicación y el primer elemento de la página que aquí
+   sobra, porque el panel ya trae el suyo. */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Cuerpo del panel ----------
+   Compensa el padding superior del panel-body del tema, para que la barra
+   de herramientas quede pegada a la cabecera del panel. */
+.lista-contenido {
+  margin-top: -19px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+/* Botones cuadrados a la altura del buscador (form-control del tema) */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* Lupa pequeña sobre el botón de auditoría */
+.lista-barra__badge {
+  font-size: 8px;
+}
+
+/* ---------- Grilla ----------
+   Altura de arranque; ajustarAlturaGrid() la sustituye en cuanto la grilla
+   está lista. La variable --ag-line-height es la altura de línea de celda
+   que usa el tema alpine. */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- Paginación ---------- */
+.pagination-controls {
+  gap: .5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto":
+   hereda el borde y la altura de los demás y queda alineado con ellos. */
+.pagination-page-badge.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* ---------- Responsive ---------- */
+/* Teléfonos: paginación apilada y centrada, botones más compactos */
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
+  }
+}
+
+/* Tablets: sólo botones un poco más compactos */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .pagination-buttons .btn {
+    padding: .2rem .5rem;
+    font-size: .75rem;
+  }
+}
+
+/* ---------- Modo oscuro ----------
+   btn-white del tema es blanco fijo; en oscuro se pasa a la superficie del
+   tema para que el grupo no destaque como un bloque blanco. */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
+}
+
+/* ============================================================
+   MARCACIONES: filtros, resumen de horas y celdas propias
+   ============================================================ */
+.mar-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  padding: .625rem .875rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.mar-filtros__grupo {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.mar-campo {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.mar-campo input,
+.mar-campo select {
+  min-width: 130px;
+}
+
+.mar-campo--empleado {
+  min-width: 260px;
+}
+
+.mar-campo--empleado input {
+  cursor: pointer;
+}
+
+.mar-atajos {
+  align-self: flex-end;
+  height: 31px;
+}
+
+.mar-atajos .btn {
+  font-size: 11px;
+}
+
+/* ---------- Resumen de horas ---------- */
+.mar-resumen {
+  margin: 0 .5rem .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  overflow: hidden;
+}
+
+.mar-resumen__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.mar-resumen__totales {
+  color: var(--bs-body-color, #212529);
+  font-weight: 500;
+}
+
+.mar-resumen__tabla {
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.mar-resumen__nota,
+.mar-resumen__vacio {
+  margin: 0;
+  padding: .4rem .75rem;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.mar-resumen__nota i {
+  color: var(--bs-app-theme, #00acac);
+  margin-right: .25rem;
+}
+
+/* ---------- Celdas de la grilla ---------- */
+:host ::ng-deep .mar-empleado {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  max-width: 100%;
+}
+
+:host ::ng-deep .mar-avatar {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+:host ::ng-deep .mar-avatar--vacio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 11px;
+}
+
+:host ::ng-deep .mar-tipo {
+  display: inline-block;
+  padding: .1rem .55rem;
+  border-radius: 2rem;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+:host ::ng-deep .mar-tipo.is-entrada {
+  background-color: rgba(var(--bs-success-rgb, 0, 172, 172), .15);
+  color: var(--bs-success-text-emphasis, #0f5132);
+}
+
+:host ::ng-deep .mar-tipo.is-salida {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .15);
+  color: var(--bs-danger-text-emphasis, #b02a37);
+}
+
+@media (max-width: 767.98px) {
+  .mar-campo--empleado {
+    min-width: 100%;
+  }
+}

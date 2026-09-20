@@ -25,6 +25,13 @@ import { CampoBusquedaPaginacionComponent } from "../../components/campos/campoB
 import { ComboComponent } from '../../components/campos/combo/combo.component';
 
 import { HomeComponent } from './pages/home/home.component';
+
+// Marcaciones (control de asistencia)
+import { KioscoMarcacionComponent } from './pages/marcaciones/kiosco/kioscoMarcacion.component';
+import { AllMarcacionesComponent, ButtonAccionMarcacion } from './pages/marcaciones/allMarcaciones/allMarcaciones.component';
+import { SaveMarcacionComponent } from './pages/marcaciones/saveMarcacion/saveMarcacion.component';
+import { DeleteMarcacionComponent } from './pages/marcaciones/deleteMarcacion/deleteMarcacion.component';
+
 import { AllCargosComponent, ButtonAccionCargo } from './pages/cargos/allCargos/allCargos.component';
 import { SaveCargoComponent } from './pages/cargos/saveCargo/saveCargo.component';
 import { DeleteCargoComponent } from './pages/cargos/deleteCargo/deleteCargo.component';
@@ -67,6 +74,12 @@ import { CampoEmailComponent } from '../../components/campos/campoEmail/campoEma
     DeleteEmpleadoComponent,
     ListEmpleadosComponent,
     ButtonAccionEmpleado,
+
+    KioscoMarcacionComponent,
+    AllMarcacionesComponent,
+    SaveMarcacionComponent,
+    DeleteMarcacionComponent,
+    ButtonAccionMarcacion,
   ],
 
   imports: [

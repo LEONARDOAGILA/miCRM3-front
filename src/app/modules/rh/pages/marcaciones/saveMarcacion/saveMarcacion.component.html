@@ -1,0 +1,132 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header [title]="titulo" (onClose)="activeModal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body marcacion-modal-body" tabindex="0" role="dialog">
+  <form [formGroup]="form" (ngSubmit)="onSubmitForm($event)" novalidate>
+    <div class="row g-3">
+
+      <div [ngClass]="fotoUrl ? 'col-lg-8' : 'col-12'">
+        <panel
+          headerClass="bg-gray-800"
+          title="Datos de la marcación"
+          noButton="true"
+          noBody="true"
+          panelClass="h-100 mb-0"
+          icono="usuarios"
+          fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <!-- Empleado (sólo al crear) -->
+              <div class="campo campo-lookup">
+                <div class="row g-2 flex-nowrap">
+                  <div class="col">
+                    <app-campoTexto
+                      [control]="empleadoNombreControl"
+                      label="Empleado"
+                      placeholder="Elige el empleado">
+                    </app-campoTexto>
+                  </div>
+                  @if (esNuevo) {
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-lookup" (click)="elegirEmpleado()" title="Buscar empleado">
+                        <i class="fa fa-search"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <div class="campo campo-combo">
+                    <app-combo
+                      formControlName="tipo"
+                      [items]="tipos"
+                      [label]="'Tipo'"
+                      bindLabel="name"
+                      bindValue="id">
+                    </app-combo>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="marcacion-campo">
+                    <span>Fecha</span>
+                    <input type="date" class="form-control" formControlName="fecha">
+                  </label>
+                </div>
+                <div class="col-md-4">
+                  <label class="marcacion-campo">
+                    <span>Hora</span>
+                    <input type="time" class="form-control" formControlName="hora" step="60">
+                  </label>
+                </div>
+              </div>
+
+              <div class="campo mt-2">
+                <app-campoTextoArea
+                  [control]="$any(form.controls['observacion'])"
+                  label="Observación"
+                  placeholder="Motivo de la corrección o del registro manual"
+                  [maxLength]="1000">
+                </app-campoTextoArea>
+              </div>
+
+              @if (marcacion) {
+                <div class="marcacion-datos">
+                  <span><b>Origen:</b> {{ textoOrigen }}</span>
+                  @if (marcacion.similitud) { <span><b>Coincidencia:</b> {{ marcacion.similitud | number:'1.0-0' }}%</span> }
+                  @if (marcacion.dispositivo) { <span><b>Dispositivo:</b> {{ marcacion.dispositivo }}</span> }
+                  @if (marcacion.created_by) { <span><b>Registró:</b> {{ marcacion.created_by }}</span> }
+                </div>
+              }
+
+              @if (esNuevo) {
+                <p class="marcacion-ayuda">
+                  <i class="fa fa-circle-info"></i>
+                  El registro manual queda marcado como tal (origen «Registro manual») y no pasa por la espera
+                  anti-duplicado del kiosco.
+                </p>
+              }
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+      @if (fotoUrl; as url) {
+        <div class="col-lg-4">
+          <panel
+            headerClass="bg-gray-800"
+            title="Foto del momento"
+            noButton="true"
+            noBody="true"
+            panelClass="h-100 mb-0"
+            icono="usuario"
+            fondoGris="true">
+            <ng-container outsideBody>
+              <div class="form-card__body text-center">
+                <img [src]="url" alt="Foto de la marcación" class="marcacion-foto" onerror="this.style.display='none'">
+                <div class="marcacion-foto__pie">{{ marcacion?.fecha }} · {{ marcacion?.hora }}</div>
+              </div>
+            </ng-container>
+          </panel>
+        </div>
+      }
+
+    </div>
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer [isDisabled]="!isdisabled" (onClose)="activeModal.close('Close click')" (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

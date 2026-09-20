@@ -63,6 +63,20 @@ export class HomeComponent implements OnInit, OnDestroy {
       color: 'bg-warning',
       descripcion: 'Ficha del empleado con foto, cargo, departamento, jefe y contacto'
     },
+    {
+      url: 'rh/allMarcaciones',
+      label: 'MARCACIONES',
+      icon: 'fa-clipboard-list',
+      color: 'bg-info',
+      descripcion: 'Entradas y salidas: listado con filtros, correcciones y horas trabajadas'
+    },
+    {
+      url: 'rh/kioscoMarcacion',
+      label: 'KIOSCO DE MARCACIÓN',
+      icon: 'fa-camera',
+      color: 'bg-danger',
+      descripcion: 'Reconocimiento facial para que el empleado marque su entrada o salida'
+    },
   ];
 
   constructor(
