@@ -91,6 +91,8 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
   estadoApi: 'cargando' | 'listo' | 'sin-clave' | 'error' = 'cargando';
   errorApi = '';
   tipoMapa: 'roadmap' | 'satellite' | 'hybrid' | 'terrain' = 'roadmap';
+  /** Pestaña visible en móvil: división política, info o mapa */
+  pestanaMovil: 'mapa' | 'info' | 'capturas' = 'mapa';
   panelOculto = this.leer('miCRM3.gmaps.panelOculto') === '1';
 
   // ---------- Búsqueda ----------
@@ -127,8 +129,12 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
   private readonly ESCALA_MAX = 8;
 
   // ---------- Capturas del mapa ----------
-  /** Al pulsar un punto del mapa se toma también la captura de Google */
-  capturaAutomatica = this.leer('miCRM3.gmaps.capturaAuto') !== '0';
+  /**
+   * Al pulsar un punto del mapa (o al buscar) se toma también la captura de
+   * Google. Arranca SIEMPRE apagada —cada captura se factura—, aunque en una
+   * sesión anterior se hubiera dejado encendida.
+   */
+  capturaAutomatica = false;
   /** Cuánto más ancho que la vista sale la captura: 0 = lo que veo, 1 = el doble… */
   areaCaptura = Number(this.leer('miCRM3.gmaps.areaCaptura') ?? 0) || 0;
   capturas: CapturaMapa[] = [];
@@ -299,6 +305,21 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
       this.gm?.event?.trigger(this.mapa, 'resize');
       if (centro) { this.mapa.setCenter(centro); }
     }, 300);
+  }
+
+  /**
+   * Cambia de pestaña en móvil. Al volver al mapa hay que avisarle del cambio
+   * de tamaño: mientras estuvo oculto no pudo medirse y saldría a medias.
+   */
+  cambiarPestana(pestana: 'mapa' | 'info' | 'capturas'): void {
+    this.pestanaMovil = pestana;
+    if (pestana !== 'mapa') { return; }
+    const centro = this.mapa?.getCenter?.();
+    setTimeout(() => {
+      if (!this.mapa) { return; }
+      this.gm?.event?.trigger(this.mapa, 'resize');
+      if (centro) { this.mapa.setCenter(centro); }
+    }, 200);
   }
 
   alternarPanel(): void {
@@ -1033,7 +1054,7 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
   }
 
   get textoBotonAbrir(): string {
-    return this.formatoEnlace === 'pantalla' ? 'Abrir esta pantalla' : 'Abrir en Google Maps';
+    return this.formatoEnlace === 'pantalla' ? 'Abrir esta pantalla' : 'Ir a Google Maps';
   }
 
   abrirEnlace(): void {

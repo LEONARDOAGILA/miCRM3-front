@@ -155,7 +155,7 @@
   height: 38px;
   padding-left: 2.1rem;
   padding-right: 2rem;
-  border-radius: 2rem;
+  border-radius: .25rem;
   box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
 }
 
@@ -1036,4 +1036,320 @@ textarea.gm-compartir__texto {
 
 .gm-select:focus {
   box-shadow: none;
+}
+
+/* ---------- Buscador y acciones dentro de la barra ---------- */
+.gm-toolbar .gm-buscar {
+  flex: 1 1 240px;
+  min-width: 180px;
+  max-width: 460px;
+  margin: 0;
+}
+
+.gm-toolbar .gm-buscar__caja .form-control {
+  height: 32px;
+  font-size: 12.5px;
+  box-shadow: none;
+}
+
+.gm-toolbar .gm-buscar__caja .form-control:focus {
+  box-shadow: 0 0 0 .18rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+}
+
+/* La lista de sugerencias cae sobre el mapa */
+.gm-toolbar .gm-sugerencias {
+  z-index: 30;
+}
+
+.gm-toolbar__acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.gm-toolbar__acciones .gm-btn {
+  height: 26px;
+}
+
+.gm-tipos .btn {
+  min-width: 52px;
+}
+
+@media (max-width: 767.98px) {
+  /* En móvil el buscador ocupa su propia fila, completo */
+  .gm-toolbar .gm-buscar {
+    flex: 1 0 100%;
+    max-width: none;
+    order: -1;
+  }
+
+  .gm-toolbar__acciones {
+    margin-left: 0 !important;
+  }
+}
+
+/* Buscar y Limpiar en la misma fila, como en la barra de los listados */
+.gm-buscar__fila {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+}
+
+.gm-buscar__fila .gm-buscar__caja {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gm-buscar__fila > .gm-btn {
+  flex: 0 0 auto;
+}
+
+/* ---------- División política: dónde se ve según el ancho ---------- */
+.gm-division-movil {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  /* En móvil sale justo debajo del buscador, antes del mapa */
+  .gm-division-movil {
+    display: block;
+    order: -2;
+    padding: .6rem .75rem 0;
+    background-color: var(--bs-component-bg, #fff);
+  }
+
+  .gm-division-escritorio {
+    display: none;
+  }
+}
+
+/* ---------- Pestañas de móvil ----------
+   En escritorio no existen: la barra lleva los botones y el cuerpo va a dos
+   columnas, como siempre. */
+.gm-pestanas,
+.gm-botones-movil {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .gm-solo-escritorio {
+    display: none;
+  }
+
+  .gm-pestanas {
+    display: flex;
+    gap: .25rem;
+    padding: .4rem .5rem 0;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    background-color: var(--bs-light, #f8f9fa);
+  }
+
+  .gm-pestana-btn {
+    flex: 1 1 0;
+    padding: .4rem .25rem;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: .375rem .375rem 0 0;
+    background: transparent;
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: 11.5px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gm-pestana-btn i {
+    margin-right: .25rem;
+  }
+
+  .gm-pestana-btn.is-activa {
+    border-color: var(--bs-border-color, #dee2e6);
+    background-color: var(--bs-component-bg, #fff);
+    color: var(--bs-app-theme, #00acac);
+    font-weight: 600;
+    margin-bottom: -1px;
+  }
+
+  /* Los botones del mapa, ya dentro de su pestaña */
+  .gm-botones-movil {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    order: -1;
+    padding: .5rem .75rem 0;
+  }
+
+  .gm-botones-movil .gm-toolbar__grupo,
+  .gm-botones-movil .gm-toolbar__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+    margin-left: 0 !important;
+  }
+
+  /* Qué se ve en cada pestaña */
+  .gm-cuerpo.is-division .gm-ficha,
+  .gm-cuerpo.is-division .gm-mapa-wrap,
+  .gm-cuerpo.is-division .gm-botones-movil,
+  .gm-cuerpo.is-info .gm-division-movil,
+  .gm-cuerpo.is-info .gm-mapa-wrap,
+  .gm-cuerpo.is-info .gm-botones-movil,
+  .gm-cuerpo.is-mapa .gm-division-movil,
+  .gm-cuerpo.is-mapa .gm-ficha {
+    display: none;
+  }
+
+  /* En la pestaña Info el panel ocupa todo y no necesita la pestaña de plegar */
+  .gm-cuerpo.is-info .gm-ficha {
+    display: block;
+  }
+
+  .gm-cuerpo.is-mapa .gm-pestana {
+    display: none;
+  }
+}
+
+/* Contadorcito en la pestaña de capturas */
+.gm-pestana-btn__cuenta {
+  display: inline-block;
+  min-width: 16px;
+  margin-left: .2rem;
+  padding: 0 .25rem;
+  border-radius: 999px;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+  font-size: 9.5px;
+  line-height: 15px;
+}
+
+.gm-capturas-movil {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  /* La pestaña Capturas trae el bloque completo; en el panel se oculta */
+  .gm-capturas-escritorio {
+    display: none;
+  }
+
+  .gm-capturas-movil {
+    padding: .6rem .75rem 0;
+    background-color: var(--bs-component-bg, #fff);
+  }
+
+  /* La división política encabeza la pestaña Info */
+  .gm-division-movil {
+    order: -2;
+  }
+
+  .gm-cuerpo.is-mapa .gm-capturas-movil,
+  .gm-cuerpo.is-info .gm-capturas-movil,
+  .gm-cuerpo.is-capturas .gm-division-movil,
+  .gm-cuerpo.is-capturas .gm-ficha,
+  .gm-cuerpo.is-capturas .gm-mapa-wrap,
+  .gm-cuerpo.is-capturas .gm-botones-movil {
+    display: none;
+  }
+
+  .gm-cuerpo.is-capturas .gm-capturas-movil {
+    display: block;
+  }
+
+  .gm-cuerpo.is-info .gm-division-movil {
+    display: block;
+  }
+}
+
+/* Pestaña de capturas vacía: un aviso, para que no quede el hueco en negro */
+.gm-sin-capturas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+}
+
+.gm-sin-capturas i {
+  font-size: 1.8rem;
+  opacity: .35;
+}
+
+.gm-sin-capturas b {
+  color: var(--bs-body-color, #212529);
+}
+
+@media (max-width: 767.98px) {
+  /* Alto mínimo: al cambiar de pestaña la tarjeta no se encoge de golpe */
+  .gm-capturas-movil {
+    min-height: clamp(220px, 45vh, 420px);
+    padding-bottom: .75rem;
+  }
+}
+
+/* ---------- Cada captura, una tarjeta reconocible ---------- */
+.gm-captura {
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.gm-captura + .gm-captura {
+  margin-top: .85rem;
+}
+
+.gm-captura__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4rem;
+  padding: .3rem .4rem .3rem .55rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .04);
+}
+
+.gm-captura__tipo {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-captura__tipo i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* La imagen ya no necesita su propio marco: lo pone la tarjeta */
+.gm-captura__img {
+  border: 0;
+  border-radius: 0;
+}
+
+.gm-captura__pie,
+.gm-captura .gm-redes,
+.gm-captura__fallo {
+  margin: 0;
+  padding: .4rem .5rem;
+}
+
+.gm-captura .gm-redes {
+  padding-top: 0;
+}
+
+.gm-capturas__vaciar {
+  font-size: 10.5px;
+  text-transform: none;
+  letter-spacing: 0;
 }
