@@ -1,0 +1,254 @@
+<!-- ============================================================
+     BOLETÍN: alta / modificación / vista
+       1. Datos y vigencia
+       2. Imágenes del carrusel (se suben al elegirlas)
+       3. Destinatarios: usuarios y grupos
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1"></div>
+  <div class="overlay1"></div>
+}
+
+<div class="modal-content border-0 shadow-lg">
+
+  <div appModalArrastrable class="modal-header bol-header">
+    <h5 class="modal-title">
+      <i class="fa fa-bullhorn fa-fw me-1"></i>{{ titulo }}
+    </h5>
+    <button type="button" class="btn-close btn-close-white" aria-label="Cerrar" (click)="activeModal.dismiss('Cross click')"></button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmitForm($event)">
+    <div class="modal-body bol-cuerpo">
+
+      <!-- ---------- 1. DATOS ---------- -->
+      <div class="bol-bloque">
+        <div class="bol-bloque__titulo"><i class="fa fa-circle-info"></i> Datos del boletín</div>
+
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label bol-label">Título <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" formControlName="titulo" maxlength="200"
+                   placeholder="Por ejemplo: Horario de atención de fin de año">
+            @if (form.get('titulo')?.touched && form.get('titulo')?.invalid) {
+              <small class="text-danger">El título es obligatorio</small>
+            }
+          </div>
+
+          <div class="col-12">
+            <label class="form-label bol-label">Texto (opcional)</label>
+            <textarea class="form-control form-control-sm" rows="2" formControlName="descripcion" maxlength="2000"
+                      placeholder="Un párrafo corto que acompaña a las imágenes"></textarea>
+          </div>
+
+          <div class="col-6 col-md-3">
+            <label class="form-label bol-label">Rige desde <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-sm" formControlName="desde">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label bol-label">Hasta <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-sm" formControlName="hasta">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label bol-label" title="Los de mayor prioridad se muestran primero">Prioridad</label>
+            <input type="number" class="form-control form-control-sm" formControlName="prioridad" min="0" max="100">
+          </div>
+
+          <div class="col-6 col-md-4 d-flex align-items-end">
+            <div class="bol-switches">
+              <label class="bol-switch" title="Hay que darse por enterado para poder cerrarlo">
+                <input type="checkbox" class="form-check-input" formControlName="obligatorio">
+                <span>Lectura obligatoria</span>
+              </label>
+              <label class="bol-switch" title="Un boletín inactivo no se muestra aunque esté vigente">
+                <input type="checkbox" class="form-check-input" formControlName="activo">
+                <span>Activo</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- 2. IMÁGENES ---------- -->
+      <div class="bol-bloque">
+        <div class="bol-bloque__titulo">
+          <span><i class="fa fa-images"></i> Contenido del carrusel</span>
+          <span class="bol-bloque__acciones">
+            @if (!esView) {
+              <label class="btn btn-xs btn-primary mb-0" title="Imágenes hasta 8 MB, video mp4 hasta 64 MB, audio mp3 hasta 20 MB">
+                <i class="fa fa-upload me-1"></i>{{ subiendo ? 'Subiendo…' : 'Agregar archivos' }}
+                <input type="file" class="d-none" [accept]="tiposAceptados" multiple [disabled]="subiendo" (change)="alElegirArchivos($event)">
+              </label>
+            }
+            <button type="button" class="btn btn-xs btn-white" [disabled]="!imagenes.length" title="Ver el boletín como lo verá el usuario" (click)="verPrevia()">
+              <i class="fa fa-eye me-1"></i>Vista previa
+            </button>
+          </span>
+        </div>
+
+        @if (!imagenes.length) {
+          <div class="bol-vacio">
+            <i class="fa fa-images"></i>
+            <span>Sin contenido. Agrega al menos una imagen, un video mp4 o un audio mp3: el boletín se muestra como un carrusel.</span>
+          </div>
+        } @else {
+          <div class="bol-imagenes">
+            @for (i of imagenes; track $index) {
+              <div class="bol-imagen">
+                <div class="bol-imagen__miniatura">
+                  @if (i.tipo === 'IMAGEN' && i.url) {
+                    <img [src]="i.url" alt="" draggable="false">
+                  } @else {
+                    <span class="bol-imagen__sin" [title]="nombreDe(i)"><i class="fa" [ngClass]="iconoDe(i)"></i></span>
+                  }
+                  @if (i.subiendo) {
+                    <span class="bol-imagen__subiendo"><span class="spinner-border spinner-border-sm"></span></span>
+                  }
+                  <span class="bol-imagen__orden">{{ $index + 1 }}</span>
+                </div>
+
+                <div class="bol-imagen__datos">
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="i.titulo" [ngModelOptions]="{standalone: true}"
+                         [disabled]="esView" maxlength="200" placeholder="Título de la imagen (opcional)">
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="i.descripcion" [ngModelOptions]="{standalone: true}"
+                         [disabled]="esView" maxlength="500" placeholder="Pie de la imagen (opcional)">
+
+                  @if (i.tipo === 'IMAGEN') {
+                    <div class="bol-imagen__tiempo">
+                      <label>Tiempo en pantalla</label>
+                      <div class="input-group input-group-sm">
+                        <input type="number" class="form-control form-control-sm" [(ngModel)]="i.segundos" [ngModelOptions]="{standalone: true}"
+                               [disabled]="esView" min="1" max="120" step="1" title="De 1 a 120 segundos"
+                               (blur)="ajustarSegundos(i)">
+                        <span class="input-group-text">seg</span>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="bol-imagen__tiempo">
+                      <label><i class="fa fa-fw" [ngClass]="iconoDe(i)"></i> {{ nombreDe(i) }}</label>
+                      <span class="bol-imagen__nota">pasa a la siguiente cuando termina</span>
+                    </div>
+                  }
+                </div>
+
+                @if (!esView) {
+                  <div class="bol-imagen__botones">
+                    <button type="button" class="btn btn-xs btn-white" [disabled]="$index === 0" title="Subir" (click)="mover($index, -1)">
+                      <i class="fa fa-arrow-up"></i>
+                    </button>
+                    <button type="button" class="btn btn-xs btn-white" [disabled]="$index === imagenes.length - 1" title="Bajar" (click)="mover($index, 1)">
+                      <i class="fa fa-arrow-down"></i>
+                    </button>
+                    <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar esta imagen" (click)="quitarImagen($index)">
+                      <i class="fa fa-xmark"></i>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- ---------- 3. DESTINATARIOS ---------- -->
+      <div class="bol-bloque">
+        <div class="bol-bloque__titulo">
+          <span><i class="fa fa-users"></i> Destinatarios</span>
+          <span class="bol-bloque__resumen">{{ resumenDestinatarios }}</span>
+        </div>
+
+        <div class="row g-2">
+          <!-- Usuarios -->
+          <div class="col-12 col-md-6">
+            <div class="bol-lista">
+              <div class="bol-lista__cabecera">
+                <span><i class="fa fa-user"></i> Usuarios <b>{{ usuarios.length }}</b></span>
+                @if (!esView) {
+                  <button type="button" class="btn btn-xs btn-white" title="Agregar un usuario" (click)="agregarUsuario()">
+                    <i class="fa fa-plus"></i>
+                  </button>
+                }
+              </div>
+
+              @if (!usuarios.length) {
+                <div class="bol-lista__vacia">Nadie añadido uno a uno.</div>
+              } @else {
+                <ul class="bol-lista__items">
+                  @for (u of usuarios; track u.user_id) {
+                    <li class="bol-item" [class.is-inactivo]="!u.isactive">
+                      <span class="bol-item__texto">
+                        <b>{{ u.login_user }}</b>
+                        <small>{{ u.name }} {{ u.surname }}@if (!u.isactive) { · inactivo }</small>
+                      </span>
+                      @if (!esView) {
+                        <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitarUsuario(u)">
+                          <i class="fa fa-xmark"></i>
+                        </button>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          </div>
+
+          <!-- Grupos -->
+          <div class="col-12 col-md-6">
+            <div class="bol-lista">
+              <div class="bol-lista__cabecera">
+                <span><i class="fa fa-sitemap"></i> Grupos <b>{{ grupos.length }}</b></span>
+                @if (!esView) {
+                  <button type="button" class="btn btn-xs btn-white" title="Agregar un grupo" (click)="agregarGrupo()">
+                    <i class="fa fa-plus"></i>
+                  </button>
+                }
+              </div>
+
+              @if (!grupos.length) {
+                <div class="bol-lista__vacia">Sin grupos: el boletín sólo llega a los usuarios de la izquierda.</div>
+              } @else {
+                <ul class="bol-lista__items">
+                  @for (g of grupos; track g.grupo_id) {
+                    <li class="bol-item">
+                      <span class="bol-item__texto">
+                        <b>{{ g.nombre }}</b>
+                        <small>{{ g.incluir_subgrupos ? 'con sus subgrupos' : 'sólo este grupo' }}</small>
+                      </span>
+                      @if (!esView) {
+                        <button type="button" class="btn btn-xs btn-white" [title]="g.incluir_subgrupos ? 'Dejar sólo este grupo' : 'Incluir los subgrupos'" (click)="alternarSubgrupos(g)">
+                          <i class="fa" [ngClass]="g.incluir_subgrupos ? 'fa-sitemap' : 'fa-circle-dot'"></i>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitarGrupo(g)">
+                          <i class="fa fa-xmark"></i>
+                        </button>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          </div>
+        </div>
+
+        <p class="bol-ayuda">
+          <i class="fa fa-shield-halved"></i>
+          Al abrirlo, cada usuario ve las imágenes con <b>su nombre estampado encima</b> como marca de agua, y las
+          imágenes no tienen dirección pública: sólo se entregan a quien es destinatario.
+        </p>
+      </div>
+    </div>
+
+    <!-- ---------- PIE ---------- -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-white" (click)="activeModal.dismiss('cancelar')">
+        <i class="fa fa-times me-1"></i>{{ esView ? 'Cerrar' : 'Cancelar' }}
+      </button>
+      @if (!esView) {
+        <button type="submit" class="btn btn-primary" [disabled]="isdisabled || subiendo">
+          <i class="fa fa-save me-1"></i>{{ esNuevo ? 'Crear boletín' : 'Guardar cambios' }}
+        </button>
+      }
+    </div>
+  </form>
+</div>

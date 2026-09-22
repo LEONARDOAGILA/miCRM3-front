@@ -14,6 +14,9 @@ import { WebsocketNotificationService } from '../../service/websocket-notificati
 import { AppStateService } from '../../service/app-state.service';
 import { StorageService } from '../../modules/seguridad/services/storage.service';
 import { UserService } from '../../modules/seguridad/services/user.service';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { BoletinService } from '../../modules/config/services/boletin.service';
+import { VerBoletinesComponent } from '../../modules/config/pages/boletines/verBoletines/verBoletines.component';
 
 interface Acceso {
   user_id: number;
@@ -123,7 +126,9 @@ export class HomePage implements OnInit, OnDestroy {
     private _wsNotifService: WebsocketNotificationService,
     private appStateService: AppStateService,
     private _storeService: StorageService,
-    private _userService: UserService
+    private _userService: UserService,
+    private modalService: NgbModal,
+    private _boletinService: BoletinService
   ) {
     this.appSettings.appContentFullHeight = true;
     this.appSettings.appContentClass = 'p-0 ';
@@ -158,6 +163,9 @@ export class HomePage implements OnInit, OnDestroy {
         this.cargarModulosPermitidos();
       });
 
+    // Boletines: lo primero que ve el usuario al entrar
+    this.mostrarBoletines();
+
     // WebSocket
     console.log('🟢 Websocket escuchando canal "trades"...');
     ECHO_PUSHER(this._seguridadService.token)
@@ -167,6 +175,44 @@ export class HomePage implements OnInit, OnDestroy {
         const mensaje = data.trade || 'Mensaje vacío';
         this.mensajes.unshift(mensaje);
         this._wsNotifService.incrementarContador();
+      });
+  }
+
+  /**
+   * Boletines vigentes del usuario, en un carrusel, al entrar al sistema.
+   *
+   * Se muestran una vez por sesión del navegador: si el usuario navega y
+   * vuelve al inicio no se le repiten. Dejan de aparecer cuando marca «no
+   * volver a mostrar» (eso lo guarda el servidor) o cuando caduca su vigencia.
+   */
+  private mostrarBoletines(): void {
+    // La bandera va por usuario y sólo se pone cuando de verdad se mostró algo:
+    // así, si el boletín se crea después de haber entrado al inicio, aparece en
+    // cuanto se vuelve a esa pantalla.
+    const clave = 'miCRM3.boletines.mostrados.' + (this.usuarioLogeado?.login_user ?? 'anon');
+    try {
+      if (sessionStorage.getItem(clave) === '1') { return; }
+    } catch { /* sin sessionStorage: se mostrarán igual */ }
+
+    this._boletinService.misBoletines()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          const boletines = res?.status === 'success' ? (res.data ?? []) : [];
+          if (!boletines.length) { return; }
+          try { sessionStorage.setItem(clave, '1'); } catch { /* sin sessionStorage */ }
+
+          const modalRef = this.modalService.open(VerBoletinesComponent, {
+            size: 'xl',
+            centered: true,
+            backdrop: 'static',
+            keyboard: false,
+            windowClass: 'bol-modal',
+            backdropClass: 'bol-backdrop',
+          });
+          modalRef.componentInstance.boletines = boletines;
+        },
+        error: () => { /* si falla, la pantalla de inicio sigue su curso */ },
       });
   }
 

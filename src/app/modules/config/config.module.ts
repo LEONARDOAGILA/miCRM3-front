@@ -51,6 +51,12 @@ import { ExtraSettingsPage } from './pages/extra-settings-page/extra-settings-pa
 import { ExtraSearchResultsPage } from './pages/extra-search-results/extra-search-results';
 import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
 
+// Boletines: avisos con imágenes que se muestran al entrar al sistema
+import { AllBoletinesComponent, ButtonAccionBoletin } from './pages/boletines/allBoletines/allBoletines.component';
+import { SaveBoletinComponent } from './pages/boletines/saveBoletin/saveBoletin.component';
+import { DeleteBoletinComponent } from './pages/boletines/deleteBoletin/deleteBoletin.component';
+import { VerBoletinesComponent } from './pages/boletines/verBoletines/verBoletines.component';
+
 
 
 
@@ -72,6 +78,11 @@ import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
     ModalReporteExternoComponent,
     DeleteFileComponent,
     PapeleraComponent,
+
+    AllBoletinesComponent,
+    ButtonAccionBoletin,
+    SaveBoletinComponent,
+    DeleteBoletinComponent,
 
 
   ],
@@ -101,6 +112,7 @@ import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
     FileTreeNodeComponent,
     ModalFooterComponent,
     ModalHeaderComponent,
+    VerBoletinesComponent,
 ]
 })
 export class ConfigModule { }

@@ -1,0 +1,588 @@
+/* ============================================================
+   BOLETINES DEL USUARIO
+   Mismo aspecto que la galería de fotos de extra-profile: visor
+   oscuro difuminado, barra flotante con botones circulares,
+   flechas grandes a los lados y contador en pastilla.
+   ============================================================ */
+
+.bol-visor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 70vh;
+  max-height: 94vh;
+  padding: 0;
+  background: rgba(0, 0, 0, .92);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: bolAparece .3s ease;
+  /* Nada de seleccionar ni arrastrar: la imagen sale marcada, no suelta */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@keyframes bolAparece {
+  from { opacity: 0; transform: scale(.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- 1. Cabecera flotante ---------- */
+.bol-visor__cabecera {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  max-width: min(60%, 620px);
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, .5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, .3);
+}
+
+.bol-visor__titulo {
+  overflow: hidden;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bol-visor__titulo i {
+  color: #f59c1a;
+}
+
+.bol-visor__vigencia {
+  color: rgba(255, 255, 255, .6);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 2. Barra de herramientas ---------- */
+.bol-visor__barra {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: calc(100% - 40px);
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, .5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, .3);
+}
+
+.bol-visor__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, .45);
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all .3s ease;
+}
+
+.bol-visor__btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .15);
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+}
+
+.bol-visor__btn:active:not(:disabled) {
+  transform: scale(.95);
+}
+
+.bol-visor__btn:disabled {
+  opacity: .3;
+  cursor: not-allowed;
+}
+
+.bol-visor__btn.is-cerrar:hover:not(:disabled) {
+  background: rgba(255, 91, 87, .35);
+}
+
+.bol-visor__nivel {
+  min-width: 56px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, .45);
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bol-visor__separador {
+  width: 1px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, .25);
+}
+
+/* ---------- 3. Lienzo ---------- */
+.bol-visor__cuerpo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 320px;
+  padding: 84px 74px 96px;
+  /* Ampliada, la imagen sobresale: se recorta dentro de la caja */
+  overflow: hidden;
+}
+
+.bol-visor__lienzo {
+  display: block;
+  max-width: 100%;
+  max-height: 76vh;
+  border-radius: 6px;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+  transform-origin: center center;
+  transition: transform .12s ease-out;
+  /* El zoom con los dedos lo lleva el componente, no el navegador */
+  touch-action: none;
+  will-change: transform;
+  -webkit-user-drag: none;
+}
+
+.bol-visor__lienzo.is-movible {
+  cursor: grab;
+}
+
+.bol-visor__lienzo.is-moviendo {
+  cursor: grabbing;
+  transition: none;   /* al arrastrar, la imagen sigue al dedo sin retraso */
+}
+
+.bol-visor__lienzo.is-oculto {
+  display: none;
+}
+
+.bol-visor__aviso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .6rem;
+  padding: 2.5rem 1rem;
+  color: rgba(255, 255, 255, .6);
+  font-size: 13px;
+  text-align: center;
+}
+
+.bol-visor__aviso i {
+  font-size: 2.2rem;
+  opacity: .5;
+}
+
+/* Flechas grandes, como las de la galería */
+.bol-visor__flecha {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0 0 6px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .6);
+  color: #fff;
+  font-size: 36px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .3);
+  transition: all .3s ease;
+}
+
+.bol-visor__flecha:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .2);
+  transform: translateY(-50%) scale(1.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .5);
+}
+
+.bol-visor__flecha:active:not(:disabled) {
+  transform: translateY(-50%) scale(.9);
+}
+
+.bol-visor__flecha:disabled {
+  opacity: .25;
+  cursor: not-allowed;
+}
+
+.bol-visor__flecha.is-izq { left: 16px; }
+.bol-visor__flecha.is-der { right: 16px; }
+
+/* El <video> hace de fuente del lienzo: nunca se ve */
+.bol-visor__medio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Lo que va pegado al borde inferior de la imagen: mando y pie */
+.bol-visor__bajo {
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  max-width: min(88%, 760px);
+}
+
+/* Mando del video y del audio */
+.bol-visor__reproductor {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: min(520px, 80vw);
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, .3);
+}
+
+.bol-visor__tiempo {
+  color: rgba(255, 255, 255, .75);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bol-visor__barra-tiempo {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .25);
+  accent-color: #00acac;
+  cursor: pointer;
+}
+
+/* El botón del altavoz parpadea cuando el navegador quitó el sonido */
+.bol-visor__btn.is-avisando {
+  background-color: rgba(245, 156, 26, .35);
+  animation: bolLatido 1.4s ease-in-out infinite;
+}
+
+@keyframes bolLatido {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 156, 26, .5); }
+  50%      { box-shadow: 0 0 0 6px rgba(245, 156, 26, 0); }
+}
+
+.bol-visor__aviso-sonido {
+  padding: 3px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .55);
+  color: rgba(255, 255, 255, .7);
+  font-size: 11px;
+}
+
+/* Título y pie de la imagen, sobre ella */
+.bol-visor__pie-imagen {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  max-width: 100%;
+  padding: 6px 16px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, .45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+}
+
+.bol-visor__pie-imagen span {
+  color: rgba(255, 255, 255, .7);
+}
+
+/* ---------- 4. Pie flotante ---------- */
+.bol-visor__pie {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, .5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, .3);
+}
+
+.bol-visor__descripcion {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 260px;
+  color: rgba(255, 255, 255, .82);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.bol-visor__acciones {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  flex-wrap: wrap;
+}
+
+.bol-visor__contador {
+  padding: 4px 14px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 20px;
+  background: rgba(0, 0, 0, .4);
+  color: rgba(255, 255, 255, .6);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bol-visor__puntos {
+  display: flex;
+  gap: .3rem;
+}
+
+.bol-visor__punto {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, .3);
+  cursor: pointer;
+  transition: all .3s ease;
+}
+
+.bol-visor__punto:hover {
+  background-color: rgba(255, 255, 255, .6);
+}
+
+.bol-visor__punto.is-activo {
+  background-color: #fff;
+  transform: scale(1.3);
+}
+
+/* Halo que se abre mientras corre el tiempo de la imagen. La duración la pone
+   la plantilla con los segundos de esa imagen; 6s es sólo el respaldo. */
+.bol-visor__punto.is-corriendo {
+  animation: bolCuentaAtras 6s linear;
+}
+
+@keyframes bolCuentaAtras {
+  from { box-shadow: 0 0 0 0 rgba(255, 255, 255, .5); }
+  to   { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); }
+}
+
+/* Botón pequeño para el pase automático, junto a los puntos.
+   Sobre el pie oscuro hace falta un fondo más claro para que se distinga. */
+.bol-visor__btn.is-mini {
+  width: 30px;
+  height: 30px;
+  font-size: .8rem;
+  background-color: rgba(255, 255, 255, .12);
+}
+
+.bol-visor__check {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0;
+  color: rgba(255, 255, 255, .7);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.bol-visor__check input {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Botones del pie: mismo trato que los circulares, pero con texto */
+.bol-visor__accion {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 16px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 20px;
+  background-color: rgba(0, 0, 0, .45);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .3s ease;
+}
+
+.bol-visor__accion:hover {
+  background: rgba(255, 255, 255, .16);
+  transform: scale(1.04);
+}
+
+.bol-visor__accion:active {
+  transform: scale(.97);
+}
+
+.bol-visor__accion.is-listo {
+  background-color: rgba(0, 172, 172, .85);
+  border-color: rgba(255, 255, 255, .2);
+}
+
+.bol-visor__accion.is-listo:hover {
+  background-color: rgba(0, 172, 172, 1);
+}
+
+/* ---------- Táctil: sin efectos de hover que se queden pegados ---------- */
+@media (hover: none) and (pointer: coarse) {
+  .bol-visor__btn:hover,
+  .bol-visor__accion:hover { transform: none; }
+  .bol-visor__flecha:hover { transform: translateY(-50%); }
+}
+
+/* ---------- Móvil ----------
+   En pantalla pequeña las tarjetas dejan de flotar y se ponen en fila:
+   con el pie flotante la imagen quedaba tapada. */
+@media (max-width: 767.98px) {
+  .bol-visor {
+    min-height: 92vh;
+    max-height: 100vh;
+    gap: .4rem;
+    padding: 10px;
+    overflow-y: auto;
+  }
+
+  .bol-visor__cabecera {
+    position: static;
+    max-width: none;
+    padding: 6px 12px;
+    border-radius: 12px;
+  }
+
+  .bol-visor__barra {
+    position: static;
+    align-self: stretch;
+    justify-content: center;
+    max-width: 100%;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .bol-visor__btn {
+    width: 32px;
+    height: 32px;
+    font-size: .9rem;
+  }
+
+  /* La barra cabe en una fila: pasar de imagen se hace con las flechas
+     grandes sobre la imagen y con el botón del pie. */
+  .bol-visor__barra .is-pasar {
+    display: none;
+  }
+
+  .bol-visor__nivel {
+    min-width: 44px;
+    padding: 2px 6px;
+    font-size: .8rem;
+  }
+
+  .bol-visor__cuerpo {
+    min-height: 200px;
+    padding: 0;
+  }
+
+  .bol-visor__lienzo {
+    max-height: 60vh;
+  }
+
+  .bol-visor__flecha {
+    width: 40px;
+    height: 40px;
+    font-size: 30px;
+  }
+
+  .bol-visor__flecha.is-izq { left: 6px; }
+  .bol-visor__flecha.is-der { right: 6px; }
+
+  .bol-visor__bajo {
+    bottom: 6px;
+    max-width: 96%;
+  }
+
+  .bol-visor__reproductor {
+    width: min(94vw, 420px);
+    gap: .4rem;
+    padding: 5px 10px;
+  }
+
+  .bol-visor__pie {
+    position: static;
+    align-items: stretch;
+    flex-direction: column;
+    gap: .5rem;
+    border-radius: 12px;
+  }
+
+  /* En columna, el flex-basis de la descripción se vuelve alto: se anula */
+  .bol-visor__descripcion {
+    flex: 0 0 auto;
+  }
+
+  .bol-visor__acciones {
+    justify-content: space-between;
+  }
+
+  .bol-visor__accion {
+    justify-content: center;
+    flex: 1 1 100%;
+  }
+}

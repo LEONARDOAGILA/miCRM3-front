@@ -2154,3 +2154,44 @@ $paleta-extra-gradiente: (
 .theme-gray-800 {
 	--#{$prefix}app-theme-gradient: linear-gradient(135deg, var(--#{$prefix}gray-800), var(--#{$prefix}gray-600));
 }
+
+/* ============================================================
+   BOLETINES: el modal del carrusel (windowClass="bol-modal")
+   Va aquí porque los modales se montan fuera del componente.
+   Se comporta como la caja de luz de las fotos del perfil: fondo
+   negro difuminado y el contenido casi a pantalla completa.
+   ============================================================ */
+.bol-modal {
+	/* El backdrop propio de bootstrap se queda corto para este visor */
+	backdrop-filter: blur(5px);
+	-webkit-backdrop-filter: blur(5px);
+}
+
+.bol-modal .modal-dialog {
+	max-width: min(1280px, 98vw);
+	margin: 1vh auto;
+}
+
+.bol-modal .modal-content {
+	border: 0;
+	overflow: hidden;
+	border-radius: 12px;
+	background: transparent;
+	box-shadow: 0 18px 60px rgba(0, 0, 0, .6);
+}
+
+/* El backdrop de este modal, más oscuro: la imagen tiene que resaltar */
+.modal-backdrop.bol-backdrop.show {
+	opacity: .85;
+}
+
+@media (max-width: 767.98px) {
+	.bol-modal .modal-dialog {
+		max-width: 100vw;
+		margin: 0;
+	}
+
+	.bol-modal .modal-content {
+		border-radius: 0;
+	}
+}
