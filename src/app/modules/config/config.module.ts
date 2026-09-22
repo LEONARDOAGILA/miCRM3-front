@@ -6,6 +6,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ConfigRoutingModule } from './config-routing.module';
 import { LoadingBarModule } from '@ngx-loading-bar/core';
 import { AgGridModule } from 'ag-grid-angular';
+import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
 
 import { DirectiveModule } from "../../core/directives/directive.module";
 import { PanelModule } from '../../components/panel/panel.module';
@@ -33,6 +34,7 @@ import { SaveFileComponent } from './pages/administrador-archivos/save-file/save
 
 
 import { CampoTextoComponent } from '../../components/campos/campoTexto/campoTexto.component';
+import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/campoTextoArea.component';
 import { CampoNumeroEnteroComponent } from '../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.component';
 import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/campoBusqueda.component';
@@ -99,6 +101,7 @@ import { VerBoletinesComponent } from './pages/boletines/verBoletines/verBoletin
     NgScrollbarModule,
 
     CampoTextoComponent,
+    CampoTextoAreaComponent,
     CampoNumeroEnteroComponent,
     CheckboxComponent,
     CampoBusquedaComponent,
@@ -113,6 +116,7 @@ import { VerBoletinesComponent } from './pages/boletines/verBoletines/verBoletin
     ModalFooterComponent,
     ModalHeaderComponent,
     VerBoletinesComponent,
+    NgxDaterangepickerMd,
 ]
 })
 export class ConfigModule { }

@@ -4,6 +4,8 @@ import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstra
 import { ToastrService } from 'ngx-toastr';
 import { Observable, Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
+import moment from 'moment';
+import { LOCALE_CONFIG, LocaleService, DefaultLocaleConfig } from 'ngx-daterangepicker-material';
 
 import { BoletinService } from '../../../services/boletin.service';
 import { LoadingService } from '../../../../../service/loading.service';
@@ -48,6 +50,12 @@ interface ImagenEditor {
   templateUrl: './saveBoletin.component.html',
   styleUrls: ['./saveBoletin.component.css'],
   standalone: false,
+  providers: [
+    // Igual que en historialAcciones y auditoria-modal: abierto por NgbModal,
+    // el picker no alcanza los providers de NgxDaterangepickerMd.forRoot().
+    { provide: LOCALE_CONFIG, useValue: DefaultLocaleConfig },
+    { provide: LocaleService, useClass: LocaleService, deps: [LOCALE_CONFIG] },
+  ],
 })
 export class SaveBoletinComponent implements OnInit, OnDestroy {
 
@@ -66,6 +74,32 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
   public imagenes: ImagenEditor[] = [];
   /** Lo que se queda cada imagen si no se toca el campo. */
   public readonly SEGUNDOS_POR_DEFECTO = 6;
+
+  // ---------- vigencia: el mismo rango de fechas del tablero ----------
+  public selected: { startDate: moment.Moment | null; endDate: moment.Moment | null } = { startDate: null, endDate: null };
+
+  public locale: any = {
+    format: 'DD/MM/YYYY',
+    displayFormat: 'DD/MM/YYYY',
+    separator: ' - ',
+    applyLabel: 'Aplicar',
+    cancelLabel: 'Cancelar',
+    clearLabel: 'Limpiar',
+    customRangeLabel: 'Personalizado',
+    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+    monthNames: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+    firstDay: 1,
+  };
+
+  /** Atajos: lo que se suele poner en un boletín. */
+  public ranges: any = {
+    'Hoy': [moment(), moment()],
+    'Esta semana': [moment(), moment().add(6, 'days')],
+    'Quince días': [moment(), moment().add(14, 'days')],
+    'Este mes': [moment(), moment().endOf('month')],
+    'Un mes': [moment(), moment().add(1, 'month')],
+    'Tres meses': [moment(), moment().add(3, 'month')],
+  };
 
   /** Lo que admite el servidor, en MB, para cada tipo de archivo. */
   private readonly TOPES_MB: Record<TipoLamina, number> = { IMAGEN: 8, AUDIO: 20, VIDEO: 64 };
@@ -109,6 +143,7 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
       case 'add':
         this.titulo = 'Nuevo boletín';
         this.form.patchValue({ desde: this.hoyIso(), hasta: this.enDiasIso(15) });
+        this.sincronizarRango();
         break;
       case 'edit':
       case 'view':
@@ -175,6 +210,7 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
         obligatorio: b.obligatorio,
         activo: b.activo,
       });
+      this.sincronizarRango();
 
       this.imagenes = (b.imagenes ?? []).map(i => ({
         id: i.id,
@@ -289,6 +325,83 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
 
   nombreDe(i: ImagenEditor): string {
     return i.tipo === 'VIDEO' ? 'Video' : i.tipo === 'AUDIO' ? 'Audio' : 'Imagen';
+  }
+
+  // ================================================================
+  // VIGENCIA
+  // El picker manda sobre los dos controles del formulario, que son los
+  // que se guardan; así el resto del componente no se entera del cambio.
+  // ================================================================
+
+  /** El usuario eligió un rango (o lo limpió). */
+  onRangoChange(rango: { startDate: any; endDate: any } | null): void {
+    if (!rango?.startDate || !rango?.endDate) {
+      this.form.patchValue({ desde: '', hasta: '' });
+      return;
+    }
+    // .format() del propio objeto (dayjs o moment), nunca moment(obj)
+    this.form.patchValue({
+      desde: rango.startDate.format('YYYY-MM-DD'),
+      hasta: rango.endDate.format('YYYY-MM-DD'),
+    });
+  }
+
+  /** Deja el picker con lo que tenga el formulario. */
+  private sincronizarRango(): void {
+    const v = this.form.getRawValue();
+    this.selected = {
+      startDate: v.desde ? moment(v.desde, 'YYYY-MM-DD') : null,
+      endDate: v.hasta ? moment(v.hasta, 'YYYY-MM-DD') : null,
+    };
+  }
+
+  private enTexto(iso: string): string {
+    return iso ? moment(iso, 'YYYY-MM-DD').format('DD/MM/YYYY') : '—';
+  }
+
+  get rangoDesdeTexto(): string { return this.enTexto(this.form.getRawValue().desde); }
+  get rangoHastaTexto(): string { return this.enTexto(this.form.getRawValue().hasta); }
+
+  /** Lo que se muestra en modo consulta, donde no hay picker. */
+  get rangoTexto(): string {
+    const v = this.form.getRawValue();
+    return v.desde && v.hasta ? `${this.enTexto(v.desde)} - ${this.enTexto(v.hasta)}` : 'Sin vigencia';
+  }
+
+  get diasDeVigencia(): string {
+    const v = this.form.getRawValue();
+    if (!v.desde || !v.hasta) { return '—'; }
+    const dias = moment(v.hasta, 'YYYY-MM-DD').diff(moment(v.desde, 'YYYY-MM-DD'), 'days') + 1;
+    if (dias < 1) { return 'El rango está al revés'; }
+    return dias === 1 ? '1 día' : `${dias} días`;
+  }
+
+  /** El mismo estado que calcula la base de datos, para verlo antes de guardar. */
+  get estadoVigencia(): { clase: string; icono: string; texto: string } {
+    const v = this.form.getRawValue();
+    if (!v.activo) { return { clase: 'inactivo', icono: 'fa-power-off', texto: 'Inactivo: no se muestra a nadie' }; }
+    if (!v.desde || !v.hasta) { return { clase: 'inactivo', icono: 'fa-calendar', texto: 'Falta elegir la vigencia' }; }
+
+    const hoy = moment().startOf('day');
+    if (hoy.isBefore(moment(v.desde, 'YYYY-MM-DD'), 'day')) {
+      return { clase: 'programado', icono: 'fa-clock', texto: 'Programado: empezará a mostrarse el ' + this.enTexto(v.desde) };
+    }
+    if (hoy.isAfter(moment(v.hasta, 'YYYY-MM-DD'), 'day')) {
+      return { clase: 'caducado', icono: 'fa-hourglass-end', texto: 'Caducado: dejó de mostrarse el ' + this.enTexto(v.hasta) };
+    }
+    return { clase: 'vigente', icono: 'fa-circle-check', texto: 'Vigente: se está mostrando' };
+  }
+
+  /** Cuántas láminas hay y de qué tipo. */
+  get resumenContenido(): string {
+    if (!this.imagenes.length) { return 'Sin contenido'; }
+    const cuenta = { IMAGEN: 0, VIDEO: 0, AUDIO: 0 } as Record<TipoLamina, number>;
+    this.imagenes.forEach(i => cuenta[i.tipo]++);
+    const partes: string[] = [];
+    if (cuenta.IMAGEN) { partes.push(cuenta.IMAGEN === 1 ? '1 imagen' : `${cuenta.IMAGEN} imágenes`); }
+    if (cuenta.VIDEO) { partes.push(cuenta.VIDEO === 1 ? '1 video' : `${cuenta.VIDEO} videos`); }
+    if (cuenta.AUDIO) { partes.push(cuenta.AUDIO === 1 ? '1 audio' : `${cuenta.AUDIO} audios`); }
+    return partes.join(' · ');
   }
 
   quitarImagen(i: number): void {
