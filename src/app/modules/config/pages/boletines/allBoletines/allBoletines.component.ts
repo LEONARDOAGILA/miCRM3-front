@@ -5,6 +5,7 @@ import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom } from 'rxjs';
+import Swal from 'sweetalert2';
 
 ///   SERVICIOS    ///
 import { BoletinService } from '../../../services/boletin.service';
@@ -332,6 +333,55 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Lo lanza ahora: avisa por websocket a los destinatarios que tengan la
+   * sesión abierta, sin esperar a que vuelvan a entrar. No cambia nada del
+   * boletín, así que se puede repetir.
+   */
+  async lanzar(b: BoletinModel): Promise<void> {
+    if (!b?.id) { return; }
+
+    const aviso = b.estado === 'VIGENTE'
+      ? 'A quien esté con la sesión abierta le saldrá en pantalla en el momento. A los demás, al entrar.'
+      : `Este boletín está ${(b.estado || '').toLowerCase()}: a quien esté con la sesión abierta le saldrá ahora, pero al entrar no lo verá mientras no esté vigente.`;
+
+    const r = await Swal.fire({
+      title: `¿Lanzar «${b.titulo}» ahora?`,
+      html: `<p class="mb-0">${aviso}</p>`,
+      icon: 'question',
+      // El check va dentro del aviso: es una decisión del momento, no un ajuste
+      input: 'checkbox',
+      inputValue: 0,
+      inputPlaceholder: 'Ignorar el «no volver a mostrar» de los usuarios',
+      showCancelButton: true,
+      confirmButtonColor: '#00acac',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, lanzar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+      customClass: { input: 'text-start' },
+    });
+    if (!r.isConfirmed) { return; }
+
+    // Marcado: a quien lo había ocultado se le retira la marca y vuelve a verlo
+    const ignorar = !!r.value;
+
+    try {
+      this._loadingService.setLoading(true);
+      const res: any = await firstValueFrom(this._boletinService.lanzarBoletin(b.id, ignorar));
+      if (res?.status === 'success') {
+        this._toastr.success(res.message, 'Boletines', { closeButton: true });
+      } else {
+        this._toastr.error(res?.message ?? 'No se pudo lanzar el boletín', 'Boletines');
+      }
+    } catch (e: any) {
+      console.error('Error al lanzar el boletín:', e);
+      this._toastr.error(e?.error?.message ?? 'No se pudo lanzar el boletín', 'Boletines');
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /**
    * Historial de cambios del boletín seleccionado.
    *
    * El modal espera «tablaNombre» —así se llama su @Input— y ese nombre es el
@@ -360,6 +410,12 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
       <span class="d-flex gap-1">
         <button type="button" class="btn btn-xs btn-white" title="Ver como lo verá el usuario" (click)="parent.previsualizar(params.data)">
           <i class="fa fa-eye"></i>
+        </button>
+        <button type="button" class="btn btn-xs btn-white text-primary"
+                [disabled]="params.data?.estado === 'INACTIVO'"
+                [title]="params.data?.estado === 'INACTIVO' ? 'Un boletín inactivo no se puede lanzar' : 'Lanzarlo ahora a los destinatarios conectados'"
+                (click)="parent.lanzar(params.data)">
+          <i class="fa fa-paper-plane"></i>
         </button>
         <button type="button" class="btn btn-xs btn-white" title="Modificar" [disabled]="parent.accesoModel?.editar === false" (click)="parent.editBoletin(params.data)">
           <i class="fa fa-pen"></i>

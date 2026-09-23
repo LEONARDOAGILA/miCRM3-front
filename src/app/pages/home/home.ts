@@ -15,8 +15,7 @@ import { AppStateService } from '../../service/app-state.service';
 import { StorageService } from '../../modules/seguridad/services/storage.service';
 import { UserService } from '../../modules/seguridad/services/user.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { BoletinService } from '../../modules/config/services/boletin.service';
-import { VerBoletinesComponent } from '../../modules/config/pages/boletines/verBoletines/verBoletines.component';
+import { BoletinPushService } from '../../modules/config/services/boletinPush.service';
 
 interface Acceso {
   user_id: number;
@@ -80,6 +79,8 @@ export class HomePage implements OnInit, OnDestroy {
   // ---------- Usuario logueado (cabecera de perfil, igual que el sidebar) ----------
   /** Lo que guardó el login en localStorage (`user`): name, surname, full_name, login_user, email, avatar, perfil. */
   public usuarioLogeado: any = null;
+  /** Canal 'trades' del websocket, para desuscribirse al salir. */
+  private canalTrades: any = null;
   /** URL de la foto (getImagenUsuario/{id}) o la imagen por defecto si no tiene o no carga. */
   public imagenUsuario: string = '/assets/img/user/default.png';
 
@@ -128,7 +129,7 @@ export class HomePage implements OnInit, OnDestroy {
     private _storeService: StorageService,
     private _userService: UserService,
     private modalService: NgbModal,
-    private _boletinService: BoletinService
+    private _boletinPush: BoletinPushService
   ) {
     this.appSettings.appContentFullHeight = true;
     this.appSettings.appContentClass = 'p-0 ';
@@ -166,57 +167,35 @@ export class HomePage implements OnInit, OnDestroy {
     // Boletines: lo primero que ve el usuario al entrar
     this.mostrarBoletines();
 
-    // WebSocket
-    console.log('🟢 Websocket escuchando canal "trades"...');
-    ECHO_PUSHER(this._seguridadService.token)
-      .channel('trades')
-      .listen('NewTrade', (data: any) => {
-        console.log('📩 Mensaje recibido:', data);
-        const mensaje = data.trade || 'Mensaje vacío';
-        this.mensajes.unshift(mensaje);
-        this._wsNotifService.incrementarContador();
-      });
+    // WebSocket: la conexión es la misma de toda la aplicación; aquí sólo
+    // se añade la escucha, que se quita en ngOnDestroy. Sin quitarla, cada
+    // visita al inicio dejaba otra escucha viva apuntando a este componente.
+    this.canalTrades = ECHO_PUSHER(this._seguridadService.token).channel('trades');
+    this.canalTrades.listen('NewTrade', this.alLlegarTrade);
   }
+
+  /** Manejador con nombre: hace falta el mismo para desuscribirse. */
+  private alLlegarTrade = (data: any): void => {
+    const mensaje = data?.trade || 'Mensaje vacío';
+    this.mensajes.unshift(mensaje);
+    this._wsNotifService.incrementarContador();
+  };
 
   /**
    * Boletines vigentes del usuario, en un carrusel, al entrar al sistema.
    *
-   * Se muestran una vez por sesión del navegador: si el usuario navega y
-   * vuelve al inicio no se le repiten. Dejan de aparecer cuando marca «no
-   * volver a mostrar» (eso lo guarda el servidor) o cuando caduca su vigencia.
+   * La lógica vive en BoletinPushService, que es el mismo que los abre cuando
+   * el administrador lanza uno con la sesión ya empezada.
    */
   private mostrarBoletines(): void {
-    // La bandera va por usuario y sólo se pone cuando de verdad se mostró algo:
-    // así, si el boletín se crea después de haber entrado al inicio, aparece en
-    // cuanto se vuelve a esa pantalla.
-    const clave = 'miCRM3.boletines.mostrados.' + (this.usuarioLogeado?.login_user ?? 'anon');
-    try {
-      if (sessionStorage.getItem(clave) === '1') { return; }
-    } catch { /* sin sessionStorage: se mostrarán igual */ }
-
-    this._boletinService.misBoletines()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (res: any) => {
-          const boletines = res?.status === 'success' ? (res.data ?? []) : [];
-          if (!boletines.length) { return; }
-          try { sessionStorage.setItem(clave, '1'); } catch { /* sin sessionStorage */ }
-
-          const modalRef = this.modalService.open(VerBoletinesComponent, {
-            size: 'xl',
-            centered: true,
-            backdrop: 'static',
-            keyboard: false,
-            windowClass: 'bol-modal',
-            backdropClass: 'bol-backdrop',
-          });
-          modalRef.componentInstance.boletines = boletines;
-        },
-        error: () => { /* si falla, la pantalla de inicio sigue su curso */ },
-      });
+    this._boletinPush.mostrarPendientes();
   }
 
   ngOnDestroy() {
+    // Sólo esta escucha: la conexión la comparten las demás pantallas
+    try { this.canalTrades?.stopListening('NewTrade', this.alLlegarTrade); } catch { /* ya no está */ }
+    this.canalTrades = null;
+
     this.destroy$.next();
     this.destroy$.complete();
     this.appSettings.appContentFullHeight = false;

@@ -66,6 +66,29 @@ export class BoletinService {
   eliminarDefinitivo(id: number | string): Observable<any> {
     return this._http.delete(this.URL_SERVICIOS + 'eliminarDefinitivo/' + id);
   }
+  /**
+   * Un boletín concreto, para quien lo va a ver.
+   *
+   * A diferencia de misBoletines, no mira la vigencia: es el que se pide
+   * cuando llega el aviso de uno recién lanzado, que puede estar programado
+   * o caducado.
+   */
+  miBoletin(id: number | string): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'miBoletin/' + id);
+  }
+
+  /**
+   * Lo lanza ahora a los destinatarios que estén con la sesión abierta.
+   *
+   * Con `ignorarNoMostrar` se les retira antes la marca de «no volver a
+   * mostrar», así llega también a quien lo había ocultado.
+   */
+  lanzarBoletin(id: number | string, ignorarNoMostrar = false): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'lanzarBoletin/' + id, {
+      ignorar_no_mostrar: ignorarNoMostrar,
+    });
+  }
+
   vaciarPapelera(): Observable<any> {
     return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera');
   }

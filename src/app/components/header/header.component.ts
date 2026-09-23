@@ -9,6 +9,7 @@ import { UserService } from '../../modules/seguridad/services/user.service';
 import { SeguridadService } from '../../modules/seguridad/services/seguridad.service';
 import { Notificaciones } from '../../core/shared/notificaciones';
 import { InactivityService } from '../../modules/seguridad/services/InactivityService';
+import { BoletinPushService } from '../../modules/config/services/boletinPush.service';
 import { WebsocketNotificationService } from '../../service/websocket-notification.service';
 
 declare var slideToggle: any;
@@ -50,7 +51,8 @@ export class HeaderComponent implements OnDestroy {
 		private _seguridadService: SeguridadService,
 		private _toastr: ToastrService,
 		private _inactivityService: InactivityService,
-	    private _wsNotifService: WebsocketNotificationService
+	    private _wsNotifService: WebsocketNotificationService,
+		private _boletinPush: BoletinPushService
 
 
 		// inicio lpaa
@@ -67,6 +69,11 @@ export class HeaderComponent implements OnDestroy {
   }
 
 	async ngOnInit(): Promise<void> {
+
+		// Boletines lanzados con la sesión ya abierta: la cabecera está en
+		// todas las pantallas, así que es el sitio para quedarse a la escucha.
+		this._boletinPush.escuchar();
+
 
 	    // Actualizar la hora cada minuto
 		setInterval(() => {
@@ -130,6 +137,7 @@ export class HeaderComponent implements OnDestroy {
 
 	ngOnDestroy() {
 		// inicio lpaa
+		this._boletinPush.parar();
 		this.unsubscribe$.next();
 		this.unsubscribe$.complete();
 		// fin lpaa

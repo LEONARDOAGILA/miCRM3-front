@@ -12,6 +12,7 @@ import Swal from 'sweetalert2';
 
 import { environment } from '../../../../environments/environment';
 import { Router } from '@angular/router';
+import { CERRAR_ECHO } from '../../../config/config';
 
 
 @Injectable({
@@ -54,6 +55,7 @@ export class SeguridadService {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("accesos");
+    CERRAR_ECHO();   // el websocket se queda abierto si no se cierra aquí
     Swal.close();  // Cerrar SweetAlert2 si está abierto
     this.modal.dismissAll();
 
