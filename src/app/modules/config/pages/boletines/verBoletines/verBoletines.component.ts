@@ -110,6 +110,8 @@ export class VerBoletinesComponent implements OnInit, AfterViewInit, OnDestroy {
   private medioInicialY = 0;
   /** Boletines cuya lectura ya se registró en esta sesión del modal. */
   private registrados = new Set<number>();
+  /** Láminas por las que ya pasó el usuario (para los obligatorios). */
+  private vistas = new Set<number>();
   private pintando = false;
   /** Para no repintar el lienzo en cada píxel al redimensionar. */
   private temporizadorTamano: any;
@@ -288,6 +290,7 @@ export class VerBoletinesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!l) { return; }
 
     this.pararMedio();
+    this.vistas.add(i);
 
     // Un video puede tardar: el aviso evita que parezca colgado
     this.trayendo = !l.url && !l.fallo && l.tipo !== 'IMAGEN';
@@ -825,10 +828,27 @@ export class VerBoletinesComponent implements OnInit, AfterViewInit, OnDestroy {
   // CERRAR
   // ================================================================
 
-  /** Un boletín obligatorio no se puede saltar sin darse por enterado. */
+  /**
+   * Un boletín obligatorio hay que verlo entero: mientras quede una lámina
+   * suya sin pasar, no se puede cerrar (y la X ni siquiera se muestra).
+   */
   get debeConfirmar(): boolean {
     if (this.vistaPrevia) { return false; }
-    return this.boletines.some(b => b.obligatorio && !this.registrados.has(b.id));
+    return this.faltanPorVer > 0;
+  }
+
+  /** Cuántas láminas de boletines obligatorios quedan por ver. */
+  get faltanPorVer(): number {
+    if (this.vistaPrevia) { return 0; }
+    return this.laminas.reduce(
+      (n, l, i) => n + (l.boletin.obligatorio && !this.vistas.has(i) ? 1 : 0),
+      0
+    );
+  }
+
+  /** Hay algún boletín de lectura obligatoria en el carrusel. */
+  get hayObligatorio(): boolean {
+    return !this.vistaPrevia && this.boletines.some(b => b.obligatorio);
   }
 
   alternarNoMostrar(b: BoletinModel): void {
@@ -837,6 +857,17 @@ export class VerBoletinesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /** Cierra y guarda los "no volver a mostrar" que haya marcado. */
   cerrar(): void {
+    // Se puede llegar aquí por teclado o saltando con los puntos
+    if (this.debeConfirmar) {
+      const n = this.faltanPorVer;
+      this._toastr.warning(
+        n === 1 ? 'Queda 1 lámina por ver' : `Quedan ${n} láminas por ver`,
+        'Lectura obligatoria',
+        { timeOut: 3000 }
+      );
+      return;
+    }
+
     if (!this.vistaPrevia) {
       for (const id of this.noMostrar) {
         this._boletinService.marcarVisto(id, true).subscribe({ error: () => {} });

@@ -40,23 +40,128 @@
   margin-top: .5rem;
 }
 
-/* ---------- Vigencia ---------- */
-.date-range-input {
-  position: relative;
+/* ---------- Pestañas ----------
+   Las mismas que las del mapa: reparten el ancho, esquinas redondeadas
+   arriba y la abierta se monta sobre la línea inferior. */
+.bol-pestanas {
+  display: flex;
+  gap: .25rem;
+  margin: -.25rem -.25rem 1rem;
+  padding: .4rem .5rem 0;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
-.date-range-input i {
-  position: absolute;
-  top: 50%;
-  left: .6rem;
-  transform: translateY(-50%);
+.bol-pestana-btn {
+  flex: 1 1 0;
+  overflow: hidden;
+  padding: .45rem .5rem;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: .375rem .375rem 0 0;
+  background: transparent;
   color: var(--bs-secondary-color, #6c757d);
-  pointer-events: none;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.date-range-input input {
-  padding-left: 2rem;
+.bol-pestana-btn i {
+  margin-right: .25rem;
+}
+
+.bol-pestana-btn:hover:not(.is-activa) {
+  color: var(--bs-body-color, #212529);
+}
+
+.bol-pestana-btn.is-activa {
+  margin-bottom: -1px;
+  border-color: var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+/* Contadorcito, igual que el de la pestaña de capturas del mapa */
+.bol-pestana-btn__cuenta {
+  display: inline-block;
+  min-width: 16px;
+  margin-left: .2rem;
+  padding: 0 .25rem;
+  border-radius: 999px;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+  font-size: 9.5px;
+  line-height: 15px;
+}
+
+.bol-pestana-btn__aviso {
+  margin-left: .2rem;
+  color: var(--bs-danger, #ff5b57);
+  font-size: 11px;
+}
+
+/* ---------- Vigencia ---------- */
+/* ---------- Rango de fechas ----------
+   Mismo recuadro que el historial de acciones. Aquí NO se pone
+   position: relative: el calendario es absoluto y tomaría este recuadro
+   estrecho como referencia, los dos meses se apilarían y el desplegable
+   (800 px de alto) quedaría recortado por el cuerpo del modal. Sin
+   posicionar, se mide contra el modal entero y sale de una. */
+.date-range-input {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: 0 .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius, .375rem);
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.date-range-input > i {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+.date-range-input .form-control {
+  width: 100%;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 1.25rem;
+  border: none;
+  background-color: transparent;
   cursor: pointer;
+  /* La flechita de desplegable, como en el historial */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 16px 12px;
+}
+
+/* El calendario es un overlay: tiene que ganarle al backdrop del modal */
+:host ::ng-deep .md-drppicker.shown {
+  z-index: 1060;
+}
+
+/* Modo oscuro: el calendario es claro por dentro; sus <select> también */
+:host ::ng-deep .md-drppicker {
+  color-scheme: light;
+}
+
+/* En celular los dos meses se apilan y el calendario mide casi 600 px: caiga
+   donde caiga el campo, no cabe debajo. Se planta centrado sobre la pantalla,
+   como un diálogo, y se desplaza por dentro si hace falta. */
+@media (max-width: 767.98px) {
+  :host ::ng-deep .md-drppicker.shown {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    margin: 0 !important;
+    transform: translate(-50%, -50%);
+    max-height: 82vh;
+    overflow-y: auto;
+  }
 }
 
 .bol-vigencia {
@@ -333,7 +438,6 @@
   background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .035);
   font-size: 11px;
   line-height: 1.5;
-  text-align: justify;
   color: var(--bs-secondary-color, #6c757d);
 }
 

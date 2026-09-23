@@ -58,6 +58,7 @@ import { AllBoletinesComponent, ButtonAccionBoletin } from './pages/boletines/al
 import { SaveBoletinComponent } from './pages/boletines/saveBoletin/saveBoletin.component';
 import { DeleteBoletinComponent } from './pages/boletines/deleteBoletin/deleteBoletin.component';
 import { VerBoletinesComponent } from './pages/boletines/verBoletines/verBoletines.component';
+import { PapeleraBoletinesComponent } from './pages/boletines/papeleraBoletines/papeleraBoletines.component';
 
 
 
@@ -85,6 +86,7 @@ import { VerBoletinesComponent } from './pages/boletines/verBoletines/verBoletin
     ButtonAccionBoletin,
     SaveBoletinComponent,
     DeleteBoletinComponent,
+    PapeleraBoletinesComponent,
 
 
   ],

@@ -21,6 +21,15 @@
         Del {{ b.desde }} al {{ b.hasta }}
         @if (hayVarios) { · Boletín {{ boletines.indexOf(b) + 1 }} de {{ boletines.length }} }
       </span>
+      @if (hayObligatorio) {
+        <span class="bol-visor__obligatorio" [class.is-listo]="!debeConfirmar">
+          @if (debeConfirmar) {
+            <i class="fa fa-lock"></i> Lectura obligatoria: {{ faltanPorVer === 1 ? 'falta' : 'faltan' }} {{ faltanPorVer }} por ver
+          } @else {
+            <i class="fa fa-circle-check"></i> Ya puede cerrar el boletín
+          }
+        </span>
+      }
     </div>
   }
 
@@ -61,12 +70,18 @@
       <i class="fa fa-chevron-right"></i>
     </button>
     <span class="bol-visor__separador"></span>
-    <button type="button" class="bol-visor__btn is-cerrar"
-            [disabled]="debeConfirmar"
-            [title]="debeConfirmar ? 'Revise los boletines obligatorios antes de cerrar' : 'Cerrar (Esc)'"
-            (click)="cerrar()">
-      <i class="fa fa-times"></i>
-    </button>
+
+    <!-- La X aparece cuando ya no queda nada obligatorio por ver -->
+    @if (debeConfirmar) {
+      <span class="bol-visor__candado" [title]="(faltanPorVer === 1 ? 'Falta ' : 'Faltan ') + faltanPorVer + ' por ver para poder cerrar'">
+        <i class="fa fa-lock"></i>
+        <span class="bol-visor__candado__n">{{ faltanPorVer }}</span>
+      </span>
+    } @else {
+      <button type="button" class="bol-visor__btn is-cerrar" title="Cerrar (Esc)" (click)="cerrar()">
+        <i class="fa fa-times"></i>
+      </button>
+    }
   </div>
 
   <!-- ---------- 3. LIENZO ---------- -->
@@ -196,6 +211,11 @@
       @if (!esUltima) {
         <button type="button" class="bol-visor__accion is-siguiente" (click)="siguiente()">
           Siguiente <i class="fa fa-chevron-right ms-1"></i>
+        </button>
+      } @else if (debeConfirmar) {
+        <button type="button" class="bol-visor__accion is-pendiente" disabled
+                title="Pase por todas las láminas para poder cerrar">
+          <i class="fa fa-lock me-1"></i>{{ faltanPorVer === 1 ? 'Falta' : 'Faltan' }} {{ faltanPorVer }} por ver
         </button>
       } @else {
         <button type="button" class="bol-visor__accion is-listo" (click)="cerrar()">

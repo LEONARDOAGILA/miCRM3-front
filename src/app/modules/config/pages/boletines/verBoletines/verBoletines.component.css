@@ -59,6 +59,20 @@
   color: #f59c1a;
 }
 
+.bol-visor__obligatorio {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  margin-top: .15rem;
+  color: #f5c37a;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.bol-visor__obligatorio.is-listo {
+  color: #6fd7cf;
+}
+
 .bol-visor__vigencia {
   color: rgba(255, 255, 255, .6);
   font-size: 11px;
@@ -135,6 +149,25 @@
   font-weight: 600;
   letter-spacing: .5px;
   text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Candado en el sitio de la X mientras falte algo obligatorio por ver */
+.bol-visor__candado {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  height: 40px;
+  padding: 0 .6rem;
+  border: 1px solid rgba(245, 156, 26, .35);
+  border-radius: 20px;
+  background-color: rgba(245, 156, 26, .18);
+  color: #f5c37a;
+  font-size: .85rem;
+}
+
+.bol-visor__candado__n {
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -470,6 +503,17 @@
 
 .bol-visor__accion:active {
   transform: scale(.97);
+}
+
+.bol-visor__accion.is-pendiente {
+  border-color: rgba(245, 156, 26, .35);
+  background-color: rgba(245, 156, 26, .18);
+  color: #f5c37a;
+  cursor: not-allowed;
+}
+
+.bol-visor__accion.is-pendiente:hover {
+  transform: none;
 }
 
 .bol-visor__accion.is-listo {

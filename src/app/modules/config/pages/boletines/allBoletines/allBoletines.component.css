@@ -56,3 +56,12 @@
   margin-top: -10px;
   --ag-line-height: 30px;
 }
+
+/* Contador del botón de la papelera, como en usuarios y grupos */
+.lista-barra__contador {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  padding: .2em .45em;
+  font-size: 9px;
+}

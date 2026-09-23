@@ -20,6 +20,7 @@ import { SaveBoletinComponent } from '../saveBoletin/saveBoletin.component';
 import { DeleteBoletinComponent } from '../deleteBoletin/deleteBoletin.component';
 import { VerBoletinesComponent } from '../verBoletines/verBoletines.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { PapeleraBoletinesComponent } from '../papeleraBoletines/papeleraBoletines.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
 /**
@@ -27,7 +28,7 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
  *
  * Grilla ag-Grid con paginación EN SERVIDOR (core.fn_boletines_listar_paginado)
  * y filtro por estado: vigentes, programados, caducados o inactivos. El
- * interruptor «Papelera» cambia la fuente a los eliminados, donde las
+ * botón «Papelera» abre el modal con los eliminados, donde las
  * acciones pasan a restaurar y eliminar definitivamente.
  *
  * Desde aquí se crea, se modifica, se ve como lo verá el usuario (con su marca
@@ -51,7 +52,8 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
   /** Filtros de la barra. */
   public estados = ESTADOS_BOLETIN;
   public estado = 'TODOS';
-  public verPapelera = false;
+  /** Boletines en la papelera de reciclaje (contador del botón). */
+  public enPapelera = 0;
   public busqueda = '';
 
   // ---------- Paginación en servidor ----------
@@ -230,8 +232,6 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
   // ================================================================
 
   async allBoletines(page: number = 1): Promise<void> {
-    if (this.verPapelera) { return this.cargarPapelera(); }
-
     try {
       this._loadingService.setLoading(true);
       const res: any = await firstValueFrom(
@@ -244,27 +244,11 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
       this.totalRegistros = paginado?.total ?? 0;
       this.paginaActual = paginado?.current_page ?? page;
       this.ultimaPagina = paginado?.last_page ?? 1;
+      this.enPapelera = paginado?.en_papelera ?? 0;
       this.selectedRow = null;
       this.programar(() => this.ajustarTamanoGrid(), 100);
     } catch (e) {
       console.error('Error al listar boletines:', e);
-    } finally {
-      this._loadingService.setLoading(false);
-    }
-  }
-
-  private async cargarPapelera(): Promise<void> {
-    try {
-      this._loadingService.setLoading(true);
-      const res: any = await firstValueFrom(this._boletinService.papelera());
-      this.boletines = res?.status === 'success' ? (res.data ?? []) : [];
-      this.totalRegistros = this.boletines.length;
-      this.paginaActual = 1;
-      this.ultimaPagina = 1;
-      this.selectedRow = null;
-      this.programar(() => this.ajustarTamanoGrid(), 100);
-    } catch (e) {
-      console.error('Error al listar la papelera:', e);
     } finally {
       this._loadingService.setLoading(false);
     }
@@ -277,9 +261,12 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
 
   cambiarEstado(): void { this.allBoletines(1); }
 
-  alternarPapelera(): void {
-    this.verPapelera = !this.verPapelera;
-    this.allBoletines(1);
+  /** Papelera de reciclaje: lo eliminado se restaura o se borra de verdad desde ahí. */
+  abrirPapelera(): void {
+    const modalRef = this.modalService.open(PapeleraBoletinesComponent, {
+      size: 'xl', centered: true, backdrop: 'static', keyboard: true,
+    });
+    modalRef.componentInstance.cambio.subscribe(() => this.allBoletines(this.paginaActual));
   }
 
   clearAllFilters(): void {
@@ -344,37 +331,17 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.registrosE.subscribe(() => this.allBoletines(this.paginaActual));
   }
 
-  async restaurar(b: BoletinModel): Promise<void> {
-    try {
-      const res: any = await firstValueFrom(this._boletinService.restaurarBoletin(b.id));
-      if (res?.status === 'success') {
-        this._toastr.success(res.message, 'Boletines');
-        this.allBoletines(1);
-      }
-    } catch (e) {
-      console.error('Error al restaurar el boletín:', e);
-    }
-  }
-
-  async eliminarDefinitivo(b: BoletinModel): Promise<void> {
-    if (!confirm(`¿Eliminar definitivamente «${b.titulo}» y sus imágenes? Esto no se puede deshacer.`)) { return; }
-    try {
-      const res: any = await firstValueFrom(this._boletinService.eliminarDefinitivo(b.id));
-      if (res?.status === 'success') {
-        this._toastr.success(res.message, 'Boletines');
-        this.allBoletines(1);
-      }
-    } catch (e) {
-      console.error('Error al eliminar definitivamente:', e);
-    }
-  }
-
+  /**
+   * Historial de cambios del boletín seleccionado.
+   *
+   * El modal espera «tablaNombre» —así se llama su @Input— y ese nombre es el
+   * de la tabla en auditoria.logs_cambios, sin el esquema.
+   */
   auditoria(): void {
     if (!this.selectedRow) { return; }
-    const modalRef = this.modalService.open(AuditoriaModalComponent, { size: 'xl', centered: true, backdrop: 'static' });
-    modalRef.componentInstance.tabla = 'boletines';
+    const modalRef = this.modalService.open(AuditoriaModalComponent, { size: 'xl', centered: true, backdrop: 'static', keyboard: true });
+    modalRef.componentInstance.tablaNombre = 'boletines';
     modalRef.componentInstance.registroId = this.selectedRow.id;
-    modalRef.componentInstance.titulo = `Auditoría del boletín «${this.selectedRow.titulo}»`;
   }
 }
 
@@ -389,15 +356,6 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
       <button type="button" class="btn btn-sm btn-outline-primary acciones-desplegar" title="Mostrar los botones" (click)="parent.toggleActionsColumn()">
         <i class="fas fa-bars"></i>
       </button>
-    } @else if (parent.verPapelera) {
-      <span class="d-flex gap-1">
-        <button type="button" class="btn btn-xs btn-white" title="Restaurar" (click)="parent.restaurar(params.data)">
-          <i class="fa fa-rotate-left"></i>
-        </button>
-        <button type="button" class="btn btn-xs btn-white text-danger" title="Eliminar definitivamente" (click)="parent.eliminarDefinitivo(params.data)">
-          <i class="fa fa-trash"></i>
-        </button>
-      </span>
     } @else {
       <span class="d-flex gap-1">
         <button type="button" class="btn btn-xs btn-white" title="Ver como lo verá el usuario" (click)="parent.previsualizar(params.data)">

@@ -72,6 +72,18 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
 
   /** Imágenes del carrusel, en el orden en que se mostrarán. */
   public imagenes: ImagenEditor[] = [];
+  // ---------- pestañas ----------
+  /**
+   * Dos pestañas: los datos (en tres columnas) y el carrusel, que es lo
+   * único que necesita el ancho entero.
+   */
+  public pestana: 'datos' | 'contenido' = 'datos';
+  public readonly pestanas = [
+    // Rótulos cortos, como los del mapa: en celular no se cortan
+    { id: 'datos' as const,     texto: 'Datos',     icono: 'fa-circle-info' },
+    { id: 'contenido' as const, texto: 'Contenido', icono: 'fa-images' },
+  ];
+
   /** Lo que se queda cada imagen si no se toca el campo. */
   public readonly SEGUNDOS_POR_DEFECTO = 6;
 
@@ -328,6 +340,38 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
   }
 
   // ================================================================
+  // PESTAÑAS
+  // ================================================================
+
+  /** El número que va en la pestaña (0 = sin globo). */
+  contadorDe(id: string): number {
+    if (id === 'contenido') { return this.imagenes.length; }
+    if (id === 'datos') { return this.usuarios.length + this.grupos.length; }
+    return 0;
+  }
+
+  /** Avisa en la pestaña que esconde un campo obligatorio sin llenar. */
+  faltaAlgoEn(id: string): boolean {
+    const malo = (campo: string) => {
+      const c = this.form.get(campo);
+      return !!c && c.invalid && c.touched;
+    };
+    if (id === 'datos') {
+      return malo('titulo') || malo('descripcion') || malo('prioridad') || malo('desde') || malo('hasta');
+    }
+    return false;
+  }
+
+  /** Al fallar el guardado, se abre la pestaña donde está el problema. */
+  private irAlProblema(): void {
+    for (const p of this.pestanas) {
+      if (this.faltaAlgoEn(p.id)) { this.pestana = p.id; return; }
+    }
+    if (!this.imagenes.length) {
+      this.pestana = 'contenido'; this.pestana = 'contenido'; }
+  }
+
+  // ================================================================
   // VIGENCIA
   // El picker manda sobre los dos controles del formulario, que son los
   // que se guardan; así el resto del componente no se entera del cambio.
@@ -538,6 +582,7 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
     Object.values(this.form.controls).forEach(c => c.markAsTouched());
 
     if (this.form.invalid) {
+      this.irAlProblema();
       this._toastr.error('Revise los campos del formulario.', 'No se puede Guardar', { timeOut: 20000, closeButton: true });
       return;
     }

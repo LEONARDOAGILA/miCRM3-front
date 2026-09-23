@@ -1,12 +1,10 @@
 <!-- ============================================================
      BOLETÍN: alta / modificación / vista
 
-     Mismo esquema que el modal de usuarios: cabecera y pie comunes,
-     y cada bloque dentro de su <panel>.
-       1. Datos del boletín
-       2. Vigencia (rango de fechas)
-       3. Contenido del carrusel (se sube al elegirlo)
-       4. Destinatarios: usuarios y grupos
+     Mismo esquema que el modal de usuarios: cabecera y pie comunes, y cada
+     bloque en su <panel>. Dos pestañas:
+       · Datos: tres columnas — datos del boletín, vigencia y destinatarios
+       · Contenido: el carrusel, que es el bloque ancho y va aparte
      ============================================================ -->
 
 @if (isLoading$ | async) {
@@ -20,10 +18,31 @@
 <!-- ===================== CUERPO ===================== -->
 <div class="modal-body bol-modal-body" tabindex="0">
   <form [formGroup]="form" autocomplete="off">
+
+    <!-- ===================== PESTAÑAS ===================== -->
+    <div class="bol-pestanas" role="tablist">
+      @for (p of pestanas; track p.id) {
+        <button type="button" class="bol-pestana-btn"
+                role="tab"
+                [class.is-activa]="pestana === p.id"
+                [attr.aria-selected]="pestana === p.id"
+                (click)="pestana = p.id">
+          <i class="fa" [ngClass]="p.icono"></i> {{ p.texto }}
+          @if (contadorDe(p.id); as n) {
+            <span class="bol-pestana-btn__cuenta">{{ n }}</span>
+          }
+          @if (faltaAlgoEn(p.id)) {
+            <i class="fa fa-circle-exclamation bol-pestana-btn__aviso" title="Faltan datos obligatorios"></i>
+          }
+        </button>
+      }
+    </div>
+
     <div class="row g-3">
 
       <!-- ============ 1. DATOS ============ -->
-      <div class="col-lg-5">
+      @if (pestana === 'datos') {
+      <div class="col-lg-4">
         <panel headerClass="bg-gray-800"
                title="Datos del boletín"
                noButton="true"
@@ -103,7 +122,7 @@
       </div>
 
       <!-- ============ 2. VIGENCIA ============ -->
-      <div class="col-lg-7">
+      <div class="col-lg-4">
         <panel headerClass="bg-gray-800"
                title="Vigencia"
                noButton="true"
@@ -169,7 +188,104 @@
         </panel>
       </div>
 
-      <!-- ============ 3. CONTENIDO ============ -->
+      <!-- ============ 3. DESTINATARIOS ============ -->
+      <div class="col-lg-4">
+        <panel headerClass="bg-gray-800"
+               title="Destinatarios"
+               noButton="true"
+               noBody="true"
+               panelClass="h-100 mb-0"
+               icono="usuarios"
+               fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <div class="bol-barra">
+                <span class="bol-barra__resumen">{{ resumenDestinatarios }}</span>
+              </div>
+
+              <div class="row g-3">
+                <!-- Usuarios -->
+                <div class="col-12">
+                  <div class="bol-lista">
+                    <div class="bol-lista__cabecera">
+                      <span><i class="fa fa-user"></i> Usuarios <b>{{ usuarios.length }}</b></span>
+                      @if (!esView) {
+                        <button type="button" class="btn btn-xs btn-white" title="Agregar un usuario" (click)="agregarUsuario()">
+                          <i class="fa fa-plus"></i>
+                        </button>
+                      }
+                    </div>
+
+                    @if (!usuarios.length) {
+                      <div class="bol-lista__vacia">Nadie añadido uno a uno.</div>
+                    } @else {
+                      <ul class="bol-lista__items">
+                        @for (u of usuarios; track u.user_id) {
+                          <li class="bol-item" [class.is-inactivo]="!u.isactive">
+                            <span class="bol-item__texto">
+                              <b>{{ u.login_user }}</b>
+                              <small>{{ u.name }} {{ u.surname }}@if (!u.isactive) { · inactivo }</small>
+                            </span>
+                            @if (!esView) {
+                              <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitarUsuario(u)">
+                                <i class="fa fa-xmark"></i>
+                              </button>
+                            }
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                </div>
+
+                <!-- Grupos -->
+                <div class="col-12">
+                  <div class="bol-lista">
+                    <div class="bol-lista__cabecera">
+                      <span><i class="fa fa-sitemap"></i> Grupos <b>{{ grupos.length }}</b></span>
+                      @if (!esView) {
+                        <button type="button" class="btn btn-xs btn-white" title="Agregar un grupo" (click)="agregarGrupo()">
+                          <i class="fa fa-plus"></i>
+                        </button>
+                      }
+                    </div>
+
+                    @if (!grupos.length) {
+                      <div class="bol-lista__vacia">Sin grupos: el boletín sólo llega a los usuarios de arriba.</div>
+                    } @else {
+                      <ul class="bol-lista__items">
+                        @for (g of grupos; track g.grupo_id) {
+                          <li class="bol-item">
+                            <span class="bol-item__texto">
+                              <b>{{ g.nombre }}</b>
+                              <small>{{ g.incluir_subgrupos ? 'con sus subgrupos' : 'sólo este grupo' }}</small>
+                            </span>
+                            @if (!esView) {
+                              <button type="button" class="btn btn-xs btn-white" [title]="g.incluir_subgrupos ? 'Dejar sólo este grupo' : 'Incluir los subgrupos'" (click)="alternarSubgrupos(g)">
+                                <i class="fa" [ngClass]="g.incluir_subgrupos ? 'fa-sitemap' : 'fa-circle-dot'"></i>
+                              </button>
+                              <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitarGrupo(g)">
+                                <i class="fa fa-xmark"></i>
+                              </button>
+                            }
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+      }
+
+      <!-- ============ 4. CONTENIDO ============ -->
+      @if (pestana === 'contenido') {
       <div class="col-12">
         <panel headerClass="bg-gray-800"
                title="Contenido del carrusel"
@@ -264,101 +380,7 @@
           </ng-container>
         </panel>
       </div>
-
-      <!-- ============ 4. DESTINATARIOS ============ -->
-      <div class="col-12">
-        <panel headerClass="bg-gray-800"
-               title="Destinatarios"
-               noButton="true"
-               noBody="true"
-               panelClass="mb-0"
-               icono="usuarios"
-               fondoGris="true">
-
-          <ng-container outsideBody>
-            <div class="form-card__body">
-
-              <div class="bol-barra">
-                <span class="bol-barra__resumen">{{ resumenDestinatarios }}</span>
-              </div>
-
-              <div class="row g-3">
-                <!-- Usuarios -->
-                <div class="col-12 col-md-6">
-                  <div class="bol-lista">
-                    <div class="bol-lista__cabecera">
-                      <span><i class="fa fa-user"></i> Usuarios <b>{{ usuarios.length }}</b></span>
-                      @if (!esView) {
-                        <button type="button" class="btn btn-xs btn-white" title="Agregar un usuario" (click)="agregarUsuario()">
-                          <i class="fa fa-plus"></i>
-                        </button>
-                      }
-                    </div>
-
-                    @if (!usuarios.length) {
-                      <div class="bol-lista__vacia">Nadie añadido uno a uno.</div>
-                    } @else {
-                      <ul class="bol-lista__items">
-                        @for (u of usuarios; track u.user_id) {
-                          <li class="bol-item" [class.is-inactivo]="!u.isactive">
-                            <span class="bol-item__texto">
-                              <b>{{ u.login_user }}</b>
-                              <small>{{ u.name }} {{ u.surname }}@if (!u.isactive) { · inactivo }</small>
-                            </span>
-                            @if (!esView) {
-                              <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitarUsuario(u)">
-                                <i class="fa fa-xmark"></i>
-                              </button>
-                            }
-                          </li>
-                        }
-                      </ul>
-                    }
-                  </div>
-                </div>
-
-                <!-- Grupos -->
-                <div class="col-12 col-md-6">
-                  <div class="bol-lista">
-                    <div class="bol-lista__cabecera">
-                      <span><i class="fa fa-sitemap"></i> Grupos <b>{{ grupos.length }}</b></span>
-                      @if (!esView) {
-                        <button type="button" class="btn btn-xs btn-white" title="Agregar un grupo" (click)="agregarGrupo()">
-                          <i class="fa fa-plus"></i>
-                        </button>
-                      }
-                    </div>
-
-                    @if (!grupos.length) {
-                      <div class="bol-lista__vacia">Sin grupos: el boletín sólo llega a los usuarios de la izquierda.</div>
-                    } @else {
-                      <ul class="bol-lista__items">
-                        @for (g of grupos; track g.grupo_id) {
-                          <li class="bol-item">
-                            <span class="bol-item__texto">
-                              <b>{{ g.nombre }}</b>
-                              <small>{{ g.incluir_subgrupos ? 'con sus subgrupos' : 'sólo este grupo' }}</small>
-                            </span>
-                            @if (!esView) {
-                              <button type="button" class="btn btn-xs btn-white" [title]="g.incluir_subgrupos ? 'Dejar sólo este grupo' : 'Incluir los subgrupos'" (click)="alternarSubgrupos(g)">
-                                <i class="fa" [ngClass]="g.incluir_subgrupos ? 'fa-sitemap' : 'fa-circle-dot'"></i>
-                              </button>
-                              <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitarGrupo(g)">
-                                <i class="fa fa-xmark"></i>
-                              </button>
-                            }
-                          </li>
-                        }
-                      </ul>
-                    }
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </ng-container>
-        </panel>
-      </div>
+      }
 
     </div>
   </form>
