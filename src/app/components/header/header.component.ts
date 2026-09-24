@@ -1,4 +1,6 @@
 import { Component, Input, Output, EventEmitter, Renderer2, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Subject, takeUntil } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
@@ -10,6 +12,10 @@ import { SeguridadService } from '../../modules/seguridad/services/seguridad.ser
 import { Notificaciones } from '../../core/shared/notificaciones';
 import { InactivityService } from '../../modules/seguridad/services/InactivityService';
 import { BoletinPushService } from '../../modules/config/services/boletinPush.service';
+import { CampanaService } from '../../modules/config/services/campana.service';
+import { AvisoCampanaService } from '../../modules/config/services/avisoCampana.service';
+import { MisNotificacionesComponent } from '../../modules/config/pages/notificaciones/misNotificaciones/misNotificaciones.component';
+import { ESTILOS_NOTIFICACION, NotificacionModel, TipoNotificacion } from '../../modules/config/interfaces/notificacionModel';
 import { WebsocketNotificationService } from '../../service/websocket-notification.service';
 
 declare var slideToggle: any;
@@ -40,6 +46,14 @@ export class HeaderComponent implements OnDestroy {
 	contadorWebsockets: number = 0;
 	animarCampana: boolean = false;
 
+	/** Campana: las últimas notificaciones y cuántas van sin leer. */
+	notificaciones: NotificacionModel[] = [];
+	noLeidas = 0;
+
+	/** Avisos al entrar una: el «ding» y el globo del navegador. */
+	avisoSonido = false;
+	avisoEscritorio = false;
+
 	// fin lpaa
 
 	constructor(
@@ -52,7 +66,11 @@ export class HeaderComponent implements OnDestroy {
 		private _toastr: ToastrService,
 		private _inactivityService: InactivityService,
 	    private _wsNotifService: WebsocketNotificationService,
-		private _boletinPush: BoletinPushService
+		private _boletinPush: BoletinPushService,
+		private _campana: CampanaService,
+		private _aviso: AvisoCampanaService,
+		private _modal: NgbModal,
+		private _router: Router
 
 
 		// inicio lpaa
@@ -74,6 +92,24 @@ export class HeaderComponent implements OnDestroy {
 		// todas las pantallas, así que es el sitio para quedarse a la escucha.
 		this._boletinPush.escuchar();
 
+		// La campana: lo que ya tiene y lo que vaya entrando
+		this._campana.escuchar();
+		this._campana.noLeidas$.pipe(takeUntil(this.unsubscribe$)).subscribe(n => {
+			this.noLeidas = n;
+			// Sin nada pendiente la campana se queda quieta, aunque no se haya abierto
+			if (!n) { this.animarCampana = false; }
+		});
+		this._campana.lista$.pipe(takeUntil(this.unsubscribe$)).subscribe(l => this.notificaciones = l);
+		this._campana.entrante$.pipe(takeUntil(this.unsubscribe$)).subscribe(n => {
+			if (n) { this.sacudirCampana(); }
+		});
+
+		// Cómo quiere que le avisen: el sonido y el globo del navegador
+		this._aviso.preferencias$.pipe(takeUntil(this.unsubscribe$)).subscribe(p => {
+			this.avisoSonido = p.sonido;
+			this.avisoEscritorio = p.escritorio;
+		});
+
 
 	    // Actualizar la hora cada minuto
 		setInterval(() => {
@@ -86,7 +122,6 @@ export class HeaderComponent implements OnDestroy {
 		.pipe(takeUntil(this.unsubscribe$))
 		.subscribe((count) => {
 			this.contadorWebsockets = count;
-			this.animarCampana = count > 0; // 🔔 activar animación solo si hay mensajes
 		});
 
 
@@ -135,9 +170,111 @@ export class HeaderComponent implements OnDestroy {
 
 	// fin lpaa
 
+
+	// ================================================================
+	// CAMPANA DE NOTIFICACIONES
+	// ================================================================
+
+	/**
+	 * La campana se queda latiendo desde que entra una notificación.
+	 *
+	 * No se para sola: igual que el sonido, insiste hasta que el usuario la
+	 * abre. Así un aviso no se pierde por no estar mirando en ese momento.
+	 */
+	private sacudirCampana(): void {
+		this.animarCampana = true;
+	}
+
+	/**
+	 * Abrir la campana la deja quieta y calla el sonido: ya se ha enterado.
+	 *
+	 * No se toca el evento, que es el que abre y cierra el desplegable.
+	 */
+	alAbrirCampana(): void {
+		this.animarCampana = false;
+		this._aviso.callar();
+	}
+
+	/** Pulsar una: queda leída y, si lleva enlace, lleva allí. */
+	async abrirNotificacion(n: NotificacionModel, ev: Event): Promise<void> {
+		ev.preventDefault();
+		if (!n.leida) { await this._campana.marcarLeidas([n.id]); }
+		if (n.url) { this._router.navigateByUrl(n.url).catch(() => { /* ruta que ya no existe */ }); }
+	}
+
+	async marcarTodasLeidas(ev: Event): Promise<void> {
+		ev.preventDefault();
+		ev.stopPropagation();
+		await this._campana.marcarLeidas();
+	}
+
+	/** «Ver más»: la lista completa, con su filtro y sus acciones. */
+	verNotificaciones(ev: Event): void {
+		ev.preventDefault();
+		const modalRef = this._modal.open(MisNotificacionesComponent, {
+			size: 'lg', centered: true, backdrop: 'static', keyboard: true, scrollable: true,
+		});
+		modalRef.result.then(() => this._campana.refrescar(), () => this._campana.refrescar());
+	}
+
+	claseTipo(n: NotificacionModel): string {
+		return (ESTILOS_NOTIFICACION[(n.tipo ?? 'INFO') as TipoNotificacion] ?? ESTILOS_NOTIFICACION.INFO).clase;
+	}
+
+	iconoDe(n: NotificacionModel): string {
+		return n.icono || (ESTILOS_NOTIFICACION[(n.tipo ?? 'INFO') as TipoNotificacion] ?? ESTILOS_NOTIFICACION.INFO).icono;
+	}
+
+	hace(n: NotificacionModel): string {
+		return this._campana.hace(n.created_at);
+	}
+
+	// ---------- Cómo avisa la campana ----------
+
+	/** En iOS y en las páginas http:// el navegador no sabe mostrar globos. */
+	get soportaAvisoEscritorio(): boolean {
+		return this._aviso.soportaEscritorio;
+	}
+
+	/**
+	 * Enciende o apaga el «ding». Se para el clic para que el desplegable no
+	 * se cierre: aquí se está ajustando, no eligiendo una notificación.
+	 */
+	alternarSonido(ev: Event): void {
+		ev.preventDefault();
+		ev.stopPropagation();
+		const activo = this._aviso.alternarSonido();
+		this._toastr.info(activo ? 'Sonará al llegar una notificación' : 'Las notificaciones llegarán en silencio', '', { timeOut: 2000 });
+	}
+
+	/**
+	 * Enciende o apaga el globo del navegador. El permiso hay que pedirlo desde
+	 * este clic: si se pide solo al cargar, el navegador lo descarta.
+	 */
+	async alternarAvisoEscritorio(ev: Event): Promise<void> {
+		ev.preventDefault();
+		ev.stopPropagation();
+
+		const { activo, permiso } = await this._aviso.alternarEscritorio();
+
+		if (permiso === 'denied') {
+			this._toastr.warning(
+				'Este navegador tiene bloqueados los avisos para el CRM. Se permiten desde el candado de la barra de direcciones.',
+				'Avisos del navegador', { timeOut: 7000, closeButton: true });
+			return;
+		}
+
+		this._toastr.info(
+			activo
+				? 'El navegador te avisará aunque el CRM no esté a la vista'
+				: 'El navegador ya no mostrará avisos',
+			'', { timeOut: 2500 });
+	}
+
 	ngOnDestroy() {
 		// inicio lpaa
 		this._boletinPush.parar();
+		this._campana.parar();
 		this.unsubscribe$.next();
 		this.unsubscribe$.complete();
 		// fin lpaa

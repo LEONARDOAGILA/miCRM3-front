@@ -1,21 +1,21 @@
 <!-- ============================================================
-     LISTADO DE BOLETINES
+     LISTADO DE NOTIFICACIONES
        1. Miga de pan
        2. <panel>
-          2a. Barra: limpiar, buscador, estado, vistas, papelera, nuevo, auditoría
+          2a. Barra: limpiar, buscador, tipo, destinatarios, nueva, auditoría
           2b. Grilla (paginación en servidor)
           2c. Paginación
      ============================================================ -->
 
 <ol class="breadcrumb lista-breadcrumb">
   <li class="breadcrumb-item"><a (click)="fun_home();">Configuración</a></li>
-  <li class="breadcrumb-item active">Boletines</li>
+  <li class="breadcrumb-item active">Notificaciones</li>
 </ol>
 
 <panel [title]="titulo"
        [noButton]="false"
        [noButtonCollapse]="true"
-       (panelReloaded)="allBoletines(paginaActual)"
+       (panelReloaded)="allNotificaciones(paginaActual)"
        (panelExpanded)="ajustarTamanoGrid()"
        [closeRoute]="'/config'"
        icono="usuarios">
@@ -40,7 +40,7 @@
           <div class="col position-relative pe-1">
             <app-campoBusquedaPaginacion
               [id]="'filter-text-box'"
-              [placeholder]="'Buscar por título o texto'"
+              [placeholder]="'Buscar por título o mensaje'"
               [iconClass]="'fa fa-search fa-lg'"
               [containerClass]="'position-relative w-100'"
               (buscar)="onFilterTextBoxChanged($event)">
@@ -48,38 +48,24 @@
           </div>
 
           <div class="col-auto pe-1">
-            <select class="form-select form-select-sm bol-filtro" [(ngModel)]="estado" (change)="cambiarEstado()" title="Filtrar por estado">
-              @for (e of estados; track e.id) { <option [ngValue]="e.id">{{ e.name }}</option> }
+            <select class="form-select form-select-sm noti-filtro" [(ngModel)]="tipo" (change)="cambiarTipo()" title="Filtrar por tipo">
+              @for (t of tipos; track t.id) { <option [ngValue]="t.id">{{ t.name }}</option> }
             </select>
           </div>
 
-          <!-- Quién lo ha visto: hace falta un boletín seleccionado -->
+          <!-- Quién la recibió: hace falta una notificación seleccionada -->
           <div class="col-auto pe-1">
             <button type="button" class="btn btn-info lista-barra__btn"
                     [disabled]="!selectedRow"
-                    [title]="selectedRow ? 'Ver quién ha visto «' + selectedRow.titulo + '»' : 'Seleccione un boletín para ver quién lo vio'"
-                    (click)="verVistas()">
-              <i class="fa fa-eye"></i>
+                    [title]="selectedRow ? 'Ver quién recibió «' + selectedRow.titulo + '»' : 'Seleccione una notificación para ver sus destinatarios'"
+                    (click)="verDestinatarios()">
+              <i class="fa fa-users"></i>
             </button>
           </div>
 
-          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
-          @if (accesoModel?.papelera === true) {
-            <div class="col-auto pe-1">
-              <button type="button" class="btn btn-dark lista-barra__btn position-relative"
-                      [title]="enPapelera ? 'Papelera de reciclaje: ' + enPapelera + (enPapelera === 1 ? ' boletín' : ' boletines') : 'Papelera de reciclaje (vacía)'"
-                      (click)="abrirPapelera()">
-                <i class="fa fa-trash-can"></i>
-                @if (enPapelera) {
-                  <span class="badge rounded-pill bg-danger lista-barra__contador">{{ enPapelera }}</span>
-                }
-              </button>
-            </div>
-          }
-
           <div class="col-auto ps-0">
-            <button type="button" class="inactivo btn btn-primary lista-barra__btn" title="Nuevo boletín"
-                    [disabled]="accesoModel?.crear === false" (click)="addBoletin()">
+            <button type="button" class="inactivo btn btn-primary lista-barra__btn" title="Enviar una notificación"
+                    [disabled]="accesoModel?.crear === false" (click)="addNotificacion()">
               <i class="fa fa-plus"></i>
             </button>
           </div>
@@ -87,7 +73,7 @@
           @if (accesoModel?.auditar === true) {
             <div class="col-auto">
               <button type="button" class="btn btn-warning lista-barra__btn position-relative"
-                      title="Ver historial de auditoría del boletín seleccionado"
+                      title="Ver historial de auditoría de la notificación seleccionada"
                       [disabled]="!selectedRow" (click)="auditoria()">
                 <i class="fa fa-user-secret"></i>
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
@@ -101,7 +87,7 @@
         <!-- ---------- 2b. GRILLA ---------- -->
         <ag-grid-angular
           class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
-          [rowData]="boletines"
+          [rowData]="notificaciones"
           [columnDefs]="columnDefs"
           [enableCellTextSelection]="true"
           [defaultColDef]="_appAgGridService.defaultColDef"
@@ -110,12 +96,9 @@
           [headerHeight]="_appAgGridService.headerHeight"
           [localeText]="_appAgGridService.localeText"
           [rowSelection]="'single'"
-          [rowDragManaged]="true"
-          [suppressMoveWhenRowDragging]="false"
-          (rowDragEnd)="alSoltarFila()"
           [pagination]="false"
           [animateRows]="true"
-          [overlayNoRowsTemplate]="'<span>No hay boletines</span>'"
+          [overlayNoRowsTemplate]="'<span>No hay notificaciones</span>'"
           [navigateToNextCell]="navegarConTeclado"
           (gridReady)="onGridReady($event)"
           (cellClicked)="onCellClicked($event)">
@@ -142,7 +125,7 @@
           </div>
 
           <div class="pagination-info small text-muted">
-            Mostrando <b>{{ desdeRegistro }}</b> – <b>{{ hastaRegistro }}</b> de <b>{{ totalRegistros }}</b> boletines
+            Mostrando <b>{{ desdeRegistro }}</b> – <b>{{ hastaRegistro }}</b> de <b>{{ totalRegistros }}</b> notificaciones
           </div>
         </div>
 

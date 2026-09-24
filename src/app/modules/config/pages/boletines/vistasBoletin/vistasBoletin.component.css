@@ -1,0 +1,271 @@
+/* ============================================================
+   VISTAS DEL BOLETÍN - Estilos del modal
+   Mismo lenguaje visual que el Historial de Acciones: panel del tema,
+   el elemento arriba con sus chips, bloque de filtros y grilla.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.vb-modal {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+/* ============================================================
+   EL BOLETÍN + RESUMEN
+   ============================================================ */
+.vb-elemento {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.vb-elemento__icono {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.vb-elemento__texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 200px;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.vb-elemento__etiqueta {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.vb-elemento__nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.vb-elemento__ayuda {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.vb-resumen {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-left: auto;
+}
+
+/* Chips: los de estado son botones que filtran */
+.vb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 999px;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: default;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+
+.vb-chip b {
+  font-weight: 700;
+  color: var(--bs-body-color, #212529);
+}
+
+button.vb-chip {
+  cursor: pointer;
+}
+
+button.vb-chip:hover {
+  border-color: var(--bs-secondary, #6c757d);
+}
+
+.vb-chip.activo {
+  background-color: var(--bs-app-theme, #00acac);
+  border-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+}
+
+.vb-chip--visto.activo     { background-color: var(--bs-teal, #00acac);    border-color: var(--bs-teal, #00acac); }
+.vb-chip--pendiente.activo { background-color: var(--bs-warning, #f59c1a); border-color: var(--bs-warning, #f59c1a); }
+.vb-chip--oculto.activo    { background-color: var(--bs-secondary, #6c757d); border-color: var(--bs-secondary, #6c757d); }
+
+.vb-chip.activo b {
+  color: #fff;
+}
+
+.vb-chip--muted {
+  border-style: dashed;
+}
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+.vb-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .5rem .75rem;
+  padding: .625rem .75rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+}
+
+.vb-filtros__campo {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.vb-filtros__acciones {
+  flex: 0 0 auto;
+  display: flex;
+  gap: .375rem;
+}
+
+.vb-filtros__acciones .btn {
+  height: 31px;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.vb-label {
+  display: block;
+  margin-bottom: .2rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.vb-filtros__campo ::ng-deep .form-control {
+  height: 31px;
+  font-size: .75rem;
+}
+
+.vb-filtros__campo ::ng-deep .btn {
+  padding: 0 .5rem;
+  height: 31px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ============================================================
+   LISTADO
+   ============================================================ */
+.vb-grid {
+  height: clamp(280px, 48vh, 520px);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  overflow: hidden;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+/* Panel expandido a pantalla completa: la grilla ocupa lo que sobra */
+:host ::ng-deep .panel.panel-expand .vb-modal {
+  height: 100%;
+}
+
+:host ::ng-deep .panel.panel-expand .vb-grid {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+/* Situación de cada destinatario, dentro de la celda */
+:host ::ng-deep .vb-estado {
+  display: inline-block;
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+:host ::ng-deep .vb-estado.es-visto {
+  background-color: rgba(0, 172, 172, .15);
+  color: #00807f;
+}
+
+:host ::ng-deep .vb-estado.es-pendiente {
+  background-color: rgba(245, 156, 26, .18);
+  color: #a96a08;
+}
+
+:host ::ng-deep .vb-estado.es-oculto {
+  background-color: rgba(108, 117, 125, .18);
+  color: #5a6268;
+}
+
+:host ::ng-deep .vb-inactivo {
+  margin-left: .25rem;
+  padding: 0 .35rem;
+  border-radius: 999px;
+  background-color: rgba(255, 91, 87, .15);
+  color: #c9302c;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   PIE
+   ============================================================ */
+.vb-pie {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem .75rem;
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.vb-pie__ayuda {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  flex: 1 1 300px;
+}
+
+.vb-pie__ayuda i {
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .vb-resumen {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .vb-grid {
+    height: clamp(240px, 42vh, 420px);
+  }
+}

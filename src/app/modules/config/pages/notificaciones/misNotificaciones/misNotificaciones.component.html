@@ -1,0 +1,103 @@
+<!-- ============================================================
+     MIS NOTIFICACIONES (modal)
+     El «ver todas» de la campana: la lista completa, agrupada por
+     día, con el mensaje entero y sus acciones.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<panel title="Notificaciones"
+       headerClass="bg-cyan-700"
+       [noButtonCollapse]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       icono="info"
+       (panelRemovedModal)="activeModal.dismiss()"
+       (panelReloaded)="cargar()">
+
+  <div class="noti-modal">
+
+    <!-- ===================== FILTROS ===================== -->
+    <div class="noti-barra">
+      <div class="noti-chips">
+        <button type="button" class="noti-chip" [class.activo]="!soloNoLeidas" (click)="filtrar(false)">
+          <i class="fa fa-list"></i> Todas <b>{{ total }}</b>
+        </button>
+        <button type="button" class="noti-chip noti-chip--sin-leer" [class.activo]="soloNoLeidas" (click)="filtrar(true)">
+          <i class="fa fa-envelope"></i> Sin leer <b>{{ noLeidas }}</b>
+        </button>
+      </div>
+
+      <div class="noti-acciones">
+        <button type="button" class="btn btn-sm btn-white" [disabled]="!noLeidas" (click)="marcarTodas()">
+          <i class="fa fa-check-double me-1"></i>Marcar todas como leídas
+        </button>
+        <button type="button" class="btn btn-sm btn-white" title="Quita de tu campana las que ya leíste"
+                [disabled]="!notificaciones.length" (click)="quitarLeidas()">
+          <i class="fa fa-broom me-1"></i><span class="d-none d-sm-inline">Quitar las leídas</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== LISTA ===================== -->
+    <div class="noti-lista">
+      @if (!notificaciones.length) {
+        <div class="noti-vacio">
+          <i class="fa fa-bell-slash"></i>
+          <span>{{ soloNoLeidas ? 'No tienes notificaciones sin leer.' : 'No tienes notificaciones.' }}</span>
+        </div>
+      }
+
+      @for (n of notificaciones; track n.id; let i = $index) {
+        @if (abreDia(i)) {
+          <div class="noti-dia">{{ dia(n) }}</div>
+        }
+
+        <div class="noti-item" [class.es-nueva]="!n.leida" [class.tiene-enlace]="!!n.url"
+             role="button" tabindex="0"
+             [title]="n.url ? 'Ir a ' + n.url : (n.leida ? 'Leída' : 'Marcar como leída')"
+             (click)="abrir(n)" (keydown.enter)="abrir(n)">
+
+          <span class="noti-item__icono" [ngClass]="estilo(n).clase">
+            <i class="fa" [ngClass]="icono(n)"></i>
+          </span>
+
+          <div class="noti-item__texto">
+            <span class="noti-item__titulo">
+              {{ n.titulo }}
+              @if (!n.leida) { <span class="noti-punto" title="Sin leer"></span> }
+            </span>
+            @if (n.mensaje) { <span class="noti-item__mensaje">{{ n.mensaje }}</span> }
+            <span class="noti-item__pie">
+              {{ hace(n) }}
+              @if (n.created_by) { · {{ n.created_by }} }
+              @if (n.url) { · <b class="noti-item__enlace">{{ n.url_texto || 'Abrir' }}</b> }
+            </span>
+          </div>
+
+          <button type="button" class="noti-item__quitar" title="Quitar de mi campana" (click)="quitar(n, $event)">
+            <i class="fa fa-xmark"></i>
+          </button>
+        </div>
+      }
+
+      @if (hayMas) {
+        <button type="button" class="noti-mas" (click)="cargar(true)">
+          <i class="fa fa-angle-down me-1"></i>Ver más ({{ total - notificaciones.length }})
+        </button>
+      }
+    </div>
+
+    <div class="noti-pie">
+      <span class="noti-pie__ayuda">
+        <i class="fa fa-circle-info"></i>
+        Al pulsar una notificación queda leída y, si lleva enlace, te lleva allí.
+        <strong>Quitar</strong> la saca sólo de tu campana: a los demás destinatarios no les afecta.
+      </span>
+    </div>
+
+  </div>
+</panel>

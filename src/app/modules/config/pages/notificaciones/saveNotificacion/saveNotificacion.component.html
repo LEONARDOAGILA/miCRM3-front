@@ -1,0 +1,320 @@
+<!-- ============================================================
+     NOTIFICACIÓN: envío / vista
+
+     Mismo esquema que el modal del boletín: cabecera y pie comunes, y
+     cada bloque en su <panel>, en tres columnas:
+       · El mensaje · A quién va · Cómo lo verá el usuario
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header [title]="titulo" (onClose)="activeModal.dismiss('Cross click')"></app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body noti-modal-body" tabindex="0">
+  <form [formGroup]="form" autocomplete="off">
+    <div class="row g-3">
+
+      <!-- ============ 1. EL MENSAJE ============ -->
+      <div class="col-lg-4">
+        <panel headerClass="bg-gray-800"
+               title="El mensaje"
+               noButton="true"
+               noBody="true"
+               panelClass="h-100 mb-0"
+               icono="info"
+               fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <div class="campo">
+                <app-campoTexto
+                  [control]="form.controls['titulo']"
+                  label="Título"
+                  placeholder="Por ejemplo: Cierre de caja a las 17:00"
+                  [maxLength]="200"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+              </div>
+
+              <div class="campo">
+                <app-campoTextoArea
+                  [control]="form.controls['mensaje']"
+                  label="Mensaje (opcional)"
+                  placeholder="Dos o tres líneas: lo que hay que hacer y cuándo"
+                  [maxLength]="1000"
+                  [alto]="90">
+                </app-campoTextoArea>
+              </div>
+
+              <!-- El tipo da el color y el icono de la campana -->
+              <label class="noti-label">Tipo</label>
+              <div class="noti-tipos">
+                @for (t of tipos; track t.id) {
+                  <button type="button" class="noti-tipo-btn" [ngClass]="t.clase"
+                          [class.is-activo]="form.controls['tipo'].value === t.id"
+                          [disabled]="esView"
+                          [title]="t.nombre"
+                          (click)="elegirTipo(t.id)">
+                    <i class="fa" [ngClass]="t.icono"></i> {{ t.nombre }}
+                  </button>
+                }
+              </div>
+
+              <!-- Caducidad: pasada la fecha deja de salir en la campana -->
+              <label class="noti-label" for="noti-caduca">Caduca (opcional)</label>
+              <input id="noti-caduca" type="datetime-local" class="form-control form-control-sm"
+                     formControlName="caduca_at" [readOnly]="esView">
+
+              @if (!esView) {
+                <div class="noti-atajos">
+                  @for (a of atajosCaducidad; track a.dias) {
+                    <button type="button" class="noti-atajo" (click)="caducarEn(a.dias)">{{ a.texto }}</button>
+                  }
+                </div>
+              }
+
+              <p class="noti-ayuda">
+                <i class="fa fa-circle-info"></i>
+                Pasada esa fecha la notificación deja de aparecer en la campana, pero sigue
+                aquí con su registro de quién la leyó.
+              </p>
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+      <!-- ============ 2. DESTINATARIOS ============ -->
+      <div class="col-lg-4">
+        <panel headerClass="bg-gray-800"
+               title="Destinatarios"
+               noButton="true"
+               noBody="true"
+               panelClass="h-100 mb-0"
+               icono="usuarios"
+               fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <div class="noti-barra">
+                <span class="noti-barra__resumen">{{ resumenDestinatarios }}</span>
+              </div>
+
+              @if (esView) {
+                <!-- Ya enviada: quién la recibió y quién la ha abierto -->
+                <div class="noti-lista">
+                  <div class="noti-lista__cabecera">
+                    <span><i class="fa fa-users"></i> Recibieron <b>{{ destinatarios.length }}</b></span>
+                  </div>
+                  @if (!destinatarios.length) {
+                    <div class="noti-lista__vacia">{{ cargandoDestinatarios ? 'Calculando…' : 'No llegó a nadie.' }}</div>
+                  } @else {
+                    <ul class="noti-lista__items">
+                      @for (d of destinatarios; track d.user_id) {
+                        <li class="noti-item" [class.is-inactivo]="!d.isactive">
+                          <span class="noti-item__texto">
+                            <b>{{ d.login_user }}</b>
+                            <small>{{ d.name }} {{ d.surname }}@if (!d.isactive) { · inactivo }</small>
+                          </span>
+                          @if (d.leida_at) {
+                            <span class="noti-marca is-leida" [title]="'Leída el ' + d.leida_at"><i class="fa fa-check-double"></i></span>
+                          } @else {
+                            <span class="noti-marca" title="Todavía no la abre"><i class="fa fa-hourglass-half"></i></span>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              } @else {
+
+                <!-- A todos: se resuelve en el servidor con los usuarios activos -->
+                <div class="estado-miswitch" [class.is-on]="todos">
+                  <span class="estado-miswitch__icon"><i class="fa-solid fa-globe"></i></span>
+                  <div class="estado-miswitch__text">
+                    <span class="estado-miswitch__label">A todo el mundo</span>
+                    <span class="estado-miswitch__hint">
+                      {{ todos ? 'La recibirán todos los usuarios activos' : 'Sólo quien esté en las listas de abajo' }}
+                    </span>
+                  </div>
+                  <button type="button" class="btn btn-sm" [class.btn-primary]="todos" [class.btn-white]="!todos"
+                          (click)="alternarTodos()">
+                    {{ todos ? 'Sí' : 'No' }}
+                  </button>
+                </div>
+
+                <div class="row g-3" [class.noti-apagado]="todos">
+                  <!-- Usuarios -->
+                  <div class="col-12">
+                    <div class="noti-lista">
+                      <div class="noti-lista__cabecera">
+                        <span><i class="fa fa-user"></i> Usuarios <b>{{ usuarios.length }}</b></span>
+                        <button type="button" class="btn btn-xs btn-white" title="Agregar un usuario"
+                                [disabled]="todos" (click)="agregarUsuario()">
+                          <i class="fa fa-plus"></i>
+                        </button>
+                      </div>
+
+                      @if (!usuarios.length) {
+                        <div class="noti-lista__vacia">Nadie añadido uno a uno.</div>
+                      } @else {
+                        <ul class="noti-lista__items">
+                          @for (u of usuarios; track u.user_id) {
+                            <li class="noti-item" [class.is-inactivo]="!u.isactive">
+                              <span class="noti-item__texto">
+                                <b>{{ u.login_user }}</b>
+                                <small>{{ u.name }} {{ u.surname }}@if (!u.isactive) { · inactivo }</small>
+                              </span>
+                              <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitarUsuario(u)">
+                                <i class="fa fa-xmark"></i>
+                              </button>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Grupos -->
+                  <div class="col-12">
+                    <div class="noti-lista">
+                      <div class="noti-lista__cabecera">
+                        <span><i class="fa fa-sitemap"></i> Grupos <b>{{ grupos.length }}</b></span>
+                        <button type="button" class="btn btn-xs btn-white" title="Agregar un grupo"
+                                [disabled]="todos" (click)="agregarGrupo()">
+                          <i class="fa fa-plus"></i>
+                        </button>
+                      </div>
+
+                      @if (!grupos.length) {
+                        <div class="noti-lista__vacia">Sin grupos: sólo llega a los usuarios de arriba.</div>
+                      } @else {
+                        <ul class="noti-lista__items">
+                          @for (g of grupos; track g.grupo_id) {
+                            <li class="noti-item">
+                              <span class="noti-item__texto">
+                                <b>{{ g.nombre }}</b>
+                                <small>{{ g.incluir_subgrupos ? 'con sus subgrupos' : 'sólo este grupo' }}</small>
+                              </span>
+                              <button type="button" class="btn btn-xs btn-white"
+                                      [title]="g.incluir_subgrupos ? 'Dejar sólo este grupo' : 'Incluir los subgrupos'"
+                                      (click)="alternarSubgrupos(g)">
+                                <i class="fa" [ngClass]="g.incluir_subgrupos ? 'fa-sitemap' : 'fa-folder'"></i>
+                              </button>
+                              <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitarGrupo(g)">
+                                <i class="fa fa-xmark"></i>
+                              </button>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+      <!-- ============ 3. CÓMO SE VERÁ ============ -->
+      <div class="col-lg-4">
+        <panel headerClass="bg-gray-800"
+               title="Cómo se verá"
+               noButton="true"
+               noBody="true"
+               panelClass="h-100 mb-0"
+               icono="info"
+               fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <!-- La misma pieza que pinta el desplegable de la campana -->
+              <div class="noti-previa">
+                <div class="noti-previa__cabecera"><i class="fa fa-bell"></i> Notificaciones (1)</div>
+                <div class="noti-previa__item">
+                  <span class="noti-previa__icono" [ngClass]="estiloElegido.clase">
+                    <i class="fa" [ngClass]="iconoElegido"></i>
+                  </span>
+                  <div class="noti-previa__texto">
+                    <b>{{ form.controls['titulo'].value || 'Título de la notificación' }}</b>
+                    <small>{{ form.controls['mensaje'].value || 'Aquí va el mensaje, recortado a dos líneas.' }}</small>
+                    <span class="noti-previa__pie">ahora mismo</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Enlace: al pulsarla lleva a una pantalla del sistema -->
+              <div class="campo">
+                <app-campoTexto
+                  [control]="form.controls['url']"
+                  label="Al pulsarla, llevar a (opcional)"
+                  placeholder="/config/boletines"
+                  [maxLength]="300"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+              </div>
+
+              <div class="campo">
+                <app-campoTexto
+                  [control]="form.controls['url_texto']"
+                  label="Texto del enlace (opcional)"
+                  placeholder="Ver los boletines"
+                  [maxLength]="60"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+              </div>
+
+              <div class="campo">
+                <app-campoTexto
+                  [control]="form.controls['icono']"
+                  label="Icono propio (opcional)"
+                  placeholder="fa-truck-fast"
+                  [maxLength]="60"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+              </div>
+
+              <p class="noti-ayuda">
+                <i class="fa fa-lightbulb"></i>
+                La ruta es la del sistema, la que sale en la barra del navegador
+                después del dominio. Si se deja vacía, la notificación sólo se lee.
+                El icono es una clase de Font&nbsp;Awesome; sin ella manda el tipo.
+              </p>
+
+              @if (esView) {
+                <ul class="noti-datos">
+                  <li><span>Enviada</span><b>{{ registro_selected?.created_at }}</b></li>
+                  <li><span>Por</span><b>{{ registro_selected?.created_by || '—' }}</b></li>
+                  <li><span>Origen</span><b>{{ registro_selected?.origen === 'SISTEMA' ? 'Sistema' : 'Manual' }}</b></li>
+                  <li><span>Caduca</span><b>{{ registro_selected?.caduca_at || 'No caduca' }}</b></li>
+                </ul>
+              }
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [cargando]="enviando"
+  [textoCerrar]="esView ? 'Cerrar' : 'Cancelar'"
+  [textoGuardar]="'Enviar notificación'"
+  (onClose)="activeModal.dismiss('cancelar')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

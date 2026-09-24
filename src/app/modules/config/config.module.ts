@@ -60,6 +60,10 @@ import { DeleteBoletinComponent } from './pages/boletines/deleteBoletin/deleteBo
 import { VerBoletinesComponent } from './pages/boletines/verBoletines/verBoletines.component';
 import { PapeleraBoletinesComponent } from './pages/boletines/papeleraBoletines/papeleraBoletines.component';
 
+// Notificaciones: avisos por usuario que cuelgan de la campana de la cabecera
+import { AllNotificacionesComponent, ButtonAccionNotificacion } from './pages/notificaciones/allNotificaciones/allNotificaciones.component';
+import { SaveNotificacionComponent } from './pages/notificaciones/saveNotificacion/saveNotificacion.component';
+
 
 
 
@@ -87,6 +91,10 @@ import { PapeleraBoletinesComponent } from './pages/boletines/papeleraBoletines/
     SaveBoletinComponent,
     DeleteBoletinComponent,
     PapeleraBoletinesComponent,
+
+    AllNotificacionesComponent,
+    ButtonAccionNotificacion,
+    SaveNotificacionComponent,
 
 
   ],

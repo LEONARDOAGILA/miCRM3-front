@@ -14,6 +14,7 @@ import { ExtraSettingsPage } from './pages/extra-settings-page/extra-settings-pa
 import { ExtraSearchResultsPage } from './pages/extra-search-results/extra-search-results';
 import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
 import { AllBoletinesComponent } from './pages/boletines/allBoletines/allBoletines.component';
+import { AllNotificacionesComponent } from './pages/notificaciones/allNotificaciones/allNotificaciones.component';
 
 
 
@@ -28,6 +29,7 @@ const routes: Routes = [
         { path: 'allDepartamentos',component:AllDepartamentosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'filemanager',component:FileManagerComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'boletines', component: AllBoletinesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        { path: 'notificaciones', component: AllNotificacionesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         // Mismo componente en modo usuario: sólo lo que puede ver, acciones según su permiso
         { path: 'misArchivos', component: FileManagerComponent, data: { modo: 'mio' }, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 

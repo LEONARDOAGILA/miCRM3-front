@@ -62,8 +62,8 @@ export interface BoletinModel {
   /** Vigencia */
   desde: string;
   hasta: string;
-  /** Orden en el carrusel: mayor primero */
-  prioridad: number;
+  /** Posición en la lista y en el carrusel: menor primero */
+  orden: number;
   /** Hay que confirmar la lectura para poder cerrarlo */
   obligatorio: boolean;
   activo: boolean;
@@ -89,7 +89,7 @@ export interface BoletinGuardar {
   descripcion?: string | null;
   desde?: string;
   hasta?: string;
-  prioridad?: number;
+  orden?: number;
   obligatorio?: boolean;
   activo?: boolean;
   imagenes?: BoletinImagen[];

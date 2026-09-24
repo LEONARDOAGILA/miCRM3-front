@@ -1,0 +1,112 @@
+<!-- ============================================================
+     VISTAS DE UN BOLETÍN (modal)
+     Hermano del Historial de Acciones: panel del tema, el boletín
+     arriba con sus totales en fichas que filtran, buscador y listado.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<panel title="Vistas del boletín"
+       headerClass="bg-cyan-700"
+       [noButtonCollapse]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       icono="usuarios"
+       (panelRemovedModal)="activeModal.dismiss()"
+       (panelReloaded)="cargar()"
+       (panelExpanded)="ajustarTamanoGrid()">
+
+  <div class="vb-modal">
+
+    <!-- ===================== EL BOLETÍN ===================== -->
+    <div class="vb-elemento">
+      <span class="vb-elemento__icono"><i class="fa fa-bullhorn"></i></span>
+      <div class="vb-elemento__texto">
+        <span class="vb-elemento__etiqueta">Boletín</span>
+        <span class="vb-elemento__nombre text-truncate">{{ registro_selected?.titulo }}</span>
+        <span class="vb-elemento__ayuda">
+          Del {{ registro_selected?.desde }} al {{ registro_selected?.hasta }}
+          @if (registro_selected?.obligatorio) { · lectura obligatoria }
+        </span>
+      </div>
+
+      <!-- Totales, que además filtran -->
+      <div class="vb-resumen">
+        <button type="button" class="vb-chip" [class.activo]="filtro.estado === ''"
+                title="Todos los destinatarios" (click)="filtrarEstado('')">
+          <i class="fa-solid fa-users"></i> Todos <b>{{ total }}</b>
+        </button>
+        <button type="button" class="vb-chip vb-chip--visto" [class.activo]="filtro.estado === 'VISTO'"
+                title="Ya lo abrieron" (click)="filtrarEstado('VISTO')">
+          <i class="fa fa-eye"></i> Vistos <b>{{ vistos }}</b>
+        </button>
+        <button type="button" class="vb-chip vb-chip--pendiente" [class.activo]="filtro.estado === 'PENDIENTE'"
+                title="Todavía no lo han abierto" (click)="filtrarEstado('PENDIENTE')">
+          <i class="fa fa-hourglass-half"></i> Pendientes <b>{{ pendientes }}</b>
+        </button>
+        <button type="button" class="vb-chip vb-chip--oculto" [class.activo]="filtro.estado === 'OCULTO'"
+                title="Pidieron no volver a verlo" (click)="filtrarEstado('OCULTO')">
+          <i class="fa fa-eye-slash"></i> Lo ocultaron <b>{{ ocultos }}</b>
+        </button>
+        <span class="vb-chip vb-chip--muted d-none d-md-inline-flex" title="Lo abrieron más de una vez">
+          <i class="fa-solid fa-rotate-right"></i> {{ repetidores }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ===================== FILTROS ===================== -->
+    <div class="vb-filtros">
+      <div class="vb-filtros__campo">
+        <label class="vb-label" for="filtro-vistas">Buscar</label>
+        <app-campoBusqueda
+          [id]="'filtro-vistas'"
+          [placeholder]="'Usuario, nombre, grupo…'"
+          [iconClass]="'fa fa-search'"
+          [containerClass]="'w-100'"
+          (searchChange)="onFilterTextBoxChanged($event)">
+        </app-campoBusqueda>
+      </div>
+
+      <div class="vb-filtros__acciones">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()"
+                [disabled]="!hayFiltro" aria-label="Limpiar filtros" title="Limpiar filtros">
+          <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== LISTADO ===================== -->
+    <div class="vb-grid">
+      <ag-grid-angular
+        [rowData]="filas"
+        [columnDefs]="columnDefs"
+        [defaultColDef]="_appAgGridService.defaultColDef"
+        [rowHeight]="40"
+        [headerHeight]="_appAgGridService.headerHeight"
+        [localeText]="_appAgGridService.localeText"
+        [pagination]="false"
+        [animateRows]="true"
+        [cacheQuickFilter]="true"
+        [enableBrowserTooltips]="true"
+        [overlayNoRowsTemplate]="'<span>' + (hayFiltro ? 'Nadie con ese estado' : 'Este boletín no tiene destinatarios') + '</span>'"
+        class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+        [navigateToNextCell]="navegarConTeclado"
+        [rowSelection]="'single'"
+        (gridReady)="onGridReady($event)">
+      </ag-grid-angular>
+    </div>
+
+    <div class="vb-pie">
+      <span class="vb-pie__ayuda">
+        <i class="fa-solid fa-circle-info"></i>
+        La lectura se apunta en cuanto el boletín se le muestra al usuario, y se cuenta cada vez que vuelve a salirle.
+        Quien lo <strong>ocultó</strong> dejó de recibirlo: para que le vuelva a llegar, marque la casilla al lanzarlo.
+      </span>
+    </div>
+
+  </div>
+</panel>

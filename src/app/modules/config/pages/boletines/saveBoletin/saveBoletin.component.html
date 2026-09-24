@@ -74,16 +74,6 @@
                 </app-campoTextoArea>
               </div>
 
-              <div class="campo">
-                <app-campoNumeroEntero
-                  [control]="form.controls['prioridad']"
-                  label="Prioridad"
-                  placeholder="0"
-                  [maxLength]="3">
-                </app-campoNumeroEntero>
-                <small class="bol-pista">Los de mayor prioridad se muestran primero.</small>
-              </div>
-
               <!-- Estado -->
               <div class="estado-miswitch" [class.is-on]="form.controls['activo'].value">
                 <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>

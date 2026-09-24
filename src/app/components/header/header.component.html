@@ -112,39 +112,69 @@
     <!-- CAMPANA DE NOTIFICACIONES -->
     <div class="navbar-item dropdown">
 
-      <a href="javascript:;" data-bs-toggle="dropdown" class="navbar-link dropdown-toggle icon" title="Notificaciones">
-        <i class="fa fa-bell"
-          [ngClass]="{'animar-campana': animarCampana}"></i>
+      <!-- Abrirla es lo que la calla: mirar la campana ya es enterarse -->
+      <a href="javascript:;" data-bs-toggle="dropdown" class="navbar-link dropdown-toggle icon" title="Notificaciones"
+         (click)="alAbrirCampana()">
+        <i class="fa fa-bell" [ngClass]="{'animar-campana': animarCampana}"></i>
 
-          
-        <!-- 🔔 Mostrar número de notificaciones -->
-        <span *ngIf="contadorWebsockets > 0" class="badge bg-danger">
-          {{ contadorWebsockets }}
+        <span *ngIf="noLeidas > 0" class="badge bg-danger">
+          {{ noLeidas > 99 ? '99+' : noLeidas }}
         </span>
       </a>
 
-      <div class="dropdown-menu media-list dropdown-menu-end">
-        <div class="dropdown-header">
-          NOTIFICACIONES ({{ contadorWebsockets }})
+      <div class="dropdown-menu media-list dropdown-menu-end campana-menu">
+        <div class="dropdown-header d-flex align-items-center justify-content-between">
+          <span>NOTIFICACIONES ({{ noLeidas }})</span>
+
+          <span class="campana-ajustes">
+            <!-- Cómo avisa: apagados hasta que el usuario los enciende -->
+            <button type="button" class="campana-ajuste" [class.is-on]="avisoSonido"
+                    [title]="avisoSonido ? 'Sonido al llegar: activado' : 'Sonido al llegar: desactivado'"
+                    [attr.aria-pressed]="avisoSonido"
+                    (click)="alternarSonido($event)">
+              <i class="fa" [ngClass]="avisoSonido ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
+            </button>
+
+            <button *ngIf="soportaAvisoEscritorio" type="button" class="campana-ajuste" [class.is-on]="avisoEscritorio"
+                    [title]="avisoEscritorio ? 'Avisos del navegador: activados' : 'Avisos del navegador: desactivados'"
+                    [attr.aria-pressed]="avisoEscritorio"
+                    (click)="alternarAvisoEscritorio($event)">
+              <i class="fa fa-desktop"></i>
+            </button>
+
+            <a *ngIf="noLeidas > 0" href="javascript:;" class="text-decoration-none fs-11px"
+               title="Marcar todas como leídas" (click)="marcarTodasLeidas($event)">
+              Marcar leídas
+            </a>
+          </span>
         </div>
 
-        <!-- ✅ Si hay mensajes -->
-        <div *ngIf="contadorWebsockets > 0; else sinNotif" class="text-center w-300px py-3">
-          <p class="mb-0">Has recibido {{ contadorWebsockets }} nuevas notificaciones.</p>
-          <button class="btn btn-sm btn-primary mt-2" (click)="resetearContador()">
-            Marcar como leídas
-          </button>
-        </div>
+        <!-- Las últimas; el detalle completo está en «Ver todas» -->
+        <ng-container *ngIf="notificaciones.length; else sinNotif">
+          <a *ngFor="let n of notificaciones" href="javascript:;"
+             class="dropdown-item media campana-item"
+             [class.es-nueva]="!n.leida"
+             [title]="n.mensaje || n.titulo"
+             (click)="abrirNotificacion(n, $event)">
+            <span class="campana-item__icono" [ngClass]="claseTipo(n)">
+              <i class="fa" [ngClass]="iconoDe(n)"></i>
+            </span>
+            <div class="media-body">
+              <h6 class="media-heading campana-item__titulo">{{ n.titulo }}</h6>
+              <p class="campana-item__mensaje" *ngIf="n.mensaje">{{ n.mensaje }}</p>
+              <div class="text-muted fs-10px">{{ hace(n) }}</div>
+            </div>
+          </a>
+        </ng-container>
 
-        <!-- ❌ Si no hay notificaciones -->
         <ng-template #sinNotif>
           <div class="text-center w-300px py-3 text-muted">
-            No se encontraron notificaciones
+            No tienes notificaciones
           </div>
         </ng-template>
 
         <div class="dropdown-footer text-center">
-          <a href="javascript:;" class="text-decoration-none">Ver más</a>
+          <a href="javascript:;" class="text-decoration-none" (click)="verNotificaciones($event)">Ver más</a>
         </div>
       </div>
     </div>

@@ -1,0 +1,53 @@
+/* ============================================================
+   LISTADO DE NOTIFICACIONES
+   ============================================================ */
+
+.noti-filtro {
+  width: auto;
+  min-width: 140px;
+}
+
+/* Tipo de la notificación, como una pastilla */
+:host ::ng-deep .noti-tipo {
+  display: inline-block;
+  padding: 0 .45rem;
+  border-radius: 999px;
+  font-size: 10.5px;
+  line-height: 18px;
+  letter-spacing: .02em;
+}
+
+:host ::ng-deep .noti-tipo.es-info  { color: #2a6fb0; background-color: rgba(52, 143, 226, .16); }
+:host ::ng-deep .noti-tipo.es-exito { color: #00807f; background-color: rgba(0, 172, 172, .16); }
+:host ::ng-deep .noti-tipo.es-aviso { color: #a96a08; background-color: rgba(245, 156, 26, .20); }
+:host ::ng-deep .noti-tipo.es-error { color: #c9302c; background-color: rgba(255, 91, 87, .18); }
+
+/* Fecha de caducidad ya pasada: no se muestra en la campana */
+:host ::ng-deep .noti-caducada {
+  color: var(--bs-secondary-color, #6c757d);
+  text-decoration: line-through;
+}
+
+/* Alto de partida de la grilla; el componente lo ajusta a la pantalla */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- Barra de herramientas ----------
+   Botones cuadrados a la altura del buscador, con el icono en blanco sobre
+   el color del botón, igual que en boletines. */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+.lista-barra__badge {
+  font-size: 8px;
+}

@@ -1,7 +1,7 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, ColumnApi } from 'ag-grid-community';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom } from 'rxjs';
@@ -22,6 +22,7 @@ import { DeleteBoletinComponent } from '../deleteBoletin/deleteBoletin.component
 import { VerBoletinesComponent } from '../verBoletines/verBoletines.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { PapeleraBoletinesComponent } from '../papeleraBoletines/papeleraBoletines.component';
+import { VistasBoletinComponent } from '../vistasBoletin/vistasBoletin.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
 /**
@@ -65,6 +66,8 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
 
   // ---------- ag-Grid ----------
   public gridApi!: GridApi;
+  /** Para saber si la grilla está ordenada por una columna. */
+  private columnApi?: ColumnApi;
   public columnDefs: any[] = [];
 
   private static readonly ANCHO_ABIERTA = 140;
@@ -117,6 +120,15 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
 
   private armarColumnas(): void {
     this.columnDefs = [
+      {
+        // El asa del arrastre va en esta columna: se coge la fila y se sube o
+        // se baja. El número es la posición que ocupa en la lista.
+        headerName: 'Orden', field: 'orden', minWidth: 90, maxWidth: 110,
+        rowDrag: () => !this.ordenadoPorColumna(),
+        headerTooltip: 'Arrastre la fila para cambiar el orden',
+        cellStyle: { textAlign: 'center' },
+      },
+
       { headerName: 'ID', field: 'id', minWidth: 70, maxWidth: 80, cellStyle: { textAlign: 'center' } },
       {
         headerName: 'Título', field: 'titulo', minWidth: 200, cellStyle: { textAlign: 'left' },
@@ -152,7 +164,6 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
       {
         headerName: 'Vistos', field: 'num_vistos', minWidth: 85, maxWidth: 100, cellStyle: { textAlign: 'center' },
       },
-      { headerName: 'Prioridad', field: 'prioridad', minWidth: 95, maxWidth: 110, cellStyle: { textAlign: 'center' } },
       {
         headerName: 'ACCIONES', field: 'actions', pinned: 'right',
         minWidth: AllBoletinesComponent.ANCHO_ABIERTA, maxWidth: AllBoletinesComponent.ANCHO_ABIERTA,
@@ -176,6 +187,7 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
+    this.columnApi = params.columnApi;
     this.programar(() => this.montarListenersCabecera(), 500);
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
     this.ajustarAlturaGrid();
@@ -261,6 +273,57 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
   }
 
   cambiarEstado(): void { this.allBoletines(1); }
+
+  // ================================================================
+  // ORDEN (arrastrando la fila)
+  // ================================================================
+
+  /**
+   * La grilla está ordenada por una columna: el arrastre no podría reflejar
+   * el orden manual, así que no se deja.
+   */
+  private ordenadoPorColumna(): boolean {
+    return (this.columnApi?.getColumnState() ?? []).some(c => !!c.sort);
+  }
+
+  /** Se soltó la fila: se guarda el orden en el que quedó la página. */
+  async alSoltarFila(): Promise<void> {
+    if (this.ordenadoPorColumna()) {
+      this._toastr.info('Quite el orden de la columna (clic en su cabecera) para ordenar arrastrando', 'Orden', { timeOut: 4000 });
+      this.allBoletines(this.paginaActual);
+      return;
+    }
+
+    const ids: number[] = [];
+    this.gridApi?.forEachNodeAfterFilterAndSort((n: any) => { if (n.data?.id) { ids.push(n.data.id); } });
+    if (ids.length < 2) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._boletinService.reordenarBoletines(ids));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message ?? 'No se pudo cambiar el orden', 'Orden');
+      } else if (res.data?.cambiados) {
+        this._toastr.success(res.message, 'Orden', { timeOut: 2000 });
+      }
+    } catch (e) {
+      console.error('Error al reordenar los boletines:', e);
+    } finally {
+      // Con los números ya renumerados por el servidor
+      this.allBoletines(this.paginaActual);
+    }
+  }
+
+  /**
+   * Quién ha visto el boletín seleccionado: vistos, pendientes y los que
+   * pidieron no volver a verlo.
+   */
+  verVistas(): void {
+    if (!this.selectedRow) { return; }
+    const modalRef = this.modalService.open(VistasBoletinComponent, {
+      size: 'xl', centered: true, backdrop: 'static', keyboard: true, scrollable: true,
+    });
+    modalRef.componentInstance.registro_selected = this.selectedRow;
+  }
 
   /** Papelera de reciclaje: lo eliminado se restaura o se borra de verdad desde ahí. */
   abrirPapelera(): void {

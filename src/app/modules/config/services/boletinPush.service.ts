@@ -86,11 +86,11 @@ export class BoletinPushService {
   // ================================================================
 
   /**
-   * Abre el carrusel con lo que el usuario tenga pendiente.
+   * Abre el carrusel: al entrar, con todo lo pendiente; al recibir un aviso,
+   * con el boletín que acaban de lanzar y nada más.
    *
    * Sin `forzar` se respeta la marca de «ya se mostraron en esta sesión del
-   * navegador», que es lo que evita que al volver al inicio se repitan. El
-   * aviso por websocket sí fuerza: es un boletín recién lanzado.
+   * navegador», que es lo que evita que al volver al inicio se repitan.
    */
   async mostrarPendientes(forzar = false, lanzado: number | null = null): Promise<void> {
     if (this.abierto) { return; }
@@ -98,18 +98,18 @@ export class BoletinPushService {
     if (!forzar && this.yaMostrados(clave)) { return; }
 
     try {
-      const res: any = await firstValueFrom(this._boletinService.misBoletines());
-      let boletines: BoletinModel[] = res?.status === 'success' ? (res.data ?? []) : [];
-
-      // El que acaban de lanzar va primero, y se pide aparte porque puede
-      // estar programado o caducado: así no lo devuelve misBoletines.
+      // Lanzado a mano: se muestra ése solo. Si se le colaran detrás los demás
+      // pendientes, el administrador mandaría uno y al usuario le saldrían
+      // tres. Se pide aparte porque puede estar programado o caducado, y
+      // entonces misBoletines no lo devuelve.
       if (lanzado) {
         const recien = await this.traer(lanzado);
-        if (recien) {
-          boletines = [recien, ...boletines.filter(b => b.id !== recien.id)];
-        }
+        if (recien) { this.abrir([recien]); }
+        return;
       }
 
+      const res: any = await firstValueFrom(this._boletinService.misBoletines());
+      const boletines: BoletinModel[] = res?.status === 'success' ? (res.data ?? []) : [];
       if (!boletines.length) { return; }
 
       this.marcarMostrados(clave);

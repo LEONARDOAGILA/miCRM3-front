@@ -78,6 +78,16 @@ export class BoletinService {
   }
 
   /**
+   * Orden de la lista: los boletines de `ids`, en ese orden.
+   *
+   * Se reparten las posiciones que ya ocupaban, así sólo cambia el orden de
+   * lo que se está viendo.
+   */
+  reordenarBoletines(ids: (number | string)[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'reordenarBoletines', { ids });
+  }
+
+  /**
    * Lo lanza ahora a los destinatarios que estén con la sesión abierta.
    *
    * Con `ignorarNoMostrar` se les retira antes la marca de «no volver a

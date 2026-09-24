@@ -195,7 +195,6 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
       descripcion: [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(2000)]],
       desde:       [{ value: '', disabled: this.isdisabled }, [Validators.required]],
       hasta:       [{ value: '', disabled: this.isdisabled }, [Validators.required]],
-      prioridad:   [{ value: 0, disabled: this.isdisabled }, [Validators.min(0), Validators.max(100)]],
       obligatorio: [{ value: false, disabled: this.isdisabled }],
       activo:      [{ value: true, disabled: this.isdisabled }],
     });
@@ -218,7 +217,6 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
         descripcion: b.descripcion ?? '',
         desde: b.desde,
         hasta: b.hasta,
-        prioridad: b.prioridad,
         obligatorio: b.obligatorio,
         activo: b.activo,
       });
@@ -357,7 +355,7 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
       return !!c && c.invalid && c.touched;
     };
     if (id === 'datos') {
-      return malo('titulo') || malo('descripcion') || malo('prioridad') || malo('desde') || malo('hasta');
+      return malo('titulo') || malo('descripcion') || malo('desde') || malo('hasta');
     }
     return false;
   }
@@ -489,7 +487,6 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
       descripcion: v.descripcion,
       desde: v.desde,
       hasta: v.hasta,
-      prioridad: v.prioridad,
       obligatorio: v.obligatorio,
       activo: v.activo,
       imagenes: listas.map((i, n) => ({
@@ -609,7 +606,6 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
       descripcion: v.descripcion || null,
       desde: v.desde,
       hasta: v.hasta,
-      prioridad: Number(v.prioridad) || 0,
       obligatorio: !!v.obligatorio,
       activo: !!v.activo,
       imagenes: this.imagenes.map((i, n) => ({
