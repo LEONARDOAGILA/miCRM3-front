@@ -116,10 +116,13 @@
       <a href="javascript:;" data-bs-toggle="dropdown" class="navbar-link dropdown-toggle icon campana-enlace"
          [title]="noLeidas ? noLeidas + (noLeidas === 1 ? ' notificación sin leer' : ' notificaciones sin leer') : 'Notificaciones'"
          (click)="alAbrirCampana()">
-        <i class="fa fa-bell" [ngClass]="{'animar-campana': animarCampana}"></i>
+        <!-- El contador cuelga del icono, no del enlace: si no, queda despegado -->
+        <span class="campana-icono">
+          <i class="fa fa-bell" [ngClass]="{'animar-campana': animarCampana}"></i>
 
-        <span *ngIf="noLeidas > 0" class="campana-badge" [class.es-muchas]="noLeidas > 9">
-          {{ noLeidas > 99 ? '99+' : noLeidas }}
+          <span *ngIf="noLeidas > 0" class="campana-badge" [class.es-muchas]="noLeidas > 9">
+            {{ noLeidas > 99 ? '99+' : noLeidas }}
+          </span>
         </span>
       </a>
 

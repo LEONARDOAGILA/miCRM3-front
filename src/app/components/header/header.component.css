@@ -256,32 +256,36 @@ html, body {
    Todo con variables del tema, para que valga en claro y en oscuro.
    ============================================================ */
 
-.campana-enlace {
+/* El envoltorio es el que ancla el contador al icono */
+.campana-icono {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Contador sobre la campana, con un anillo del color de la barra para que
-   se despegue del icono en vez de pisarlo */
+/* Contador en la esquina del icono, con un anillo del color de la barra
+   para que se despegue de la campana en vez de pisarla */
 .campana-badge {
   position: absolute;
-  top: 2px;
-  right: 0;
-  min-width: 17px;
-  height: 17px;
+  top: -7px;
+  right: -9px;
+  min-width: 16px;
+  height: 16px;
   padding: 0 4px;
   border-radius: 999px;
   background-color: #ff5b57;
   box-shadow: 0 0 0 2px var(--bs-app-header-bg, var(--bs-body-bg, #fff));
   color: #fff;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  line-height: 17px;
+  line-height: 16px;
   text-align: center;
 }
 
-/* Con dos o tres cifras deja de ser un círculo y se ensancha */
+/* Con dos o tres cifras deja de ser un círculo y se ensancha hacia fuera */
 .campana-badge.es-muchas {
-  right: -4px;
+  right: -12px;
 }
 
 /* ---------- El desplegable ---------- */
