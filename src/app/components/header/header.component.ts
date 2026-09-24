@@ -221,8 +221,16 @@ export class HeaderComponent implements OnDestroy {
 		return (ESTILOS_NOTIFICACION[(n.tipo ?? 'INFO') as TipoNotificacion] ?? ESTILOS_NOTIFICACION.INFO).clase;
 	}
 
+	/**
+	 * El icono propio de la notificación, o el que le toca por su tipo.
+	 *
+	 * Sólo se acepta si parece una clase de Font Awesome: si alguien escribió
+	 * cualquier cosa en «icono propio», el círculo salía vacío.
+	 */
 	iconoDe(n: NotificacionModel): string {
-		return n.icono || (ESTILOS_NOTIFICACION[(n.tipo ?? 'INFO') as TipoNotificacion] ?? ESTILOS_NOTIFICACION.INFO).icono;
+		const porTipo = (ESTILOS_NOTIFICACION[(n.tipo ?? 'INFO') as TipoNotificacion] ?? ESTILOS_NOTIFICACION.INFO).icono;
+		const propio = (n.icono ?? '').trim();
+		return /^fa[bsrl]?-[a-z0-9-]+$/i.test(propio) ? propio : porTipo;
 	}
 
 	hace(n: NotificacionModel): string {

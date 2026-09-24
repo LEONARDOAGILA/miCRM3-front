@@ -113,18 +113,24 @@
     <div class="navbar-item dropdown">
 
       <!-- Abrirla es lo que la calla: mirar la campana ya es enterarse -->
-      <a href="javascript:;" data-bs-toggle="dropdown" class="navbar-link dropdown-toggle icon" title="Notificaciones"
+      <a href="javascript:;" data-bs-toggle="dropdown" class="navbar-link dropdown-toggle icon campana-enlace"
+         [title]="noLeidas ? noLeidas + (noLeidas === 1 ? ' notificación sin leer' : ' notificaciones sin leer') : 'Notificaciones'"
          (click)="alAbrirCampana()">
         <i class="fa fa-bell" [ngClass]="{'animar-campana': animarCampana}"></i>
 
-        <span *ngIf="noLeidas > 0" class="badge bg-danger">
+        <span *ngIf="noLeidas > 0" class="campana-badge" [class.es-muchas]="noLeidas > 9">
           {{ noLeidas > 99 ? '99+' : noLeidas }}
         </span>
       </a>
 
-      <div class="dropdown-menu media-list dropdown-menu-end campana-menu">
-        <div class="dropdown-header d-flex align-items-center justify-content-between">
-          <span>NOTIFICACIONES ({{ noLeidas }})</span>
+      <div class="dropdown-menu dropdown-menu-end campana-menu">
+
+        <!-- ---------- Cabecera: el recuento y cómo avisa ---------- -->
+        <div class="campana-cabecera">
+          <span class="campana-cabecera__titulo">
+            Notificaciones
+            <span *ngIf="noLeidas > 0" class="campana-cabecera__cuenta">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
+          </span>
 
           <span class="campana-ajustes">
             <!-- Cómo avisa: apagados hasta que el usuario los enciende -->
@@ -142,40 +148,57 @@
               <i class="fa fa-desktop"></i>
             </button>
 
-            <a *ngIf="noLeidas > 0" href="javascript:;" class="text-decoration-none fs-11px"
+            <span *ngIf="noLeidas > 0" class="campana-ajustes__sep" aria-hidden="true"></span>
+
+            <a *ngIf="noLeidas > 0" href="javascript:;" class="campana-marcar"
                title="Marcar todas como leídas" (click)="marcarTodasLeidas($event)">
-              Marcar leídas
+              <i class="fa fa-check-double"></i>
+              <span class="campana-marcar__texto">Marcar leídas</span>
             </a>
           </span>
         </div>
 
-        <!-- Las últimas; el detalle completo está en «Ver todas» -->
-        <ng-container *ngIf="notificaciones.length; else sinNotif">
+        <!-- ---------- Las últimas; el resto está en «Ver todas» ---------- -->
+        <div class="campana-lista" *ngIf="notificaciones.length; else sinNotif">
           <a *ngFor="let n of notificaciones" href="javascript:;"
-             class="dropdown-item media campana-item"
+             class="dropdown-item campana-item"
              [class.es-nueva]="!n.leida"
              [title]="n.mensaje || n.titulo"
              (click)="abrirNotificacion(n, $event)">
+
             <span class="campana-item__icono" [ngClass]="claseTipo(n)">
               <i class="fa" [ngClass]="iconoDe(n)"></i>
             </span>
-            <div class="media-body">
-              <h6 class="media-heading campana-item__titulo">{{ n.titulo }}</h6>
-              <p class="campana-item__mensaje" *ngIf="n.mensaje">{{ n.mensaje }}</p>
-              <div class="text-muted fs-10px">{{ hace(n) }}</div>
-            </div>
+
+            <span class="campana-item__cuerpo">
+              <span class="campana-item__linea">
+                <span class="campana-item__titulo">{{ n.titulo }}</span>
+                <span class="campana-item__hora">{{ hace(n) }}</span>
+              </span>
+              <span class="campana-item__mensaje" *ngIf="n.mensaje">{{ n.mensaje }}</span>
+              <!-- El enlace se anuncia: así se sabe que la notificación lleva a algún sitio -->
+              <span class="campana-item__enlace" *ngIf="n.url">
+                <i class="fa fa-arrow-right-long"></i>{{ n.url_texto || 'Abrir' }}
+              </span>
+            </span>
+
+            <span class="campana-item__punto" *ngIf="!n.leida" title="Sin leer"></span>
           </a>
-        </ng-container>
+        </div>
 
         <ng-template #sinNotif>
-          <div class="text-center w-300px py-3 text-muted">
-            No tienes notificaciones
+          <div class="campana-vacio">
+            <i class="fa fa-bell-slash"></i>
+            <span class="campana-vacio__titulo">No tienes notificaciones</span>
+            <span class="campana-vacio__ayuda">Aquí aparecerán los avisos que te envíen</span>
           </div>
         </ng-template>
 
-        <div class="dropdown-footer text-center">
-          <a href="javascript:;" class="text-decoration-none" (click)="verNotificaciones($event)">Ver más</a>
-        </div>
+        <!-- ---------- Pie ---------- -->
+        <a href="javascript:;" class="campana-pie" (click)="verNotificaciones($event)">
+          Ver todas las notificaciones
+          <i class="fa fa-arrow-right-long"></i>
+        </a>
       </div>
     </div>
 
