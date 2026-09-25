@@ -307,3 +307,34 @@
   margin-right: .3rem;
   color: var(--bs-app-theme, #00acac);
 }
+
+/* Adónde llevará el enlace escrito: se dice debajo del campo */
+.noti-destino {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  margin-top: -.35rem;
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.noti-destino i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Sale del sistema: conviene que se note antes de enviarla */
+.noti-destino.es-fuera {
+  color: #a96a08;
+}
+
+.noti-destino.es-fuera i {
+  color: #a96a08;
+}
+
+.noti-ayuda code {
+  padding: 0 .2rem;
+  border-radius: 3px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .07);
+  color: inherit;
+  font-size: 10.5px;
+}

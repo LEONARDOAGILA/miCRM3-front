@@ -201,11 +201,14 @@
         </div>
       }
 
+      <!-- Sólo si el boletín lo permite: se configura en cada boletín -->
       @if (!vistaPrevia && boletin; as b) {
-        <label class="bol-visor__check" title="Este boletín no volverá a aparecer al entrar">
-          <input type="checkbox" class="form-check-input" [checked]="noMostrar.has(b.id)" (change)="alternarNoMostrar(b)">
-          <span>No volver a mostrar</span>
-        </label>
+        @if (b.no_mostrar !== false) {
+          <label class="bol-visor__check" title="Este boletín no volverá a aparecer al entrar">
+            <input type="checkbox" class="form-check-input" [checked]="noMostrar.has(b.id)" (change)="alternarNoMostrar(b)">
+            <span>No volver a mostrar</span>
+          </label>
+        }
       }
 
       @if (!esUltima) {

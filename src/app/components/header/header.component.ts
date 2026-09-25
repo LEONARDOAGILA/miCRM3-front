@@ -15,7 +15,7 @@ import { BoletinPushService } from '../../modules/config/services/boletinPush.se
 import { CampanaService } from '../../modules/config/services/campana.service';
 import { AvisoCampanaService } from '../../modules/config/services/avisoCampana.service';
 import { MisNotificacionesComponent } from '../../modules/config/pages/notificaciones/misNotificaciones/misNotificaciones.component';
-import { ESTILOS_NOTIFICACION, NotificacionModel, TipoNotificacion } from '../../modules/config/interfaces/notificacionModel';
+import { destinoDeNotificacion, ESTILOS_NOTIFICACION, NotificacionModel, TipoNotificacion } from '../../modules/config/interfaces/notificacionModel';
 import { WebsocketNotificationService } from '../../service/websocket-notification.service';
 
 declare var slideToggle: any;
@@ -195,11 +195,28 @@ export class HeaderComponent implements OnDestroy {
 		this._aviso.callar();
 	}
 
-	/** Pulsar una: queda leída y, si lleva enlace, lleva allí. */
+	/**
+	 * Pulsar una: queda leída y, si lleva enlace, lleva allí.
+	 *
+	 * Un enlace de internet abre otra pestaña y deja el CRM donde estaba;
+	 * una ruta del sistema navega aquí mismo.
+	 */
 	async abrirNotificacion(n: NotificacionModel, ev: Event): Promise<void> {
 		ev.preventDefault();
 		if (!n.leida) { await this._campana.marcarLeidas([n.id]); }
-		if (n.url) { this._router.navigateByUrl(n.url).catch(() => { /* ruta que ya no existe */ }); }
+
+		const a = destinoDeNotificacion(n.url);
+		if (!a) { return; }
+		if (a.tipo === 'externa') {
+			window.open(a.destino, '_blank', 'noopener,noreferrer');
+		} else {
+			this._router.navigateByUrl(a.destino).catch(() => { /* ruta que ya no existe */ });
+		}
+	}
+
+	/** Para pintar el icono: si el enlace se va fuera del sistema. */
+	enlaceFuera(n: NotificacionModel): boolean {
+		return destinoDeNotificacion(n.url)?.tipo === 'externa';
 	}
 
 	async marcarTodasLeidas(ev: Event): Promise<void> {

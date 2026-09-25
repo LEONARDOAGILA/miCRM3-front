@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 
-import { NotificacionModel } from '../interfaces/notificacionModel';
+import { destinoDeNotificacion, NotificacionModel } from '../interfaces/notificacionModel';
 
 /** Lo que el usuario ha decidido para los avisos de su campana. */
 export interface PreferenciasAviso {
@@ -253,7 +253,14 @@ export class AvisoCampanaService {
 
       globo.onclick = () => {
         try { window.focus(); } catch { /* el navegador puede negarlo */ }
-        if (n.url) { this.router.navigateByUrl(n.url).catch(() => { /* ruta que ya no existe */ }); }
+
+        const a = destinoDeNotificacion(n.url);
+        if (a?.tipo === 'externa') {
+          window.open(a.destino, '_blank', 'noopener,noreferrer');
+        } else if (a) {
+          this.router.navigateByUrl(a.destino).catch(() => { /* ruta que ya no existe */ });
+        }
+
         globo.close();
       };
 

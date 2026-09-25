@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { NotificacionService } from '../../../services/notificacion.service';
 import { CampanaService } from '../../../services/campana.service';
-import { ESTILOS_NOTIFICACION, NotificacionModel, TipoNotificacion } from '../../../interfaces/notificacionModel';
+import { destinoDeNotificacion, ESTILOS_NOTIFICACION, NotificacionModel, TipoNotificacion } from '../../../interfaces/notificacionModel';
 import { LoadingService } from '../../../../../service/loading.service';
 import { PanelModule } from '../../../../../components/panel/panel.module';
 
@@ -89,7 +89,13 @@ export class MisNotificacionesComponent implements OnInit {
   // ACCIONES
   // ================================================================
 
-  /** Pulsar una: queda leída y, si lleva enlace, lleva allí. */
+  /**
+   * Pulsar una: queda leída y, si lleva enlace, lleva allí.
+   *
+   * Con un enlace de internet se abre otra pestaña y este modal se queda
+   * abierto, para poder seguir revisando la lista; con una ruta del sistema
+   * hay que cerrarlo, porque debajo cambia la pantalla.
+   */
   async abrir(n: NotificacionModel): Promise<void> {
     if (!n.leida) {
       n.leida = true;
@@ -98,10 +104,21 @@ export class MisNotificacionesComponent implements OnInit {
       if (this.soloNoLeidas) { this.cargar(); }
     }
 
-    if (n.url) {
-      this.activeModal.close('ir');
-      this.router.navigateByUrl(n.url).catch(() => { /* ruta que ya no existe */ });
+    const a = destinoDeNotificacion(n.url);
+    if (!a) { return; }
+
+    if (a.tipo === 'externa') {
+      window.open(a.destino, '_blank', 'noopener,noreferrer');
+      return;
     }
+
+    this.activeModal.close('ir');
+    this.router.navigateByUrl(a.destino).catch(() => { /* ruta que ya no existe */ });
+  }
+
+  /** Para pintar el icono: si el enlace se va fuera del sistema. */
+  enlaceFuera(n: NotificacionModel): boolean {
+    return destinoDeNotificacion(n.url)?.tipo === 'externa';
   }
 
   async marcarTodas(): Promise<void> {

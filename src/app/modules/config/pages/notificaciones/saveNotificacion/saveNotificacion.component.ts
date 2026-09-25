@@ -10,7 +10,8 @@ import { NotificacionService } from '../../../services/notificacion.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { GrupoModel } from '../../../../seguridad/interfaces/grupoModel';
 import {
-  DestinatarioNotificacion, ESTILOS_NOTIFICACION, NotificacionEnviar, NotificacionModel, TipoNotificacion,
+  DestinatarioNotificacion, destinoDeNotificacion, DestinoNotificacion,
+  ESTILOS_NOTIFICACION, NotificacionEnviar, NotificacionModel, TipoNotificacion,
 } from '../../../interfaces/notificacionModel';
 import { ListUsersComponent } from '../../../../seguridad/pages/users/listUsers/listUsers.component';
 import { ListGruposComponent } from '../../../../seguridad/pages/grupos/listGrupos/listGrupos.component';
@@ -132,7 +133,7 @@ export class SaveNotificacionComponent implements OnInit, OnDestroy {
       mensaje:   ['', [Validators.maxLength(1000)]],
       tipo:      ['INFO' as TipoNotificacion, [Validators.required]],
       icono:     ['', [Validators.maxLength(60)]],
-      url:       ['', [Validators.maxLength(300)]],
+      url:       ['', [Validators.maxLength(500)]],
       url_texto: ['', [Validators.maxLength(60)]],
       caduca_at: [''],
       modulo:    ['', [Validators.maxLength(60)]],
@@ -275,6 +276,14 @@ export class SaveNotificacionComponent implements OnInit, OnDestroy {
 
   get iconoElegido(): string {
     return (this.form?.controls['icono']?.value || '').trim() || this.estiloElegido.icono;
+  }
+
+  /**
+   * A dónde llevará el enlace escrito: una pantalla del sistema o una
+   * dirección de internet. Se dice debajo del campo para que no haya sorpresas.
+   */
+  get destinoDelEnlace(): DestinoNotificacion | null {
+    return destinoDeNotificacion(this.form?.controls['url']?.value);
   }
 
   // ================================================================

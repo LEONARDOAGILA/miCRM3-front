@@ -74,7 +74,11 @@
             <span class="noti-item__pie">
               {{ hace(n) }}
               @if (n.created_by) { · {{ n.created_by }} }
-              @if (n.url) { · <b class="noti-item__enlace">{{ n.url_texto || 'Abrir' }}</b> }
+              @if (n.url) {
+                · <b class="noti-item__enlace">
+                    <i class="fa me-1" [ngClass]="enlaceFuera(n) ? 'fa-arrow-up-right-from-square' : 'fa-arrow-right-long'"></i>{{ n.url_texto || (enlaceFuera(n) ? 'Abrir el enlace' : 'Abrir') }}
+                  </b>
+              }
             </span>
           </div>
 

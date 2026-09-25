@@ -179,9 +179,9 @@
                 <span class="campana-item__hora">{{ hace(n) }}</span>
               </span>
               <span class="campana-item__mensaje" *ngIf="n.mensaje">{{ n.mensaje }}</span>
-              <!-- El enlace se anuncia: así se sabe que la notificación lleva a algún sitio -->
+              <!-- El enlace se anuncia, y se distingue si sale del sistema -->
               <span class="campana-item__enlace" *ngIf="n.url">
-                <i class="fa fa-arrow-right-long"></i>{{ n.url_texto || 'Abrir' }}
+                <i class="fa" [ngClass]="enlaceFuera(n) ? 'fa-arrow-up-right-from-square' : 'fa-arrow-right-long'"></i>{{ n.url_texto || (enlaceFuera(n) ? 'Abrir el enlace' : 'Abrir') }}
               </span>
             </span>
 

@@ -196,6 +196,7 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
       desde:       [{ value: '', disabled: this.isdisabled }, [Validators.required]],
       hasta:       [{ value: '', disabled: this.isdisabled }, [Validators.required]],
       obligatorio: [{ value: false, disabled: this.isdisabled }],
+      no_mostrar:  [{ value: true, disabled: this.isdisabled }],
       activo:      [{ value: true, disabled: this.isdisabled }],
     });
   }
@@ -218,6 +219,7 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
         desde: b.desde,
         hasta: b.hasta,
         obligatorio: b.obligatorio,
+        no_mostrar: b.no_mostrar !== false,
         activo: b.activo,
       });
       this.sincronizarRango();
@@ -488,6 +490,7 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
       desde: v.desde,
       hasta: v.hasta,
       obligatorio: v.obligatorio,
+      no_mostrar: v.no_mostrar,
       activo: v.activo,
       imagenes: listas.map((i, n) => ({
         id: i.id, tipo: i.tipo, titulo: i.titulo, descripcion: i.descripcion,
@@ -607,6 +610,7 @@ export class SaveBoletinComponent implements OnInit, OnDestroy {
       desde: v.desde,
       hasta: v.hasta,
       obligatorio: !!v.obligatorio,
+      no_mostrar: !!v.no_mostrar,
       activo: !!v.activo,
       imagenes: this.imagenes.map((i, n) => ({
         id: i.id ?? null,

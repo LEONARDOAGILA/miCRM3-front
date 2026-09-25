@@ -229,15 +229,37 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   @ViewChild('lienzoCuadricula') lienzoCuadricula?: ElementRef<HTMLElement>;
 
   /**
+   * Cuándo se abrió el menú, para no cerrarlo con el scroll que provoca él
+   * mismo. Ver `cerrarMenuPorScroll`.
+   */
+  private menuAbiertoEn = 0;
+
+  /**
+   * Los milisegundos que el menú recién abierto aguanta un scroll sin cerrarse.
+   * De sobra para el desplazamiento del navegador y muy poco para que a nadie
+   * le dé tiempo a mover la rueda a propósito.
+   */
+  private static readonly GRACIA_SCROLL_MS = 350;
+
+  /**
    * Cierra el menú si el usuario hace scroll en cualquier sitio (capturado).
    * Se registra FUERA de la zona de Angular: si no, cada evento de scroll
    * (también el del menú lateral) disparaba una detección de cambios en
    * medio del scroll, y el sidebar (ngAfterViewChecked) devolvía su scroll
    * a la posición guardada: el menú se quedaba "trabado" en esta pantalla.
    * Sólo entra en la zona cuando de verdad hay un menú que cerrar.
+   *
+   * OJO con el scroll que NO hace el usuario: al pulsar una fila, ag-Grid
+   * enfoca su celda y el navegador la desplaza para dejarla a la vista. Ese
+   * scroll llega justo después del clic derecho y cerraba el menú antes de
+   * que se viera. Sólo pasaba cuando la lista no cabía entera en pantalla
+   * —una carpeta con muchos archivos—, y por eso parecía que el menú no
+   * funcionaba sobre los archivos. Los primeros milisegundos se perdonan.
    */
   private readonly cerrarMenuPorScroll = () => {
-    if (this.menuCtx.visible) { this.ngZone.run(() => this.cerrarMenu()); }
+    if (!this.menuCtx.visible) { return; }
+    if (Date.now() - this.menuAbiertoEn < FileManagerComponent.GRACIA_SCROLL_MS) { return; }
+    this.ngZone.run(() => this.cerrarMenu());
   };
 
   private readonly unsubscribe$ = new Subject<void>();
@@ -381,6 +403,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   private abrirMenu(e: MouseEvent, elemento: FileTreeNode | null, origen: 'grilla' | 'arbol'): void {
+    // El scroll que venga justo detrás es el del propio clic, no el del usuario
+    this.menuAbiertoEn = Date.now();
+
     this.menuCtx = {
       visible: true,
       x: e.clientX,

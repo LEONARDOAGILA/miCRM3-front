@@ -66,6 +66,8 @@ export interface BoletinModel {
   orden: number;
   /** Hay que confirmar la lectura para poder cerrarlo */
   obligatorio: boolean;
+  /** El visor ofrece la casilla «No volver a mostrar» */
+  no_mostrar: boolean;
   activo: boolean;
   vigente: boolean;
   estado: EstadoBoletin;
@@ -91,6 +93,7 @@ export interface BoletinGuardar {
   hasta?: string;
   orden?: number;
   obligatorio?: boolean;
+  no_mostrar?: boolean;
   activo?: boolean;
   imagenes?: BoletinImagen[];
   /** Ids de los usuarios destinatarios */

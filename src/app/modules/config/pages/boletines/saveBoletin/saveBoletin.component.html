@@ -106,6 +106,32 @@
                 </app-checkbox>
               </div>
 
+              <!-- La casilla que el usuario ve en el visor -->
+              <div class="estado-miswitch" [class.is-on]="form.controls['no_mostrar'].value">
+                <span class="estado-miswitch__icon"><i class="fa-solid fa-eye-slash"></i></span>
+                <div class="estado-miswitch__text">
+                  <span class="estado-miswitch__label">Permitir «No volver a mostrar»</span>
+                  <span class="estado-miswitch__hint">
+                    {{ form.controls['no_mostrar'].value
+                        ? 'El usuario puede ocultarlo y no le saldrá más'
+                        : 'Le saldrá cada vez que entre, mientras esté vigente' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-miswitch__switch"
+                  [control]="form.controls['no_mostrar']"
+                  [label]="form.controls['no_mostrar'].value ? 'Sí' : 'No'"
+                  [id]="'ck-no-mostrar'">
+                </app-checkbox>
+              </div>
+
+              @if (form.controls['obligatorio'].value && form.controls['no_mostrar'].value) {
+                <p class="bol-ayuda">
+                  <i class="fa fa-circle-info"></i>
+                  Es de <b>lectura obligatoria</b> pero deja ocultarlo: quien marque la casilla
+                  no volverá a verlo. Si tiene que llegarle a todo el mundo, quite el permiso de arriba.
+                </p>
+              }
+
             </div>
           </ng-container>
         </panel>

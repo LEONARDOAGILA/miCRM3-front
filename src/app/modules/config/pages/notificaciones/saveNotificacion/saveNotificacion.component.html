@@ -253,15 +253,22 @@
                 </div>
               </div>
 
-              <!-- Enlace: al pulsarla lleva a una pantalla del sistema -->
+              <!-- Enlace: una pantalla del sistema o una dirección de internet -->
               <div class="campo">
                 <app-campoTexto
                   [control]="form.controls['url']"
                   label="Al pulsarla, llevar a (opcional)"
-                  placeholder="/config/boletines"
-                  [maxLength]="300"
+                  placeholder="/config/boletines  ·  https://almacenesespana.ec"
+                  [maxLength]="500"
                   [trimEspacios]="true">
                 </app-campoTexto>
+
+                @if (destinoDelEnlace; as d) {
+                  <span class="noti-destino" [class.es-fuera]="d.tipo === 'externa'">
+                    <i class="fa" [ngClass]="d.tipo === 'externa' ? 'fa-arrow-up-right-from-square' : 'fa-diagram-project'"></i>
+                    {{ d.tipo === 'externa' ? 'Se abrirá en otra pestaña del navegador' : 'Pantalla del sistema: ' + d.destino }}
+                  </span>
+                }
               </div>
 
               <div class="campo">
@@ -286,9 +293,10 @@
 
               <p class="noti-ayuda">
                 <i class="fa fa-lightbulb"></i>
-                La ruta es la del sistema, la que sale en la barra del navegador
-                después del dominio. Si se deja vacía, la notificación sólo se lee.
-                El icono es una clase de Font&nbsp;Awesome; sin ella manda el tipo.
+                Vale una <b>pantalla del sistema</b> (<code>/config/boletines</code>, lo que sale en la
+                barra del navegador después del dominio) o una <b>dirección de internet</b>
+                (<code>https://…</code>), que se abrirá en otra pestaña. Si se deja vacía, la
+                notificación sólo se lee. El icono es una clase de Font&nbsp;Awesome; sin ella manda el tipo.
               </p>
 
               @if (esView) {
