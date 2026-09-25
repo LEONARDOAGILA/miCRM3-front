@@ -49,21 +49,20 @@
 
 		<!-- ---------- Barra de pestañas ----------
 		     flex-nowrap + overflow-auto: en móvil las pestañas se desplazan en
-		     horizontal en lugar de saltar de línea. Cada botón lleva dos textos:
-		     el largo en mayúsculas para escritorio y el corto para móvil.
+		     horizontal en lugar de saltar de línea, con una sombra al borde que
+		     avisa de que hay más. El rótulo es el mismo en todas las pantallas.
 
 		     Las pestañas con (click) ponen a true una bandera de home.ts que
 		     dispara el @defer de su panel: Bootstrap sigue encargándose de
 		     mostrar la pestaña (data-bs-toggle) y la bandera sólo provoca la
 		     descarga del componente, que hasta ese momento no existe. -->
-		<ul class="profile-header-tab nav nav-tabs flex-nowrap overflow-auto border py-0" role="tablist">
+		<ul class="profile-header-tab nav nav-tabs flex-nowrap overflow-auto py-0" role="tablist">
 
 			<!-- MÓDULOS: tarjetas de acceso a cada módulo del sistema. Activa por defecto. -->
 			<li class="nav-item flex-shrink-0" role="presentation">
 				<button class="nav-link active" id="inicio-modulos-tab" data-bs-toggle="tab" data-bs-target="#inicio-modulos" type="button" role="tab" aria-controls="inicio-modulos" aria-selected="true">
 					<i class="fa fa-th-large me-1"></i>
-					<span class="d-none d-sm-inline">MODULOS</span>
-					<span class="d-inline d-sm-none">Módulos</span>
+					<span class="tab-inicio__texto">Módulos</span>
 				</button>
 			</li>
 
@@ -71,8 +70,7 @@
 			<li class="nav-item flex-shrink-0" role="presentation">
 				<button class="nav-link" id="inicio-metricas1-tab" data-bs-toggle="tab" data-bs-target="#inicio-metricas1" type="button" role="tab" aria-controls="inicio-metricas1" aria-selected="false" (click)="metricas1Activa = true">
 					<i class="fa fa-chart-line me-1"></i>
-					<span class="d-none d-sm-inline">METRICAS 1</span>
-					<span class="d-inline d-sm-none">Métricas 1</span>
+					<span class="tab-inicio__texto">Métricas 1</span>
 				</button>
 			</li>
 
@@ -80,8 +78,7 @@
 			<li class="nav-item flex-shrink-0" role="presentation">
 				<button class="nav-link" id="inicio-metricas2-tab" data-bs-toggle="tab" data-bs-target="#inicio-metricas2" type="button" role="tab" aria-controls="inicio-metricas2" aria-selected="false" (click)="metricas2Activa = true">
 					<i class="fa fa-chart-pie me-1"></i>
-					<span class="d-none d-sm-inline">METRICAS 2</span>
-					<span class="d-inline d-sm-none">Métricas 2</span>
+					<span class="tab-inicio__texto">Métricas 2</span>
 				</button>
 			</li>
 
@@ -89,8 +86,7 @@
 			<li class="nav-item flex-shrink-0" role="presentation">
 				<button class="nav-link" id="inicio-metricas3-tab" data-bs-toggle="tab" data-bs-target="#inicio-metricas3" type="button" role="tab" aria-controls="inicio-metricas3" aria-selected="false" (click)="metricas3Activa = true">
 					<i class="fa fa-chart-bar me-1"></i>
-					<span class="d-none d-sm-inline">METRICAS 3</span>
-					<span class="d-inline d-sm-none">Métricas 3</span>
+					<span class="tab-inicio__texto">Métricas 3</span>
 				</button>
 			</li>
 
@@ -98,8 +94,7 @@
 			<li class="nav-item flex-shrink-0" role="presentation">
 				<button class="nav-link" id="inicio-accesos-tab" data-bs-toggle="tab" data-bs-target="#inicio-accesos" type="button" role="tab" aria-controls="inicio-accesos" aria-selected="false">
 					<i class="fa fa-bolt me-1"></i>
-					<span class="d-none d-sm-inline">ACCESOS</span>
-					<span class="d-inline d-sm-none">Accesos</span>
+					<span class="tab-inicio__texto">Accesos</span>
 				</button>
 			</li>
 
@@ -107,8 +102,7 @@
 			<li class="nav-item flex-shrink-0" role="presentation">
 				<button class="nav-link" id="inicio-contactanos-tab" data-bs-toggle="tab" data-bs-target="#inicio-contactanos" type="button" role="tab" aria-controls="inicio-contactanos" aria-selected="false" (click)="contactanosActivo = true">
 					<i class="fa fa-headset me-1"></i>
-					<span class="d-none d-sm-inline">CONTACTANOS</span>
-					<span class="d-inline d-sm-none">Contáctanos</span>
+					<span class="tab-inicio__texto">Contáctanos</span>
 				</button>
 			</li>
 

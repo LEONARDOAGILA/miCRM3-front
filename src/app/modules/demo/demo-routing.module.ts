@@ -50,6 +50,9 @@ const routes: Routes = [
         { path: 'WindowsExplorer',component:WindowsExplorerComponent},
         
         { path: 'qr',component:ScannerComponent},
+        // Demostración del lector nuevo (components/scanner). Es standalone y
+        // se carga sola, así que no hace falta declararla en demo.module.ts
+        { path: 'scannerqr', loadComponent: () => import('./pages/scannerQrDemo/scannerQrDemo.component').then(m => m.ScannerQrDemoComponent) },
         { path: 'factura',component:FacturaComponent},
         { path: 'ubicaciongps',component:UbicacionGpsComponent},
         { path: 'ubicaciongooglemaps',component:UbicacionGoogleMapsComponent},

@@ -1,0 +1,347 @@
+/* ============================================================
+   LECTOR DE CÓDIGOS
+   Todo con variables del tema, para que valga en claro y en oscuro.
+   El original traía 713 líneas con los colores escritos a mano.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.lector {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+/* ---------- El visor ---------- */
+.lector__visor {
+  position: relative;
+  overflow: hidden;
+  /* Cuadrado-ish: es la forma en que se sostiene el teléfono para leer */
+  aspect-ratio: 4 / 3;
+  max-height: 60vh;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .6rem;
+  background-color: #111417;
+}
+
+.lector__visor ::ng-deep video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---------- Apagada ---------- */
+.lector__apagado {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  padding: 1rem;
+  text-align: center;
+  color: rgba(255, 255, 255, .75);
+}
+
+.lector__apagado i {
+  margin-bottom: .3rem;
+  font-size: 2.6rem;
+  opacity: .35;
+}
+
+.lector__apagado-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.lector__apagado-ayuda {
+  margin-bottom: .6rem;
+  font-size: 11.5px;
+}
+
+/* ---------- La mira ---------- */
+.lector__mira {
+  position: absolute;
+  /* Deja ver los bordes: ayuda a encuadrar sin tapar la imagen */
+  inset: 12%;
+  pointer-events: none;
+}
+
+.lector__esquina {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--bs-app-theme, #00acac);
+}
+
+.lector__esquina.is-ai { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: .4rem; }
+.lector__esquina.is-ad { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: .4rem; }
+.lector__esquina.is-bi { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: .4rem; }
+.lector__esquina.is-bd { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: .4rem; }
+
+/* La línea que recorre: dice que está buscando */
+.lector__rayo {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--bs-app-theme, #00acac), transparent);
+  box-shadow: 0 0 8px var(--bs-app-theme, #00acac);
+  animation: lectorRayo 2.4s ease-in-out infinite;
+}
+
+@keyframes lectorRayo {
+  0%, 100% { top: 4%; }
+  50%      { top: 96%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lector__rayo { animation: none; top: 50%; }
+}
+
+/* ---------- Encendiendo ---------- */
+.lector__cargando {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  background-color: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 12px;
+}
+
+.lector__girando {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255, 255, 255, .25);
+  border-top-color: var(--bs-app-theme, #00acac);
+  border-radius: 50%;
+  animation: lectorGiro .8s linear infinite;
+}
+
+@keyframes lectorGiro {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Cuando la cámara no se puede usar ---------- */
+.lector__problema {
+  padding: .5rem .7rem;
+  border-radius: .5rem;
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .15);
+  color: var(--bs-warning-text-emphasis, #997404);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* ---------- Controles ---------- */
+.lector__barra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.lector__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .4rem .7rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .45rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-body-color, #212529);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+}
+
+.lector__btn:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.lector__btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.lector__btn.is-on {
+  background-color: var(--bs-app-theme, #00acac);
+  border-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+}
+
+.lector__camaras {
+  width: auto;
+  max-width: 190px;
+  margin-left: auto;
+  font-size: 11.5px;
+}
+
+/* ---------- Lo último leído ---------- */
+.lector__ultimo {
+  padding: .6rem .75rem;
+  border: 1px solid var(--bs-app-theme, #00acac);
+  border-radius: .55rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
+}
+
+.lector__ultimo-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .3rem;
+}
+
+.lector__formato {
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+
+.lector__hora {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El código, en monoespaciada y entero: es el dato que importa */
+.lector__codigo {
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--bs-body-color, #212529);
+  word-break: break-all;
+  user-select: all;
+}
+
+.lector__ultimo-acciones {
+  display: flex;
+  gap: .35rem;
+  margin-top: .5rem;
+}
+
+/* ---------- Historial ---------- */
+.lector__historial {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .55rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.lector__historial-cabecera {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem .6rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.lector__rotulo {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.lector__cuentas {
+  display: inline-flex;
+  gap: .5rem;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.lector__cuentas i {
+  margin-right: .2rem;
+}
+
+.lector__historial-acciones {
+  display: inline-flex;
+  gap: .25rem;
+  margin-left: auto;
+}
+
+.lector__vacio {
+  padding: 1rem .6rem;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.lector__lista {
+  max-height: 260px;
+  margin: 0;
+  padding: .25rem;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.lector__item {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .3rem .35rem;
+  border-radius: .3rem;
+}
+
+.lector__item:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
+}
+
+.lector__item-formato {
+  flex: 0 0 auto;
+  min-width: 64px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+  text-transform: uppercase;
+}
+
+.lector__item-texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lector__item-hora {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Teléfono ---------- */
+@media (max-width: 575.98px) {
+  .lector__visor {
+    aspect-ratio: 3 / 4;
+  }
+
+  .lector__camaras {
+    max-width: 100%;
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .lector__item-formato {
+    display: none;
+  }
+}
