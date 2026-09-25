@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, Renderer2, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Subject, takeUntil } from 'rxjs';
@@ -16,9 +16,15 @@ import { CampanaService } from '../../modules/config/services/campana.service';
 import { AvisoCampanaService } from '../../modules/config/services/avisoCampana.service';
 import { MisNotificacionesComponent } from '../../modules/config/pages/notificaciones/misNotificaciones/misNotificaciones.component';
 import { destinoDeNotificacion, ESTILOS_NOTIFICACION, NotificacionModel, TipoNotificacion } from '../../modules/config/interfaces/notificacionModel';
-import { WebsocketNotificationService } from '../../service/websocket-notification.service';
+import { PresenciaService } from '../../modules/seguridad/services/presencia.service';
+import {
+	ESTADOS_ELEGIBLES, EstadoElegido, estiloDePresencia, PresenciaModel,
+} from '../../modules/seguridad/interfaces/presenciaModel';
 
 declare var slideToggle: any;
+
+/** Lo que se muestra cuando el usuario no tiene foto o la suya no carga. */
+const AVATAR_POR_DEFECTO = '/assets/img/user/default.png';
 
 @Component({
 	selector: 'header',
@@ -26,7 +32,7 @@ declare var slideToggle: any;
 	styleUrls: ['./header.component.css'],
 	standalone: false,
 })
-export class HeaderComponent implements OnDestroy {
+export class HeaderComponent implements OnInit, OnDestroy {
 	@Input() appSidebarTwo;
 	@Output() appSidebarEndToggled = new EventEmitter<boolean>();
 	@Output() appSidebarMobileToggled = new EventEmitter<boolean>();
@@ -39,12 +45,19 @@ export class HeaderComponent implements OnDestroy {
 	msgNotificacion: Notificaciones = new Notificaciones();
 	private unsubscribe$ = new Subject<void>();
 	usuarioLogeado: any = false;   // el usuario de localStorage (false si no hay sesión)
-	ban: any = false;
-	activoInactivo: any = true;
-	iconoActivoInactivo: any = true;
-	imagenUsuario: any = null;
-	contadorWebsockets: number = 0;
+	imagenUsuario: string | null = null;
+
+	/** Presencia: el estado que publico y los que puedo elegir. */
+	presencia: PresenciaModel | null = null;
+	readonly estadosElegibles = ESTADOS_ELEGIBLES;
+	readonly estiloDe = estiloDePresencia;
+	/** Se está guardando un cambio de estado: evita dobles clics. */
+	cambiandoEstado = false;
 	animarCampana: boolean = false;
+
+	/** Los dos temporizadores del reloj, para poder pararlos al salir. */
+	private relojAlMinuto: any = null;
+	private relojCadaMinuto: any = null;
 
 	/** Campana: las últimas notificaciones y cuántas van sin leer. */
 	notificaciones: NotificacionModel[] = [];
@@ -57,7 +70,6 @@ export class HeaderComponent implements OnDestroy {
 	// fin lpaa
 
 	constructor(
-		private renderer: Renderer2,
 		public appSettings: AppSettings,
 		// inicio lpaa
 		private _storeService: StorageService,
@@ -65,28 +77,19 @@ export class HeaderComponent implements OnDestroy {
 		private _seguridadService: SeguridadService,
 		private _toastr: ToastrService,
 		private _inactivityService: InactivityService,
-	    private _wsNotifService: WebsocketNotificationService,
 		private _boletinPush: BoletinPushService,
 		private _campana: CampanaService,
 		private _aviso: AvisoCampanaService,
 		private _modal: NgbModal,
-		private _router: Router
-
-
-		// inicio lpaa
-
-	) {
-
-
-	}
+		private _router: Router,
+		private _presencia: PresenciaService,
+		private _ngZone: NgZone
+		// fin lpaa
+	) {}
 
 	// inicio lpaa
 
-  resetearContador() {
-    this._wsNotifService.reiniciarContador();
-  }
-
-	async ngOnInit(): Promise<void> {
+	ngOnInit(): void {
 
 		// Boletines lanzados con la sesión ya abierta: la cabecera está en
 		// todas las pantallas, así que es el sitio para quedarse a la escucha.
@@ -111,61 +114,52 @@ export class HeaderComponent implements OnDestroy {
 		});
 
 
-	    // Actualizar la hora cada minuto
-		setInterval(() => {
-		this.today = new Date();
-		}, 60000);
+		// Mi estado, y el latido que dice que sigo aquí
+		this._presencia.mia$.pipe(takeUntil(this.unsubscribe$)).subscribe(p => this.presencia = p);
+		this._presencia.empezar();
 
-
-		// 🔔 Escuchar contador global de WebSockets
-		this._wsNotifService.contadorMensajes$
-		.pipe(takeUntil(this.unsubscribe$))
-		.subscribe((count) => {
-			this.contadorWebsockets = count;
-		});
-
-
+		this.arrancarReloj();
 
 	  	// 🔐 Usuario logeado
 		const userLogin: any = this._storeService.getStorageItem("user");
-		this.usuarioLogeado = userLogin;
-		if (!userLogin) {
-			this.usuarioLogeado = false;
-			return
-		}
+		this.usuarioLogeado = userLogin || false;
+		if (!userLogin) { return; }
 
-
-
-		if (userLogin.avatar) {
-			const imageUrl = this._userService.getUserImage(userLogin.id, true);
-			if (imageUrl) {
-				await this.checkImageExists(imageUrl)
-					.then(exists => {
-						if (exists) {
-							this.imagenUsuario = imageUrl;
-						} else {
-							this.imagenUsuario = '/assets/img/user/default.png';
-						}
-					})
-					.catch(() => {
-						this.imagenUsuario = '/assets/img/user/default.png';
-					});
-			} else {
-				this.imagenUsuario = '/assets/img/user/default.png';
-			}
-		}else{
-				this.imagenUsuario = '/assets/img/user/default.png';
-		}
-		
+		// Se pide directamente: si la imagen no existe, el propio <img> avisa
+		// con (error) y se cambia por la de por defecto. Antes se descargaba
+		// dos veces, una para comprobar que estaba y otra para mostrarla.
+		this.imagenUsuario = userLogin.avatar
+			? this._userService.getUserImage(userLogin.id, true)
+			: AVATAR_POR_DEFECTO;
 	}
 
-	private checkImageExists(url: string): Promise<boolean> {
-		return new Promise((resolve) => {
-			const img = new Image();
-			img.onload = () => resolve(true);
-			img.onerror = () => resolve(false);
-			img.src = url;
-		});
+	/** La foto no se pudo cargar (borrada, sin permiso, sin red). */
+	alFallarLaFoto(): void {
+		this.imagenUsuario = AVATAR_POR_DEFECTO;
+	}
+
+	/**
+	 * El reloj de la barra.
+	 *
+	 * Se engancha al cambio de minuto real en vez de contar 60 segundos desde
+	 * que se abrió la pantalla: así el minuto cambia cuando toca y no hasta
+	 * 59 segundos tarde. Los temporizadores se guardan porque hay que pararlos
+	 * al destruir la cabecera; el setInterval de antes seguía corriendo para
+	 * siempre y disparando una detección de cambios cada minuto.
+	 */
+	private arrancarReloj(): void {
+		this.today = new Date();
+
+		const faltanParaElMinuto = 60000 - (Date.now() % 60000);
+		this.relojAlMinuto = setTimeout(() => {
+			this.today = new Date();
+			this.relojCadaMinuto = setInterval(() => this.today = new Date(), 60000);
+		}, faltanParaElMinuto);
+	}
+
+	private pararReloj(): void {
+		if (this.relojAlMinuto)   { clearTimeout(this.relojAlMinuto);   this.relojAlMinuto = null; }
+		if (this.relojCadaMinuto) { clearInterval(this.relojCadaMinuto); this.relojCadaMinuto = null; }
 	}
 
 	// fin lpaa
@@ -298,6 +292,8 @@ export class HeaderComponent implements OnDestroy {
 
 	ngOnDestroy() {
 		// inicio lpaa
+		this.pararReloj();
+		this._presencia.parar();
 		this._boletinPush.parar();
 		this._campana.parar();
 		this.unsubscribe$.next();
@@ -319,8 +315,11 @@ export class HeaderComponent implements OnDestroy {
 			cancelButtonColor: "#d33",
 			confirmButtonText: "Sí, salir",
 			cancelButtonText: "Cancelar",
-		}).then((result) => {
+		}).then(async (result) => {
 			if (result.isConfirmed) {
+				// Antes de irse: que deje de figurar conectado en el acto
+				await this._presencia.desconectar();
+				this._presencia.parar();
 				this._inactivityService.deactivate();
 				this._seguridadService.logout();
 				//window.location.reload();
@@ -328,60 +327,43 @@ export class HeaderComponent implements OnDestroy {
 		});
 	}
 
-	editEnLineaUser(user_id: any) {
-		const data = {
-			en_linea: false,
-		};
+	// ================================================================
+	// PRESENCIA: «En línea / Fuera de línea»
+	// ================================================================
 
-		this._userService.editEnLineaUser(user_id, data).pipe(takeUntil(this.unsubscribe$)).subscribe({
-			next: (response: any) => {
-				if (response.status == "success") {
-					this.ban = true;
-
-					if (this.ban === true) {
-						this._inactivityService.deactivate();
-						this._seguridadService.logout();
-						//window.location.reload();
-					}
-
-				} else {
-					this.msgNotificacion.error(response.message);
-					this.ban = false;
-				}
-			},
-			error: (error: any) => {
-				this.msgNotificacion.error(error.message);
-				this.ban = false;
-			},
-		});
+	/** El que se pinta en la barra: ya cruzado con el latido. */
+	get estadoActual() {
+		return this.estiloDe(this.presencia?.efectivo);
 	}
 
+	/** El que el usuario eligió, para marcar la opción del menú. */
+	get estadoElegido(): EstadoElegido {
+		return this.presencia?.estado ?? 'DISPONIBLE';
+	}
 
-	editActivoInactivo(user_id: any, boolean: boolean) {
-		const data = {
-			en_linea: boolean,
-		};
+	/**
+	 * Cambia el estado que se publica.
+	 *
+	 * El menú se deja abierto a propósito (stopPropagation): así se ve cómo
+	 * queda marcado el que se acaba de elegir.
+	 */
+	async elegirEstado(estado: EstadoElegido, ev: Event): Promise<void> {
+		ev.preventDefault();
+		ev.stopPropagation();
+		if (this.cambiandoEstado || estado === this.estadoElegido) { return; }
 
-		this._userService.editEnLineaUser(user_id, data).pipe(takeUntil(this.unsubscribe$)).subscribe({
-			next: (response: any) => {
-				if (response.status == "success") {
-
-					//this.msgNotificacion.info('Usuario ' + (data.en_linea ? 'En linea' : 'Fuera de linea'));
-					this._toastr.success('Usuario ' + (data.en_linea ? 'En línea' : 'Fuera de línea'), '', { closeButton: true } // ✅ Opciones van en el tercer argumento
-					);
-
-
-					this.activoInactivo = data.en_linea;
-					this.iconoActivoInactivo = data.en_linea;
-
-				} else {
-					this.msgNotificacion.error(response.message);
-				}
-			},
-			error: (error: any) => {
-				this.msgNotificacion.error(error.message);
-			},
-		});
+		this.cambiandoEstado = true;
+		try {
+			const listo = await this._presencia.cambiar(estado, this.presencia?.mensaje ?? null);
+			const e = this.estiloDe(estado);
+			if (listo) {
+				this._toastr.success(e.nombre, 'Tu estado', { timeOut: 2000 });
+			} else {
+				this._toastr.error('No se pudo cambiar tu estado', 'Tu estado');
+			}
+		} finally {
+			this.cambiandoEstado = false;
+		}
 	}
 
 

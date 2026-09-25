@@ -213,16 +213,7 @@ html, body {
   object-fit: cover;
 }
 
-/* Punto de estado sobre la foto (en línea / fuera de línea) */
-.usuario-menu__estado {
-  position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid var(--bs-dropdown-bg, var(--bs-component-bg, #fff));
-}
+/* El estado sobre la foto es .marca-estado, la misma pieza que en la barra */
 
 .usuario-menu__texto {
   min-width: 0;
@@ -573,4 +564,129 @@ html, body {
 
 .campana-pie:hover i {
   transform: translateX(3px);
+}
+
+/* ============================================================
+   MI ESTADO (presencia) en el menú del usuario
+   ============================================================ */
+
+/* ---------- La marca de estado, pegada a la foto ----------
+   La misma pieza en los dos sitios. En la barra es un punto de color, que a
+   ese tamaño es lo único que se lee; en la cabecera del menú, donde la foto
+   es mayor, lleva dentro el icono y así Ocupado y No molestar se distinguen
+   aunque compartan el rojo. */
+.navbar-user__foto,
+.usuario-menu__foto {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* El tema le da a .image 30x30 con márgenes negativos arriba y abajo, así que
+   el envoltorio se quedaba en 20px de alto y la marca caía fuera del círculo.
+   Los márgenes pasan al envoltorio y dentro se anulan. */
+.navbar-user__foto {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  margin-top: -5px;
+  margin-bottom: -5px;
+}
+
+.navbar-user__foto .image {
+  flex: 0 0 auto;
+  width: 100%;
+  height: 100%;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Sin esto la foto llegaba con su proporción original (27x30) y dejaba un
+   hueco a un lado del círculo */
+.navbar-user__foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.marca-estado {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  /* El aro recorta la marca contra lo que tenga detrás */
+  border: 2px solid var(--bs-app-header-bg, var(--bs-body-bg, #fff));
+  color: #fff;
+  line-height: 1;
+}
+
+/* A 11px un icono no se lee: en la barra se queda sólo el color */
+.marca-estado i {
+  display: none;
+}
+
+/* En la cabecera del menú la foto es mayor y el icono sí cabe */
+.marca-estado.es-grande {
+  right: -2px;
+  bottom: -2px;
+  width: 18px;
+  height: 18px;
+  font-size: 8px;
+  border-color: var(--bs-dropdown-bg, var(--bs-component-bg, #fff));
+}
+
+.marca-estado.es-grande i {
+  display: inline-block;
+}
+
+.marca-estado.es-DISPONIBLE  { background-color: var(--bs-success, #198754); }
+.marca-estado.es-OCUPADO,
+.marca-estado.es-NO_MOLESTAR { background-color: var(--bs-danger, #dc3545); }
+.marca-estado.es-AUSENTE     { background-color: var(--bs-warning, #ffc107); }
+.marca-estado.es-INVISIBLE,
+.marca-estado.es-DESCONECTADO{ background-color: var(--bs-secondary, #6c757d); }
+
+/* «Fuera de línea» y «Desconectado» llevan un círculo relleno que, en blanco
+   sobre gris, se ve como una mancha: se deja el hueco vacío también en grande */
+.marca-estado.es-grande.es-INVISIBLE i,
+.marca-estado.es-grande.es-DESCONECTADO i {
+  display: none;
+}
+
+.usuario-menu__rotulo {
+  padding: .35rem .9rem .15rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.usuario-menu__estado-item {
+  font-size: 13px;
+}
+
+/* El elegido queda marcado, no sólo por el tic */
+.usuario-menu__estado-item.is-elegido {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+  font-weight: 600;
+}
+
+/* Cuando lo que ven los demás no es lo que elegiste */
+.usuario-menu__aviso {
+  margin: .25rem .6rem .1rem;
+  padding: .35rem .5rem;
+  border-radius: 6px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.usuario-menu__aviso i {
+  color: var(--bs-app-theme, #00acac);
 }

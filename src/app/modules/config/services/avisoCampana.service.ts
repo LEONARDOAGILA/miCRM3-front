@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 
 import { destinoDeNotificacion, NotificacionModel } from '../interfaces/notificacionModel';
+import { PresenciaService } from '../../seguridad/services/presencia.service';
 
 /** Lo que el usuario ha decidido para los avisos de su campana. */
 export interface PreferenciasAviso {
@@ -55,7 +56,10 @@ export class AvisoCampanaService {
   /** El timbre del que insiste: el de la última que entró. */
   private tipoPendiente: NotificacionModel['tipo'] = 'INFO';
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private _presencia: PresenciaService,
+  ) {}
 
   get preferencias(): PreferenciasAviso { return this._preferencias.value; }
 
@@ -147,6 +151,14 @@ export class AvisoCampanaService {
    */
   avisar(n: NotificacionModel | null): void {
     if (!n) { return; }
+
+    // En «No molestar» la notificación llega igual y la campana la cuenta,
+    // pero no suena ni asoma nada: es justo lo que se pidió al elegirlo.
+    if (this._presencia.noMolestar) {
+      this.callar();
+      return;
+    }
+
     if (this.preferencias.sonido) {
       this.sonar(n.tipo);
       this.insistir(n.tipo);
