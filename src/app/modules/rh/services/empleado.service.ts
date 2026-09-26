@@ -91,4 +91,25 @@ export class EmpleadoService {
     }
     return url;
   }
+
+  //   ******   UBICACIÓN (la dirección que trae el mapa)   ******  //
+
+  /** Los doce campos que devuelve el mapa, en una sola llamada. */
+  guardarUbicacion(empleadoId: number, datos: any): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'guardarUbicacion/' + empleadoId, datos);
+  }
+
+  /** Una de las dos capturas: la vista del mapa o la de la calle. */
+  addFotoUbicacion(data: FormData): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'addFotoUbicacion', data);
+  }
+
+  /** URL para el <img> de cada foto del mapa. */
+  getFotoUbicacion(empleadoId: number, campo: 'mapa' | 'casa', avoidCache = false): string {
+    let url = `${this.URL_SERVICIOS}getFotoUbicacion/${empleadoId}/${campo}`;
+    if (avoidCache) {
+      url += `?t=${Date.now()}`;
+    }
+    return url;
+  }
 }

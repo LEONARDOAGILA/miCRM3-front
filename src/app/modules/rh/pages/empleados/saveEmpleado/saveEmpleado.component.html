@@ -27,7 +27,7 @@
           title="Foto del empleado" 
           noButton="true" 
           noBody="true"
-          panelClass="h-100 mb-3 mb-md-0" 
+          panelClass="mb-3" 
           icono="usuario" 
           fondoGris="true">
           
@@ -105,6 +105,104 @@
           </div>
           </ng-container>
         </panel>
+
+  <!-- ---------- DIRECCIÓN ----------
+       Debajo de la foto: es contenido alto y estrecho, y esa columna
+       quedaba medio vacía. La dirección se busca en el mapa y de ahí
+       salen la división política, las coordenadas y las dos fotos. -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Dirección"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="info"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+
+          <div class="campo emp-direccion">
+            <app-campoTexto
+              [control]="form.controls['direccion']"
+              label="Dirección"
+              placeholder="Búscala en el mapa o escríbela"
+              [maxLength]="1000"
+              [trimEspacios]="true">
+            </app-campoTexto>
+
+            <button type="button" class="btn btn-sm btn-primary emp-direccion__btn"
+                    title="Buscar la dirección en Google Maps"
+                    [disabled]="isdisabled"
+                    (click)="elegirDireccionEnElMapa()">
+              <i class="fa fa-map-location-dot me-1"></i>
+              <span>Buscar en el mapa</span>
+            </button>
+          </div>
+
+          @if (hayUbicacion) {
+            <div class="emp-ubicacion">
+
+              <!-- Lo que se guardará -->
+              <div class="emp-ubicacion__cabecera">
+                <span class="emp-ubicacion__titulo">
+                  <i class="fa fa-location-dot"></i>
+                  {{ resumenUbicacion.ubicacion || 'Dirección tomada del mapa' }}
+                </span>
+                <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar la dirección del mapa"
+                        [disabled]="isdisabled" (click)="quitarUbicacion()">
+                  <i class="fa fa-xmark"></i>
+                </button>
+              </div>
+
+              @if (resumenUbicacion.division) {
+                <span class="emp-ubicacion__linea">{{ resumenUbicacion.division }}</span>
+              }
+              @if (resumenUbicacion.calles) {
+                <span class="emp-ubicacion__linea">{{ resumenUbicacion.calles }}</span>
+              }
+
+              <!-- Coordenadas y enlace, que antes no se veían -->
+              @if (resumenUbicacion.coordenadas) {
+                <span class="emp-ubicacion__coords">
+                  <i class="fa fa-crosshairs"></i>{{ resumenUbicacion.coordenadas }}
+                </span>
+              }
+              @if (enlaceMapa) {
+                <a [href]="enlaceMapa" target="_blank" rel="noopener noreferrer" class="emp-ubicacion__enlace"
+                   [title]="enlaceMapa">
+                  <i class="fa fa-arrow-up-right-from-square"></i>Abrir en Google Maps
+                </a>
+              }
+
+              <!-- Las dos capturas, antes de guardar -->
+              @if (urlFotoMapa || urlFotoCasa) {
+                <div class="emp-fotos">
+                  @if (urlFotoMapa) {
+                    <button type="button" class="emp-foto" title="Ver la vista del mapa" (click)="verFoto('mapa')">
+                      <img [src]="urlFotoMapa" alt="Vista del mapa" />
+                      <span class="emp-foto__pie"><i class="fa fa-map me-1"></i>Mapa</span>
+                    </button>
+                  }
+                  @if (urlFotoCasa) {
+                    <button type="button" class="emp-foto" title="Ver la vista de la calle" (click)="verFoto('casa')">
+                      <img [src]="urlFotoCasa" alt="Vista de la calle" />
+                      <span class="emp-foto__pie"><i class="fa fa-house me-1"></i>Fachada</span>
+                    </button>
+                  }
+                </div>
+              } @else if (resumenUbicacion.coordenadas) {
+                <span class="emp-fotos__vacio">
+                  <i class="fa fa-image"></i> Sin fotos del lugar
+                </span>
+              }
+
+            </div>
+          }
+
+        </div>
+      </ng-container>
+    </panel>
     </div>
 
     <!-- ============ COLUMNA DERECHA: FORMULARIO ============ -->
@@ -155,14 +253,14 @@
                         </app-combo>
                       </div>
                       <div class="col">
-                        <app-campoTexto
+                        <!-- Valida cédula y RUC con el algoritmo del SRI según el tipo
+                             elegido al lado; el pasaporte pasa sin dígito verificador. -->
+                        <app-campoIdentificacion
                           [control]="form.controls['numero_identificacion']"
+                          [tipoControl]="ctrlTipoIdentificacion"
                           label="Nº identificación"
-                          placeholder="Ej: 0102030405"
-                          [maxLength]="20"
-                          [trimEspacios]="true"
-                          [noEspacios]="true">
-                        </app-campoTexto>
+                          [maxLength]="20">
+                        </app-campoIdentificacion>
                       </div>
                     </div>
                   </div>
@@ -439,17 +537,6 @@
                           [pais]="'ninguno'"
                           [tipoTelefono]="'ambos'">
                         </app-campoTelefono>
-                      </div>
-                    </div>
-                    <div class="col-12">
-                      <div class="campo">
-                        <app-campoTexto
-                          [control]="form.controls['direccion']"
-                          label="Dirección"
-                          placeholder="Calle, número, ciudad"
-                          [maxLength]="1000"
-                          [trimEspacios]="true">
-                        </app-campoTexto>
                       </div>
                     </div>
                   </div>

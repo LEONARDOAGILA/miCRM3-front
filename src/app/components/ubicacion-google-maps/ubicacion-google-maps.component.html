@@ -80,11 +80,13 @@
               [attr.aria-selected]="pestanaMovil === 'info'" (click)="cambiarPestana('info')">
         <i class="fa fa-circle-info"></i> Info
       </button>
-      <button type="button" class="gm-pestana-btn" role="tab" [class.is-activa]="pestanaMovil === 'capturas'"
-              [attr.aria-selected]="pestanaMovil === 'capturas'" (click)="cambiarPestana('capturas')">
-        <i class="fa fa-camera"></i> Capturas
-        @if (capturas.length) { <span class="gm-pestana-btn__cuenta">{{ capturas.length }}</span> }
-      </button>
+      @if (mostrarCapturas) {
+        <button type="button" class="gm-pestana-btn" role="tab" [class.is-activa]="pestanaMovil === 'capturas'"
+                [attr.aria-selected]="pestanaMovil === 'capturas'" (click)="cambiarPestana('capturas')">
+          <i class="fa fa-camera"></i> Capturas
+          @if (capturas.length) { <span class="gm-pestana-btn__cuenta">{{ capturas.length }}</span> }
+        </button>
+      }
     </div>
 
     <div class="gm-cuerpo" [class.is-panel-oculto]="panelOculto" [ngClass]="'is-' + pestanaMovil">
@@ -277,7 +279,7 @@
 
       <!-- ---------- 2c. MAPA ---------- -->
       <div class="gm-mapa-wrap">
-        <div #mapContainer class="gm-mapa"></div>
+        <div #mapContainer class="gm-mapa" [style.height]="altoMapa || null"></div>
         <button type="button" class="gm-pestana"
                 [title]="panelOculto ? 'Mostrar el panel' : 'Ocultar el panel'"
                 (click)="alternarPanel()">
@@ -297,7 +299,8 @@
 
 <!-- Las capturas: en el panel (escritorio) o en su pestaña (móvil) -->
 <ng-template #bloqueCapturas>
-@if (capturas.length) {
+<!-- Incrustado para elegir un punto, las capturas se apagan con [mostrarCapturas] -->
+@if (mostrarCapturas && capturas.length) {
   <div class="gm-capturas">
     <div class="gm-capturas__titulo">
       <span><i class="fa fa-camera"></i> {{ capturas.length > 1 ? 'Capturas (' + capturas.length + ')' : 'Captura' }}</span>

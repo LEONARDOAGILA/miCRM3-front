@@ -17,6 +17,24 @@ export interface EmpleadoModel {
   /** M, F, O */
   genero?: string | null;
   direccion?: string | null;
+
+  /** La dirección tal como vino de Google Maps (ver fn_empleados_ubicacion) */
+  provincia?: string | null;
+  canton?: string | null;
+  parroquia?: string | null;
+  calle_principal?: string | null;
+  calle_secundaria?: string | null;
+  numeracion?: string | null;
+  /** La dirección completa que devuelve Google; «direccion» es la escrita */
+  ubicacion?: string | null;
+  codigo_postal?: string | null;
+  /** «-2.170900, -79.922400» */
+  coordenadas?: string | null;
+  link_coordenadas?: string | null;
+  /** Nombres de archivo en storage/app/public/img/empleados */
+  url_foto_mapa?: string | null;
+  url_foto_casa?: string | null;
+
   cargo_id: number;
   cargo_nombre?: string;
   departamento_id: number;

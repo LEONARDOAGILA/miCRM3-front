@@ -31,7 +31,12 @@ export class ValidacionCedulaRucService {
                 if (0 <= tercerDigito && tercerDigito <= 5) {
                     return this.esRucPersonaNaturalValido(identificacion);
                 } else if (6 === tercerDigito) {
-                    return this.esRucSociedadPublicaValido(identificacion);
+                    // Tercer dígito 6: puede ser RUC de persona natural NACIONALIZADO (cédula + '001') o
+                    // sociedad pública. Se intenta primero como natural; si no valida, se evalúa como pública.
+                    return (
+                        this.esRucPersonaNaturalValido(identificacion) ||
+                        this.esRucSociedadPublicaValido(identificacion)
+                    );
                 } else if (9 === tercerDigito) {
                     return this.esRucSociedadPrivadaValido(identificacion);
                 } else {
@@ -110,25 +115,26 @@ export class ValidacionCedulaRucService {
     /**
      * Permite verificar si un número de ruc para sociedades privadas es válido o no.
      *
+     * NO se exige el dígito verificador (2026-07-28). Medido sobre las 178.903 sociedades privadas activas
+     * del catálogo de la Superintendencia de Compañías: solo el 59% lo cumple. El 41% restante se rechazaba
+     * — 36% son RUC que el SRI emitió sin respetar su propia regla, y 5% caían en 11-residuo=10, que no es
+     * un dígito y por tanto nunca podía coincidir. El algoritmo NO está mal (si lo estuviera los aciertos
+     * rondarían el 9% por azar, no el 59%): es el SRI el que no lo respeta, así que exigirlo dejaba fuera a
+     * 4 de cada 10 empresas reales. Caso que lo destapó: 1793232706001 (ZULU LABZ S.A.), válido en el SRI.
+     *
+     * Se mantiene TODA la validación estructural: 13 dígitos numéricos, provincia 01-24 o 30, tercer dígito
+     * 9 y establecimiento >= 001. Cédula y RUC de persona natural siguen exigiendo el dígito verificador,
+     * que ahí sí es fiable y protege de los errores de tipeo.
+     *
      * @param numeroRuc
      * @return
      */
     static esRucSociedadPrivadaValido(numeroRuc: string): boolean {
-        const esIdentificacionValida = this.validacionesPrevias(
+        return this.validacionesPrevias(
             numeroRuc,
             13,
             TipoIdentificacionEnum.RUC_SOCIEDAD_PRIVADA
         );
-        if (esIdentificacionValida) {
-            const ultimoDigito: number = parseInt(numeroRuc.charAt(9), 10);
-            return this.algoritmoVerificaIdentificacion(
-                numeroRuc,
-                ultimoDigito,
-                TipoIdentificacionEnum.RUC_SOCIEDAD_PRIVADA
-            );
-        } else {
-            return false;
-        }
     }
 
     /**
@@ -205,11 +211,18 @@ export class ValidacionCedulaRucService {
     }
 
     /**
-     * @param numeroCedula
+     * Valida el código de provincia de la cédula/RUC
+     *
+     * Códigos válidos:
+     * - 01 a 24: Provincias del Ecuador
+     * - 30: Extranjeros residentes en Ecuador con cédula ecuatoriana
+     *
+     * @param numeroCedula - Cédula o RUC a validar
+     * @return true si el código de provincia es válido
      */
     static esCodigoProvinciaValido(numeroCedula: string) {
         const numeroProvincia: number = parseInt(numeroCedula.substring(0, 2), 10);
-        return numeroProvincia > 0 && numeroProvincia <= 24;
+        return (numeroProvincia >= 1 && numeroProvincia <= 24) || numeroProvincia === 30;
     }
 
     /**
@@ -227,11 +240,11 @@ export class ValidacionCedulaRucService {
     /**
      * Tercer dígito:
      * <p>
-     * RUC jurídicos y extranjeros sin cédula: 9
+     * Cédula y RUC persona natural: 0-6 (0-5 cédulas tradicionales, 6 desde año 2000)
      * <p>
      * RUC públicos: 6
      * <p>
-     * RUC natural menor a 6: (0,1,2,3,4,5)
+     * RUC jurídicos y extranjeros sin cédula: 9
      *
      * @param numeroCedula
      * @param tipoIdentificacion
@@ -264,19 +277,30 @@ export class ValidacionCedulaRucService {
     }
 
     /**
-     * @param tercerDigito
-     * @return
+     * Valida que el tercer dígito de la cédula esté entre 0 y 6
+     * (para personas naturales ecuatorianas y extranjeros residentes)
+     *
+     * - 0-5: Cédulas tradicionales de personas naturales
+     * - 6: Cédulas emitidas desde el año 2000 en adelante
+     *
+     * @param tercerDigito - El tercer dígito de la cédula
+     * @return true si está entre 0 y 6, false en caso contrario
      */
     static esTercerDigitoCedulaValido(tercerDigito: number) {
-        return !isNaN(tercerDigito) && !(tercerDigito < 0 && tercerDigito > 5);
+        return !isNaN(tercerDigito) && tercerDigito >= 0 && tercerDigito <= 6;
     }
 
     /**
-     * @param tercerDigito
-     * @return
+     * Valida que el tercer dígito del RUC de persona natural esté entre 0 y 6
+     *
+     * - 0-5: RUC basados en cédulas tradicionales
+     * - 6: RUC basados en cédulas emitidas desde el año 2000 en adelante
+     *
+     * @param tercerDigito - El tercer dígito del RUC
+     * @return true si está entre 0 y 6, false en caso contrario
      */
     static verificarTercerDigitoRucNatural(tercerDigito: number) {
-        return tercerDigito >= 0 || tercerDigito <= 5;
+        return tercerDigito >= 0 && tercerDigito <= 6;
     }
 
     /**

@@ -20,6 +20,10 @@ import { ContactoEmergencia, EmpleadoModel, ESTADOS_EMPLEADO, GENEROS, PARENTESC
 import { ListCargosComponent } from '../../cargos/listCargos/listCargos.component';
 import { ListDepartamentosComponent } from '../../departamentos/listDepartamentos/listDepartamentos.component';
 import { ListEmpleadosComponent } from '../listEmpleados/listEmpleados.component';
+import {
+  SeleccionarUbicacionComponent, UbicacionElegida,
+} from '../../../../../components/ubicacion-google-maps/seleccionarUbicacion.component';
+import { ImagenVisor, VisorImagenesComponent } from '../../../../../components/visorImagenes/visorImagenes.component';
 
 type AccionEmpleado = 'add' | 'edit' | 'clon' | 'view';
 
@@ -385,6 +389,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.soltarUrlesDeFotos();
     this.destruido = true;
     this.destroy$.next();
     this.destroy$.complete();
@@ -433,6 +438,9 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
   }
 
   get ctrlActivo(): FormControl { return this.form.controls['activo'] as FormControl; }
+
+  /** El tipo manda sobre la validación del número: cédula, RUC o pasaporte. */
+  get ctrlTipoIdentificacion(): FormControl { return this.form.controls['tipo_identificacion'] as FormControl; }
 
   /** Nombre para el resumen bajo la foto. */
   get nombreCompleto(): string {
@@ -607,6 +615,19 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
         activo:                m.activo !== false,
         foto:                  m.foto ?? '',
       });
+
+      // La dirección que vino del mapa: se enseña bajo el campo y sirve de
+      // punto de partida si se vuelve a abrir el mapa
+      this.ubicacionGuardada = {
+        provincia: m.provincia, canton: m.canton, parroquia: m.parroquia,
+        calle_principal: m.calle_principal, calle_secundaria: m.calle_secundaria,
+        numeracion: m.numeracion, ubicacion: m.ubicacion,
+        codigo_postal: m.codigo_postal, coordenadas: m.coordenadas,
+        link_coordenadas: m.link_coordenadas,
+        url_foto_mapa: m.url_foto_mapa, url_foto_casa: m.url_foto_casa,
+      };
+      this.refrescarFotos();
+
       this.cargoNombreControl.setValue(m.cargo_nombre || '');
       this.departamentoNombreControl.setValue(m.departamento_nombre || '');
       this.jefeNombreControl.setValue(m.jefe_nombre || '');
@@ -644,6 +665,172 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
   // GUARDAR
   // ================================================================
 
+  // ================================================================
+  // DIRECCIÓN (la que trae Google Maps)
+  // ================================================================
+
+  /** Lo último que devolvió el mapa; se guarda después del empleado. */
+  public ubicacion: UbicacionElegida | null = null;
+
+  /** Los campos de la dirección que ya tenía el empleado. */
+  public ubicacionGuardada: Partial<EmpleadoModel> = {};
+
+  /**
+   * Las miniaturas del cuadro.
+   *
+   * Recién elegidas son object URL de los blobs que devolvió el mapa; hay que
+   * soltarlas a mano o se quedan en memoria hasta recargar la página. Las ya
+   * guardadas se piden al servidor por su url.
+   */
+  private urlesTemporales: string[] = [];
+
+  /**
+   * Las direcciones de las miniaturas.
+   *
+   * Se calculan una sola vez, cuando cambia la ubicación: en un getter se
+   * crearía un object URL nuevo en cada ciclo de Angular y acabarían miles
+   * colgando en memoria.
+   */
+  public urlFotoMapa: string | null = null;
+  public urlFotoCasa: string | null = null;
+
+  private refrescarFotos(): void {
+    this.soltarUrlesDeFotos();
+    this.urlFotoMapa = this.urlDeLaFoto('mapa');
+    this.urlFotoCasa = this.urlDeLaFoto('casa');
+  }
+
+  private urlDeLaFoto(campo: 'mapa' | 'casa'): string | null {
+    const blob = campo === 'mapa' ? this.ubicacion?.fotoMapa : this.ubicacion?.fotoCasa;
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      this.urlesTemporales.push(url);
+      return url;
+    }
+
+    // Sin nada recién elegido, la que ya tuviera guardada el empleado
+    const guardada = campo === 'mapa' ? this.ubicacionGuardada?.url_foto_mapa : this.ubicacionGuardada?.url_foto_casa;
+    return guardada && this.empleadoId ? this._empleadoService.getFotoUbicacion(this.empleadoId, campo, true) : null;
+  }
+
+  private soltarUrlesDeFotos(): void {
+    this.urlesTemporales.forEach(u => { try { URL.revokeObjectURL(u); } catch { /* ya no estaba */ } });
+    this.urlesTemporales = [];
+  }
+
+  /**
+   * Abre las fotos del lugar en el visor, no en otra pestaña.
+   *
+   * Es el mismo visor del mapa —ampliar, girar, arrastrar—, ahora suelto en
+   * components/visorImagenes. Se pasan las dos, así que desde una se llega a
+   * la otra con las flechas.
+   */
+  public verFoto(cual: 'mapa' | 'casa'): void {
+    const imagenes: ImagenVisor[] = [];
+    if (this.urlFotoMapa) { imagenes.push({ url: this.urlFotoMapa, titulo: 'Vista del mapa', nombre: 'ubicacion-mapa.png' }); }
+    if (this.urlFotoCasa) { imagenes.push({ url: this.urlFotoCasa, titulo: 'Vista de la calle', nombre: 'ubicacion-fachada.jpg' }); }
+    if (!imagenes.length) { return; }
+
+    const modalRef = this.modalService.open(VisorImagenesComponent, {
+      size: 'xl', centered: true, backdrop: true, keyboard: true, windowClass: 'visor-modal',
+    });
+    modalRef.componentInstance.imagenes = imagenes;
+    // Si sólo hay una, el índice que toca es el 0
+    modalRef.componentInstance.indice = cual === 'casa' && imagenes.length > 1 ? 1 : 0;
+  }
+
+  /** El enlace a Google Maps, venga de donde venga. */
+  get enlaceMapa(): string | null {
+    return this.ubicacion?.link_coordenadas ?? this.ubicacionGuardada?.link_coordenadas ?? null;
+  }
+
+  /** ¿Hay algo que enseñar debajo del campo? */
+  get hayUbicacion(): boolean {
+    return !!(this.ubicacion || this.ubicacionGuardada?.coordenadas);
+  }
+
+  /** Lo que se muestra en el resumen: primero lo recién elegido. */
+  get resumenUbicacion(): { ubicacion: string; coordenadas: string; division: string; calles: string } {
+    const u = this.ubicacion;
+    const g = this.ubicacionGuardada ?? {};
+    const division = [
+      u ? u.provincia : g.provincia,
+      u ? u.canton : g.canton,
+      u ? u.parroquia : g.parroquia,
+    ].filter(Boolean).join(' · ');
+
+    // Las calles con su numeración: «Los Naranjos 609 y 1º Pasaje 33»
+    const principal = u ? u.calle_principal : g.calle_principal;
+    const secundaria = u ? u.calle_secundaria : g.calle_secundaria;
+    const numero = u ? u.numeracion : g.numeracion;
+    const calles = [
+      [principal, numero].filter(Boolean).join(' '),
+      secundaria,
+    ].filter(Boolean).join(' y ');
+
+    return {
+      ubicacion:   (u ? u.ubicacion : g.ubicacion) ?? '',
+      coordenadas: (u ? u.coordenadas : g.coordenadas) ?? '',
+      division,
+      calles,
+    };
+  }
+
+  /**
+   * Abre el mapa para elegir la dirección.
+   *
+   * Si el empleado ya tenía coordenadas, el mapa se abre ahí; si no, en el
+   * país. Lo que se elija no se guarda todavía: viaja con el formulario.
+   */
+  public elegirDireccionEnElMapa(): void {
+    if (this.isdisabled) { return; }
+
+    const modalRef = this.modalService.open(SeleccionarUbicacionComponent, {
+      size: 'xl', centered: true, backdrop: 'static', keyboard: true, scrollable: true,
+    });
+
+    const nombre = [this.form.get('nombres')?.value, this.form.get('apellidos')?.value].filter(Boolean).join(' ');
+    modalRef.componentInstance.titulo = nombre ? `Dirección de ${nombre}` : 'Elegir la dirección en el mapa';
+    modalRef.componentInstance.lugarInicial = this.coordenadasDeLoGuardado();
+
+    modalRef.result.then((elegida: UbicacionElegida) => {
+      if (!elegida) { return; }
+      this.ubicacion = elegida;
+      this.refrescarFotos();
+      // La dirección del formulario se rellena con la de Google
+      this.form.get('direccion')?.setValue(elegida.ubicacion ?? '');
+      this.form.get('direccion')?.markAsDirty();
+      this._toastr.success('Dirección tomada del mapa', 'Dirección', { timeOut: 2500 });
+    }, () => { /* lo cerró sin elegir */ });
+  }
+
+  /** «-2.170900, -79.922400» → punto del mapa. */
+  private coordenadasDeLoGuardado(): { lat: number; lng: number } | null {
+    const texto = this.ubicacion?.coordenadas ?? this.ubicacionGuardada?.coordenadas;
+    if (!texto) { return null; }
+    const [lat, lng] = String(texto).split(',').map((n: string) => parseFloat(n.trim()));
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  }
+
+  /** Quita la dirección del mapa (el texto escrito se queda). */
+  public quitarUbicacion(): void {
+    if (this.isdisabled) { return; }
+    this.ubicacion = {
+      provincia: null, canton: null, parroquia: null, calle_principal: null,
+      calle_secundaria: null, numeracion: null, ubicacion: null, codigo_postal: null,
+      coordenadas: null, link_coordenadas: null, fotoMapa: null, fotoCasa: null,
+      lugar: null as any,
+    };
+    this.ubicacionGuardada = {};
+    this.refrescarFotos();
+    this._toastr.info('Se quitará al guardar', 'Dirección del mapa', { timeOut: 2500 });
+  }
+
+  public abrirEnGoogleMaps(): void {
+    const enlace = this.ubicacion?.link_coordenadas ?? this.ubicacionGuardada?.link_coordenadas;
+    if (enlace) { window.open(enlace, '_blank', 'noopener,noreferrer'); }
+  }
+
   public async onSubmitForm($ev?: any) {
     $ev?.preventDefault?.();
     this._toastr.clear();
@@ -658,7 +845,16 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.form.invalid) {
-      this._toastr.error('Revise los campos del formulario.', 'No se puede Guardar', { timeOut: 20000, closeButton: true });
+      // Sin esto los campos que nunca se tocaron no se ponen en rojo y el aviso
+      // manda a 'revisar el formulario' sin decir dónde
+      this.form.markAllAsTouched();
+
+      const falloIdentificacion = this.form.controls['numero_identificacion'].getError('identificacion');
+      if (falloIdentificacion) {
+        this._toastr.error(falloIdentificacion.mensaje, 'Identificación no válida', { timeOut: 20000, closeButton: true });
+      } else {
+        this._toastr.error('Revise los campos del formulario.', 'No se puede Guardar', { timeOut: 20000, closeButton: true });
+      }
       return;
     }
     this.gridApi?.stopEditing();
@@ -704,7 +900,17 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
         this.response.data.foto = this.nuevaFoto || this.response.data.foto;
       }
 
-      // 3) Contactos de emergencia (la lista completa; el back sincroniza)
+      // 3) La dirección del mapa y sus dos fotos (necesitan el id)
+      if (this.ubicacion) {
+        try {
+          await this.guardarUbicacion();
+        } catch (e) {
+          console.error('Error al guardar la ubicación:', e);
+          this._toastr.warning('El empleado se guardó, pero la dirección del mapa no. Vuelva a abrirlo e inténtelo de nuevo.', 'Dirección', { timeOut: 8000, closeButton: true });
+        }
+      }
+
+      // 4) Contactos de emergencia (la lista completa; el back sincroniza)
       try {
         await this.guardarContactos();
       } catch (e) {
@@ -722,6 +928,51 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
       this.isdisabled = false;
     } finally {
       this._loadingService.setLoading(false);
+    }
+  }
+
+  /**
+   * Guarda los campos de la dirección y sube las dos capturas.
+   *
+   * Las fotos van después del empleado porque el nombre del archivo lleva su
+   * id; si alguna falla, la dirección ya quedó guardada.
+   */
+  private async guardarUbicacion(): Promise<void> {
+    const u = this.ubicacion;
+    if (!u || !this.empleadoId) { return; }
+
+    await firstValueFrom(this._empleadoService.guardarUbicacion(this.empleadoId, {
+      provincia:        u.provincia,
+      canton:           u.canton,
+      parroquia:        u.parroquia,
+      calle_principal:  u.calle_principal,
+      calle_secundaria: u.calle_secundaria,
+      numeracion:       u.numeracion,
+      ubicacion:        u.ubicacion,
+      codigo_postal:    u.codigo_postal,
+      coordenadas:      u.coordenadas,
+      link_coordenadas: u.link_coordenadas,
+    }));
+
+    await this.subirFotoUbicacion('mapa', u.fotoMapa);
+    await this.subirFotoUbicacion('casa', u.fotoCasa);
+  }
+
+  /** Una captura del mapa; si no hay, no se toca lo que estuviera guardado. */
+  private async subirFotoUbicacion(campo: 'mapa' | 'casa', blob: Blob | null): Promise<void> {
+    if (!blob || !this.empleadoId) { return; }
+
+    const extension = (blob.type || '').includes('jpeg') ? 'jpg' : 'png';
+    const fd = new FormData();
+    fd.append('EmpleadoId', String(this.empleadoId));
+    fd.append('campo', campo);
+    fd.append('imagen_file', blob, `${this.empleadoId}_emp${campo}.${extension}`);
+
+    try {
+      await firstValueFrom(this._empleadoService.addFotoUbicacion(fd));
+    } catch (e) {
+      // Una foto que falla no debe tumbar el guardado de la dirección
+      console.error(`No se pudo subir la foto de ${campo}:`, e);
     }
   }
 

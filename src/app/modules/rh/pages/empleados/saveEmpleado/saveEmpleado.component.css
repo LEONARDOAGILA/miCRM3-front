@@ -772,3 +772,146 @@
 @media (max-width: 767.98px) {
   .contactos-grid { height: 260px; }
 }
+
+/* ============================================================
+   DIRECCIÓN TOMADA DEL MAPA
+   Vive bajo la foto, en la columna estrecha: todo en vertical.
+   ============================================================ */
+
+/* En columna: al lado del campo, el texto de la dirección se quedaba en
+   «Los Naranjos 609, 0…» */
+.emp-direccion {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: .3rem;
+}
+
+.emp-direccion > app-campoTexto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.emp-direccion__btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ---------- El resumen de lo que se guardará ---------- */
+.emp-ubicacion {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  margin-top: .1rem;
+  padding: .55rem .65rem;
+  border: 1px solid var(--bs-app-theme, #00acac);
+  border-radius: .5rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
+}
+
+.emp-ubicacion__cabecera {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+}
+
+.emp-ubicacion__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--bs-body-color, #212529);
+}
+
+.emp-ubicacion__titulo i {
+  margin-right: .3rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.emp-ubicacion__linea {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.emp-ubicacion__coords {
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.emp-ubicacion__coords i {
+  margin-right: .3rem;
+}
+
+/* El enlace, que antes no se veía por ningún lado */
+.emp-ubicacion__enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  margin-top: .1rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bs-app-theme, #00acac);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emp-ubicacion__enlace:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Las dos capturas ---------- */
+.emp-fotos {
+  display: grid;
+  /* Una al lado de otra; en columna muy estrecha se apilan solas */
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: .4rem;
+  margin-top: .35rem;
+}
+
+/* Es un botón, no un enlace: abre el visor, no otra pestaña */
+.emp-foto {
+  position: relative;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .4rem;
+  background-color: var(--bs-component-bg, #fff);
+  cursor: zoom-in;
+  transition: border-color .12s ease;
+}
+
+.emp-foto:hover {
+  border-color: var(--bs-app-theme, #00acac);
+}
+
+.emp-foto img {
+  display: block;
+  width: 100%;
+  /* Recorte parejo: las dos fotos vienen con proporciones distintas */
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.emp-foto__pie {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: .15rem .3rem;
+  background-color: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.emp-fotos__vacio {
+  margin-top: .3rem;
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}

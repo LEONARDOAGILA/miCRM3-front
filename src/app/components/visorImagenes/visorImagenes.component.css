@@ -1,0 +1,119 @@
+/* ============================================================
+   VISOR DE IMÁGENES
+   Ocupa toda la pantalla, sobre el fondo del modal. Los mismos
+   estilos que tenía el visor del mapa, de donde salió.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.visor {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 0, 0, .88);
+  user-select: none;
+}
+
+.visor__barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+  padding: .45rem .6rem;
+  background-color: rgba(0, 0, 0, .55);
+  color: #f8f9fa;
+}
+
+.visor__titulo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visor__titulo small {
+  font-size: 10px;
+  color: #adb5bd;
+  font-variant-numeric: tabular-nums;
+}
+
+.visor__acciones {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: .25rem;
+}
+
+.visor__zoom {
+  min-width: 48px;
+  font-size: 11.5px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.visor__lienzo {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: grab;
+  /* Sin esto el navegador se queda el pellizco y no llega al visor */
+  touch-action: none;
+}
+
+.visor__lienzo:active {
+  cursor: grabbing;
+}
+
+.visor__img {
+  max-width: 92%;
+  max-height: 92%;
+  transition: transform .12s ease-out;
+  will-change: transform;
+  -webkit-user-drag: none;
+}
+
+.visor__flecha {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 52px;
+  border: 0;
+  border-radius: .4rem;
+  background-color: rgba(255, 255, 255, .14);
+  color: #fff;
+  cursor: pointer;
+}
+
+.visor__flecha:hover {
+  background-color: rgba(255, 255, 255, .28);
+}
+
+.visor__flecha.is-izq { left: 10px; }
+.visor__flecha.is-der { right: 10px; }
+
+.visor__ayuda {
+  padding: .4rem;
+  font-size: 10.5px;
+  text-align: center;
+  color: #adb5bd;
+}
+
+@media (max-width: 767.98px) {
+  .visor__ayuda {
+    display: none;
+  }
+
+  .visor__titulo small {
+    display: none;
+  }
+}

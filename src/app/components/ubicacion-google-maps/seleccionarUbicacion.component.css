@@ -1,0 +1,74 @@
+/* ============================================================
+   ELEGIR LA DIRECCIÓN EN EL MAPA (modal)
+   ============================================================ */
+
+.su-cabecera {
+  padding: .75rem 1rem;
+}
+
+/* El mapa trae sus propios márgenes: aquí no se le añaden más */
+.su-cuerpo {
+  padding: .5rem;
+}
+
+.su-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+
+.su-resumen {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex: 1 1 260px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.su-resumen > i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.su-resumen__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.su-resumen__texto b {
+  overflow: hidden;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.su-resumen__texto small {
+  overflow: hidden;
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.su-resumen__coords {
+  font-family: var(--bs-font-monospace, monospace);
+}
+
+.su-resumen__vacio {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.su-resumen__vacio i {
+  margin-right: .3rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.su-botones {
+  display: flex;
+  gap: .4rem;
+  flex: 0 0 auto;
+}

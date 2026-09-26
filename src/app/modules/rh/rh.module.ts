@@ -17,6 +17,7 @@ import { ActionButtonsModule } from '../../components/botones/action-buttons/act
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
 import { CampoTextoComponent } from '../../components/campos/campoTexto/campoTexto.component';
+import { CampoIdentificacionComponent } from '../../components/campos/campoIdentificacion/campoIdentificacion.component';
 import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/campoTextoArea.component';
 import { CampoNumeroEnteroComponent } from '../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.component';
@@ -97,6 +98,7 @@ import { CampoEmailComponent } from '../../components/campos/campoEmail/campoEma
     NgScrollbarModule,
 
     CampoTextoComponent,
+    CampoIdentificacionComponent,
     CampoTextoAreaComponent,
     CampoTelefonoComponent,
     CampoEmailComponent,
