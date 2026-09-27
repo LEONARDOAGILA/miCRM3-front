@@ -42,21 +42,22 @@
   flex-direction: column;
   gap: .625rem;
 
-  flex: 0 0 320px;
-  max-width: 320px;
+  /* El ancho lo fija el divisor (variable en línea, como el lateral del
+     administrador de archivos) y se recuerda en el navegador; el valor de
+     reserva es el que traía antes. */
+  flex: 0 0 var(--gc-ancho-columna, 27rem);
+  max-width: var(--gc-ancho-columna, 27rem);
   min-height: 0;
 
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .28) transparent;
+  /* El scroll lo lleva la lista por dentro, no la columna */
+  overflow: hidden;
 
   transition: flex-basis .25s ease, max-width .25s ease, padding .25s ease, opacity .2s ease;
 }
 
 .gc-cuerpo.is-panel-oculto .gc-columna {
   flex-basis: 0;
+  /* Gana al ancho del divisor: plegada no ocupa nada */
   max-width: 0;
   padding: 0;
   opacity: 0;
@@ -64,16 +65,365 @@
   pointer-events: none;
 }
 
-.gc-buscar {
+/* ---------- El listado de clientes ---------- */
+/* Buscador arriba, grilla con su propio scroll en medio y paginación abajo:
+   así la columna no crece y el listado siempre está a mano */
+.gc-lista {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+
+  height: 100%;
+  min-height: 0;
+}
+
+.gc-lista__buscador {
   flex: 0 0 auto;
-  height: 40px;
-  font-size: .8125rem;
+}
+
+/* La grilla de clientes, la misma de «Listar clientes».
+   ::ng-deep porque las filas, las celdas y los chips del cellRenderer los
+   pinta ag-Grid fuera del alcance de la encapsulación; :host lo acota a
+   este componente. */
+.gc-grilla {
+  flex: 1 1 auto;
+  min-height: 12rem;
+  width: 100%;
+
+  --ag-line-height: 26px;
+}
+
+/* Toda la fila abre el cliente: cursor de mano */
+:host ::ng-deep .gc-grilla .ag-row {
+  cursor: pointer;
+}
+
+/* El cliente que se está gestionando: barra del color de la aplicación en el
+   borde izquierdo y un fondo suave, para no perderlo de vista al paginar */
+:host ::ng-deep .gc-grilla .ag-row.fila-actual {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .1);
+  box-shadow: inset 3px 0 0 var(--bs-app-theme, #00acac);
+}
+
+:host ::ng-deep .gc-grilla .ag-row.fila-actual .ag-cell {
   font-weight: 600;
+}
+
+/* Chips del nombre: «Actual» y, si no está activo, su estado */
+:host ::ng-deep .gc-chip {
+  display: inline-block;
+  margin-left: .375rem;
+  padding: .05rem .35rem;
+  border-radius: .25rem;
+  vertical-align: 1px;
+
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: .625rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+:host ::ng-deep .gc-chip--aviso {
+  background-color: var(--bs-warning, #ffc107);
+  color: #212529;
+}
+
+/* Paginación de la lista */
+.gc-lista__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .25rem;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.gc-lista__pie .btn {
+  padding: .1rem .4rem;
+  font-size: .6875rem;
+}
+
+.gc-lista__pagina.disabled {
+  opacity: 1;
+  pointer-events: none;
   white-space: nowrap;
 }
 
-.gc-vacio {
-  padding: 1.5rem .5rem;
+.gc-lista__cuenta {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+}
+
+/* ---------- El menú superior del cliente (columna derecha) ----------
+   Quién es a la izquierda y qué hacer con él a la derecha. Pegado arriba
+   mientras se baja por el historial: las acciones son lo que más se usa. */
+.gc-barra {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+
+  margin-bottom: .75rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+
+.gc-barra__cliente {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.gc-barra__acciones {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  flex-wrap: wrap;
+
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Si en la barra no hay nada más (sin el bloque del nombre del cliente), los
+   botones empiezan por la izquierda en vez de quedar flotando a la derecha */
+.gc-barra__acciones:only-child {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.gc-barra__acciones .btn {
+  font-size: .75rem;
+  white-space: nowrap;
+}
+
+/* El de plegar se separa del grupo: no actúa sobre el cliente sino sobre
+   lo que se ve */
+.gc-barra__plegar {
+  margin-left: .25rem;
+}
+
+/* ---------- Los datos del cliente, en tarjetas ----------
+   Tarjetas y no <panel>: la cabecera del panel (con sus botones y su fondo
+   oscuro) se comía casi tanto alto como los datos. Aquí el título es una
+   línea fina y cada dato ocupa un renglón. */
+.gc-fichas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: .5rem;
+
+  margin-bottom: .625rem;
+}
+
+.gc-tarjeta {
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  overflow: hidden;
+}
+
+/* El título: una tira fina con el icono del tema, sin botones */
+.gc-tarjeta__titulo {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .25rem .5rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .04);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.gc-tarjeta__titulo > i {
+  color: var(--bs-app-theme, #00acac);
+  font-size: .75rem;
+}
+
+.gc-tarjeta__cuerpo {
+  padding: .3rem .5rem;
+}
+
+/* Cada dato en un renglón: «Rótulo: valor». Si el valor no cabe, salta de
+   línea completo en vez de partirse a media palabra. */
+.gc-campo {
+  display: flex;
+  align-items: baseline;
+  gap: .3rem;
+  flex-wrap: wrap;
+
+  padding: .1rem 0;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.gc-campo__rotulo {
+  flex: 0 0 auto;
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gc-campo__valor {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  flex: 1 1 auto;
+
+  font-size: .75rem;
+  font-weight: 500;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.gc-campo__valor > a,
+.gc-campo__valor > span {
+  color: inherit;
+  text-decoration: none;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.gc-campo__valor > a:hover {
+  color: var(--bs-app-theme, #00acac);
+  text-decoration: underline;
+}
+
+/* El enlace a la pestaña de contactos, sin pinta de botón */
+.gc-campo__enlace {
+  padding: 0;
+  border: 0;
+  background: none;
+
+  color: var(--bs-app-theme, #00acac);
+  font-size: .75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.gc-campo__enlace:hover {
+  text-decoration: underline;
+}
+
+/* Los iconos de al lado (llamar, WhatsApp, copiar, mapa): discretos hasta
+   que se pasa por encima */
+.gc-campo__accion {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 1;
+
+  color: var(--bs-secondary-color, #adb5bd);
+  font-size: .75rem;
+  cursor: pointer;
+
+  transition: color .12s ease;
+}
+
+.gc-campo__accion:hover {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gc-campo__accion--wa:hover {
+  color: #25d366;
+}
+
+/* Las observaciones: dos renglones como mucho, que no estiren la tarjeta */
+.gc-campo--largo .gc-campo__valor {
+  font-weight: 400;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gc-campo--largo .gc-campo__valor > span,
+.gc-campo--largo > span:last-child {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  overflow: hidden;
+}
+
+/* ---------- El divisor entre las dos columnas ----------
+   Como el del administrador de archivos: en reposo es una franja con una
+   línea a cada lado; al pasar el ratón o mientras se arrastra, una barra de
+   4px con el color de la aplicación. La zona de agarre (10px) es más ancha
+   que la línea para que no haya que apuntar. */
+.gc-divisor {
+  position: relative;
+  flex: 0 0 10px;
+  box-sizing: border-box;
+
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-body-bg, #e4e7e8);
+
+  cursor: col-resize;
+  /* Que el dedo arrastre el divisor y no haga scroll de la página */
+  touch-action: none;
+  z-index: 5;
+}
+
+.gc-divisor::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+
+  background-color: transparent;
+  /* Retardo al iluminarse, como en VS Code: pasar por encima de camino a
+     otro sitio no enciende la barra */
+  transition: background-color .1s ease .25s;
+}
+
+.gc-divisor:hover::before,
+.gc-divisor:focus-visible::before,
+.gc-cuerpo.is-redimensionando .gc-divisor::before {
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.gc-cuerpo.is-redimensionando .gc-divisor::before {
+  transition-delay: 0s;
+}
+
+.gc-divisor:focus-visible {
+  outline: none;
+}
+
+/* Mientras se arrastra: ni transiciones ni selección de texto, y el cursor
+   de redimensionar manda en toda la pantalla */
+.gc-cuerpo.is-redimensionando,
+.gc-cuerpo.is-redimensionando * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.gc-cuerpo.is-redimensionando .gc-columna {
+  transition: none;
 }
 
 /* ---------- El lomo de la ficha plegada ---------- */
@@ -131,8 +481,8 @@
 
 .gc-panel__contenido {
   height: 100%;
-  /* Deja libre la franja de la pestañita (20px) y separa de la tarjeta */
-  padding-left: 1.75rem;
+  /* La pestañita ya no se monta aquí: basta con separarse del divisor */
+  padding-left: .75rem;
 
   overflow-y: auto;
   overflow-x: hidden;
@@ -141,34 +491,33 @@
   scrollbar-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .28) transparent;
 }
 
-/* La pestañita del borde, calcada de la del mapa */
+/* La pestañita de plegar, centrada sobre el divisor. El resto de la franja
+   queda libre para arrastrar; por eso el botón recupera el cursor de mano. */
 .gc-pestana {
   position: absolute;
   top: 50%;
-  /* Pegada al borde de la tarjeta: nace de ella hacia la derecha, como la
-     del panel del mapa */
-  left: 0;
-  transform: translateY(-50%);
-  z-index: 5;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 6;
 
-  width: 20px;
+  width: 18px;
   height: 52px;
   padding: 0;
 
   border: 1px solid var(--bs-border-color, #dee2e6);
-  border-left: 0;
-  border-radius: 0 .5rem .5rem 0;
+  border-radius: .4rem;
 
   background-color: var(--bs-component-bg, #fff);
   color: var(--bs-secondary-color, #6c757d);
-  box-shadow: 2px 0 8px rgba(0, 0, 0, .12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
   font-size: 11px;
-  cursor: pointer;
+  cursor: pointer !important;
 
   transition: background-color .15s ease, color .15s ease;
 }
 
-.gc-pestana:hover {
+.gc-pestana:hover,
+.gc-pestana:focus-visible {
   background-color: var(--bs-app-theme, #00acac);
   color: #fff;
 }
@@ -390,25 +739,10 @@
 }
 
 /* ============================================================
-   FICHA DEL CLIENTE
+   DATOS DEL CLIENTE
+   Las piezas que comparten la cabecera de la derecha y el menú:
+   el avatar, el nombre con sus badges y cada dato con su icono.
    ============================================================ */
-.gestion-ficha {
-  padding: .875rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .5rem;
-  background-color: var(--bs-body-bg, #fff);
-}
-
-.gestion-ficha__cabecera {
-  display: flex;
-  align-items: center;
-  gap: .625rem;
-
-  padding-bottom: .75rem;
-  margin-bottom: .75rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-}
-
 .gestion-ficha__avatar {
   display: inline-flex;
   align-items: center;
@@ -435,18 +769,16 @@
   font-weight: 600;
   font-size: .875rem;
   line-height: 1.2;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gestion-ficha__badges {
   display: flex;
   gap: .25rem;
   flex-wrap: wrap;
-}
-
-.gestion-ficha__datos {
-  display: flex;
-  flex-direction: column;
-  gap: .375rem;
 }
 
 .gestion-dato {
@@ -477,27 +809,12 @@
 }
 
 .gestion-dato__accion {
-  margin-left: auto;
   flex: 0 0 auto;
   color: var(--bs-secondary-color, #6c757d);
 }
 
 .gestion-dato__accion:hover {
   color: var(--bs-app-theme, #00acac);
-}
-
-.gestion-ficha__acciones {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: .375rem;
-
-  margin-top: .875rem;
-  padding-top: .75rem;
-  border-top: 1px solid var(--bs-border-color, #dee2e6);
-}
-
-.gestion-ficha__acciones .btn {
-  font-size: .75rem;
 }
 
 /* ============================================================
@@ -857,6 +1174,35 @@
     overflow: visible;
   }
 
+  /* Una encima de otra: no hay ancho que repartir */
+  .gc-divisor {
+    display: none;
+  }
+
+  /* Apilada, la grilla no pelea por el alto: se le da uno fijo y ya */
+  .gc-grilla {
+    flex: 0 0 auto;
+    height: 16rem;
+  }
+
+  /* En estrecho, los botones pasan debajo del nombre y se reparten el ancho */
+  .gc-barra {
+    position: static;
+  }
+
+  .gc-barra__acciones {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .gc-barra__acciones .btn {
+    flex: 1 1 auto;
+  }
+
+  .gc-fichas {
+    grid-template-columns: 1fr;
+  }
+
   /* Plegada se recoge hacia arriba, no hacia el lado */
   .gc-cuerpo.is-panel-oculto .gc-columna {
     max-height: 0;
@@ -1144,12 +1490,22 @@
   margin-bottom: .75rem;
 }
 
-.agenda-filtros__atajos,
-.agenda-filtros__fechas {
+.agenda-filtros__atajos {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: .25rem;
+}
+
+/* Rango, buscador y botones: en una línea si caben, y si no, la fila entera */
+.agenda-filtros__fechas {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .375rem;
+
+  flex: 1 1 26rem;
+  justify-content: flex-end;
 }
 
 .agenda-filtros__atajos .btn {
@@ -1185,47 +1541,111 @@
 }
 
 /* ============================================================
-   LA AGENDA POR DÍAS
+   LA AGENDA EN GRILLA
+   Antes eran tarjetas agrupadas por día; con quinientos pendientes eso no
+   se podía recorrer. Ahora es la grilla de siempre, con su paginación.
    ============================================================ */
-.agenda-dia {
-  margin-bottom: 1rem;
+.agenda-grilla {
+  height: clamp(320px, calc(100vh - 430px), 900px);
+  width: 100%;
+
+  --ag-line-height: 28px;
 }
 
-.agenda-dia__titulo {
+/* Lo vencido y lo de hoy se reconocen sin leer la fecha */
+:host ::ng-deep .agenda-grilla .fila-vencida {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .07);
+}
+
+:host ::ng-deep .agenda-grilla .fila-hoy {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
+}
+
+:host ::ng-deep .agenda-grilla .ag-row {
+  cursor: pointer;
+}
+
+/* La columna «Cuándo» (HTML plano del cellRenderer) */
+:host ::ng-deep .agenda-cuando {
+  font-variant-numeric: tabular-nums;
+}
+
+:host ::ng-deep .agenda-cuando.is-vencida {
+  color: var(--bs-danger, #dc3545);
+  font-weight: 600;
+}
+
+:host ::ng-deep .agenda-cuando.is-hoy {
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+/* Paginación, igual que la de la lista de clientes */
+.agenda-pie {
   display: flex;
   align-items: center;
-  gap: .25rem;
+  justify-content: space-between;
+  gap: .5rem;
+  flex-wrap: wrap;
 
-  margin-bottom: .375rem;
-  padding-bottom: .25rem;
-  border-bottom: 1px dashed var(--bs-border-color, #dee2e6);
+  margin-top: .5rem;
+}
 
+.agenda-pie .btn {
+  padding: .15rem .5rem;
   font-size: .75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .02em;
+}
+
+.agenda-pie__cuenta {
+  font-size: .75rem;
   color: var(--bs-secondary-color, #6c757d);
 }
 
-.agenda-dia__titulo.is-vencido {
-  color: var(--bs-danger, #dc3545);
-  border-bottom-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .3);
+/* El selector de rango y el buscador, en la barra de filtros.
+   Los estilos del campo son los mismos de historialAcciones: el icono y la
+   flecha dentro de la caja, que si no el calendario cae debajo del rótulo. */
+.agenda-rango {
+  flex: 0 1 16rem;
+  min-width: 14rem;
 }
 
-/* La hora, a la izquierda de cada tarjeta: se lee la agenda de un vistazo */
-.agenda-hora {
+.date-range-input {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+
+  padding: 0 .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius, .375rem);
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.date-range-input > i {
   flex: 0 0 auto;
-  width: 3rem;
-
-  font-size: .8125rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--bs-body-color, #495057);
-  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
 }
 
-.agenda-hora.is-vencida {
-  color: var(--bs-danger, #dc3545);
+.date-range-input .form-control {
+  width: 100%;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 1.25rem;
+
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 16px 12px;
+}
+
+.agenda-filtros__buscador {
+  flex: 1 1 14rem;
+  min-width: 12rem;
+  max-width: 22rem;
 }
 
 /* ---------- Responsive ---------- */
@@ -1247,8 +1667,26 @@
     margin-left: 0;
   }
 
-  .agenda-hora {
-    width: 2.5rem;
-    font-size: .75rem;
+  /* En estrecho la grilla se queda con un alto fijo y se desplaza dentro */
+  .agenda-grilla {
+    height: 22rem;
   }
+
+  .agenda-filtros__buscador {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .agenda-rango {
+    width: 100%;
+  }
+}
+
+/* La pista de «elige un cliente», debajo del tablero: ya no es el
+   protagonista de la pantalla, así que va en pequeño y en gris */
+.gestion-pista {
+  margin: .75rem 0 0;
+  text-align: center;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
 }

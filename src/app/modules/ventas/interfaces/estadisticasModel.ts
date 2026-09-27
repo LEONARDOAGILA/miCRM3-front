@@ -1,0 +1,61 @@
+/**
+ * El tablero de ventas: lo que devuelve ventas.fn_estadisticas_generales
+ * (GET ventas/gestion/estadisticas).
+ *
+ * Se pinta en «Gestión de clientes» mientras no hay ningún cliente elegido,
+ * en lugar de dejar media pantalla en blanco.
+ */
+export interface EstadisticasVentas {
+  /** Cuándo se calculó (hora del servidor) */
+  generado: string;
+  /** Cuántos días trae la serie de `por_dia` */
+  dias: number;
+
+  clientes: {
+    total: number;
+    activos: number;
+    inactivos: number;
+    morosos: number;
+    suspendidos: number;
+    empresas: number;
+    personas: number;
+    sin_vendedor: number;
+    /** Dados de alta desde el día 1 de este mes */
+    nuevos_mes: number;
+    en_papelera: number;
+  };
+
+  gestiones: {
+    total: number;
+    realizadas: number;
+    pendientes: number;
+    canceladas: number;
+    /** Pendientes cuya hora ya pasó */
+    vencidas: number;
+    /** Pendientes programadas para hoy */
+    hoy: number;
+    realizadas_hoy: number;
+    realizadas_mes: number;
+    minutos_mes: number;
+    /** Clientes distintos con al menos una gestión este mes */
+    clientes_tocados: number;
+  };
+
+  /** Lo del usuario que está mirando (se ata por created_by) */
+  mias: {
+    login: string | null;
+    pendientes: number;
+    vencidas: number;
+    hoy: number;
+    realizadas_hoy: number;
+    clientes: number;
+  };
+
+  /** Un punto por día, con ceros incluidos: la línea no da saltos */
+  por_dia: { dia: string; realizadas: number; programadas: number }[];
+
+  por_tipo: { tipo: string; cuantas: number }[];
+  resultados: { resultado: string; cuantas: number }[];
+  vendedores: { vendedor: string; clientes: number; pendientes: number }[];
+  ciudades: { ciudad: string; clientes: number }[];
+}

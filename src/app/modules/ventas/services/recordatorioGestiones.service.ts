@@ -1,10 +1,11 @@
 import { Injectable, NgZone } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { Subject, firstValueFrom } from 'rxjs';
+import { Subject, Subscription, firstValueFrom } from 'rxjs';
 
 import { GestionService } from './gestion.service';
 import { GestionModel } from '../interfaces/gestionModel';
 import { AvisoCampanaService } from '../../config/services/avisoCampana.service';
+import { PresenciaService } from '../../seguridad/services/presencia.service';
 import {
   RecordatorioGestionComponent, RespuestaRecordatorio,
 } from '../pages/gestion-clientes/recordatorioGestion/recordatorioGestion.component';
@@ -24,6 +25,11 @@ import {
  * que tiene asignado como vendedor. Mientras seguridad.users no guarde a qué
  * empleado corresponde cada usuario, lo segundo no se puede saber y manda lo
  * primero.
+ *
+ * En «No molestar» se calla del todo —ni modal, ni sonido, ni globo—, igual
+ * que hace la campana. No se pierde nada: se sigue mirando la agenda y lo que
+ * toca queda en la cola, así que al volver a Disponible sale lo que haya. Lo
+ * pendiente también está siempre en la pestaña «Lo que toca hacer».
  */
 @Injectable({ providedIn: 'root' })
 export class RecordatorioGestionesService {
@@ -58,11 +64,16 @@ export class RecordatorioGestionesService {
   /** Los globos abiertos, para poder cerrarlos al salir. */
   private globos: Notification[] = [];
 
+  /** El estado de presencia, para saber cuándo hay que callarse y cuándo volver. */
+  private suscripcionPresencia: Subscription | null = null;
+  private callado = false;
+
   constructor(
     private ngZone: NgZone,
     private modal: NgbModal,
     private _gestionService: GestionService,
     private _aviso: AvisoCampanaService,
+    private _presencia: PresenciaService,
   ) {
     this.pospuestas = this.leerPospuestas();
   }
@@ -75,7 +86,17 @@ export class RecordatorioGestionesService {
   empezar(): void {
     if (this.activo) { return; }
     this.activo = true;
+    this.callado = this._presencia.noMolestar;
     this.revisar();
+
+    // Al salir de «No molestar» se suelta lo que se quedó en la cola; entrar
+    // en él no cancela nada, sólo deja de mostrarlo
+    this.suscripcionPresencia = this._presencia.mia$.subscribe(() => {
+      const calladoAhora = this._presencia.noMolestar;
+      const volvio = this.callado && !calladoAhora;
+      this.callado = calladoAhora;
+      if (volvio) { this.mostrarSiguiente(); }
+    });
 
     // Fuera de Angular: un intervalo de un minuto dispararía la detección de
     // cambios de toda la aplicación sin necesidad
@@ -90,6 +111,8 @@ export class RecordatorioGestionesService {
   detener(): void {
     this.activo = false;
     if (this.temporizador) { clearInterval(this.temporizador); this.temporizador = null; }
+    this.suscripcionPresencia?.unsubscribe();
+    this.suscripcionPresencia = null;
     this.cola = [];
     this.avisadas.clear();
     this.globos.forEach(g => { try { g.close(); } catch { /* ya no estaba */ } });
@@ -165,6 +188,11 @@ export class RecordatorioGestionesService {
 
   private mostrarSiguiente(): void {
     if (this.mostrando || !this.cola.length || !this.activo) { return; }
+
+    // «No molestar»: lo que toca se queda en la cola y sale cuando el usuario
+    // vuelva a estar disponible. Mismo criterio que la campana, que tampoco
+    // suena pero sigue contando lo que llega.
+    if (this._presencia.noMolestar) { return; }
 
     const gestion = this.cola.shift()!;
     this.avisadas.add(gestion.id);

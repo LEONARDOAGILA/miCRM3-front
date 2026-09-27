@@ -23,6 +23,12 @@ export interface FiltrosAgenda {
   desde?: string | null;
   hasta?: string | null;
   limite?: number;
+
+  // ---------- Sólo para la grilla (agendaPaginada) ----------
+  /** Busca en asunto, nota, cliente, identificación y teléfono */
+  search?: string;
+  page?: number;
+  perPage?: number;
 }
 
 /** Contadores que devuelve la agenda. */
@@ -31,6 +37,12 @@ export interface MetaAgenda {
   vencidas: number;
   hoy: number;
   mostradas: number;
+  /** Los de la paginación; sólo vienen de agendaPaginada */
+  per_page?: number;
+  current_page?: number;
+  last_page?: number;
+  from?: number;
+  to?: number;
 }
 
 /**
@@ -88,6 +100,36 @@ export class GestionService {
     if (filtros.desde) { params = params.set('desde', filtros.desde); }
     if (filtros.hasta) { params = params.set('hasta', filtros.hasta); }
     return this._http.get(this.URL_SERVICIOS + 'agenda', { params });
+  }
+
+  /**
+   * La misma agenda, pero de a una página y con buscador: es lo que pinta la
+   * grilla de «Lo que toca hacer». Los contadores del meta (total, vencidas,
+   * hoy) siguen siendo de todo el filtro, no de la página.
+   */
+  agendaPaginada(filtros: FiltrosAgenda = {}): Observable<any> {
+    let params = new HttpParams()
+      .set('page', String(filtros.page ?? 1))
+      .set('per_page', String(filtros.perPage ?? 15));
+
+    if (filtros.mias) { params = params.set('mias', '1'); }
+    if (filtros.soloVencidas) { params = params.set('vencidas', '1'); }
+    if (filtros.empleadoId) { params = params.set('empleado_id', String(filtros.empleadoId)); }
+    if (filtros.desde) { params = params.set('desde', filtros.desde); }
+    if (filtros.hasta) { params = params.set('hasta', filtros.hasta); }
+    if (filtros.search) { params = params.set('search', filtros.search); }
+
+    return this._http.get(this.URL_SERVICIOS + 'agendaPaginada', { params });
+  }
+
+  /**
+   * El tablero que se ve cuando todavía no hay un cliente elegido.
+   *
+   * Una sola llamada: el back arma cartera, gestiones, lo del usuario y las
+   * series en una función de PostgreSQL.
+   */
+  estadisticas(dias: number = 14): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'estadisticas', { params: new HttpParams().set('dias', String(dias)) });
   }
 
   //   ******   REGISTRAR / PROGRAMAR   ******  //

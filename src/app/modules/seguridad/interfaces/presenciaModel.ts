@@ -46,9 +46,9 @@ export const ESTILOS_PRESENCIA: Record<EstadoEfectivo, EstiloPresencia> = {
     ayuda: 'Estás, pero prefieres que no te interrumpan',
   },
   NO_MOLESTAR: {
-    // El que además silencia la campana
+    // El que además silencia la campana y los recordatorios de gestiones
     nombre: 'No molestar', icono: 'fa-bell-slash', color: 'text-danger',
-    ayuda: 'Como ocupado y, además, la campana no suena ni avisa el navegador',
+    ayuda: 'Como ocupado y, además, no suena la campana ni salta el recordatorio de las gestiones',
   },
   INVISIBLE: {
     nombre: 'Fuera de línea', icono: 'fa-circle', color: 'text-secondary',

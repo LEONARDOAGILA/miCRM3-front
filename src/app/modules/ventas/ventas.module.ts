@@ -6,6 +6,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { VentasRoutingModule } from './ventas-routing.module';
 import { LoadingBarModule } from '@ngx-loading-bar/core';
 import { AgGridModule } from 'ag-grid-angular';
+import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
 
 import { DirectiveModule } from "../../core/directives/directive.module";
 import { PanelModule } from '../../components/panel/panel.module';
@@ -37,6 +38,7 @@ import { PapeleraClientesComponent } from './pages/clientes/papeleraClientes/pap
 
 // Gestión de clientes: llamadas hechas, programadas y reasignación de cartera
 import { GestionClientesComponent } from './pages/gestion-clientes/gestionClientes.component';
+import { ResumenVentasComponent } from './pages/gestion-clientes/resumenVentas/resumenVentas.component';
 import { SaveGestionComponent } from './pages/gestion-clientes/saveGestion/saveGestion.component';
 import { CerrarGestionComponent } from './pages/gestion-clientes/cerrarGestion/cerrarGestion.component';
 import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCliente/reasignarCliente.component';
@@ -76,6 +78,7 @@ import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCli
     ReactiveFormsModule,
 
     AgGridModule,
+    NgxDaterangepickerMd,   // el selector de rango de fechas de la agenda
     NgScrollbarModule,
 
     CampoTextoComponent,
@@ -92,6 +95,9 @@ import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCli
     ActionButtonsModule,
     ModalFooterComponent,
     ModalHeaderComponent,
+
+    // El tablero que se ve mientras no hay cliente elegido (standalone)
+    ResumenVentasComponent,
   ]
 })
 export class VentasModule { }

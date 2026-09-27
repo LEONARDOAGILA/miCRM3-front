@@ -5,6 +5,8 @@ import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
+import { LOCALE_CONFIG, LocaleService, DefaultLocaleConfig } from 'ngx-daterangepicker-material';
+import moment from 'moment';
 import Swal from 'sweetalert2';
 
 ///   SERVICIOS    ///
@@ -19,7 +21,7 @@ import { LoadingService } from '../../../../service/loading.service';
 import { ClienteModel, ContactoCliente } from '../../interfaces/clienteModel';
 import {
   AsignacionCliente, GestionModel, ResumenGestiones,
-  ESTADOS_GESTION, TIPOS_GESTION, claseDeResultado, iconoDeTipo, nombreDe, RESULTADOS_GESTION,
+  ESTADOS_GESTION, TIPOS_GESTION, PRIORIDADES_GESTION, claseDeResultado, iconoDeTipo, nombreDe, RESULTADOS_GESTION,
 } from '../../interfaces/gestionModel';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 
@@ -61,6 +63,13 @@ export interface DiaDeAgenda {
   templateUrl: './gestionClientes.component.html',
   styleUrls: ['./gestionClientes.component.css'],
   standalone: false,
+  providers: [
+    // El mismo par que saveBoletin e historialAcciones: en la aplicación no
+    // hay NgxDaterangepickerMd.forRoot(), así que cada pantalla que use el
+    // selector se trae su LocaleService o revienta con NG0201.
+    { provide: LOCALE_CONFIG, useValue: DefaultLocaleConfig },
+    { provide: LocaleService, useClass: LocaleService, deps: [LOCALE_CONFIG] },
+  ],
 })
 export class GestionClientesComponent implements OnInit, OnDestroy {
 
@@ -81,6 +90,12 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   /** El aviso de «última / próxima»; se cierra a mano y vuelve con otro cliente. */
   public hitosVisible = true;
 
+  /**
+   * Los paneles de datos del cliente se pliegan enteros: quien pasa el día en
+   * el historial no quiere verlos, y quien está llamando sí. Se recuerda.
+   */
+  public datosVisibles = this.leerDatosVisibles();
+
   /** Se entra por la agenda: es por donde se empieza el día. */
   public vista: Vista = 'agenda';
 
@@ -93,6 +108,36 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public soloMias = true;
   public cargandoAgenda = false;
 
+  // ---------- La lista de clientes (columna izquierda) ----------
+  /**
+   * Los clientes se piden por páginas al servidor, como en la grilla de
+   * allClientes: con ochenta mil, ni se traen todos ni se busca por cada
+   * letra. El buscador consulta al pulsar Enter o la lupa.
+   */
+  public listaClientes: ClienteModel[] = [];
+  public terminoClientes = '';
+  public paginaClientes = 1;
+  public totalClientes = 0;
+  public porPaginaClientes = 15;
+  public ultimaPaginaClientes = 1;
+  public cargandoClientes = false;
+
+  /** Lo mismo que en la agenda: la respuesta vieja no pisa a la nueva. */
+  private peticionClientes = 0;
+
+  /**
+   * La grilla es la misma de «Listar clientes», encajada en la columna: se
+   * ordena, se filtra por columna, se recorre con las flechas y se abre el
+   * cliente con Enter o con un clic en la fila.
+   */
+  public gridApiClientes!: GridApi;
+  public columnDefsClientes: any[] = [];
+
+  /** El cliente que se está gestionando queda marcado en su fila. */
+  public rowClassRulesClientes = {
+    'fila-actual': (p: RowClassParams) => this.esElElegido(p.data),
+  };
+
   // ---------- Columna de la izquierda ----------
   /**
    * La columna del cliente se pliega, como el panel del mapa.
@@ -101,6 +146,23 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * completa no quiere volver a plegarla cada vez que entra.
    */
   public panelOculto = this.leerPanelOculto();
+
+  /**
+   * El ancho de la columna se cambia arrastrando el divisor, igual que en el
+   * administrador de archivos: hay quien quiere ver la grilla ancha para
+   * buscar y quien quiere el historial a pantalla casi completa. También se
+   * recuerda por navegador.
+   */
+  public readonly ANCHO_COLUMNA_DEFECTO = 432;
+  public readonly ANCHO_COLUMNA_MIN = 260;
+  public readonly ANCHO_COLUMNA_MAX = 760;
+  /** Lo que como mínimo se le deja al panel de trabajo de la derecha. */
+  private readonly ANCHO_PANEL_MIN = 420;
+  private readonly CLAVE_ANCHO_COLUMNA = 'miCRM3.gestion.anchoColumna';
+
+  public anchoColumna = this.leerAnchoColumna();
+  /** true mientras se arrastra: quita transiciones y selección de texto. */
+  public redimensionando = false;
 
   /** Menú del clic derecho: dónde está y sobre qué actúa. */
   public menuCtx = { visible: false, x: 0, y: 0 };
@@ -118,6 +180,66 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   public tipos = TIPOS_GESTION;
   public estados = ESTADOS_GESTION;
+
+  // ---------- La agenda, en grilla y paginada ----------
+  /**
+   * Antes era una lista de tarjetas agrupadas por día. Con quinientos
+   * pendientes eso es una pantalla interminable: ahora es la misma grilla
+   * que el resto del sistema, con paginación en el servidor y buscador.
+   */
+  public gridApiAgenda!: GridApi;
+  public columnDefsAgenda: any[] = [];
+  public paginaAgenda = 1;
+  public porPaginaAgenda = 15;
+  public ultimaPaginaAgenda = 1;
+  public buscaAgenda = '';
+
+  /**
+   * Cada carga lleva número. Con el servidor tardando medio segundo, pulsar
+   * dos atajos seguidos dejaba en pantalla los datos del primero: si al
+   * volver una respuesta ya hay otra más nueva pedida, se descarta.
+   */
+  private peticionAgenda = 0;
+
+  /**
+   * Los atajos (Hoy, 7 días…) mueven el selector de fechas, y el selector
+   * avisa del cambio como si lo hubiera tocado el usuario. Sin esta bandera
+   * ese eco llegaba después, con el rango vacío, y deshacía el atajo recién
+   * pulsado: se pedía «hoy» y se acababa viendo todo.
+   */
+  private ajustandoRango = false;
+
+  public rowClassRulesAgenda = {
+    'fila-vencida': (p: RowClassParams) => p.data?.vencida === true,
+    'fila-hoy':     (p: RowClassParams) => !p.data?.vencida && this.esDeHoy(p.data?.fecha_programada),
+  };
+
+  // ---------- El rango de fechas (el selector de los boletines) ----------
+  /** null (y no un objeto con nulos) es lo que deja el campo con su texto de «Todas las fechas». */
+  public selectedRango: { startDate: moment.Moment; endDate: moment.Moment } | null = null;
+
+  public locale: any = {
+    format: 'DD/MM/YYYY',
+    displayFormat: 'DD/MM/YYYY',
+    separator: ' - ',
+    applyLabel: 'Aplicar',
+    cancelLabel: 'Cancelar',
+    clearLabel: 'Limpiar',
+    customRangeLabel: 'Personalizado',
+    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+    monthNames: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+    firstDay: 1,
+  };
+
+  /** Atajos del selector: los de una agenda comercial. */
+  public ranges: any = {
+    'Hoy': [moment(), moment()],
+    'Mañana': [moment().add(1, 'days'), moment().add(1, 'days')],
+    'Próximos 7 días': [moment(), moment().add(7, 'days')],
+    'Este mes': [moment().startOf('month'), moment().endOf('month')],
+    'Mes que viene': [moment().add(1, 'month').startOf('month'), moment().add(1, 'month').endOf('month')],
+    'Lo atrasado': [moment().subtract(1, 'year'), moment().subtract(1, 'days')],
+  };
 
   public rowClassRules = {
     'fila-vencida':   (p: RowClassParams) => p.data?.vencida === true,
@@ -146,7 +268,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.initializeGrid();
+    this.initializeGridClientes();
+    this.initializeGridAgenda();
     this.cargarAgenda();
+    this.cargarClientes(1);
 
     // Se puede llegar con el cliente en la url (?cliente=9), que es como
     // entra el recordatorio cuando se pulsa «Abrir el cliente»
@@ -179,6 +304,134 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   // ================================================================
+  // LA LISTA DE CLIENTES
+  // ================================================================
+
+  /** Una página de clientes, con el filtro que esté escrito. */
+  async cargarClientes(page: number = 1): Promise<void> {
+    const mia = ++this.peticionClientes;
+    try {
+      this.cargandoClientes = true;
+      this.gridApiClientes?.showLoadingOverlay();
+      const res: any = await firstValueFrom(
+        this._clienteService.allClientes(page, this.porPaginaClientes, this.terminoClientes)
+      );
+
+      if (mia !== this.peticionClientes) { return; }
+
+      this.listaClientes = res.body?.data?.data ?? [];
+      const meta = res.body?.data?.meta;
+      if (meta) {
+        this.totalClientes = meta.total;
+        this.porPaginaClientes = meta.per_page;
+        this.paginaClientes = meta.current_page;
+        this.ultimaPaginaClientes = meta.last_page;
+      }
+    } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al cargar los clientes:', error);
+      if (mia === this.peticionClientes) { this.listaClientes = []; }
+    } finally {
+      if (mia !== this.peticionClientes) { return; }
+      this.cargandoClientes = false;
+      // El cartel de la grilla: o se quita, o dice que no hubo resultados
+      if (this.listaClientes.length) { this.gridApiClientes?.hideOverlay(); }
+      else { this.gridApiClientes?.showNoRowsOverlay(); }
+    }
+  }
+
+  /** Lo emite el buscador al pulsar Enter o la lupa; nunca mientras se teclea. */
+  buscarClientes(termino?: string): void {
+    this.terminoClientes = (termino ?? '').trim();
+    this.cargarClientes(1);
+  }
+
+  public get desdeClientes(): number {
+    return this.totalClientes === 0 ? 0 : (this.paginaClientes - 1) * this.porPaginaClientes + 1;
+  }
+
+  public get hastaClientes(): number {
+    return Math.min(this.paginaClientes * this.porPaginaClientes, this.totalClientes);
+  }
+
+  irAPaginaClientes(page: number): void {
+    if (page < 1 || page > this.ultimaPaginaClientes || page === this.paginaClientes) { return; }
+    this.cargarClientes(page);
+  }
+
+  /** ¿Es el que se está gestionando? Para marcarlo en la grilla. */
+  esElElegido(c: ClienteModel): boolean {
+    return !!this.cliente && c?.id === this.cliente.id;
+  }
+
+  /**
+   * Las columnas: las tres que identifican al cliente sin sacar una barra de
+   * desplazamiento horizontal en una columna estrecha. El resto (ciudad,
+   * correo, activo, cupo) está en la ficha de la derecha, y el listado
+   * completo con todas sus columnas sigue a un clic derecho de distancia.
+   */
+  initializeGridClientes(): void {
+    this.columnDefsClientes = [
+      {
+        headerName: 'Cliente',
+        field: 'nombre_completo',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 170,
+        cellRenderer: (params: any) => {
+          const icono = params.data?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user';
+          const nombre = params.value ?? '';
+          const actual = this.esElElegido(params.data)
+            ? ' <span class="gc-chip">Actual</span>'
+            : '';
+          const estado = params.data?.estado && params.data.estado !== 'ACTIVO'
+            ? ` <span class="gc-chip gc-chip--aviso">${params.data.estado}</span>`
+            : '';
+          return `<i class="fa ${icono} fa-fw me-1 text-secondary"></i>${nombre}${actual}${estado}`;
+        }
+      },
+      {
+        headerName: 'Identificación',
+        field: 'numero_identificacion',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 95,
+        maxWidth: 110,
+      },
+      {
+        headerName: 'Teléfono',
+        field: 'celular',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 95,
+        maxWidth: 110,
+        valueGetter: (p: any) => p.data?.celular || p.data?.telefono || '',
+      },
+    ];
+  }
+
+  onGridReadyClientes(params: GridReadyEvent): void {
+    this.gridApiClientes = params.api;
+    this._appAgGridService.ajustarTamanoGrid(this.gridApiClientes);
+  }
+
+  /** ↑ / ↓ recorren la grilla; el Enter de abajo es el que abre el cliente. */
+  navegarConTecladoClientes = this._appAgGridService.navegacionConFlechas();
+
+  onCellKeyDownClientes(e: any): void {
+    if (e.event?.key === 'Enter' && e.data) { this.seleccionarCliente(e.data); }
+  }
+
+  /** Toda la fila abre el cliente, no hace falta apuntar a un botón. */
+  onCellClickedClientes(e: CellClickedEvent): void {
+    if (e.data) { this.seleccionarCliente(e.data); }
+  }
+
+  /** El cartel de «no hay filas», que cambia si hay una búsqueda escrita. */
+  public get vacioClientes(): string {
+    return this.terminoClientes
+      ? `<span>Ningún cliente coincide con «${this.terminoClientes}».</span>`
+      : '<span>Todavía no hay clientes registrados.</span>';
+  }
+
+  // ================================================================
   // ELEGIR EL CLIENTE
   // ================================================================
 
@@ -207,6 +460,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.gestiones = [];
     this.totalRegistros = 0;
     this.gridApi?.setRowData([]);
+    this.gridApiClientes?.redrawRows();
     this.vista = 'agenda';
     this.cargarAgenda();
   }
@@ -219,11 +473,99 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     try { return localStorage.getItem('miCRM3.gestion.panelOculto') === '1'; } catch { return false; }
   }
 
+  /**
+   * Arrastre del divisor. Se usa pointer capture: el propio divisor sigue
+   * recibiendo los movimientos aunque el cursor se salga de él o de la
+   * ventana, y suelta sólo al levantar el botón.
+   */
+  iniciarRedimension(ev: PointerEvent): void {
+    if (ev.button !== 0 || this.panelOculto) { return; }
+    ev.preventDefault();
+
+    const divisor = ev.currentTarget as HTMLElement;
+    const xInicial = ev.clientX;
+    const anchoInicial = this.anchoColumna;
+    this.redimensionando = true;
+    divisor.setPointerCapture(ev.pointerId);
+
+    const mover = (e: PointerEvent) => {
+      this.anchoColumna = this.limitarAncho(anchoInicial + (e.clientX - xInicial));
+      // Las columnas de la grilla acompañan al arrastre
+      this.gridApiClientes?.sizeColumnsToFit();
+    };
+    const soltar = (e: PointerEvent) => {
+      divisor.removeEventListener('pointermove', mover);
+      divisor.removeEventListener('pointerup', soltar);
+      divisor.removeEventListener('pointercancel', soltar);
+      divisor.releasePointerCapture(e.pointerId);
+      this.redimensionando = false;
+      this.guardarAnchoColumna();
+      // La del historial recupera el sitio que quedó al otro lado
+      setTimeout(() => this.gridApi?.sizeColumnsToFit(), 60);
+    };
+
+    divisor.addEventListener('pointermove', mover);
+    divisor.addEventListener('pointerup', soltar);
+    divisor.addEventListener('pointercancel', soltar);
+  }
+
+  /** Con el foco en el divisor, las flechas lo mueven sin ratón. */
+  onTeclaDivisor(ev: KeyboardEvent): void {
+    const paso = ev.shiftKey ? 48 : 16;
+    let nuevo: number | null = null;
+
+    if (ev.key === 'ArrowLeft')  { nuevo = this.anchoColumna - paso; }
+    if (ev.key === 'ArrowRight') { nuevo = this.anchoColumna + paso; }
+    if (ev.key === 'Home')       { nuevo = this.ANCHO_COLUMNA_MIN; }
+    if (ev.key === 'End')        { nuevo = this.ANCHO_COLUMNA_MAX; }
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); this.alternarPanel(); return; }
+    if (nuevo === null) { return; }
+
+    ev.preventDefault();
+    this.anchoColumna = this.limitarAncho(nuevo);
+    this.guardarAnchoColumna();
+    setTimeout(() => { this.gridApiClientes?.sizeColumnsToFit(); this.gridApi?.sizeColumnsToFit(); }, 60);
+  }
+
+  /** Doble clic en el divisor: el ancho de siempre. */
+  restablecerAncho(): void {
+    this.anchoColumna = this.limitarAncho(this.ANCHO_COLUMNA_DEFECTO);
+    this.guardarAnchoColumna();
+    setTimeout(() => { this.gridApiClientes?.sizeColumnsToFit(); this.gridApi?.sizeColumnsToFit(); }, 60);
+  }
+
+  /**
+   * Entre el mínimo y el máximo, y además sin ahogar al panel de la derecha:
+   * en una pantalla estrecha el tope real es menor que ANCHO_COLUMNA_MAX.
+   */
+  private limitarAncho(px: number): number {
+    const cuerpo = this.host.nativeElement.querySelector('.gc-cuerpo') as HTMLElement | null;
+    const disponible = cuerpo ? cuerpo.clientWidth - this.ANCHO_PANEL_MIN : this.ANCHO_COLUMNA_MAX;
+    const techo = Math.max(this.ANCHO_COLUMNA_MIN, Math.min(this.ANCHO_COLUMNA_MAX, disponible));
+    return Math.round(Math.min(techo, Math.max(this.ANCHO_COLUMNA_MIN, px)));
+  }
+
+  private guardarAnchoColumna(): void {
+    try { localStorage.setItem(this.CLAVE_ANCHO_COLUMNA, String(this.anchoColumna)); } catch { /* sin storage */ }
+  }
+
+  private leerAnchoColumna(): number {
+    try {
+      const v = Number(localStorage.getItem('miCRM3.gestion.anchoColumna'));
+      if (v >= 260 && v <= 760) { return v; }
+    } catch { /* sin storage */ }
+    return 432;
+  }
+
   alternarPanel(): void {
     this.panelOculto = !this.panelOculto;
     try { localStorage.setItem('miCRM3.gestion.panelOculto', this.panelOculto ? '1' : '0'); } catch { /* sin storage */ }
-    // La grilla del historial ocupa el hueco que deja la columna
-    setTimeout(() => this.gridApi?.sizeColumnsToFit(), 300);
+    // Las dos grillas recalculan sus anchos: la del historial gana el hueco
+    // que deja la columna, y la de clientes lo recupera al volver
+    setTimeout(() => {
+      this.gridApi?.sizeColumnsToFit();
+      this.gridApiClientes?.sizeColumnsToFit();
+    }, 300);
   }
 
   // ================================================================
@@ -278,6 +620,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         return;
       }
       this.cliente = res.data;
+      // La marca de «Actual» viaja de una fila a otra
+      this.gridApiClientes?.redrawRows();
       await Promise.all([
         this.cargarGestiones(1),
         this.cargarResumen(),
@@ -352,31 +696,222 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // LA AGENDA: TODO LO PENDIENTE, DE TODOS MIS CLIENTES
   // ================================================================
 
-  /** Lo que toca hacer, con el rango de fechas que esté elegido. */
-  async cargarAgenda(): Promise<void> {
+  /** Una página de lo que toca hacer, con el rango de fechas que esté elegido. */
+  async cargarAgenda(page: number = this.paginaAgenda): Promise<void> {
+    const mia = ++this.peticionAgenda;
     try {
       this.cargandoAgenda = true;
-      const res: any = await firstValueFrom(this._gestionService.agenda({
+      this.gridApiAgenda?.showLoadingOverlay();
+
+      const res: any = await firstValueFrom(this._gestionService.agendaPaginada({
         mias: this.soloMias,
         soloVencidas: this.rango === 'vencidas',
         desde: this.rango === 'vencidas' ? null : (this.desdeFiltro || null),
         hasta: this.rango === 'vencidas' ? null : (this.hastaFiltro || null),
-        limite: 200,
+        search: this.buscaAgenda,
+        page,
+        perPage: this.porPaginaAgenda,
       }));
+
+      // Llegó tarde: ya se pidió otra cosa y esto pintaría el filtro viejo
+      if (mia !== this.peticionAgenda) { return; }
 
       if (res?.status === 'success') {
         this.agenda = res.data?.data ?? [];
         this.agendaMeta = res.data?.meta ?? { total: 0, vencidas: 0, hoy: 0, mostradas: 0 };
+        this.paginaAgenda = this.agendaMeta.current_page ?? page;
+        this.ultimaPaginaAgenda = this.agendaMeta.last_page ?? 1;
       } else {
         this.agenda = [];
         this.agendaMeta = { total: 0, vencidas: 0, hoy: 0, mostradas: 0 };
       }
     } catch (error) {
       console.error('Error al cargar la agenda:', error);
-      this.agenda = [];
+      if (mia === this.peticionAgenda) { this.agenda = []; }
     } finally {
-      this.cargandoAgenda = false;
+      if (mia === this.peticionAgenda) {
+        this.cargandoAgenda = false;
+        if (this.agenda.length) { this.gridApiAgenda?.hideOverlay(); }
+        else { this.gridApiAgenda?.showNoRowsOverlay(); }
+      }
     }
+  }
+
+  // ---------- La grilla ----------
+
+  /**
+   * Las columnas: cuándo toca (con el aviso de vencida), de quién es, qué
+   * hay que hacer y los dos botones que se usan de verdad —cerrarla o irse
+   * al cliente—.
+   */
+  initializeGridAgenda(): void {
+    this.columnDefsAgenda = [
+      {
+        headerName: 'Cuándo',
+        field: 'fecha_programada',
+        minWidth: 135,
+        maxWidth: 165,
+        cellStyle: { textAlign: 'left' },
+        cellRenderer: (p: any) => {
+          const f = this.fechaCorta(p.value);
+          if (p.data?.vencida) { return `<span class="agenda-cuando is-vencida"><i class="fa fa-triangle-exclamation fa-fw"></i>${f}</span>`; }
+          if (this.esDeHoy(p.value)) { return `<span class="agenda-cuando is-hoy"><i class="fa fa-star fa-fw"></i>${f}</span>`; }
+          return `<span class="agenda-cuando">${f}</span>`;
+        },
+      },
+      {
+        headerName: 'Cliente',
+        field: 'cliente_nombre',
+        minWidth: 170,
+        cellStyle: { textAlign: 'left' },
+      },
+      {
+        headerName: 'Tipo',
+        field: 'tipo',
+        minWidth: 105,
+        maxWidth: 125,
+        cellStyle: { textAlign: 'left' },
+        cellRenderer: (p: any) => `<i class="fa ${iconoDeTipo(p.value)} fa-fw me-1 text-muted"></i>${nombreDe(this.tipos, p.value)}`,
+      },
+      {
+        headerName: 'Asunto',
+        field: 'asunto',
+        minWidth: 180,
+        cellStyle: { textAlign: 'left' },
+      },
+      {
+        headerName: 'Prioridad',
+        field: 'prioridad',
+        minWidth: 90,
+        maxWidth: 100,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: (p: any) => {
+          const clase = p.value === 'ALTA' ? 'bg-danger' : (p.value === 'BAJA' ? 'bg-secondary' : 'bg-warning text-dark');
+          return `<span class="badge ${clase} fs-10px">${nombreDe(PRIORIDADES_GESTION, p.value)}</span>`;
+        },
+      },
+      {
+        headerName: 'Teléfono',
+        field: 'telefono',
+        minWidth: 110,
+        maxWidth: 130,
+        cellStyle: { textAlign: 'left' },
+        // El de la gestión si se anotó; si no, el del cliente: esta grilla
+        // es una lista de llamadas y el número tiene que estar a la vista
+        valueGetter: (p: any) => p.data?.telefono || p.data?.cliente_telefono || '',
+      },
+      {
+        headerName: 'Vendedor',
+        field: 'empleado_nombre',
+        minWidth: 130,
+        cellStyle: { textAlign: 'left' },
+      },
+      {
+        headerName: 'Acciones',
+        field: 'acciones',
+        pinned: 'right',
+        minWidth: 86,
+        maxWidth: 86,
+        sortable: false,
+        resizable: false,
+        filter: false,
+        suppressMenu: true,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: () => `
+          <span class="gestion-acciones">
+            <button type="button" class="btn btn-xs btn-success" data-accion="cerrar" title="Marcar como hecha"><i class="fa fa-check"></i></button>
+            <button type="button" class="btn btn-xs btn-white" data-accion="abrir" title="Abrir el cliente"><i class="fa fa-arrow-right"></i></button>
+          </span>`,
+      },
+    ];
+  }
+
+  onGridReadyAgenda(params: GridReadyEvent): void {
+    this.gridApiAgenda = params.api;
+    this._appAgGridService.ajustarTamanoGrid(this.gridApiAgenda);
+  }
+
+  navegarConTecladoAgenda = this._appAgGridService.navegacionConFlechas();
+
+  /** Los botones de la columna Acciones y el doble propósito de la fila. */
+  onCellClickedAgenda(e: CellClickedEvent): void {
+    const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
+    if (destino?.dataset['accion'] === 'cerrar') { this.cerrarDesdeAgenda(e.data); return; }
+    if (destino?.dataset['accion'] === 'abrir')  { this.irAlCliente(e.data); return; }
+  }
+
+  onCellKeyDownAgenda(e: any): void {
+    if (e.event?.key === 'Enter' && e.data) { this.irAlCliente(e.data); }
+  }
+
+  /** Lo emite el buscador al pulsar Enter o la lupa. */
+  buscarEnAgenda(termino?: string): void {
+    this.buscaAgenda = (termino ?? '').trim();
+    this.cargarAgenda(1);
+  }
+
+  irAPaginaAgenda(page: number): void {
+    if (page < 1 || page > this.ultimaPaginaAgenda || page === this.paginaAgenda) { return; }
+    this.cargarAgenda(page);
+  }
+
+  public get desdeAgenda(): number {
+    return this.agendaMeta.total === 0 ? 0 : (this.paginaAgenda - 1) * this.porPaginaAgenda + 1;
+  }
+
+  public get hastaAgenda(): number {
+    return Math.min(this.paginaAgenda * this.porPaginaAgenda, this.agendaMeta.total);
+  }
+
+  /** «27/09 14:30», que es lo que cabe en la columna. */
+  private fechaCorta(iso?: string | null): string {
+    if (!iso) { return ''; }
+    const d = new Date(String(iso).replace(' ', 'T'));
+    if (isNaN(d.getTime())) { return String(iso); }
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm} ${hh}:${mi}`;
+  }
+
+  private esDeHoy(iso?: string | null): boolean {
+    if (!iso) { return false; }
+    const d = new Date(String(iso).replace(' ', 'T'));
+    const hoy = new Date();
+    return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth() && d.getDate() === hoy.getDate();
+  }
+
+  /**
+   * El selector de rango (el mismo de los boletines). Limpiarlo equivale a
+   * «Todo»; elegir dos fechas deja el rango a mano.
+   */
+  onRangoFechas(rango: { startDate: any; endDate: any } | null): void {
+    // Viene de haber pulsado un atajo: ya se cargó con esas fechas
+    if (this.ajustandoRango) { return; }
+
+    // El valor lo guarda el componente, no el propio selector: con
+    // [(ngModel)] el picker devolvía su versión del rango y borraba la que
+    // acababa de poner un atajo (se pedía «Hoy» y el campo quedaba vacío).
+    // Se escribe con la bandera puesta porque al escribirlo el picker vuelve
+    // a emitir, y sin ella esto se llamaba a sí mismo sin parar.
+    this.ajustandoRango = true;
+    setTimeout(() => { this.ajustandoRango = false; });
+    this.selectedRango = rango?.startDate && rango?.endDate
+      ? { startDate: rango.startDate, endDate: rango.endDate }
+      : null;
+
+    if (!rango?.startDate || !rango?.endDate) {
+      this.desdeFiltro = '';
+      this.hastaFiltro = '';
+      this.rango = 'todo';
+    } else {
+      // .format() del propio objeto (dayjs o moment), nunca moment(obj)
+      this.desdeFiltro = rango.startDate.format('YYYY-MM-DD');
+      this.hastaFiltro = rango.endDate.format('YYYY-MM-DD');
+      this.rango = 'rango';
+    }
+    this.cargarAgenda(1);
   }
 
   /** Los atajos de arriba: hoy, mañana, la semana… */
@@ -419,7 +954,16 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         // Las fechas las pone el usuario; no se tocan
         break;
     }
-    this.cargarAgenda();
+
+    // El selector de fechas acompaña al atajo que se pulsó; lo que emita a
+    // continuación es eco, no una elección del usuario
+    this.ajustandoRango = true;
+    setTimeout(() => { this.ajustandoRango = false; });
+    this.selectedRango = this.desdeFiltro && this.hastaFiltro
+      ? { startDate: moment(this.desdeFiltro, 'YYYY-MM-DD'), endDate: moment(this.hastaFiltro, 'YYYY-MM-DD') }
+      : null;
+
+    this.cargarAgenda(1);
   }
 
   /** Cambió una de las dos fechas a mano. */
@@ -430,6 +974,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   alternarMias(): void {
+    this.paginaAgenda = 1;
     this.soloMias = !this.soloMias;
     this.cargarAgenda();
   }
@@ -728,6 +1273,59 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   nombreResultado = (r: string) => nombreDe(RESULTADOS_GESTION, r);
 
   /** «tel:» y «mailto:» para llamar o escribir desde el navegador o el móvil. */
+  /** Plegar y desplegar los paneles de datos del cliente. */
+  alternarDatos(): void {
+    this.datosVisibles = !this.datosVisibles;
+    try { localStorage.setItem('miCRM3.gestion.datosCliente', this.datosVisibles ? '1' : '0'); } catch { /* sin storage */ }
+    // Al aparecer o desaparecer los paneles, la grilla del historial cambia de alto
+    setTimeout(() => this.gridApi?.sizeColumnsToFit(), 250);
+  }
+
+  private leerDatosVisibles(): boolean {
+    try { return localStorage.getItem('miCRM3.gestion.datosCliente') !== '0'; } catch { return true; }
+  }
+
+  /** «Cédula», «RUC» o «Pasaporte», según con qué esté registrado. */
+  public get rotuloIdentificacion(): string {
+    switch (this.cliente?.tipo_identificacion) {
+      case 'RUC': return 'RUC';
+      case 'PAS': return 'Pasaporte';
+      default:    return 'Cédula';
+    }
+  }
+
+  /**
+   * La dirección para leer: la escrita a mano manda; si no hay, se arma con
+   * lo que dejó el mapa (calle principal N12-34 y calle secundaria).
+   */
+  public get direccionDelCliente(): string {
+    const c = this.cliente;
+    if (!c) { return ''; }
+    if (c.direccion) { return c.direccion; }
+
+    const calle = [c.calle_principal, c.numeracion].filter(Boolean).join(' ');
+    const conEsquina = [calle, c.calle_secundaria].filter(Boolean).join(' y ');
+    return conEsquina || c.ubicacion || '';
+  }
+
+  /** Copiar un dato al portapapeles: en una llamada se pega en otro sistema. */
+  async copiar(texto?: string | null, que: string = 'El dato'): Promise<void> {
+    if (!texto) { return; }
+    try {
+      await navigator.clipboard.writeText(String(texto));
+      this._toastr.success(`${que} se copió al portapapeles`, '', { timeOut: 1500 });
+    } catch {
+      // Sin permiso o sin https: no se avisa con un error, no es grave
+      console.warn('No se pudo copiar al portapapeles');
+    }
+  }
+
+  /** El sitio web se guarda sin esquema; el enlace lo necesita. */
+  enlaceWeb(url?: string | null): string {
+    if (!url) { return ''; }
+    return /^https?:\/\//i.test(url) ? url : 'https://' + url;
+  }
+
   enlaceTelefono(numero?: string | null): string { return numero ? 'tel:' + String(numero).replace(/\s/g, '') : ''; }
   enlaceWhatsapp(numero?: string | null): string {
     const limpio = (numero ?? '').replace(/\D/g, '');

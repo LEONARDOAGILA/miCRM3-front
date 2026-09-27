@@ -1,0 +1,293 @@
+/* ============================================================
+   TABLERO DE VENTAS
+
+   Las rejillas van con auto-fit y no con las columnas de Bootstrap: este
+   tablero vive dentro de la columna derecha, cuyo ancho cambia al arrastrar
+   el divisor, y los breakpoints de Bootstrap miran la ventana, no el hueco
+   que le queda al panel.
+   ============================================================ */
+
+.rv-cargando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+
+  padding: 3rem 1rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.rv-cargando p {
+  margin: 0;
+  font-size: .8125rem;
+}
+
+/* ---------- Los cuatro números gordos ----------
+   .widget-stats es del tema (scss/apple/ui/_widget-stats.scss); aquí sólo se
+   colocan y se aprietan un punto, que el panel es más estrecho que una
+   pantalla de tablero. */
+.rv-widgets {
+  display: grid;
+  /* 17rem para que en el ancho habitual del panel salgan dos y dos: con
+     13rem entraban tres y el cuarto quedaba solo, y encima el texto del pie
+     del widget no cabía */
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: .625rem;
+
+  margin-bottom: .625rem;
+}
+
+.rv-widgets .widget-stats {
+  margin-bottom: 0;
+  padding: .75rem .875rem;
+  border-radius: .5rem;
+}
+
+.rv-widgets .stats-info h4 {
+  font-size: .6875rem;
+  letter-spacing: .04em;
+}
+
+.rv-widgets .stats-info p {
+  font-size: 1.5rem;
+  margin-bottom: .25rem;
+}
+
+/* El pie del widget es una tira a sangre: el tema la saca de la caja con
+   márgenes negativos de 1rem, que es su padding. Como aquí el widget va más
+   apretado (.75rem .875rem), hay que rehacer márgenes Y padding a juego: con
+   sólo cambiar el padding, el texto se salía por la derecha y lo cortaba el
+   panel («722 activos (72%»). */
+.rv-widgets .widget.widget-stats .stats-link a {
+  margin: .5rem -.875rem -.75rem;
+  padding: .25rem .875rem;
+  font-size: .6875rem;
+}
+
+/* ---------- Mi día ----------
+   En fila, no en columna: .rv-tarjeta apila sus hijos y aquí los tres
+   trozos (texto, barra y botón) van uno al lado del otro. Con las dos clases
+   en el selector, porque .rv-tarjeta se declara más abajo y en un empate de
+   especificidad ganaba ella. */
+.rv-tarjeta.rv-dia {
+  flex-direction: row;
+  align-items: center;
+  gap: .875rem;
+  flex-wrap: wrap;
+
+  padding: .5rem .75rem;
+  margin-bottom: .625rem;
+}
+
+.rv-dia__texto {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+.rv-dia__titulo {
+  font-size: .6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.rv-dia__cuenta {
+  font-size: .8125rem;
+}
+
+/* La barra de avance: cuánto de lo de hoy ya está hecho */
+.rv-dia__barra {
+  flex: 1 1 8rem;
+  height: 6px;
+  border-radius: 3px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .1);
+  overflow: hidden;
+}
+
+.rv-dia__avance {
+  height: 100%;
+  border-radius: 3px;
+  background-color: var(--bs-app-theme, #00acac);
+  transition: width .3s ease;
+}
+
+/* ---------- Las tarjetas de las series ---------- */
+.rv-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: .625rem;
+}
+
+.rv-tarjeta {
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  overflow: hidden;
+}
+
+/* La del gráfico de líneas pide el ancho entero cuando hay sitio */
+.rv-ancha {
+  grid-column: 1 / -1;
+}
+
+.rv-tarjeta__titulo {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .25rem .5rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .04);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.rv-tarjeta__titulo > i {
+  color: var(--bs-app-theme, #00acac);
+  font-size: .75rem;
+}
+
+.rv-tarjeta__cuerpo {
+  padding: .375rem .5rem;
+}
+
+/* ngx-charts necesita un alto concreto: sin él se dibuja a cero */
+.rv-grafico {
+  height: 220px;
+  padding: .25rem;
+}
+
+.rv-ancha .rv-grafico {
+  height: 240px;
+}
+
+/* La letra de los ejes y la leyenda, al tamaño del resto del tablero */
+:host ::ng-deep .rv-grafico .ngx-charts text {
+  font-size: 10px;
+  fill: var(--bs-secondary-color, #6c757d);
+}
+
+:host ::ng-deep .rv-grafico .legend-labels {
+  background: none !important;
+}
+
+:host ::ng-deep .rv-grafico .legend-label-text {
+  font-size: 11px;
+  color: var(--bs-body-color, #495057) !important;
+}
+
+/* ---------- Listas de dos columnas (resultados, estado) ---------- */
+.rv-linea {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+
+  padding: .15rem 0;
+  font-size: .75rem;
+}
+
+.rv-linea + .rv-linea {
+  border-top: 1px dashed var(--bs-border-color, #e9ecef);
+}
+
+.rv-linea--suelta .rv-linea__nombre {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.rv-linea__nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rv-linea__cuenta {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Barras (vendedores, ciudades) ---------- */
+.rv-barra {
+  padding: .2rem 0;
+}
+
+.rv-barra__fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+
+  font-size: .75rem;
+}
+
+.rv-barra__nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rv-barra__cuenta {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.rv-barra__riel {
+  height: 5px;
+  margin-top: .15rem;
+  border-radius: 3px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  overflow: hidden;
+}
+
+.rv-barra__valor {
+  height: 100%;
+  border-radius: 3px;
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.rv-barra__valor--alt {
+  background-color: var(--bs-info, #49b6d6);
+}
+
+.rv-vacio {
+  margin: 0;
+  padding: .5rem 0;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Pie ---------- */
+.rv-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+
+  margin-top: .625rem;
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.rv-pie .btn {
+  font-size: .6875rem;
+}
+
+/* ---------- Modo oscuro ---------- */
+[data-bs-theme="dark"] .rv-tarjeta {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+}
