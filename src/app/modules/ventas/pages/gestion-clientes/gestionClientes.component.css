@@ -19,127 +19,256 @@
 }
 
 /* ============================================================
-   BUSCADOR
+   LAS DOS COLUMNAS DE «GESTIÓN DE CLIENTES»
+
+   A la izquierda el cliente, a la derecha su trabajo. La columna se
+   pliega con la pestañita del borde, igual que el panel del mapa
+   (components/ubicacion-google-maps), y el alto es fijo para que el
+   contenido se desplace por dentro en vez de estirar la página.
    ============================================================ */
-.gestion-buscador {
-  position: relative;
+.gc-cuerpo {
   display: flex;
-  gap: .5rem;
-  margin-bottom: 1rem;
+  align-items: stretch;
+  /* Sin hueco: la pestañita de plegar nace del borde de la tarjeta y con un
+     gap quedaba flotando en medio. La separación la pone el padding de la
+     columna derecha. */
+  gap: 0;
+
+  height: clamp(420px, calc(100vh - 255px), 1000px);
 }
 
-.gestion-buscador__campo {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
+.gc-columna {
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+
+  flex: 0 0 320px;
+  max-width: 320px;
+  min-height: 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .28) transparent;
+
+  transition: flex-basis .25s ease, max-width .25s ease, padding .25s ease, opacity .2s ease;
 }
 
-.gestion-buscador__campo .form-control {
-  height: 42px;
-  padding-left: 2.25rem;
-  font-size: .8125rem;
-}
-
-.gestion-buscador__lupa {
-  position: absolute;
-  top: 50%;
-  left: .75rem;
-  transform: translateY(-50%);
-  color: var(--bs-secondary-color, #adb5bd);
+.gc-cuerpo.is-panel-oculto .gc-columna {
+  flex-basis: 0;
+  max-width: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
   pointer-events: none;
 }
 
-.gestion-buscador__cargando {
-  position: absolute;
-  top: 50%;
-  right: .75rem;
-  transform: translateY(-50%);
-  color: var(--bs-app-theme, #00acac);
-}
-
-.gestion-buscador__btn {
-  height: 42px;
+.gc-buscar {
   flex: 0 0 auto;
+  height: 40px;
+  font-size: .8125rem;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-/* ---------- Sugerencias ---------- */
-.gestion-sugerencias {
-  position: absolute;
-  top: calc(100% + .25rem);
-  left: 0;
-  right: 0;
-  z-index: 1050;
-
-  max-height: 320px;
-  overflow-y: auto;
-  margin: 0;
-  padding: .25rem;
-  list-style: none;
-
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .5rem;
-  background-color: var(--bs-body-bg, #fff);
-  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+.gc-vacio {
+  padding: 1.5rem .5rem;
 }
 
-.gestion-sugerencias__item {
+/* ---------- El lomo de la ficha plegada ---------- */
+/* Franja estrecha con el rótulo de canto: deja claro qué se escondió y lo
+   devuelve al pulsarla */
+.gc-lomo {
   display: flex;
-  align-items: center;
-  gap: .625rem;
-  width: 100%;
-
-  padding: .375rem .5rem;
-  border: 0;
-  border-radius: .375rem;
-  background: none;
-  text-align: left;
-}
-
-.gestion-sugerencias__item:hover,
-.gestion-sugerencias__item:focus-visible {
-  background-color: var(--bs-secondary-bg, #f1f3f5);
-}
-
-.gestion-sugerencias__icono {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  width: 1.75rem;
-  height: 1.75rem;
-  flex: 0 0 auto;
-  border-radius: 50%;
+  flex: 0 0 32px;
+  width: 32px;
+  padding: .5rem 0;
 
-  background-color: var(--bs-secondary-bg, #e9ecef);
-  color: var(--bs-body-color, #495057);
-  font-size: .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+  color: var(--bs-secondary-color, #6c757d);
+  cursor: pointer;
+
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
-.gestion-sugerencias__texto {
-  display: flex;
-  flex-direction: column;
+.gc-lomo:hover,
+.gc-lomo:focus-visible {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* De abajo arriba, como el lomo de una carpeta */
+.gc-lomo__texto {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+
+  max-height: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: .6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+}
+
+/* ---------- Columna derecha ---------- */
+.gc-panel {
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
 }
 
-.gestion-sugerencias__nombre {
-  font-weight: 600;
-  font-size: .8125rem;
-  line-height: 1.2;
+.gc-panel__contenido {
+  height: 100%;
+  /* Deja libre la franja de la pestañita (20px) y separa de la tarjeta */
+  padding-left: 1.75rem;
 
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .28) transparent;
 }
 
-.gestion-sugerencias__dato {
-  font-size: .75rem;
+/* La pestañita del borde, calcada de la del mapa */
+.gc-pestana {
+  position: absolute;
+  top: 50%;
+  /* Pegada al borde de la tarjeta: nace de ella hacia la derecha, como la
+     del panel del mapa */
+  left: 0;
+  transform: translateY(-50%);
+  z-index: 5;
+
+  width: 20px;
+  height: 52px;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 0;
+  border-radius: 0 .5rem .5rem 0;
+
+  background-color: var(--bs-component-bg, #fff);
   color: var(--bs-secondary-color, #6c757d);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, .12);
+  font-size: 11px;
+  cursor: pointer;
 
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.gc-pestana:hover {
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+}
+
+/* ============================================================
+   MENÚ DEL CLIC DERECHO
+   Mismo menú que la papelera de clientes, para que se comporten igual.
+   ============================================================ */
+.menu-ctx {
+  position: fixed;
+  z-index: 1080;                 /* por encima del modal (1055) */
+  min-width: 230px;
+  max-width: 300px;
+  padding: .375rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+
+  font-size: 12px;
+  animation: menu-ctx-entrada .1s ease-out;
+}
+
+@keyframes menu-ctx-entrada {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.menu-ctx__cabecera {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .375rem .625rem .5rem;
+  margin-bottom: .25rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.menu-ctx__item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  width: 100%;
+  padding: .4rem .625rem;
+  border: 0;
+  border-radius: .375rem;
+
+  background: transparent;
+  color: var(--bs-body-color, #212529);
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+
+  transition: background-color .1s ease;
+}
+
+.menu-ctx__item:hover,
+.menu-ctx__item:focus-visible {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-body-color, #212529);
+  outline: none;
+}
+
+.menu-ctx__item:disabled {
+  opacity: .45;
+  pointer-events: none;
+}
+
+.menu-ctx__item--peligro:hover,
+.menu-ctx__item--peligro:focus-visible {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);
+  color: var(--bs-danger, #dc3545);
+}
+
+.menu-ctx__detalle {
+  margin-left: auto;
+  padding-left: .75rem;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+
+  font-size: 10px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.menu-ctx__sep {
+  height: 1px;
+  margin: .25rem .375rem;
+  background-color: var(--bs-border-color, #dee2e6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-ctx {
+    animation: none;
+  }
 }
 
 /* ============================================================
@@ -264,7 +393,6 @@
    FICHA DEL CLIENTE
    ============================================================ */
 .gestion-ficha {
-  height: 100%;
   padding: .875rem;
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .5rem;
@@ -410,53 +538,100 @@
   background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
 }
 
+/* ---------- Aviso de «última / próxima» ---------- */
+/* Franja con el color del estado: la cruz arriba a la derecha (la pone
+   alert-dismissible) y el botón de acción al final de la línea */
+.gestion-aviso {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+
+  margin-bottom: .75rem;
+  padding: .5rem 2.5rem .5rem .75rem;   /* sitio para la cruz */
+  border-radius: .5rem;
+}
+
+.gestion-aviso .btn-close {
+  padding: .6rem;
+  font-size: .625rem;
+}
+
+.gestion-aviso__acciones {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.gestion-aviso__acciones .btn {
+  font-size: .6875rem;
+  padding: .15rem .5rem;
+  white-space: nowrap;
+}
+
 .gestion-hitos {
   display: flex;
   flex-direction: column;
   gap: .125rem;
-  margin-bottom: .75rem;
+
+  flex: 1 1 18rem;
+  min-width: 0;
 }
 
 .gestion-hito {
-  font-size: .75rem;
-  color: var(--bs-secondary-color, #6c757d);
+  display: flex;
+  align-items: center;
+  gap: .375rem;
 
+  font-size: .75rem;
+  min-width: 0;
+}
+
+.gestion-hito > i {
+  flex: 0 0 auto;
+  opacity: .7;
+}
+
+/* «Última» / «Próxima»: rótulo discreto y de ancho fijo, para que las dos
+   líneas queden alineadas */
+.gestion-hito__etiqueta {
+  flex: 0 0 auto;
+  width: 3.75rem;
+
+  font-size: .6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  opacity: .75;
+}
+
+.gestion-hito__asunto {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.gestion-hito i {
-  color: var(--bs-secondary-color, #adb5bd);
+.gestion-hito__fecha {
+  flex: 0 0 auto;
+  opacity: .8;
 }
 
-/* ---------- Pestañas ---------- */
-.gestion-tabs {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+.gestion-hito__vacio {
+  opacity: .7;
 }
 
-.gestion-tabs .nav-link {
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  padding: .5rem .75rem;
+@media (max-width: 575.98px) {
+  .gestion-aviso__acciones {
+    margin-left: 0;
+    width: 100%;
+  }
 
-  font-size: .8125rem;
-  color: var(--bs-secondary-color, #6c757d);
-  white-space: nowrap;
-  background: none;
-}
+  .gestion-aviso__acciones .btn {
+    width: 100%;
+  }
 
-.gestion-tabs .nav-link:hover {
-  color: var(--bs-app-theme, #00acac);
-}
-
-.gestion-tabs .nav-link.active {
-  color: var(--bs-app-theme, #00acac);
-  border-bottom-color: var(--bs-app-theme, #00acac);
-  background: none;
+  .gestion-hito__etiqueta {
+    width: auto;
+  }
 }
 
 .gestion-panel {
@@ -667,8 +842,62 @@
    RESPONSIVE
    ============================================================ */
 @media (max-width: 991.98px) {
-  .gestion-ficha {
+  /* Apiladas: la ficha arriba y el trabajo debajo, y el alto lo pone el
+     contenido (en móvil el que manda es el scroll de la página) */
+  .gc-cuerpo {
+    flex-direction: column;
     height: auto;
+  }
+
+  .gc-columna,
+  .gc-cuerpo.is-panel-oculto .gc-columna {
+    flex: 0 0 auto;
+    max-width: none;
+    width: 100%;
+    overflow: visible;
+  }
+
+  /* Plegada se recoge hacia arriba, no hacia el lado */
+  .gc-cuerpo.is-panel-oculto .gc-columna {
+    max-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .gc-panel__contenido {
+    height: auto;
+    overflow: visible;
+    padding-left: 0;
+  }
+
+  /* Apiladas, el lomo es una barra: el texto vuelve a ser horizontal */
+  .gc-lomo {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: .375rem 0;
+    margin-bottom: .5rem;
+  }
+
+  .gc-lomo__texto {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+
+  /* La pestañita se pone arriba, centrada y tumbada */
+  .gc-pestana {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: 22px;
+    margin-bottom: .5rem;
+
+    border-left: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: .5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+  }
+
+  .gc-panel__contenido {
+    padding-left: 0;
   }
 
   .gestion-grilla {
@@ -704,51 +933,202 @@
 }
 
 /* ============================================================
-   PESTAÑAS PRINCIPALES: la agenda y el cliente
+   PESTAÑAS
+
+   Mismo lenguaje que la barra del inicio (pages/home): sin cajas,
+   subrayado de 3px siempre reservado —así nada salta al cambiar de
+   pestaña—, el color de la aplicación en la activa y desplazamiento
+   horizontal en móvil con la sombra que avisa de que hay más.
+
+   Se comparte entre las dos principales (.gestion-vistas) y las del
+   cliente (.gestion-tabs), que sólo se diferencian en el tamaño.
    ============================================================ */
-.gestion-vistas {
-  flex-wrap: nowrap;
+.gestion-vistas.nav-tabs,
+.gestion-tabs.nav-tabs {
+  position: relative;
+  /* Pegadas: cada pestaña monta su borde izquierdo sobre el derecho de la
+     anterior (ver el margin-left negativo), así entre dos no queda ni hueco
+     ni una línea doble */
+  gap: 0;
+  /* La línea va en ::after, no en el borde: así la pestaña activa la tapa sin
+     tener que salirse de la caja (eso sacaba una barra de desplazamiento
+     vertical de 10px dentro de la propia barra de pestañas) */
+  border-bottom: 0 !important;
+
+  /* En celular se desplazan en horizontal; la barra de scroll, discreta.
+     El overflow va aquí y no con la utilidad de Bootstrap porque esa trae
+     !important y pisaba el overflow-y. */
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.gestion-vistas.nav-tabs::after,
+.gestion-tabs.nav-tabs::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+
+  height: 1px;
+  background-color: var(--bs-border-color, #e2e8f0);
+}
+
+.gestion-vistas.nav-tabs::-webkit-scrollbar,
+.gestion-tabs.nav-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.gestion-vistas.nav-tabs::-webkit-scrollbar-thumb,
+.gestion-tabs.nav-tabs::-webkit-scrollbar-thumb {
+  border-radius: 2px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .2);
+}
+
+.gestion-vistas .nav-link,
+.gestion-tabs .nav-link {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .55rem 1rem;
+
+  /* Pestaña con caja: borde arriba y a los lados, y abajo nada —ahí va la
+     línea de la barra—. El de arriba es de 3px y se reserva en transparente
+     para que la activa no cambie de alto al marcarse. */
+  border: 1px solid var(--bs-border-color, #e2e8f0);
+  border-top: 3px solid transparent;
+  border-bottom-color: transparent;
+  border-radius: .35rem .35rem 0 0;
+
+  /* Por encima de la línea de la barra, que es la que tapa la activa */
+  position: relative;
+  z-index: 1;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  /* Las de atrás, ligeramente hundidas */
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .035);
+
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+}
+
+/* Sin separación entre pestañas: los bordes se comparten.
+   El <li> viene con padding-left del tema (18px, de la lista del menú); sin
+   anularlo queda un hueco entre pestaña y pestaña. */
+.gestion-vistas .nav-item,
+.gestion-tabs .nav-item {
+  margin: 0;
+  padding: 0;
+}
+
+.gestion-vistas .nav-item + .nav-item .nav-link,
+.gestion-tabs .nav-item + .nav-item .nav-link {
+  margin-left: -1px;
+}
+
+/* La activa, por encima de sus vecinas y de la línea de la barra */
+.gestion-vistas .nav-link.active,
+.gestion-tabs .nav-link.active {
+  z-index: 2;
+}
+
+.gestion-vistas .nav-link i,
+.gestion-tabs .nav-link i {
+  font-size: .875rem;
+  opacity: .85;
+}
+
+.gestion-vistas .nav-link:hover,
+.gestion-tabs .nav-link:hover {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
+  border-top-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .35);
+  border-bottom-color: transparent;
+  color: var(--bs-body-color, #212529);
+}
+
+/* Que se vea al llegar con el tabulador */
+.gestion-vistas .nav-link:focus-visible,
+.gestion-tabs .nav-link:focus-visible {
+  outline: 2px solid var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
+}
+
+/* La activa sale al frente: fondo del contenido, acento arriba y el borde
+   de abajo del mismo color que el panel, que tapa la línea de la barra y
+   deja la pestaña «abierta» sobre su contenido. */
+.gestion-vistas .nav-link.active,
+.gestion-tabs .nav-link.active {
+  background-color: var(--bs-component-bg, #fff);
+  border-color: var(--bs-border-color, #e2e8f0);
+  border-top-color: var(--bs-app-theme, #00acac);
+  border-bottom-color: var(--bs-component-bg, #fff);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gestion-vistas .nav-link.active i,
+.gestion-tabs .nav-link.active i {
+  opacity: 1;
+}
+
+/* ---------- Las principales ---------- */
+.gestion-vistas.nav-tabs {
   margin-bottom: 1rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .gestion-vistas .nav-link {
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  padding: .5rem .875rem;
-
   font-size: .875rem;
-  font-weight: 600;
-  color: var(--bs-secondary-color, #6c757d);
-  white-space: nowrap;
-  background: none;
 }
 
-.gestion-vistas .nav-link:hover {
-  color: var(--bs-app-theme, #00acac);
-}
-
-.gestion-vistas .nav-link.active {
-  color: var(--bs-app-theme, #00acac);
-  border-bottom-color: var(--bs-app-theme, #00acac);
-  background: none;
-}
-
-/* El cliente que se está trabajando, junto al nombre de la pestaña */
+/* El cliente que se está trabajando, junto al rótulo de su pestaña */
 .gestion-vistas__cliente {
-  margin-left: .25rem;
+  max-width: 12rem;
+  padding-left: .375rem;
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+
   font-weight: 400;
-  font-size: .8125rem;
+  font-size: .75rem;
   color: var(--bs-secondary-color, #6c757d);
 
-  display: inline-block;
-  max-width: 14rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  vertical-align: bottom;
+}
+
+.gestion-vistas .nav-link.active .gestion-vistas__cliente {
+  color: var(--bs-body-color, #212529);
+}
+
+/* ---------- Las del cliente: un punto más compactas ---------- */
+.gestion-tabs .nav-link {
+  padding: .45rem .875rem;
+  font-size: .78125rem;
+}
+
+/* En pantallas estrechas caben menos: rótulos más juntos y una sombra al
+   borde derecho que avisa de que la lista sigue */
+@media (max-width: 767.98px) {
+  .gestion-vistas.nav-tabs,
+  .gestion-tabs.nav-tabs {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+  }
+
+  .gestion-vistas .nav-link,
+  .gestion-tabs .nav-link {
+    padding: .5rem .7rem;
+    font-size: .75rem;
+  }
+
+  /* El nombre del cliente sobra cuando no hay sitio: ya está en la ficha */
+  .gestion-vistas__cliente {
+    display: none;
+  }
 }
 
 /* ============================================================
@@ -850,13 +1230,21 @@
 
 /* ---------- Responsive ---------- */
 @media (max-width: 767.98px) {
+  /* En rejilla, cada rótulo se queda pegado a su campo: en línea se partían
+     y «HASTA» acababa al final de una fila con su fecha en la siguiente */
   .agenda-filtros__fechas {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
     width: 100%;
   }
 
   .agenda-filtros__fechas .form-control {
-    flex: 1 1 8rem;
-    width: auto;
+    width: 100%;
+  }
+
+  .agenda-filtros__etiqueta {
+    margin-left: 0;
   }
 
   .agenda-hora {

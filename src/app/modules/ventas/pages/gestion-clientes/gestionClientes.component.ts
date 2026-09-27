@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
-import { catchError, debounceTime, takeUntil } from 'rxjs/operators';
+import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import Swal from 'sweetalert2';
 
@@ -78,6 +78,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   public pestana: Pestana = 'historial';
 
+  /** El aviso de «última / próxima»; se cierra a mano y vuelve con otro cliente. */
+  public hitosVisible = true;
+
   /** Se entra por la agenda: es por donde se empieza el día. */
   public vista: Vista = 'agenda';
 
@@ -90,12 +93,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public soloMias = true;
   public cargandoAgenda = false;
 
-  // ---------- Buscador con sugerencias ----------
-  public termino = '';
-  public sugerencias: ClienteModel[] = [];
-  public buscando = false;
-  public sugerenciasAbiertas = false;
-  private readonly teclea$ = new Subject<string>();
+  // ---------- Columna de la izquierda ----------
+  /**
+   * La columna del cliente se pliega, como el panel del mapa.
+   *
+   * Se recuerda en el navegador: quien trabaja con el historial a pantalla
+   * completa no quiere volver a plegarla cada vez que entra.
+   */
+  public panelOculto = this.leerPanelOculto();
+
+  /** Menú del clic derecho: dónde está y sobre qué actúa. */
+  public menuCtx = { visible: false, x: 0, y: 0 };
 
   // ---------- Historial (grilla con paginación en servidor) ----------
   public gestiones: GestionModel[] = [];
@@ -118,7 +126,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   private readonly unsubscribe$ = new Subject<void>();
 
-  @ViewChild('cajaBuscador') cajaBuscador?: ElementRef<HTMLElement>;
+  @ViewChild('menuCtxEl') menuCtxEl?: ElementRef<HTMLElement>;
 
   constructor(
     private host: ElementRef<HTMLElement>,
@@ -152,11 +160,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         if (this.cliente?.id && g?.cliente_id === this.cliente.id) { this.refrescar(); }
         this.cargarAgenda();
       });
-
-    // El buscador espera a que el usuario deje de teclear
-    this.teclea$
-      .pipe(debounceTime(350), takeUntil(this.unsubscribe$))
-      .subscribe(term => this.buscarSugerencias(term));
   }
 
   ngOnDestroy(): void {
@@ -176,47 +179,23 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   // ================================================================
-  // BUSCAR EL CLIENTE
+  // ELEGIR EL CLIENTE
   // ================================================================
 
-  onTeclear(valor: string): void {
-    this.termino = valor;
-    this.teclea$.next(valor);
-  }
-
-  private async buscarSugerencias(term: string): Promise<void> {
-    const texto = (term ?? '').trim();
-    if (texto.length < 2) {
-      this.sugerencias = [];
-      this.sugerenciasAbiertas = false;
-      return;
-    }
-    try {
-      this.buscando = true;
-      const res: any = await firstValueFrom(this._clienteService.allClientes(1, 8, texto));
-      this.sugerencias = res.body?.data?.data ?? [];
-      this.sugerenciasAbiertas = true;
-    } catch (error) {
-      console.error('Error al buscar clientes:', error);
-      this.sugerencias = [];
-    } finally {
-      this.buscando = false;
-    }
-  }
-
-  /** El selector de siempre, por si se prefiere la grilla completa. */
+  /**
+   * El selector con paginación en servidor.
+   *
+   * Antes había además un buscador que consultaba mientras se escribía; con
+   * ochenta mil clientes eso es una consulta por letra y se notaba. El
+   * selector pide de a una página y trae su propio buscador, que sólo
+   * consulta al pulsar Enter.
+   */
   abrirSelectorClientes(): void {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.modal.open(ListClientesComponent, { size: 'lg', centered: true, backdrop: 'static' });
     modalRef.componentInstance.clienteSeleccionadoId = this.cliente?.id;
     modalRef.componentInstance.ayuda = 'Haz clic sobre el cliente que vas a gestionar.';
     this.escucharModal(modalRef, modalRef.componentInstance.seleccionado, (c: any) => this.seleccionarCliente(c));
-  }
-
-  @HostListener('document:click', ['$event'])
-  cerrarSugerencias(ev?: MouseEvent): void {
-    if (ev && this.cajaBuscador?.nativeElement.contains(ev.target as Node)) { return; }
-    this.sugerenciasAbiertas = false;
   }
 
   limpiarCliente(): void {
@@ -227,12 +206,58 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.pendientes = [];
     this.gestiones = [];
     this.totalRegistros = 0;
-    this.termino = '';
-    this.sugerencias = [];
     this.gridApi?.setRowData([]);
     this.vista = 'agenda';
     this.cargarAgenda();
   }
+
+  // ================================================================
+  // LA COLUMNA DE LA IZQUIERDA
+  // ================================================================
+
+  private leerPanelOculto(): boolean {
+    try { return localStorage.getItem('miCRM3.gestion.panelOculto') === '1'; } catch { return false; }
+  }
+
+  alternarPanel(): void {
+    this.panelOculto = !this.panelOculto;
+    try { localStorage.setItem('miCRM3.gestion.panelOculto', this.panelOculto ? '1' : '0'); } catch { /* sin storage */ }
+    // La grilla del historial ocupa el hueco que deja la columna
+    setTimeout(() => this.gridApi?.sizeColumnsToFit(), 300);
+  }
+
+  // ================================================================
+  // MENÚ DEL CLIC DERECHO
+  // ================================================================
+
+  /** Las mismas acciones que los botones, donde esté el puntero. */
+  onContextMenu(ev: MouseEvent): void {
+    // Dentro de un campo o de la grilla manda el menú del navegador / de ag-Grid
+    const destino = ev.target as HTMLElement;
+    if (destino.closest('input, textarea, select, .ag-root-wrapper')) { return; }
+
+    ev.preventDefault();
+    this.menuCtx = { visible: true, x: ev.clientX, y: ev.clientY };
+
+    // Si se sale de la pantalla, se recoloca
+    setTimeout(() => {
+      const el = this.menuCtxEl?.nativeElement;
+      if (!el) { return; }
+      const r = el.getBoundingClientRect();
+      if (r.right > window.innerWidth)   { this.menuCtx.x = Math.max(0, window.innerWidth - r.width - 8); }
+      if (r.bottom > window.innerHeight) { this.menuCtx.y = Math.max(0, window.innerHeight - r.height - 8); }
+    });
+  }
+
+  cerrarMenu(): void {
+    if (this.menuCtx.visible) { this.menuCtx.visible = false; }
+  }
+
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  @HostListener('window:resize')
+  @HostListener('window:scroll')
+  onCerrarMenuGlobal(): void { this.cerrarMenu(); }
 
   // ================================================================
   // CARGAR TODO LO DEL CLIENTE
@@ -240,10 +265,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   async seleccionarCliente(cliente: any): Promise<void> {
     if (!cliente?.id) { return; }
-    this.sugerenciasAbiertas = false;
-    this.termino = '';
     this.vista = 'cliente';
     this.pestana = 'historial';
+    this.hitosVisible = true;
     this.paginaActual = 1;
 
     try {
@@ -714,6 +738,20 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   get hayCliente(): boolean { return !!this.cliente?.id; }
+
+  /**
+   * El color del aviso de arriba, según cómo esté el cliente.
+   *
+   * Rojo si hay algo vencido, ámbar si no queda nada agendado —que es lo que
+   * enfría una cartera— y azul cuando está al día. Gris mientras no haya
+   * ninguna gestión.
+   */
+  get claseAviso(): string {
+    if (!this.resumen) { return 'alert-secondary'; }
+    if (this.resumen.vencidas > 0 || this.resumen.proxima?.vencida) { return 'alert-danger'; }
+    if (!this.resumen.proxima) { return this.resumen.total ? 'alert-warning' : 'alert-secondary'; }
+    return 'alert-info';
+  }
 
   /** Badge del estado del cliente (el mismo criterio que la grilla de clientes). */
   claseEstadoCliente(estado?: string | null): string {
