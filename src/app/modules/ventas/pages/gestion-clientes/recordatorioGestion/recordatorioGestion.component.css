@@ -22,6 +22,11 @@
 
 .recordatorio-body {
   padding: 1rem;
+
+  /* Que no se salga de la pantalla: con la nota larga y la lista de atajos,
+     en un portátil el pie quedaba debajo del borde */
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
 }
 
 /* ---------- Qué hay que hacer ---------- */

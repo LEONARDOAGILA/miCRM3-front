@@ -3,6 +3,14 @@
    Sólo lo propio de este modal.
    ============================================================ */
 
+/* El cuerpo nunca pasa del alto de la ventana: lo que sobre se desplaza
+   dentro, como en saveGestion y cerrarGestion. Si no, en un portátil el pie
+   con los botones quedaba fuera de la pantalla. */
+.reasignar-modal-body {
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
+}
+
 /* ---------- De quién a quién ---------- */
 .reasignar-flujo {
   display: flex;

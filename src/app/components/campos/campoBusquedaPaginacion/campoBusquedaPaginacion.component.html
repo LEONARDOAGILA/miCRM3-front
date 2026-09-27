@@ -1,15 +1,33 @@
-<div [class]="containerClass">  
+<div [class]="containerClass">
+
   <input
     #inputElement
     type="text"
-    class="form-control ps-35px rounded-3 fs-12px"
+    class="form-control ps-35px rounded-3 fs-12px campo-busqueda__input"
+    [class.campo-busqueda__input--con-x]="limpiable && valor"
     [id]="id"
     [placeholder]="placeholder"
+    [value]="valor"
+    (input)="onInput($event)"
     (blur)="onBlur($event)"
     (keyup.enter)="onKeyupEnter($event)"
+    (keydown.escape)="limpiar()"
   />
 
-  <button class="btn position-absolute start-0 top-0 shadow-none" (click)="onButtonClick()">
+  <!-- type="button": sin él, dentro de un formulario la lupa lo enviaba -->
+  <button type="button" class="btn position-absolute start-0 top-0 shadow-none" (click)="onButtonClick()">
     <i [class]="iconClass"></i>
   </button>
+
+  <!-- La × sólo cuando hay algo que borrar; misma que app-campoTexto -->
+  @if (limpiable && valor) {
+    <button type="button"
+            class="campo-busqueda__limpiar"
+            tabindex="-1"
+            aria-label="Limpiar la búsqueda"
+            title="Limpiar (Esc)"
+            (click)="limpiar()">
+      <span class="campo-busqueda__limpiar-x" aria-hidden="true">&times;</span>
+    </button>
+  }
 </div>

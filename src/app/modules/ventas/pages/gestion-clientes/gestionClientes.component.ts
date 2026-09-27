@@ -167,6 +167,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   /** Menú del clic derecho: dónde está y sobre qué actúa. */
   public menuCtx = { visible: false, x: 0, y: 0 };
 
+  /** Lo que se deja libre por debajo al repartir el alto de la pantalla. */
+  // Lo de debajo no es sólo la paginación: también el relleno de la tarjeta
+  // del tema y el margen del pie de página. Medido en pantalla: con menos,
+  // la página entera se quedaba con una barra de desplazamiento de 30px.
+  private readonly MARGEN_ABAJO = 50;
+  private readonly MARGEN_PAGINACION = 88;
+  private ajusteAltoTimeout: any = null;
+
   // ---------- Historial (grilla con paginación en servidor) ----------
   public gestiones: GestionModel[] = [];
   public gridApi!: GridApi;
@@ -410,6 +418,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   onGridReadyClientes(params: GridReadyEvent): void {
     this.gridApiClientes = params.api;
     this._appAgGridService.ajustarTamanoGrid(this.gridApiClientes);
+    this.replantearAltos();
   }
 
   /** ↑ / ↓ recorren la grilla; el Enter de abajo es el que abre el cliente. */
@@ -451,7 +460,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.seleccionado, (c: any) => this.seleccionarCliente(c));
   }
 
-  limpiarCliente(): void {
+  /**
+   * Suelta el cliente que se estaba mirando.
+   *
+   * @param irALaAgenda true (lo que hace la opción «Quitar el cliente» del
+   *        menú) lleva además a «Lo que toca hacer»; false se queda en esta
+   *        pestaña, que es lo que conviene cuando se limpia el buscador: la
+   *        columna derecha pasa a enseñar el tablero.
+   */
+  limpiarCliente(irALaAgenda: boolean = true): void {
     this.cliente = null;
     this.resumen = null;
     this.contactos = [];
@@ -461,8 +478,22 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.totalRegistros = 0;
     this.gridApi?.setRowData([]);
     this.gridApiClientes?.redrawRows();
-    this.vista = 'agenda';
-    this.cargarAgenda();
+
+    if (irALaAgenda) {
+      this.vista = 'agenda';
+      this.cargarAgenda();
+    }
+    this.replantearAltos(200);
+  }
+
+  /**
+   * La × del buscador de clientes: el listado vuelve a estar completo (de eso
+   * se encarga la búsqueda vacía que emite el propio campo) y, ya puestos, se
+   * suelta el cliente elegido —que es lo que pide quien borra la búsqueda para
+   * empezar con otro—.
+   */
+  alLimpiarBusquedaClientes(): void {
+    if (this.cliente) { this.limpiarCliente(false); }
   }
 
   // ================================================================
@@ -569,6 +600,66 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   // ================================================================
+  // EL ALTO DE LA PANTALLA
+  // ================================================================
+
+  /**
+   * Da a cada grilla el alto que queda hasta el borde de la ventana, igual
+   * que allUsers: con un alto fijo, en un portátil sobra media pantalla y en
+   * un monitor grande se desperdicia la mitad.
+   *
+   * Se llama al arrancar, al cambiar de pestaña o de vista, al plegar algo y
+   * cuando cambia el tamaño de la ventana.
+   */
+  ajustarAltos(): void {
+    const host = this.host.nativeElement;
+
+    // Las dos columnas: llenan hasta abajo y el scroll va por dentro
+    const cuerpo = host.querySelector('.gc-cuerpo') as HTMLElement | null;
+    if (cuerpo) {
+      const alto = window.innerHeight - cuerpo.getBoundingClientRect().top - this.MARGEN_ABAJO;
+      cuerpo.style.height = Math.max(alto, 360) + 'px';
+    }
+
+    // La grilla de la agenda deja sitio para su paginación
+    const agenda = host.querySelector('.agenda-grilla') as HTMLElement | null;
+    if (agenda) {
+      const alto = window.innerHeight - agenda.getBoundingClientRect().top - this.MARGEN_PAGINACION;
+      agenda.style.height = Math.max(alto, 240) + 'px';
+    }
+
+    // La del historial va DENTRO del panel de la derecha, que ya está
+    // ajustado a la ventana y tiene su propio scroll: se mide contra el panel
+    // y no contra la ventana, o se le daba el mínimo y se salía por abajo.
+    const panel = host.querySelector('.gc-panel__contenido') as HTMLElement | null;
+    const historial = host.querySelector('.gestion-grilla') as HTMLElement | null;
+    if (panel && historial) {
+      // Cuánto hay por encima de la grilla dentro del panel (la barra, las
+      // tarjetas, los contadores y las pestañas), contando lo ya desplazado
+      const arriba = historial.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
+      const alto = panel.clientHeight - arriba - this.MARGEN_PAGINACION;
+      historial.style.height = Math.max(alto, 220) + 'px';
+    }
+
+    // Ya con el ancho definitivo, las columnas se reparten
+    setTimeout(() => {
+      this.gridApi?.sizeColumnsToFit();
+      this.gridApiAgenda?.sizeColumnsToFit();
+      this.gridApiClientes?.sizeColumnsToFit();
+    }, 80);
+  }
+
+  /** Lo llaman los sitios donde algo aparece o desaparece: se mide después de pintar. */
+  private replantearAltos(espera: number = 120): void {
+    setTimeout(() => this.ajustarAltos(), espera);
+  }
+
+  /** Lo mismo, desde la plantilla: al cambiar de pestaña cambia lo que se ve. */
+  replantear(): void {
+    this.replantearAltos(160);
+  }
+
+  // ================================================================
   // MENÚ DEL CLIC DERECHO
   // ================================================================
 
@@ -597,9 +688,20 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   @HostListener('document:click')
   @HostListener('document:keydown.escape')
-  @HostListener('window:resize')
   @HostListener('window:scroll')
   onCerrarMenuGlobal(): void { this.cerrarMenu(); }
+
+  /**
+   * Al cambiar el tamaño de la ventana se cierra el menú y se vuelve a
+   * repartir el alto. Con retardo: redimensionar dispara decenas de eventos
+   * y medir en todos ellos hace que la pantalla dé tirones.
+   */
+  @HostListener('window:resize')
+  onRedimensionar(): void {
+    this.cerrarMenu();
+    if (this.ajusteAltoTimeout) { clearTimeout(this.ajusteAltoTimeout); }
+    this.ajusteAltoTimeout = setTimeout(() => this.ajustarAltos(), 150);
+  }
 
   // ================================================================
   // CARGAR TODO LO DEL CLIENTE
@@ -607,6 +709,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   async seleccionarCliente(cliente: any): Promise<void> {
     if (!cliente?.id) { return; }
+    this.replantearAltos(200);
     this.vista = 'cliente';
     this.pestana = 'historial';
     this.hitosVisible = true;
@@ -829,6 +932,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   onGridReadyAgenda(params: GridReadyEvent): void {
     this.gridApiAgenda = params.api;
     this._appAgGridService.ajustarTamanoGrid(this.gridApiAgenda);
+    this.replantearAltos();
   }
 
   navegarConTecladoAgenda = this._appAgGridService.navegacionConFlechas();
@@ -1117,6 +1221,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.gridApi = params.api;
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
     this.gridApi.setRowData(this.gestiones);
+    this.replantearAltos();
   }
 
   navegarConTeclado = this._appAgGridService.navegacionConFlechas();
@@ -1270,6 +1375,24 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   iconoTipo = iconoDeTipo;
   claseResultado = claseDeResultado;
   nombreTipo = (tipo: string) => nombreDe(TIPOS_GESTION, tipo);
+  nombreEstado = (estado: string) => nombreDe(ESTADOS_GESTION, estado);
+
+  /** El icono de cada estado, para el menú del filtro. */
+  iconoEstado(estado?: string | null): string {
+    switch (estado) {
+      case 'PENDIENTE': return 'fa-clock';
+      case 'REALIZADA': return 'fa-circle-check';
+      case 'CANCELADA': return 'fa-ban';
+      default:          return 'fa-flag';
+    }
+  }
+
+  /** Quita los dos filtros de golpe y recarga. */
+  limpiarFiltrosHistorial(): void {
+    this.filtroTipo = null;
+    this.filtroEstado = null;
+    this.cargarGestiones(1);
+  }
   nombreResultado = (r: string) => nombreDe(RESULTADOS_GESTION, r);
 
   /** «tel:» y «mailto:» para llamar o escribir desde el navegador o el móvil. */
@@ -1277,8 +1400,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   alternarDatos(): void {
     this.datosVisibles = !this.datosVisibles;
     try { localStorage.setItem('miCRM3.gestion.datosCliente', this.datosVisibles ? '1' : '0'); } catch { /* sin storage */ }
-    // Al aparecer o desaparecer los paneles, la grilla del historial cambia de alto
-    setTimeout(() => this.gridApi?.sizeColumnsToFit(), 250);
+    // Al aparecer o desaparecer las tarjetas, el historial gana o pierde alto
+    this.replantearAltos(250);
   }
 
   private leerDatosVisibles(): boolean {

@@ -35,7 +35,7 @@
         <button type="button" class="nav-link" role="tab"
                 [class.active]="vista === 'agenda'"
                 [attr.aria-selected]="vista === 'agenda'"
-                (click)="vista = 'agenda'">
+                (click)="vista = 'agenda'; replantear()">
           <i class="fa fa-calendar-day"></i>
           <span class="gestion-vistas__texto">Lo que toca hacer</span>
           @if (agendaMeta.vencidas) {
@@ -49,7 +49,7 @@
         <button type="button" class="nav-link" role="tab"
                 [class.active]="vista === 'cliente'"
                 [attr.aria-selected]="vista === 'cliente'"
-                (click)="vista = 'cliente'">
+                (click)="vista = 'cliente'; replantear()">
           <i class="fa fa-headset"></i>
           <span class="gestion-vistas__texto">Gestión de clientes</span>
           @if (hayCliente) {
@@ -229,7 +229,8 @@
                 [placeholder]="'Buscar por nombre, identificación o teléfono…'"
                 [iconClass]="'fa fa-search'"
                 [containerClass]="'position-relative w-100'"
-                (buscar)="buscarClientes($event)">
+                (buscar)="buscarClientes($event)"
+                (limpiado)="alLimpiarBusquedaClientes()">
               </app-campoBusquedaPaginacion>
             </div>
 
@@ -361,9 +362,13 @@
                   <button type="button" class="btn btn-outline-secondary btn-sm gc-barra__plegar"
                           [title]="datosVisibles ? 'Ocultar los datos del cliente' : 'Mostrar los datos del cliente'"
                           (click)="alternarDatos()">
+
                     <i class="fa fa-fw" [ngClass]="datosVisibles ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                    <span class="gc-barra__plegar-texto">Datos</span>
+                    <span class="gc-barra__plegar-texto">{{ datosVisibles ? 'Ocultar datos' : 'Mostrar datos' }}</span>
+                    
                   </button>
+
+
                 </div>
               </div>
 
@@ -563,10 +568,10 @@
                ámbar si no queda nada agendado (que es lo que enfría una
                cartera) y azul cuando todo está al día. Se puede cerrar, y
                vuelve al cambiar de cliente. -->
-          @if (resumen && hitosVisible) {
+          <!-- @if (resumen && hitosVisible) {
             <div class="alert alert-dismissible fade show gestion-aviso" [ngClass]="claseAviso" role="status">
 
-              <div class="gestion-hitos">
+              <!-- <div class="gestion-hitos">
                 <span class="gestion-hito">
                   <i class="fa fa-clock-rotate-left fa-fw"></i>
                   <span class="gestion-hito__etiqueta">Última</span>
@@ -594,10 +599,10 @@
                     <i class="gestion-hito__vacio">nada agendado</i>
                   }
                 </span>
-              </div>
+              </div> -->
 
               <!-- Lo que toca hacer con este aviso, sin salir de él -->
-              <div class="gestion-aviso__acciones">
+              <!-- <div class="gestion-aviso__acciones">
                 @if (resumen.proxima) {
                   <button type="button" class="btn btn-xs btn-white"
                           [title]="'Cerrar «' + resumen.proxima.asunto + '»'"
@@ -612,11 +617,11 @@
                     <i class="fa fa-calendar-plus me-1"></i>Programar
                   </button>
                 }
-              </div>
+              </div> -->
 
-              <button type="button" class="btn-close" aria-label="Ocultar el aviso" (click)="hitosVisible = false"></button>
+              <!-- <button type="button" class="btn-close" aria-label="Ocultar el aviso" (click)="hitosVisible = false"></button>
             </div>
-          }
+          } -->
 
           <!-- Contadores -->
           @if (resumen) {
@@ -653,7 +658,7 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'historial'"
                       [attr.aria-selected]="pestana === 'historial'"
-                      (click)="pestana = 'historial'">
+                      (click)="pestana = 'historial'; replantear()">
                 <i class="fa fa-list-ul"></i>
                 <span class="gestion-tabs__texto">Historial</span>
               </button>
@@ -662,7 +667,7 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'pendientes'"
                       [attr.aria-selected]="pestana === 'pendientes'"
-                      (click)="pestana = 'pendientes'">
+                      (click)="pestana = 'pendientes'; replantear()">
                 <i class="fa fa-clock"></i>
                 <span class="gestion-tabs__texto">Pendientes</span>
                 @if (pendientes.length) { <span class="badge bg-warning fs-10px">{{ pendientes.length }}</span> }
@@ -672,7 +677,7 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'contactos'"
                       [attr.aria-selected]="pestana === 'contactos'"
-                      (click)="pestana = 'contactos'">
+                      (click)="pestana = 'contactos'; replantear()">
                 <i class="fa fa-address-book"></i>
                 <span class="gestion-tabs__texto">Contactos</span>
                 @if (contactos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ contactos.length }}</span> }
@@ -682,7 +687,7 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'cartera'"
                       [attr.aria-selected]="pestana === 'cartera'"
-                      (click)="pestana = 'cartera'">
+                      (click)="pestana = 'cartera'; replantear()">
                 <i class="fa fa-arrow-right-arrow-left"></i>
                 <span class="gestion-tabs__texto">Cartera</span>
                 @if (asignaciones.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ asignaciones.length }}</span> }
@@ -694,24 +699,74 @@
 
             <!-- ===== HISTORIAL ===== -->
             @if (pestana === 'historial') {
+              <!-- Filtros en dos menús: las dos filas de botones (once en total)
+                   se comían el alto que necesita la grilla. El botón enseña lo
+                   que está filtrando, así que no hace falta mirar la lista. -->
               <div class="gestion-filtros">
-                <span class="gestion-filtros__etiqueta">Tipo</span>
-                <button type="button" class="btn btn-xs" [class.btn-primary]="!filtroTipo" [class.btn-white]="filtroTipo"
-                        (click)="cambiarFiltro('tipo', null)">Todos</button>
-                @for (t of tipos; track t.id) {
-                  <button type="button" class="btn btn-xs" [class.btn-primary]="filtroTipo === t.id" [class.btn-white]="filtroTipo !== t.id"
-                          (click)="cambiarFiltro('tipo', t.id)">
-                    <i class="fa {{ t.icono }} me-1"></i>{{ t.name }}
+
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroTipo"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por tipo de gestión">
+                    <i class="fa fa-fw" [ngClass]="filtroTipo ? iconoTipo(filtroTipo) : 'fa-tag'"></i>
+                    <span>{{ filtroTipo ? nombreTipo(filtroTipo) : 'Todos los tipos' }}</span>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroTipo"
+                              (click)="cambiarFiltro('tipo', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Todos los tipos
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (t of tipos; track t.id) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroTipo === t.id"
+                                (click)="cambiarFiltro('tipo', t.id)">
+                          <i class="fa {{ t.icono }} fa-fw me-1"></i>{{ t.name }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroEstado"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por estado">
+                    <i class="fa fa-fw" [ngClass]="filtroEstado ? 'fa-circle-check' : 'fa-flag'"></i>
+                    <span>{{ filtroEstado ? nombreEstado(filtroEstado) : 'Todos los estados' }}</span>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroEstado"
+                              (click)="cambiarFiltro('estado', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Todos los estados
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (e of estados; track e.id) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroEstado === e.id"
+                                (click)="cambiarFiltro('estado', e.id)">
+                          <i class="fa fa-fw me-1" [ngClass]="iconoEstado(e.id)"></i>{{ e.name }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                <!-- Sólo aparece cuando hay algo que quitar -->
+                @if (filtroTipo || filtroEstado) {
+                  <button type="button" class="btn btn-xs btn-white gestion-filtro__limpiar"
+                          title="Quitar los filtros" (click)="limpiarFiltrosHistorial()">
+                    <i class="fa fa-xmark me-1"></i>Quitar filtros
                   </button>
                 }
-                <span class="gestion-filtros__separador"></span>
-                <span class="gestion-filtros__etiqueta">Estado</span>
-                <button type="button" class="btn btn-xs" [class.btn-primary]="!filtroEstado" [class.btn-white]="filtroEstado"
-                        (click)="cambiarFiltro('estado', null)">Todos</button>
-                @for (e of estados; track e.id) {
-                  <button type="button" class="btn btn-xs" [class.btn-primary]="filtroEstado === e.id" [class.btn-white]="filtroEstado !== e.id"
-                          (click)="cambiarFiltro('estado', e.id)">{{ e.name }}</button>
-                }
+
+                <span class="gestion-filtros__cuenta">{{ totalRegistros }} gestion{{ totalRegistros === 1 ? '' : 'es' }}</span>
               </div>
 
               <ag-grid-angular
@@ -878,7 +933,7 @@
                    la mitad de la pantalla está libre, se aprovecha para ver
                    cómo va la cartera y cómo va el día; al elegir un cliente
                    este bloque desaparece y no vuelve a consultarse. -->
-              <app-resumen-ventas (irALaAgenda)="vista = 'agenda'"></app-resumen-ventas>
+              <app-resumen-ventas (irALaAgenda)="vista = 'agenda'; replantear()"></app-resumen-ventas>
 
               <p class="gestion-pista">
                 <i class="fa fa-arrow-left me-1"></i>
