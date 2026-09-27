@@ -17,6 +17,7 @@ import { AvisoCampanaService } from '../../modules/config/services/avisoCampana.
 import { MisNotificacionesComponent } from '../../modules/config/pages/notificaciones/misNotificaciones/misNotificaciones.component';
 import { destinoDeNotificacion, ESTILOS_NOTIFICACION, NotificacionModel, TipoNotificacion } from '../../modules/config/interfaces/notificacionModel';
 import { PresenciaService } from '../../modules/seguridad/services/presencia.service';
+import { RecordatorioGestionesService } from '../../modules/ventas/services/recordatorioGestiones.service';
 import {
 	ESTADOS_ELEGIBLES, EstadoElegido, estiloDePresencia, PresenciaModel,
 } from '../../modules/seguridad/interfaces/presenciaModel';
@@ -83,6 +84,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 		private _modal: NgbModal,
 		private _router: Router,
 		private _presencia: PresenciaService,
+		private _recordatorios: RecordatorioGestionesService,
 		private _ngZone: NgZone
 		// fin lpaa
 	) {}
@@ -117,6 +119,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
 		// Mi estado, y el latido que dice que sigo aquí
 		this._presencia.mia$.pipe(takeUntil(this.unsubscribe$)).subscribe(p => this.presencia = p);
 		this._presencia.empezar();
+
+		// Las gestiones programadas: cuando llega su hora sale el recordatorio.
+		// Va aquí y no en la pantalla de ventas porque si no, sólo avisaría a
+		// quien ya la tuviera abierta, que es el que menos lo necesita.
+		if (this.puedeGestionarClientes()) { this._recordatorios.empezar(); }
 
 		this.arrancarReloj();
 
@@ -293,6 +300,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 	ngOnDestroy() {
 		// inicio lpaa
 		this.pararReloj();
+		this._recordatorios.detener();
 		this._presencia.parar();
 		this._boletinPush.parar();
 		this._campana.parar();
@@ -304,6 +312,16 @@ export class HeaderComponent implements OnInit, OnDestroy {
 	}
 
 
+
+	/** ¿El perfil tiene la pantalla de gestión de clientes? Si no, no hay nada que recordarle. */
+	private puedeGestionarClientes(): boolean {
+		try {
+			const accesos = JSON.parse(localStorage.getItem('accesos') ?? '[]');
+			return Array.isArray(accesos) && accesos.some((a: any) => a?.url === 'ventas/gestionClientes');
+		} catch {
+			return false;
+		}
+	}
 
 	fun_salir() {
 		Swal.fire({

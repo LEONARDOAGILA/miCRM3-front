@@ -1,0 +1,176 @@
+/* ============================================================
+   RECORDATORIO DE GESTIÓN
+
+   Sale encima de lo que sea que esté haciendo el usuario, así que
+   se distingue de los demás modales: cabecera ámbar y el aviso
+   arriba del todo.
+   ============================================================ */
+
+.recordatorio-header {
+  background-color: var(--bs-warning, #ffc107);
+  color: #212529;
+}
+
+.recordatorio-header .modal-title {
+  font-size: .9375rem;
+  font-weight: 600;
+}
+
+.recordatorio-header .btn-close-white {
+  filter: none;          /* sobre ámbar la × blanca no se ve */
+}
+
+.recordatorio-body {
+  padding: 1rem;
+}
+
+/* ---------- Qué hay que hacer ---------- */
+.recordatorio-titulo {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  margin-bottom: .625rem;
+}
+
+.recordatorio-titulo__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+
+  background-color: var(--bs-warning, #ffc107);
+  color: #212529;
+}
+
+.recordatorio-titulo__texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.recordatorio-titulo__asunto {
+  font-weight: 600;
+  font-size: .875rem;
+  line-height: 1.25;
+}
+
+.recordatorio-titulo__cliente {
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Datos sueltos ---------- */
+.recordatorio-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem .875rem;
+
+  padding: .5rem .625rem;
+  border-radius: .5rem;
+
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.recordatorio-nota {
+  margin: .5rem 0 0;
+  font-size: .8125rem;
+  font-style: italic;
+  color: var(--bs-body-color, #495057);
+}
+
+/* ---------- Llamar ---------- */
+.recordatorio-llamar {
+  display: flex;
+  gap: .375rem;
+  margin-top: .75rem;
+}
+
+.recordatorio-llamar .btn {
+  font-size: .8125rem;
+}
+
+.recordatorio-llamar .btn-success {
+  flex: 1 1 auto;
+}
+
+/* ---------- Cierre rápido ---------- */
+.recordatorio-cierre {
+  margin-top: .875rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.recordatorio-etiqueta {
+  margin-bottom: .125rem;
+  font-size: .6875rem;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.recordatorio-ayuda {
+  margin: .5rem 0 0;
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Pie ---------- */
+.recordatorio-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.recordatorio-posponer .btn {
+  font-size: .75rem;
+}
+
+.recordatorio-posponer__texto {
+  opacity: 1;
+  pointer-events: none;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.recordatorio-footer__derecha {
+  display: flex;
+  gap: .375rem;
+  margin-left: auto;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 575.98px) {
+  .recordatorio-footer,
+  .recordatorio-footer__derecha,
+  .recordatorio-posponer {
+    width: 100%;
+  }
+
+  .recordatorio-posponer .btn {
+    flex: 1 1 0;
+  }
+
+  .recordatorio-footer__derecha {
+    margin-left: 0;
+  }
+
+  .recordatorio-footer__derecha .btn {
+    flex: 1 1 0;
+  }
+}
+
+/* ---------- Modo oscuro ---------- */
+[data-bs-theme="dark"] .recordatorio-datos {
+  background-color: var(--bs-component-bg, #1e293b);
+}

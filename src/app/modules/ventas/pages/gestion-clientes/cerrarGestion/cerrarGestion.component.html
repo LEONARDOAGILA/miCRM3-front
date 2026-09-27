@@ -1,0 +1,167 @@
+<!-- ============================================================
+     CERRAR GESTIÓN (modal)
+
+     Se marca realizada con su resultado y, en el mismo sitio, se
+     deja agendado el seguimiento. Los resultados que piden
+     continuar («Volver a llamar», «No contesta»…) lo marcan solos.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Guardando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<app-modal-header title="Cerrar gestión" (onClose)="modal.dismiss()"></app-modal-header>
+
+<div class="modal-body cerrar-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- Qué se cierra -->
+    <div class="cerrar-cabecera">
+      <span class="cerrar-cabecera__icono"><i class="fa fa-clock"></i></span>
+      <div class="cerrar-cabecera__texto">
+        <span class="cerrar-cabecera__asunto">{{ gestion?.asunto }}</span>
+        <span class="cerrar-cabecera__dato">
+          <i class="fa fa-user fa-fw"></i>{{ gestion?.cliente_nombre }}
+          @if (gestion?.fecha_programada) {
+            <span class="ms-2"><i class="fa fa-calendar fa-fw"></i>{{ gestion?.fecha_programada }}</span>
+          }
+          @if (gestion?.vencida) {
+            <span class="badge bg-danger fs-10px ms-2">Vencida</span>
+          }
+        </span>
+      </div>
+    </div>
+
+    <panel
+      headerClass="bg-gray-800"
+      title="Cómo terminó"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="check"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-2">
+            <div class="col-12 col-md-7">
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="resultado"
+                  [items]="resultados"
+                  [label]="'Resultado'"
+                  bindLabel="name"
+                  bindValue="id">
+                </app-combo>
+              </div>
+            </div>
+            <div class="col-12 col-md-5">
+              <app-campoNumeroEntero
+                [control]="form.controls['duracion_minutos']"
+                label="Duración (min)"
+                placeholder="0"
+                [maxLength]="4">
+              </app-campoNumeroEntero>
+            </div>
+            <div class="col-12">
+              <app-campoTextoArea
+                [control]="form.controls['nota']"
+                label="Qué se habló"
+                placeholder="Lo que dijo el cliente, acuerdos, próximos pasos…"
+                [maxLength]="4000"
+                [alto]="100">
+              </app-campoTextoArea>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- El seguimiento ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Siguiente gestión"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="calendar"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+
+          <div class="cerrar-seguimiento" [class.is-on]="quiereSeguimiento">
+            <span class="cerrar-seguimiento__icono"><i class="fa-solid fa-calendar-plus"></i></span>
+            <div class="cerrar-seguimiento__texto">
+              <span class="cerrar-seguimiento__label">Programar el seguimiento</span>
+              <span class="cerrar-seguimiento__hint">
+                {{ quiereSeguimiento
+                   ? 'Queda en la agenda enganchado a esta gestión'
+                   : 'El cliente se queda sin próxima acción' }}
+              </span>
+            </div>
+            <app-checkbox class="cerrar-seguimiento__switch"
+              [control]="ctrlProgramar"
+              [label]="quiereSeguimiento ? 'Sí' : 'No'"
+              [id]="'ck-programar-seguimiento'">
+            </app-checkbox>
+          </div>
+
+          @if (quiereSeguimiento) {
+            <div class="row g-2">
+              <div class="col-12 col-md-5">
+                <app-campoTexto
+                  [control]="form.controls['sig_fecha']"
+                  label="Fecha y hora"
+                  type="datetime-local"
+                  [limpiable]="false">
+                </app-campoTexto>
+              </div>
+              <div class="col-6 col-md-4">
+                <div class="campo-combo">
+                  <app-combo
+                    formControlName="sig_tipo"
+                    [items]="tipos"
+                    [label]="'Tipo'"
+                    bindLabel="name"
+                    bindValue="id">
+                  </app-combo>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="campo-combo">
+                  <app-combo
+                    formControlName="sig_prioridad"
+                    [items]="prioridades"
+                    [label]="'Prioridad'"
+                    bindLabel="name"
+                    bindValue="id">
+                  </app-combo>
+                </div>
+              </div>
+              <div class="col-12">
+                <app-campoTexto
+                  [control]="form.controls['sig_asunto']"
+                  label="Asunto"
+                  placeholder="Qué hay que hacer la próxima vez"
+                  [maxLength]="200"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+              </div>
+            </div>
+          }
+
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<app-modal-footer
+  [isDisabled]="!guardando"
+  [textoCerrar]="'Salir'"
+  (onClose)="modal.dismiss()"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

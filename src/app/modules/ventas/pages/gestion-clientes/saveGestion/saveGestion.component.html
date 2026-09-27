@@ -1,0 +1,215 @@
+<!-- ============================================================
+     REGISTRAR / PROGRAMAR GESTIÓN (modal)
+
+     El mismo formulario para las tres cosas: registrar lo que ya se
+     hizo, dejar agendado lo siguiente o corregir una gestión. El
+     interruptor de arriba decide cuál de las dos fechas se pide.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Guardando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<app-modal-header [title]="titulo" (onClose)="modal.dismiss()"></app-modal-header>
+
+<div class="modal-body gestion-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- ---------- Con quién ---------- -->
+    <div class="gestion-cliente">
+      <span class="gestion-cliente__icono">
+        <i class="fa" [ngClass]="cliente?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user'"></i>
+      </span>
+      <div class="gestion-cliente__texto">
+        <span class="gestion-cliente__nombre">{{ cliente?.nombre_completo }}</span>
+        <span class="gestion-cliente__dato">{{ cliente?.numero_identificacion }}</span>
+      </div>
+    </div>
+
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos de la gestión"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="phone"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+
+          <!-- Realizada o programada -->
+          <div class="gestion-estado" [class.is-programada]="esProgramada">
+            <span class="gestion-estado__icono">
+              <i class="fa-solid" [ngClass]="esProgramada ? 'fa-calendar-plus' : 'fa-check'"></i>
+            </span>
+            <div class="gestion-estado__texto">
+              <span class="gestion-estado__label">{{ esProgramada ? 'Gestión programada' : 'Gestión realizada' }}</span>
+              <span class="gestion-estado__hint">
+                {{ esProgramada
+                   ? 'Queda pendiente en la agenda hasta que la cierres'
+                   : 'Se guarda en el historial con su resultado' }}
+              </span>
+            </div>
+            <div class="gestion-estado__botones btn-group btn-group-sm" role="group">
+              <button type="button" class="btn" [class.btn-primary]="!esProgramada" [class.btn-white]="esProgramada"
+                      (click)="ctrlEstado.setValue('REALIZADA')">
+                <i class="fa fa-check me-1"></i>Ya la hice
+              </button>
+              <button type="button" class="btn" [class.btn-primary]="esProgramada" [class.btn-white]="!esProgramada"
+                      (click)="ctrlEstado.setValue('PENDIENTE')">
+                <i class="fa fa-clock me-1"></i>Programarla
+              </button>
+            </div>
+          </div>
+
+          <div class="row g-2">
+
+            <div class="col-12 col-md-4">
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="tipo"
+                  [items]="tipos"
+                  [label]="'Tipo'"
+                  bindLabel="name"
+                  bindValue="id">
+                </app-combo>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-8">
+              <app-campoTexto
+                [control]="form.controls['asunto']"
+                label="Asunto"
+                placeholder="Ej: Llamada de seguimiento de la cotización"
+                [maxLength]="200"
+                [minLength]="3"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+            <!-- La fecha que toca según el estado -->
+            <div class="col-12 col-md-4">
+              @if (esProgramada) {
+                <app-campoTexto
+                  [control]="form.controls['fecha_programada']"
+                  label="Fecha y hora"
+                  type="datetime-local"
+                  [limpiable]="false">
+                </app-campoTexto>
+              } @else {
+                <app-campoTexto
+                  [control]="form.controls['fecha_realizada']"
+                  label="Fecha y hora"
+                  type="datetime-local"
+                  [limpiable]="false">
+                </app-campoTexto>
+              }
+            </div>
+
+            <div class="col-6 col-md-4">
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="prioridad"
+                  [items]="prioridades"
+                  [label]="'Prioridad'"
+                  bindLabel="name"
+                  bindValue="id">
+                </app-combo>
+              </div>
+            </div>
+
+            <div class="col-6 col-md-4">
+              <app-campoNumeroEntero
+                [control]="form.controls['duracion_minutos']"
+                label="Duración (min)"
+                placeholder="0"
+                [maxLength]="4">
+              </app-campoNumeroEntero>
+            </div>
+
+            <!-- Sólo cuando ya se hizo -->
+            @if (!esProgramada) {
+              <div class="col-12 col-md-6">
+                <div class="campo-combo">
+                  <app-combo
+                    formControlName="resultado"
+                    [items]="resultados"
+                    [label]="'¿Cómo terminó?'"
+                    bindLabel="name"
+                    bindValue="id">
+                  </app-combo>
+                </div>
+              </div>
+            }
+
+            <div class="col-12" [class.col-md-6]="!esProgramada">
+              <app-campoTexto
+                [control]="form.controls['telefono']"
+                label="Teléfono"
+                placeholder="Al que se llama"
+                [maxLength]="20"
+                icono="fa-phone">
+              </app-campoTexto>
+              @if (telefonos.length) {
+                <div class="gestion-telefonos">
+                  @for (t of telefonos; track t.id) {
+                    <button type="button" class="btn btn-xs btn-white" (click)="form.controls['telefono'].setValue(t.id)">
+                      <i class="fa fa-phone me-1"></i>{{ t.name }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (contactosCombo.length) {
+              <div class="col-12">
+                <div class="campo-combo">
+                  <app-combo
+                    formControlName="contacto_id"
+                    [items]="contactosCombo"
+                    [label]="'Persona de contacto (opcional)'"
+                    bindLabel="name"
+                    bindValue="id">
+                  </app-combo>
+                </div>
+              </div>
+            }
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <panel
+      headerClass="bg-gray-800"
+      title="Notas"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="editar"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <app-campoTextoArea
+            [control]="form.controls['nota']"
+            label="Qué se habló"
+            placeholder="Lo que dijo el cliente, acuerdos, próximos pasos…"
+            [maxLength]="4000"
+            [alto]="110">
+          </app-campoTextoArea>
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<app-modal-footer
+  [isDisabled]="!guardando"
+  [textoCerrar]="'Salir'"
+  (onClose)="modal.dismiss()"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

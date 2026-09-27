@@ -1,0 +1,603 @@
+<!-- ============================================================
+     GESTIÓN DE CLIENTES
+
+     1. Miga de pan
+     2. <panel> del tema, partido en dos pestañas:
+        2a. «Lo que toca hacer»: todo lo pendiente del usuario, de
+            todos sus clientes, con rango de fechas
+        2b. «Gestión de clientes»: el buscador y, con un cliente
+            elegido, su ficha a la izquierda y sus pestañas a la derecha
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Ventas</a></li>
+  <li class="breadcrumb-item active">Gestión de clientes</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       (panelReloaded)="vista === 'cliente' && cliente ? seleccionarCliente(cliente) : cargarAgenda()"
+       [closeRoute]="'/ventas'"
+       icono="phone">
+
+  <div class="content-container1 gestion-contenido">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <!-- ---------- PESTAÑAS PRINCIPALES ---------- -->
+    <ul class="nav nav-tabs gestion-vistas" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button type="button" class="nav-link" [class.active]="vista === 'agenda'" (click)="vista = 'agenda'">
+          <i class="fa fa-calendar-day me-1"></i>Lo que toca hacer
+          @if (agendaMeta.vencidas) {
+            <span class="badge bg-danger fs-10px ms-1">{{ agendaMeta.vencidas }}</span>
+          } @else if (agendaMeta.total) {
+            <span class="badge bg-warning fs-10px ms-1">{{ agendaMeta.total }}</span>
+          }
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button type="button" class="nav-link" [class.active]="vista === 'cliente'" (click)="vista = 'cliente'">
+          <i class="fa fa-headset me-1"></i>Gestión de clientes
+          @if (hayCliente) {
+            <span class="gestion-vistas__cliente">· {{ cliente?.nombre_completo }}</span>
+          }
+        </button>
+      </li>
+    </ul>
+
+    <!-- ============ 2a. LO QUE TOCA HACER ============ -->
+    @if (vista === 'agenda') {
+      <div class="gestion-agenda">
+
+        <!-- Filtros de fecha -->
+        <div class="agenda-filtros">
+          <div class="agenda-filtros__atajos">
+            <button type="button" class="btn btn-xs" [class.btn-danger]="rango === 'vencidas'" [class.btn-white]="rango !== 'vencidas'"
+                    (click)="elegirRango('vencidas')">
+              <i class="fa fa-triangle-exclamation me-1"></i>Vencidas
+            </button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'hoy'" [class.btn-white]="rango !== 'hoy'"
+                    (click)="elegirRango('hoy')">Hoy</button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'manana'" [class.btn-white]="rango !== 'manana'"
+                    (click)="elegirRango('manana')">Mañana</button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'semana'" [class.btn-white]="rango !== 'semana'"
+                    (click)="elegirRango('semana')">7 días</button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'mes'" [class.btn-white]="rango !== 'mes'"
+                    (click)="elegirRango('mes')">Este mes</button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'todo'" [class.btn-white]="rango !== 'todo'"
+                    (click)="elegirRango('todo')">Todo</button>
+          </div>
+
+          <div class="agenda-filtros__fechas">
+            <label class="agenda-filtros__etiqueta" for="agenda-desde">Desde</label>
+            <input id="agenda-desde" type="date" class="form-control form-control-sm"
+                   [value]="desdeFiltro" (change)="cambiarFecha('desde', $any($event.target).value)" />
+            <label class="agenda-filtros__etiqueta" for="agenda-hasta">Hasta</label>
+            <input id="agenda-hasta" type="date" class="form-control form-control-sm"
+                   [value]="hastaFiltro" (change)="cambiarFecha('hasta', $any($event.target).value)" />
+
+            <button type="button" class="btn btn-sm" [class.btn-primary]="soloMias" [class.btn-white]="!soloMias"
+                    [title]="soloMias ? 'Viendo sólo lo que tú programaste' : 'Viendo lo de todos'"
+                    (click)="alternarMias()">
+              <i class="fa fa-user me-1"></i>{{ soloMias ? 'Sólo lo mío' : 'De todos' }}
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Recargar" (click)="cargarAgenda()">
+              <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoAgenda"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Contadores -->
+        <div class="gestion-resumen agenda-resumen">
+          <div class="gestion-chip">
+            <span class="gestion-chip__valor">{{ agendaMeta.total }}</span>
+            <span class="gestion-chip__texto">pendientes</span>
+          </div>
+          @if (agendaMeta.vencidas) {
+            <div class="gestion-chip gestion-chip--peligro">
+              <span class="gestion-chip__valor">{{ agendaMeta.vencidas }}</span>
+              <span class="gestion-chip__texto">vencidas</span>
+            </div>
+          }
+          <div class="gestion-chip gestion-chip--aviso">
+            <span class="gestion-chip__valor">{{ agendaMeta.hoy }}</span>
+            <span class="gestion-chip__texto">para hoy</span>
+          </div>
+          @if (agendaMeta.total > agendaMeta.mostradas) {
+            <span class="agenda-tope">
+              <i class="fa fa-circle-info me-1"></i>Se muestran las {{ agendaMeta.mostradas }} más próximas
+            </span>
+          }
+        </div>
+
+        <!-- La lista, por días -->
+        @if (agenda.length) {
+          @for (dia of agendaAgrupada; track dia.clave) {
+            <div class="agenda-dia">
+              <h6 class="agenda-dia__titulo" [class.is-vencido]="dia.vencido">
+                <i class="fa fa-fw" [ngClass]="dia.vencido ? 'fa-triangle-exclamation' : 'fa-calendar-day'"></i>
+                {{ dia.titulo }}
+                <span class="badge bg-secondary bg-opacity-25 text-body fs-10px ms-1">{{ dia.items.length }}</span>
+              </h6>
+
+              <div class="gestion-agenda__lista">
+                @for (g of dia.items; track g.id) {
+                  <div class="gestion-tarjeta gestion-tarjeta--fija" [class.is-vencida]="g.vencida">
+                    <span class="agenda-hora" [class.is-vencida]="g.vencida">{{ horaDe(g) }}</span>
+                    <span class="gestion-tarjeta__icono"><i class="fa" [ngClass]="iconoTipo(g.tipo)"></i></span>
+                    <span class="gestion-tarjeta__texto">
+                      <span class="gestion-tarjeta__asunto">{{ g.asunto }}</span>
+                      <span class="gestion-tarjeta__dato">
+                        <i class="fa fa-user fa-fw"></i>{{ g.cliente_nombre }}
+                        @if (g.telefono) {
+                          <a class="ms-2" [href]="enlaceTelefono(g.telefono)"><i class="fa fa-phone fa-fw"></i>{{ g.telefono }}</a>
+                        }
+                        @if (g.empleado_nombre) {
+                          <span class="ms-2"><i class="fa fa-user-tie fa-fw"></i>{{ g.empleado_nombre }}</span>
+                        }
+                      </span>
+                    </span>
+
+                    @if (g.prioridad === 'ALTA') {
+                      <span class="badge bg-warning fs-10px">Alta</span>
+                    }
+
+                    <span class="gestion-tarjeta__botones">
+                      <button type="button" class="btn btn-sm btn-success" title="Cerrar la gestión" (click)="cerrarDesdeAgenda(g)">
+                        <i class="fa fa-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-white" title="Abrir el cliente" (click)="irAlCliente(g)">
+                        <i class="fa fa-arrow-right"></i>
+                      </button>
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="gestion-vacio">
+            <i class="fa fa-mug-hot"></i>
+            <p>
+              No hay nada pendiente
+              @if (rango !== 'todo') { <span>en ese rango de fechas</span> }
+              @if (soloMias) { <span>entre lo que tú programaste</span> }.
+            </p>
+          </div>
+        }
+
+      </div>
+    }
+
+    <!-- ============ 2b. GESTIÓN DE CLIENTES ============ -->
+    @if (vista === 'cliente') {
+
+      <!-- Buscador del cliente -->
+      <div class="gestion-buscador" #cajaBuscador>
+        <div class="gestion-buscador__campo">
+          <i class="fa fa-search gestion-buscador__lupa" aria-hidden="true"></i>
+          <input type="text"
+                 class="form-control"
+                 [value]="termino"
+                 placeholder="Busca el cliente por nombre, identificación, correo o teléfono…"
+                 (input)="onTeclear($any($event.target).value)"
+                 (focus)="sugerencias.length && (sugerenciasAbiertas = true)"
+                 aria-label="Buscar cliente" />
+          @if (buscando) {
+            <i class="fa fa-circle-notch fa-spin gestion-buscador__cargando" aria-hidden="true"></i>
+          }
+        </div>
+
+        <button type="button" class="btn btn-primary gestion-buscador__btn" title="Abrir el listado de clientes"
+                (click)="abrirSelectorClientes()">
+          <i class="fa fa-list"></i>
+          <span class="d-none d-md-inline ms-1">Ver listado</span>
+        </button>
+
+        @if (hayCliente) {
+          <button type="button" class="btn btn-outline-secondary gestion-buscador__btn" title="Quitar el cliente seleccionado"
+                  (click)="limpiarCliente()">
+            <i class="fa fa-xmark"></i>
+            <span class="d-none d-md-inline ms-1">Cambiar</span>
+          </button>
+        }
+
+        <!-- Sugerencias mientras se escribe -->
+        @if (sugerenciasAbiertas && sugerencias.length) {
+          <ul class="gestion-sugerencias" role="listbox">
+            @for (s of sugerencias; track s.id) {
+              <li role="option">
+                <button type="button" class="gestion-sugerencias__item" (click)="seleccionarCliente(s)">
+                  <span class="gestion-sugerencias__icono">
+                    <i class="fa" [ngClass]="s.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user'"></i>
+                  </span>
+                  <span class="gestion-sugerencias__texto">
+                    <span class="gestion-sugerencias__nombre">{{ s.nombre_completo }}</span>
+                    <span class="gestion-sugerencias__dato">
+                      {{ s.numero_identificacion }}
+                      @if (s.celular || s.telefono) { · {{ s.celular || s.telefono }} }
+                      @if (s.vendedor_nombre) { · {{ s.vendedor_nombre }} }
+                    </span>
+                  </span>
+                  <i class="fa fa-arrow-right text-muted" aria-hidden="true"></i>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      @if (!hayCliente) {
+        <div class="gestion-vacio">
+          <i class="fa fa-magnifying-glass"></i>
+          <p>Busca un cliente arriba para ver su ficha, su historial y programarle una gestión.</p>
+        </div>
+      }
+    }
+
+    <!-- El cliente elegido: ficha y pestañas -->
+    @if (vista === 'cliente' && hayCliente) {
+      <div class="row g-3 gestion-cuerpo">
+
+        <!-- ======= FICHA DEL CLIENTE ======= -->
+        <div class="col-lg-4">
+          <div class="gestion-ficha">
+
+            <div class="gestion-ficha__cabecera">
+              <span class="gestion-ficha__avatar">
+                <i class="fa" [ngClass]="cliente?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user'"></i>
+              </span>
+              <div class="gestion-ficha__titulo">
+                <span class="gestion-ficha__nombre">{{ cliente?.nombre_completo }}</span>
+                <span class="gestion-ficha__badges">
+                  <span class="badge fs-10px" [ngClass]="claseEstadoCliente(cliente?.estado)">{{ cliente?.estado }}</span>
+                  <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ cliente?.tipo_cliente }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Contacto directo -->
+            <div class="gestion-ficha__datos">
+              <div class="gestion-dato">
+                <i class="fa fa-id-card fa-fw"></i>
+                <span>{{ cliente?.numero_identificacion }}</span>
+              </div>
+
+              @if (cliente?.celular) {
+                <div class="gestion-dato">
+                  <i class="fa fa-mobile-screen fa-fw"></i>
+                  <a [href]="enlaceTelefono(cliente?.celular)">{{ cliente?.celular }}</a>
+                  <a class="gestion-dato__accion" [href]="enlaceWhatsapp(cliente?.celular)" target="_blank" rel="noopener noreferrer" title="Abrir WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                  </a>
+                </div>
+              }
+              @if (cliente?.telefono) {
+                <div class="gestion-dato">
+                  <i class="fa fa-phone fa-fw"></i>
+                  <a [href]="enlaceTelefono(cliente?.telefono)">{{ cliente?.telefono }}</a>
+                </div>
+              }
+              @if (cliente?.email) {
+                <div class="gestion-dato">
+                  <i class="fa fa-envelope fa-fw"></i>
+                  <a [href]="'mailto:' + cliente?.email" class="text-truncate">{{ cliente?.email }}</a>
+                </div>
+              }
+              @if (cliente?.direccion || cliente?.canton) {
+                <div class="gestion-dato">
+                  <i class="fa fa-location-dot fa-fw"></i>
+                  <span class="text-truncate">{{ cliente?.direccion || cliente?.canton }}</span>
+                  @if (cliente?.link_coordenadas) {
+                    <a class="gestion-dato__accion" [href]="cliente?.link_coordenadas" target="_blank" rel="noopener noreferrer" title="Ver en Google Maps">
+                      <i class="fa fa-map-location-dot"></i>
+                    </a>
+                  }
+                </div>
+              }
+              <div class="gestion-dato">
+                <i class="fa fa-user-tie fa-fw"></i>
+                <span>{{ cliente?.vendedor_nombre || 'Sin vendedor asignado' }}</span>
+              </div>
+              <div class="gestion-dato">
+                <i class="fa fa-credit-card fa-fw"></i>
+                <span>
+                  {{ cliente?.forma_pago }}
+                  @if (cliente?.dias_credito) { · {{ cliente?.dias_credito }} días }
+                </span>
+              </div>
+            </div>
+
+            <!-- Qué hacer con él -->
+            <div class="gestion-ficha__acciones">
+              <button type="button" class="btn btn-primary btn-sm" [disabled]="accesoModel?.crear === false"
+                      title="Registrar una gestión que ya hiciste" (click)="registrarGestion()">
+                <i class="fa fa-phone me-1"></i>Registrar gestión
+              </button>
+              <button type="button" class="btn btn-warning btn-sm" [disabled]="accesoModel?.crear === false"
+                      title="Dejar agendada la siguiente" (click)="programarGestion()">
+                <i class="fa fa-calendar-plus me-1"></i>Programar
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="accesoModel?.editar === false"
+                      title="Pasar el cliente a otro vendedor" (click)="reasignar()">
+                <i class="fa fa-user-check me-1"></i>Reasignar
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" title="Ver la ficha completa" (click)="verFicha()">
+                <i class="fa fa-address-card me-1"></i>Ver ficha
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ======= RESUMEN Y PESTAÑAS ======= -->
+        <div class="col-lg-8">
+
+          <!-- Contadores -->
+          @if (resumen) {
+            <div class="gestion-resumen">
+              <div class="gestion-chip">
+                <span class="gestion-chip__valor">{{ resumen.total }}</span>
+                <span class="gestion-chip__texto">gestiones</span>
+              </div>
+              <div class="gestion-chip gestion-chip--ok">
+                <span class="gestion-chip__valor">{{ resumen.realizadas }}</span>
+                <span class="gestion-chip__texto">realizadas</span>
+              </div>
+              <div class="gestion-chip gestion-chip--aviso">
+                <span class="gestion-chip__valor">{{ resumen.pendientes }}</span>
+                <span class="gestion-chip__texto">pendientes</span>
+              </div>
+              @if (resumen.vencidas) {
+                <div class="gestion-chip gestion-chip--peligro">
+                  <span class="gestion-chip__valor">{{ resumen.vencidas }}</span>
+                  <span class="gestion-chip__texto">vencidas</span>
+                </div>
+              }
+              <div class="gestion-chip">
+                <span class="gestion-chip__valor">{{ resumen.minutos }}</span>
+                <span class="gestion-chip__texto">minutos</span>
+              </div>
+            </div>
+
+            <div class="gestion-hitos">
+              <span class="gestion-hito">
+                <i class="fa fa-clock-rotate-left fa-fw"></i>
+                Última:
+                @if (resumen.ultima) {
+                  <b>{{ resumen.ultima.asunto }}</b> · {{ resumen.ultima.fecha_realizada }}
+                  @if (resumen.ultima.resultado) {
+                    <span class="badge fs-10px ms-1" [ngClass]="claseResultado(resumen.ultima.resultado)">{{ nombreResultado(resumen.ultima.resultado) }}</span>
+                  }
+                } @else { <i class="text-muted">sin gestiones todavía</i> }
+              </span>
+              <span class="gestion-hito">
+                <i class="fa fa-calendar-day fa-fw"></i>
+                Próxima:
+                @if (resumen.proxima) {
+                  <b>{{ resumen.proxima.asunto }}</b> · {{ resumen.proxima.fecha_programada }}
+                  @if (resumen.proxima.vencida) { <span class="badge bg-danger fs-10px ms-1">Vencida</span> }
+                } @else { <i class="text-muted">nada agendado</i> }
+              </span>
+            </div>
+          }
+
+          <!-- Pestañas -->
+          <ul class="nav nav-tabs gestion-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button type="button" class="nav-link" [class.active]="pestana === 'historial'" (click)="pestana = 'historial'">
+                <i class="fa fa-list-ul me-1"></i>Historial
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button type="button" class="nav-link" [class.active]="pestana === 'pendientes'" (click)="pestana = 'pendientes'">
+                <i class="fa fa-clock me-1"></i>Pendientes
+                @if (pendientes.length) { <span class="badge bg-warning fs-10px ms-1">{{ pendientes.length }}</span> }
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button type="button" class="nav-link" [class.active]="pestana === 'contactos'" (click)="pestana = 'contactos'">
+                <i class="fa fa-address-book me-1"></i>Contactos
+                @if (contactos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px ms-1">{{ contactos.length }}</span> }
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button type="button" class="nav-link" [class.active]="pestana === 'cartera'" (click)="pestana = 'cartera'">
+                <i class="fa fa-arrow-right-arrow-left me-1"></i>Cartera
+              </button>
+            </li>
+          </ul>
+
+          <div class="gestion-panel">
+
+            <!-- ===== HISTORIAL ===== -->
+            @if (pestana === 'historial') {
+              <div class="gestion-filtros">
+                <span class="gestion-filtros__etiqueta">Tipo</span>
+                <button type="button" class="btn btn-xs" [class.btn-primary]="!filtroTipo" [class.btn-white]="filtroTipo"
+                        (click)="cambiarFiltro('tipo', null)">Todos</button>
+                @for (t of tipos; track t.id) {
+                  <button type="button" class="btn btn-xs" [class.btn-primary]="filtroTipo === t.id" [class.btn-white]="filtroTipo !== t.id"
+                          (click)="cambiarFiltro('tipo', t.id)">
+                    <i class="fa {{ t.icono }} me-1"></i>{{ t.name }}
+                  </button>
+                }
+                <span class="gestion-filtros__separador"></span>
+                <span class="gestion-filtros__etiqueta">Estado</span>
+                <button type="button" class="btn btn-xs" [class.btn-primary]="!filtroEstado" [class.btn-white]="filtroEstado"
+                        (click)="cambiarFiltro('estado', null)">Todos</button>
+                @for (e of estados; track e.id) {
+                  <button type="button" class="btn btn-xs" [class.btn-primary]="filtroEstado === e.id" [class.btn-white]="filtroEstado !== e.id"
+                          (click)="cambiarFiltro('estado', e.id)">{{ e.name }}</button>
+                }
+              </div>
+
+              <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente gestion-grilla"
+                [rowData]="gestiones"
+                [columnDefs]="columnDefs"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [localeText]="_appAgGridService.localeText"
+                [rowClassRules]="rowClassRules"
+                [rowHeight]="35"
+                [headerHeight]="35"
+                [rowSelection]="'single'"
+                [pagination]="false"
+                [enableCellTextSelection]="true"
+                [overlayNoRowsTemplate]="'<span>Este cliente todavía no tiene gestiones. Usa <b>Registrar gestión</b>.</span>'"
+                [navigateToNextCell]="navegarConTeclado"
+                (gridReady)="onGridReady($event)"
+                (cellClicked)="onCellClicked($event)">
+              </ag-grid-angular>
+
+              <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2">
+                <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+                  <button type="button" class="btn btn-sm btn-white" title="Primera página" (click)="firstPage()" [disabled]="paginaActual === 1">
+                    <i class="fa fa-angle-double-left"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" title="Página anterior" (click)="prevPage()" [disabled]="paginaActual === 1">
+                    <i class="fa fa-chevron-left"></i>
+                  </button>
+                  <span class="btn btn-sm btn-white pagination-page-badge disabled">
+                    Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+                  </span>
+                  <button type="button" class="btn btn-sm btn-white" title="Página siguiente" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+                    <i class="fa fa-chevron-right"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" title="Última página" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
+                    <i class="fa fa-angle-double-right"></i>
+                  </button>
+                </div>
+                <div class="pagination-info small text-muted">
+                  Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> gestiones
+                </div>
+              </div>
+            }
+
+            <!-- ===== PENDIENTES ===== -->
+            @if (pestana === 'pendientes') {
+              @if (pendientes.length) {
+                <div class="gestion-agenda__lista">
+                  @for (g of pendientes; track g.id) {
+                    <div class="gestion-tarjeta gestion-tarjeta--fija" [class.is-vencida]="g.vencida">
+                      <span class="gestion-tarjeta__icono"><i class="fa" [ngClass]="iconoTipo(g.tipo)"></i></span>
+                      <span class="gestion-tarjeta__texto">
+                        <span class="gestion-tarjeta__asunto">{{ g.asunto }}</span>
+                        <span class="gestion-tarjeta__dato">
+                          <i class="fa fa-clock fa-fw"></i>{{ g.fecha_programada }}
+                          <span class="ms-2"><i class="fa fa-flag fa-fw"></i>{{ g.prioridad }}</span>
+                          @if (g.telefono) {
+                            <a class="ms-2" [href]="enlaceTelefono(g.telefono)"><i class="fa fa-phone fa-fw"></i>{{ g.telefono }}</a>
+                          }
+                        </span>
+                      </span>
+                      <span class="gestion-tarjeta__botones">
+                        <button type="button" class="btn btn-sm btn-success" title="Cerrar la gestión" (click)="cerrar(g)">
+                          <i class="fa fa-check"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-white" title="Modificar" (click)="editarGestion(g)">
+                          <i class="fa fa-pen"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-white text-danger" title="Eliminar" (click)="eliminarGestion(g)">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="gestion-vacio">
+                  <i class="fa fa-calendar-check"></i>
+                  <p>No hay nada agendado con este cliente. Usa <b>Programar</b> para dejar la próxima llamada.</p>
+                </div>
+              }
+            }
+
+            <!-- ===== PERSONAS DE CONTACTO ===== -->
+            @if (pestana === 'contactos') {
+              @if (contactos.length) {
+                <div class="gestion-contactos">
+                  @for (c of contactos; track c.id) {
+                    <div class="gestion-contacto" [class.is-inactivo]="c.activo === false">
+                      <span class="gestion-contacto__orden">{{ c.prioridad }}</span>
+                      <div class="gestion-contacto__texto">
+                        <span class="gestion-contacto__nombre">{{ c.nombres }}</span>
+                        <span class="gestion-contacto__dato">
+                          @if (c.cargo) { <span class="me-2">{{ c.cargo }}</span> }
+                          @if (c.email) { <a [href]="'mailto:' + c.email" class="me-2"><i class="fa fa-envelope fa-fw"></i>{{ c.email }}</a> }
+                        </span>
+                      </div>
+                      <span class="gestion-contacto__telefonos">
+                        @if (c.telefono) {
+                          <a class="btn btn-sm btn-white" [href]="enlaceTelefono(c.telefono)" title="Llamar">
+                            <i class="fa fa-phone me-1"></i>{{ c.telefono }}
+                          </a>
+                          <a class="btn btn-sm btn-white" [href]="enlaceWhatsapp(c.telefono)" target="_blank" rel="noopener noreferrer" title="WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                          </a>
+                        }
+                      </span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="gestion-vacio">
+                  <i class="fa fa-address-book"></i>
+                  <p>Este cliente no tiene personas de contacto. Se agregan en su ficha, en <b>Personas de contacto</b>.</p>
+                </div>
+              }
+            }
+
+            <!-- ===== CARTERA ===== -->
+            @if (pestana === 'cartera') {
+              <div class="gestion-cartera">
+                <div class="gestion-cartera__actual">
+                  <i class="fa fa-user-tie fa-fw"></i>
+                  Ahora lo atiende <b>{{ cliente?.vendedor_nombre || 'nadie' }}</b>
+                  <button type="button" class="btn btn-xs btn-white ms-2" [disabled]="accesoModel?.editar === false" (click)="reasignar()">
+                    <i class="fa fa-user-check me-1"></i>Reasignar
+                  </button>
+                </div>
+
+                @if (asignaciones.length) {
+                  <ul class="gestion-linea">
+                    @for (a of asignaciones; track a.id) {
+                      <li class="gestion-linea__item">
+                        <span class="gestion-linea__punto"></span>
+                        <div class="gestion-linea__texto">
+                          <span class="gestion-linea__titulo">
+                            {{ a.empleado_anterior || 'Sin vendedor' }}
+                            <i class="fa fa-arrow-right mx-1 text-muted"></i>
+                            <b>{{ a.empleado_nuevo || 'Sin vendedor' }}</b>
+                          </span>
+                          <span class="gestion-linea__dato">
+                            <i class="fa fa-calendar fa-fw"></i>{{ a.asignado_at }}
+                            @if (a.created_by) { <span class="ms-2"><i class="fa fa-user fa-fw"></i>{{ a.created_by }}</span> }
+                          </span>
+                          @if (a.motivo) { <span class="gestion-linea__motivo">{{ a.motivo }}</span> }
+                        </div>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <div class="gestion-vacio">
+                    <i class="fa fa-arrow-right-arrow-left"></i>
+                    <p>El cliente nunca ha cambiado de vendedor.</p>
+                  </div>
+                }
+              </div>
+            }
+
+          </div>
+        </div>
+      </div>
+    }
+
+  </div>
+</panel>
