@@ -164,8 +164,19 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   /** true mientras se arrastra: quita transiciones y selección de texto. */
   public redimensionando = false;
 
-  /** Menú del clic derecho: dónde está y sobre qué actúa. */
-  public menuCtx = { visible: false, x: 0, y: 0 };
+  /**
+   * Menú del clic derecho: dónde está y sobre qué actúa.
+   *
+   * `objetivo` es la fila que había debajo del puntero cuando se abrió: así
+   * el menú ofrece lo de ESE cliente o ESA gestión, y no sólo lo general.
+   */
+  public menuCtx: {
+    visible: boolean;
+    x: number;
+    y: number;
+    tipo: 'cliente' | 'gestion' | 'contacto' | null;
+    fila: any;
+  } = { visible: false, x: 0, y: 0, tipo: null, fila: null };
 
   /** Lo que se deja libre por debajo al repartir el alto de la pantalla. */
   // Lo de debajo no es sólo la paginación: también el relleno de la tarjeta
@@ -173,6 +184,12 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // la página entera se quedaba con una barra de desplazamiento de 30px.
   private readonly MARGEN_ABAJO = 50;
   private readonly MARGEN_PAGINACION = 88;
+
+  // Con el panel expandido (el botón de la cabecera) la tarjeta llega al
+  // borde de la ventana: ya no hay pie de página que esquivar, así que se
+  // deja sólo lo que ocupan la paginación y el relleno del panel.
+  private readonly MARGEN_ABAJO_EXPANDIDO = 22;
+  private readonly MARGEN_PAGINACION_EXPANDIDO = 56;
   private ajusteAltoTimeout: any = null;
 
   // ---------- Historial (grilla con paginación en servidor) ----------
@@ -216,6 +233,27 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * pulsado: se pedía «hoy» y se acababa viendo todo.
    */
   private ajustandoRango = false;
+
+  // ---------- Las otras tres pestañas, también en grilla ----------
+  /**
+   * Pendientes, Contactos y Cartera eran listas de tarjetas. Se pasan a
+   * grilla por lo mismo que la agenda: se ordena, se filtra por columna y
+   * cada fila ocupa un renglón en vez de tres.
+   */
+  public gridApiPendientes!: GridApi;
+  public gridApiContactos!: GridApi;
+  public gridApiCartera!: GridApi;
+  public columnDefsPendientes: any[] = [];
+  public columnDefsContactos: any[] = [];
+  public columnDefsCartera: any[] = [];
+
+  public rowClassRulesPendientes = {
+    'fila-vencida': (p: RowClassParams) => p.data?.vencida === true,
+  };
+
+  public rowClassRulesContactos = {
+    'fila-excluida': (p: RowClassParams) => p.data?.activo === false,
+  };
 
   public rowClassRulesAgenda = {
     'fila-vencida': (p: RowClassParams) => p.data?.vencida === true,
@@ -278,6 +316,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.initializeGrid();
     this.initializeGridClientes();
     this.initializeGridAgenda();
+    this.initializeGridPendientes();
+    this.initializeGridContactos();
+    this.initializeGridCartera();
     this.cargarAgenda();
     this.cargarClientes(1);
 
@@ -614,17 +655,24 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   ajustarAltos(): void {
     const host = this.host.nativeElement;
 
+    // Expandido o no, el hueco que hay que dejar por debajo cambia. El <panel>
+    // del tema va DENTRO de esta pantalla, así que se busca hacia abajo: con
+    // closest() no se encontraba y el modo expandido nunca se notaba.
+    const expandido = !!host.querySelector('.panel.panel-expand');
+    const margenAbajo = expandido ? this.MARGEN_ABAJO_EXPANDIDO : this.MARGEN_ABAJO;
+    const margenPaginacion = expandido ? this.MARGEN_PAGINACION_EXPANDIDO : this.MARGEN_PAGINACION;
+
     // Las dos columnas: llenan hasta abajo y el scroll va por dentro
     const cuerpo = host.querySelector('.gc-cuerpo') as HTMLElement | null;
     if (cuerpo) {
-      const alto = window.innerHeight - cuerpo.getBoundingClientRect().top - this.MARGEN_ABAJO;
+      const alto = window.innerHeight - cuerpo.getBoundingClientRect().top - margenAbajo;
       cuerpo.style.height = Math.max(alto, 360) + 'px';
     }
 
     // La grilla de la agenda deja sitio para su paginación
     const agenda = host.querySelector('.agenda-grilla') as HTMLElement | null;
     if (agenda) {
-      const alto = window.innerHeight - agenda.getBoundingClientRect().top - this.MARGEN_PAGINACION;
+      const alto = window.innerHeight - agenda.getBoundingClientRect().top - margenPaginacion;
       agenda.style.height = Math.max(alto, 240) + 'px';
     }
 
@@ -637,7 +685,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       // Cuánto hay por encima de la grilla dentro del panel (la barra, las
       // tarjetas, los contadores y las pestañas), contando lo ya desplazado
       const arriba = historial.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
-      const alto = panel.clientHeight - arriba - this.MARGEN_PAGINACION;
+      const alto = panel.clientHeight - arriba - margenPaginacion;
       historial.style.height = Math.max(alto, 220) + 'px';
     }
 
@@ -646,6 +694,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this.gridApi?.sizeColumnsToFit();
       this.gridApiAgenda?.sizeColumnsToFit();
       this.gridApiClientes?.sizeColumnsToFit();
+      this.gridApiPendientes?.sizeColumnsToFit();
+      this.gridApiContactos?.sizeColumnsToFit();
+      this.gridApiCartera?.sizeColumnsToFit();
     }, 80);
   }
 
@@ -665,12 +716,24 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   /** Las mismas acciones que los botones, donde esté el puntero. */
   onContextMenu(ev: MouseEvent): void {
-    // Dentro de un campo o de la grilla manda el menú del navegador / de ag-Grid
+    // En un campo de texto manda el menú del navegador (copiar, pegar…)
     const destino = ev.target as HTMLElement;
-    if (destino.closest('input, textarea, select, .ag-root-wrapper')) { return; }
+    if (destino.closest('input, textarea, select')) { return; }
 
     ev.preventDefault();
-    this.menuCtx = { visible: true, x: ev.clientX, y: ev.clientY };
+
+    // ¿Se pulsó sobre una fila de alguna grilla? Entonces el menú se abre con
+    // las acciones de esa fila. (ag-Grid Community no trae menú propio, así
+    // que aquí no se le quita nada a nadie.)
+    const objetivo = this.filaBajoElPuntero(destino);
+
+    this.menuCtx = {
+      visible: true,
+      x: ev.clientX,
+      y: ev.clientY,
+      tipo: objetivo.tipo,
+      fila: objetivo.fila,
+    };
 
     // Si se sale de la pantalla, se recoloca
     setTimeout(() => {
@@ -682,8 +745,57 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Cierra el menú, pero NO borra la fila señalada: las opciones se escriben
+   * «cerrarMenu(); hacerAlgo(menuCtx.fila)», y si se limpiara aquí la acción
+   * recibiría null. Los datos se sustituyen solos en el siguiente clic.
+   */
   cerrarMenu(): void {
     if (this.menuCtx.visible) { this.menuCtx.visible = false; }
+  }
+
+  /**
+   * De dónde salió el clic derecho: qué grilla y qué fila.
+   *
+   * ag-Grid pinta la misma fila en varios contenedores (el central y los
+   * fijados), pero todos llevan el mismo row-index, así que con eso y la api
+   * de la grilla se recupera el dato.
+   */
+  private filaBajoElPuntero(destino: HTMLElement): { tipo: 'cliente' | 'gestion' | 'contacto' | null; fila: any } {
+    const vacio = { tipo: null, fila: null } as { tipo: 'cliente' | 'gestion' | 'contacto' | null; fila: any };
+
+    const filaEl = destino.closest('.ag-row') as HTMLElement | null;
+    if (!filaEl) { return vacio; }
+
+    const indice = Number(filaEl.getAttribute('row-index'));
+    if (!Number.isFinite(indice)) { return vacio; }
+
+    // Qué grilla es; la del cliente depende de la pestaña que esté abierta
+    let api: GridApi | undefined;
+    let tipo: 'cliente' | 'gestion' | 'contacto' | null = null;
+
+    if (destino.closest('.gc-grilla')) {
+      api = this.gridApiClientes; tipo = 'cliente';
+    } else if (destino.closest('.agenda-grilla')) {
+      api = this.gridApiAgenda; tipo = 'gestion';
+    } else if (destino.closest('.gestion-grilla')) {
+      switch (this.pestana) {
+        case 'historial':  api = this.gridApi;           tipo = 'gestion';  break;
+        case 'pendientes': api = this.gridApiPendientes; tipo = 'gestion';  break;
+        case 'contactos':  api = this.gridApiContactos;  tipo = 'contacto'; break;
+        default:           return vacio;   // cartera: es historial, no hay nada que hacerle
+      }
+    }
+
+    const fila = api?.getDisplayedRowAtIndex(indice)?.data;
+    return fila ? { tipo, fila } : vacio;
+  }
+
+  /** El teléfono que toca marcar según lo que haya debajo del puntero. */
+  public get telefonoDelObjetivo(): string | null {
+    const f = this.menuCtx.fila;
+    if (!f) { return null; }
+    return f.telefono || f.cliente_telefono || f.celular || null;
   }
 
   @HostListener('document:click')
@@ -927,6 +1039,144 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           </span>`,
       },
     ];
+  }
+
+  /** Lo que queda por hacer con este cliente. */
+  initializeGridPendientes(): void {
+    this.columnDefsPendientes = [
+      {
+        headerName: 'Cuándo', field: 'fecha_programada', minWidth: 140, maxWidth: 170,
+        cellStyle: { textAlign: 'left' },
+        cellRenderer: (p: any) => p.data?.vencida
+          ? `<span class="agenda-cuando is-vencida"><i class="fa fa-triangle-exclamation fa-fw"></i>${p.value ?? ''}</span>`
+          : `<span class="agenda-cuando">${p.value ?? ''}</span>`,
+      },
+      {
+        headerName: 'Tipo', field: 'tipo', minWidth: 110, maxWidth: 130,
+        cellStyle: { textAlign: 'left' },
+        cellRenderer: (p: any) => `<i class="fa ${iconoDeTipo(p.value)} fa-fw me-1 text-muted"></i>${nombreDe(this.tipos, p.value)}`,
+      },
+      { headerName: 'Asunto', field: 'asunto', minWidth: 200, cellStyle: { textAlign: 'left', fontWeight: '600' } },
+      {
+        headerName: 'Prioridad', field: 'prioridad', minWidth: 90, maxWidth: 110,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: (p: any) => {
+          const clase = p.value === 'ALTA' ? 'bg-danger' : (p.value === 'BAJA' ? 'bg-secondary' : 'bg-warning text-dark');
+          return `<span class="badge ${clase} fs-10px">${nombreDe(PRIORIDADES_GESTION, p.value)}</span>`;
+        },
+      },
+      {
+        headerName: 'Teléfono', field: 'telefono', minWidth: 110, maxWidth: 140,
+        cellStyle: { textAlign: 'left' },
+        valueGetter: (p: any) => p.data?.telefono || p.data?.cliente_telefono || '',
+      },
+      { headerName: 'Responsable', field: 'empleado_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Nota', field: 'nota', minWidth: 180, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
+      {
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        sortable: false, filter: false, suppressMenu: true, resizable: false,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: () => `<div class="gestion-acciones">
+            <button type="button" class="btn-icon btn-cerrar" data-accion="cerrar" title="Cerrar la gestión"><i class="fa fa-check"></i></button>
+            <button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen"></i></button>
+            <button type="button" class="btn-icon btn-quitar" data-accion="eliminar" title="Eliminar"><i class="fa fa-trash"></i></button>
+          </div>`,
+      },
+    ];
+  }
+
+  /** Las personas de contacto del cliente. */
+  initializeGridContactos(): void {
+    this.columnDefsContactos = [
+      {
+        headerName: 'Orden', field: 'prioridad', minWidth: 70, maxWidth: 80,
+        cellStyle: { textAlign: 'center' },
+      },
+      { headerName: 'Nombre', field: 'nombres', minWidth: 170, cellStyle: { textAlign: 'left', fontWeight: '600' } },
+      { headerName: 'Cargo', field: 'cargo', minWidth: 130, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Teléfono', field: 'telefono', minWidth: 110, maxWidth: 140, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Correo', field: 'email', minWidth: 180, cellStyle: { textAlign: 'left' } },
+      {
+        headerName: 'Activo', field: 'activo', minWidth: 80, maxWidth: 80,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: (p: any) => p.value === false
+          ? '<span class="badge bg-danger fs-10px">NO</span>'
+          : '<span class="badge bg-teal fs-10px">SÍ</span>',
+      },
+      {
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        sortable: false, filter: false, suppressMenu: true, resizable: false,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: (p: any) => {
+          const tel = p.data?.telefono
+            ? `<button type="button" class="btn-icon btn-cerrar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button>
+               <button type="button" class="btn-icon btn-editar" data-accion="whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`
+            : '';
+          const mail = p.data?.email
+            ? `<button type="button" class="btn-icon btn-editar" data-accion="correo" title="Escribir"><i class="fa fa-envelope"></i></button>`
+            : '';
+          return `<div class="gestion-acciones">${tel}${mail}</div>`;
+        },
+      },
+    ];
+  }
+
+  /** Por qué vendedores ha pasado el cliente. */
+  initializeGridCartera(): void {
+    this.columnDefsCartera = [
+      { headerName: 'Cuándo', field: 'asignado_at', minWidth: 150, maxWidth: 180, cellStyle: { textAlign: 'left' } },
+      {
+        headerName: 'Antes lo atendía', field: 'empleado_anterior', minWidth: 160,
+        cellStyle: { textAlign: 'left' },
+        valueGetter: (p: any) => p.data?.empleado_anterior || 'Sin vendedor',
+      },
+      {
+        headerName: 'Pasó a', field: 'empleado_nuevo', minWidth: 160,
+        cellStyle: { textAlign: 'left', fontWeight: '600' },
+        valueGetter: (p: any) => p.data?.empleado_nuevo || 'Sin vendedor',
+      },
+      { headerName: 'Motivo', field: 'motivo', minWidth: 200, cellStyle: { textAlign: 'left' }, tooltipField: 'motivo' },
+      { headerName: 'Lo hizo', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' } },
+    ];
+  }
+
+  onGridReadyPendientes(params: GridReadyEvent): void {
+    this.gridApiPendientes = params.api;
+    this._appAgGridService.ajustarTamanoGrid(this.gridApiPendientes);
+    this.replantearAltos();
+  }
+
+  onGridReadyContactos(params: GridReadyEvent): void {
+    this.gridApiContactos = params.api;
+    this._appAgGridService.ajustarTamanoGrid(this.gridApiContactos);
+    this.replantearAltos();
+  }
+
+  onGridReadyCartera(params: GridReadyEvent): void {
+    this.gridApiCartera = params.api;
+    this._appAgGridService.ajustarTamanoGrid(this.gridApiCartera);
+    this.replantearAltos();
+  }
+
+  /** Los tres botones de la columna ACCIONES de Pendientes. */
+  onCellClickedPendientes(e: CellClickedEvent): void {
+    const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
+    switch (destino?.dataset['accion']) {
+      case 'cerrar':   this.cerrar(e.data); break;
+      case 'editar':   this.editarGestion(e.data); break;
+      case 'eliminar': this.eliminarGestion(e.data); break;
+    }
+  }
+
+  /** Llamar, WhatsApp o correo a la persona de contacto. */
+  onCellClickedContactos(e: CellClickedEvent): void {
+    const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
+    const accion = destino?.dataset['accion'];
+    if (!accion) { return; }
+
+    if (accion === 'llamar')   { window.location.href = this.enlaceTelefono(e.data?.telefono); }
+    if (accion === 'whatsapp') { window.open(this.enlaceWhatsapp(e.data?.telefono), '_blank', 'noopener'); }
+    if (accion === 'correo')   { window.location.href = 'mailto:' + e.data?.email; }
   }
 
   onGridReadyAgenda(params: GridReadyEvent): void {

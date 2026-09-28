@@ -20,10 +20,13 @@
        [noButton]="false"
        [noButtonCollapse]="true"
        (panelReloaded)="vista === 'cliente' && cliente ? seleccionarCliente(cliente) : cargarAgenda()"
+       (panelExpanded)="replantear()"
        [closeRoute]="'/ventas'"
        icono="phone">
 
-  <div class="content-container1 gestion-contenido">
+  <!-- El clic derecho se escucha en toda la pantalla (antes sólo en la pestaña
+       del cliente, así que en la agenda no salía el menú). -->
+  <div class="content-container1 gestion-contenido" (contextmenu)="onContextMenu($event)">
     @if (isLoading$ | async) {
       <div class="loader1"></div>
       <div class="overlay1"></div>
@@ -213,7 +216,7 @@
            [class.is-panel-oculto]="panelOculto"
            [class.is-redimensionando]="redimensionando"
            [style.--gc-ancho-columna]="anchoColumna + 'px'"
-           (contextmenu)="onContextMenu($event)">
+           >
 
         <!-- ---------- Columna izquierda: la grilla de clientes ----------
              La misma grilla de «Listar clientes», siempre a la vista y paginada
@@ -561,6 +564,36 @@
                   </div>
 
                 </div>
+
+                
+                  <!-- Contadores -->
+                  @if (resumen) {
+                    <div class="gestion-resumen">
+                      <div class="gestion-chip">
+                        <span class="gestion-chip__valor">{{ resumen.total }}</span>
+                        <span class="gestion-chip__texto">gestiones</span>
+                      </div>
+                      <div class="gestion-chip gestion-chip--ok">
+                        <span class="gestion-chip__valor">{{ resumen.realizadas }}</span>
+                        <span class="gestion-chip__texto">realizadas</span>
+                      </div>
+                      <div class="gestion-chip gestion-chip--aviso">
+                        <span class="gestion-chip__valor">{{ resumen.pendientes }}</span>
+                        <span class="gestion-chip__texto">pendientes</span>
+                      </div>
+                      @if (resumen.vencidas) {
+                        <div class="gestion-chip gestion-chip--peligro">
+                          <span class="gestion-chip__valor">{{ resumen.vencidas }}</span>
+                          <span class="gestion-chip__texto">vencidas</span>
+                        </div>
+                      }
+                      <div class="gestion-chip">
+                        <span class="gestion-chip__valor">{{ resumen.minutos }}</span>
+                        <span class="gestion-chip__texto">minutos</span>
+                      </div>
+                    </div>
+                  }
+
               }
 
           <!-- ---------- Dónde va este cliente ----------
@@ -623,34 +656,6 @@
             </div>
           } -->
 
-          <!-- Contadores -->
-          @if (resumen) {
-            <div class="gestion-resumen">
-              <div class="gestion-chip">
-                <span class="gestion-chip__valor">{{ resumen.total }}</span>
-                <span class="gestion-chip__texto">gestiones</span>
-              </div>
-              <div class="gestion-chip gestion-chip--ok">
-                <span class="gestion-chip__valor">{{ resumen.realizadas }}</span>
-                <span class="gestion-chip__texto">realizadas</span>
-              </div>
-              <div class="gestion-chip gestion-chip--aviso">
-                <span class="gestion-chip__valor">{{ resumen.pendientes }}</span>
-                <span class="gestion-chip__texto">pendientes</span>
-              </div>
-              @if (resumen.vencidas) {
-                <div class="gestion-chip gestion-chip--peligro">
-                  <span class="gestion-chip__valor">{{ resumen.vencidas }}</span>
-                  <span class="gestion-chip__texto">vencidas</span>
-                </div>
-              }
-              <div class="gestion-chip">
-                <span class="gestion-chip__valor">{{ resumen.minutos }}</span>
-                <span class="gestion-chip__texto">minutos</span>
-              </div>
-            </div>
-
-          }
 
           <!-- Pestañas -->
           <ul class="nav nav-tabs gestion-tabs flex-nowrap py-0" role="tablist">
@@ -811,118 +816,78 @@
               </div>
             }
 
-            <!-- ===== PENDIENTES ===== -->
+            <!-- ===== PENDIENTES =====
+                 Grilla, como el historial: lo vencido en rojo y los tres
+                 botones de siempre en ACCIONES. -->
             @if (pestana === 'pendientes') {
-              @if (pendientes.length) {
-                <div class="gestion-agenda__lista">
-                  @for (g of pendientes; track g.id) {
-                    <div class="gestion-tarjeta gestion-tarjeta--fija" [class.is-vencida]="g.vencida">
-                      <span class="gestion-tarjeta__icono"><i class="fa" [ngClass]="iconoTipo(g.tipo)"></i></span>
-                      <span class="gestion-tarjeta__texto">
-                        <span class="gestion-tarjeta__asunto">{{ g.asunto }}</span>
-                        <span class="gestion-tarjeta__dato">
-                          <i class="fa fa-clock fa-fw"></i>{{ g.fecha_programada }}
-                          <span class="ms-2"><i class="fa fa-flag fa-fw"></i>{{ g.prioridad }}</span>
-                          @if (g.telefono) {
-                            <a class="ms-2" [href]="enlaceTelefono(g.telefono)"><i class="fa fa-phone fa-fw"></i>{{ g.telefono }}</a>
-                          }
-                        </span>
-                      </span>
-                      <span class="gestion-tarjeta__botones">
-                        <button type="button" class="btn btn-sm btn-success" title="Cerrar la gestión" (click)="cerrar(g)">
-                          <i class="fa fa-check"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-white" title="Modificar" (click)="editarGestion(g)">
-                          <i class="fa fa-pen"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-white text-danger" title="Eliminar" (click)="eliminarGestion(g)">
-                          <i class="fa fa-trash"></i>
-                        </button>
-                      </span>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <div class="gestion-vacio">
-                  <i class="fa fa-calendar-check"></i>
-                  <p>No hay nada agendado con este cliente. Usa <b>Programar</b> para dejar la próxima llamada.</p>
-                </div>
-              }
+              <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente gestion-grilla"
+                [rowData]="pendientes"
+                [columnDefs]="columnDefsPendientes"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [localeText]="_appAgGridService.localeText"
+                [rowClassRules]="rowClassRulesPendientes"
+                [rowHeight]="34"
+                [headerHeight]="34"
+                [rowSelection]="'single'"
+                [pagination]="false"
+                [enableCellTextSelection]="true"
+                [overlayNoRowsTemplate]="'<span>No hay nada agendado con este cliente. Usa <b>Programar</b> para dejar la próxima llamada.</span>'"
+                [navigateToNextCell]="navegarConTeclado"
+                (gridReady)="onGridReadyPendientes($event)"
+                (cellClicked)="onCellClickedPendientes($event)">
+              </ag-grid-angular>
             }
 
-            <!-- ===== PERSONAS DE CONTACTO ===== -->
+            <!-- ===== PERSONAS DE CONTACTO =====
+                 Los botones de ACCIONES llaman, escriben por WhatsApp o
+                 abren el correo; los datos se editan en la ficha del cliente. -->
             @if (pestana === 'contactos') {
-              @if (contactos.length) {
-                <div class="gestion-contactos">
-                  @for (c of contactos; track c.id) {
-                    <div class="gestion-contacto" [class.is-inactivo]="c.activo === false">
-                      <span class="gestion-contacto__orden">{{ c.prioridad }}</span>
-                      <div class="gestion-contacto__texto">
-                        <span class="gestion-contacto__nombre">{{ c.nombres }}</span>
-                        <span class="gestion-contacto__dato">
-                          @if (c.cargo) { <span class="me-2">{{ c.cargo }}</span> }
-                          @if (c.email) { <a [href]="'mailto:' + c.email" class="me-2"><i class="fa fa-envelope fa-fw"></i>{{ c.email }}</a> }
-                        </span>
-                      </div>
-                      <span class="gestion-contacto__telefonos">
-                        @if (c.telefono) {
-                          <a class="btn btn-sm btn-white" [href]="enlaceTelefono(c.telefono)" title="Llamar">
-                            <i class="fa fa-phone me-1"></i>{{ c.telefono }}
-                          </a>
-                          <a class="btn btn-sm btn-white" [href]="enlaceWhatsapp(c.telefono)" target="_blank" rel="noopener noreferrer" title="WhatsApp">
-                            <i class="fab fa-whatsapp"></i>
-                          </a>
-                        }
-                      </span>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <div class="gestion-vacio">
-                  <i class="fa fa-address-book"></i>
-                  <p>Este cliente no tiene personas de contacto. Se agregan en su ficha, en <b>Personas de contacto</b>.</p>
-                </div>
-              }
+              <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente gestion-grilla"
+                [rowData]="contactos"
+                [columnDefs]="columnDefsContactos"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [localeText]="_appAgGridService.localeText"
+                [rowClassRules]="rowClassRulesContactos"
+                [rowHeight]="34"
+                [headerHeight]="34"
+                [rowSelection]="'single'"
+                [pagination]="false"
+                [enableCellTextSelection]="true"
+                [overlayNoRowsTemplate]="'<span>Este cliente no tiene personas de contacto. Se agregan en su ficha, en <b>Personas de contacto</b>.</span>'"
+                [navigateToNextCell]="navegarConTeclado"
+                (gridReady)="onGridReadyContactos($event)"
+                (cellClicked)="onCellClickedContactos($event)">
+              </ag-grid-angular>
             }
 
-            <!-- ===== CARTERA ===== -->
+            <!-- ===== CARTERA =====
+                 Quién lo atiende ahora, y debajo por dónde ha pasado. -->
             @if (pestana === 'cartera') {
-              <div class="gestion-cartera">
-                <div class="gestion-cartera__actual">
-                  <i class="fa fa-user-tie fa-fw"></i>
-                  Ahora lo atiende <b>{{ cliente?.vendedor_nombre || 'nadie' }}</b>
-                  <button type="button" class="btn btn-xs btn-white ms-2" [disabled]="accesoModel?.editar === false" (click)="reasignar()">
-                    <i class="fa fa-user-check me-1"></i>Reasignar
-                  </button>
-                </div>
-
-                @if (asignaciones.length) {
-                  <ul class="gestion-linea">
-                    @for (a of asignaciones; track a.id) {
-                      <li class="gestion-linea__item">
-                        <span class="gestion-linea__punto"></span>
-                        <div class="gestion-linea__texto">
-                          <span class="gestion-linea__titulo">
-                            {{ a.empleado_anterior || 'Sin vendedor' }}
-                            <i class="fa fa-arrow-right mx-1 text-muted"></i>
-                            <b>{{ a.empleado_nuevo || 'Sin vendedor' }}</b>
-                          </span>
-                          <span class="gestion-linea__dato">
-                            <i class="fa fa-calendar fa-fw"></i>{{ a.asignado_at }}
-                            @if (a.created_by) { <span class="ms-2"><i class="fa fa-user fa-fw"></i>{{ a.created_by }}</span> }
-                          </span>
-                          @if (a.motivo) { <span class="gestion-linea__motivo">{{ a.motivo }}</span> }
-                        </div>
-                      </li>
-                    }
-                  </ul>
-                } @else {
-                  <div class="gestion-vacio">
-                    <i class="fa fa-arrow-right-arrow-left"></i>
-                    <p>El cliente nunca ha cambiado de vendedor.</p>
-                  </div>
-                }
+              <div class="gestion-cartera__actual">
+                <i class="fa fa-user-tie fa-fw"></i>
+                Ahora lo atiende <b>{{ cliente?.vendedor_nombre || 'nadie' }}</b>
+                <button type="button" class="btn btn-xs btn-white ms-2" [disabled]="accesoModel?.editar === false" (click)="reasignar()">
+                  <i class="fa fa-user-check me-1"></i>Reasignar
+                </button>
               </div>
+
+              <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente gestion-grilla"
+                [rowData]="asignaciones"
+                [columnDefs]="columnDefsCartera"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [localeText]="_appAgGridService.localeText"
+                [rowHeight]="34"
+                [headerHeight]="34"
+                [rowSelection]="'single'"
+                [pagination]="false"
+                [enableCellTextSelection]="true"
+                [overlayNoRowsTemplate]="'<span>El cliente nunca ha cambiado de vendedor.</span>'"
+                [navigateToNextCell]="navegarConTeclado"
+                (gridReady)="onGridReadyCartera($event)">
+              </ag-grid-angular>
             }
 
           </div>
@@ -954,6 +919,100 @@
            [style.top.px]="menuCtx.y"
            (click)="$event.stopPropagation()"
            (contextmenu)="$event.preventDefault()">
+
+        <!-- ---------- Lo de la fila señalada ----------
+             Si el clic derecho cayó sobre una fila de cualquier grilla, lo
+             primero que ofrece el menú son las acciones de ESA fila. Debajo,
+             separadas, siguen las de siempre. -->
+        @if (menuCtx.tipo === 'cliente' && menuCtx.fila) {
+          <div class="menu-ctx__cabecera">
+            <i class="fa fa-fw" [ngClass]="menuCtx.fila.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user'"></i>
+            <span class="text-truncate">{{ menuCtx.fila.nombre_completo }}</span>
+          </div>
+
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  (click)="cerrarMenu(); seleccionarCliente(menuCtx.fila)">
+            <i class="fa fa-arrow-right fa-fw text-success"></i> Abrir este cliente
+          </button>
+          @if (telefonoDelObjetivo) {
+            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(telefonoDelObjetivo)" (click)="cerrarMenu()">
+              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
+              <span class="menu-ctx__detalle">{{ telefonoDelObjetivo }}</span>
+            </a>
+            <a class="menu-ctx__item" role="menuitem" [href]="enlaceWhatsapp(telefonoDelObjetivo)"
+               target="_blank" rel="noopener noreferrer" (click)="cerrarMenu()">
+              <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
+            </a>
+          }
+
+          <div class="menu-ctx__sep"></div>
+        }
+
+        @if (menuCtx.tipo === 'gestion' && menuCtx.fila) {
+          <div class="menu-ctx__cabecera">
+            <i class="fa fa-fw" [ngClass]="iconoTipo(menuCtx.fila.tipo)"></i>
+            <span class="text-truncate">{{ menuCtx.fila.asunto }}</span>
+          </div>
+
+          @if (menuCtx.fila.estado === 'PENDIENTE') {
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    [disabled]="accesoModel?.editar === false"
+                    (click)="cerrarMenu(); cerrar(menuCtx.fila)">
+              <i class="fa fa-check fa-fw text-success"></i> Marcar como hecha
+            </button>
+          }
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  [disabled]="accesoModel?.editar === false"
+                  (click)="cerrarMenu(); editarGestion(menuCtx.fila)">
+            <i class="fa fa-pen fa-fw text-secondary"></i> Modificar la gestión
+          </button>
+          <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem"
+                  [disabled]="accesoModel?.eliminar === false"
+                  (click)="cerrarMenu(); eliminarGestion(menuCtx.fila)">
+            <i class="fa fa-trash fa-fw"></i> Eliminar la gestión
+          </button>
+          @if (menuCtx.fila.cliente_id && menuCtx.fila.cliente_id !== cliente?.id) {
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); irAlCliente(menuCtx.fila)">
+              <i class="fa fa-user fa-fw text-secondary"></i> Abrir el cliente
+              <span class="menu-ctx__detalle">{{ menuCtx.fila.cliente_nombre }}</span>
+            </button>
+          }
+          @if (telefonoDelObjetivo && menuCtx.fila.cliente_id !== cliente?.id) {
+            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(telefonoDelObjetivo)" (click)="cerrarMenu()">
+              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
+              <span class="menu-ctx__detalle">{{ telefonoDelObjetivo }}</span>
+            </a>
+          }
+
+          <div class="menu-ctx__sep"></div>
+        }
+
+        @if (menuCtx.tipo === 'contacto' && menuCtx.fila) {
+          <div class="menu-ctx__cabecera">
+            <i class="fa fa-address-book fa-fw"></i>
+            <span class="text-truncate">{{ menuCtx.fila.nombres }}</span>
+          </div>
+
+          @if (menuCtx.fila.telefono) {
+            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(menuCtx.fila.telefono)" (click)="cerrarMenu()">
+              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
+              <span class="menu-ctx__detalle">{{ menuCtx.fila.telefono }}</span>
+            </a>
+            <a class="menu-ctx__item" role="menuitem" [href]="enlaceWhatsapp(menuCtx.fila.telefono)"
+               target="_blank" rel="noopener noreferrer" (click)="cerrarMenu()">
+              <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
+            </a>
+          }
+          @if (menuCtx.fila.email) {
+            <a class="menu-ctx__item" role="menuitem" [href]="'mailto:' + menuCtx.fila.email" (click)="cerrarMenu()">
+              <i class="fa fa-envelope fa-fw text-secondary"></i> Escribir un correo
+              <span class="menu-ctx__detalle">{{ menuCtx.fila.email }}</span>
+            </a>
+          }
+
+          <div class="menu-ctx__sep"></div>
+        }
 
         @if (hayCliente) {
           <div class="menu-ctx__cabecera">
