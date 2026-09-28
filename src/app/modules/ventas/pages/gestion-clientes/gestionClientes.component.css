@@ -1498,3 +1498,94 @@
   font-size: .75rem;
   color: var(--bs-secondary-color, #6c757d);
 }
+
+/* ---------- Menú de WhatsApp ----------
+   Comparte todo con el menú del clic derecho (.menu-ctx); sólo se le da un
+   poco más de ancho para que quepan los nombres de las plantillas. */
+.menu-wa {
+  min-width: 15rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   PESTAÑA DE WHATSAPP
+   La conversación tal como se leería en el teléfono: lo del cliente a
+   la izquierda, lo nuestro a la derecha y en verde.
+   ============================================================ */
+.wa-barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+
+  margin-bottom: .5rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.wa-barra__dato b {
+  color: var(--bs-body-color, #212529);
+}
+
+.wa-chat {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+
+  height: clamp(280px, calc(100vh - 520px), 900px);
+  padding: .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* Separador de día */
+.wa-dia {
+  align-self: center;
+  margin: .5rem 0 .25rem;
+  padding: .1rem .6rem;
+  border-radius: 1rem;
+
+  background-color: var(--bs-component-bg, #fff);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+}
+
+.wa-globo {
+  max-width: min(32rem, 78%);
+  align-self: flex-start;
+
+  padding: .35rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .6rem .6rem .6rem .15rem;
+
+  background-color: var(--bs-component-bg, #fff);
+}
+
+/* Lo que escribió el vendedor */
+.wa-globo.is-nuestro {
+  align-self: flex-end;
+  border-radius: .6rem .6rem .15rem .6rem;
+
+  background-color: rgba(37, 211, 102, .14);
+  border-color: rgba(37, 211, 102, .35);
+}
+
+.wa-globo__texto {
+  font-size: .8125rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.wa-globo__pie {
+  margin-top: .1rem;
+  font-size: .625rem;
+  color: var(--bs-secondary-color, #6c757d);
+  text-align: right;
+}

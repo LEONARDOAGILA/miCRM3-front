@@ -132,6 +132,11 @@
             <button type="button" class="btn btn-sm btn-white" title="Recargar" (click)="cargarAgenda()">
               <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoAgenda"></i>
             </button>
+            <button type="button" class="btn btn-sm btn-white"
+                    title="Conversaciones de WhatsApp que no se pudieron atar a un cliente"
+                    (click)="verConversacionesSueltas()">
+              <i class="fab fa-whatsapp text-success"></i>
+            </button>
           </div>
         </div>
 
@@ -435,10 +440,14 @@
                         <span class="gc-campo__valor">
                           @if (cliente?.celular) {
                             <a [href]="enlaceTelefono(cliente?.celular)" title="Llamar">{{ cliente?.celular }}</a>
-                            <a class="gc-campo__accion gc-campo__accion--wa" [href]="enlaceWhatsapp(cliente?.celular)"
-                               target="_blank" rel="noopener noreferrer" title="Escribir por WhatsApp">
+                            <!-- WhatsApp con mensaje ya escrito: el menú va
+                                 flotando por encima (ver .menu-wa), porque
+                                 esta tarjeta recorta lo que se salga. -->
+                            <button type="button" class="gc-campo__accion gc-campo__accion--wa"
+                                    title="Escribir por WhatsApp"
+                                    (click)="abrirMenuWhatsapp($event, cliente?.celular)">
                               <i class="fab fa-whatsapp"></i>
-                            </a>
+                            </button>
                             <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.celular, 'El celular')">
                               <i class="fa fa-copy"></i>
                             </button>
@@ -698,6 +707,18 @@
                 @if (asignaciones.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ asignaciones.length }}</span> }
               </button>
             </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link"
+                      [class.active]="pestana === 'whatsapp'"
+                      (click)="pestana = 'whatsapp'; replantear(); bajarAlUltimoMensaje()">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+                @if (resumenWhatsapp?.sin_responder) {
+                  <span class="badge bg-danger fs-10px">{{ resumenWhatsapp?.sin_responder }}</span>
+                } @else if (resumenWhatsapp?.total) {
+                  <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ resumenWhatsapp?.total }}</span>
+                }
+              </button>
+            </li>
           </ul>
 
           <div class="gestion-panel">
@@ -890,6 +911,75 @@
               </ag-grid-angular>
             }
 
+
+            <!-- ===== WHATSAPP =====
+                 Lo que el vendedor ha hablado con el cliente. Lo registra el
+                 servicio miCRM3-wa, que escucha la cuenta de WhatsApp; aquí
+                 sólo se lee. Para escribir están las plantillas del botón
+                 verde de la ficha, que abren el WhatsApp del vendedor. -->
+            @if (pestana === 'whatsapp') {
+              <div class="wa-barra">
+                @if (resumenWhatsapp?.total) {
+                  <span class="wa-barra__dato"><b>{{ resumenWhatsapp?.total }}</b> mensajes</span>
+                  <span class="wa-barra__dato">{{ resumenWhatsapp?.entrantes }} del cliente · {{ resumenWhatsapp?.salientes }} nuestros</span>
+                  @if (resumenWhatsapp?.ultimo_at) {
+                    <span class="wa-barra__dato">último: {{ resumenWhatsapp?.ultimo_at }}</span>
+                  }
+                  @if (resumenWhatsapp?.sin_responder) {
+                    <span class="badge bg-danger fs-10px">{{ resumenWhatsapp?.sin_responder }} sin responder</span>
+                  }
+                }
+                <button type="button" class="btn btn-xs btn-white ms-auto" title="Recargar la conversación"
+                        (click)="cargarConversacion()">
+                  <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoConversacion"></i>
+                </button>
+                @if (cliente?.celular) {
+                  <button type="button" class="btn btn-xs btn-success"
+                          title="Escribir por WhatsApp"
+                          (click)="abrirMenuWhatsapp($event, cliente?.celular)">
+                    <i class="fab fa-whatsapp me-1"></i>Escribir
+                  </button>
+                }
+              </div>
+
+              @if (conversacion.length) {
+                <div class="wa-chat">
+                  @for (m of conversacion; track m.id; let i = $index) {
+                    @if (esNuevoDia(i)) {
+                      <div class="wa-dia">{{ diaDelMensaje(m) }}</div>
+                    }
+                    <div class="wa-globo" [class.is-nuestro]="m.direccion === 'SALIENTE'">
+                      <div class="wa-globo__texto">
+                        @if (m.tipo !== 'TEXTO') {
+                          <i class="fa fa-fw me-1"
+                             [ngClass]="{
+                               'fa-image': m.tipo === 'IMAGEN',
+                               'fa-microphone': m.tipo === 'AUDIO',
+                               'fa-video': m.tipo === 'VIDEO',
+                               'fa-file': m.tipo === 'DOCUMENTO',
+                               'fa-location-dot': m.tipo === 'UBICACION'
+                             }"></i>
+                        }
+                        {{ descripcionDeMensaje(m) }}
+                      </div>
+                      <div class="wa-globo__pie">
+                        @if (m.direccion === 'ENTRANTE' && m.autor) { {{ m.autor }} · }
+                        @if (m.direccion === 'SALIENTE' && m.vendedor) { {{ m.vendedor }} · }
+                        {{ horaDelMensaje(m) }}
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="gestion-vacio">
+                  <i class="fab fa-whatsapp"></i>
+                  <p>
+                    No hay conversación registrada con este cliente.
+                    @if (!cliente?.celular) { <span>Además, no tiene celular en la ficha, así que no hay número con el que cruzarla.</span> }
+                  </p>
+                </div>
+              }
+            }
           </div>
             } @else {
 
@@ -907,6 +997,45 @@
             }
           </div>
         </div>
+      </div>
+    }
+
+    <!-- ================= MENÚ DE WHATSAPP =================
+         Las plantillas que se ofrecen al escribirle al cliente. Va aquí
+         fuera y con position: fixed porque dentro de la tarjeta lo recortaba
+         el overflow. -->
+    @if (menuWa.visible) {
+      <div #menuWaEl
+           class="menu-ctx menu-wa"
+           role="menu"
+           [style.left.px]="menuWa.x"
+           [style.top.px]="menuWa.y"
+           (click)="$event.stopPropagation()">
+
+        <div class="menu-ctx__cabecera">
+          <i class="fab fa-whatsapp fa-fw text-success"></i>
+          <span class="text-truncate">Escribir a {{ menuWa.aQuien || menuWa.numero }}</span>
+        </div>
+
+        @for (p of plantillasWhatsapp; track p.id) {
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  [title]="textoDePlantilla(p)"
+                  (click)="cerrarMenuWhatsapp(); escribirPorWhatsapp(menuWa.numero, p, menuWa.aQuien)">
+            <i class="fa {{ p.icono }} fa-fw text-success"></i> {{ p.nombre }}
+          </button>
+        }
+
+        <div class="menu-ctx__sep"></div>
+
+        <button type="button" class="menu-ctx__item" role="menuitem"
+                (click)="cerrarMenuWhatsapp(); escribirPorWhatsapp(menuWa.numero, null, menuWa.aQuien)">
+          <i class="fa fa-comment fa-fw text-secondary"></i> Abrir el chat sin mensaje
+        </button>
+        <button type="button" class="menu-ctx__item" role="menuitem"
+                (click)="cerrarMenuWhatsapp(); alternarDestinoWhatsapp()">
+          <i class="fa fa-fw text-secondary" [ngClass]="destinoWhatsapp === 'app' ? 'fa-desktop' : 'fa-globe'"></i>
+          {{ destinoWhatsapp === 'app' ? 'Abriendo en la aplicación' : 'Abriendo en WhatsApp Web' }}
+        </button>
       </div>
     }
 
@@ -939,10 +1068,10 @@
               <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
               <span class="menu-ctx__detalle">{{ telefonoDelObjetivo }}</span>
             </a>
-            <a class="menu-ctx__item" role="menuitem" [href]="enlaceWhatsapp(telefonoDelObjetivo)"
-               target="_blank" rel="noopener noreferrer" (click)="cerrarMenu()">
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); escribirPorWhatsapp(telefonoDelObjetivo)">
               <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
-            </a>
+            </button>
           }
 
           <div class="menu-ctx__sep"></div>
@@ -995,14 +1124,15 @@
           </div>
 
           @if (menuCtx.fila.telefono) {
-            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(menuCtx.fila.telefono)" (click)="cerrarMenu()">
-              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); llamarConSoftphone(menuCtx.fila.telefono, menuCtx.fila.nombres)">
+              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar con Zoiper
               <span class="menu-ctx__detalle">{{ menuCtx.fila.telefono }}</span>
-            </a>
-            <a class="menu-ctx__item" role="menuitem" [href]="enlaceWhatsapp(menuCtx.fila.telefono)"
-               target="_blank" rel="noopener noreferrer" (click)="cerrarMenu()">
+            </button>
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); escribirPorWhatsapp(menuCtx.fila.telefono, null, menuCtx.fila.nombres)">
               <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
-            </a>
+            </button>
           }
           @if (menuCtx.fila.email) {
             <a class="menu-ctx__item" role="menuitem" [href]="'mailto:' + menuCtx.fila.email" (click)="cerrarMenu()">
@@ -1051,6 +1181,9 @@
           <div class="menu-ctx__sep"></div>
         }
 
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); verConversacionesSueltas()">
+          <i class="fab fa-whatsapp fa-fw text-success"></i> Conversaciones sin asignar
+        </button>
         <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); abrirSelectorClientes()">
           <i class="fa fa-magnifying-glass fa-fw text-secondary"></i> Buscar en el listado completo
         </button>

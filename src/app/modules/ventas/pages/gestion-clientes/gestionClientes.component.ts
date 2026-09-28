@@ -13,6 +13,7 @@ import Swal from 'sweetalert2';
 import { ClienteService } from '../../services/cliente.service';
 import { GestionService, MetaAgenda } from '../../services/gestion.service';
 import { RecordatorioGestionesService } from '../../services/recordatorioGestiones.service';
+import { WhatsappService, MensajeWhatsapp, ResumenWhatsapp } from '../../services/whatsapp.service';
 import { SeguridadService } from '../../../seguridad/services/seguridad.service';
 import { AppAgGridService } from '../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../service/loading.service';
@@ -24,6 +25,9 @@ import {
   ESTADOS_GESTION, TIPOS_GESTION, PRIORIDADES_GESTION, claseDeResultado, iconoDeTipo, nombreDe, RESULTADOS_GESTION,
 } from '../../interfaces/gestionModel';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
+import {
+  PLANTILLAS_WHATSAPP, PlantillaWhatsapp, aplicarPlantilla, primerNombre,
+} from '../../interfaces/plantillasWhatsapp';
 
 ///   COMPONENTES    ///
 import { ListClientesComponent } from '../clientes/listClientes/listClientes.component';
@@ -31,8 +35,9 @@ import { SaveClienteComponent } from '../clientes/saveCliente/saveCliente.compon
 import { SaveGestionComponent, ModoGestion } from './saveGestion/saveGestion.component';
 import { CerrarGestionComponent } from './cerrarGestion/cerrarGestion.component';
 import { ReasignarClienteComponent } from './reasignarCliente/reasignarCliente.component';
+import { ConversacionesWhatsappComponent } from './conversacionesWhatsapp/conversacionesWhatsapp.component';
 
-type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera';
+type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
 type Vista = 'agenda' | 'cliente';
 /** Atajos del rango de fechas de la agenda. */
@@ -206,6 +211,34 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public tipos = TIPOS_GESTION;
   public estados = ESTADOS_GESTION;
 
+  // ---------- WhatsApp ----------
+  /** Los mensajes que se ofrecen al escribir; ver plantillasWhatsapp.ts. */
+  public plantillasWhatsapp = PLANTILLAS_WHATSAPP;
+
+  /**
+   * La conversación de WhatsApp del cliente.
+   *
+   * La alimenta el servicio miCRM3-wa, que está enlazado a la cuenta del
+   * vendedor como un dispositivo más y sólo escucha. Aquí sólo se lee: para
+   * escribir están las plantillas, que abren el WhatsApp del vendedor.
+   */
+  public conversacion: MensajeWhatsapp[] = [];
+  public resumenWhatsapp: ResumenWhatsapp | null = null;
+  public cargandoConversacion = false;
+
+  /**
+   * El menú de plantillas, flotando por encima de todo.
+   *
+   * No es un desplegable de Bootstrap a propósito: vive dentro de una tarjeta
+   * con overflow: hidden y de un panel con scroll, así que el menú se abría
+   * pero quedaba recortado y parecía que el botón no hacía nada. Se coloca
+   * igual que el menú del clic derecho, con coordenadas y position: fixed.
+   */
+  public menuWa: { visible: boolean; x: number; y: number; numero: string | null; aQuien: string | null } =
+    { visible: false, x: 0, y: 0, numero: null, aQuien: null };
+
+  @ViewChild('menuWaEl') menuWaEl?: ElementRef<HTMLElement>;
+
   // ---------- La agenda, en grilla y paginada ----------
   /**
    * Antes era una lista de tarjetas agrupadas por día. Con quinientos
@@ -307,6 +340,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     private _clienteService: ClienteService,
     private _gestionService: GestionService,
     private _recordatorios: RecordatorioGestionesService,
+    private _whatsappService: WhatsappService,
     public _appAgGridService: AppAgGridService,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -801,7 +835,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   @HostListener('document:click')
   @HostListener('document:keydown.escape')
   @HostListener('window:scroll')
-  onCerrarMenuGlobal(): void { this.cerrarMenu(); }
+  onCerrarMenuGlobal(): void { this.cerrarMenu(); this.cerrarMenuWhatsapp(); }
 
   /**
    * Al cambiar el tamaño de la ventana se cierra el menú y se vuelve a
@@ -811,6 +845,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   @HostListener('window:resize')
   onRedimensionar(): void {
     this.cerrarMenu();
+    this.cerrarMenuWhatsapp();
     if (this.ajusteAltoTimeout) { clearTimeout(this.ajusteAltoTimeout); }
     this.ajusteAltoTimeout = setTimeout(() => this.ajustarAltos(), 150);
   }
@@ -843,6 +878,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         this.cargarContactos(),
         this.cargarAsignaciones(),
         this.cargarPendientes(),
+        this.cargarConversacion(),
       ]);
     } catch (error) {
       console.error('Error al abrir el cliente:', error);
@@ -891,6 +927,71 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       console.error('Error al cargar el historial de cartera:', error);
       this.asignaciones = [];
     }
+  }
+
+  /**
+   * La conversación de WhatsApp y su resumen.
+   *
+   * Se piden juntos al abrir el cliente: el resumen es lo que pone el número
+   * en la pestaña, así que tiene que estar aunque nadie entre a leerla.
+   */
+  async cargarConversacion(): Promise<void> {
+    if (!this.cliente?.id) { return; }
+    try {
+      this.cargandoConversacion = true;
+      const [chat, resumen]: any[] = await Promise.all([
+        firstValueFrom(this._whatsappService.conversacion(this.cliente.id)),
+        firstValueFrom(this._whatsappService.resumen(this.cliente.id)),
+      ]);
+
+      this.conversacion = chat?.status === 'success' ? (chat.data ?? []) : [];
+      this.resumenWhatsapp = resumen?.status === 'success' ? resumen.data : null;
+    } catch (error) {
+      console.error('Error al cargar la conversación de WhatsApp:', error);
+      this.conversacion = [];
+      this.resumenWhatsapp = null;
+    } finally {
+      this.cargandoConversacion = false;
+      // Al entrar en la pestaña se baja al último mensaje, como en un chat
+      if (this.pestana === 'whatsapp') { this.bajarAlUltimoMensaje(); }
+    }
+  }
+
+  /** El chat se lee por el final. */
+  bajarAlUltimoMensaje(): void {
+    setTimeout(() => {
+      const caja = this.host.nativeElement.querySelector('.wa-chat') as HTMLElement | null;
+      if (caja) { caja.scrollTop = caja.scrollHeight; }
+    }, 120);
+  }
+
+  /** Lo que se ve en cada burbuja cuando el mensaje no es texto. */
+  descripcionDeMensaje(m: MensajeWhatsapp): string {
+    if (m.cuerpo) { return m.cuerpo; }
+    switch (m.tipo) {
+      case 'IMAGEN':    return 'Envió una imagen';
+      case 'AUDIO':     return 'Envió una nota de voz';
+      case 'VIDEO':     return 'Envió un video';
+      case 'DOCUMENTO': return 'Envió un documento';
+      case 'UBICACION': return 'Compartió su ubicación';
+      default:          return 'Envió un mensaje';
+    }
+  }
+
+  /** El día al que pertenece un mensaje, para separar la conversación. */
+  diaDelMensaje(m: MensajeWhatsapp): string {
+    return (m.enviado_at ?? '').slice(0, 10);
+  }
+
+  /** ¿Empieza aquí un día nuevo dentro de la conversación? */
+  esNuevoDia(i: number): boolean {
+    if (i === 0) { return true; }
+    return this.diaDelMensaje(this.conversacion[i]) !== this.diaDelMensaje(this.conversacion[i - 1]);
+  }
+
+  /** Sólo la hora, que es lo que se pone debajo de cada burbuja. */
+  horaDelMensaje(m: MensajeWhatsapp): string {
+    return (m.enviado_at ?? '').slice(11, 16);
   }
 
   /** Lo pendiente del cliente (la pestaña «Pendientes»). */
@@ -1109,7 +1210,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: (p: any) => {
           const tel = p.data?.telefono
-            ? `<button type="button" class="btn-icon btn-cerrar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button>
+            ? `<button type="button" class="btn-icon btn-cerrar" data-accion="llamar" title="Llamar con Zoiper"><i class="fa fa-phone"></i></button>
                <button type="button" class="btn-icon btn-editar" data-accion="whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`
             : '';
           const mail = p.data?.email
@@ -1174,7 +1275,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const accion = destino?.dataset['accion'];
     if (!accion) { return; }
 
-    if (accion === 'llamar')   { window.location.href = this.enlaceTelefono(e.data?.telefono); }
+    if (accion === 'llamar')   { this.llamarConSoftphone(e.data?.telefono, e.data?.nombres); }
     if (accion === 'whatsapp') { window.open(this.enlaceWhatsapp(e.data?.telefono), '_blank', 'noopener'); }
     if (accion === 'correo')   { window.location.href = 'mailto:' + e.data?.email; }
   }
@@ -1646,6 +1747,22 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   nombreResultado = (r: string) => nombreDe(RESULTADOS_GESTION, r);
 
   /** «tel:» y «mailto:» para llamar o escribir desde el navegador o el móvil. */
+  /**
+   * Las conversaciones de WhatsApp que el CRM no pudo atar a ningún cliente.
+   *
+   * Pasa cuando el número no está en ninguna ficha o cuando WhatsApp manda un
+   * identificador oculto en vez del teléfono. Desde ahí se asignan a mano.
+   */
+  verConversacionesSueltas(): void {
+    if (this._seguridadService.isexpired()) { return; }
+
+    const ref = this.modal.open(ConversacionesWhatsappComponent, { size: 'lg', centered: true, backdrop: 'static' });
+    ref.componentInstance.asignado.subscribe(() => {
+      // Si la que se asignó es del cliente abierto, su pestaña ya la tiene
+      if (this.cliente?.id) { this.cargarConversacion(); }
+    });
+  }
+
   /** Plegar y desplegar los paneles de datos del cliente. */
   alternarDatos(): void {
     this.datosVisibles = !this.datosVisibles;
@@ -1700,12 +1817,210 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   enlaceTelefono(numero?: string | null): string { return numero ? 'tel:' + String(numero).replace(/\s/g, '') : ''; }
-  enlaceWhatsapp(numero?: string | null): string {
+
+  // ================================================================
+  // MARCAR CON EL SOFTPHONE (ZOIPER)
+  // ================================================================
+
+  /**
+   * Protocolo que se le pasa al sistema operativo para marcar.
+   *
+   * Se envía con DOS PUNTOS y sin barras: zoiper:0991234567. Con «://»
+   * Windows le añade una barra al final (zoiper://0991234567/) y el softphone
+   * acabaría marcando ese carácter de más; comprobado mirando lo que recibe
+   * el manejador. El programa entiende además tel:, sip: y callto:.
+   *
+   * Se deja configurable por navegador para no tener que recompilar si se
+   * cambia de softphone (3CX, MicroSIP, X-Lite…):
+   *
+   *   localStorage.setItem('miCRM3.softphone', 'callto');   // o tel, sip…
+   */
+  private get protocoloLlamada(): string {
+    try { return localStorage.getItem('miCRM3.softphone') || 'zoiper'; } catch { return 'zoiper'; }
+  }
+
+  /** La URL completa que se le entrega al sistema. */
+  public enlaceSoftphone(numero?: string | null): string {
+    const n = this.numeroMarcable(numero);
+    return n ? `${this.protocoloLlamada}:${n}` : '';
+  }
+
+  /**
+   * El número tal como hay que marcarlo: sólo lo que sabe marcar una central
+   * (dígitos, +, * y #). Se quitan espacios, guiones y paréntesis, que es lo
+   * que suele traer un número tecleado a mano.
+   */
+  private numeroMarcable(numero?: string | null): string {
+    return String(numero ?? '').replace(/[^\d+*#]/g, '');
+  }
+
+  /**
+   * Marca con el softphone del puesto.
+   *
+   * No navega a ningún sitio: el navegador le entrega el enlace al sistema,
+   * que abre Zoiper. La primera vez Chrome pregunta si se permite abrirlo;
+   * marcando «Permitir siempre» no vuelve a preguntar.
+   */
+  llamarConSoftphone(numero?: string | null, quien?: string | null): void {
+    const n = this.numeroMarcable(numero);
+    if (!n) {
+      this._toastr.warning('No tiene teléfono registrado', 'Sin número');
+      return;
+    }
+
+    this._toastr.info('Marcando ' + n + '…', quien || 'Zoiper', { timeOut: 2500 });
+    window.location.href = this.enlaceSoftphone(n);
+  }
+  enlaceWhatsapp(numero?: string | null, texto?: string | null): string {
+    const internacional = this.numeroInternacional(numero);
+    if (!internacional) { return ''; }
+
+    const mensaje = texto ? '?text=' + encodeURIComponent(texto) : '';
+
+    // «app» abre el WhatsApp instalado; «web» pasa por el navegador y deja
+    // que el sistema decida. Se elige por navegador:
+    //   localStorage.setItem('miCRM3.whatsapp', 'app');
+    return this.destinoWhatsapp === 'app'
+      ? `whatsapp://send?phone=${internacional}${texto ? '&text=' + encodeURIComponent(texto) : ''}`
+      : `https://wa.me/${internacional}${mensaje}`;
+  }
+
+  /** «0991234567» → «593991234567», que es lo que pide WhatsApp. */
+  private numeroInternacional(numero?: string | null): string {
     const limpio = (numero ?? '').replace(/\D/g, '');
     if (!limpio) { return ''; }
     // Ecuador: 0991234567 → 593991234567
-    const internacional = limpio.startsWith('0') ? '593' + limpio.substring(1) : limpio;
-    return 'https://wa.me/' + internacional;
+    return limpio.startsWith('0') ? '593' + limpio.substring(1) : limpio;
+  }
+
+  /** Dónde se abre el chat: en el navegador o en la aplicación instalada. */
+  public get destinoWhatsapp(): 'web' | 'app' {
+    try { return localStorage.getItem('miCRM3.whatsapp') === 'app' ? 'app' : 'web'; } catch { return 'web'; }
+  }
+
+  /** Cambia de WhatsApp Web a la aplicación de escritorio y al revés. */
+  alternarDestinoWhatsapp(): void {
+    const nuevo = this.destinoWhatsapp === 'app' ? 'web' : 'app';
+    try { localStorage.setItem('miCRM3.whatsapp', nuevo); } catch { /* sin storage */ }
+    this._toastr.info(
+      nuevo === 'app' ? 'Los chats se abrirán en la aplicación instalada' : 'Los chats se abrirán en WhatsApp Web',
+      'WhatsApp', { timeOut: 2500 },
+    );
+  }
+
+  /** Abre el menú de plantillas junto al botón que se pulsó. */
+  abrirMenuWhatsapp(ev: MouseEvent, numero?: string | null, aQuien?: string | null): void {
+    ev.stopPropagation();
+
+    if (!numero) {
+      this._toastr.warning('No tiene un número al que escribir', 'WhatsApp');
+      return;
+    }
+
+    const r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    this.menuWa = { visible: true, x: r.left, y: r.bottom + 4, numero, aQuien: aQuien ?? null };
+
+    // Si no cabe hacia abajo o hacia la derecha, se recoloca
+    setTimeout(() => {
+      const el = this.menuWaEl?.nativeElement;
+      if (!el) { return; }
+      const m = el.getBoundingClientRect();
+      if (m.right > window.innerWidth)   { this.menuWa.x = Math.max(8, window.innerWidth - m.width - 8); }
+      if (m.bottom > window.innerHeight) { this.menuWa.y = Math.max(8, r.top - m.height - 4); }
+    });
+  }
+
+  cerrarMenuWhatsapp(): void {
+    if (this.menuWa.visible) { this.menuWa.visible = false; }
+  }
+
+  /** El texto de una plantilla, ya con el nombre del cliente y el del vendedor. */
+  textoDePlantilla(plantilla: PlantillaWhatsapp): string {
+    const esEmpresa = this.cliente?.tipo_cliente === 'EMPRESA';
+    return aplicarPlantilla(plantilla.texto, {
+      cliente:  this.cliente?.nombre_completo,
+      nombre:   primerNombre(this.cliente?.nombre_completo, esEmpresa),
+      vendedor: this.nombreDelUsuario,
+      empresa:  this.nombreDeLaEmpresa,
+    });
+  }
+
+  /** Quien está usando el CRM, para firmar el mensaje. */
+  private get nombreDelUsuario(): string {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') ?? '{}');
+      return u?.name || u?.login_user || '';
+    } catch { return ''; }
+  }
+
+  /**
+   * Cómo se llama la empresa en los mensajes.
+   *
+   * Hoy el sistema no guarda ese dato en ningún lado (en la cabecera está
+   * escrito a mano), así que se lee de una clave del navegador:
+   *
+   *   localStorage.setItem('miCRM3.empresa', 'Almespaña');
+   *
+   * Si no está, las plantillas se escriben sin nombrarla.
+   */
+  private get nombreDeLaEmpresa(): string {
+    try { return localStorage.getItem('miCRM3.empresa') ?? ''; } catch { return ''; }
+  }
+
+  /**
+   * Abre el chat de WhatsApp y deja constancia en el CRM.
+   *
+   * Lo segundo es lo que importa: hasta ahora se escribía al cliente por
+   * WhatsApp y el CRM no se enteraba, así que el historial mentía. Se
+   * registra como gestión REALIZADA con el texto que se envió.
+   *
+   * @param plantilla null abre el chat en blanco (no se registra nada: puede
+   *        que sólo se vaya a mirar la conversación).
+   */
+  async escribirPorWhatsapp(numero?: string | null, plantilla: PlantillaWhatsapp | null = null, aQuien?: string | null): Promise<void> {
+    if (!this.numeroInternacional(numero)) {
+      this._toastr.warning('No tiene un número al que escribir', 'WhatsApp');
+      return;
+    }
+
+    const texto = plantilla ? this.textoDePlantilla(plantilla) : null;
+    window.open(this.enlaceWhatsapp(numero, texto), '_blank', 'noopener');
+
+    if (!plantilla || !this.cliente?.id) { return; }
+
+    // La gestión queda registrada sola; si falla, el chat ya está abierto y
+    // no hay por qué interrumpir al vendedor con un error rojo
+    try {
+      const res: any = await firstValueFrom(this._gestionService.addGestion({
+        cliente_id: this.cliente.id,
+        tipo: 'WHATSAPP',
+        estado: 'REALIZADA',
+        prioridad: 'MEDIA',
+        asunto: plantilla.asunto + (aQuien ? ' — ' + aQuien : ''),
+        nota: texto,
+        telefono: numero,
+        fecha_realizada: this.ahoraParaElServidor(),
+        resultado: 'CONTACTADO',
+      }));
+
+      if (res?.status === 'success') {
+        this._toastr.success('Se registró la gestión de WhatsApp', plantilla.nombre, { timeOut: 2500 });
+        await this.refrescarTrasWhatsapp();
+      }
+    } catch (error) {
+      console.error('No se pudo registrar la gestión de WhatsApp:', error);
+    }
+  }
+
+  /** «AAAA-MM-DD HH:mm:ss» de ahora mismo, que es lo que espera el back. */
+  private ahoraParaElServidor(): string {
+    const d = new Date();
+    const dos = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())} ${dos(d.getHours())}:${dos(d.getMinutes())}:${dos(d.getSeconds())}`;
+  }
+
+  private async refrescarTrasWhatsapp(): Promise<void> {
+    await Promise.all([this.cargarGestiones(this.paginaActual), this.cargarResumen()]);
   }
 
   get hayCliente(): boolean { return !!this.cliente?.id; }
