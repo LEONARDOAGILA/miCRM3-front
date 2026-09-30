@@ -1,0 +1,1207 @@
+<!-- ============================================================
+     GESTIÓN DE CLIENTES
+
+     1. Miga de pan
+     2. <panel> del tema, partido en dos pestañas:
+        2a. «Lo que toca hacer»: todo lo pendiente del usuario, de
+            todos sus clientes, con rango de fechas
+        2b. «Gestión de clientes»: el buscador y, con un cliente
+            elegido, su ficha a la izquierda y sus pestañas a la derecha
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Ventas</a></li>
+  <li class="breadcrumb-item active">Gestión de clientes</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       (panelReloaded)="vista === 'cliente' && cliente ? seleccionarCliente(cliente) : cargarAgenda()"
+       (panelExpanded)="replantear()"
+       [closeRoute]="'/ventas'"
+       icono="phone">
+
+  <!-- El clic derecho se escucha en toda la pantalla (antes sólo en la pestaña
+       del cliente, así que en la agenda no salía el menú). -->
+  <div class="content-container1 gestion-contenido" (contextmenu)="onContextMenu($event)">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <!-- ---------- PESTAÑAS PRINCIPALES ---------- -->
+    <ul class="nav nav-tabs gestion-vistas flex-nowrap py-0" role="tablist">
+      <li class="nav-item flex-shrink-0" role="presentation">
+        <button type="button" class="nav-link" role="tab"
+                [class.active]="vista === 'agenda'"
+                [attr.aria-selected]="vista === 'agenda'"
+                (click)="vista = 'agenda'; replantear()">
+          <i class="fa fa-calendar-day"></i>
+          <span class="gestion-vistas__texto">Lo que toca hacer</span>
+          @if (agendaMeta.vencidas) {
+            <span class="badge bg-danger fs-10px">{{ agendaMeta.vencidas }}</span>
+          } @else if (agendaMeta.total) {
+            <span class="badge bg-warning fs-10px">{{ agendaMeta.total }}</span>
+          }
+        </button>
+      </li>
+      <li class="nav-item flex-shrink-0" role="presentation">
+        <button type="button" class="nav-link" role="tab"
+                [class.active]="vista === 'cliente'"
+                [attr.aria-selected]="vista === 'cliente'"
+                (click)="vista = 'cliente'; replantear()">
+          <i class="fa fa-headset"></i>
+          <span class="gestion-vistas__texto">Gestión de clientes</span>
+          @if (hayCliente) {
+            <span class="gestion-vistas__cliente">{{ cliente?.nombre_completo }}</span>
+          }
+        </button>
+      </li>
+    </ul>
+
+    <!-- ============ 2a. LO QUE TOCA HACER ============
+         Grilla y no tarjetas: con quinientos pendientes la lista por días era
+         una pantalla sin fin. Se pagina en el servidor, se ordena y se filtra
+         por columna, y el rango de fechas usa el mismo selector que los
+         boletines. -->
+    @if (vista === 'agenda') {
+      <div class="gestion-agenda">
+
+        <!-- Filtros -->
+        <div class="agenda-filtros">
+          <div class="agenda-filtros__atajos">
+            <button type="button" class="btn btn-xs" [class.btn-danger]="rango === 'vencidas'" [class.btn-white]="rango !== 'vencidas'"
+                    (click)="elegirRango('vencidas')">
+              <i class="fa fa-triangle-exclamation me-1"></i>Vencidas
+            </button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'hoy'" [class.btn-white]="rango !== 'hoy'"
+                    (click)="elegirRango('hoy')">Hoy</button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'manana'" [class.btn-white]="rango !== 'manana'"
+                    (click)="elegirRango('manana')">Mañana</button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'semana'" [class.btn-white]="rango !== 'semana'"
+                    (click)="elegirRango('semana')">7 días</button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'mes'" [class.btn-white]="rango !== 'mes'"
+                    (click)="elegirRango('mes')">Este mes</button>
+            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'todo'" [class.btn-white]="rango !== 'todo'"
+                    (click)="elegirRango('todo')">Todo</button>
+          </div>
+
+          <div class="agenda-filtros__fechas">
+
+            <!-- El selector de rango de los boletines: un solo campo, con
+                 atajos y calendario, y el botón de limpiar equivale a «Todo» -->
+            <div class="ngx-daterangepicker-action date-range-input agenda-rango">
+              <i class="fa fa-calendar fa-fw" aria-hidden="true"></i>
+              <input id="agenda-rango"
+                     type="text"
+                     class="form-control form-control-sm shadow-none"
+                     readonly
+                     placeholder="Todas las fechas"
+                     ngxDaterangepickerMd
+                     [locale]="locale"
+                     [ranges]="ranges"
+                     [opens]="'left'"
+                     [alwaysShowCalendars]="true"
+                     [showDropdowns]="true"
+                     [showCustomRangeLabel]="true"
+                     [showClearButton]="true"
+                     [showCancel]="true"
+                     [ngModel]="selectedRango"
+                     [ngModelOptions]="{ standalone: true }"
+                     (ngModelChange)="onRangoFechas($event)" />
+            </div>
+
+            <div class="agenda-filtros__buscador">
+              <app-campoBusquedaPaginacion
+                [id]="'buscar-agenda'"
+                [placeholder]="'Buscar por asunto, cliente o teléfono…'"
+                [iconClass]="'fa fa-search'"
+                [containerClass]="'position-relative w-100'"
+                (buscar)="buscarEnAgenda($event)">
+              </app-campoBusquedaPaginacion>
+            </div>
+
+            <button type="button" class="btn btn-sm" [class.btn-primary]="soloMias" [class.btn-white]="!soloMias"
+                    [title]="soloMias ? 'Viendo sólo lo que tú programaste' : 'Viendo lo de todos'"
+                    (click)="alternarMias()">
+              <i class="fa fa-user me-1"></i>{{ soloMias ? 'Sólo lo mío' : 'De todos' }}
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Recargar" (click)="cargarAgenda()">
+              <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoAgenda"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white"
+                    title="Conversaciones de WhatsApp que no se pudieron atar a un cliente"
+                    (click)="verConversacionesSueltas()">
+              <i class="fab fa-whatsapp text-success"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Contadores: son de todo el filtro, no de la página -->
+        <div class="gestion-resumen agenda-resumen">
+          <div class="gestion-chip">
+            <span class="gestion-chip__valor">{{ agendaMeta.total }}</span>
+            <span class="gestion-chip__texto">pendientes</span>
+          </div>
+          @if (agendaMeta.vencidas) {
+            <div class="gestion-chip gestion-chip--peligro">
+              <span class="gestion-chip__valor">{{ agendaMeta.vencidas }}</span>
+              <span class="gestion-chip__texto">vencidas</span>
+            </div>
+          }
+          <div class="gestion-chip gestion-chip--aviso">
+            <span class="gestion-chip__valor">{{ agendaMeta.hoy }}</span>
+            <span class="gestion-chip__texto">para hoy</span>
+          </div>
+          @if (buscaAgenda) {
+            <span class="agenda-tope">
+              <i class="fa fa-filter me-1"></i>Filtrando por «{{ buscaAgenda }}»
+            </span>
+          }
+        </div>
+
+        <!-- La grilla -->
+        <ag-grid-angular
+          class="ag-theme-alpine ag-grid-transparente agenda-grilla"
+          [rowData]="agenda"
+          [columnDefs]="columnDefsAgenda"
+          [defaultColDef]="_appAgGridService.defaultColDef"
+          [localeText]="_appAgGridService.localeText"
+          [rowClassRules]="rowClassRulesAgenda"
+          [rowHeight]="34"
+          [headerHeight]="34"
+          [rowSelection]="'single'"
+          [pagination]="false"
+          [enableCellTextSelection]="true"
+          [overlayNoRowsTemplate]="'<span>No hay nada pendiente con esos filtros.</span>'"
+          [navigateToNextCell]="navegarConTecladoAgenda"
+          (cellKeyDown)="onCellKeyDownAgenda($event)"
+          (gridReady)="onGridReadyAgenda($event)"
+          (cellClicked)="onCellClickedAgenda($event)">
+        </ag-grid-angular>
+
+        <!-- Paginación, como en el resto de listados -->
+        @if (agendaMeta.total) {
+          <div class="agenda-pie">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Paginación de la agenda">
+              <button type="button" class="btn btn-white" title="Primera página"
+                      [disabled]="paginaAgenda === 1" (click)="irAPaginaAgenda(1)">
+                <i class="fa fa-angle-double-left"></i>
+              </button>
+              <button type="button" class="btn btn-white" title="Anterior"
+                      [disabled]="paginaAgenda === 1" (click)="irAPaginaAgenda(paginaAgenda - 1)">
+                <i class="fa fa-chevron-left"></i>
+              </button>
+              <span class="btn btn-white disabled">{{ paginaAgenda }} / {{ ultimaPaginaAgenda }}</span>
+              <button type="button" class="btn btn-white" title="Siguiente"
+                      [disabled]="paginaAgenda === ultimaPaginaAgenda" (click)="irAPaginaAgenda(paginaAgenda + 1)">
+                <i class="fa fa-chevron-right"></i>
+              </button>
+              <button type="button" class="btn btn-white" title="Última página"
+                      [disabled]="paginaAgenda === ultimaPaginaAgenda" (click)="irAPaginaAgenda(ultimaPaginaAgenda)">
+                <i class="fa fa-angle-double-right"></i>
+              </button>
+            </div>
+            <span class="agenda-pie__cuenta">{{ desdeAgenda }}–{{ hastaAgenda }} de {{ agendaMeta.total }}</span>
+          </div>
+        }
+
+      </div>
+    }
+
+    <!-- ============ 2b. GESTIÓN DE CLIENTES ============
+         Dos columnas: a la izquierda el cliente (se pliega con la pestañita
+         del borde, como el panel del mapa), a la derecha su trabajo. El clic
+         derecho en cualquier punto abre el menú de acciones. -->
+    @if (vista === 'cliente') {
+      <div class="gc-cuerpo"
+           [class.is-panel-oculto]="panelOculto"
+           [class.is-redimensionando]="redimensionando"
+           [style.--gc-ancho-columna]="anchoColumna + 'px'"
+           >
+
+        <!-- ---------- Columna izquierda: la grilla de clientes ----------
+             La misma grilla de «Listar clientes», siempre a la vista y paginada
+             en el servidor. El buscador consulta al pulsar Enter o la lupa,
+             nunca mientras se teclea: con ochenta mil clientes eso sería una
+             consulta por letra. -->
+        <aside class="gc-columna" [attr.aria-hidden]="panelOculto">
+          <div class="gc-lista">
+
+            <div class="gc-lista__buscador">
+              <app-campoBusquedaPaginacion
+                [id]="'buscar-cliente-gestion'"
+                [placeholder]="'Buscar por nombre, identificación o teléfono…'"
+                [iconClass]="'fa fa-search'"
+                [containerClass]="'position-relative w-100'"
+                (buscar)="buscarClientes($event)"
+                (limpiado)="alLimpiarBusquedaClientes()">
+              </app-campoBusquedaPaginacion>
+            </div>
+
+            <!-- La misma grilla de «Listar clientes», aquí encajada: se puede
+                 ordenar, filtrar por columna y recorrer con las flechas; un clic
+                 en la fila (o Enter) abre el cliente en la columna derecha. -->
+            <ag-grid-angular
+              class="ag-theme-alpine ag-grid-transparente gc-grilla"
+              [rowData]="listaClientes"
+              [columnDefs]="columnDefsClientes"
+              [defaultColDef]="_appAgGridService.defaultColDef"
+              [localeText]="_appAgGridService.localeText"
+              [rowClassRules]="rowClassRulesClientes"
+              [rowHeight]="32"
+              [headerHeight]="32"
+              [rowSelection]="'single'"
+              [pagination]="false"
+              [enableCellTextSelection]="true"
+              [overlayNoRowsTemplate]="vacioClientes"
+              [navigateToNextCell]="navegarConTecladoClientes"
+              (cellKeyDown)="onCellKeyDownClientes($event)"
+              (gridReady)="onGridReadyClientes($event)"
+              (cellClicked)="onCellClickedClientes($event)">
+            </ag-grid-angular>
+
+            <!-- Paginación compacta: la columna es estrecha -->
+            @if (totalClientes) {
+              <div class="gc-lista__pie">
+                <div class="btn-group btn-group-sm" role="group" aria-label="Paginación de clientes">
+                  <button type="button" class="btn btn-white" title="Primera página"
+                          [disabled]="paginaClientes === 1" (click)="irAPaginaClientes(1)">
+                    <i class="fa fa-angle-double-left"></i>
+                  </button>
+                  <button type="button" class="btn btn-white" title="Anterior"
+                          [disabled]="paginaClientes === 1" (click)="irAPaginaClientes(paginaClientes - 1)">
+                    <i class="fa fa-chevron-left"></i>
+                  </button>
+                  <span class="btn btn-white disabled gc-lista__pagina">{{ paginaClientes }} / {{ ultimaPaginaClientes }}</span>
+                  <button type="button" class="btn btn-white" title="Siguiente"
+                          [disabled]="paginaClientes === ultimaPaginaClientes" (click)="irAPaginaClientes(paginaClientes + 1)">
+                    <i class="fa fa-chevron-right"></i>
+                  </button>
+                  <button type="button" class="btn btn-white" title="Última página"
+                          [disabled]="paginaClientes === ultimaPaginaClientes" (click)="irAPaginaClientes(ultimaPaginaClientes)">
+                    <i class="fa fa-angle-double-right"></i>
+                  </button>
+                </div>
+                <span class="gc-lista__cuenta">{{ desdeClientes }}–{{ hastaClientes }} de {{ totalClientes }}</span>
+              </div>
+            }
+
+          </div>
+        </aside>
+
+
+        <!-- ---------- El divisor ----------
+             Se arrastra con el ratón para repartir el ancho entre la lista y
+             el trabajo; doble clic vuelve al de siempre y, con el foco
+             puesto, ← → lo mueven (con Mayús, a zancadas) y Enter pliega.
+             El ancho se recuerda en el navegador. Mismo comportamiento que
+             el del administrador de archivos. -->
+        @if (!panelOculto) {
+          <div class="gc-divisor"
+               role="separator"
+               tabindex="0"
+               aria-orientation="vertical"
+               aria-label="Ancho de la lista de clientes"
+               [attr.aria-valuenow]="anchoColumna"
+               [attr.aria-valuemin]="ANCHO_COLUMNA_MIN"
+               [attr.aria-valuemax]="ANCHO_COLUMNA_MAX"
+               title="Arrastra para repartir el ancho (doble clic: ancho por defecto)"
+               (pointerdown)="iniciarRedimension($event)"
+               (dblclick)="restablecerAncho()"
+               (keydown)="onTeclaDivisor($event)">
+
+            <!-- La pestañita de plegar vive en el divisor: el mismo sitio de
+                 siempre, pero ya no se pelea con el borde de la tarjeta -->
+            <button type="button" class="gc-pestana"
+                    title="Ocultar la lista de clientes"
+                    (pointerdown)="$event.stopPropagation()"
+                    (click)="alternarPanel()">
+              <i class="fa fa-chevron-left"></i>
+            </button>
+          </div>
+        }
+
+        <!-- ---------- El lomo ----------
+             Con la lista plegada queda esta franja: dice qué columna se
+             escondió y la devuelve al pulsarla. -->
+        @if (panelOculto) {
+          <button type="button" class="gc-lomo"
+                  title="Mostrar la lista de clientes"
+                  (click)="alternarPanel()">
+            <span class="gc-lomo__texto">Clientes</span>
+          </button>
+        }
+
+        <!-- ---------- Columna derecha: su trabajo ---------- -->
+        <div class="gc-panel">
+
+          <div class="gc-panel__contenido">
+            @if (hayCliente) {
+
+              <!-- ---------- Menú superior ----------
+                   Quién es el cliente y, a la derecha, todo lo que se puede
+                   hacer con él. Va pegado arriba (sticky) para que al bajar
+                   por el historial las acciones sigan a un clic. -->
+              <div class="gc-barra">
+
+
+                <div class="gc-barra__acciones">
+                  <button type="button" class="btn btn-primary btn-sm" [disabled]="accesoModel?.crear === false"
+                          title="Registrar una gestión que ya hiciste" (click)="registrarGestion()">
+                    <i class="fa fa-phone me-1"></i>Registrar gestión
+                  </button>
+                  <button type="button" class="btn btn-warning btn-sm" [disabled]="accesoModel?.crear === false"
+                          title="Dejar agendada la siguiente" (click)="programarGestion()">
+                    <i class="fa fa-calendar-plus me-1"></i>Programar
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="accesoModel?.editar === false"
+                          title="Pasar el cliente a otro vendedor" (click)="reasignar()">
+                    <i class="fa fa-user-check me-1"></i>Reasignar
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" title="Abrir la ficha completa del cliente" (click)="verFicha()">
+                    <i class="fa fa-address-card me-1"></i>Ver ficha
+                  </button>
+
+                  <!-- Los datos ocupan sitio; quien vive en el historial los pliega -->
+                  <button type="button" class="btn btn-outline-secondary btn-sm gc-barra__plegar"
+                          [title]="datosVisibles ? 'Ocultar los datos del cliente' : 'Mostrar los datos del cliente'"
+                          (click)="alternarDatos()">
+
+                    <i class="fa fa-fw" [ngClass]="datosVisibles ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    <span class="gc-barra__plegar-texto">{{ datosVisibles ? 'Ocultar datos' : 'Mostrar datos' }}</span>
+                    
+                  </button>
+
+
+                </div>
+              </div>
+
+              <!-- ---------- Los datos, por temas ----------
+                   Tarjetas en vez de paneles: el mismo reparto por temas pero
+                   sin la cabecera gruesa del panel. Cada dato va en una línea,
+                   «Rótulo: valor», para que la ficha entera ocupe la mitad y
+                   el historial no quede debajo del doblez. -->
+              @if (datosVisibles) {
+                <div class="gc-fichas">
+
+                  <!-- Quién es -->
+                  <div class="gc-tarjeta">
+                    <div class="gc-tarjeta__titulo"><i class="fa fa-user fa-fw"></i>Identificación</div>
+                    <div class="gc-tarjeta__cuerpo">
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">{{ cliente?.tipo_cliente === 'EMPRESA' ? 'Razón social' : 'Nombres' }}:</span>
+                        <span class="gc-campo__valor">{{ cliente?.nombre_completo || '—' }}</span>
+                      </div>
+                      @if (cliente?.nombre_comercial) {
+                        <div class="gc-campo">
+                          <span class="gc-campo__rotulo">Comercial:</span>
+                          <span class="gc-campo__valor">{{ cliente?.nombre_comercial }}</span>
+                        </div>
+                      }
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">{{ rotuloIdentificacion }}:</span>
+                        <span class="gc-campo__valor">
+                          {{ cliente?.numero_identificacion }}
+                          <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.numero_identificacion, 'La identificación')">
+                            <i class="fa fa-copy"></i>
+                          </button>
+                        </span>
+                      </div>
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Vendedor:</span>
+                        <span class="gc-campo__valor">{{ cliente?.vendedor_nombre || 'sin asignar' }}</span>
+                      </div>
+                      @if (cliente?.fecha_nacimiento) {
+                        <div class="gc-campo">
+                          <span class="gc-campo__rotulo">Nacimiento:</span>
+                          <span class="gc-campo__valor">{{ cliente?.fecha_nacimiento }}</span>
+                        </div>
+                      }
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Estado:</span>
+                        <span class="gc-campo__valor">
+                          <span class="badge fs-10px" [ngClass]="claseEstadoCliente(cliente?.estado)">{{ cliente?.estado }}</span>
+                          @if (!cliente?.activo) { <span class="badge bg-danger fs-10px">INACTIVO</span> }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Por dónde se le llega -->
+                  <div class="gc-tarjeta">
+                    <div class="gc-tarjeta__titulo"><i class="fa fa-phone fa-fw"></i>Contactabilidad</div>
+                    <div class="gc-tarjeta__cuerpo">
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Celular:</span>
+                        <span class="gc-campo__valor">
+                          @if (cliente?.celular) {
+                            <a [href]="enlaceTelefono(cliente?.celular)" title="Llamar">{{ cliente?.celular }}</a>
+                            <!-- WhatsApp con mensaje ya escrito: el menú va
+                                 flotando por encima (ver .menu-wa), porque
+                                 esta tarjeta recorta lo que se salga. -->
+                            <button type="button" class="gc-campo__accion gc-campo__accion--wa"
+                                    title="Escribir por WhatsApp"
+                                    (click)="abrirMenuWhatsapp($event, cliente?.celular)">
+                              <i class="fab fa-whatsapp"></i>
+                            </button>
+                            <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.celular, 'El celular')">
+                              <i class="fa fa-copy"></i>
+                            </button>
+                          } @else { — }
+                        </span>
+                      </div>
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Teléfono:</span>
+                        <span class="gc-campo__valor">
+                          @if (cliente?.telefono) {
+                            <a [href]="enlaceTelefono(cliente?.telefono)" title="Llamar">{{ cliente?.telefono }}</a>
+                            <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.telefono, 'El teléfono')">
+                              <i class="fa fa-copy"></i>
+                            </button>
+                          } @else { — }
+                        </span>
+                      </div>
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Correo:</span>
+                        <span class="gc-campo__valor">
+                          @if (cliente?.email) {
+                            <a [href]="'mailto:' + cliente?.email" [title]="cliente?.email">{{ cliente?.email }}</a>
+                            <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.email, 'El correo')">
+                              <i class="fa fa-copy"></i>
+                            </button>
+                          } @else { — }
+                        </span>
+                      </div>
+                      @if (cliente?.email_alterno) {
+                        <div class="gc-campo">
+                          <span class="gc-campo__rotulo">Alterno:</span>
+                          <span class="gc-campo__valor">
+                            <a [href]="'mailto:' + cliente?.email_alterno" [title]="cliente?.email_alterno">{{ cliente?.email_alterno }}</a>
+                          </span>
+                        </div>
+                      }
+                      @if (cliente?.sitio_web) {
+                        <div class="gc-campo">
+                          <span class="gc-campo__rotulo">Web:</span>
+                          <span class="gc-campo__valor">
+                            <a [href]="enlaceWeb(cliente?.sitio_web)" target="_blank" rel="noopener noreferrer">{{ cliente?.sitio_web }}</a>
+                          </span>
+                        </div>
+                      }
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Personas:</span>
+                        <span class="gc-campo__valor">
+                          @if (contactos.length) {
+                            <button type="button" class="gc-campo__enlace" (click)="pestana = 'contactos'">
+                              {{ contactos.length }} contacto{{ contactos.length === 1 ? '' : 's' }}
+                            </button>
+                          } @else { sin personas de contacto }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Dónde está -->
+                  <div class="gc-tarjeta">
+                    <div class="gc-tarjeta__titulo"><i class="fa fa-location-dot fa-fw"></i>Ubicación</div>
+                    <div class="gc-tarjeta__cuerpo">
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Provincia:</span>
+                        <span class="gc-campo__valor">{{ cliente?.provincia || '—' }}</span>
+                      </div>
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Ciudad:</span>
+                        <span class="gc-campo__valor">{{ cliente?.canton || '—' }}</span>
+                      </div>
+                      @if (cliente?.parroquia) {
+                        <div class="gc-campo">
+                          <span class="gc-campo__rotulo">Parroquia:</span>
+                          <span class="gc-campo__valor">{{ cliente?.parroquia }}</span>
+                        </div>
+                      }
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Dirección:</span>
+                        <span class="gc-campo__valor">
+                          <span [title]="direccionDelCliente">{{ direccionDelCliente || '—' }}</span>
+                          @if (cliente?.link_coordenadas) {
+                            <a class="gc-campo__accion" [href]="cliente?.link_coordenadas" target="_blank" rel="noopener noreferrer" title="Ver en Google Maps">
+                              <i class="fa fa-map-location-dot"></i>
+                            </a>
+                          }
+                        </span>
+                      </div>
+                      @if (cliente?.codigo_postal) {
+                        <div class="gc-campo">
+                          <span class="gc-campo__rotulo">C. postal:</span>
+                          <span class="gc-campo__valor">{{ cliente?.codigo_postal }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Cómo se le cobra -->
+                  <div class="gc-tarjeta">
+                    <div class="gc-tarjeta__titulo"><i class="fa fa-briefcase fa-fw"></i>Condiciones comerciales</div>
+                    <div class="gc-tarjeta__cuerpo">
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Forma de pago:</span>
+                        <span class="gc-campo__valor">{{ cliente?.forma_pago }}</span>
+                      </div>
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Crédito:</span>
+                        <span class="gc-campo__valor">{{ cliente?.dias_credito ? cliente?.dias_credito + ' días' : 'sin crédito' }}</span>
+                      </div>
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Cupo:</span>
+                        <span class="gc-campo__valor">{{ cliente?.limite_credito ? (cliente?.limite_credito | number:'1.2-2') : '—' }}</span>
+                      </div>
+                      <div class="gc-campo">
+                        <span class="gc-campo__rotulo">Descuento:</span>
+                        <span class="gc-campo__valor">{{ cliente?.descuento ? cliente?.descuento + ' %' : '—' }}</span>
+                      </div>
+                      @if (cliente?.observaciones) {
+                        <div class="gc-campo gc-campo--largo">
+                          <span class="gc-campo__rotulo">Observaciones:</span>
+                          <span class="gc-campo__valor" [title]="cliente?.observaciones">{{ cliente?.observaciones }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                </div>
+
+                
+                  <!-- Contadores -->
+                  @if (resumen) {
+                    <div class="gestion-resumen">
+                      <div class="gestion-chip">
+                        <span class="gestion-chip__valor">{{ resumen.total }}</span>
+                        <span class="gestion-chip__texto">gestiones</span>
+                      </div>
+                      <div class="gestion-chip gestion-chip--ok">
+                        <span class="gestion-chip__valor">{{ resumen.realizadas }}</span>
+                        <span class="gestion-chip__texto">realizadas</span>
+                      </div>
+                      <div class="gestion-chip gestion-chip--aviso">
+                        <span class="gestion-chip__valor">{{ resumen.pendientes }}</span>
+                        <span class="gestion-chip__texto">pendientes</span>
+                      </div>
+                      @if (resumen.vencidas) {
+                        <div class="gestion-chip gestion-chip--peligro">
+                          <span class="gestion-chip__valor">{{ resumen.vencidas }}</span>
+                          <span class="gestion-chip__texto">vencidas</span>
+                        </div>
+                      }
+                      <div class="gestion-chip">
+                        <span class="gestion-chip__valor">{{ resumen.minutos }}</span>
+                        <span class="gestion-chip__texto">minutos</span>
+                      </div>
+                    </div>
+                  }
+
+              }
+
+          <!-- ---------- Dónde va este cliente ----------
+               El aviso toma el color del estado: rojo si hay algo vencido,
+               ámbar si no queda nada agendado (que es lo que enfría una
+               cartera) y azul cuando todo está al día. Se puede cerrar, y
+               vuelve al cambiar de cliente. -->
+          <!-- @if (resumen && hitosVisible) {
+            <div class="alert alert-dismissible fade show gestion-aviso" [ngClass]="claseAviso" role="status">
+
+              <!-- <div class="gestion-hitos">
+                <span class="gestion-hito">
+                  <i class="fa fa-clock-rotate-left fa-fw"></i>
+                  <span class="gestion-hito__etiqueta">Última</span>
+                  @if (resumen.ultima) {
+                    <b class="gestion-hito__asunto">{{ resumen.ultima.asunto }}</b>
+                    <span class="gestion-hito__fecha">{{ resumen.ultima.fecha_realizada }}</span>
+                    @if (resumen.ultima.resultado) {
+                      <span class="badge fs-10px" [ngClass]="claseResultado(resumen.ultima.resultado)">{{ nombreResultado(resumen.ultima.resultado) }}</span>
+                    }
+                  } @else {
+                    <i class="gestion-hito__vacio">sin gestiones todavía</i>
+                  }
+                </span>
+
+                <span class="gestion-hito">
+                  <i class="fa fa-calendar-day fa-fw"></i>
+                  <span class="gestion-hito__etiqueta">Próxima</span>
+                  @if (resumen.proxima) {
+                    <b class="gestion-hito__asunto">{{ resumen.proxima.asunto }}</b>
+                    <span class="gestion-hito__fecha">{{ resumen.proxima.fecha_programada }}</span>
+                    @if (resumen.proxima.vencida) {
+                      <span class="badge bg-danger fs-10px">Vencida</span>
+                    }
+                  } @else {
+                    <i class="gestion-hito__vacio">nada agendado</i>
+                  }
+                </span>
+              </div> -->
+
+              <!-- Lo que toca hacer con este aviso, sin salir de él -->
+              <!-- <div class="gestion-aviso__acciones">
+                @if (resumen.proxima) {
+                  <button type="button" class="btn btn-xs btn-white"
+                          [title]="'Cerrar «' + resumen.proxima.asunto + '»'"
+                          (click)="cerrar(resumen.proxima)">
+                    <i class="fa fa-check me-1"></i>Cerrarla
+                  </button>
+                } @else {
+                  <button type="button" class="btn btn-xs btn-white"
+                          [disabled]="accesoModel?.crear === false"
+                          title="Dejar agendada la siguiente gestión"
+                          (click)="programarGestion()">
+                    <i class="fa fa-calendar-plus me-1"></i>Programar
+                  </button>
+                }
+              </div> -->
+
+              <!-- <button type="button" class="btn-close" aria-label="Ocultar el aviso" (click)="hitosVisible = false"></button>
+            </div>
+          } -->
+
+
+          <!-- Pestañas -->
+          <ul class="nav nav-tabs gestion-tabs flex-nowrap py-0" role="tablist">
+            <li class="nav-item flex-shrink-0" role="presentation">
+              <button type="button" class="nav-link" role="tab"
+                      [class.active]="pestana === 'historial'"
+                      [attr.aria-selected]="pestana === 'historial'"
+                      (click)="pestana = 'historial'; replantear()">
+                <i class="fa fa-list-ul"></i>
+                <span class="gestion-tabs__texto">Historial</span>
+              </button>
+            </li>
+            <li class="nav-item flex-shrink-0" role="presentation">
+              <button type="button" class="nav-link" role="tab"
+                      [class.active]="pestana === 'pendientes'"
+                      [attr.aria-selected]="pestana === 'pendientes'"
+                      (click)="pestana = 'pendientes'; replantear()">
+                <i class="fa fa-clock"></i>
+                <span class="gestion-tabs__texto">Pendientes</span>
+                @if (pendientes.length) { <span class="badge bg-warning fs-10px">{{ pendientes.length }}</span> }
+              </button>
+            </li>
+            <li class="nav-item flex-shrink-0" role="presentation">
+              <button type="button" class="nav-link" role="tab"
+                      [class.active]="pestana === 'contactos'"
+                      [attr.aria-selected]="pestana === 'contactos'"
+                      (click)="pestana = 'contactos'; replantear()">
+                <i class="fa fa-address-book"></i>
+                <span class="gestion-tabs__texto">Contactos</span>
+                @if (contactos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ contactos.length }}</span> }
+              </button>
+            </li>
+            <li class="nav-item flex-shrink-0" role="presentation">
+              <button type="button" class="nav-link" role="tab"
+                      [class.active]="pestana === 'cartera'"
+                      [attr.aria-selected]="pestana === 'cartera'"
+                      (click)="pestana = 'cartera'; replantear()">
+                <i class="fa fa-arrow-right-arrow-left"></i>
+                <span class="gestion-tabs__texto">Cartera</span>
+                @if (asignaciones.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ asignaciones.length }}</span> }
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link"
+                      [class.active]="pestana === 'whatsapp'"
+                      (click)="pestana = 'whatsapp'; replantear(); bajarAlUltimoMensaje()">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+                @if (resumenWhatsapp?.sin_responder) {
+                  <span class="badge bg-danger fs-10px">{{ resumenWhatsapp?.sin_responder }}</span>
+                } @else if (resumenWhatsapp?.total) {
+                  <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ resumenWhatsapp?.total }}</span>
+                }
+              </button>
+            </li>
+          </ul>
+
+          <div class="gestion-panel">
+
+            <!-- ===== HISTORIAL ===== -->
+            @if (pestana === 'historial') {
+              <!-- Filtros en dos menús: las dos filas de botones (once en total)
+                   se comían el alto que necesita la grilla. El botón enseña lo
+                   que está filtrando, así que no hace falta mirar la lista. -->
+              <div class="gestion-filtros">
+
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroTipo"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por tipo de gestión">
+                    <i class="fa fa-fw" [ngClass]="filtroTipo ? iconoTipo(filtroTipo) : 'fa-tag'"></i>
+                    <span>{{ filtroTipo ? nombreTipo(filtroTipo) : 'Todos los tipos' }}</span>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroTipo"
+                              (click)="cambiarFiltro('tipo', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Todos los tipos
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (t of tipos; track t.id) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroTipo === t.id"
+                                (click)="cambiarFiltro('tipo', t.id)">
+                          <i class="fa {{ t.icono }} fa-fw me-1"></i>{{ t.name }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroEstado"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por estado">
+                    <i class="fa fa-fw" [ngClass]="filtroEstado ? 'fa-circle-check' : 'fa-flag'"></i>
+                    <span>{{ filtroEstado ? nombreEstado(filtroEstado) : 'Todos los estados' }}</span>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroEstado"
+                              (click)="cambiarFiltro('estado', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Todos los estados
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (e of estados; track e.id) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroEstado === e.id"
+                                (click)="cambiarFiltro('estado', e.id)">
+                          <i class="fa fa-fw me-1" [ngClass]="iconoEstado(e.id)"></i>{{ e.name }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                <!-- Sólo aparece cuando hay algo que quitar -->
+                @if (filtroTipo || filtroEstado) {
+                  <button type="button" class="btn btn-xs btn-white gestion-filtro__limpiar"
+                          title="Quitar los filtros" (click)="limpiarFiltrosHistorial()">
+                    <i class="fa fa-xmark me-1"></i>Quitar filtros
+                  </button>
+                }
+
+                <span class="gestion-filtros__cuenta">{{ totalRegistros }} gestion{{ totalRegistros === 1 ? '' : 'es' }}</span>
+              </div>
+
+              <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente gestion-grilla"
+                [rowData]="gestiones"
+                [columnDefs]="columnDefs"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [localeText]="_appAgGridService.localeText"
+                [rowClassRules]="rowClassRules"
+                [rowHeight]="35"
+                [headerHeight]="35"
+                [rowSelection]="'single'"
+                [pagination]="false"
+                [enableCellTextSelection]="true"
+                [overlayNoRowsTemplate]="'<span>Este cliente todavía no tiene gestiones. Usa <b>Registrar gestión</b>.</span>'"
+                [navigateToNextCell]="navegarConTeclado"
+                (gridReady)="onGridReady($event)"
+                (cellClicked)="onCellClicked($event)">
+              </ag-grid-angular>
+
+              <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2">
+                <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+                  <button type="button" class="btn btn-sm btn-white" title="Primera página" (click)="firstPage()" [disabled]="paginaActual === 1">
+                    <i class="fa fa-angle-double-left"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" title="Página anterior" (click)="prevPage()" [disabled]="paginaActual === 1">
+                    <i class="fa fa-chevron-left"></i>
+                  </button>
+                  <span class="btn btn-sm btn-white pagination-page-badge disabled">
+                    Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+                  </span>
+                  <button type="button" class="btn btn-sm btn-white" title="Página siguiente" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+                    <i class="fa fa-chevron-right"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" title="Última página" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
+                    <i class="fa fa-angle-double-right"></i>
+                  </button>
+                </div>
+                <div class="pagination-info small text-muted">
+                  Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> gestiones
+                </div>
+              </div>
+            }
+
+            <!-- ===== PENDIENTES =====
+                 Grilla, como el historial: lo vencido en rojo y los tres
+                 botones de siempre en ACCIONES. -->
+            @if (pestana === 'pendientes') {
+              <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente gestion-grilla"
+                [rowData]="pendientes"
+                [columnDefs]="columnDefsPendientes"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [localeText]="_appAgGridService.localeText"
+                [rowClassRules]="rowClassRulesPendientes"
+                [rowHeight]="34"
+                [headerHeight]="34"
+                [rowSelection]="'single'"
+                [pagination]="false"
+                [enableCellTextSelection]="true"
+                [overlayNoRowsTemplate]="'<span>No hay nada agendado con este cliente. Usa <b>Programar</b> para dejar la próxima llamada.</span>'"
+                [navigateToNextCell]="navegarConTeclado"
+                (gridReady)="onGridReadyPendientes($event)"
+                (cellClicked)="onCellClickedPendientes($event)">
+              </ag-grid-angular>
+            }
+
+            <!-- ===== PERSONAS DE CONTACTO =====
+                 Los botones de ACCIONES llaman, escriben por WhatsApp o
+                 abren el correo; los datos se editan en la ficha del cliente. -->
+            @if (pestana === 'contactos') {
+              <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente gestion-grilla"
+                [rowData]="contactos"
+                [columnDefs]="columnDefsContactos"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [localeText]="_appAgGridService.localeText"
+                [rowClassRules]="rowClassRulesContactos"
+                [rowHeight]="34"
+                [headerHeight]="34"
+                [rowSelection]="'single'"
+                [pagination]="false"
+                [enableCellTextSelection]="true"
+                [overlayNoRowsTemplate]="'<span>Este cliente no tiene personas de contacto. Se agregan en su ficha, en <b>Personas de contacto</b>.</span>'"
+                [navigateToNextCell]="navegarConTeclado"
+                (gridReady)="onGridReadyContactos($event)"
+                (cellClicked)="onCellClickedContactos($event)">
+              </ag-grid-angular>
+            }
+
+            <!-- ===== CARTERA =====
+                 Quién lo atiende ahora, y debajo por dónde ha pasado. -->
+            @if (pestana === 'cartera') {
+              <div class="gestion-cartera__actual">
+                <i class="fa fa-user-tie fa-fw"></i>
+                Ahora lo atiende <b>{{ cliente?.vendedor_nombre || 'nadie' }}</b>
+                <button type="button" class="btn btn-xs btn-white ms-2" [disabled]="accesoModel?.editar === false" (click)="reasignar()">
+                  <i class="fa fa-user-check me-1"></i>Reasignar
+                </button>
+              </div>
+
+              <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente gestion-grilla"
+                [rowData]="asignaciones"
+                [columnDefs]="columnDefsCartera"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [localeText]="_appAgGridService.localeText"
+                [rowHeight]="34"
+                [headerHeight]="34"
+                [rowSelection]="'single'"
+                [pagination]="false"
+                [enableCellTextSelection]="true"
+                [overlayNoRowsTemplate]="'<span>El cliente nunca ha cambiado de vendedor.</span>'"
+                [navigateToNextCell]="navegarConTeclado"
+                (gridReady)="onGridReadyCartera($event)">
+              </ag-grid-angular>
+            }
+
+
+            <!-- ===== WHATSAPP =====
+                 Lo que el vendedor ha hablado con el cliente. Lo registra el
+                 servicio miCRM3-wa, que escucha la cuenta de WhatsApp; aquí
+                 sólo se lee. Para escribir están las plantillas del botón
+                 verde de la ficha, que abren el WhatsApp del vendedor. -->
+            @if (pestana === 'whatsapp') {
+              <div class="wa-barra">
+                @if (resumenWhatsapp?.total) {
+                  <span class="wa-barra__dato"><b>{{ resumenWhatsapp?.total }}</b> mensajes</span>
+                  <span class="wa-barra__dato">{{ resumenWhatsapp?.entrantes }} del cliente · {{ resumenWhatsapp?.salientes }} nuestros</span>
+                  @if (resumenWhatsapp?.ultimo_at) {
+                    <span class="wa-barra__dato">último: {{ resumenWhatsapp?.ultimo_at }}</span>
+                  }
+                  @if (resumenWhatsapp?.sin_responder) {
+                    <span class="badge bg-danger fs-10px">{{ resumenWhatsapp?.sin_responder }} sin responder</span>
+                  }
+                }
+                <button type="button" class="btn btn-xs btn-white ms-auto" title="Recargar la conversación"
+                        (click)="cargarConversacion()">
+                  <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoConversacion"></i>
+                </button>
+                @if (cliente?.celular) {
+                  <button type="button" class="btn btn-xs btn-success"
+                          title="Escribir por WhatsApp"
+                          (click)="abrirMenuWhatsapp($event, cliente?.celular)">
+                    <i class="fab fa-whatsapp me-1"></i>Escribir
+                  </button>
+                }
+              </div>
+
+              @if (conversacion.length) {
+                <div class="wa-chat">
+                  @for (m of conversacion; track m.id; let i = $index) {
+                    @if (esNuevoDia(i)) {
+                      <div class="wa-dia">{{ diaDelMensaje(m) }}</div>
+                    }
+                    <div class="wa-globo" [class.is-nuestro]="m.direccion === 'SALIENTE'">
+                      <div class="wa-globo__texto">
+                        @if (m.tipo !== 'TEXTO') {
+                          <i class="fa fa-fw me-1"
+                             [ngClass]="{
+                               'fa-image': m.tipo === 'IMAGEN',
+                               'fa-microphone': m.tipo === 'AUDIO',
+                               'fa-video': m.tipo === 'VIDEO',
+                               'fa-file': m.tipo === 'DOCUMENTO',
+                               'fa-location-dot': m.tipo === 'UBICACION'
+                             }"></i>
+                        }
+                        {{ descripcionDeMensaje(m) }}
+                      </div>
+                      <div class="wa-globo__pie">
+                        @if (m.direccion === 'ENTRANTE' && m.autor) { {{ m.autor }} · }
+                        @if (m.direccion === 'SALIENTE' && m.vendedor) { {{ m.vendedor }} · }
+                        {{ horaDelMensaje(m) }}
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="gestion-vacio">
+                  <i class="fab fa-whatsapp"></i>
+                  <p>
+                    No hay conversación registrada con este cliente.
+                    @if (!cliente?.celular) { <span>Además, no tiene celular en la ficha, así que no hay número con el que cruzarla.</span> }
+                  </p>
+                </div>
+              }
+            }
+          </div>
+            } @else {
+
+              <!-- ---------- Sin cliente elegido: el tablero ----------
+                   Antes aquí sólo ponía «elige un cliente de la lista». Ya que
+                   la mitad de la pantalla está libre, se aprovecha para ver
+                   cómo va la cartera y cómo va el día; al elegir un cliente
+                   este bloque desaparece y no vuelve a consultarse. -->
+              <app-resumen-ventas (irALaAgenda)="vista = 'agenda'; replantear()"></app-resumen-ventas>
+
+              <p class="gestion-pista">
+                <i class="fa fa-arrow-left me-1"></i>
+                Elige un cliente de la lista de la izquierda para ver su ficha, su historial y programarle una gestión.
+              </p>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ================= MENÚ DE WHATSAPP =================
+         Las plantillas que se ofrecen al escribirle al cliente. Va aquí
+         fuera y con position: fixed porque dentro de la tarjeta lo recortaba
+         el overflow. -->
+    @if (menuWa.visible) {
+      <div #menuWaEl
+           class="menu-ctx menu-wa"
+           role="menu"
+           [style.left.px]="menuWa.x"
+           [style.top.px]="menuWa.y"
+           (click)="$event.stopPropagation()">
+
+        <div class="menu-ctx__cabecera">
+          <i class="fab fa-whatsapp fa-fw text-success"></i>
+          <span class="text-truncate">Escribir a {{ menuWa.aQuien || menuWa.numero }}</span>
+        </div>
+
+        @for (p of plantillasWhatsapp; track p.id) {
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  [title]="textoDePlantilla(p)"
+                  (click)="cerrarMenuWhatsapp(); escribirPorWhatsapp(menuWa.numero, p, menuWa.aQuien)">
+            <i class="fa {{ p.icono }} fa-fw text-success"></i> {{ p.nombre }}
+          </button>
+        }
+
+        <div class="menu-ctx__sep"></div>
+
+        <button type="button" class="menu-ctx__item" role="menuitem"
+                (click)="cerrarMenuWhatsapp(); escribirPorWhatsapp(menuWa.numero, null, menuWa.aQuien)">
+          <i class="fa fa-comment fa-fw text-secondary"></i> Abrir el chat sin mensaje
+        </button>
+        <button type="button" class="menu-ctx__item" role="menuitem"
+                (click)="cerrarMenuWhatsapp(); alternarDestinoWhatsapp()">
+          <i class="fa fa-fw text-secondary" [ngClass]="destinoWhatsapp === 'app' ? 'fa-desktop' : 'fa-globe'"></i>
+          {{ destinoWhatsapp === 'app' ? 'Abriendo en la aplicación' : 'Abriendo en WhatsApp Web' }}
+        </button>
+      </div>
+    }
+
+    <!-- ================= MENÚ DEL CLIC DERECHO ================= -->
+    @if (menuCtx.visible) {
+      <div #menuCtxEl
+           class="menu-ctx"
+           role="menu"
+           [style.left.px]="menuCtx.x"
+           [style.top.px]="menuCtx.y"
+           (click)="$event.stopPropagation()"
+           (contextmenu)="$event.preventDefault()">
+
+        <!-- ---------- Lo de la fila señalada ----------
+             Si el clic derecho cayó sobre una fila de cualquier grilla, lo
+             primero que ofrece el menú son las acciones de ESA fila. Debajo,
+             separadas, siguen las de siempre. -->
+        @if (menuCtx.tipo === 'cliente' && menuCtx.fila) {
+          <div class="menu-ctx__cabecera">
+            <i class="fa fa-fw" [ngClass]="menuCtx.fila.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user'"></i>
+            <span class="text-truncate">{{ menuCtx.fila.nombre_completo }}</span>
+          </div>
+
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  (click)="cerrarMenu(); seleccionarCliente(menuCtx.fila)">
+            <i class="fa fa-arrow-right fa-fw text-success"></i> Abrir este cliente
+          </button>
+          @if (telefonoDelObjetivo) {
+            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(telefonoDelObjetivo)" (click)="cerrarMenu()">
+              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
+              <span class="menu-ctx__detalle">{{ telefonoDelObjetivo }}</span>
+            </a>
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); escribirPorWhatsapp(telefonoDelObjetivo)">
+              <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
+            </button>
+          }
+
+          <div class="menu-ctx__sep"></div>
+        }
+
+        @if (menuCtx.tipo === 'gestion' && menuCtx.fila) {
+          <div class="menu-ctx__cabecera">
+            <i class="fa fa-fw" [ngClass]="iconoTipo(menuCtx.fila.tipo)"></i>
+            <span class="text-truncate">{{ menuCtx.fila.asunto }}</span>
+          </div>
+
+          @if (menuCtx.fila.estado === 'PENDIENTE') {
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    [disabled]="accesoModel?.editar === false"
+                    (click)="cerrarMenu(); cerrar(menuCtx.fila)">
+              <i class="fa fa-check fa-fw text-success"></i> Marcar como hecha
+            </button>
+          }
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  [disabled]="accesoModel?.editar === false"
+                  (click)="cerrarMenu(); editarGestion(menuCtx.fila)">
+            <i class="fa fa-pen fa-fw text-secondary"></i> Modificar la gestión
+          </button>
+          <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem"
+                  [disabled]="accesoModel?.eliminar === false"
+                  (click)="cerrarMenu(); eliminarGestion(menuCtx.fila)">
+            <i class="fa fa-trash fa-fw"></i> Eliminar la gestión
+          </button>
+          @if (menuCtx.fila.cliente_id && menuCtx.fila.cliente_id !== cliente?.id) {
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); irAlCliente(menuCtx.fila)">
+              <i class="fa fa-user fa-fw text-secondary"></i> Abrir el cliente
+              <span class="menu-ctx__detalle">{{ menuCtx.fila.cliente_nombre }}</span>
+            </button>
+          }
+          @if (telefonoDelObjetivo && menuCtx.fila.cliente_id !== cliente?.id) {
+            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(telefonoDelObjetivo)" (click)="cerrarMenu()">
+              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
+              <span class="menu-ctx__detalle">{{ telefonoDelObjetivo }}</span>
+            </a>
+          }
+
+          <div class="menu-ctx__sep"></div>
+        }
+
+        @if (menuCtx.tipo === 'contacto' && menuCtx.fila) {
+          <div class="menu-ctx__cabecera">
+            <i class="fa fa-address-book fa-fw"></i>
+            <span class="text-truncate">{{ menuCtx.fila.nombres }}</span>
+          </div>
+
+          @if (menuCtx.fila.telefono) {
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); llamarConSoftphone(menuCtx.fila.telefono, menuCtx.fila.nombres)">
+              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar con Zoiper
+              <span class="menu-ctx__detalle">{{ menuCtx.fila.telefono }}</span>
+            </button>
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); escribirPorWhatsapp(menuCtx.fila.telefono, null, menuCtx.fila.nombres)">
+              <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
+            </button>
+          }
+          @if (menuCtx.fila.email) {
+            <a class="menu-ctx__item" role="menuitem" [href]="'mailto:' + menuCtx.fila.email" (click)="cerrarMenu()">
+              <i class="fa fa-envelope fa-fw text-secondary"></i> Escribir un correo
+              <span class="menu-ctx__detalle">{{ menuCtx.fila.email }}</span>
+            </a>
+          }
+
+          <div class="menu-ctx__sep"></div>
+        }
+
+        @if (hayCliente) {
+          <div class="menu-ctx__cabecera">
+            <i class="fa fa-fw" [ngClass]="cliente?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user'"></i>
+            <span class="text-truncate">{{ cliente?.nombre_completo }}</span>
+          </div>
+
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  [disabled]="accesoModel?.crear === false"
+                  (click)="cerrarMenu(); registrarGestion()">
+            <i class="fa fa-phone fa-fw text-success"></i> Registrar gestión
+          </button>
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  [disabled]="accesoModel?.crear === false"
+                  (click)="cerrarMenu(); programarGestion()">
+            <i class="fa fa-calendar-plus fa-fw text-warning"></i> Programar gestión
+          </button>
+
+          <div class="menu-ctx__sep"></div>
+
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  [disabled]="accesoModel?.editar === false"
+                  (click)="cerrarMenu(); reasignar()">
+            <i class="fa fa-user-check fa-fw text-secondary"></i> Reasignar a otro vendedor
+          </button>
+          <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); verFicha()">
+            <i class="fa fa-address-card fa-fw text-secondary"></i> Ver la ficha completa
+          </button>
+          @if (cliente?.celular || cliente?.telefono) {
+            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(cliente?.celular || cliente?.telefono)" (click)="cerrarMenu()">
+              <i class="fa fa-mobile-screen fa-fw text-secondary"></i> Llamar
+              <span class="menu-ctx__detalle">{{ cliente?.celular || cliente?.telefono }}</span>
+            </a>
+          }
+
+          <div class="menu-ctx__sep"></div>
+        }
+
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); verConversacionesSueltas()">
+          <i class="fab fa-whatsapp fa-fw text-success"></i> Conversaciones sin asignar
+        </button>
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); abrirSelectorClientes()">
+          <i class="fa fa-magnifying-glass fa-fw text-secondary"></i> Buscar en el listado completo
+        </button>
+        <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); alternarPanel()">
+          <i class="fa fa-fw text-secondary" [ngClass]="panelOculto ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+          {{ panelOculto ? 'Mostrar la lista' : 'Ocultar la lista' }}
+        </button>
+        @if (hayCliente) {
+          <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); seleccionarCliente(cliente)">
+            <i class="fa fa-arrows-rotate fa-fw text-secondary"></i> Recargar
+          </button>
+          <div class="menu-ctx__sep"></div>
+          <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); limpiarCliente()">
+            <i class="fa fa-xmark fa-fw"></i> Quitar el cliente
+          </button>
+        }
+      </div>
+    }
+
+  </div>
+</panel>

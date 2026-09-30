@@ -3,7 +3,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
-import { ClienteModel } from '../../../../clientes/interfaces/clienteModel';
+import { ClienteModel } from '../../../../ventas/interfaces/clienteModel';
 
 @Component({
   selector: 'app-all-clientes',

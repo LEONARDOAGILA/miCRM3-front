@@ -1,0 +1,54 @@
+<div class="seg-home">
+
+  <div style="min-height: 100vh; background: url(/assets/img/cover/cover-scrum-board.png) no-repeat fixed; background-size: 360px; background-position: right bottom;">
+
+    <!-- ===================== CABECERA ===================== -->
+    <div class="seg-header">
+      <div class="seg-header__icono">
+        <i class="fa fa-people-group" aria-hidden="true"></i>
+      </div>
+
+      <div class="seg-header__texto">
+        <h1 class="seg-header__titulo">Menú Recursos Humanos</h1>
+        <p class="seg-header__ayuda">
+          Cargos, empleados y organización del personal
+        </p>
+      </div>
+
+      <a routerLink="/home" class="btn btn-outline-secondary btn-sm seg-header__volver">
+        <i class="fa fa-circle-left fa-fw me-1" aria-hidden="true"></i>
+        <span class="d-none d-sm-inline">Volver al inicio</span>
+        <span class="d-inline d-sm-none">Volver</span>
+      </a>
+    </div>
+
+    <!-- ===================== MÓDULOS ===================== -->
+    <div class="row g-3">
+      @if (modulosPermitidos.length > 0) {
+        @for (modulo of modulosPermitidos; track modulo.url) {
+          <div class="col-xl-4 col-md-6">
+            <a [routerLink]="modulo.url.startsWith('/') ? modulo.url : '/' + modulo.url" class="seg-card">
+              <span class="seg-card__icono {{ modulo.color }}">
+                <i class="fa {{ modulo.icon }}" aria-hidden="true"></i>
+              </span>
+              <span class="seg-card__cuerpo">
+                <span class="seg-card__titulo">{{ modulo.label }}</span>
+                <span class="seg-card__descripcion">{{ modulo.descripcion }}</span>
+              </span>
+              <i class="fa fa-arrow-right seg-card__flecha" aria-hidden="true"></i>
+            </a>
+          </div>
+        }
+      } @else {
+        <div class="col-12">
+          <div class="seg-vacio">
+            <i class="fa fa-lock" aria-hidden="true"></i>
+            <p>No tiene opciones de Recursos Humanos asignadas en su perfil</p>
+            <a routerLink="/home" class="btn btn-sm btn-outline-secondary">Volver al inicio</a>
+          </div>
+        </div>
+      }
+    </div>
+
+  </div>
+</div>

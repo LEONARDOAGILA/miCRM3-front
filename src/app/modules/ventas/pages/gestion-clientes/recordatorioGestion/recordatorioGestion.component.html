@@ -1,0 +1,102 @@
+<!-- ============================================================
+     RECORDATORIO DE GESTIÓN
+
+     Sale solo cuando llega la hora de una gestión programada.
+     Lo justo para resolverla aquí: llamar, cerrarla o posponerla.
+     ============================================================ -->
+
+<div class="modal-header recordatorio-header">
+  <h5 class="modal-title">
+    <i class="fa fa-bell fa-shake me-2" aria-hidden="true"></i>Toca hacer esta gestión
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar" (click)="ignorar()"></button>
+</div>
+
+<div class="modal-body recordatorio-body">
+
+  <!-- Qué hay que hacer -->
+  <div class="recordatorio-titulo">
+    <span class="recordatorio-titulo__icono"><i class="fa" [ngClass]="icono"></i></span>
+    <div class="recordatorio-titulo__texto">
+      <span class="recordatorio-titulo__asunto">{{ gestion?.asunto }}</span>
+      <span class="recordatorio-titulo__cliente">
+        <i class="fa fa-user fa-fw"></i>{{ gestion?.cliente_nombre }}
+      </span>
+    </div>
+    <span class="badge fs-10px" [ngClass]="gestion?.vencida ? 'bg-danger' : 'bg-warning'">{{ cuando }}</span>
+  </div>
+
+  <!-- Datos -->
+  <div class="recordatorio-datos">
+    <span><i class="fa fa-clock fa-fw"></i>{{ gestion?.fecha_programada }}</span>
+    <span><i class="fa fa-flag fa-fw"></i>{{ gestion?.prioridad }}</span>
+    <span><i class="fa fa-tag fa-fw"></i>{{ tipoNombre }}</span>
+    <span *ngIf="gestion?.empleado_nombre"><i class="fa fa-user-tie fa-fw"></i>{{ gestion?.empleado_nombre }}</span>
+  </div>
+
+  <p class="recordatorio-nota" *ngIf="gestion?.nota">
+    <i class="fa fa-quote-left fa-fw me-1"></i>{{ gestion?.nota }}
+  </p>
+
+  <!-- Llamar -->
+  <div class="recordatorio-llamar" *ngIf="telefono">
+    <a class="btn btn-success" [href]="enlaceTelefono">
+      <i class="fa fa-phone me-1"></i>Llamar al {{ telefono }}
+    </a>
+    <a class="btn btn-white" [href]="enlaceWhatsapp" target="_blank" rel="noopener noreferrer" title="Abrir WhatsApp">
+      <i class="fab fa-whatsapp"></i>
+    </a>
+  </div>
+
+  <!-- Cerrarla sin salir del aviso -->
+  <div class="recordatorio-cierre" *ngIf="cerrando">
+    <div class="row g-2">
+      <div class="col-7">
+        <label class="form-label recordatorio-etiqueta" for="rec-resultado">¿Cómo terminó?</label>
+        <select id="rec-resultado" class="form-select form-select-sm" [(ngModel)]="resultado">
+          <option *ngFor="let r of resultados" [value]="r.id">{{ r.name }}</option>
+        </select>
+      </div>
+      <div class="col-5">
+        <label class="form-label recordatorio-etiqueta" for="rec-duracion">Duración (min)</label>
+        <input id="rec-duracion" type="number" min="0" max="1440" class="form-control form-control-sm" [(ngModel)]="duracion" />
+      </div>
+      <div class="col-12">
+        <label class="form-label recordatorio-etiqueta" for="rec-nota">Qué se habló</label>
+        <textarea id="rec-nota" class="form-control form-control-sm" rows="2" [(ngModel)]="nota"
+                  placeholder="Lo que dijo el cliente, acuerdos, próximos pasos…"></textarea>
+      </div>
+    </div>
+    <p class="recordatorio-ayuda">
+      <i class="fa fa-circle-info fa-fw me-1"></i>
+      Para dejar programado el seguimiento, usa <b>Abrir el cliente</b>: ahí se cierra y se agenda la siguiente de una vez.
+    </p>
+  </div>
+
+</div>
+
+<div class="modal-footer recordatorio-footer">
+
+  <!-- Posponer -->
+  <div class="recordatorio-posponer btn-group btn-group-sm" role="group" aria-label="Posponer">
+    <span class="btn btn-white disabled recordatorio-posponer__texto">
+      <i class="fa fa-clock-rotate-left me-1"></i>Posponer
+    </span>
+    <button type="button" class="btn btn-white" (click)="posponer(5)">5 min</button>
+    <button type="button" class="btn btn-white" (click)="posponer(15)">15 min</button>
+    <button type="button" class="btn btn-white" (click)="posponer(60)">1 h</button>
+  </div>
+
+  <div class="recordatorio-footer__derecha">
+    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="abrirCliente()">
+      <i class="fa fa-arrow-up-right-from-square me-1"></i>Abrir el cliente
+    </button>
+
+    <button type="button" class="btn btn-sm btn-primary" *ngIf="!cerrando" (click)="cerrando = true">
+      <i class="fa fa-check me-1"></i>Marcar como hecha
+    </button>
+    <button type="button" class="btn btn-sm btn-primary" *ngIf="cerrando" [disabled]="guardando" (click)="cerrar()">
+      <i class="fa fa-floppy-disk me-1"></i>Guardar y cerrar
+    </button>
+  </div>
+</div>

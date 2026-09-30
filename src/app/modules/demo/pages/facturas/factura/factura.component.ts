@@ -13,7 +13,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 //   ******   MODELOS   ******  //
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
-import { ClienteModel } from '../../../../../modules/clientes/interfaces/clienteModel';
+import { ClienteModel } from '../../../../../modules/ventas/interfaces/clienteModel';
 import { ProductoModel } from '../../../../../modules/inventarios/interfaces/productoModel';
 import { LoadingService } from '../../../../../service/loading.service';
 import { DatosPruebaService } from '../../../../../service/datos-prueba.service';
@@ -21,7 +21,7 @@ import { DatosPruebaService } from '../../../../../service/datos-prueba.service'
 //   ******   COMPONENTES   ******  //
 import { AllClientesComponent } from '../all-clientes/all-clientes.component';
 import { AllProductosComponent } from '../all-productos/all-productos.component';
-import { ClienteService } from '../../../../clientes/services/cliente.service';
+import { ClienteService } from '../../../../ventas/services/cliente.service';
 
 @Component({
   selector: 'app-factura',

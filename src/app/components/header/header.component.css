@@ -1,21 +1,32 @@
-/* LPAA - ESTILOS PARA CAMPANA DE AVISO */
-@keyframes campanaLatido {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.9);
-  }
-  100% {
-    transform: scale(1);
-  }
+/* LPAA - ESTILOS PARA CAMPANA DE AVISO
+   La campana tañe en vez de hincharse: se mueve como una campana de verdad,
+   colgada de su parte de arriba. Sigue repitiéndose hasta que se pulsa, pero
+   con un descanso entre toques para que no canse. */
+@keyframes campanaTanido {
+  0%   { transform: rotate(0deg); }
+  4%   { transform: rotate(15deg); }
+  9%   { transform: rotate(-13deg); }
+  14%  { transform: rotate(11deg); }
+  19%  { transform: rotate(-9deg); }
+  24%  { transform: rotate(6deg); }
+  29%  { transform: rotate(-4deg); }
+  34%  { transform: rotate(2deg); }
+  /* De aquí al final se queda quieta: es la pausa entre toque y toque */
+  38%, 100% { transform: rotate(0deg); }
 }
 
 .animar-campana {
-  animation: campanaLatido 1s ease-in-out infinite;
-  transform-origin: center;
+  animation: campanaTanido 2.4s ease-in-out infinite;
+  transform-origin: top center;
   color: #ffc107;
   transition: color 0.3s ease;
+}
+
+/* A quien le molesta el movimiento le queda el color, que ya avisa */
+@media (prefers-reduced-motion: reduce) {
+  .animar-campana {
+    animation: none;
+  }
 }
 
 /* Solución para móvil - evitar que usuario y campana se bajen */
@@ -161,4 +172,521 @@ html, body {
 
 .app-content {
   flex: 1;
+}
+/* ============================================================
+   MENÚ DEL USUARIO (dropdown de la cabecera)
+   Colores por variables del tema (claro / oscuro / color del tema).
+   ============================================================ */
+.usuario-menu {
+  min-width: 260px;
+  padding-top: 0;
+}
+
+.usuario-menu__cabecera {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .875rem 1rem;
+  background-color: rgba(var(--bs-app-theme-rgb), .08);
+  border-radius: var(--bs-dropdown-border-radius, .375rem) var(--bs-dropdown-border-radius, .375rem) 0 0;
+}
+
+.usuario-menu__foto {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: visible;
+  background-color: var(--bs-gray-800);
+  color: var(--bs-gray-500);
+  font-size: 1.25rem;
+}
+
+.usuario-menu__foto img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* El estado sobre la foto es .marca-estado, la misma pieza que en la barra */
+
+.usuario-menu__texto {
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.usuario-menu__nombre {
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+.usuario-menu__detalle {
+  font-size: 11px;
+  color: var(--bs-secondary-color, var(--bs-gray-600));
+}
+
+.usuario-menu__cambiar {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--bs-secondary-color, var(--bs-gray-600));
+}
+
+.usuario-menu .dropdown-item:hover .usuario-menu__cambiar {
+  color: inherit;
+}
+
+/* ============================================================
+   CAMPANA DE NOTIFICACIONES
+   El desplegable trae las últimas; el resto está en «Ver todas».
+   Todo con variables del tema, para que valga en claro y en oscuro.
+   ============================================================ */
+
+/* El envoltorio es el que ancla el contador al icono */
+.campana-icono {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Contador en la esquina del icono, con un anillo del color de la barra
+   para que se despegue de la campana en vez de pisarla */
+.campana-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background-color: #ff5b57;
+  box-shadow: 0 0 0 2px var(--bs-app-header-bg, var(--bs-body-bg, #fff));
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* Con dos o tres cifras deja de ser un círculo y se ensancha hacia fuera */
+.campana-badge.es-muchas {
+  right: -12px;
+}
+
+/* ---------- El desplegable ---------- */
+.campana-menu {
+  width: 360px;
+  /* En un teléfono no puede pasar del ancho de la pantalla */
+  max-width: calc(100vw - 24px);
+  padding: 0;
+  overflow: hidden;
+  border-radius: .6rem;
+  box-shadow: 0 .6rem 1.6rem rgba(0, 0, 0, .16);
+}
+
+/* ---------- Cabecera ---------- */
+.campana-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .6rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #e9ecef);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.campana-cabecera__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campana-cabecera__cuenta {
+  min-width: 18px;
+  padding: 0 .35rem;
+  border-radius: 999px;
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+/* ---------- Cómo avisa: dos interruptores y el «marcar leídas» ---------- */
+.campana-ajustes {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.campana-ajustes__sep {
+  width: 1px;
+  height: 14px;
+  margin: 0 .15rem;
+  background-color: var(--bs-border-color, #dee2e6);
+}
+
+.campana-ajuste {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 50%;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 10px;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+
+.campana-ajuste:hover {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Encendido: se ve de un vistazo cuál de los dos está puesto */
+.campana-ajuste.is-on {
+  background-color: var(--bs-app-theme, #00acac);
+  border-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+}
+
+.campana-marcar {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: none;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.campana-marcar:hover {
+  color: var(--bs-app-theme, #00acac);
+  text-decoration: underline;
+}
+
+/* ---------- La lista ---------- */
+.campana-lista {
+  max-height: min(60vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Barra de desplazamiento fina, para que no parta el diseño */
+.campana-lista::-webkit-scrollbar {
+  width: 6px;
+}
+
+.campana-lista::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .22);
+}
+
+.campana-item {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  padding: .6rem .75rem;
+  white-space: normal;
+  border-bottom: 1px solid var(--bs-border-color, #f1f3f5);
+}
+
+.campana-item:last-child {
+  border-bottom: 0;
+}
+
+.campana-item:hover,
+.campana-item:focus {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .045);
+}
+
+/* Sin leer: fondo un punto más vivo y la franja del tema a la izquierda */
+.campana-item.es-nueva {
+  box-shadow: inset 3px 0 0 var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .05);
+}
+
+.campana-item.es-nueva:hover {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .1);
+}
+
+.campana-item__icono {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-top: 1px;
+  border-radius: 50%;
+  font-size: .9rem;
+}
+
+.campana-item__icono.es-info  { background-color: rgba(52, 143, 226, .15); color: #2a6fb0; }
+.campana-item__icono.es-exito { background-color: rgba(0, 172, 172, .15);  color: #00807f; }
+.campana-item__icono.es-aviso { background-color: rgba(245, 156, 26, .18); color: #a96a08; }
+.campana-item__icono.es-error { background-color: rgba(255, 91, 87, .16);  color: #c9302c; }
+
+.campana-item__cuerpo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+}
+
+/* Título y hora en la misma línea: la hora no se encoge nunca */
+.campana-item__linea {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+}
+
+.campana-item__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--bs-body-color, #212529);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campana-item__hora {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+}
+
+/* El mensaje, recortado a dos líneas: el resto se lee en «Ver todas» */
+.campana-item__mensaje {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.campana-item__enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  margin-top: .1rem;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* El punto de «sin leer», alineado con el título */
+.campana-item__punto {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 50%;
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+/* ---------- Sin nada que mostrar ---------- */
+.campana-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .25rem;
+  padding: 2.25rem 1rem;
+  text-align: center;
+}
+
+.campana-vacio i {
+  margin-bottom: .35rem;
+  font-size: 1.9rem;
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .3;
+}
+
+.campana-vacio__titulo {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.campana-vacio__ayuda {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Pie ---------- */
+.campana-pie {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: .6rem;
+  border-top: 1px solid var(--bs-border-color, #e9ecef);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  color: var(--bs-app-theme, #00acac);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.campana-pie:hover {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .1);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.campana-pie i {
+  transition: transform .12s ease;
+}
+
+.campana-pie:hover i {
+  transform: translateX(3px);
+}
+
+/* ============================================================
+   MI ESTADO (presencia) en el menú del usuario
+   ============================================================ */
+
+/* ---------- La marca de estado, pegada a la foto ----------
+   La misma pieza en los dos sitios. En la barra es un punto de color, que a
+   ese tamaño es lo único que se lee; en la cabecera del menú, donde la foto
+   es mayor, lleva dentro el icono y así Ocupado y No molestar se distinguen
+   aunque compartan el rojo. */
+.navbar-user__foto,
+.usuario-menu__foto {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* El tema le da a .image 30x30 con márgenes negativos arriba y abajo, así que
+   el envoltorio se quedaba en 20px de alto y la marca caía fuera del círculo.
+   Los márgenes pasan al envoltorio y dentro se anulan. */
+.navbar-user__foto {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  margin-top: -5px;
+  margin-bottom: -5px;
+}
+
+.navbar-user__foto .image {
+  flex: 0 0 auto;
+  width: 100%;
+  height: 100%;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Sin esto la foto llegaba con su proporción original (27x30) y dejaba un
+   hueco a un lado del círculo */
+.navbar-user__foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.marca-estado {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  /* El aro recorta la marca contra lo que tenga detrás */
+  border: 2px solid var(--bs-app-header-bg, var(--bs-body-bg, #fff));
+  color: #fff;
+  line-height: 1;
+}
+
+/* A 11px un icono no se lee: en la barra se queda sólo el color */
+.marca-estado i {
+  display: none;
+}
+
+/* En la cabecera del menú la foto es mayor y el icono sí cabe */
+.marca-estado.es-grande {
+  right: -2px;
+  bottom: -2px;
+  width: 18px;
+  height: 18px;
+  font-size: 8px;
+  border-color: var(--bs-dropdown-bg, var(--bs-component-bg, #fff));
+}
+
+.marca-estado.es-grande i {
+  display: inline-block;
+}
+
+.marca-estado.es-DISPONIBLE  { background-color: var(--bs-success, #198754); }
+.marca-estado.es-OCUPADO,
+.marca-estado.es-NO_MOLESTAR { background-color: var(--bs-danger, #dc3545); }
+.marca-estado.es-AUSENTE     { background-color: var(--bs-warning, #ffc107); }
+.marca-estado.es-INVISIBLE,
+.marca-estado.es-DESCONECTADO{ background-color: var(--bs-secondary, #6c757d); }
+
+/* «Fuera de línea» y «Desconectado» llevan un círculo relleno que, en blanco
+   sobre gris, se ve como una mancha: se deja el hueco vacío también en grande */
+.marca-estado.es-grande.es-INVISIBLE i,
+.marca-estado.es-grande.es-DESCONECTADO i {
+  display: none;
+}
+
+.usuario-menu__rotulo {
+  padding: .35rem .9rem .15rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.usuario-menu__estado-item {
+  font-size: 13px;
+}
+
+/* El elegido queda marcado, no sólo por el tic */
+.usuario-menu__estado-item.is-elegido {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+  font-weight: 600;
+}
+
+/* Cuando lo que ven los demás no es lo que elegiste */
+.usuario-menu__aviso {
+  margin: .25rem .6rem .1rem;
+  padding: .35rem .5rem;
+  border-radius: 6px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.usuario-menu__aviso i {
+  color: var(--bs-app-theme, #00acac);
 }

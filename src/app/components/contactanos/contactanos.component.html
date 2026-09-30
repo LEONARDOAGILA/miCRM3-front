@@ -1,0 +1,151 @@
+<div class="contactanos row g-3">
+
+  <!-- ============ COLUMNA IZQUIERDA: DATOS DE CONTACTO ============ -->
+  <div class="col-lg-5">
+    <panel
+      headerClass="bg-gray-800"
+      title="Información de contacto"
+      noButton="true"
+      noBody="true"
+      panelClass="h-100 mb-0"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="contactanos__datos">
+
+          <!-- Cabecera de marca -->
+          <div class="contactanos__marca">
+            <span class="contactanos__logo">
+              <i class="fa-solid fa-headset" aria-hidden="true"></i>
+            </span>
+            <div class="contactanos__marca-texto">
+              <span class="contactanos__empresa">{{ empresa }}</span>
+              <span class="contactanos__lema">{{ lema }}</span>
+            </div>
+          </div>
+
+          <!-- Canales -->
+          <ul class="contactanos__canales">
+            @for (canal of canales; track canal.etiqueta) {
+              <li class="canal">
+                <span class="canal__icono {{ canal.color }}">
+                  <i class="{{ canal.icono }}" aria-hidden="true"></i>
+                </span>
+                <div class="canal__cuerpo">
+                  <span class="canal__etiqueta">{{ canal.etiqueta }}</span>
+                  @if (canal.href) {
+                    <a class="canal__valor" [href]="canal.href" target="_blank" rel="noopener">{{ canal.valor }}</a>
+                  } @else {
+                    <span class="canal__valor">{{ canal.valor }}</span>
+                  }
+                  @if (canal.detalle) {
+                    <span class="canal__detalle">{{ canal.detalle }}</span>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+
+          <!-- Nota de horario -->
+          <div class="contactanos__nota">
+            <i class="fa-regular fa-clock me-2" aria-hidden="true"></i>
+            Fuera del horario de atención puedes dejarnos tu mensaje y te contactamos al siguiente día hábil.
+          </div>
+
+        </div>
+      </ng-container>
+    </panel>
+  </div>
+
+  <!-- ============ COLUMNA DERECHA: FORMULARIO ============ -->
+  <div class="col-lg-7">
+    <panel
+      headerClass="bg-gray-800"
+      title="Envíanos un mensaje"
+      noButton="true"
+      noBody="true"
+      panelClass="h-100 mb-0"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <form [formGroup]="form" class="contactanos__form" autocomplete="off" (ngSubmit)="enviar()">
+
+          <div class="row gx-3">
+            <div class="col-md-6">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="Nombre completo"
+                placeholder="Nombre completo"
+                [maxLength]="100"
+                [trimEspacios]="true"
+                icono="fa-user">
+              </app-campoTexto>
+            </div>
+
+            <div class="col-md-6">
+              <app-campoEmail
+                [control]="form.controls['email']"
+                label="Correo electrónico"
+                placeholder="nombre@dominio.com">
+              </app-campoEmail>
+            </div>
+
+            <div class="col-md-6">
+              <!-- required=false: el teléfono es opcional; el campo lo pone
+                   obligatorio por defecto -->
+              <app-campoTelefono
+                [control]="form.controls['telefono']"
+                label="Teléfono (opcional)"
+                [required]="false"
+                tipoTelefono="ambos">
+              </app-campoTelefono>
+            </div>
+
+            <div class="col-md-6">
+              <app-combo
+                formControlName="asunto"
+                [items]="asuntos"
+                [label]="'Asunto'"
+                bindLabel="name"
+                bindValue="id"
+                [required]="true">
+              </app-combo>
+            </div>
+
+            <div class="col-12">
+              <app-campoTextoArea
+                [control]="form.controls['mensaje']"
+                label="Mensaje"
+                placeholder="Cuéntanos en qué podemos ayudarte"
+                [maxLength]="MAX_MENSAJE"
+                [minLength]="10"
+                [trimEspacios]="true">
+              </app-campoTextoArea>
+              <div class="contactanos__contador" [class.is-low]="caracteresRestantes < 50">
+                {{ caracteresRestantes }} caracteres disponibles
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="contactanos__acciones">
+            <span class="contactanos__privacidad">
+              <i class="fa-solid fa-lock me-1" aria-hidden="true"></i>
+              Tus datos sólo se usan para responderte.
+            </span>
+            <div class="contactanos__botones">
+              <button type="button" class="btn btn-default" (click)="limpiar()">
+                <i class="fa-solid fa-eraser me-1" aria-hidden="true"></i> Limpiar
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-paper-plane me-1" aria-hidden="true"></i> Enviar mensaje
+              </button>
+            </div>
+          </div>
+
+        </form>
+      </ng-container>
+    </panel>
+  </div>
+
+</div>

@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { ClienteModel } from '../modules/clientes/interfaces/clienteModel';
 import { ProductoModel } from '../modules/inventarios/interfaces/productoModel';
 
 @Injectable({
@@ -7,8 +6,10 @@ import { ProductoModel } from '../modules/inventarios/interfaces/productoModel';
 })
 export class DatosPruebaService {
 
-  // Clientes de ejemplo
-  public clientesEjemplo: ClienteModel[] = [
+  // Clientes de ejemplo de la demo de facturas.
+  // Van sin tipar a propósito: son los campos del modelo viejo de clientes
+  // (estado booleano, nombre y apellido sueltos), no los de ventas.clientes.
+  public clientesEjemplo: any[] = [
     { id: 1, identificacion: '001', nombre: 'nombre_1', apellido: 'apellido_1', nombre_completo: 'nombre_1 apellido_1', email: 'test@gmail.com', telefono: '9999999999', direccion: 'calle pruebas', estado: true },
     { id: 2, identificacion: '002', nombre: 'nombre_2', apellido: 'apellido_2', nombre_completo: 'nombre_2 apellido_2', email: 'test@gmail.com', telefono: '9999999999', direccion: 'calle pruebas', estado: true },
     { id: 3, identificacion: '003', nombre: 'nombre_3', apellido: 'apellido_3', nombre_completo: 'nombre_3 apellido_3', email: 'test@gmail.com', telefono: '9999999999', direccion: 'calle pruebas', estado: true },

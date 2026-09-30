@@ -1,26 +1,91 @@
-/* Estilos base para paginación */
+/* ============================================================
+   LISTADO DE USUARIOS
+
+   Lo que va aquí es sólo lo propio de esta pantalla. Las clases del
+   spinner (content-container1, overlay1, loader1), .inactivo y
+   .ag-grid-transparente son globales y viven en scss/angular.scss.
+   ============================================================ */
+
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida 20px: el tema deja un hueco entre la
+   cabecera de la aplicación y el primer elemento de la página que aquí
+   sobra, porque el panel ya trae el suyo. */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Cuerpo del panel ----------
+   Compensa el padding superior del panel-body del tema, para que la barra
+   de herramientas quede pegada a la cabecera del panel. */
+.lista-contenido {
+  margin-top: -19px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+/* Botones cuadrados a la altura del buscador (form-control del tema) */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* Lupa pequeña sobre el botón de auditoría */
+.lista-barra__badge {
+  font-size: 8px;
+}
+
+/* ---------- Grilla ----------
+   Altura de arranque; ajustarAlturaGrid() la sustituye en cuanto la grilla
+   está lista. La variable --ag-line-height es la altura de línea de celda
+   que usa el tema alpine. */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- Paginación ---------- */
 .pagination-controls {
-  gap: 0.5rem;
+  gap: .5rem;
 }
 
 .pagination-buttons {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
 }
 
-/* Para pantallas muy pequeñas (teléfonos) */
-@media (max-width: 576px) {
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto":
+   hereda el borde y la altura de los demás y queda alineado con ellos. */
+.pagination-page-badge.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* ---------- Responsive ---------- */
+/* Teléfonos: paginación apilada y centrada, botones más compactos */
+@media (max-width: 575.98px) {
   .pagination-controls {
     flex-direction: column;
     align-items: stretch;
     text-align: center;
-  }
-
-  .pagination-info {
-    margin-bottom: 0.5rem;
-    font-size: 0.7rem;
   }
 
   .pagination-buttons {
@@ -28,30 +93,28 @@
   }
 
   .pagination-buttons .btn {
-    padding: 0.2rem 0.4rem;
-    font-size: 0.7rem;
+    padding: .2rem .4rem;
+    font-size: .7rem;
   }
 
-  .pagination-buttons .btn i {
-    font-size: 0.8rem;
-  }
-
-  .pagination-page-badge {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
-    background-color: #f8f9fa;
-    border-radius: 0.25rem;
-    border: 1px solid #dee2e6;
+  .pagination-info {
+    font-size: .7rem;
   }
 }
 
-/* Para pantallas medianas (tablets) */
-@media (min-width: 577px) and (max-width: 768px) {
+/* Tablets: sólo botones un poco más compactos */
+@media (min-width: 576px) and (max-width: 767.98px) {
   .pagination-buttons .btn {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.75rem;
+    padding: .2rem .5rem;
+    font-size: .75rem;
   }
-  .pagination-page-badge {
-    font-size: 0.75rem;
-  }
+}
+
+/* ---------- Modo oscuro ----------
+   btn-white del tema es blanco fijo; en oscuro se pasa a la superficie del
+   tema para que el grupo no destaque como un bloque blanco. */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
 }

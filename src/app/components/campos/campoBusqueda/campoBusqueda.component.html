@@ -1,12 +1,33 @@
-<div [class]="containerClass" style="position: relative;">  
+<div [class]="containerClass" style="position: relative;">
+
   <input
+      #campo
       type="text"
-      class="form-control ps-35px rounded-3 fs-12px"
+      class="form-control ps-35px rounded-3 fs-12px campo-busqueda__input"
+      [class.campo-busqueda__input--con-x]="limpiable && valor"
       [id]="id"
       [placeholder]="placeholder"
+      [value]="valor"
       (input)="onInputChange($event)"
+      (keydown.escape)="limpiar(campo)"
   />
-  <button class="btn position-absolute start-0 top-0 shadow-none">
+
+  <!-- type="button": sin él, dentro de un formulario la lupa lo enviaba -->
+  <button type="button" class="btn position-absolute start-0 top-0 shadow-none" tabindex="-1"
+          (click)="campo.focus()">
       <i [class]="iconClass"></i>
   </button>
+
+  <!-- La × sólo cuando hay algo que borrar. Mismo signo y mismo gesto que
+       app-campoTexto, para que todos los campos se vacíen igual. -->
+  @if (limpiable && valor) {
+    <button type="button"
+            class="campo-busqueda__limpiar"
+            tabindex="-1"
+            aria-label="Limpiar la búsqueda"
+            title="Limpiar (Esc)"
+            (click)="limpiar(campo)">
+      <span class="campo-busqueda__limpiar-x" aria-hidden="true">&times;</span>
+    </button>
+  }
 </div>

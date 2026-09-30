@@ -22,6 +22,44 @@ export class CampoTextoComponent   {
   @Input() mayusculas: boolean = false; // Parámetro para activar/desactivar
   @Input() soloLetras: boolean = false; // Parámetro para activar/desactivar
   @Input() trimEspacios: boolean = false; // Parámetro para activar/desactivar
+
+  /**
+   * Icono decorativo opcional a la derecha del campo, con las clases de Font
+   * Awesome (por ejemplo 'fa-user' o 'fa-envelope').
+   *
+   * Vacío por defecto: los campos que no lo indiquen se ven igual que siempre.
+   */
+  @Input() icono: string = '';
+
+  /**
+   * Muestra el botón × para vaciar el campo, como en app-campoEmail y
+   * app-combo. Se puede apagar en los campos donde no tenga sentido.
+   */
+  @Input() limpiable: boolean = true;
+
+  /** Vacía el campo y avisa al padre, igual que si se hubiera borrado a mano. */
+  limpiar(): void {
+    this.control.setValue('');
+    this.control.markAsDirty();
+    this.valueChange.emit('');
+  }
+
+  /**
+   * Impide que el navegador y los gestores de contraseñas ofrezcan valores
+   * guardados sobre este campo.
+   *
+   * Hace falta en formularios que tienen un campo de clave al lado: Chrome los
+   * interpreta como un login y despliega las credenciales guardadas del
+   * operador sobre el campo de usuario, que es justo lo que no queremos cuando
+   * se está dando de alta a OTRA persona.
+   *
+   * Emite la misma combinación que ya usa app-campoClave, que es la que
+   * funciona: autocomplete="new-password" (Chrome/Firefox), data-lpignore
+   * (LastPass) y data-form-type="other" (Dashlane, 1Password).
+   *
+   * Por defecto false, para no cambiar el comportamiento del resto de pantallas.
+   */
+  @Input() sinAutocompletado: boolean = false;
   onInputChange(value: string) {
     this.valueChange.emit(value); // Emite el nuevo valor
   }

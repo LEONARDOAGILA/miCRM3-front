@@ -1,0 +1,248 @@
+<!-- ============================================================
+     KIOSCO DE MARCACIÓN FACIAL
+       1. Miga de pan
+       2. <panel>
+          2a. Barra: cámara, reloj, estado
+          2b. Cámara en vivo (izquierda)
+          2c. Panel derecho: registrar plantillas, ajustes, marcaciones de hoy
+     ============================================================ -->
+
+<ol class="breadcrumb kiosco-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/rh/home-rh">Recursos Humanos</a></li>
+  <li class="breadcrumb-item active">Kiosco de marcación</li>
+</ol>
+
+<panel
+  title="Kiosco de marcación facial"
+  [noButton]="false"
+  [noButtonCollapse]="true"
+  (panelReloaded)="recargar()"
+  [closeRoute]="'/rh/home-rh'"
+  icono="usuarios"
+  bodyClass="p-0"
+  panelClass="mb-0">
+
+  <div class="kiosco">
+
+    <!-- ---------- 2a. BARRA ---------- -->
+    <div class="kiosco-toolbar">
+      <div class="kiosco-toolbar__grupo">
+        <button type="button" class="btn btn-sm kiosco-btn"
+                [ngClass]="camaraEncendida ? 'btn-danger' : 'btn-primary'"
+                [disabled]="estado === 'cargando'"
+                [title]="camaraEncendida ? 'Apagar la cámara' : 'Encender la cámara'"
+                (click)="alternarCamara()">
+          <i class="fa" [ngClass]="camaraEncendida ? 'fa-video-slash' : 'fa-video'"></i>
+          <span class="kiosco-btn__texto">{{ camaraEncendida ? 'Apagar' : 'Encender' }}</span>
+        </button>
+
+        @if (camaras.length > 1) {
+          <select class="form-select form-select-sm kiosco-select" [(ngModel)]="camaraId" (change)="cambiarCamara()" title="Elegir cámara">
+            @for (c of camaras; track c.deviceId; let i = $index) {
+              <option [value]="c.deviceId">{{ c.label || 'Cámara ' + (i + 1) }}</option>
+            }
+          </select>
+        }
+
+        <label class="kiosco-switch" title="Ver la imagen como en un espejo">
+          <input type="checkbox" class="form-check-input" [(ngModel)]="espejo" (change)="guardarAjustes()">
+          <span>Espejo</span>
+        </label>
+
+        <a class="btn btn-sm btn-white kiosco-btn" routerLink="/rh/allMarcaciones" title="Ver todas las marcaciones">
+          <i class="fa fa-clipboard-list"></i><span class="kiosco-btn__texto">Marcaciones</span>
+        </a>
+      </div>
+
+      <div class="kiosco-toolbar__estado ms-auto">
+        <span class="kiosco-reloj">{{ reloj | date:'HH:mm:ss' }}</span>
+        <span class="kiosco-punto" [ngClass]="{ 'is-on': camaraEncendida && estado === 'listo' }"></span>
+        <span class="kiosco-texto-estado">{{ textoEstado }}</span>
+        @if (camaraEncendida) { <span class="kiosco-fps">{{ fps }} fps</span> }
+      </div>
+    </div>
+
+    <div class="kiosco-cuerpo">
+
+      <!-- ---------- 2b. CÁMARA ---------- -->
+      <div class="kiosco-video-col">
+        <div class="kiosco-video" [class.is-espejo]="espejo">
+          <video #video autoplay muted playsinline></video>
+          <canvas #canvas></canvas>
+
+          @if (estado === 'cargando') {
+            <div class="kiosco-velo"><span class="spinner-border text-light"></span><span>Cargando el reconocimiento facial…</span></div>
+          } @else if (estado === 'error') {
+            <div class="kiosco-velo kiosco-velo--error"><i class="fa fa-triangle-exclamation"></i><span>{{ mensajeError }}</span></div>
+          } @else if (!camaraEncendida) {
+            <div class="kiosco-velo">
+              <i class="fa fa-video-slash"></i><span>Cámara apagada</span>
+              <button type="button" class="btn btn-sm btn-primary" (click)="encenderCamara()">Encender cámara</button>
+            </div>
+          }
+
+          @if (aviso; as a) {
+            <div class="kiosco-aviso" [ngClass]="'is-' + a.tono">
+              <i class="fa" [ngClass]="a.tono === 'ok' ? 'fa-circle-check' : (a.tono === 'error' ? 'fa-circle-exclamation' : 'fa-eye')"></i>
+              <div>
+                <b>{{ a.nombre }}</b>
+                <span>{{ a.texto }}@if (a.hora) { · {{ a.hora }} }</span>
+              </div>
+            </div>
+          }
+
+          @if (capturando) {
+            <div class="kiosco-captura">
+              <span>Capturando {{ capturasHechas }}/{{ CAPTURAS_NECESARIAS }} — que mueva un poco la cabeza</span>
+              <div class="kiosco-captura__barra"><span [style.width.%]="capturasHechas / CAPTURAS_NECESARIAS * 100"></span></div>
+              <button type="button" class="btn btn-xs btn-white" (click)="cancelarCaptura()">Cancelar</button>
+            </div>
+          }
+        </div>
+
+        <p class="kiosco-ayuda">
+          <i class="fa fa-circle-info"></i>
+          Colócate a un metro de la cámara, de frente y con buena luz. La marcación se registra sola
+          @if (exigirParpadeo) { <b>tras un parpadeo</b> } y el sistema decide si es entrada o salida.
+          Hay <b>{{ rostros.length }}</b> empleado(s) con rostro registrado ({{ totalMuestras }} muestras).
+        </p>
+      </div>
+
+      <!-- ---------- 2c. PANEL DERECHO ---------- -->
+      <div class="kiosco-panel">
+
+        <!-- Registrar plantillas -->
+        @if (accesoModel?.crear !== false) {
+          <div class="kiosco-bloque">
+            <div class="kiosco-bloque__titulo"><i class="fa fa-user-plus"></i> Registrar rostro</div>
+
+            <select class="form-select form-select-sm mb-2" [(ngModel)]="empleadoSeleccionado" (focus)="cargarEmpleados()" [disabled]="capturando || registrando">
+              <option [ngValue]="null">— Elige el empleado —</option>
+              @for (e of empleados; track e.id) {
+                <option [ngValue]="e.id">{{ nombreEmpleado(e) }}</option>
+              }
+            </select>
+
+            <div class="kiosco-bloque__acciones">
+              <button type="button" class="btn btn-sm btn-success" [disabled]="capturando || registrando || !camaraEncendida || !empleadoSeleccionado" (click)="iniciarCaptura()">
+                <i class="fa fa-camera me-1"></i>Capturar {{ CAPTURAS_NECESARIAS }} muestras
+              </button>
+              <button type="button" class="btn btn-sm btn-white" [disabled]="importando || registrando || !empleadoSeleccionado" title="Calcular el rostro desde la foto del empleado" (click)="registrarDesdeFoto()">
+                @if (importando) { <span class="spinner-border spinner-border-sm me-1"></span> } @else { <i class="fa fa-image me-1"></i> }
+                Desde su foto
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Rostros registrados -->
+        <div class="kiosco-bloque">
+          <div class="kiosco-bloque__titulo">
+            <i class="fa fa-id-card"></i> Rostros registrados
+            <span class="kiosco-contador">{{ rostros.length }}</span>
+          </div>
+
+          @if (rostros.length) {
+            <ul class="kiosco-lista">
+              @for (r of rostros; track r.empleado_id) {
+                <li class="kiosco-item">
+                  <img [src]="fotoEmpleado(r.empleado_id)" alt="" class="kiosco-item__foto" onerror="this.style.visibility='hidden'">
+                  <span class="kiosco-item__texto">
+                    <span class="kiosco-item__nombre">{{ r.empleado }}</span>
+                    <span class="kiosco-item__detalle">{{ r.num_muestras }} muestra(s)@if (r.cargo) { · {{ r.cargo }} }</span>
+                  </span>
+                  <button type="button" class="btn btn-xs btn-white" title="Marcar a mano" (click)="marcarAMano(r)">
+                    <i class="fa fa-fingerprint"></i>
+                  </button>
+                  @if (accesoModel?.eliminar !== false) {
+                    <button type="button" class="btn btn-xs btn-white text-danger" title="Borrar sus plantillas faciales" (click)="quitarPlantillas(r)">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="kiosco-vacio">Nadie tiene rostro registrado todavía. Elige un empleado y captura sus muestras.</div>
+          }
+        </div>
+
+        <!-- Ajustes -->
+        <div class="kiosco-bloque">
+          <div class="kiosco-bloque__titulo"><i class="fa fa-sliders"></i> Ajustes del kiosco</div>
+
+          <label class="kiosco-ajuste">
+            <span>Exigencia al comparar <b>{{ umbral | number:'1.2-2' }}</b></span>
+            <input type="range" class="form-range" min="0.35" max="0.7" step="0.01" [(ngModel)]="umbral" (change)="onUmbralCambia()">
+            <small>Menor = más estricto</small>
+          </label>
+
+          <label class="kiosco-ajuste">
+            <span>Fotogramas para confirmar <b>{{ confirmaciones }}</b></span>
+            <input type="range" class="form-range" min="2" max="15" step="1" [(ngModel)]="confirmaciones" (change)="guardarAjustes()">
+          </label>
+
+          <label class="kiosco-ajuste">
+            <span>Espera entre marcaciones <b>{{ esperaSegundos }} s</b></span>
+            <input type="range" class="form-range" min="10" max="600" step="10" [(ngModel)]="esperaSegundos" (change)="guardarAjustes()">
+          </label>
+
+          <label class="kiosco-ajuste">
+            <span>Nombre del dispositivo</span>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="dispositivo" (change)="guardarAjustes()" maxlength="150" placeholder="Kiosco recepción">
+          </label>
+
+          <label class="kiosco-switch">
+            <input type="checkbox" class="form-check-input" [(ngModel)]="exigirParpadeo" (change)="guardarAjustes()">
+            <span>Exigir parpadeo (prueba de vida)</span>
+          </label>
+
+          <label class="kiosco-switch">
+            <input type="checkbox" class="form-check-input" [(ngModel)]="guardarFoto" (change)="guardarAjustes()">
+            <span>Guardar foto de cada marcación</span>
+          </label>
+        </div>
+
+        <!-- Marcaciones de hoy -->
+        <div class="kiosco-bloque">
+          <div class="kiosco-bloque__titulo">
+            <i class="fa fa-clipboard-list"></i> Hoy
+            <span class="kiosco-contador">{{ marcacionesHoy.length }}</span>
+          </div>
+
+          <div class="kiosco-resumen">
+            <span><b>{{ resumenHoy.personas }}</b> persona(s)</span>
+            <span class="text-success"><b>{{ resumenHoy.entradas }}</b> entradas</span>
+            <span class="text-danger"><b>{{ resumenHoy.salidas }}</b> salidas</span>
+          </div>
+
+          @if (marcacionesHoy.length) {
+            <ul class="kiosco-lista">
+              @for (m of marcacionesHoy; track m.id) {
+                <li class="kiosco-item">
+                  @if (m.foto) {
+                    <img [src]="fotoMarcacion(m)" alt="" class="kiosco-item__foto" onerror="this.style.visibility='hidden'">
+                  } @else {
+                    <span class="kiosco-item__foto kiosco-item__foto--vacia"><i class="fa fa-user"></i></span>
+                  }
+                  <span class="kiosco-item__texto">
+                    <span class="kiosco-item__nombre">{{ m.empleado }}</span>
+                    <span class="kiosco-item__detalle">
+                      {{ m.hora }}@if (m.similitud) { · {{ m.similitud | number:'1.0-0' }}% }
+                    </span>
+                  </span>
+                  <span class="kiosco-tipo" [ngClass]="m.tipo === 'ENTRADA' ? 'is-entrada' : 'is-salida'">
+                    {{ m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }}
+                  </span>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="kiosco-vacio">Sin marcaciones hoy.</div>
+          }
+        </div>
+
+      </div>
+    </div>
+  </div>
+</panel>

@@ -1,0 +1,62 @@
+/* ============================================================
+   CAMPO DE BÚSQUEDA
+
+   La lupa va a la izquierda (padding del propio input) y la × a la
+   derecha, con el mismo botón y el mismo signo que app-campoTexto
+   y el ng-select de app-combo, para que todos los campos se
+   vacíen igual.
+
+   Los colores salen de las variables de Bootstrap que ya usa la
+   plantilla: el campo acompaña al panel de temas y al modo oscuro.
+   ============================================================ */
+
+/* Sitio para la × sólo cuando está: así, con el campo vacío, el texto
+   ocupa todo el ancho como antes */
+.campo-busqueda__input--con-x {
+  padding-right: 2.25rem;
+}
+
+/* ---------- Botón de limpiar ---------- */
+.campo-busqueda__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .25rem;
+  transform: translateY(-50%);
+  z-index: 3;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.75rem;
+  height: 1.75rem;
+
+  padding: 0;
+  border: none;
+  border-radius: .375rem;
+
+  background: none;
+  color: var(--bs-secondary-color, #6c757d);
+  cursor: pointer;
+
+  transition: color .15s ease, background-color .15s ease;
+}
+
+.campo-busqueda__limpiar-x {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+  pointer-events: none;          /* que el clic lo reciba siempre el botón */
+}
+
+.campo-busqueda__limpiar:hover,
+.campo-busqueda__limpiar:focus-visible {
+  color: var(--bs-danger, #dc3545);
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+}
+
+/* El tema deja el foco sin marca; se devuelve el anillo, como en campoTexto */
+.campo-busqueda__input:focus {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+}

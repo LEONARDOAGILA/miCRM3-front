@@ -1,11 +1,21 @@
 import { Component, OnInit, OnDestroy, ElementRef } from '@angular/core';
-import { Router } from '@angular/router';
+import { DatePipe } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { NgScrollbarModule } from 'ngx-scrollbar';
 import { Subject, takeUntil, interval } from 'rxjs';
+import { Dashboard1Component } from '../../components/dashboards/dashboard1/dashboard1.component';
+import { Dashboard2Component } from '../../components/dashboards/dashboard2/dashboard2.component';
+import { Dashboard3Component } from '../../components/dashboards/dashboard3/dashboard3.component';
+import { ContactanosComponent } from '../../components/contactanos/contactanos.component';
 import { AppSettings } from '../../service/app-settings.service';
 import { ECHO_PUSHER } from "../../config/config";
 import { SeguridadService } from "../../modules/seguridad/services/seguridad.service";
 import { WebsocketNotificationService } from '../../service/websocket-notification.service';
 import { AppStateService } from '../../service/app-state.service';
+import { StorageService } from '../../modules/seguridad/services/storage.service';
+import { UserService } from '../../modules/seguridad/services/user.service';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { BoletinPushService } from '../../modules/config/services/boletinPush.service';
 
 interface Acceso {
   user_id: number;
@@ -33,11 +43,31 @@ interface ActivityItem {
   color: string;
 }
 
+/**
+ * Standalone para que los @defer de la plantilla generen trozos de verdad.
+ *
+ * Un @defer sólo separa el código de un componente si puede quitar la
+ * referencia estática a él. Cuando el anfitrión está declarado en un NgModule,
+ * esa referencia vive en el array imports del módulo y el empaquetador no
+ * puede quitarla: el componente se pinta tarde, pero se descarga con main.js.
+ * Con el anfitrión standalone la referencia está en este fichero y sólo se
+ * usa dentro de los @defer, así que el compilador la convierte en import().
+ */
 @Component({
   selector: 'home',
   templateUrl: './home.html',
   styleUrls: ['./home.scss'],
-  standalone: false
+  standalone: true,
+  imports: [
+    DatePipe,            // | date del pie
+    RouterLink,          // [routerLink] de las tarjetas y los accesos directos
+    NgScrollbarModule,   // <ng-scrollbar>
+    // Sólo se usan dentro de bloques @defer: se descargan al pulsar su pestaña
+    Dashboard1Component,
+    Dashboard2Component,
+    Dashboard3Component,
+    ContactanosComponent
+  ]
 })
 export class HomePage implements OnInit, OnDestroy {
   today: Date = new Date();
@@ -45,7 +75,24 @@ export class HomePage implements OnInit, OnDestroy {
   public fechaActual: string = '';
   public mensajes: string[] = [];
   public modulosPermitidos: ModuloCard[] = [];
-  
+
+  // ---------- Usuario logueado (cabecera de perfil, igual que el sidebar) ----------
+  /** Lo que guardó el login en localStorage (`user`): name, surname, full_name, login_user, email, avatar, perfil. */
+  public usuarioLogeado: any = null;
+  /** Canal 'trades' del websocket, para desuscribirse al salir. */
+  private canalTrades: any = null;
+  /** URL de la foto (getImagenUsuario/{id}) o la imagen por defecto si no tiene o no carga. */
+  public imagenUsuario: string = '/assets/img/user/default.png';
+
+  // ---------- Pestañas MÉTRICAS ----------
+  // Cada bandera dispara el @defer (when ...) de su pestaña. Se ponen a true
+  // al pulsar la pestaña y no vuelven a false: @defer carga una vez y el
+  // componente se queda creado, que es lo que se quiere al cambiar de pestaña.
+  public metricas1Activa = false;
+  public metricas2Activa = false;
+  public metricas3Activa = false;
+  public contactanosActivo = false;
+
   private destroy$ = new Subject<void>();
 
   recentActivities: ActivityItem[] = [
@@ -67,7 +114,7 @@ export class HomePage implements OnInit, OnDestroy {
     { url: '/tesoreria', label: 'Tesorería', icon: 'fa-money-bill-wave', color: 'bg-pink', descripcion: 'Flujo de caja, bancos, conciliación' },
     { url: '/activos-fijos', label: 'Activos Fijos', icon: 'fa-building', color: 'bg-secondary', descripcion: 'Depreciaciones, bajas, control' },
     { url: '/logistica', label: 'Logística', icon: 'fa-truck', color: 'bg-teal', descripcion: 'Transporte, rutas, entregas' },
-    { url: '/rrhh', label: 'RRHH', icon: 'fa-users-gear', color: 'bg-orange', descripcion: 'Empleados, nómina, reclutamiento' },
+    { url: '/rh', label: 'RRHH', icon: 'fa-users-gear', color: 'bg-orange', descripcion: 'Cargos, empleados, nómina, reclutamiento' },
     { url: '/reportes', label: 'Reportes', icon: 'fa-chart-pie', color: 'bg-indigo', descripcion: 'Dashboards, BI, análisis' },
     { url: '', label: 'Seguridad', icon: 'fa-shield-alt', color: 'bg-dark', descripcion: 'Roles, permisos, auditoría', action: 'seguridad' }
   ];
@@ -78,15 +125,25 @@ export class HomePage implements OnInit, OnDestroy {
     public appSettings: AppSettings,
     private _seguridadService: SeguridadService,
     private _wsNotifService: WebsocketNotificationService,
-    private appStateService: AppStateService
+    private appStateService: AppStateService,
+    private _storeService: StorageService,
+    private _userService: UserService,
+    private modalService: NgbModal,
+    private _boletinPush: BoletinPushService
   ) {
     this.appSettings.appContentFullHeight = true;
     this.appSettings.appContentClass = 'p-0 ';
+
+    // Marca #app para poder ajustar desde styles.css el hueco que deja la
+    // cabecera fija en móvil. appClass está enlazado a [class] de #app en
+    // app.component.html y no lo usaba nadie.
+    this.appSettings.appClass = 'home-page';
     this.elRef.nativeElement.classList.add('d-flex', 'flex-column', 'h-100');
   }
 
   ngOnInit() {
     this.appSettings.appThemePanelNone = false;
+    this.cargarUsuarioLogeado();
     
     // Cargar módulos permitidos
     this.cargarModulosPermitidos();
@@ -107,23 +164,79 @@ export class HomePage implements OnInit, OnDestroy {
         this.cargarModulosPermitidos();
       });
 
-    // WebSocket
-    console.log('🟢 Websocket escuchando canal "trades"...');
-    ECHO_PUSHER(this._seguridadService.token)
-      .channel('trades')
-      .listen('NewTrade', (data: any) => {
-        console.log('📩 Mensaje recibido:', data);
-        const mensaje = data.trade || 'Mensaje vacío';
-        this.mensajes.unshift(mensaje);
-        this._wsNotifService.incrementarContador();
-      });
+    // Boletines: lo primero que ve el usuario al entrar
+    this.mostrarBoletines();
+
+    // WebSocket: la conexión es la misma de toda la aplicación; aquí sólo
+    // se añade la escucha, que se quita en ngOnDestroy. Sin quitarla, cada
+    // visita al inicio dejaba otra escucha viva apuntando a este componente.
+    this.canalTrades = ECHO_PUSHER(this._seguridadService.token).channel('trades');
+    this.canalTrades.listen('NewTrade', this.alLlegarTrade);
+  }
+
+  /** Manejador con nombre: hace falta el mismo para desuscribirse. */
+  private alLlegarTrade = (data: any): void => {
+    const mensaje = data?.trade || 'Mensaje vacío';
+    this.mensajes.unshift(mensaje);
+    this._wsNotifService.incrementarContador();
+  };
+
+  /**
+   * Boletines vigentes del usuario, en un carrusel, al entrar al sistema.
+   *
+   * La lógica vive en BoletinPushService, que es el mismo que los abre cuando
+   * el administrador lanza uno con la sesión ya empezada.
+   */
+  private mostrarBoletines(): void {
+    this._boletinPush.mostrarPendientes();
   }
 
   ngOnDestroy() {
+    // Sólo esta escucha: la conexión la comparten las demás pantallas
+    try { this.canalTrades?.stopListening('NewTrade', this.alLlegarTrade); } catch { /* ya no está */ }
+    this.canalTrades = null;
+
     this.destroy$.next();
     this.destroy$.complete();
     this.appSettings.appContentFullHeight = false;
     this.appSettings.appContentClass = '';
+    this.appSettings.appClass = '';
+  }
+
+  /** Nombre a mostrar: "Nombre Apellido" (o el full_name del login, o el login). */
+  get nombreUsuario(): string {
+    const u = this.usuarioLogeado;
+    if (!u) { return ''; }
+    const n = `${u.name ?? ''} ${u.surname ?? ''}`.trim();
+    return n || u.full_name || u.login_user || '';
+  }
+
+  /** Saludo según la hora: Buenos días / tardes / noches. */
+  get saludo(): string {
+    const h = new Date().getHours();
+    return h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
+  }
+
+  /**
+   * Usuario y foto para la cabecera: mismo criterio que el sidebar. La foto
+   * se pide al back (getImagenUsuario/{id}) y, si no existe o falla, queda
+   * la imagen por defecto.
+   */
+  private async cargarUsuarioLogeado(): Promise<void> {
+    const user: any = this._storeService.getStorageItem('user');
+    this.usuarioLogeado = user || null;
+    if (!user?.avatar) { return; }
+    const url = this._userService.getUserImage(user.id, true);
+    if (await this.existeImagen(url)) { this.imagenUsuario = url; }
+  }
+
+  private existeImagen(url: string): Promise<boolean> {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
   }
 
   actualizarHora(): void {

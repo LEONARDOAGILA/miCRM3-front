@@ -15,40 +15,28 @@
   padding: 1rem;
 }
 
+.estado-miswitch{
+  min-height: 58px;
+}
 /* ============================================================
    TARJETAS
    ============================================================ */
-.form-card {
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bs-component-bg, #fff);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: var(--pf-radius);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
-  overflow: hidden;
+/* La cabecera y el marco los pone <panel>, igual que en saveUser.
+   Aquí sólo queda el relleno del cuerpo, con las medidas del estándar. */
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .25rem;
 }
 
-.form-card__header {
+/* ---------- Contenido en la cabecera del panel ---------- */
+/* <panel> expone un slot [header] junto al título; ahí van el contador de
+   permisos y el buscador, que antes vivían en la cabecera hecha a mano.
+   margin-left:auto los empuja al extremo derecho de la barra. */
+.panel-acciones {
   display: flex;
   align-items: center;
   gap: .5rem;
-  padding: .625rem .875rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  font-size: .75rem;
-  font-weight: 700;
-  letter-spacing: .045em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.form-card__header > i {
-  font-size: .875rem;
-  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-}
-
-.form-card__body {
-  padding: 1rem .875rem .25rem;
+  margin-left: auto;
 }
 
 /* ============================================================
@@ -84,28 +72,10 @@
   display: block;
 }
 
-:host ::ng-deep .form-card__body .form-floating {
-  margin-bottom: 0 !important;
-}
-
-:host ::ng-deep .form-card__body .input-group.with-focus {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin: 0;
-  min-height: 0;
-}
-
-:host ::ng-deep .form-card__body .input-group.with-focus > label.col-form-label {
-  display: none;
-}
-
-:host ::ng-deep .form-card__body .msg-requerido {
-  display: block;
-  margin-top: .25rem;
-  font-size: .7rem;
-  line-height: 1.3;
-}
+/* Aquí había cuatro reglas ::ng-deep que tapaban el <label> vacío y el
+   .input-group.with-focus que los campos usaban para sus mensajes. Esa
+   estructura ya no existe: el mensaje va posicionado dentro del hueco que
+   deja el propio campo, así que las reglas sobraban. */
 
 .form-hint {
   display: flex;
@@ -149,6 +119,26 @@
   padding: .5rem;
 }
 
+/* ---------- Panel expandido ---------- */
+/* Al expandir, el tema pone .panel a pantalla completa como flex en columna y
+   estira su .panel-body con flex:1. Pero este panel va con noBody="true", así
+   que ese .panel-body no existe: el contenido cuelga directo de .panel por el
+   slot [outsideBody] y no había nada que creciera. De ahí que el grid se
+   quedara con su altura fija mientras el panel ocupaba toda la pantalla.
+
+   min-height:0 es imprescindible: sin él el elemento flex no puede encogerse
+   por debajo de su contenido y el scroll interno del ag-grid no funciona. */
+:host ::ng-deep .panel.panel-expand > .perfil-grid {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+/* La leyenda se queda abajo, sin estirarse */
+:host ::ng-deep .panel.panel-expand > .permisos-leyenda {
+  flex: 0 0 auto;
+}
+
 .permisos-leyenda {
   display: flex;
   align-items: center;
@@ -162,6 +152,15 @@
 
 .permisos-leyenda i {
   color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.permisos-leyenda__ayuda {
+  display: inline;          /* texto corrido: con flex cada <strong> quedaba como una columna */
+  line-height: 1.4;
+}
+
+.permisos-leyenda__ayuda i {
+  margin-right: .3rem;
 }
 
 /* ------------------------------------------------------------
@@ -261,8 +260,10 @@
     max-width: none;
   }
 
-  .estado-perfil {
-    height: auto;
+  /* La ayuda ocupaba tres líneas en el móvil y describe un gesto de ratón.
+     Se oculta y queda sólo el contador de permisos habilitados. */
+  .permisos-leyenda__ayuda {
+    display: none;
   }
 
   .perfil-grid {
@@ -272,8 +273,43 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .estado-perfil,
+  .estado-miswitch,
   :host ::ng-deep .btn-mas-permisos {
     transition: none;
   }
+}
+
+/* ---------- Marcar / desmarcar en bloque ---------- */
+.permisos-masivo .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* Casilla en la cabecera de cada columna de permiso */
+:host ::ng-deep .cabecera-permiso {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+}
+
+:host ::ng-deep .cabecera-permiso .col-check {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+}
+
+:host ::ng-deep .cabecera-permiso .col-check:disabled {
+  cursor: default;
+  opacity: .5;
+}
+
+/* Fila con sólo parte de los permisos: la casilla «Todos» a medias */
+:host ::ng-deep .permiso-check--todos input[data-medias] {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .35);
+  border-color: var(--bs-app-theme, #00acac);
 }

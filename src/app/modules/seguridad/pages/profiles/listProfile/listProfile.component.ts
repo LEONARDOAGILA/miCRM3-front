@@ -1,15 +1,30 @@
-
-import { Component, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { AgGridAngular } from 'ag-grid-angular';
-import { GridApi, GridReadyEvent, CellClickedEvent } from 'ag-grid-community';
+import { GridApi, GridReadyEvent, CellClickedEvent, CellKeyDownEvent, RowClassParams } from 'ag-grid-community';
 
 import { ProfileService } from '../../../../seguridad/services/profile.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
+/**
+ * Modal de selección de perfil (lo abre saveUser para el campo "Perfil").
+ *
+ * Mismo esquema que listHorarios: grilla ag-Grid con paginación en servidor
+ * y buscador. Al pulsar cualquier celda de una fila se emite ese perfil por
+ * `seleccionado` y se cierra el modal; la columna "Ir" queda como pista
+ * visual de que la fila es pulsable.
+ *
+ * Además marca el perfil que el usuario ya tiene asignado
+ * (perfilSeleccionadoId) con una barra lateral y la etiqueta «Actual».
+ *
+ * Memoria: no hay suscripciones vivas (las peticiones van con
+ * firstValueFrom, que completa sola) ni temporizadores ni listeners
+ * nativos, así que no hace falta ngOnDestroy. Quien abre el modal es el
+ * responsable de cortar su suscripción a `seleccionado` (saveUser lo hace
+ * con takeUntil al cerrarse el modal).
+ */
 @Component({
   selector: 'app-listProfile',
   templateUrl: './listProfile.component.html',
@@ -17,25 +32,36 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class ListProfileComponent implements OnInit {
-  
 
+  /** Perfil ya asignado al usuario, para marcarlo como «Actual» en la grilla. */
+  @Input() perfilSeleccionadoId?: number;
 
+  /** Perfil elegido. Se emite una sola vez, justo antes de cerrar. */
   @Output() seleccionado = new EventEmitter<any>();
 
-  @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
+  // ---------- ag-Grid ----------
   public gridApi!: GridApi;
   public columnDefs: any[] = [];
+  /** Filas de la página actual. */
   public rowData: any[] = [];
-  
+
+  /** Clase para la fila del perfil ya asignado (estilo en el .css). */
+  public rowClassRules = {
+    'fila-actual': (params: RowClassParams) =>
+      this.perfilSeleccionadoId != null && params.data?.id === this.perfilSeleccionadoId
+  };
+
+  // ---------- Búsqueda ----------
   @ViewChild(CampoBusquedaPaginacionComponent) campoBusquedaPaginacion!: CampoBusquedaPaginacionComponent;
+  /** Filtro vigente; viaja al servidor en cada página. */
   public searchTerm: string = '';
-  
-  // Variables de paginación
+
+  // ---------- Paginación en servidor ----------
   public paginaActual: number = 1;
   public totalRegistros: number = 0;
   public registrosPorPagina: number = 5;
   public ultimaPagina: number = 1;
-  
+
   public isLoading$ = this._loadingService.isLoading$;
 
   constructor(
@@ -50,6 +76,20 @@ export class ListProfileComponent implements OnInit {
     this.cargarPerfiles();
   }
 
+  /** Primer registro mostrado; 0 sin resultados. */
+  public get desde(): number {
+    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
+  }
+
+  /** Último registro mostrado, sin pasarse del total. */
+  public get hasta(): number {
+    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
+  }
+
+  // ================================================================
+  // AG-GRID
+  // ================================================================
+
   initializeGrid(): void {
     this.columnDefs = [
       {
@@ -63,51 +103,41 @@ export class ListProfileComponent implements OnInit {
         headerName: 'Nombre',
         field: 'nombre',
         cellStyle: { textAlign: 'left' },
-        minWidth: 150,
-        maxWidth: 450,
+        minWidth: 160,
+        // El perfil ya asignado lleva la etiqueta «Actual» junto al nombre
+        cellRenderer: (params: any) =>
+          params.data?.id === this.perfilSeleccionadoId
+            ? `${params.value ?? ''} <span class="lista-actual">Actual</span>`
+            : (params.value ?? '')
       },
       {
         headerName: 'Inactividad',
         field: 'inactividad',
-        minWidth: 100,
-        maxWidth: 100,
-        cellStyle: { textAlign: 'center' }
+        headerTooltip: 'Minutos sin actividad antes de cerrar la sesión',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 110,
+        maxWidth: 130,
+        // Sólo el número no decía nada: se le pone la unidad
+        cellRenderer: (params: any) => params.value != null ? `${params.value} min` : ''
       },
-      // {
-      //   headerName: 'Estado',
-      //   field: 'activo',
-      //   width: 80,
-      //   cellStyle: { textAlign: 'center' },
-      //   cellRenderer: (params: any) => {
-      //     return params.value === true ? 
-      //       '<span class="badge bg-success">Activo</span>' : 
-      //       '<span class="badge bg-danger">Inactivo</span>';
-      //   }
-      // },
-{
-  headerName: 'Seleccionar',
-  field: 'seleccionar',
-  pinned: 'right',
-  minWidth: 85,
-  maxWidth: 85,
-  cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-  sortable: false,
-  resizable: false,
-  headerComponentParams: {
-    template: `
-      <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
-        <span>Seleccionar</span>
-      </div>
-    `
-  },
-  cellRenderer: () => {
-    return `<button class="btn btn-sm btn-outline-primary" style="padding: 4px 6px; border-radius: 4px;">
+      // Columna "Ir": sólo indica que la fila se puede elegir. La selección
+      // real la hace onCellClicked sobre cualquier celda.
+      {
+        headerName: 'Ir',
+        field: 'seleccionar',
+        pinned: 'right',
+        minWidth: 60,
+        maxWidth: 60,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        sortable: false,
+        resizable: false,
+        filter: false,
+        suppressMenu: true,
+        cellRenderer: () =>
+          `<span class="lista-ir" title="Elegir este perfil">
              <i class="fas fa-arrow-right"></i>
-            </button>`;
-  }
-}
-
-
+           </span>`
+      }
     ];
   }
 
@@ -116,40 +146,62 @@ export class ListProfileComponent implements OnInit {
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
   }
 
-  onCellClicked(event: CellClickedEvent): void {
-    if (event.colDef.field === 'seleccionar') {
-      this.seleccionado.emit(event.data);
-      this.modal.close();
-    }
+  /** Un clic en cualquier celda elige la fila: emite el perfil y cierra. */
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas();
+
+  /** Enter sobre la fila enfocada = elegirla (igual que el clic). */
+  onCellKeyDown(event: CellKeyDownEvent): void {
+    if ((event.event as KeyboardEvent)?.key === 'Enter') { this.onCellClicked(event as unknown as CellClickedEvent); }
   }
 
+  onCellClicked(event: CellClickedEvent): void {
+    if (!event.data) { return; }
+    this.seleccionado.emit(event.data);
+    this.modal.close(event.data);
+  }
+
+  // ================================================================
+  // DATOS
+  // ================================================================
+
+  /** Pide una página al servidor y actualiza grilla y contadores. */
   async cargarPerfiles(page: number = 1) {
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
-        this._profileService.listProfiles(page, this.registrosPorPagina, this.searchTerm)        
+        this._profileService.listProfiles(page, this.registrosPorPagina, this.searchTerm)
       );
-      //console.log('perfiles list',res)
-      
+
       this.rowData = res.body?.data?.data || [];
-      
+
       if (res.body?.data?.meta) {
         this.totalRegistros = res.body.data.meta.total;
         this.registrosPorPagina = res.body.data.meta.per_page;
         this.paginaActual = res.body.data.meta.current_page;
         this.ultimaPagina = res.body.data.meta.last_page;
       }
-      
+
       if (this.gridApi) {
         this.gridApi.setRowData(this.rowData);
       }
     } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar perfiles:', error);
+      this.rowData = [];
+      this.totalRegistros = 0;
+      this.ultimaPagina = 1;
+      this.gridApi?.setRowData([]);
     } finally {
       this._loadingService.setLoading(false);
     }
   }
 
+  // ================================================================
+  // BÚSQUEDA
+  // ================================================================
+
+  /** Nuevo filtro → siempre desde la página 1, o podría caer fuera de rango. */
   async onSearch(term?: string) {
     if (term !== undefined) this.searchTerm = term;
     this.paginaActual = 1;
@@ -159,11 +211,15 @@ export class ListProfileComponent implements OnInit {
   limpiarBusqueda() {
     this.searchTerm = '';
     this.paginaActual = 1;
-    this.campoBusquedaPaginacion.reset();
+    this.campoBusquedaPaginacion?.reset();
     this.cargarPerfiles(1);
   }
 
-  // Funciones de paginación
+  // ================================================================
+  // PAGINACIÓN
+  // ================================================================
+  // Todas pasan por goToPage(), que es la única que valida el rango.
+
   firstPage(): void {
     if (this.paginaActual !== 1) {
       this.goToPage(1);
@@ -190,4 +246,3 @@ export class ListProfileComponent implements OnInit {
     this.goToPage(this.paginaActual - 1);
   }
 }
-

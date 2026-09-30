@@ -1,133 +1,978 @@
-:root {
-  /* Colores para modo claro */
-  --table-bg: #ffffff;
-  --table-header-bg: #ffffff;
-  --table-row-hover: #f8fafc;
-  --table-row-active: #e7f1ff;
-  --table-border: #f0f0f0;
-  --table-text: #212529;
-  --table-shadow: rgba(0, 0, 0, 0.05);
-  --no-data-text: #6c757d;
-  
-  /* Scrollbar */
-  --scrollbar-width: 3px;
-  --scrollbar-track-bg: #f1f1f1;
-  --scrollbar-thumb-bg: #888;
-  --scrollbar-thumb-hover-bg: #555;
-  --scrollbar-border-radius: 1.5px;
-  --scrollbar-padding: 5px;
+/* ============================================================
+   ADMINISTRADOR DE ARCHIVOS
+
+   La estructura (file-manager, -toolbar, -sidebar, -content) es del
+   tema. Aquí va lo propio de esta pantalla: la barra de herramientas
+   con sus grupos, el lateral con buscador y árbol a altura completa,
+   la barra de ubicación y la de estado.
+
+   Todo con variables --bs-* para seguir el modo claro/oscuro sin
+   colores fijos (antes había una paleta propia bajo .dark-mode que no
+   respondía al data-bs-theme de la aplicación).
+   ============================================================ */
+
+:host {
+  display: block;
 }
 
-/* Modo oscuro */
-.dark-mode {
-  --table-bg: #2a3042;
-  --table-header-bg: #2a3042;
-  --table-row-hover: #343a4a;
-  --table-row-active: #3a4466;
-  --table-border: #3a4256;
-  --table-text: #e9ecef;
-  --table-shadow: rgba(0, 0, 0, 0.2);
-  --no-data-text: #adb5bd;
-  
-  /* Scrollbar modo oscuro */
-  --scrollbar-track-bg: #2a3042;
-  --scrollbar-thumb-bg: #4a5068;
-  --scrollbar-thumb-hover-bg: #5a6688;
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida: el panel ya trae su propio hueco. */
+.archivos-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
 }
 
-/* Estilos base */
-.scrollable-container {
-  overflow-y: hidden;
-  padding-right: var(--scrollbar-padding);
+/* ============================================================
+   BARRA DE HERRAMIENTAS
+   ============================================================ */
+.archivos-toolbar {
+  align-items: center;
+  gap: .25rem;
+  padding: .375rem .5rem;
 }
 
-.scrollable-container:hover {
-  overflow-y: auto;
+.archivos-toolbar__grupo {
+  display: flex;
+  align-items: center;
+  gap: .125rem;
 }
 
-.scrollable-container:hover::-webkit-scrollbar {
-  width: var(--scrollbar-width);
+.archivos-toolbar__separador {
+  width: 1px;
+  height: 1.5rem;
+  margin: 0 .375rem;
+  background-color: var(--bs-border-color, #dee2e6);
 }
 
-.scrollable-container:hover::-webkit-scrollbar-track {
-  background: var(--scrollbar-track-bg);
-  border-radius: var(--scrollbar-border-radius);
+/* Botón plano: sólo se dibuja al pasar el ratón */
+.archivos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .3rem .55rem;
+  border: 1px solid transparent;
+  border-radius: .375rem;
+
+  background: transparent;
+  color: var(--bs-body-color, #212529);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  transition: background-color .12s ease, border-color .12s ease;
 }
 
-.scrollable-container:hover::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb-bg);
-  border-radius: var(--scrollbar-border-radius);
+.archivos-btn:hover:not(:disabled),
+.archivos-btn:focus-visible {
+  background-color: var(--bs-component-bg, #fff);
+  border-color: var(--bs-border-color, #dee2e6);
 }
 
-.scrollable-container:hover::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover-bg);
+/* Deshabilitado: el icono pierde el color para que se vea que no aplica */
+.archivos-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 
-.scrollable-container:hover {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb-bg) var(--scrollbar-track-bg);
+.archivos-btn:disabled .archivos-btn__icono {
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
-.file-tree {
-  max-height: 350px;
+.archivos-btn__icono {
+  width: 1rem;
+  text-align: center;
+  font-size: 13px;
 }
 
-/* Estructura principal */
-.file-manager-content {
-  flex: 1;
-  min-height: 0;
+/* Elemento objetivo de las acciones, a la derecha de la barra */
+.archivos-toolbar__objetivo {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+
+  margin-left: auto;
+  max-width: 16rem;
+  padding: .25rem .625rem;
+  border-radius: 2rem;
+
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .10);
+  color: var(--bs-app-theme, #00acac);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   LATERAL: ÁRBOL
+   ============================================================ */
+.archivos-lateral {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  min-height: 0;
+  background-color: var(--bs-component-bg, #fff);
 }
 
-/* Mensaje de no datos */
-.no-data-row td {
-  padding: 20px;
+.archivos-lateral__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.archivos-lateral__titulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.archivos-lateral__buscador {
+  position: relative;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.archivos-lateral__buscador .form-control {
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+}
+
+.archivos-lateral__lupa {
+  position: absolute;
+  top: 50%;
+  left: 1.3rem;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.archivos-lateral__limpiar {
+  position: absolute;
+  top: 50%;
+  right: 1.1rem;
+  transform: translateY(-50%);
+
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.archivos-lateral__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* El árbol ocupa todo lo que queda; antes tenía 350px fijos y por debajo
+   quedaba un hueco muerto */
+.archivos-lateral__arbol {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.archivos-arbol {
+  min-height: 100%;   /* el fondo entero recibe drops (= raíz) */
+  /* Tan ancho como el nodo más largo: con muchos niveles el árbol crece
+     hacia la derecha y ng-scrollbar (orientation auto) pone la barra
+     horizontal, en vez de recortar los nombres. */
+  width: max-content;
+  min-width: 100%;
+  padding: .5rem .75rem .5rem .25rem;
+}
+
+.archivos-arbol__vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+
+  padding: 2rem 1rem;
   text-align: center;
-  color: var(--no-data-text);
-  font-style: italic;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
-/* Estilos responsivos */
-@media (max-width: 768px) {
-  .file-manager-container {
-    position: relative;
+.archivos-arbol__vacio i {
+  font-size: 1.5rem;
+  opacity: .5;
+}
+
+/* ============================================================
+   CONTENIDO
+   ============================================================ */
+.archivos-contenido {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-inline-start: 0 !important;  /* la línea la pinta el divisor (el tema pone otra y se veían dos) */
+}
+
+/* ---------- Barra de ubicación ---------- */
+.archivos-ubicacion {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.archivos-ruta {
+  display: flex;
+  align-items: center;
+  gap: .125rem;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.archivos-ruta::-webkit-scrollbar {
+  display: none;
+}
+
+.archivos-ruta__tramo {
+  flex: 0 0 auto;
+
+  padding: .2rem .5rem;
+  border: 0;
+  border-radius: .25rem;
+
+  background: transparent;
+  color: var(--bs-body-color, #212529);
+  font-size: 12px;
+  white-space: nowrap;
+
+  transition: background-color .12s ease;
+}
+
+.archivos-ruta__tramo:hover {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .10);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-ruta__tramo--actual {
+  font-weight: 600;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-ruta__sep {
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: var(--bs-secondary-color, #adb5bd);
+}
+
+/* ---------- Buscador de la grilla ---------- */
+.archivos-buscador {
+  margin: 0;
+  padding: .5rem .75rem 0;
+}
+
+/* Botón cuadrado a la altura del buscador (igual que allUsers) */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* ---------- Grilla ---------- */
+.archivos-grilla {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .5rem;
+}
+
+/* Elementos inactivos, atenuados (rowClassRules del .ts). ::ng-deep porque
+   la fila la genera ag-Grid fuera de la encapsulación del componente. */
+:host ::ng-deep .archivos-grilla .ag-row.fila-inactiva .ag-cell {
+  opacity: .55;
+}
+
+:host ::ng-deep .archivos-grilla .ag-row {
+  cursor: pointer;
+}
+
+/* ---------- Resumen de la carpeta (bajo la grilla) ---------- */
+.archivos-estado {
+  padding: .375rem .75rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  font-size: .75rem;
+}
+
+.archivos-estado b {
+  font-weight: 600;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+/* Por debajo de lg el tema ya saca el lateral fuera de pantalla y lo
+   muestra con file-manager-sidebar-mobile-toggled; aquí sólo se compacta
+   la barra de herramientas a iconos. */
+@media (max-width: 991.98px) {
+  .archivos-btn__texto {
+    display: none;
   }
 
-  .file-manager-sidebar-mobile-toggler {
-    position: fixed;
-    left: 10px;
-    top: 10px;
-    z-index: 1100;
-    transition: left 0.3s ease;
+  .archivos-btn {
+    padding: .35rem .5rem;
   }
 
-  .file-manager-sidebar-mobile-toggled .file-manager-sidebar-mobile-toggler {
-    left: 240px;
+  .archivos-toolbar__objetivo {
+    max-width: 9rem;
   }
 
-  .file-manager-sidebar {
-    position: fixed;
-    left: -250px;
-    top: 0;
-    width: 250px;
-    height: 100vh;
-    background: var(--table-bg);
-    box-shadow: 2px 0 10px var(--table-shadow);
-    transition: left 0.3s ease;
-    z-index: 1050;
+  .archivos-lateral {
+    box-shadow: 4px 0 12px rgba(0, 0, 0, .12);
   }
 
-  .file-manager-sidebar-mobile-toggled .file-manager-sidebar {
-    left: 0;
+  /* ---------- Pestaña para abrir / cerrar el árbol (móvil y tablet) ----------
+     El tema la pinta gris sobre gris y casi no se ve: aquí va en el color
+     del tema, con sombra y una etiqueta "Carpetas" vertical para que se
+     entienda qué abre. Cerrada: color del tema con la flecha; abierta:
+     misma pestaña pegada al borde del árbol, con la flecha hacia atrás. */
+  .archivos-lateral .file-manager-sidebar-mobile-toggler {
+    top: .75rem;
+    width: auto;
   }
 
-  .file-manager-content {
-    transition: margin-left 0.3s ease;
+  .archivos-lateral .file-manager-sidebar-mobile-toggler .btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+    padding: .55rem .45rem .6rem;
+    border: 0;
+    border-radius: 0 .625rem .625rem 0;
+    background: var(--bs-app-theme, #00acac);
+    color: var(--bs-app-theme-color, #fff);
+    box-shadow: 3px 2px 10px rgba(0, 0, 0, .28);
+    font-size: 1.05rem;
+    line-height: 1;
   }
 
-  .file-manager-sidebar-mobile-toggled .file-manager-content {
-    margin-left: 250px;
+  .archivos-lateral .file-manager-sidebar-mobile-toggler .btn::after {
+    content: 'Carpetas';
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: .625rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    opacity: .95;
+  }
+
+  .archivos-lateral .file-manager-sidebar-mobile-toggler .btn:hover,
+  .archivos-lateral .file-manager-sidebar-mobile-toggler .btn:focus-visible {
+    background: var(--bs-app-theme-hover, var(--bs-app-theme, #00acac));
+    color: var(--bs-app-theme-color, #fff);
+    outline: none;
+  }
+
+  /* Abierto: la flecha basta, sin etiqueta */
+  .file-manager-sidebar-mobile-toggled .archivos-lateral .file-manager-sidebar-mobile-toggler .btn::after {
+    content: none;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .archivos-toolbar__objetivo {
+    display: none;
+  }
+
+  .archivos-ubicacion {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archivos-btn,
+  .archivos-ruta__tramo {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   MENÚ CONTEXTUAL (clic derecho)
+   ============================================================ */
+.menu-ctx {
+  position: fixed;
+  z-index: 1070;                 /* por encima del panel expandido (1054) */
+  min-width: 220px;
+  max-width: 280px;
+  padding: .375rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+
+  font-size: 12px;
+  animation: menu-ctx-entrada .1s ease-out;
+}
+
+@keyframes menu-ctx-entrada {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.menu-ctx__cabecera {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .375rem .625rem .5rem;
+  margin-bottom: .25rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.menu-ctx__cabecera--vacio {
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 500;
+}
+
+.menu-ctx__item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  width: 100%;
+  padding: .4rem .625rem;
+  border: 0;
+  border-radius: .375rem;
+
+  background: transparent;
+  color: var(--bs-body-color, #212529);
+  text-align: left;
+  white-space: nowrap;
+
+  transition: background-color .1s ease;
+}
+
+.menu-ctx__item:hover,
+.menu-ctx__item:focus-visible {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  outline: none;
+}
+
+.menu-ctx__item--peligro:hover,
+.menu-ctx__item--peligro:focus-visible {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);
+  color: var(--bs-danger, #dc3545);
+}
+
+.menu-ctx__detalle {
+  margin-left: auto;
+  padding-left: .75rem;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  font-size: 10px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.menu-ctx__sep {
+  height: 1px;
+  margin: .25rem .375rem;
+  background-color: var(--bs-border-color, #dee2e6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-ctx {
+    animation: none;
+  }
+}
+
+/* ---------- Papelera (barra de ubicación) ---------- */
+.archivos-papelera {
+  flex: 0 0 auto;
+}
+
+/* Vacía: el icono se atenúa para que se vea que no hay nada dentro */
+.archivos-papelera--vacia {
+  opacity: .5;
+}
+
+.archivos-papelera__badge {
+  font-size: 9px;
+  padding: .2em .45em;
+}
+
+/* Marca "se abre en ventana nueva" junto al nombre (cellRenderer del .ts) */
+:host ::ng-deep .archivos-grilla .lista-nueva-ventana {
+  margin-left: .35rem;
+  font-size: .7em;
+  color: var(--bs-app-theme, #00acac);
+  opacity: .8;
+}
+
+/* ---------- Arrastrar y soltar (mover) ---------- */
+/* Fila-carpeta de la grilla sobre la que se va a soltar */
+:host ::ng-deep .archivos-grilla .ag-row.fila-destino .ag-cell {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .16) !important;
+  box-shadow: inset 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+/* Reordenar: hueco antes / después de una fila (línea de inserción) */
+:host ::ng-deep .archivos-grilla .ag-row.fila-insertar-antes .ag-cell {
+  box-shadow: inset 0 3px 0 0 var(--bs-primary, #348fe2);
+}
+
+:host ::ng-deep .archivos-grilla .ag-row.fila-insertar-despues .ag-cell {
+  box-shadow: inset 0 -3px 0 0 var(--bs-primary, #348fe2);
+}
+
+/* Fondo de la grilla = soltar en la carpeta actual */
+.archivos-grilla.is-destino-fondo {
+  outline: 2px dashed var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+  border-radius: .375rem;
+}
+
+/* Fondo del árbol = soltar en la raíz */
+.archivos-arbol.is-destino-raiz {
+  outline: 2px dashed var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+  border-radius: .375rem;
+  min-height: 100%;
+}
+
+/* La celda Nombre se puede coger */
+:host ::ng-deep .archivos-grilla .ag-cell[col-id="nombre"] {
+  cursor: grab;
+}
+
+/* Botones de la cabecera del árbol (expandir · contraer · raíz) */
+.archivos-lateral__acciones .btn {
+  padding: .15rem .45rem;
+  font-size: 11px;
+}
+
+/* ============================================================
+   DIVISOR ÁRBOL | GRILLA (ancho del lateral), al estilo de VS Code:
+   en reposo es sólo una línea de 1px con un asa de tres puntos en
+   medio; la zona de agarre es más ancha (8px) pero invisible, y al
+   pasar el ratón (con un pequeño retardo, como en VS Code) o al
+   arrastrar se vuelve una barra de 4px del color del tema.
+   En móvil el lateral es un panel superpuesto: sin divisor.
+   ============================================================ */
+.archivos-divisor {
+  position: relative;
+  flex: 0 0 10px;                     /* franja entre árbol y grilla */
+  box-sizing: border-box;
+  background-color: var(--bs-body-bg, #e4e7e8);   /* mismo fondo que hay detrás del panel (claro / oscuro) */
+  border-left: 1px solid var(--bs-border-color, #dee2e6);    /* las dos líneas, una a cada lado */
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+  cursor: col-resize;
+  touch-action: none;                 /* que el dedo no haga scroll al arrastrar */
+  z-index: 2;
+}
+
+/* Barra de 4px en el centro, invisible en reposo; al pasar el ratón (con
+   retardo, como VS Code) o al arrastrar toma el color del tema */
+.archivos-divisor::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background-color: transparent;
+  transition: background-color .1s ease .25s;   /* retardo como VS Code */
+}
+
+/* Asa: tres puntos verticales en el centro, muy tenues */
+.archivos-divisor::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 15px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background-image: radial-gradient(circle, rgba(var(--bs-body-color-rgb, 33, 37, 41), .45) 1.1px, transparent 1.4px);
+  background-size: 3px 5px;
+  background-repeat: repeat-y;
+  background-position: center;
+  transition: opacity .1s ease .25s;
+  pointer-events: none;
+}
+
+.archivos-divisor:hover::before,
+.file-manager.is-redimensionando .archivos-divisor::before {
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.file-manager.is-redimensionando .archivos-divisor::before {
+  transition-delay: 0s;
+}
+
+.archivos-divisor:hover::after,
+.file-manager.is-redimensionando .archivos-divisor::after {
+  opacity: 0;
+}
+
+/* Mientras se arrastra: sin transiciones ni selección de texto, cursor en todo */
+.file-manager.is-redimensionando,
+.file-manager.is-redimensionando * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.file-manager.is-redimensionando .file-manager-sidebar {
+  transition: none;
+}
+
+@media (max-width: 991.98px) {
+  .archivos-divisor {
+    display: none;
+  }
+}
+
+/* ============================================================
+   PIE DEL ÁRBOL: ALMACENAMIENTO (bloque "SSD Storage" de la plantilla)
+   ============================================================ */
+.archivos-almacen {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex: 0 0 auto;
+  cursor: pointer;                   /* clic = actualizar */
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.archivos-almacen__icono {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: .5rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-app-theme, #00acac);
+  font-size: 1.25rem;
+}
+
+.archivos-almacen__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.archivos-almacen__titulo {
+  font-weight: 700;
+  color: var(--bs-body-color, #212529);
+}
+
+.archivos-almacen__barra {
+  height: 5px;
+  margin: .25rem 0;
+}
+
+.archivos-almacen__linea {
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.archivos-almacen__linea b {
+  color: var(--bs-body-color, #212529);
+  font-weight: 600;
+}
+
+.archivos-almacen__linea--disco {
+  font-size: 10.5px;
+}
+
+.archivos-almacen__papelera {
+  color: var(--bs-warning, #f59c1a);
+}
+
+/* Textos "Papelera" y "Raíz" de la barra de ubicación: sólo con sitio;
+   en pantallas pequeñas (< 992px, como la barra de herramientas) quedan
+   los iconos. */
+@media (max-width: 991.98px) {
+  .archivos-ubicacion__texto {
+    display: none;
+  }
+}
+
+/* ---------- Multiselección ---------- */
+/* Chip "N seleccionados" en la barra, con su botón para quitar la selección */
+.archivos-toolbar__objetivo--varios {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+.archivos-toolbar__quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: .25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 11px;
+  opacity: .7;
+}
+
+.archivos-toolbar__quitar:hover {
+  opacity: 1;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .2);
+}
+
+/* Casilla de selección de ag-Grid, un poco más discreta */
+:host ::ng-deep .archivos-grilla .ag-checkbox-input-wrapper {
+  font-size: 14px;
+}
+
+/* ============================================================
+   VISTA CUADRÍCULA (iconos grandes, como el explorador de Windows)
+   ============================================================ */
+.archivos-vista .btn.active {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .14);
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-cuadricula {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .5rem;
+}
+
+.archivos-cuadricula.is-destino-fondo {
+  outline: 2px dashed var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+  border-radius: .375rem;
+}
+
+/* Rejilla de tiles: tantas columnas como quepan de ~120px */
+.archivos-cuadricula__lienzo {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: .5rem;
+  align-content: start;
+  min-height: 100%;
+  padding: .25rem;
+}
+
+.archivos-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .25rem;
+
+  padding: .75rem .5rem .5rem;
+  border: 1px solid transparent;
+  border-radius: .5rem;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+
+  transition: background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+.archivos-tile:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
+  border-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.archivos-tile:focus-visible {
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .25);
+}
+
+.archivos-tile.is-seleccionado {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .14);
+  border-color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-tile.is-inactivo {
+  opacity: .5;
+}
+
+/* Reordenar: barra vertical de inserción a la izquierda / derecha del tile */
+.archivos-tile.is-insertar-antes::before,
+.archivos-tile.is-insertar-despues::before {
+  content: '';
+  position: absolute;
+  top: .25rem;
+  bottom: .25rem;
+  width: 3px;
+  border-radius: 2px;
+  background-color: var(--bs-primary, #348fe2);
+  pointer-events: none;
+}
+
+.archivos-tile.is-insertar-antes::before  { left: -.35rem; }
+.archivos-tile.is-insertar-despues::before { right: -.35rem; }
+
+/* Carpeta sobre la que se va a soltar */
+.archivos-tile.is-destino {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: inset 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+/* Icono grande / miniatura */
+.archivos-tile__icono {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.archivos-tile__miniatura {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: .375rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+  background-color: var(--bs-body-bg, #fff);
+}
+
+/* Contador de elementos en carpetas */
+.archivos-tile__contador {
+  position: absolute;
+  right: 4px;
+  bottom: 6px;
+  min-width: 18px;
+  padding: 0 .3rem;
+  border-radius: 2rem;
+  background-color: var(--bs-body-color, #212529);
+  color: var(--bs-body-bg, #fff);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+/* Extensión, como etiqueta sobre el icono del fichero */
+.archivos-tile__ext {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  padding: .05rem .35rem;
+  border-radius: .2rem;
+  background-color: var(--bs-body-color, #212529);
+  color: var(--bs-body-bg, #fff);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+/* Marcas pequeñas: protegido / ventana nueva */
+.archivos-tile__marca {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  font-size: 11px;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.archivos-tile__marca--2 {
+  right: auto;
+  left: 2px;
+}
+
+.archivos-tile__nombre {
+  width: 100%;
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--bs-body-color, #212529);
+  /* dos líneas como máximo, con puntos suspensivos */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.archivos-tile.is-seleccionado .archivos-tile__nombre {
+  font-weight: 600;
+}
+
+.archivos-tile__detalle {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+  min-height: 1em;
+}
+
+/* Casilla en la esquina: visible al pasar o si está seleccionado */
+.archivos-tile__check {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--bs-app-theme, #00acac);
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+
+.archivos-tile:hover .archivos-tile__check,
+.archivos-tile.is-seleccionado .archivos-tile__check {
+  opacity: 1;
+}
+
+.archivos-cuadricula__vacio {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 3rem 1rem;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.archivos-cuadricula__vacio i {
+  font-size: 2rem;
+  opacity: .5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archivos-tile,
+  .archivos-tile__check {
+    transition: none;
   }
 }

@@ -5,6 +5,10 @@ export const environment = {
   WEBSOKETS_PRODUCTION: false,
   URL_SERVICIOS: "http://192.168.2.173:8009/",
   URL_WEBSOCKETS: "192.168.2.173", 
+  // Clave de Google Maps Platform (Maps JavaScript API + Places API). Vacía = la
+  // pantalla de Google Maps avisa y no carga la API. Restringirla por dominio
+  // en la consola de Google Cloud.
+  GOOGLE_MAPS_API_KEY: "AIzaSyCuSb0RIFnVu8HhH5KiGo1iYpZLdRI3TAY",
 };
 
 

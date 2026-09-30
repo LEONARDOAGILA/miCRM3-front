@@ -1,0 +1,159 @@
+<!-- ============================================================
+     GUARDAR DEPARTAMENTO (modal)
+     Mismo esquema que saveCargo: cabecera, paneles del tema (datos +
+     descripción) y pie con Guardar. En 'view' va deshabilitado.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body cargo-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- ---------- Datos del departamento ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos del departamento"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="briefcase"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        @if (esView) {
+          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+        }
+        @if (!esNuevo && numEmpleados > 0) {
+          <span class="chip chip-info" title="Empleados del departamento">
+            <i class="fa-solid fa-users"></i> {{ numEmpleados }} {{ numEmpleados === 1 ? 'empleado' : 'empleados' }}
+          </span>
+        }
+      </div>
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <!-- Nombre -->
+            <div class="col-12 col-md-7">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="NOMBRE DEL DEPARTAMENTO"
+                placeholder="Nombre del departamento"
+                [maxLength]="100"
+                [minLength]="3"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+            <!-- Estado -->
+            <div class="col-12 col-md-5">
+              <div class="estado-cargo" [class.is-on]="ctrlActivo.value">
+                <span class="estado-cargo__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-cargo__text">
+                  <span class="estado-cargo__label">Estado</span>
+                  <span class="estado-cargo__hint">
+                    {{ ctrlActivo.value ? 'Se puede asignar a empleados' : 'No se ofrece al asignar' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-cargo__switch"
+                  [control]="ctrlActivo"
+                  [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
+                  [id]="'ck-departamento-activo'">
+                </app-checkbox>
+              </div>
+            </div>
+
+            <!-- Código -->
+            <div class="col-12 col-md-4">
+              <app-campoTexto
+                [control]="form.controls['codigo']"
+                label="CÓDIGO"
+                placeholder="Ej.: RRHH"
+                [maxLength]="20"
+                [trimEspacios]="true"
+                [noEspacios]="true"
+                [mayusculas]="true"
+                icono="fa-tag">
+              </app-campoTexto>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                Abreviatura única, en mayúsculas. Opcional.
+              </p>
+            </div>
+
+            <!-- Responsable -->
+            <div class="col-12 col-md-8">
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="empleado_id"
+                  [items]="responsables"
+                  [label]="'Responsable (empleado activo)'"
+                  bindLabel="nombre"
+                  bindValue="id">
+                </app-combo>
+              </div>
+              @if (!esView) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Quien dirige el departamento. Opcional; sólo empleados activos.
+                </p>
+              }
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Descripción ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Descripción"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="editar"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <app-campoTextoArea
+            [control]="form.controls['descripcion']"
+            label="DESCRIPCIÓN / FUNCIONES"
+            placeholder="Área de trabajo y funciones principales (opcional)"
+            [maxLength]="1000"
+            [alto]="110">
+          </app-campoTextoArea>
+
+          @if (!esNuevo && departamentoModel) {
+            <div class="cargo-meta">
+              <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ departamentoModel.created_at }} por <b>{{ departamentoModel.created_by || '—' }}</b></span>
+              <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ departamentoModel.updated_at }} por <b>{{ departamentoModel.updated_by || '—' }}</b></span>
+            </div>
+          }
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

@@ -1,0 +1,79 @@
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+    title="Seleccionar icono"
+    (onClose)="modal.dismiss('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body selector-body">
+
+    <!-- ---------- Búsqueda ---------- -->
+    <div class="selector-buscador">
+        <i class="fa-solid fa-magnifying-glass selector-buscador__icono" aria-hidden="true"></i>
+        <input type="text"
+               class="form-control"
+               placeholder="Buscar icono (usuario, factura, reporte…)"
+               aria-label="Buscar icono"
+               [(ngModel)]="filtroIcono"
+               [ngModelOptions]="{ standalone: true }">
+
+        <button type="button"
+                class="selector-buscador__limpiar"
+                *ngIf="filtroIcono || grupoIcono !== 'Todos'"
+                (click)="limpiarBusqueda()"
+                aria-label="Limpiar la búsqueda"
+                title="Limpiar">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <!-- ---------- Grupos ---------- -->
+    <div class="selector-grupos" role="tablist" aria-label="Grupos de iconos">
+        <button type="button" *ngFor="let grupo of gruposIconos"
+                class="grupo-chip"
+                role="tab"
+                [class.activo]="grupoIcono === grupo"
+                [attr.aria-selected]="grupoIcono === grupo"
+                (click)="grupoIcono = grupo">
+            {{ grupo }}
+        </button>
+    </div>
+
+    <!-- ---------- Resumen ---------- -->
+    <p class="selector-resumen" aria-live="polite">
+        {{ iconosFiltrados.length }} de {{ totalIconos }} iconos
+    </p>
+
+    <!-- ---------- Rejilla ---------- -->
+    <div class="selector-grid" *ngIf="iconosFiltrados.length > 0; else sinIconos"
+         role="listbox" aria-label="Iconos disponibles">
+        <button type="button" *ngFor="let icono of iconosFiltrados"
+                class="icono-opcion"
+                role="option"
+                [class.activo]="iconoSeleccionado === icono.clase"
+                [attr.aria-selected]="iconoSeleccionado === icono.clase"
+                [title]="icono.nombre + ' (' + icono.clase + ')'"
+                (click)="seleccionar(icono.clase)">
+            <i [ngClass]="icono.clase" aria-hidden="true"></i>
+            <span>{{ icono.nombre }}</span>
+        </button>
+    </div>
+
+    <!-- ---------- Sin resultados ---------- -->
+    <ng-template #sinIconos>
+        <div class="selector-vacio">
+            <i class="fa-solid fa-magnifying-glass selector-vacio__icono" aria-hidden="true"></i>
+            <p class="selector-vacio__titulo">
+                Ningún icono coincide con «{{ filtroIcono }}»
+            </p>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="limpiarBusqueda()">
+                <i class="fa-solid fa-eraser me-1" aria-hidden="true"></i> Limpiar búsqueda
+            </button>
+        </div>
+    </ng-template>
+
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer [isDisabled]="false" (onClose)="modal.dismiss('Close click')">
+</app-modal-footer>

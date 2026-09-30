@@ -13,6 +13,7 @@ import { PanelModule } from '../../components/panel/panel.module';
 
 import { ModalFooterComponent } from '../../components/modal/modal-footer/modal-footer.component';
 import { ModalHeaderComponent } from '../../components/modal/modal-header/modal-header.component';
+import { ModalArrastrableDirective } from '../../components/modal/modal-arrastrable.directive';
 import { ActionButtonsModule } from '../../components/botones/action-buttons/action-buttons.module';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
@@ -44,11 +45,21 @@ import { CampoClaveComponent } from '../../components/campos/campoClave/campoCla
 import { AllHorariosComponent, ButtonAccionHorario } from './pages/horarios/allHorarios/allHorarios.component';
 import { DeleteHorarioComponent } from './pages/horarios/delete-horario/delete-horario.component';
 import { ListHorariosComponent } from './pages/horarios/listHorarios/listHorarios.component';
+import { ListUsersComponent } from './pages/users/listUsers/listUsers.component';
 import { SaveHorarioComponent } from './pages/horarios/save-horario/save-horario.component';
 import { AllProfilesComponent, ButtonAccionProfile } from './pages/profiles/allProfiles/allProfiles.component';
 import { DeleteProfileComponent } from './pages/profiles/deleteProfile/deleteProfile.component';
 import { ListProfileComponent } from './pages/profiles/listProfile/listProfile.component';
 import { Save2ProfileComponent } from './pages/profiles/save2Profile/save2Profile.component';
+
+// Usuarios y grupos (árbol estilo Active Directory)
+import { UsuariosGruposComponent, ButtonAccionUsuarioGrupo } from './pages/grupos/usuariosGrupos/usuariosGrupos.component';
+import { SaveGrupoComponent } from './pages/grupos/saveGrupo/saveGrupo.component';
+import { DeleteGrupoComponent } from './pages/grupos/deleteGrupo/deleteGrupo.component';
+import { ListGruposComponent } from './pages/grupos/listGrupos/listGrupos.component';
+import { PapeleraUsuariosComponent } from './pages/grupos/papeleraUsuarios/papeleraUsuarios.component';
+import { FileTreeNodeComponent } from '../../components/file-tree-node/file-tree-node.component';
+import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/campoTextoArea.component';
 
 
 
@@ -77,6 +88,7 @@ import { Save2ProfileComponent } from './pages/profiles/save2Profile/save2Profil
 
     AllHorariosComponent,
     ListHorariosComponent,
+    ListUsersComponent,
     SaveHorarioComponent,
     DeleteHorarioComponent,
     ButtonAccionHorario,
@@ -86,6 +98,13 @@ import { Save2ProfileComponent } from './pages/profiles/save2Profile/save2Profil
     DeleteProfileComponent,
     Save2ProfileComponent,
     ButtonAccionProfile,
+
+    UsuariosGruposComponent,
+    ButtonAccionUsuarioGrupo,
+    SaveGrupoComponent,
+    DeleteGrupoComponent,
+    ListGruposComponent,
+    PapeleraUsuariosComponent,
 
     
 
@@ -117,10 +136,13 @@ import { Save2ProfileComponent } from './pages/profiles/save2Profile/save2Profil
     CheckboxComponent,
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
+    ModalArrastrableDirective,
     ComboComponent,
     ActionButtonsModule,
     ModalFooterComponent,
     ModalHeaderComponent,
+    FileTreeNodeComponent,
+    CampoTextoAreaComponent,
 
     
 ]

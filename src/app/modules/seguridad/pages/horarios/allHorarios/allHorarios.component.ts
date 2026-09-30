@@ -52,6 +52,13 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
   public accesoModel: AccesoModel;
   public chorarioModel: ChorarioModel[] = [];
   public selectedRow: ChorarioModel | null = null;
+  /**
+   * true mientras la columna ACCIONES está plegada (sólo se ve su cabecera).
+   * El renderer de la celda lo usa para pintar un único botón que vuelve a
+   * desplegarla: sin eso el usuario no sabe que puede pulsar la cabecera.
+   */
+  public accionesPlegadas = false;
+
 
   // ****** PAGINACIÓN Y BÚSQUEDA ****** //
   public paginaActual: number = 1;
@@ -149,6 +156,16 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
   }
 
   // ****** FUNCIONES DE PAGINACIÓN ****** //
+  /** Primer registro mostrado; 0 sin resultados (antes decía "1 - 0 de 0"). */
+  public get desde(): number {
+    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
+  }
+
+  /** Último registro mostrado, sin pasarse del total. */
+  public get hasta(): number {
+    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
+  }
+
   firstPage(): void {
     if (this.paginaActual !== 1) {
       this.goToPage(1);
@@ -233,7 +250,7 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
         resizable: false,
         headerComponentParams: {
           template: `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
               <span>ACCIONES</span>
               <i class="fas fa-arrow-right"></i>
             </div>
@@ -288,20 +305,24 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
     
     if (actionsCol) {
       const isCollapsed = actionsCol.minWidth === 50;
+
+      // Estado para el renderer de la celda: tras este cambio la columna queda
+      // al revés de como estaba.
+      this.accionesPlegadas = !isCollapsed;
       
       actionsCol.minWidth = isCollapsed ? 110 : 50;
       actionsCol.maxWidth = isCollapsed ? 110 : 50;
-      actionsCol.cellStyle = isCollapsed ?
-        { display: 'flex', justifyContent: 'center', alignItems: 'center' } :
-        { display: 'none', justifyContent: 'left', alignItems: 'left' };
+      // Las celdas se ven en los dos estados: plegada, la celda muestra el botón
+      // de desplegar (ver renderer al final del fichero), así que ya no se oculta.
+      actionsCol.cellStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center' };
       
       actionsCol.headerComponentParams = {
         template: isCollapsed ?
-          `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+          `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
             <span>ACCIONES</span>
             <i class="fas fa-arrow-right"></i>
           </div>` :
-          `<div style="display: flex; align-items: center; justify-content: center;">
+          `<div style="display: flex; align-items: center; justify-content: center;" title="Mostrar los botones de acción">
             <i class="fas fa-bars"></i>
           </div>`
       };
@@ -354,6 +375,9 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
   clearSelection(): void {
     this._appAgGridService.limpiarSeleccion(this.gridApi);
   }
+
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
 
   onCellClicked(e: CellClickedEvent): void {
     this.selectedRow = e.data;
@@ -487,6 +511,15 @@ addHorario() {
   selector: 'app-button-accion-horario',
   standalone: false,
   template: `
+    @if (AllHorariosComponent.accionesPlegadas) {
+      <button type="button"
+              class="btn btn-sm btn-outline-primary acciones-desplegar"
+              title="Mostrar los botones de acción"
+              aria-label="Mostrar los botones de acción"
+              (click)="AllHorariosComponent.toggleActionsColumn()">
+        <i class="fas fa-bars"></i>
+      </button>
+    } @else {
     <app-action-buttons 
       [accesoModel]="AllHorariosComponent.accesoModel"
       [buttonView]="true"
@@ -498,7 +531,19 @@ addHorario() {
       (clone)="clonHorario()"
       (delete)="deleteHorario()">
     </app-action-buttons>
+    }
   `,
+  styles: [`
+    .acciones-desplegar {
+      width: 28px;
+      height: 24px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: .25rem;
+    }
+  `],
 })
 export class ButtonAccionHorario {
   private params: any;

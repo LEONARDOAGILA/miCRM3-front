@@ -15,16 +15,23 @@
   <form [formGroup]="form" class="form-validate" novalidate>
 
     <!-- ---------- Datos del horario ---------- -->
-    <div class="form-card mb-3">
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos del horario"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="clock"
+      fondoGris="true">
 
-      <div class="form-card__header">
-        <i class="fa-solid fa-clock"></i>
-        <span>Datos del horario</span>
-        <span class="chip chip-muted ms-auto" *ngIf="isdisabled">
+      <!-- El slot [header] del panel deja meter contenido junto al título -->
+      <div header class="panel-acciones" *ngIf="isdisabled">
+        <span class="chip chip-muted">
           <i class="fa-solid fa-eye"></i> Solo lectura
         </span>
       </div>
 
+      <ng-container outsideBody>
       <div class="form-card__body">
         <div class="row g-3 align-items-start">
 
@@ -58,15 +65,20 @@
 
         </div>
       </div>
-    </div>
+      </ng-container>
+    </panel>
 
     <!-- ---------- Días y horarios ---------- -->
-    <div class="form-card" formArrayName="dhorario">
+    <panel
+      headerClass="bg-gray-800"
+      title="Días y horarios"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="calendar"
+      fondoGris="true">
 
-      <div class="form-card__header dias-header">
-        <i class="fa-solid fa-calendar-week"></i>
-        <span>Días y horarios</span>
-
+      <div header class="panel-acciones">
         <span class="chip" [ngClass]="dhorario.length >= 7 ? 'chip-muted' : 'chip-info'">
           {{ dhorario.length }} de 7 días
         </span>
@@ -74,13 +86,16 @@
         <button
           *ngIf="!isdisabled"
           type="button"
-          class="btn btn-sm btn-primary ms-auto"
+          class="btn btn-sm btn-primary"
           [disabled]="dhorario.length >= 7"
           [title]="dhorario.length >= 7 ? 'Ya están configurados los 7 días de la semana' : 'Agregar un día al horario'"
           (click)="addHorarioItem()">
           <i class="fa fa-plus"></i> Agregar día
         </button>
       </div>
+
+      <ng-container outsideBody>
+      <div formArrayName="dhorario">
 
       <!-- Lista de días -->
       <div class="tabla-dias" *ngIf="dhorario.length > 0; else sinDias">
@@ -182,7 +197,9 @@
 
       </div>
 
-    </div>
+      </div>
+      </ng-container>
+    </panel>
 
   </form>
 </div>

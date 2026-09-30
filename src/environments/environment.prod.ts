@@ -4,6 +4,7 @@ export const environment = {
    WEBSOKETS_PRODUCTION: true,
    URL_SERVICIOS: "https://api.aespana.com.ec/",
    URL_WEBSOCKETS: "api.aespana.com.ec",          
+   GOOGLE_MAPS_API_KEY: "",
 
 };
 

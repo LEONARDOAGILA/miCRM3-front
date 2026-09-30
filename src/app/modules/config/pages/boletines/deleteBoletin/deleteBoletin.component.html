@@ -1,0 +1,72 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg" role="alertdialog" aria-labelledby="eliminarBoletinTitulo">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarBoletinTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button" class="btn-close btn-close-white" aria-label="Cerrar" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Enviar este boletín a la papelera?</h6>
+        <p class="eliminar-aviso__texto">
+          Dejará de mostrarse a sus destinatarios al iniciar sesión. Podrá restaurarlo desde la
+          <b>papelera de boletines</b> o eliminarlo allí definitivamente, junto con sus imágenes.
+        </p>
+      </div>
+    </div>
+
+    <div class="list-group list-group-flush eliminar-datos">
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-hashtag fa-fw me-1"></i>ID</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-bullhorn fa-fw me-1"></i>Título</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.titulo || '—' }}</span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-calendar fa-fw me-1"></i>Vigencia</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.desde }} → {{ registro_selected?.hasta }}</span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-images fa-fw me-1"></i>Imágenes</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.num_imagenes }}</span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-users fa-fw me-1"></i>Destinatarios</span>
+        <span class="eliminar-datos__valor">
+          {{ registro_selected?.num_usuarios }} usuario(s) · {{ registro_selected?.num_grupos }} grupo(s)
+        </span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-eye fa-fw me-1"></i>Ya lo vieron</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.num_vistos }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer">
+    <button type="button" class="btn btn-white" (click)="modal.dismiss('cancelar')">
+      <i class="fa fa-times me-1"></i>Cancelar
+    </button>
+    <button type="button" class="btn btn-danger" [disabled]="isLoading" (click)="deleteBoletin()">
+      <i class="fa fa-trash me-1"></i>Enviar a la papelera
+    </button>
+  </div>
+</div>

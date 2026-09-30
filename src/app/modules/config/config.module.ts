@@ -6,6 +6,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ConfigRoutingModule } from './config-routing.module';
 import { LoadingBarModule } from '@ngx-loading-bar/core';
 import { AgGridModule } from 'ag-grid-angular';
+import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
 
 import { DirectiveModule } from "../../core/directives/directive.module";
 import { PanelModule } from '../../components/panel/panel.module';
@@ -33,6 +34,7 @@ import { SaveFileComponent } from './pages/administrador-archivos/save-file/save
 
 
 import { CampoTextoComponent } from '../../components/campos/campoTexto/campoTexto.component';
+import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/campoTextoArea.component';
 import { CampoNumeroEnteroComponent } from '../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.component';
 import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/campoBusqueda.component';
@@ -41,9 +43,26 @@ import { ComboComponent } from '../../components/campos/combo/combo.component';
 import { FileTreeNodeComponent } from '../../components/file-tree-node/file-tree-node.component';
 
 import { ModalReporteExternoComponent } from './pages/administrador-archivos/modalReporteExterno/modalReporteExterno.component';
+import { DeleteFileComponent } from './pages/administrador-archivos/delete-file/deleteFile.component';
+import { PapeleraComponent } from './pages/administrador-archivos/papelera/papelera.component';
+import { ModalArrastrableDirective } from '../../components/modal/modal-arrastrable.directive';
+import { DropzoneComponent } from '../../components/campos/dropzone/dropzone.component';
+import { MoverArchivoComponent } from './pages/administrador-archivos/mover-archivo/moverArchivo.component';
+import { PermisosArchivoComponent } from './pages/administrador-archivos/permisos-archivo/permisosArchivo.component';
 import { ExtraSettingsPage } from './pages/extra-settings-page/extra-settings-page';
 import { ExtraSearchResultsPage } from './pages/extra-search-results/extra-search-results';
 import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
+
+// Boletines: avisos con imágenes que se muestran al entrar al sistema
+import { AllBoletinesComponent, ButtonAccionBoletin } from './pages/boletines/allBoletines/allBoletines.component';
+import { SaveBoletinComponent } from './pages/boletines/saveBoletin/saveBoletin.component';
+import { DeleteBoletinComponent } from './pages/boletines/deleteBoletin/deleteBoletin.component';
+import { VerBoletinesComponent } from './pages/boletines/verBoletines/verBoletines.component';
+import { PapeleraBoletinesComponent } from './pages/boletines/papeleraBoletines/papeleraBoletines.component';
+
+// Notificaciones: avisos por usuario que cuelgan de la campana de la cabecera
+import { AllNotificacionesComponent, ButtonAccionNotificacion } from './pages/notificaciones/allNotificaciones/allNotificaciones.component';
+import { SaveNotificacionComponent } from './pages/notificaciones/saveNotificacion/saveNotificacion.component';
 
 
 
@@ -64,6 +83,18 @@ import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
     FileManagerComponent,
     SaveFileComponent,
     ModalReporteExternoComponent,
+    DeleteFileComponent,
+    PapeleraComponent,
+
+    AllBoletinesComponent,
+    ButtonAccionBoletin,
+    SaveBoletinComponent,
+    DeleteBoletinComponent,
+    PapeleraBoletinesComponent,
+
+    AllNotificacionesComponent,
+    ButtonAccionNotificacion,
+    SaveNotificacionComponent,
 
 
   ],
@@ -80,15 +111,22 @@ import { ExtraProfilePage } from './pages/extra-profile/extra-profile';
     NgScrollbarModule,
 
     CampoTextoComponent,
+    CampoTextoAreaComponent,
     CampoNumeroEnteroComponent,
     CheckboxComponent,
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
+    ModalArrastrableDirective,
+    DropzoneComponent,
+    MoverArchivoComponent,
+    PermisosArchivoComponent,
     ComboComponent,
     ActionButtonsModule,
     FileTreeNodeComponent,
     ModalFooterComponent,
     ModalHeaderComponent,
+    VerBoletinesComponent,
+    NgxDaterangepickerMd,
 ]
 })
 export class ConfigModule { }

@@ -1,0 +1,24 @@
+# Navegadores a los que tiene que llegar el paquete compilado.
+#
+# Sin este fichero Angular usa su lista interna, cuyo suelo es iOS >= 16, y
+# babel deja sin transpilar todo lo que esos navegadores ya entienden: entre
+# otras cosas, los campos estáticos de clase con los que Angular adjunta las
+# definiciones de componente (static #_ = this.ɵcmp = defineComponent({...})).
+#
+# JavaScriptCore en iOS 15 (el último que tiene el iPhone 7) tiene un fallo
+# resolviendo variables del ámbito exterior desde esos inicializadores:
+# "ReferenceError: Can't find variable: _c11" al cargar ngx-charts.
+#
+# Bajando el suelo a iOS 14 —que NO soporta campos de clase— babel los
+# convierte en asignaciones corrientes después de la clase
+# (Clase.ɵcmp = defineComponent({...})) y el fallo no se puede producir.
+# iOS >= 15 no sirve: babel sabe que Safari 15 soporta los campos y no los toca.
+#
+# Las demás líneas son las mismas que trae Angular por defecto.
+Chrome >= 107
+ChromeAndroid >= 107
+Edge >= 107
+Firefox >= 104
+FirefoxAndroid >= 104
+Safari >= 14
+iOS >= 14

@@ -1,0 +1,236 @@
+<!-- ============================================================
+     LISTADO DE MARCACIONES
+       1. Miga de pan
+       2. <panel>
+          2a. Filtros (fechas, atajos, empleado, tipo, origen) y barra
+          2b. Resumen de horas (plegable)
+          2c. Grilla + paginación
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Recursos Humanos</a></li>
+  <li class="breadcrumb-item active">Marcaciones</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       [ButtonPrint]="accesoModel?.reporte === true"
+       [ButtonExportExcel]="accesoModel?.reporte === true"
+       [ButtonExportCsv]="accesoModel?.reporte === true"
+       (panelReloaded)="allMarcaciones(paginaActual)"
+       (panelExpanded)="ajustarTamanoGrid()"
+       (panelPrinted)="printPdf()"
+       (panelExportExceled)="exportExcel()"
+       (panelExportCsved)="exportCsv()"
+       [closeRoute]="'/rh'"
+       icono="usuarios">
+
+  <div class="content-container1 lista-contenido">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <div class="content2">
+      <div class="example-wrapper">
+
+        <!-- ---------- 2a. FILTROS ---------- -->
+        <div class="mar-filtros">
+          <div class="mar-filtros__grupo">
+            <label class="mar-campo">
+              <span>Desde</span>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="desde" (change)="aplicarFiltros()">
+            </label>
+            <label class="mar-campo">
+              <span>Hasta</span>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="hasta" (change)="aplicarFiltros()">
+            </label>
+
+            <div class="btn-group mar-atajos" role="group">
+              <button type="button" class="btn btn-xs btn-white" (click)="hoy()">Hoy</button>
+              <button type="button" class="btn btn-xs btn-white" (click)="estaSemana()">Semana</button>
+              <button type="button" class="btn btn-xs btn-white" (click)="esteMes()">Mes</button>
+            </div>
+          </div>
+
+          <div class="mar-filtros__grupo">
+            <label class="mar-campo mar-campo--empleado">
+              <span>Empleado</span>
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control" [value]="empleadoNombre" placeholder="Todos" readonly (click)="elegirEmpleado()">
+                <button type="button" class="btn btn-white" title="Elegir empleado" (click)="elegirEmpleado()"><i class="fa fa-search"></i></button>
+                @if (empleadoId) {
+                  <button type="button" class="btn btn-white text-danger" title="Quitar el filtro" (click)="limpiarEmpleado()"><i class="fa fa-times"></i></button>
+                }
+              </div>
+            </label>
+
+            <label class="mar-campo">
+              <span>Tipo</span>
+              <select class="form-select form-select-sm" [(ngModel)]="tipo" (change)="aplicarFiltros()">
+                <option [ngValue]="null">Todos</option>
+                @for (t of tipos; track t.id) { <option [ngValue]="t.id">{{ t.name }}</option> }
+              </select>
+            </label>
+
+            <label class="mar-campo">
+              <span>Origen</span>
+              <select class="form-select form-select-sm" [(ngModel)]="origen" (change)="aplicarFiltros()">
+                <option [ngValue]="null">Todos</option>
+                @for (o of origenes; track o.id) { <option [ngValue]="o.id">{{ o.name }}</option> }
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <!-- ---------- BARRA ---------- -->
+        <div class="row g-2 m-2 align-items-center lista-barra">
+          <div class="col-auto pe-1">
+            <button type="button" class="btn btn-sm btn-outline-secondary lista-barra__btn" title="Limpiar filtros" (click)="clearAllFilters()">
+              <i class="fas fa-filter-circle-xmark"></i>
+            </button>
+          </div>
+
+          <div class="col position-relative pe-1">
+            <app-campoBusquedaPaginacion
+              [id]="'filter-text-box'"
+              [placeholder]="'Buscar empleado u observación'"
+              [iconClass]="'fa fa-search fa-lg'"
+              [containerClass]="'position-relative w-100'"
+              (buscar)="onFilterTextBoxChanged($event)">
+            </app-campoBusquedaPaginacion>
+          </div>
+
+          <div class="col-auto ps-0">
+            <button type="button" class="btn btn-success lista-barra__btn" title="Abrir el kiosco de marcación facial" (click)="irAlKiosco()">
+              <i class="fa fa-camera"></i>
+            </button>
+          </div>
+
+          <div class="col-auto">
+            <button type="button" class="btn lista-barra__btn" [ngClass]="verResumen ? 'btn-info' : 'btn-white'"
+                    title="Ver las horas trabajadas por empleado y día" (click)="alternarResumen()">
+              <i class="fa fa-clock"></i>
+            </button>
+          </div>
+
+          <div class="col-auto ps-0">
+            <button type="button" class="inactivo btn btn-primary lista-barra__btn" title="Registrar una marcación a mano"
+                    [disabled]="accesoModel?.crear === false" (click)="addMarcacion()">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+
+          @if (accesoModel?.auditar === true) {
+            <div class="col-auto">
+              <button type="button" class="btn btn-warning lista-barra__btn position-relative"
+                      title="Ver historial de auditoría del registro seleccionado"
+                      [disabled]="!selectedRow" (click)="auditoria()">
+                <i class="fa fa-user-secret"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
+                  <i class="fa fa-search"></i>
+                </span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- ---------- 2b. RESUMEN DE HORAS ---------- -->
+        @if (verResumen) {
+          <div class="mar-resumen">
+            <div class="mar-resumen__cabecera">
+              <span><i class="fa fa-clock me-1"></i> Horas trabajadas</span>
+              @if (totalesResumen) {
+                <span class="mar-resumen__totales">
+                  <b>{{ totalesResumen.empleados }}</b> empleado(s) ·
+                  <b>{{ totalesResumen.dias }}</b> día(s) ·
+                  <b>{{ totalesResumen.horas }}</b> horas
+                </span>
+              }
+            </div>
+
+            @if (resumen.length) {
+              <div class="table-responsive mar-resumen__tabla">
+                <table class="table table-sm mb-0">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th><th>Empleado</th><th>Departamento</th>
+                      <th class="text-center">Entrada</th><th class="text-center">Salida</th>
+                      <th class="text-center">Marcaciones</th><th class="text-center">Horas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (r of resumen; track r.empleado_id + r.fecha) {
+                      <tr [class.table-warning]="r.incompleto">
+                        <td>{{ r.fecha }}</td>
+                        <td>{{ r.empleado }}</td>
+                        <td>{{ r.departamento || '—' }}</td>
+                        <td class="text-center">{{ r.primera_entrada || '—' }}</td>
+                        <td class="text-center">{{ r.ultima_salida || '—' }}</td>
+                        <td class="text-center">{{ r.marcaciones }}</td>
+                        <td class="text-center"><b>{{ r.horas_texto }}</b></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <p class="mar-resumen__nota">
+                <i class="fa fa-circle-info"></i> Las horas suman cada entrada con su salida siguiente;
+                en ámbar, los días con marcaciones incompletas.
+              </p>
+            } @else {
+              <div class="mar-resumen__vacio">Sin datos en el rango elegido.</div>
+            }
+          </div>
+        }
+
+        <!-- ---------- 2c. GRILLA ---------- -->
+        <ag-grid-angular
+          class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
+          [rowData]="marcaciones"
+          [columnDefs]="columnDefs"
+          [enableCellTextSelection]="true"
+          [defaultColDef]="_appAgGridService.defaultColDef"
+          [sideBar]="_appAgGridService.sideBar"
+          [rowHeight]="_appAgGridService.rowHeight"
+          [headerHeight]="_appAgGridService.headerHeight"
+          [localeText]="_appAgGridService.localeText"
+          [rowSelection]="'single'"
+          [pagination]="false"
+          [animateRows]="true"
+          [overlayNoRowsTemplate]="'<span>No hay marcaciones en el rango elegido</span>'"
+          [navigateToNextCell]="navegarConTeclado"
+          (gridReady)="onGridReady($event)"
+          (cellClicked)="onCellClicked($event)">
+        </ag-grid-angular>
+
+        <!-- ---------- PAGINACIÓN ---------- -->
+        <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+          <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+            <button type="button" class="btn btn-sm btn-white" title="Primera página" (click)="firstPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-angle-double-left"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Página anterior" (click)="prevPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-chevron-left"></i>
+            </button>
+            <span class="btn btn-sm btn-white pagination-page-badge disabled">
+              Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+            </span>
+            <button type="button" class="btn btn-sm btn-white" title="Página siguiente" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-chevron-right"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Última página" (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-angle-double-right"></i>
+            </button>
+          </div>
+
+          <div class="pagination-info small text-muted">
+            Mostrando <b>{{ desdeRegistro }}</b> – <b>{{ hastaRegistro }}</b> de <b>{{ totalRegistros }}</b> marcaciones
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</panel>

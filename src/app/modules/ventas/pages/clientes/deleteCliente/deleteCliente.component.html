@@ -1,0 +1,117 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarClienteTitulo"
+     aria-describedby="eliminarClienteDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarClienteTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <!-- Advertencia -->
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Enviar este cliente a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): el cliente va a la papelera,
+             desde donde se puede restaurar o borrar definitivamente. -->
+        <p class="eliminar-aviso__texto" id="eliminarClienteDescripcion">
+          Dejará de aparecer en los listados y no se podrá elegir en una venta. Sus personas de
+          contacto, su dirección y sus imágenes se conservan: podrá restaurarlo tal como estaba
+          desde la <b>Papelera de reciclaje</b>, o eliminarlo allí definitivamente.
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-id-card fa-fw me-1" aria-hidden="true"></i>Identificación
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.numero_identificacion || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-user fa-fw me-1" aria-hidden="true"></i>Cliente
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.nombre_completo || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-user-tag fa-fw me-1" aria-hidden="true"></i>Tipo
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.tipo_cliente === 'EMPRESA' ? 'Empresa' : 'Persona natural' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-user-tie fa-fw me-1" aria-hidden="true"></i>Vendedor
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.vendedor_nombre || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
+        </span>
+        <span class="badge fs-10px"
+              [ngClass]="registro_selected?.activo ? 'bg-teal' : 'bg-danger'">
+          {{ registro_selected?.activo ? 'ACTIVO' : 'INACTIVO' }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si el cliente sólo dejó de comprar, márquelo como <b>Inactivo</b> (o <b>Suspendido</b> si
+      debe) desde <b>Modificar cliente</b> en lugar de enviarlo a la papelera.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="deleteCliente()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
+    </button>
+  </div>
+
+</div>

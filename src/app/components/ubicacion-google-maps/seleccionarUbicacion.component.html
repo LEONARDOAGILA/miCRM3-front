@@ -1,0 +1,49 @@
+<!-- ============================================================
+     ELEGIR LA DIRECCIÓN EN EL MAPA (modal)
+     Envuelve al mapa y devuelve la dirección desmenuzada con sus fotos.
+     ============================================================ -->
+
+<div class="modal-header su-cabecera">
+  <h5 class="modal-title"><i class="fa fa-map-location-dot me-2"></i>{{ titulo }}</h5>
+  <button type="button" class="btn-close" aria-label="Cerrar" (click)="activeModal.dismiss()"></button>
+</div>
+
+<div class="modal-body su-cuerpo">
+  <app-ubicacion-google-maps
+    [lugarInicial]="lugarInicial"
+    [altoMapa]="'min(58vh, 520px)'"
+    (lugarElegido)="alElegirEnElMapa($event)">
+  </app-ubicacion-google-maps>
+</div>
+
+<div class="modal-footer su-pie">
+  <!-- Qué se va a guardar, para que no haya sorpresas -->
+  <div class="su-resumen">
+    @if (lugar) {
+      <i class="fa fa-location-dot"></i>
+      <span class="su-resumen__texto">
+        <b>{{ lugar.nombre }}</b>
+        <small>{{ lugar.direccion }}</small>
+        <small class="su-resumen__coords">{{ coordenadas }}</small>
+      </span>
+    } @else {
+      <span class="su-resumen__vacio">
+        <i class="fa fa-circle-info"></i>
+        Busca la dirección arriba o pulsa en el mapa.
+      </span>
+    }
+  </div>
+
+  <div class="su-botones">
+    <button type="button" class="btn btn-sm btn-white" (click)="activeModal.dismiss()">
+      <i class="fa fa-xmark me-1"></i>Cancelar
+    </button>
+    <button type="button" class="btn btn-sm btn-primary" [disabled]="!lugar || guardando" (click)="usarEstaDireccion()">
+      @if (guardando) {
+        <i class="fa fa-circle-notch fa-spin me-1"></i>Tomando las fotos…
+      } @else {
+        <i class="fa fa-check me-1"></i>Usar esta dirección
+      }
+    </button>
+  </div>
+</div>

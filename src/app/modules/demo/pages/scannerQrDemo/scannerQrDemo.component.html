@@ -1,0 +1,214 @@
+<!-- ============================================================
+     DEMO DEL LECTOR: pasar productos por caja
+
+     Muestra cómo se usa <app-scanner> dentro de una pantalla normal: se
+     escucha (leido), se busca el código en el catálogo y se arma la cuenta.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item">Demo</li>
+  <li class="breadcrumb-item active">Lector de códigos</li>
+</ol>
+
+<h1 class="page-header">
+  Lector de códigos <small>probándolo como si fuera una caja de tienda</small>
+</h1>
+
+<div class="row g-3">
+
+  <!-- ===================== IZQUIERDA: EL LECTOR ===================== -->
+  <div class="col-xl-5">
+    <panel title="Lector" headerClass="bg-gray-800" noButton="true" noBody="true" icono="info" fondoGris="true">
+      <ng-container outsideBody>
+        <div class="form-card__body">
+
+          <!-- Aquí está todo: es el mismo componente que se usaría en
+               inventario o en activos fijos -->
+          <app-scanner [mostrarHistorial]="false" (leido)="alLeer($event)"></app-scanner>
+
+          <p class="demo-ayuda">
+            <i class="fa fa-circle-info"></i>
+            Apunta con la cámara a uno de los códigos de abajo —desde el teléfono, a la
+            pantalla del ordenador— o pulsa <b>Simular</b> si no tienes cámara a mano.
+          </p>
+
+        </div>
+      </ng-container>
+    </panel>
+  </div>
+
+  <!-- ===================== DERECHA: LO LEÍDO Y LA CUENTA ===================== -->
+  <div class="col-xl-7">
+
+    <!-- ---------- Lo último ---------- -->
+    <panel title="Último código" headerClass="bg-gray-800" noButton="true" noBody="true" icono="info" fondoGris="true">
+      <ng-container outsideBody>
+        <div class="form-card__body">
+
+          @if (!ultimo) {
+            <div class="demo-vacio">
+              <i class="fa fa-barcode"></i>
+              <span>Todavía no has leído ningún código.</span>
+            </div>
+          } @else if (encontrado) {
+            <div class="demo-ficha">
+              <span class="demo-ficha__icono"><i class="fa" [ngClass]="encontrado.icono"></i></span>
+              <div class="demo-ficha__texto">
+                <span class="demo-ficha__nombre">{{ encontrado.nombre }}</span>
+                <span class="demo-ficha__meta">{{ encontrado.categoria }} · {{ encontrado.codigo }}</span>
+                <span class="demo-ficha__meta">
+                  Quedan <b>{{ encontrado.stock }}</b>
+                  @if (encontrado.stock === 0) { <b class="text-danger">· sin existencias</b> }
+                </span>
+              </div>
+              <span class="demo-ficha__precio">{{ encontrado.precio | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+          } @else {
+            <!-- Leído pero no está en el catálogo: pasa a menudo de verdad -->
+            <div class="demo-ficha is-desconocido">
+              <span class="demo-ficha__icono"><i class="fa fa-circle-question"></i></span>
+              <div class="demo-ficha__texto">
+                <span class="demo-ficha__nombre">Código no reconocido</span>
+                <span class="demo-ficha__meta demo-ficha__codigo">{{ ultimo.texto }}</span>
+                <span class="demo-ficha__meta">No hay ningún producto con ese código en el catálogo.</span>
+              </div>
+            </div>
+          }
+
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- La cuenta ---------- -->
+    <panel title="La cuenta" headerClass="bg-gray-800" noButton="true" noBody="true" icono="usuarios" fondoGris="true">
+      <ng-container outsideBody>
+        <div class="form-card__body">
+
+          <div class="demo-barra">
+            <span class="demo-barra__resumen">
+              {{ lineas.length }} {{ lineas.length === 1 ? 'producto' : 'productos' }} ·
+              {{ unidades }} {{ unidades === 1 ? 'unidad' : 'unidades' }}
+            </span>
+            <button type="button" class="btn btn-xs btn-white text-danger"
+                    [disabled]="!lineas.length" (click)="vaciar()">
+              <i class="fa fa-trash me-1"></i>Vaciar
+            </button>
+          </div>
+
+          @if (!lineas.length) {
+            <div class="demo-vacio">
+              <i class="fa fa-basket-shopping"></i>
+              <span>Escanea un producto para empezar.</span>
+            </div>
+          } @else {
+            <ul class="demo-lineas">
+              @for (l of lineas; track porCodigo($index, l)) {
+                <li class="demo-linea">
+                  <span class="demo-linea__icono"><i class="fa" [ngClass]="l.producto.icono"></i></span>
+
+                  <span class="demo-linea__texto">
+                    <b>{{ l.producto.nombre }}</b>
+                    <small>{{ l.producto.codigo }} · {{ l.producto.precio | currency:'USD':'symbol':'1.2-2' }} c/u</small>
+                  </span>
+
+                  <span class="demo-linea__cantidad">
+                    <button type="button" class="btn btn-xs btn-white" title="Quitar uno" (click)="menos(l)">
+                      <i class="fa fa-minus"></i>
+                    </button>
+                    <b>{{ l.cantidad }}</b>
+                    <button type="button" class="btn btn-xs btn-white" title="Añadir uno" (click)="mas(l)">
+                      <i class="fa fa-plus"></i>
+                    </button>
+                  </span>
+
+                  <span class="demo-linea__importe">{{ l.cantidad * l.producto.precio | currency:'USD':'symbol':'1.2-2' }}</span>
+
+                  <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitar(l)">
+                    <i class="fa fa-xmark"></i>
+                  </button>
+                </li>
+              }
+            </ul>
+
+            <div class="demo-total">
+              <span>Total</span>
+              <b>{{ total | currency:'USD':'symbol':'1.2-2' }}</b>
+            </div>
+          }
+
+        </div>
+      </ng-container>
+    </panel>
+  </div>
+
+  <!-- ===================== CÓDIGOS DE PRUEBA ===================== -->
+  <div class="col-12">
+    <panel title="Códigos para probar" headerClass="bg-gray-800" noButton="true" noBody="true" icono="info" fondoGris="true">
+      <ng-container outsideBody>
+        <div class="form-card__body">
+
+          <div class="demo-barra">
+            <span class="demo-barra__resumen">
+              Códigos de verdad: los EAN-13 llevan bien su cifra de control, así que
+              también los lee un lector de pistola.
+            </span>
+            <span class="d-flex gap-1 flex-wrap">
+              <!-- Los dos formatos que entiende el lector -->
+              <span class="demo-formatos">
+                <button type="button" class="demo-formato" [class.is-on]="formatoALaVista === 'QR'"
+                        (click)="verFormato('QR')">
+                  <i class="fa fa-qrcode me-1"></i>QR
+                </button>
+                <button type="button" class="demo-formato" [class.is-on]="formatoALaVista === 'BARRAS'"
+                        (click)="verFormato('BARRAS')">
+                  <i class="fa fa-barcode me-1"></i>Barras
+                </button>
+              </span>
+
+              <button type="button" class="btn btn-xs btn-white" (click)="alternarCodigos()">
+                <i class="fa me-1" [ngClass]="mostrarCodigos ? 'fa-eye-slash' : 'fa-eye'"></i>
+                {{ mostrarCodigos ? 'Ocultar' : 'Ver los códigos' }}
+              </button>
+              <button type="button" class="btn btn-xs btn-white" (click)="simularDesconocido()">
+                <i class="fa fa-circle-question me-1"></i>Simular uno que no existe
+              </button>
+            </span>
+          </div>
+
+          <!-- Los de barras son apaisados y piden columnas más anchas -->
+          <div class="demo-codigos" [class.es-barras]="mostrarCodigos && formatoALaVista === 'BARRAS'">
+            @for (c of codigosDePrueba; track c.producto.codigo) {
+              <div class="demo-codigo">
+                @if (mostrarCodigos) {
+                  <!-- El SVG lo genera el propio componente, no viene de fuera -->
+                  @if (formatoALaVista === 'QR') {
+                    <div class="demo-codigo__dibujo is-qr" [innerHTML]="c.qr"></div>
+                  } @else if (c.barras) {
+                    <div class="demo-codigo__dibujo is-barras" [innerHTML]="c.barras"></div>
+                  } @else {
+                    <div class="demo-codigo__dibujo is-vacio">
+                      Este código no cabe en un código de barras
+                    </div>
+                  }
+                }
+
+                <span class="demo-codigo__nombre">{{ c.producto.nombre }}</span>
+                <span class="demo-codigo__valor">{{ c.producto.codigo }}</span>
+                <span class="demo-codigo__pie">
+                  <span class="demo-codigo__tipo">{{ c.producto.barras === 'EAN_13' ? 'EAN-13' : 'Code 39' }}</span>
+                  · {{ c.producto.precio | currency:'USD':'symbol':'1.2-2' }}
+                  @if (c.producto.stock === 0) { · <b class="text-danger">sin stock</b> }
+                </span>
+                <button type="button" class="btn btn-xs btn-white" (click)="simular(c.producto)">
+                  <i class="fa fa-play me-1"></i>Simular
+                </button>
+              </div>
+            }
+          </div>
+
+        </div>
+      </ng-container>
+    </panel>
+  </div>
+
+</div>

@@ -12,7 +12,7 @@
       *ngIf="this.buttonAdd" 
       (click)="onAdd()"
       class="btn-icon btn-add" 
-      [title]="!accesoModel.crear? 'Nuevo - Desactivado' : 'Nuevo'" 
+      [title]="!accesoModel?.crear? 'Nuevo - Desactivado' : 'Nuevo'" 
       >
   <i class="fa fa-plus"></i>
   </button>
@@ -28,8 +28,8 @@
       *ngIf="this.buttonView" 
       (click)="onView()" 
       class="btn-icon btn-view" 
-      [title]="!accesoModel.ver? 'Ver - Desactivado' : 'Ver'" 
-      [disabled]="!accesoModel.ver">
+      [title]="!accesoModel?.ver? 'Ver - Desactivado' : 'Ver'" 
+      [disabled]="!accesoModel?.ver">
   <i class="fa fa-eye"></i>
   </button>
 
@@ -37,8 +37,8 @@
       *ngIf="this.buttonEdit" 
       (click)="onEdit()" 
       class="btn-icon btn-edit" 
-      [title]="!accesoModel.editar? 'Editar - Desactivado' : 'Editar'" 
-      [disabled]="!accesoModel.editar">
+      [title]="!accesoModel?.editar? 'Editar - Desactivado' : 'Editar'" 
+      [disabled]="!accesoModel?.editar">
   <i class="fa fa-sharp-duotone fa-solid fa-pen-to-square"></i>
   </button>
 
@@ -46,8 +46,8 @@
       *ngIf="this.buttonClone" 
       (click)="onClone()" 
       class="btn-icon btn-create" 
-      [title]="!accesoModel.crear? 'Clonar - Desactivado' : 'Clonar'" 
-      [disabled]="!accesoModel.crear">
+      [title]="!accesoModel?.crear? 'Clonar - Desactivado' : 'Clonar'" 
+      [disabled]="!accesoModel?.crear">
   <i class="fa fa-clone"></i>
   </button>
 
@@ -55,8 +55,8 @@
       *ngIf="this.buttonDelete" 
       (click)="onDelete()" 
       class="btn-icon btn-delete" 
-      [title]="!accesoModel.eliminar? 'Eliminar - Desactivado' : 'Eliminar'" 
-      [disabled]="!accesoModel.eliminar">
+      [title]="!accesoModel?.eliminar? 'Eliminar - Desactivado' : 'Eliminar'" 
+      [disabled]="!accesoModel?.eliminar">
   <i class="fa fa-trash"></i>
   </button>
 

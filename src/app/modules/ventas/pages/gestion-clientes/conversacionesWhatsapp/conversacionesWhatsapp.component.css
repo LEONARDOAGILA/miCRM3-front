@@ -1,0 +1,78 @@
+/* ============================================================
+   CONVERSACIONES DE WHATSAPP SIN ASIGNAR
+   ============================================================ */
+.cw-cuerpo {
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
+}
+
+.cw-ayuda {
+  margin-bottom: .75rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cw-cargando,
+.cw-vacio {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+}
+
+.cw-vacio i {
+  font-size: 2rem;
+  opacity: .5;
+  display: block;
+  margin-bottom: .5rem;
+}
+
+.cw-lista {
+  display: flex;
+  flex-direction: column;
+  gap: .375rem;
+}
+
+.cw-fila {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+
+  padding: .5rem .625rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.cw-fila__quien {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cw-fila__nombre {
+  font-size: .8125rem;
+  font-weight: 600;
+}
+
+.cw-fila__numero {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Lo último que se dijo, para reconocer la conversación de un vistazo */
+.cw-fila__ultimo {
+  margin-top: .15rem;
+  font-size: .75rem;
+  color: var(--bs-body-color, #495057);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cw-fila .btn {
+  flex: 0 0 auto;
+  font-size: .75rem;
+}

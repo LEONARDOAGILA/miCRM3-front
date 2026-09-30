@@ -27,6 +27,7 @@ import { ListObservableComponent } from './pages/observables/list-observable/lis
 import { ScannerComponent } from './pages/scanner/scanner.component';
 import { FacturaComponent } from './pages/facturas/factura/factura.component';
 import { UbicacionGpsComponent } from './pages/ubicacion-gps/ubicacion-gps.component';
+import { UbicacionGoogleMapsComponent } from './pages/ubicacion-google-maps/ubicacion-google-maps.component';
 import { DetectaRostroComponent } from './pages/detecta-rostro/detecta-rostro.component';
 import { DetectaIPComponent } from './pages/detecta-ip/detecta-ip.component';
 import { WebsocketSendComponent } from './pages/websocket-send/websocket-send.component';
@@ -49,8 +50,12 @@ const routes: Routes = [
         { path: 'WindowsExplorer',component:WindowsExplorerComponent},
         
         { path: 'qr',component:ScannerComponent},
+        // Demostración del lector nuevo (components/scanner). Es standalone y
+        // se carga sola, así que no hace falta declararla en demo.module.ts
+        { path: 'scannerqr', loadComponent: () => import('./pages/scannerQrDemo/scannerQrDemo.component').then(m => m.ScannerQrDemoComponent) },
         { path: 'factura',component:FacturaComponent},
         { path: 'ubicaciongps',component:UbicacionGpsComponent},
+        { path: 'ubicaciongooglemaps',component:UbicacionGoogleMapsComponent},
         { path: 'detectarostro',component:DetectaRostroComponent},
         { path: 'detectaip',component:DetectaIPComponent},
         { path: 'importarexcel',component:ImportExcelComponent},

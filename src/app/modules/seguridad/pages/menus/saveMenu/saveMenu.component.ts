@@ -1,12 +1,14 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { firstValueFrom, } from 'rxjs';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
 import { MenuService } from "../../../services/menu.service";
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { LoadingService } from '../../../../../service/loading.service';
+import { SelectorIconosComponent } from '../../../../../components/selector-iconos/selector-iconos.component';
 
 import { MenuModel } from "../../../../seguridad/interfaces/menuModel";
 
@@ -17,7 +19,10 @@ import { MenuModel } from "../../../../seguridad/interfaces/menuModel";
   styleUrls: ['./saveMenu.component.css'],
   standalone: false,
 })
-export class SaveMenuComponent implements OnInit {
+export class SaveMenuComponent implements OnInit, OnDestroy {
+
+  /** Corta la suscripción al selector de iconos si el modal se cierra antes. */
+  private readonly destroy$ = new Subject<void>();
 
   @Input() registro_selected: any = {};
   @Input() accion: any = {};
@@ -36,48 +41,11 @@ export class SaveMenuComponent implements OnInit {
   public disableLabel = true;
 
   // ============================================================
-  // SELECTOR DE ICONOS
-  // Catálogo de Font Awesome 6 (la librería que carga la app) con
-  // nombre en español para poder buscarlos sin saber la clase.
+  // ICONO
+  // El catálogo y la rejilla viven en SelectorIconosComponent, que se abre
+  // en su propio modal: desplegarlo aquí dentro hacía crecer el formulario
+  // de golpe y empujaba hacia abajo el resto de los campos.
   // ============================================================
-  private readonly ICONOS_POR_GRUPO: { [grupo: string]: string } = {
-    'General': 'house:Inicio|gauge-high:Panel de control|table-columns:Tablero|bars:Menú|list:Lista|list-check:Tareas|compass:Navegar|sitemap:Estructura|diagram-project:Organigrama|folder:Carpeta|folder-open:Carpeta abierta|folder-tree:Árbol de carpetas|star:Favorito|bookmark:Marcador|flag:Bandera|bell:Notificaciones|magnifying-glass:Buscar|filter:Filtro|thumbtack:Fijar|heart:Preferidos|lightbulb:Idea|rocket:Lanzamiento',
-    'Configuración': 'gear:Configuración|gears:Ajustes|sliders:Parámetros|wrench:Herramienta|screwdriver-wrench:Mantenimiento|toolbox:Caja de herramientas|plug:Conexión|power-off:Encendido|arrows-rotate:Actualizar|code:Código|terminal:Consola|bug:Errores|server:Servidor|database:Base de datos|hard-drive:Disco|cloud:Nube|cloud-arrow-up:Respaldo',
-    'Seguridad': 'lock:Bloqueo|unlock:Desbloqueo|key:Llave|shield:Escudo|shield-halved:Seguridad|user-shield:Permisos|user-lock:Bloquear usuario|fingerprint:Huella|id-badge:Credencial|id-card:Identificación|user-secret:Auditoría|eye:Ver|eye-slash:Ocultar',
-    'Usuarios': 'user:Usuario|users:Usuarios|user-plus:Nuevo usuario|user-gear:Perfil|user-tie:Empleado|user-group:Grupos|people-group:Equipo|user-check:Aprobación|address-book:Agenda|address-card:Contacto|headset:Soporte',
-    'Documentos': 'file:Archivo|file-lines:Documento|file-invoice:Factura|file-invoice-dollar:Factura con importe|file-pdf:PDF|file-excel:Excel|file-csv:CSV|clipboard:Portapapeles|clipboard-list:Checklist|clipboard-check:Revisado|book:Libro|book-open:Manual|newspaper:Noticias|print:Imprimir|paperclip:Adjunto|download:Descargar|upload:Subir|image:Imagen|camera:Cámara|video:Vídeo|microphone:Audio|palette:Diseño|brush:Estilos',
-    'Comercial': 'cart-shopping:Carrito|basket-shopping:Compras|bag-shopping:Ventas|store:Tienda|shop:Local|box:Producto|boxes-stacked:Inventario|warehouse:Bodega|truck:Despacho|truck-fast:Envío|tags:Categorías|tag:Etiqueta|receipt:Recibo|barcode:Código de barras|qrcode:Código QR|cash-register:Caja',
-    'Finanzas': 'dollar-sign:Precio|money-bill:Dinero|money-bill-wave:Pagos|money-check-dollar:Cobros|credit-card:Tarjeta|wallet:Billetera|piggy-bank:Ahorros|coins:Monedas|calculator:Calculadora|percent:Descuentos|scale-balanced:Balance|landmark:Banco',
-    'Informes': 'chart-line:Tendencia|chart-bar:Barras|chart-pie:Circular|chart-column:Columnas|chart-area:Área|table:Tabla|table-list:Listado',
-    'Comunicación': 'envelope:Correo|envelope-open:Mensaje abierto|paper-plane:Enviar|comments:Chat|comment-dots:Comentario|phone:Teléfono|mobile-screen:Móvil|share-nodes:Compartir|rss:Novedades|at:Arroba',
-    'Tiempo y lugar': 'calendar:Calendario|calendar-days:Agenda|calendar-check:Cita|clock:Horario|hourglass-half:Tiempo|business-time:Jornada|map:Mapa|map-location-dot:Ubicaciones|location-dot:Dirección|globe:Global|earth-americas:Región|route:Rutas|building:Empresa|industry:Planta|city:Sucursales',
-    'Acciones': 'plus:Agregar|pen:Editar|pen-to-square:Modificar|trash:Eliminar|check:Confirmar|circle-check:Aprobado|xmark:Cancelar|circle-xmark:Rechazado|triangle-exclamation:Alerta|circle-info:Información|circle-question:Ayuda|right-from-bracket:Salir',
-  };
-
-  public readonly catalogoIconos: { clase: string; nombre: string; grupo: string }[] =
-    Object.keys(this.ICONOS_POR_GRUPO).reduce((acc, grupo) => {
-      this.ICONOS_POR_GRUPO[grupo].split('|').forEach(par => {
-        const [icono, nombre] = par.split(':');
-        acc.push({ clase: `fa-solid fa-${icono}`, nombre, grupo });
-      });
-      return acc;
-    }, [] as { clase: string; nombre: string; grupo: string }[]);
-
-  public mostrarSelectorIconos = false;
-  public filtroIcono = '';
-  public grupoIcono = 'Todos';
-
-  public get gruposIconos(): string[] {
-    return ['Todos', ...Object.keys(this.ICONOS_POR_GRUPO)];
-  }
-
-  public get iconosFiltrados(): { clase: string; nombre: string; grupo: string }[] {
-    const texto = (this.filtroIcono || '').trim().toLowerCase();
-    return this.catalogoIconos.filter(i =>
-      (this.grupoIcono === 'Todos' || i.grupo === this.grupoIcono) &&
-      (!texto || i.nombre.toLowerCase().includes(texto) || i.clase.toLowerCase().includes(texto))
-    );
-  }
 
   public get iconoActual(): string {
     return (this.form?.controls['icono']?.value || '').toString().trim();
@@ -88,11 +56,30 @@ export class SaveMenuComponent implements OnInit {
     return /^bi(\s|-)/.test(this.iconoActual);
   }
 
+  /** Abre el selector y escribe en el campo el icono que devuelva. */
+  public abrirSelectorIconos(): void {
+    const modalRef = this.modalService.open(SelectorIconosComponent, {
+      size: 'lg',
+      centered: true,
+      scrollable: true,
+      backdrop: 'static',
+    });
+
+    modalRef.componentInstance.iconoSeleccionado = this.iconoActual;
+
+    // takeUntil con el cierre del modal: 'seleccionado' no completa nunca, así
+    // que sin esto la suscripción seguiría viva si el usuario cancela.
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(merge(
+        this.destroy$,
+        from(modalRef.result).pipe(catchError(() => of(null)))   // dismiss() rechaza
+      )))
+      .subscribe((clase: string) => this.seleccionarIcono(clase));
+  }
+
   public seleccionarIcono(clase: string): void {
     this.form.controls['icono'].setValue(clase);
     this.form.controls['icono'].markAsDirty();
-    this.mostrarSelectorIconos = false;
-    this.filtroIcono = '';
   }
 
   public limpiarIcono(): void {
@@ -100,9 +87,11 @@ export class SaveMenuComponent implements OnInit {
     this.form.controls['icono'].markAsDirty();
   }
 
+
   constructor(
       private fb: FormBuilder,
       public  modal: NgbActiveModal,
+      private modalService: NgbModal,
       private _menuService: MenuService,
       private _seguridadService: SeguridadService,       
       private _toastr: ToastrService,
@@ -115,6 +104,11 @@ export class SaveMenuComponent implements OnInit {
     
 
 
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   async ngOnInit(): Promise<void> {
 

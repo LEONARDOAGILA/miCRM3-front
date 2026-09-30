@@ -177,6 +177,12 @@ export class LoginComponent implements OnInit, OnDestroy{
                             this._inactivityService.activate(this.user.perfil.inactividad);  // Activa el servicio para 50 segudos de inactividad, luego cierra sesion.
                         } 
                         this.appSettings.appEmpty = false;
+                        // Cada sesión vuelve a ver sus boletines vigentes
+                        try {
+                          Object.keys(sessionStorage)
+                            .filter(k => k.startsWith('miCRM3.boletines.mostrados'))
+                            .forEach(k => sessionStorage.removeItem(k));
+                        } catch { /* sin sessionStorage */ }
                         this.route.navigate(['/home']); 
                     }else{
                       this._toastr.error(`Perfil desactivo`, this.user.perfil.nombre, {timeOut: 3000,closeButton: true });

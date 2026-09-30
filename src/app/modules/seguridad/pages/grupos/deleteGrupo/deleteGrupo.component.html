@@ -1,0 +1,78 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg" role="alertdialog" aria-labelledby="eliminarGrupoTitulo">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarGrupoTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button" class="btn-close btn-close-white" aria-label="Cerrar" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar este grupo?</h6>
+        <p class="eliminar-aviso__texto">
+          Esta acción no se puede deshacer. Sólo se pueden eliminar grupos vacíos:
+          sin usuarios y sin subgrupos. Su historial de auditoría se conserva.
+        </p>
+      </div>
+    </div>
+
+    <div class="list-group list-group-flush eliminar-datos">
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-hashtag fa-fw me-1"></i>ID</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-users fa-fw me-1"></i>Grupo</span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.ruta || registro_selected?.nombre }}</span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-user fa-fw me-1"></i>Usuarios</span>
+        <span class="badge fs-10px" [ngClass]="(registro_selected?.num_usuarios || 0) > 0 ? 'bg-danger' : 'bg-teal'">
+          {{ registro_selected?.num_usuarios || 0 }}
+        </span>
+      </div>
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta"><i class="fa fa-sitemap fa-fw me-1"></i>Subgrupos</span>
+        <span class="badge fs-10px" [ngClass]="(registro_selected?.num_hijos || 0) > 0 ? 'bg-danger' : 'bg-teal'">
+          {{ registro_selected?.num_hijos || 0 }}
+        </span>
+      </div>
+    </div>
+
+    @if (bloqueado) {
+      <p class="eliminar-nota">
+        <i class="fa fa-ban fa-fw me-1 text-danger"></i>
+        Este grupo tiene usuarios o subgrupos: muévalos a otro grupo (arrastrándolos en el árbol) antes de eliminarlo.
+      </p>
+    } @else {
+      <p class="eliminar-nota">
+        <i class="fa fa-info-circle fa-fw me-1"></i>
+        Si solo quiere dejar de usarlo, puede marcarlo como <b>inactivo</b> desde Modificar grupo.
+      </p>
+    }
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1"></i>Cancelar
+    </button>
+    <button type="button" class="btn btn-danger" [disabled]="isLoading || bloqueado" (click)="deleteGrupo()">
+      <i class="fa fa-trash fa-fw me-1"></i>Sí, eliminar
+    </button>
+  </div>
+</div>

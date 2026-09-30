@@ -90,6 +90,7 @@
 	& .file-manager-toolbar {
 		background: var(--#{$prefix}light);
 		padding: $spacer * .25;
+		border-top: 1px solid var(--#{$prefix}border-color);
 		border-bottom: 1px solid var(--#{$prefix}border-color);
 		display: flex;
 		flex-wrap: wrap;

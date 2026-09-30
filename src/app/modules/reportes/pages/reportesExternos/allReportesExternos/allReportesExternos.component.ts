@@ -345,6 +345,9 @@ public selectedRow: ReporteExternoModel | null = null;
         this.gridApi.sizeColumnsToFit();
       }
     }
+    /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+    navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
+
     onCellClicked(e: CellClickedEvent): void {
         this.selectedRow = e.data;
       //console.log('cliked', e.data)

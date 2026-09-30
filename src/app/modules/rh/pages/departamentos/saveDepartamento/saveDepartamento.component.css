@@ -1,0 +1,220 @@
+/* ============================================================
+   SAVE DEPARTAMENTO - Estilos del modal (mismos que saveCargo)
+   Mismo lenguaje visual que los modales de usuario y perfil.
+   Colores tomados de las variables de Bootstrap / Color Admin,
+   por lo que funcionan igual en tema claro y oscuro.
+   ============================================================ */
+
+:host {
+  display: block;
+  --hr-radius: .5rem;
+}
+
+.cargo-modal-body {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  padding: 1rem;
+}
+
+/* ============================================================
+   TARJETAS
+   ============================================================ */
+/* La cabecera y el marco los pone <panel>, igual que en saveUser.
+   Aquí sólo queda el relleno del cuerpo, con las medidas del estándar. */
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .25rem;
+}
+
+/* ---------- Contenido en la cabecera del panel ---------- */
+/* <panel> expone un slot [header] junto al título; ahí van el contador de
+   días y el botón de agregar, que antes vivían en la cabecera hecha a mano.
+   margin-left:auto los empuja al extremo derecho de la barra. */
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+.panel-acciones .btn {
+  font-size: .75rem;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   CHIPS
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: none;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip-muted { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-info  { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+
+/* ============================================================
+/* ============================================================
+   ESTADO DEL CARGO (switch)
+   ============================================================ */
+.estado-cargo {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  height: calc(3.5rem + 2px); /* mismo alto que un campo flotante */
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.estado-cargo.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.estado-cargo__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.estado-cargo.is-on .estado-cargo__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.estado-cargo__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.estado-cargo__label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+}
+
+.estado-cargo__hint {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.estado-cargo__switch {
+  margin-left: auto;
+}
+
+.estado-cargo__switch ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.estado-cargo__switch ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.estado-cargo__switch ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.estado-cargo__switch ::ng-deep .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  vertical-align: middle;
+}
+
+/* ============================================================
+   CAMPOS DEL ENCABEZADO
+   Los componentes compartidos reservan un label vacío bajo cada
+   campo; se elimina para igualar el ritmo vertical.
+   ============================================================ */
+:host ::ng-deep app-campoTexto {
+  display: block;
+}
+
+:host ::ng-deep app-campoTextoArea {
+  display: block;
+}
+
+/* app-combo (ng-select) alineado con los campos flotantes de al lado */
+.campo-combo {
+  margin-bottom: 1rem;
+}
+
+/* Ayuda bajo el salario */
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: -.5rem 0 .5rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* Quién y cuándo (edición / vista) */
+.cargo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1.25rem;
+  margin-top: .25rem;
+  padding-top: .5rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cargo-meta i {
+  margin-right: .3rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+@media (max-width: 767.98px) {
+  .cargo-modal-body {
+    padding: .75rem;
+  }
+}

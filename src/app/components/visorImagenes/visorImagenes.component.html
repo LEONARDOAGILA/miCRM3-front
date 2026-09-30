@@ -1,0 +1,72 @@
+<!-- ============================================================
+     VISOR DE IMÁGENES
+     Ampliar, reducir, girar y arrastrar. Sale del visor que tenía
+     dentro el mapa; ahora lo usa también la ficha del empleado.
+     ============================================================ -->
+
+@if (actual; as img) {
+  <div class="visor" (click)="activeModal.dismiss()">
+
+    <!-- ---------- Barra ---------- -->
+    <div class="visor__barra" (click)="$event.stopPropagation()">
+      <span class="visor__titulo" [title]="img.titulo">
+        <i class="fa fa-image me-1"></i>{{ img.titulo }}
+        @if (hayVarias) { <small>{{ indice + 1 }} de {{ imagenes.length }}</small> }
+      </span>
+
+      <span class="visor__acciones">
+        <button type="button" class="btn btn-sm btn-white" title="Reducir (tecla −)" (click)="reducir()">
+          <i class="fa fa-magnifying-glass-minus"></i>
+        </button>
+        <span class="visor__zoom" title="Tamaño">{{ escalaTexto }}</span>
+        <button type="button" class="btn btn-sm btn-white" title="Ampliar (tecla +)" (click)="ampliar()">
+          <i class="fa fa-magnifying-glass-plus"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-white" title="Girar a la izquierda (Mayús + R)" (click)="girar(-90)">
+          <i class="fa fa-rotate-left"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-white" title="Girar a la derecha (tecla R)" (click)="girar(90)">
+          <i class="fa fa-rotate-right"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-white" title="Ajustar a la pantalla (tecla 0)" (click)="ajustar()">
+          <i class="fa fa-compress"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-primary" title="Guardar la imagen" (click)="descargar()">
+          <i class="fa fa-download"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-danger" title="Cerrar (Esc)" (click)="activeModal.dismiss()">
+          <i class="fa fa-xmark"></i>
+        </button>
+      </span>
+    </div>
+
+    <!-- ---------- La imagen ---------- -->
+    <div #visorLienzo class="visor__lienzo"
+         (click)="$event.stopPropagation()"
+         (wheel)="onRueda($event)"
+         (mousedown)="onRatonAbajo($event)"
+         (touchstart)="onDedosAbajo($event)"
+         (touchmove)="onDedosMueve($event)"
+         (touchend)="onDedosArriba()"
+         (touchcancel)="onDedosArriba()">
+      <img #visorImg [src]="img.url" [alt]="img.titulo" class="visor__img"
+           [style.transform]="transform" draggable="false">
+    </div>
+
+    <!-- ---------- Pasar de una a otra ---------- -->
+    @if (hayVarias) {
+      <button type="button" class="visor__flecha is-izq" title="Anterior (←)"
+              (click)="$event.stopPropagation(); mover(-1)">
+        <i class="fa fa-chevron-left"></i>
+      </button>
+      <button type="button" class="visor__flecha is-der" title="Siguiente (→)"
+              (click)="$event.stopPropagation(); mover(1)">
+        <i class="fa fa-chevron-right"></i>
+      </button>
+    }
+
+    <div class="visor__ayuda" (click)="$event.stopPropagation()">
+      Rueda del ratón para ampliar · arrastra para mover · Esc para cerrar
+    </div>
+  </div>
+}

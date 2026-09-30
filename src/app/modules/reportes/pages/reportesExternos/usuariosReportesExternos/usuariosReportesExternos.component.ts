@@ -188,6 +188,9 @@ export class UsuariosReportesExternosComponent implements OnInit, OnDestroy {
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;        
   }
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => { this.usuario_obj2 = null; this.usuario_obj1 = fila; });
+
   onCellClicked(e: CellClickedEvent): void {
     this.usuario_obj2 = null;
     this.usuario_obj1 = e.data;
@@ -316,6 +319,9 @@ export class UsuariosReportesExternosComponent implements OnInit, OnDestroy {
       (document.getElementById("filter-text-box-listaUsuariosTabla2") as HTMLInputElement).value
     );
   }
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado2 = this._appAgGridService.navegacionConFlechas(fila => { this.usuario_obj1 = null; this.usuario_obj2 = fila; });
+
   onCellClicked2(e: CellClickedEvent): void {
     this.usuario_obj1 = null;
     this.usuario_obj2 = e.data;

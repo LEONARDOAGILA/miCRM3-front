@@ -1,0 +1,1355 @@
+/* ============================================================
+   UBICACIÓN CON GOOGLE MAPS
+   Misma disposición que la pantalla de GPS: barra arriba, panel de
+   búsqueda a la izquierda (plegable) y el mapa a la derecha.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.gm {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Barra ---------- */
+.gm-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .25rem .375rem;
+  padding: .375rem .5rem;
+  background-color: var(--bs-light, #f8f9fa);
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.gm-toolbar__grupo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.gm-toolbar__sep {
+  width: 1px;
+  height: 1.5rem;
+  margin: 0 .25rem;
+  background-color: var(--bs-border-color, #dee2e6);
+}
+
+.gm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  white-space: nowrap;
+}
+
+.gm-tipos .btn {
+  font-size: 11px;
+}
+
+/* ---------- Cuerpo ---------- */
+/* Alto fijo: así el panel de la izquierda se desplaza por dentro en vez de
+   estirar la página, y el mapa siempre queda a la vista */
+.gm-cuerpo {
+  display: flex;
+  align-items: stretch;
+  height: clamp(360px, calc(100vh - 235px), 900px);
+}
+
+.gm-ficha {
+  flex: 0 0 340px;
+  max-width: 340px;
+  min-height: 0;
+  padding: .75rem;
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-component-bg, #fff);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .28) transparent;
+  transition: flex-basis .25s ease, max-width .25s ease, padding .25s ease, opacity .2s ease;
+}
+
+.gm-cuerpo.is-panel-oculto .gm-ficha {
+  flex-basis: 0;
+  max-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gm-mapa-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 320px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .04);
+}
+
+.gm-mapa {
+  position: absolute;
+  inset: 0;
+}
+
+.gm-mapa__vacio {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 12px;
+  text-align: center;
+  padding: 1rem;
+}
+
+.gm-mapa__vacio i {
+  font-size: 2.5rem;
+  opacity: .35;
+}
+
+/* Pestaña para plegar el panel (borde izquierdo del mapa).
+   Va pegada (sticky) a media pantalla: aunque el panel sea largo o la página
+   esté desplazada, la pestaña sigue a la vista sin salirse del mapa. */
+.gm-pestana {
+  position: sticky;
+  float: left;
+  top: calc(50vh - 26px);
+  z-index: 5;
+  width: 22px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 0;
+  border-radius: 0 .5rem .5rem 0;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, .18);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.gm-pestana:hover {
+  background-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme-color, #fff);
+}
+
+/* ---------- Buscador ---------- */
+.gm-buscar {
+  position: relative;
+  margin-bottom: .75rem;
+}
+
+.gm-buscar__caja {
+  position: relative;
+}
+
+.gm-buscar__caja .form-control {
+  height: 38px;
+  padding-left: 2.1rem;
+  padding-right: 2rem;
+  border-radius: .25rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+}
+
+.gm-buscar__lupa {
+  position: absolute;
+  top: 50%;
+  left: .85rem;
+  transform: translateY(-50%);
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.gm-buscar__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .6rem;
+  transform: translateY(-50%);
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.gm-buscar__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+.gm-sugerencias {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  margin: 0;
+  padding: .25rem;
+  list-style: none;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.gm-sugerencia {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  padding: .45rem .6rem;
+  border-radius: .375rem;
+  cursor: pointer;
+}
+
+.gm-sugerencia > i {
+  margin-top: 3px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-sugerencia.is-activa {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.gm-sugerencia.is-activa > i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gm-sugerencia__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gm-sugerencia__nombre {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.gm-sugerencia__detalle {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Avisos, lugar, mi posición ---------- */
+.gm-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  padding: .5rem .65rem;
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-aviso--error {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .10);
+  color: var(--bs-danger-text-emphasis, #b02a37);
+}
+
+.gm-aviso code {
+  font-size: 11px;
+}
+
+.gm-ayuda {
+  display: flex;
+  gap: .5rem;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-ayuda i {
+  margin-top: 2px;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gm-lugar {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  padding: .6rem .7rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-danger, #dc3545);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .05);
+}
+
+.gm-lugar__pin {
+  margin-top: 3px;
+  color: var(--bs-danger, #dc3545);
+}
+
+.gm-lugar__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gm-lugar__nombre {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.gm-lugar__detalle {
+  font-size: 11.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-lugar__distancia {
+  margin-top: .15rem;
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin-top: .5rem;
+}
+
+.gm-yo {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-top: .75rem;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-yo__punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #4285F4;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(66, 133, 244, .4);
+}
+
+.gm-yo__precision {
+  margin-left: auto;
+}
+
+/* Ventana de información de Google (fuera de la encapsulación) */
+:host ::ng-deep .gm-info {
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 260px;
+}
+
+/* ---------- Móvil ---------- */
+@media (max-width: 767.98px) {
+  .gm-btn__texto,
+  .gm-toolbar__sep {
+    display: none;
+  }
+
+  .gm-cuerpo {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+  }
+
+  .gm-ficha {
+    flex: 0 0 auto;
+    max-width: none;
+    border-right: 0;
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    overflow: visible;
+  }
+
+  .gm-cuerpo.is-panel-oculto .gm-ficha {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top: 0;
+    overflow: hidden;
+  }
+
+  /* El mapa va primero: en el móvil es lo que se quiere ver al entrar */
+  .gm-mapa-wrap {
+    order: -1;
+    height: clamp(280px, 55vh, 520px);
+  }
+
+  /* La pestaña de plegar se va al borde de abajo del mapa, girada, porque el
+     panel que abre y cierra queda justo debajo */
+  .gm-pestana {
+    position: absolute;
+    float: none;
+    left: 50%;
+    top: auto;
+    bottom: 0;
+    transform: translateX(-50%) rotate(90deg);
+    margin-bottom: 15px;
+  }
+}
+
+/* Miga de pan a la derecha, sin quitarle ancho al panel (como el administrador de archivos) */
+.gm-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Compartir ---------- */
+.gm-compartir {
+  margin-top: .75rem;
+  padding: .55rem .6rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+}
+
+.gm-compartir__titulo {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .45rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-compartir__titulo i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gm-compartir__tipos {
+  display: flex;
+  width: 100%;
+  margin-bottom: .45rem;
+}
+
+.gm-compartir__tipos .btn {
+  flex: 1 1 0;
+  padding: .15rem .25rem;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.gm-compartir__caja {
+  display: flex;
+  align-items: stretch;
+  gap: .35rem;
+}
+
+.gm-compartir__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 10.5px;
+  line-height: 1.45;
+  background-color: var(--bs-component-bg, #fff);
+  cursor: text;
+}
+
+textarea.gm-compartir__texto {
+  resize: vertical;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.gm-compartir__copiar {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.gm-compartir__pie {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-top: .35rem;
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+
+/* ---------- Coordenadas (misma caja que los enlaces) ---------- */
+.gm-dato {
+  margin-top: .5rem;
+  padding: .55rem .6rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+}
+
+.gm-dato__titulo {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .45rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-dato__titulo i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gm-dato__caja {
+  display: flex;
+  align-items: stretch;
+  gap: .35rem;
+}
+
+.gm-dato__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  background-color: var(--bs-component-bg, #fff);
+  cursor: text;
+}
+
+.gm-dato__copiar {
+  flex: 0 0 auto;
+}
+
+/* En columna: el panel es estrecho y los seis decimales no entran de lado a lado */
+.gm-dato__partes {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  margin-top: .35rem;
+}
+
+.gm-dato__parte {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: .25rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.gm-dato__parte > span {
+  flex: 0 0 58px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-dato__parte .btn {
+  flex: 0 0 auto;
+  padding: .15rem .35rem;
+}
+
+
+/* ---------- Ficha del marcador (InfoWindow de Google) ----------
+   El contenido lo inyectamos con setContent(), así que no lleva los atributos
+   de Angular: hay que llegar a él con ::ng-deep. En modo oscuro la burbuja de
+   Google sigue siendo blanca y el texto heredaba el color claro del sistema,
+   por eso no se leía. */
+:host ::ng-deep .gm-info {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #202124;
+}
+
+:host ::ng-deep .gm-info small {
+  color: #5f6368;
+  font-variant-numeric: tabular-nums;
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-c,
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-d,
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-tc::after {
+  background-color: #2b3035;
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-c {
+  box-shadow: 0 2px 7px 1px rgba(0, 0, 0, .5);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-info {
+  color: #e9ecef;
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-info small {
+  color: #adb5bd;
+}
+
+/* La «x» de cerrar es un icono pintado con background-color */
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-c button.gm-ui-hover-effect > span {
+  background-color: #adb5bd;
+}
+
+/* Las barras de desplazamiento de la ficha: en oscuro el carril blanco de
+   Google se veía como dos franjas claras al borde de la burbuja */
+:host ::ng-deep .gm-style .gm-style-iw-d {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, .25) transparent;
+}
+
+:host ::ng-deep .gm-style .gm-style-iw-d::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+:host ::ng-deep .gm-style .gm-style-iw-d::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:host ::ng-deep .gm-style .gm-style-iw-d::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .25);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-d {
+  scrollbar-color: rgba(255, 255, 255, .28) transparent;
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .gm-style .gm-style-iw-d::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .28);
+}
+
+/* ---------- Capturas del mapa ---------- */
+.gm-capturas {
+  margin-top: .75rem;
+  padding: .55rem .6rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+}
+
+.gm-capturas__titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4rem;
+  margin-bottom: .45rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-capturas__titulo i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gm-capturas__titulo .btn i {
+  color: var(--bs-danger, #dc3545);
+}
+
+.gm-captura + .gm-captura {
+  margin-top: .5rem;
+}
+
+.gm-captura__img {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  cursor: zoom-in;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.gm-captura__pie {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin-top: .3rem;
+}
+
+.gm-captura__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.gm-captura__nombre {
+  overflow: hidden;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--bs-body-color, #212529);
+}
+
+.gm-captura__detalle {
+  font-size: 10px;
+  color: var(--bs-secondary-color, #6c757d);
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-captura__acciones {
+  display: flex;
+  flex: 0 0 auto;
+  gap: .2rem;
+}
+
+.gm-captura__fallo {
+  display: flex;
+  align-items: flex-start;
+  gap: .45rem;
+  padding: .5rem .55rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .10);
+}
+
+.gm-captura__fallo i {
+  margin-top: 2px;
+  color: var(--bs-warning, #ffc107);
+}
+
+/* Etiqueta de dónde salió la captura (Google factura, pantalla no) */
+.gm-captura__origen {
+  display: inline-block;
+  margin-left: .25rem;
+  padding: 0 .3rem;
+  border-radius: 999px;
+  font-size: 9px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-body-color, #212529);
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .25);
+}
+
+.gm-captura__origen.is-pantalla {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .22);
+}
+
+/* Barra de desplazamiento del panel, discreta como la del resto del sistema */
+.gm-ficha::-webkit-scrollbar {
+  width: 8px;
+}
+
+.gm-ficha::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gm-ficha::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(var(--bs-body-color-rgb, 33, 37, 41), .28);
+}
+
+.gm-ficha::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--bs-body-color-rgb, 33, 37, 41), .45);
+}
+
+/* ---------- Enviar a otras apps ---------- */
+.gm-redes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  margin-top: .4rem;
+}
+
+.gm-red {
+  flex: 1 1 0;
+  min-width: 34px;
+  padding: .25rem 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.gm-red:hover {
+  color: #fff;
+  filter: brightness(1.08);
+}
+
+.gm-red--whatsapp { background-color: #25d366; border-color: #25d366; }
+.gm-red--telegram { background-color: #229ed9; border-color: #229ed9; }
+.gm-red--correo   { background-color: #6c757d; border-color: #6c757d; }
+.gm-red--facebook { background-color: #1877f2; border-color: #1877f2; }
+.gm-red--x        { background-color: #000; border-color: #000; }
+
+.gm-red--mas {
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-body-color, #212529);
+}
+
+.gm-red--mas:hover {
+  color: var(--bs-body-color, #212529);
+}
+
+/* ---------- Panel expandido (botón de expandir del <panel>) ----------
+   El panel pasa a pantalla completa y su cuerpo es un flex: la barra queda
+   arriba y la tarjeta de información y el mapa llenan lo que sobra. */
+:host ::ng-deep .panel.panel-expand > .panel-body {
+  overflow: hidden;
+}
+
+:host ::ng-deep .panel.panel-expand .gm {
+  height: 100%;
+}
+
+:host ::ng-deep .panel.panel-expand .gm-cuerpo {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+/* ---------- Visor de capturas ---------- */
+.gm-visor {
+  position: fixed;
+  inset: 0;
+  z-index: 1085;                 /* por encima del panel expandido (1080) */
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 0, 0, .88);
+  user-select: none;
+}
+
+.gm-visor__barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+  padding: .45rem .6rem;
+  background-color: rgba(0, 0, 0, .55);
+  color: #f8f9fa;
+}
+
+.gm-visor__titulo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gm-visor__titulo small {
+  font-size: 10px;
+  color: #adb5bd;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-visor__acciones {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: .25rem;
+}
+
+.gm-visor__zoom {
+  min-width: 48px;
+  font-size: 11.5px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-visor__lienzo {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.gm-visor__lienzo:active {
+  cursor: grabbing;
+}
+
+.gm-visor__img {
+  max-width: 92%;
+  max-height: 92%;
+  transition: transform .12s ease-out;
+  will-change: transform;
+  -webkit-user-drag: none;
+}
+
+.gm-visor__flecha {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 52px;
+  border: 0;
+  border-radius: .4rem;
+  background-color: rgba(255, 255, 255, .14);
+  color: #fff;
+  cursor: pointer;
+}
+
+.gm-visor__flecha:hover {
+  background-color: rgba(255, 255, 255, .28);
+}
+
+.gm-visor__flecha.is-izq { left: 10px; }
+.gm-visor__flecha.is-der { right: 10px; }
+
+.gm-visor__ayuda {
+  padding: .4rem;
+  font-size: 10.5px;
+  text-align: center;
+  color: #adb5bd;
+}
+
+@media (max-width: 767.98px) {
+  .gm-visor__ayuda {
+    display: none;
+  }
+
+  .gm-visor__titulo small {
+    display: none;
+  }
+}
+
+/* Interruptor de la barra (captura al pulsar en el mapa) */
+.gm-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin: 0 .1rem 0 0;
+  padding: .25rem .45rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.gm-switch .form-check-input {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* La «x» de la ficha viene de serie con 48×48 y un icono de 24: demasiado
+   grande para una ficha pequeña. Google la dibuja con estilos en línea, de
+   ahí los !important. */
+:host ::ng-deep .gm-style .gm-style-iw-chr {
+  height: 26px !important;
+  min-height: 26px !important;
+}
+
+:host ::ng-deep .gm-style .gm-style-iw-c button.gm-ui-hover-effect {
+  width: 26px !important;
+  height: 26px !important;
+  top: 0 !important;
+  right: 0 !important;
+  opacity: .7;
+}
+
+:host ::ng-deep .gm-style .gm-style-iw-c button.gm-ui-hover-effect:hover {
+  opacity: 1;
+}
+
+:host ::ng-deep .gm-style .gm-style-iw-c button.gm-ui-hover-effect > span {
+  width: 14px !important;
+  height: 14px !important;
+  margin: 6px !important;
+}
+
+/* El hueco que dejaba la cabecera alta ya no hace falta */
+:host ::ng-deep .gm-style .gm-style-iw-d {
+  margin-top: -6px;
+}
+
+/* El de la izquierda manda la imagen en sí (diálogo del sistema) */
+.gm-red--imagen {
+  background-color: var(--bs-app-theme, #00acac);
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme-color, #fff);
+}
+
+.gm-red--imagen:hover {
+  color: var(--bs-app-theme-color, #fff);
+}
+
+/* Etiqueta de qué se ve en la captura: el mapa o la calle */
+.gm-captura__clase {
+  background-color: rgba(var(--bs-info-rgb, 13, 202, 240), .22);
+}
+
+/* Cabecera de las tarjetas de datos con botón a la derecha */
+.gm-dato__titulo--con-boton {
+  justify-content: space-between;
+}
+
+.gm-dato__titulo--con-boton > span {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+/* ---------- División política ---------- */
+.gm-division {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .15rem .5rem;
+  margin: 0;
+  font-size: 11.5px;
+}
+
+.gm-division dt {
+  font-weight: 500;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+}
+
+.gm-division dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--bs-body-color, #212529);
+  text-overflow: ellipsis;
+}
+
+/* Selector del área de la captura, dentro del interruptor de la barra */
+.gm-select {
+  width: auto;
+  min-width: 120px;
+  padding: .1rem 1.4rem .1rem .35rem;
+  border: 0;
+  font-size: 12px;
+  background-color: transparent;
+}
+
+.gm-select:focus {
+  box-shadow: none;
+}
+
+/* ---------- Buscador y acciones dentro de la barra ---------- */
+.gm-toolbar .gm-buscar {
+  flex: 1 1 240px;
+  min-width: 180px;
+  max-width: 460px;
+  margin: 0;
+}
+
+.gm-toolbar .gm-buscar__caja .form-control {
+  height: 32px;
+  font-size: 12.5px;
+  box-shadow: none;
+}
+
+.gm-toolbar .gm-buscar__caja .form-control:focus {
+  box-shadow: 0 0 0 .18rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+}
+
+/* La lista de sugerencias cae sobre el mapa */
+.gm-toolbar .gm-sugerencias {
+  z-index: 30;
+}
+
+.gm-toolbar__acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.gm-toolbar__acciones .gm-btn {
+  height: 26px;
+}
+
+.gm-tipos .btn {
+  min-width: 52px;
+}
+
+@media (max-width: 767.98px) {
+  /* En móvil el buscador ocupa su propia fila, completo */
+  .gm-toolbar .gm-buscar {
+    flex: 1 0 100%;
+    max-width: none;
+    order: -1;
+  }
+
+  .gm-toolbar__acciones {
+    margin-left: 0 !important;
+  }
+}
+
+/* Buscar y Limpiar en la misma fila, como en la barra de los listados */
+.gm-buscar__fila {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+}
+
+.gm-buscar__fila .gm-buscar__caja {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gm-buscar__fila > .gm-btn {
+  flex: 0 0 auto;
+}
+
+/* ---------- División política: dónde se ve según el ancho ---------- */
+.gm-division-movil {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  /* En móvil sale justo debajo del buscador, antes del mapa */
+  .gm-division-movil {
+    display: block;
+    order: -2;
+    padding: .6rem .75rem 0;
+    background-color: var(--bs-component-bg, #fff);
+  }
+
+  .gm-division-escritorio {
+    display: none;
+  }
+}
+
+/* ---------- Pestañas de móvil ----------
+   En escritorio no existen: la barra lleva los botones y el cuerpo va a dos
+   columnas, como siempre. */
+.gm-pestanas,
+.gm-botones-movil {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .gm-solo-escritorio {
+    display: none;
+  }
+
+  .gm-pestanas {
+    display: flex;
+    gap: .25rem;
+    padding: .4rem .5rem 0;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    background-color: var(--bs-light, #f8f9fa);
+  }
+
+  .gm-pestana-btn {
+    flex: 1 1 0;
+    padding: .4rem .25rem;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: .375rem .375rem 0 0;
+    background: transparent;
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: 11.5px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gm-pestana-btn i {
+    margin-right: .25rem;
+  }
+
+  .gm-pestana-btn.is-activa {
+    border-color: var(--bs-border-color, #dee2e6);
+    background-color: var(--bs-component-bg, #fff);
+    color: var(--bs-app-theme, #00acac);
+    font-weight: 600;
+    margin-bottom: -1px;
+  }
+
+  /* Los botones del mapa, ya dentro de su pestaña */
+  .gm-botones-movil {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    order: -1;
+    padding: .5rem .75rem 0;
+  }
+
+  .gm-botones-movil .gm-toolbar__grupo,
+  .gm-botones-movil .gm-toolbar__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+    margin-left: 0 !important;
+  }
+
+  /* Qué se ve en cada pestaña */
+  .gm-cuerpo.is-division .gm-ficha,
+  .gm-cuerpo.is-division .gm-mapa-wrap,
+  .gm-cuerpo.is-division .gm-botones-movil,
+  .gm-cuerpo.is-info .gm-division-movil,
+  .gm-cuerpo.is-info .gm-mapa-wrap,
+  .gm-cuerpo.is-info .gm-botones-movil,
+  .gm-cuerpo.is-mapa .gm-division-movil,
+  .gm-cuerpo.is-mapa .gm-ficha {
+    display: none;
+  }
+
+  /* En la pestaña Info el panel ocupa todo y no necesita la pestaña de plegar */
+  .gm-cuerpo.is-info .gm-ficha {
+    display: block;
+  }
+
+  .gm-cuerpo.is-mapa .gm-pestana {
+    display: none;
+  }
+}
+
+/* Contadorcito en la pestaña de capturas */
+.gm-pestana-btn__cuenta {
+  display: inline-block;
+  min-width: 16px;
+  margin-left: .2rem;
+  padding: 0 .25rem;
+  border-radius: 999px;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+  font-size: 9.5px;
+  line-height: 15px;
+}
+
+.gm-capturas-movil {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  /* La pestaña Capturas trae el bloque completo; en el panel se oculta */
+  .gm-capturas-escritorio {
+    display: none;
+  }
+
+  .gm-capturas-movil {
+    padding: .6rem .75rem 0;
+    background-color: var(--bs-component-bg, #fff);
+  }
+
+  /* La división política encabeza la pestaña Info */
+  .gm-division-movil {
+    order: -2;
+  }
+
+  .gm-cuerpo.is-mapa .gm-capturas-movil,
+  .gm-cuerpo.is-info .gm-capturas-movil,
+  .gm-cuerpo.is-capturas .gm-division-movil,
+  .gm-cuerpo.is-capturas .gm-ficha,
+  .gm-cuerpo.is-capturas .gm-mapa-wrap,
+  .gm-cuerpo.is-capturas .gm-botones-movil {
+    display: none;
+  }
+
+  .gm-cuerpo.is-capturas .gm-capturas-movil {
+    display: block;
+  }
+
+  .gm-cuerpo.is-info .gm-division-movil {
+    display: block;
+  }
+}
+
+/* Pestaña de capturas vacía: un aviso, para que no quede el hueco en negro */
+.gm-sin-capturas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+}
+
+.gm-sin-capturas i {
+  font-size: 1.8rem;
+  opacity: .35;
+}
+
+.gm-sin-capturas b {
+  color: var(--bs-body-color, #212529);
+}
+
+@media (max-width: 767.98px) {
+  /* Alto mínimo: al cambiar de pestaña la tarjeta no se encoge de golpe */
+  .gm-capturas-movil {
+    min-height: clamp(220px, 45vh, 420px);
+    padding-bottom: .75rem;
+  }
+}
+
+/* ---------- Cada captura, una tarjeta reconocible ---------- */
+.gm-captura {
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.gm-captura + .gm-captura {
+  margin-top: .85rem;
+}
+
+.gm-captura__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4rem;
+  padding: .3rem .4rem .3rem .55rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .04);
+}
+
+.gm-captura__tipo {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gm-captura__tipo i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* La imagen ya no necesita su propio marco: lo pone la tarjeta */
+.gm-captura__img {
+  border: 0;
+  border-radius: 0;
+}
+
+.gm-captura__pie,
+.gm-captura .gm-redes,
+.gm-captura__fallo {
+  margin: 0;
+  padding: .4rem .5rem;
+}
+
+.gm-captura .gm-redes {
+  padding-top: 0;
+}
+
+.gm-capturas__vaciar {
+  font-size: 10.5px;
+  text-transform: none;
+  letter-spacing: 0;
+}

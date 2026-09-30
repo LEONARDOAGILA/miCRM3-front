@@ -58,6 +58,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       icon: 'fa-cubes',
       color: 'bg-info',
       descripcion: 'Creación, edición, eliminación de perfiles y asignación de permisos'
+    },
+    {
+      url: 'seguridad/allMenus',
+      label: 'MENÚS',
+      icon: 'fa-sitemap',
+      color: 'bg-warning',
+      descripcion: 'Árbol de menús de la aplicación: módulos, opciones y su orden'
     }
   ];
 

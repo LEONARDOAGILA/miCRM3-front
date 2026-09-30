@@ -13,6 +13,8 @@ export interface AccesoModel {
     listar?: boolean;
     reporte?: boolean;
     auditar?: boolean;
+    /** Puede abrir la papelera de reciclaje del componente */
+    papelera?: boolean;
     ejecutar?: boolean;
     created_at?: Date;
     updated_at?: Date;

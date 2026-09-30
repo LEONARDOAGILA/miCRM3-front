@@ -1,32 +1,160 @@
+/* ============================================================
+   SELECCIONAR HORARIO (modal)
+
+   Sólo lo propio de este modal. El aspecto de la grilla viene del skin
+   global de ag-Grid (scss/angular.scss); el spinner (loader1/overlay1)
+   también es global.
+   ============================================================ */
+
+/* ---------- Botón de limpiar, cuadrado y a la altura del buscador ---------- */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* ---------- Pista sobre la grilla ---------- */
+.lista-ayuda {
+  margin: 0 0 .5rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.lista-ayuda i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* ---------- Grilla ---------- */
+.lista-grilla {
+  height: 300px;
+  width: 100%;
+}
+
+/* Toda la fila es pulsable: cursor de mano en las celdas.
+   ::ng-deep porque .ag-row, .lista-ir, .lista-actual y .fila-actual los
+   genera ag-Grid fuera del alcance de la encapsulación de este componente;
+   :host lo acota a este modal. */
+:host ::ng-deep .lista-grilla .ag-row {
+  cursor: pointer;
+}
+
+/* Fila del horario que el usuario ya tiene asignado (rowClassRules del .ts):
+   barra en el borde izquierdo con el color del tema. */
+:host ::ng-deep .lista-grilla .ag-center-cols-container .ag-row.fila-actual {
+  box-shadow: inset 3px 0 0 var(--bs-app-theme, #00acac);
+}
+
+/* Etiqueta «Actual» junto al nombre (cellRenderer de la columna Nombre) */
+:host ::ng-deep .lista-actual {
+  display: inline-block;
+  margin-left: .5rem;
+  padding: .1rem .4rem;
+  border-radius: .25rem;
+  vertical-align: 1px;
+
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+/* Icono de la columna "Ir": un círculo tenue que se enciende al pasar por
+   la fila, para que se vea que la fila entera es el objetivo, no el icono */
+:host ::ng-deep .lista-ir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+
+  color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .10);
+  font-size: .75rem;
+
+  transition: background-color .12s ease, color .12s ease, transform .12s ease;
+}
+
+:host ::ng-deep .lista-grilla .ag-row:hover .lista-ir {
+  color: #fff;
+  background-color: var(--bs-app-theme, #00acac);
+  transform: translateX(2px);
+}
+
+/* ---------- Paginación (igual que allUsers) ---------- */
 .pagination-controls {
-  gap: 0.5rem;
+  gap: .5rem;
 }
 
 .pagination-buttons {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
 }
 
-.pagination-page-badge {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 0.25rem;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
+.pagination-buttons .btn {
+  min-width: 32px;
 }
 
-@media (max-width: 576px) {
+/* El indicador de página va dentro del btn-group como un botón "muerto" */
+.pagination-page-badge.disabled {
+  opacity: 1;
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 575.98px) {
   .pagination-controls {
     flex-direction: column;
     align-items: stretch;
     text-align: center;
   }
-  .pagination-info {
-    margin-bottom: 0.5rem;
-  }
+
   .pagination-buttons {
     justify-content: center;
   }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
+  }
+}
+
+/* Tablets: sólo botones un poco más compactos */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .pagination-buttons .btn {
+    padding: .2rem .5rem;
+    font-size: .75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host ::ng-deep .lista-ir {
+    transition: none;
+  }
+}
+
+/* ---------- Modo oscuro ---------- */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
 }

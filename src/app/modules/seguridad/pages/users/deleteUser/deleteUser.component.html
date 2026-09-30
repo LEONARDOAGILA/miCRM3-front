@@ -10,7 +10,7 @@
      aria-describedby="eliminarUsuarioDescripcion">
 
   <!-- ===================== CABECERA ===================== -->
-  <div class="modal-header eliminar-header">
+  <div appModalArrastrable class="modal-header eliminar-header">
     <h5 class="modal-title" id="eliminarUsuarioTitulo">
       <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
     </h5>
@@ -29,10 +29,12 @@
         <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
       <div>
-        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar este usuario?</h6>
+        <h6 class="eliminar-aviso__titulo">¿Enviar este usuario a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): el usuario va a la papelera,
+             desde donde se puede restaurar o borrar definitivamente. -->
         <p class="eliminar-aviso__texto" id="eliminarUsuarioDescripcion">
-          Esta acción no se puede deshacer. Se eliminarán también todos los accesos
-          y datos asociados a este usuario.
+          Se cerrarán sus sesiones activas y dejará de poder iniciar sesión ni aparecer en los
+          listados. Podrá restaurarlo desde la <b>Papelera de reciclaje</b> o eliminarlo allí definitivamente.
         </p>
       </div>
     </div>
@@ -86,7 +88,7 @@
     <p class="eliminar-nota">
       <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
       Si solo necesita impedirle el acceso temporalmente, desactive el usuario
-      desde <b>Modificar usuario</b> en lugar de eliminarlo.
+      desde <b>Modificar usuario</b> en lugar de enviarlo a la papelera.
     </p>
 
   </div>
@@ -102,7 +104,7 @@
             class="btn btn-danger"
             [disabled]="isLoading"
             (click)="deleteUser()">
-      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
     </button>
   </div>
 

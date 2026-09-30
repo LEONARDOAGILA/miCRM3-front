@@ -14,6 +14,8 @@
 /* ICONOS DISPONIBLES */
 .panel-icono-usuario .panel-icono::before { content: '\f007'; }  /* fa-user */
 .panel-icono-usuarios .panel-icono::before { content: '\f0c0'; }  /* fa-users */
+.panel-icono-id-badge .panel-icono::before { content: '\f2c1'; }  /* fa-id-badge (cargos) */
+.panel-icono-briefcase .panel-icono::before { content: '\f0b1'; } /* fa-briefcase */
 .panel-icono-clave .panel-icono::before { content: '\f084'; }   /* fa-key */
 .panel-icono-email .panel-icono::before { content: '\f0e0'; }   /* fa-envelope */
 .panel-icono-editar .panel-icono::before { content: '\f044'; }  /* fa-edit */

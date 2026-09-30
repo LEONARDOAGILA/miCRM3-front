@@ -45,72 +45,27 @@
 
 /* ============================================================
    TARJETAS
+   La cabecera y el marco los pone <panel>, igual que en saveUser.
+   Aquí sólo queda el relleno del cuerpo, con las mismas medidas
+   que usa el estándar.
    ============================================================ */
-.form-card {
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bs-component-bg, #fff);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: var(--mn-radius);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
-  overflow: hidden;
-}
-
-.form-card__header {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .625rem .875rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  font-size: .75rem;
-  font-weight: 700;
-  letter-spacing: .045em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.form-card__header > i {
-  font-size: .875rem;
-  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-}
-
 .form-card__body {
+  flex: 1 1 auto;
   padding: 1rem .875rem .5rem;
 }
 
 /* ============================================================
    CAMPOS
-   Los componentes compartidos reservan un label vacío bajo cada
-   campo; se elimina para igualar el ritmo vertical.
    ============================================================ */
 :host ::ng-deep app-campoTexto,
 :host ::ng-deep app-campoNumeroEntero {
   display: block;
 }
 
-:host ::ng-deep .form-card__body .form-floating {
-  margin-bottom: 0 !important;
-}
-
-:host ::ng-deep .form-card__body .input-group.with-focus {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin: 0;
-  min-height: 0;
-}
-
-:host ::ng-deep .form-card__body .input-group.with-focus > label.col-form-label {
-  display: none;
-}
-
-:host ::ng-deep .form-card__body .msg-requerido {
-  display: block;
-  margin-top: .25rem;
-  font-size: .7rem;
-  line-height: 1.3;
-}
+/* Aquí había cuatro reglas ::ng-deep que tapaban el <label> vacío y el
+   .input-group.with-focus que los campos usaban para sus mensajes. Esa
+   estructura ya no existe: el mensaje va posicionado dentro del hueco que
+   deja el propio campo, así que las reglas sobraban. */
 
 .campo-hint {
   display: flex;
@@ -154,8 +109,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(3.5rem + 2px);
-  height: calc(3.5rem + 2px); /* mismo alto que el campo */
+  width: 45px;
+  height: 45px;               /* mismo alto que el campo */
   border: 1px solid var(--bs-component-border-color, #ced4da);
   border-radius: .375rem;
   background-color: var(--bs-component-bg, #fff);
@@ -168,8 +123,7 @@
   transition: border-color .15s ease, background-color .15s ease;
 }
 
-.icono-preview:hover,
-.icono-preview.is-open {
+.icono-preview:hover {
   border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
   background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
 }
@@ -198,190 +152,34 @@
 .campo-hint--alerta i {
   color: var(--bs-danger, #dc3545);
 }
+/* Los estilos del selector de iconos (buscador, chips de grupo, rejilla y
+   estado vacío) se fueron con el componente a
+   components/selector-iconos/, que ahora se abre en su propio modal. */
 
-/* ============================================================
-   SELECTOR DE ICONOS
-   ============================================================ */
-.icono-selector {
-  margin-top: .625rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .5rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  overflow: hidden;
-}
-
-.icono-selector__buscador {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: .375rem;
-  padding: .5rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-}
-
-.icono-selector__buscador > i {
-  position: absolute;
-  left: 1rem;
-  font-size: .75rem;
-  color: var(--bs-secondary-color, #6c757d);
-  pointer-events: none;
-}
-
-.icono-selector__buscador .form-control {
-  padding-left: 1.85rem;
-  font-size: .75rem;
-  height: 32px;
-}
-
-.icono-selector__cerrar {
-  flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .375rem;
-  background-color: transparent;
-  color: var(--bs-secondary-color, #6c757d);
-  cursor: pointer;
-}
-
-.icono-selector__cerrar:hover {
-  background-color: var(--bs-danger, #dc3545);
-  border-color: var(--bs-danger, #dc3545);
-  color: #fff;
-}
-
-.icono-selector__grupos {
-  display: flex;
-  gap: .25rem;
-  padding: .5rem;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  scrollbar-width: thin;
-}
-
-.icono-selector__grupos::-webkit-scrollbar {
-  height: 4px;
-}
-
-.icono-selector__grupos::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, .35);
-  border-radius: 2px;
-}
-
-.grupo-chip {
-  flex: 0 0 auto;
-  padding: .2rem .6rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 999px;
-  background-color: var(--bs-component-bg, #fff);
-  color: var(--bs-secondary-color, #6c757d);
-  font-size: .6875rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
-}
-
-.grupo-chip:hover {
-  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-}
-
-.grupo-chip.activo {
-  background-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-  color: #fff;
-}
-
-.icono-selector__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
-  gap: .375rem;
-  padding: .5rem;
-  max-height: 230px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
-
-.icono-selector__grid::-webkit-scrollbar {
-  width: 6px;
-}
-
-.icono-selector__grid::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, .35);
-  border-radius: 3px;
-}
-
-.icono-opcion {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: .25rem;
-  padding: .45rem .25rem;
-  border: 1px solid transparent;
-  border-radius: .375rem;
-  background-color: var(--bs-component-bg, #fff);
-  color: var(--bs-component-color, #2d353c);
-  cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease, transform .15s ease;
-}
-
-.icono-opcion i {
-  font-size: 1.05rem;
-  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-}
-
-.icono-opcion span {
-  font-size: .5625rem;
-  line-height: 1.2;
-  text-align: center;
-  color: var(--bs-secondary-color, #6c757d);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.icono-opcion:hover {
-  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
-  transform: translateY(-1px);
-}
-
-.icono-opcion.activo {
-  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
-  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .14);
-}
-
-.icono-opcion.activo span {
-  color: var(--bs-component-color, #2d353c);
-  font-weight: 600;
-}
-
-.icono-selector__vacio {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .4rem;
-  padding: 1.5rem 1rem;
-  text-align: center;
-  font-size: .75rem;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.icono-selector__vacio i {
-  font-size: 1.25rem;
-  opacity: .5;
-}
 
 /* ============================================================
    RESPONSIVE
+
+   Sólo había un punto de corte a 575px. Como el modal pasó a
+   dos columnas, hay que acompañar el paso a una sola.
+   La rejilla de iconos tiene su propio responsive en
+   components/selector-iconos/.
    ============================================================ */
+
+/* Tablet: las dos columnas se apilan (col-lg), así que los paneles
+   necesitan separación vertical entre ellos. */
+@media (max-width: 991.98px) {
+  .menu-modal-body .row > [class^="col-"] + [class^="col-"] {
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .icono-acciones {
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 575.98px) {
   .menu-modal-body {
     padding: .75rem;
@@ -389,5 +187,17 @@
 
   .form-card__body {
     padding: .875rem .75rem .5rem;
+  }
+
+  /* Orden y etiqueta dejan de compartir fila: a este ancho quedaban
+     demasiado estrechos para leer la etiqueta flotante. */
+  .menu-modal-body .col-5,
+  .menu-modal-body .col-7 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .icono-row {
+    align-items: flex-start;
   }
 }

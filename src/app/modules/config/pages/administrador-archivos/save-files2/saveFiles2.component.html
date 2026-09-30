@@ -1,0 +1,267 @@
+<!-- ============================================================
+     SUBIR VARIOS ARCHIVOS (modal)
+
+     Izquierda: la zona para soltar y la cola de ficheros (uno por fila:
+     icono según extensión, nombre editable, tamaño, orden y estado).
+     Derecha: lo que vale para todos (descripción, activo, color) y el
+     panel Acceso. Pie: progreso global + Subir / Detener / Cerrar.
+     ============================================================ -->
+
+<!-- Input real, oculto y múltiple: el diálogo lo abre abrirSelector() -->
+<input #input type="file" multiple class="d-none" (change)="onInputChange($event)">
+
+<app-modal-header [title]="title" (onClose)="cerrar()"></app-modal-header>
+
+<div class="modal-body archivo-modal-body">
+  <form [formGroup]="form" novalidate>
+
+    <!-- ---------- Ubicación ---------- -->
+    <div class="ubicacion">
+      <span class="chip chip-archivo"><i class="fa-solid fa-cloud-arrow-up"></i> Subida masiva</span>
+      <span class="chip chip-info"><i class="fa-solid fa-layer-group"></i> Nivel {{ nivel }}</span>
+      <span class="chip chip-muted"><i class="fa-solid fa-folder-open"></i> Dentro de «{{ nombrePadre }}»</span>
+      @if (filas.length) {
+        <span class="chip chip-muted"><i class="fa-solid fa-list-ol"></i> Orden {{ maxOrder2 }} → {{ maxOrder2 + filas.length - 1 }}</span>
+      }
+    </div>
+
+    <div class="row g-3">
+
+      <!-- ============ ARCHIVOS ============ -->
+      <div class="col-lg-7">
+        <panel headerClass="bg-gray-800" title="Archivos" noButton="true" noBody="true" panelClass="h-100 mb-0" icono="upload" fondoGris="true">
+          <div header class="panel-acciones">
+            @if (filas.length) {
+              <span class="chip chip-info">{{ filas.length }} {{ filas.length === 1 ? 'archivo' : 'archivos' }} · {{ tamanoTotal }}</span>
+              @if (guardadas) { <span class="chip chip-ok"><i class="fa fa-check"></i> {{ guardadas }}</span> }
+              @if (fallidas)  { <span class="chip chip-error"><i class="fa fa-triangle-exclamation"></i> {{ fallidas }}</span> }
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body form-card__body--cola">
+
+              <!-- Zona para soltar (compacta cuando ya hay ficheros) -->
+              <div class="zona-multi"
+                   [class.zona-multi--activa]="arrastrando"
+                   [class.zona-multi--compacta]="filas.length"
+                   [class.zona-multi--disabled]="subiendo"
+                   role="button" tabindex="0"
+                   (click)="abrirSelector()"
+                   (keydown.enter)="abrirSelector()"
+                   (dragover)="onDragOver($event)"
+                   (dragleave)="onDragLeave($event)"
+                   (drop)="onDrop($event)">
+                <span class="zona-multi__icono"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+                <div class="zona-multi__texto">
+                  <p class="zona-multi__titulo">{{ filas.length ? 'Añadir más archivos' : 'Arrastra aquí varios archivos' }}</p>
+                  <p class="zona-multi__ayuda">
+                    o haz clic para elegirlos. Imagen, PDF, Excel, Word, video, audio o cualquier otro fichero.
+                    @if (maxMb > 0) { Máximo {{ maxMb }} MB cada uno. }
+                  </p>
+                </div>
+              </div>
+
+              <!-- Cola -->
+              @if (filas.length) {
+                <div class="cola">
+                  <div class="cola__cabecera">
+                    <span class="cola__col cola__col--orden">#</span>
+                    <span class="cola__col cola__col--icono"></span>
+                    <span class="cola__col cola__col--nombre">Nombre (se guarda así)</span>
+                    <span class="cola__col cola__col--meta">Tipo · tamaño</span>
+                    <span class="cola__col cola__col--estado">Estado</span>
+                    <span class="cola__col cola__col--acciones">
+                      @if (!subiendo && pendientes.length) {
+                        <button type="button" class="btn btn-link btn-sm p-0 text-danger" (click)="quitarTodos()" title="Quitar todos los pendientes">Quitar todos</button>
+                      }
+                    </span>
+                  </div>
+
+                  @for (f of filas; track f.clave; let i = $index) {
+                    <div class="cola__fila" [class.is-ok]="f.estado === 'ok'" [class.is-error]="f.estado === 'error'" [class.is-activa]="f.estado === 'subiendo' || f.estado === 'guardando'">
+                      <span class="cola__col cola__col--orden">{{ f.orden }}</span>
+
+                      <span class="cola__col cola__col--icono" [style.--tipo-color]="colorDe(f)">
+                        @if (f.vistaPrevia) {
+                          <img class="cola__miniatura" [src]="f.vistaPrevia" alt="">
+                        } @else {
+                          <span class="cola__icono"><i [ngClass]="f.icono"></i></span>
+                        }
+                      </span>
+
+                      <span class="cola__col cola__col--nombre">
+                        @if (f.estado === 'ok') {
+                          <span class="cola__nombre text-truncate" [title]="f.nombre">{{ f.nombre }}</span>
+                        } @else {
+                          <input type="text" class="form-control form-control-sm cola__input" [(ngModel)]="f.nombre" [ngModelOptions]="{ standalone: true }"
+                                 maxlength="100" [disabled]="subiendo" [title]="'Original: ' + f.fichero.name" placeholder="Nombre">
+                        }
+                        <span class="cola__original text-truncate" [title]="f.fichero.name">{{ f.fichero.name }}</span>
+                      </span>
+
+                      <span class="cola__col cola__col--meta">
+                        <span class="cola__ext" [style.--tipo-color]="colorDe(f)">{{ f.extension ? f.extension.toUpperCase() : 'FILE' }}</span>
+                        <span class="cola__tamano">{{ formato(f.tamano) }}</span>
+                      </span>
+
+                      <span class="cola__col cola__col--estado">
+                        @switch (f.estado) {
+                          @case ('pendiente') { <span class="estado estado--pendiente"><i class="fa-regular fa-clock"></i> Pendiente</span> }
+                          @case ('subiendo') {
+                            <span class="estado estado--activo"><i class="fa fa-circle-notch fa-spin"></i> {{ f.progreso }} %</span>
+                            <span class="cola__progreso"><span class="cola__progreso-barra" [style.width.%]="f.progreso"></span></span>
+                          }
+                          @case ('guardando') { <span class="estado estado--activo"><i class="fa fa-circle-notch fa-spin"></i> Guardando…</span> }
+                          @case ('ok') { <span class="estado estado--ok"><i class="fa fa-circle-check"></i> Subido</span> }
+                          @case ('error') { <span class="estado estado--error" [title]="f.error"><i class="fa fa-circle-xmark"></i> {{ f.error }}</span> }
+                        }
+                      </span>
+
+                      <span class="cola__col cola__col--acciones">
+                        @if (f.estado !== 'ok' && !subiendo) {
+                          <button type="button" class="btn-icono" (click)="mover(f, -1)" [disabled]="i === 0" title="Subir en el orden"><i class="fa fa-chevron-up"></i></button>
+                          <button type="button" class="btn-icono" (click)="mover(f, 1)" [disabled]="i === filas.length - 1" title="Bajar en el orden"><i class="fa fa-chevron-down"></i></button>
+                          <button type="button" class="btn-icono btn-icono--quitar" (click)="quitar(f)" title="Quitar de la lista"><i class="fa fa-times"></i></button>
+                        }
+                      </span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="campo-hint mt-2">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Cada archivo se guardará con su nombre original, el icono que más se parezca a su extensión y un
+                  número de orden correlativo. Lo de la derecha vale para todos.
+                </p>
+              }
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+      <!-- ============ PARA TODOS ============ -->
+      <div class="col-lg-5 d-flex flex-column gap-3">
+        <panel headerClass="bg-gray-800" title="Para todos los archivos" noButton="true" noBody="true" panelClass="mb-0" icono="editar" fondoGris="true">
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <app-campoTexto
+                [control]="form.controls['descripcion']"
+                label="DESCRIPCIÓN"
+                placeholder="La misma para todos (opcional)"
+                [maxLength]="100">
+              </app-campoTexto>
+
+              <!-- Activo / inactivo -->
+              <label class="opcion-switch opcion-switch--activo" for="masivo-activo" [class.is-inactivo]="!ctrlActivo.value">
+                <span class="opcion-switch__icono"><i class="fa" [ngClass]="ctrlActivo.value ? 'fa-circle-check' : 'fa-circle-xmark'"></i></span>
+                <span class="opcion-switch__texto">
+                  <span class="opcion-switch__titulo">{{ ctrlActivo.value ? 'Activos' : 'Inactivos' }}</span>
+                  <span class="opcion-switch__ayuda">
+                    @if (ctrlActivo.value) { Disponibles para los usuarios al terminar. } @else { Quedan ocultos para los usuarios (atenuados aquí). }
+                  </span>
+                </span>
+                <span class="form-check form-switch opcion-switch__control">
+                  <input class="form-check-input" type="checkbox" role="switch" id="masivo-activo" [formControl]="ctrlActivo">
+                </span>
+              </label>
+
+              <!-- Color: por tipo (automático) o uno para todos -->
+              <div class="color-bloque">
+                <span class="color-bloque__etiqueta">Color del icono</span>
+                <div class="color-bloque__fila">
+                  <label class="color-muestra" [class.is-auto]="!colorComun" [style.background-color]="colorComun || null" title="Elegir cualquier color">
+                    <input type="color" [value]="colorComun || '#A6A09B'" (input)="elegirColor($any($event.target).value)" aria-label="Color">
+                    @if (!colorComun) { <i class="fa fa-wand-magic-sparkles"></i> }
+                  </label>
+                  <span class="color-valor">{{ colorComun ? colorComun : 'Según el tipo' }}</span>
+                  <div class="color-paleta">
+                    @for (c of coloresRapidos; track c) {
+                      <button type="button" class="color-paleta__punto" [class.is-activo]="c.toLowerCase() === colorComun.toLowerCase()"
+                              [style.background-color]="c" [title]="c" (click)="elegirColor(c)"></button>
+                    }
+                  </div>
+                </div>
+                <p class="campo-hint mt-2 mb-0">
+                  <i class="fa-solid fa-circle-info"></i>
+                  @if (colorComun) { Todos con el mismo color; vuelve a pulsar el punto para dejar el automático. }
+                  @else { Cada archivo toma el color de su tipo (PDF rojo, Excel verde, imagen turquesa…). }
+                </p>
+              </div>
+
+            </div>
+          </ng-container>
+        </panel>
+
+        <!-- ============ ACCESO ============ -->
+        <panel headerClass="bg-gray-800" title="Acceso" noButton="true" noBody="true" panelClass="mb-0 flex-grow-1" icono="shield" fondoGris="true">
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <label class="opcion-switch" for="masivo-proteger-url" [class.is-deshabilitada]="ctrlProtegerUrl.disabled">
+                <span class="opcion-switch__icono"><i class="fa fa-shield-halved"></i></span>
+                <span class="opcion-switch__texto">
+                  <span class="opcion-switch__titulo">Proteger la URL</span>
+                  <span class="opcion-switch__ayuda">
+                    @if (ctrlNuevaVentana.value) { No aplica si se abren en una ventana nueva. }
+                    @else if (ctrlProtegerUrl.value) { Sin <b>Abrir en pestaña</b> ni <b>Descargar</b>: sólo dentro del sistema. }
+                    @else { El visor permite abrir en otra pestaña y descargar. }
+                  </span>
+                </span>
+                <span class="form-check form-switch opcion-switch__control">
+                  <input class="form-check-input" type="checkbox" role="switch" id="masivo-proteger-url" [formControl]="ctrlProtegerUrl"
+                         (change)="onCambioProtegerUrl($any($event.target).checked)">
+                </span>
+              </label>
+
+              <label class="opcion-switch" for="masivo-nueva-ventana" [class.is-deshabilitada]="ctrlNuevaVentana.disabled">
+                <span class="opcion-switch__icono"><i class="fa fa-arrow-up-right-from-square"></i></span>
+                <span class="opcion-switch__texto">
+                  <span class="opcion-switch__titulo">Abrir en una ventana nueva</span>
+                  <span class="opcion-switch__ayuda">
+                    @if (ctrlProtegerUrl.value) { No disponible con la URL protegida. }
+                    @else if (ctrlNuevaVentana.value) { Al ejecutar se abren en otra pestaña del navegador. }
+                    @else { Al ejecutar se abren en el visor, dentro del sistema. }
+                  </span>
+                </span>
+                <span class="form-check form-switch opcion-switch__control">
+                  <input class="form-check-input" type="checkbox" role="switch" id="masivo-nueva-ventana" [formControl]="ctrlNuevaVentana"
+                         (change)="onCambioNuevaVentana($any($event.target).checked)">
+                </span>
+              </label>
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<!-- ---------- Pie: progreso global + acciones ---------- -->
+<div class="modal-footer pie-modal pie-masivo">
+  @if (filas.length && (subiendo || guardadas || fallidas)) {
+    <div class="pie-masivo__progreso" [title]="progresoGlobal + ' %'">
+      <span class="pie-masivo__progreso-texto">{{ guardadas }} de {{ filas.length }} subidos @if (fallidas) { · {{ fallidas }} con error }</span>
+      <span class="pie-masivo__barra"><span class="pie-masivo__barra-relleno" [class.is-error]="fallidas && !subiendo" [style.width.%]="progresoGlobal"></span></span>
+    </div>
+  }
+
+  <button type="button" class="btn btn-danger pie-modal__boton" [disabled]="subiendo" (click)="cerrar()">
+    <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i><span>{{ guardadas && !pendientes.length ? 'Cerrar' : 'Salir' }}</span>
+  </button>
+
+  @if (subiendo) {
+    <button type="button" class="btn btn-warning pie-modal__boton" (click)="detener()">
+      <i class="fa fa-hand fa-fw me-1" aria-hidden="true"></i><span>Detener</span>
+    </button>
+  }
+
+  <button type="button" class="btn btn-primary pie-modal__boton" [disabled]="subiendo || !pendientes.length" (click)="subirTodo()">
+    <i class="fa fa-fw me-1" [ngClass]="subiendo ? 'fa-circle-notch fa-spin' : 'fa-cloud-arrow-up'" aria-hidden="true"></i>
+    <span>{{ textoBoton }}</span>
+  </button>
+</div>

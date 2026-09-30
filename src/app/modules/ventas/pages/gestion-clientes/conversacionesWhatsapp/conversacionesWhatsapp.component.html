@@ -1,0 +1,65 @@
+<app-modal-header title="Conversaciones de WhatsApp sin asignar"
+                  (onClose)="modal.close()"></app-modal-header>
+
+<div class="modal-body cw-cuerpo">
+
+  <p class="cw-ayuda">
+    Son conversaciones que el CRM registró pero no pudo atar a ningún cliente:
+    o el número no está en ninguna ficha, o WhatsApp no entregó el teléfono y
+    mandó un identificador oculto. Elige a quién pertenece cada una y pasará a
+    verse en su pestaña de WhatsApp.
+  </p>
+
+  @if (cargando) {
+    <div class="cw-cargando"><i class="fa fa-circle-notch fa-spin me-2"></i>Buscando…</div>
+  } @else if (conversaciones.length) {
+    <div class="cw-lista">
+      @for (c of conversaciones; track c.numero) {
+        <div class="cw-fila">
+          <div class="cw-fila__quien">
+            <span class="cw-fila__nombre">
+              <i class="fab fa-whatsapp fa-fw text-success"></i>
+              {{ c.autor || 'Sin nombre' }}
+            </span>
+            <span class="cw-fila__numero">
+              @if (esOculto(c)) {
+                <span class="badge bg-warning text-dark fs-10px" title="WhatsApp no entregó el teléfono de este chat">
+                  número oculto
+                </span>
+              } @else {
+                {{ c.numero }}
+              }
+              · {{ c.mensajes }} mensaje{{ c.mensajes === 1 ? '' : 's' }} · {{ c.ultimo_at }}
+            </span>
+            @if (c.ultimo) {
+              <span class="cw-fila__ultimo">{{ c.ultimo }}</span>
+            }
+          </div>
+
+          <button type="button" class="btn btn-sm btn-primary"
+                  [disabled]="asignando === c.numero"
+                  (click)="asignar(c)">
+            @if (asignando === c.numero) {
+              <i class="fa fa-circle-notch fa-spin me-1"></i>
+            } @else {
+              <i class="fa fa-user-check me-1"></i>
+            }
+            Asignar a un cliente
+          </button>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="cw-vacio">
+      <i class="fab fa-whatsapp"></i>
+      <p>No hay conversaciones sueltas: todo lo registrado está atado a su cliente.</p>
+    </div>
+  }
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-white btn-sm" (click)="cargar()">
+    <i class="fa fa-arrows-rotate me-1"></i>Actualizar
+  </button>
+  <button type="button" class="btn btn-secondary btn-sm" (click)="modal.close()">Cerrar</button>
+</div>

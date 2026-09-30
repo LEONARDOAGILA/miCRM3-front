@@ -1,0 +1,113 @@
+<!-- ============================================================
+     DESTINATARIOS DE UNA NOTIFICACIÓN (modal)
+     Hermano de las Vistas del boletín: panel del tema, la notificación
+     arriba con sus totales en fichas que filtran, buscador y listado.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<panel title="Destinatarios de la notificación"
+       headerClass="bg-cyan-700"
+       [noButtonCollapse]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       icono="usuarios"
+       (panelRemovedModal)="activeModal.dismiss()"
+       (panelReloaded)="cargar()"
+       (panelExpanded)="ajustarTamanoGrid()">
+
+  <div class="dn-modal">
+
+    <!-- ===================== LA NOTIFICACIÓN ===================== -->
+    <div class="dn-elemento">
+      <span class="dn-elemento__icono"><i class="fa fa-bell"></i></span>
+      <div class="dn-elemento__texto">
+        <span class="dn-elemento__etiqueta">Notificación</span>
+        <span class="dn-elemento__nombre text-truncate">{{ registro_selected?.titulo }}</span>
+        <span class="dn-elemento__ayuda">
+          Enviada el {{ registro_selected?.created_at }}
+          @if (registro_selected?.created_by) { por {{ registro_selected?.created_by }} }
+          @if (registro_selected?.caduca_at) { · caduca el {{ registro_selected?.caduca_at }} }
+        </span>
+      </div>
+
+      <!-- Totales, que además filtran -->
+      <div class="dn-resumen">
+        <button type="button" class="dn-chip" [class.activo]="filtro.estado === ''"
+                title="Todos los destinatarios" (click)="filtrarEstado('')">
+          <i class="fa-solid fa-users"></i> Todos <b>{{ total }}</b>
+        </button>
+        <button type="button" class="dn-chip dn-chip--leida" [class.activo]="filtro.estado === 'LEIDA'"
+                title="Ya la abrieron" (click)="filtrarEstado('LEIDA')">
+          <i class="fa fa-check-double"></i> Leídas <b>{{ leidas }}</b>
+        </button>
+        <button type="button" class="dn-chip dn-chip--pendiente" [class.activo]="filtro.estado === 'PENDIENTE'"
+                title="Todavía no la han abierto" (click)="filtrarEstado('PENDIENTE')">
+          <i class="fa fa-hourglass-half"></i> Pendientes <b>{{ pendientes }}</b>
+        </button>
+        <button type="button" class="dn-chip dn-chip--quitada" [class.activo]="filtro.estado === 'QUITADA'"
+                title="La sacaron de su campana" (click)="filtrarEstado('QUITADA')">
+          <i class="fa fa-inbox"></i> Quitadas <b>{{ quitadas }}</b>
+        </button>
+        <span class="dn-chip dn-chip--muted d-none d-md-inline-flex" title="Porcentaje que la ha leído">
+          <i class="fa-solid fa-percent"></i> {{ porcentajeLeido }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ===================== FILTROS ===================== -->
+    <div class="dn-filtros">
+      <div class="dn-filtros__campo">
+        <label class="dn-label" for="filtro-destinatarios">Buscar</label>
+        <app-campoBusqueda
+          [id]="'filtro-destinatarios'"
+          [placeholder]="'Usuario, nombre, apellido…'"
+          [iconClass]="'fa fa-search'"
+          [containerClass]="'w-100'"
+          (searchChange)="onFilterTextBoxChanged($event)">
+        </app-campoBusqueda>
+      </div>
+
+      <div class="dn-filtros__acciones">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()"
+                [disabled]="!hayFiltro" aria-label="Limpiar filtros" title="Limpiar filtros">
+          <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== LISTADO ===================== -->
+    <div class="dn-grid">
+      <ag-grid-angular
+        [rowData]="filas"
+        [columnDefs]="columnDefs"
+        [defaultColDef]="_appAgGridService.defaultColDef"
+        [rowHeight]="40"
+        [headerHeight]="_appAgGridService.headerHeight"
+        [localeText]="_appAgGridService.localeText"
+        [pagination]="false"
+        [animateRows]="true"
+        [cacheQuickFilter]="true"
+        [enableBrowserTooltips]="true"
+        [overlayNoRowsTemplate]="'<span>' + (hayFiltro ? 'Nadie con esa situación' : 'Esta notificación no llegó a nadie') + '</span>'"
+        class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+        [navigateToNextCell]="navegarConTeclado"
+        [rowSelection]="'single'"
+        (gridReady)="onGridReady($event)">
+      </ag-grid-angular>
+    </div>
+
+    <div class="dn-pie">
+      <span class="dn-pie__ayuda">
+        <i class="fa-solid fa-circle-info"></i>
+        La lectura se apunta cuando el usuario pulsa la notificación, no cuando le suena la campana.
+        <strong>Quitada</strong> es la que él mismo sacó de su campana: para que le vuelva a llegar, envíela de nuevo.
+      </span>
+    </div>
+
+  </div>
+</panel>

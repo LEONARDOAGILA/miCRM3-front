@@ -21,7 +21,27 @@ export class CampoNumeroEnteroComponent {
   @Output() valueChange = new EventEmitter<string>();
   @Output() blur = new EventEmitter<string>(); // ← NUEVO: emitir el valor al perder foco
 
+  /**
+   * Muestra el botón × para vaciar el campo, como en app-campoEmail y
+   * app-combo. Se puede apagar en los campos donde no tenga sentido.
+   */
+  @Input() limpiable: boolean = true;
+
   esCedulaValida: boolean = true;
+
+  /**
+   * Vacía el campo y avisa al padre.
+   *
+   * setValue vuelve a lanzar los validadores del control, así que el error
+   * cedulaInvalida que onBlur pudo poner a mano desaparece solo: un campo
+   * vacío no es una identificación inválida.
+   */
+  limpiar(): void {
+    this.control.setValue('');
+    this.control.markAsDirty();
+    this.esCedulaValida = true;
+    this.valueChange.emit('');
+  }
 
   onInputChange(value: string) {
     this.valueChange.emit(value);

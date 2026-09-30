@@ -2,13 +2,24 @@
 <div class="error">
 	<div class="error-code">404</div>
 	<div class="error-content">
-		<div class="error-message">We couldn't find it...</div>
+		<div class="error-message">No pudimos encontrarlo....</div>
 		<div class="error-desc mb-4">
-			The page you're looking for doesn't exist.... <br />
-			Perhaps, there pages will help find what you're looking for.
+			La página que buscas no existe, o no tienes acceso a ella.... <br />
+			Si no es asi, consulta con el administrador.
 		</div>
-		<div>
-			<a routerLink="/" class="btn btn-success px-3">Go Home</a>
+		<div class="d-flex flex-wrap justify-content-center gap-2">
+			<a routerLink="/" class="btn btn-success px-3">
+				<i class="fa fa-home fa-fw me-1" aria-hidden="true"></i> Volver al Inicio
+			</a>
+
+			<!-- La página de error se pinta con appEmpty = true (sin header ni menú),
+			     así que sin este botón el usuario no tenía forma de cerrar sesión. -->
+			<button type="button"
+					class="btn btn-danger px-3"
+					*ngIf="haySesion"
+					(click)="fun_salir()">
+				<i class="fa fa-sign-out fa-fw me-1" aria-hidden="true"></i> Cerrar Sesión
+			</button>
 		</div>
 	</div>
 </div>

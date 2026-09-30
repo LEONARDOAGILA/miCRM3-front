@@ -15,8 +15,9 @@
     <span class="icon-bar"></span>
     <span class="icon-bar"></span>
   </button>
-  <a href="/" class="navbar-brand"><span class="navbar-logo"></span> <b class="me-2">IUNIX</b></a>
-	<span class="badge bg-success bg-opacity-10 text-success small navbar-logo" style="font-size: 0.75rem; border: 1px solid rgba(40, 167, 69, 0.3);">Versión 3.0</span>
+  <!-- routerLink, no href: con href el navegador recargaba la aplicación entera -->
+  <a routerLink="/" class="navbar-brand"><span class="navbar-logo"></span> <b class="me-2">IUNIX</b></a>
+	<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-12px navbar-logo">Versión 3.0</span>
 
   <button type="button" class="navbar-mobile-toggler" (click)="toggleAppTopMenuMobile()" *ngIf="this.appSettings.appTopMenu && !this.appSettings.appSidebarNone">
     <span class="fa-stack fa-lg text-inverse">
@@ -91,7 +92,10 @@
   </h5>
 </div>
 
-    <div class="d-flex align-items-center gap-3 flex-wrap">
+    <!-- d-none d-md-flex: la fecha y la hora sólo se ven a partir de 768px.
+	     En móvil las muestra el pie de la pantalla de inicio (d-md-none),
+	     así que aquí sobraban y le quitaban sitio a la barra. -->
+    <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
 			<div class="vr d-none d-md-block text-secondary"></div>
 			<div class="d-flex align-items-center gap-2">
 				<i class="fa fa-calendar text-primary"></i>
@@ -100,6 +104,7 @@
 				<span class="small fw-semibold text-dark">{{ today | date:'HH:mm' }}</span>
 			</div>
 		</div>
+    
 	</div>
 
 		</div>
@@ -108,40 +113,96 @@
     <!-- CAMPANA DE NOTIFICACIONES -->
     <div class="navbar-item dropdown">
 
-      <a href="javascript:;" data-bs-toggle="dropdown" class="navbar-link dropdown-toggle icon" title="Notificaciones">
-        <i class="fa fa-bell"
-          [ngClass]="{'animar-campana': animarCampana}"></i>
+      <!-- Abrirla es lo que la calla: mirar la campana ya es enterarse -->
+      <a href="javascript:;" data-bs-toggle="dropdown" class="navbar-link dropdown-toggle icon campana-enlace"
+         [title]="noLeidas ? noLeidas + (noLeidas === 1 ? ' notificación sin leer' : ' notificaciones sin leer') : 'Notificaciones'"
+         (click)="alAbrirCampana()">
+        <!-- El contador cuelga del icono, no del enlace: si no, queda despegado -->
+        <span class="campana-icono">
+          <i class="fa fa-bell" [ngClass]="{'animar-campana': animarCampana}"></i>
 
-          
-        <!-- 🔔 Mostrar número de notificaciones -->
-        <span *ngIf="contadorWebsockets > 0" class="badge bg-danger">
-          {{ contadorWebsockets }}
+          <span *ngIf="noLeidas > 0" class="campana-badge" [class.es-muchas]="noLeidas > 9">
+            {{ noLeidas > 99 ? '99+' : noLeidas }}
+          </span>
         </span>
       </a>
 
-      <div class="dropdown-menu media-list dropdown-menu-end">
-        <div class="dropdown-header">
-          NOTIFICACIONES ({{ contadorWebsockets }})
+      <div class="dropdown-menu dropdown-menu-end campana-menu">
+
+        <!-- ---------- Cabecera: el recuento y cómo avisa ---------- -->
+        <div class="campana-cabecera">
+          <span class="campana-cabecera__titulo">
+            Notificaciones
+            <span *ngIf="noLeidas > 0" class="campana-cabecera__cuenta">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
+          </span>
+
+          <span class="campana-ajustes">
+            <!-- Cómo avisa: apagados hasta que el usuario los enciende -->
+            <button type="button" class="campana-ajuste" [class.is-on]="avisoSonido"
+                    [title]="avisoSonido ? 'Sonido al llegar: activado' : 'Sonido al llegar: desactivado'"
+                    [attr.aria-pressed]="avisoSonido"
+                    (click)="alternarSonido($event)">
+              <i class="fa" [ngClass]="avisoSonido ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
+            </button>
+
+            <button *ngIf="soportaAvisoEscritorio" type="button" class="campana-ajuste" [class.is-on]="avisoEscritorio"
+                    [title]="avisoEscritorio ? 'Avisos del navegador: activados' : 'Avisos del navegador: desactivados'"
+                    [attr.aria-pressed]="avisoEscritorio"
+                    (click)="alternarAvisoEscritorio($event)">
+              <i class="fa fa-desktop"></i>
+            </button>
+
+            <span *ngIf="noLeidas > 0" class="campana-ajustes__sep" aria-hidden="true"></span>
+
+            <a *ngIf="noLeidas > 0" href="javascript:;" class="campana-marcar"
+               title="Marcar todas como leídas" (click)="marcarTodasLeidas($event)">
+              <i class="fa fa-check-double"></i>
+              <span class="campana-marcar__texto">Marcar leídas</span>
+            </a>
+          </span>
         </div>
 
-        <!-- ✅ Si hay mensajes -->
-        <div *ngIf="contadorWebsockets > 0; else sinNotif" class="text-center w-300px py-3">
-          <p class="mb-0">Has recibido {{ contadorWebsockets }} nuevas notificaciones.</p>
-          <button class="btn btn-sm btn-primary mt-2" (click)="resetearContador()">
-            Marcar como leídas
-          </button>
+        <!-- ---------- Las últimas; el resto está en «Ver todas» ---------- -->
+        <div class="campana-lista" *ngIf="notificaciones.length; else sinNotif">
+          <a *ngFor="let n of notificaciones" href="javascript:;"
+             class="dropdown-item campana-item"
+             [class.es-nueva]="!n.leida"
+             [title]="n.mensaje || n.titulo"
+             (click)="abrirNotificacion(n, $event)">
+
+            <span class="campana-item__icono" [ngClass]="claseTipo(n)">
+              <i class="fa" [ngClass]="iconoDe(n)"></i>
+            </span>
+
+            <span class="campana-item__cuerpo">
+              <span class="campana-item__linea">
+                <span class="campana-item__titulo">{{ n.titulo }}</span>
+                <span class="campana-item__hora">{{ hace(n) }}</span>
+              </span>
+              <span class="campana-item__mensaje" *ngIf="n.mensaje">{{ n.mensaje }}</span>
+              <!-- El enlace se anuncia, y se distingue si sale del sistema -->
+              <span class="campana-item__enlace" *ngIf="n.url">
+                <i class="fa" [ngClass]="enlaceFuera(n) ? 'fa-arrow-up-right-from-square' : 'fa-arrow-right-long'"></i>{{ n.url_texto || (enlaceFuera(n) ? 'Abrir el enlace' : 'Abrir') }}
+              </span>
+            </span>
+
+            <span class="campana-item__punto" *ngIf="!n.leida" title="Sin leer"></span>
+          </a>
         </div>
 
-        <!-- ❌ Si no hay notificaciones -->
         <ng-template #sinNotif>
-          <div class="text-center w-300px py-3 text-muted">
-            No se encontraron notificaciones
+          <div class="campana-vacio">
+            <i class="fa fa-bell-slash"></i>
+            <span class="campana-vacio__titulo">No tienes notificaciones</span>
+            <span class="campana-vacio__ayuda">Aquí aparecerán los avisos que te envíen</span>
           </div>
         </ng-template>
 
-        <div class="dropdown-footer text-center">
-          <a href="javascript:;" class="text-decoration-none">Ver más</a>
-        </div>
+        <!-- ---------- Pie ---------- -->
+        <a href="javascript:;" class="campana-pie" (click)="verNotificaciones($event)">
+          Ver todas las notificaciones
+          <i class="fa fa-arrow-right-long"></i>
+        </a>
       </div>
     </div>
 
@@ -164,58 +225,100 @@
     <div class="navbar-item navbar-user dropdown">
       <a href="javascript:;" class="navbar-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
 
-        <div class="image image-icon bg-gray-800 text-gray-600" *ngIf="imagenUsuario">
-          <img *ngIf="imagenUsuario" src="{{imagenUsuario}}" alt="" />
-				</div>
+        <!-- La foto con su estado encima, igual que en la cabecera del menú -->
+        <div class="navbar-user__foto" [title]="estadoActual.nombre + ' · ' + estadoActual.ayuda">
+          <div class="image image-icon bg-gray-800 text-gray-600">
+            <!-- (error): si la foto no está, se cambia por la de por defecto -->
+            <img *ngIf="imagenUsuario" [src]="imagenUsuario"
+                 [alt]="usuarioLogeado ? 'Foto de ' + usuarioLogeado.login_user : 'Foto del usuario'"
+                 (error)="alFallarLaFoto()" />
+            <i *ngIf="!imagenUsuario" class="fa fa-user"></i>
+          </div>
 
-        <div class="image image-icon bg-gray-800 text-gray-600" *ngIf="!imagenUsuario">
-					<i class="fa fa-user"></i>
-				</div>
+          <!-- El estado que publico, ya cruzado con el latido -->
+          <span class="marca-estado" [ngClass]="'es-' + (presencia?.efectivo || 'DESCONECTADO')">
+            <i class="fa" [ngClass]="estadoActual.icono" aria-hidden="true"></i>
+          </span>
+        </div>
 
-				<span style="margin-right: 5px;">
-					<i *ngIf="iconoActivoInactivo; else iconoInactivoTemplate" class="fa fa-circle"
-						style="color: green;" aria-hidden="true"></i>
-					<ng-template #iconoInactivoTemplate>
-						<i class="fa fa-circle" style="color: red" aria-hidden="true"></i>
-					</ng-template>
-				</span>
-        
-<div>
+<div class="ms-2">
   <span class="d-none d-md-inline">
     <span class="d-none d-sm-inline" *ngIf="usuarioLogeado">{{usuarioLogeado.login_user}}</span>
   </span>
-  <i class="fa fa-caret-down ms-1" style="font-size: 1rem; opacity: 0.7;"></i>
+  <i class="fa fa-caret-down ms-1 fs-16px opacity-75"></i>
 </div>
 
 
 
       </a>
-      <div class="dropdown-menu dropdown-menu-end me-1">
-        <a routerLink="/home" class="dropdown-item menu-link" >🏠︎&nbsp;&nbsp;Inicio</a>
-        <a routerLink="config/extra-profile" class="dropdown-item menu-link" >🪪&nbsp;&nbsp;Editar Perfil</a>
-				<a href="javascript:;" class="dropdown-item d-flex align-items-center">📧&nbsp;&nbsp;Inbox
-					<span class="badge bg-danger rounded-pill ms-auto pb-4px">2</span>
-				</a>
-				<a href="javascript:;" class="dropdown-item menu-link" >📅&nbsp;&nbsp;Calendario</a>
-				<a routerLink="config/extra-settings" class="dropdown-item">⚙️&nbsp;&nbsp;Ajustes</a>
-        <a routerLink="config/extra-search-results" class="dropdown-item">❓&nbsp;&nbsp;Ayuda</a>
-				<div class="dropdown-divider"></div>
+      <!-- Menú del usuario: cabecera con foto y datos, opciones con iconos del
+           tema (fa-fw para que alineen), estado en línea como un solo item que
+           alterna, y salir en rojo. Sin emojis ni colores fijos. -->
+      <div class="dropdown-menu dropdown-menu-end me-1 usuario-menu">
 
-				<a (click)="editActivoInactivo(usuarioLogeado.id, false);" style="cursor:pointer;" class="dropdown-item"
-					*ngIf="activoInactivo; else inactivoTemplate">
-					<i class="fa fa-circle" style="color: green;" aria-hidden="true"></i>&nbsp;&nbsp;En linea
-				</a>
-				<ng-template #inactivoTemplate>
-					<a (click)="editActivoInactivo(usuarioLogeado.id, true);" style="cursor:pointer;"
-						class="dropdown-item">
-						Fuera de linea <i class="fa fa-circle" style="color: red" aria-hidden="true"></i>
-					</a>
-				</ng-template>
+        <!-- Cabecera: quién soy -->
+        <div class="usuario-menu__cabecera" *ngIf="usuarioLogeado">
+          <div class="usuario-menu__foto">
+            <img *ngIf="imagenUsuario" [src]="imagenUsuario" alt="" (error)="alFallarLaFoto()" />
+            <i *ngIf="!imagenUsuario" class="fa fa-user"></i>
+            <!-- La misma marca que en la barra, para que sea la misma pieza -->
+            <span class="marca-estado es-grande" [ngClass]="'es-' + (presencia?.efectivo || 'DESCONECTADO')"
+                  [title]="estadoActual.nombre">
+              <i class="fa" [ngClass]="estadoActual.icono" aria-hidden="true"></i>
+            </span>
+          </div>
+          <div class="usuario-menu__texto">
+            <div class="usuario-menu__nombre text-truncate">{{ usuarioLogeado.full_name || usuarioLogeado.login_user }}</div>
+            <div class="usuario-menu__detalle text-truncate">
+              {{ usuarioLogeado.login_user }}<ng-container *ngIf="usuarioLogeado.perfil?.nombre"> · {{ usuarioLogeado.perfil.nombre }}</ng-container>
+            </div>
+            <div class="usuario-menu__detalle text-truncate" *ngIf="usuarioLogeado.email">{{ usuarioLogeado.email }}</div>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
 
-        
-        <a (click)="fun_salir();" style="cursor:pointer;" class="dropdown-item">❌&nbsp;&nbsp;Cerrar Sesión</a>
+        <a routerLink="/home" class="dropdown-item"><i class="fa fa-house fa-fw me-2 text-theme"></i>Inicio</a>
+        <a routerLink="config/extra-profile" class="dropdown-item"><i class="fa fa-id-card fa-fw me-2 text-theme"></i>Editar perfil</a>
+        <!-- Sin contador: el «2» venía de la plantilla y era siempre 2 -->
+        <a href="javascript:;" class="dropdown-item d-flex align-items-center">
+          <i class="fa fa-envelope fa-fw me-2 text-theme"></i>Bandeja de entrada
+        </a>
+        <a href="javascript:;" class="dropdown-item"><i class="fa fa-calendar-days fa-fw me-2 text-theme"></i>Calendario</a>
+        <a routerLink="config/extra-settings" class="dropdown-item"><i class="fa fa-gear fa-fw me-2 text-theme"></i>Ajustes</a>
+        <a routerLink="config/extra-search-results" class="dropdown-item"><i class="fa fa-circle-question fa-fw me-2 text-theme"></i>Ayuda</a>
+        <div class="dropdown-divider"></div>
 
-			</div>
+        <!-- ---------- Mi estado ----------
+             Cuatro opciones que se eligen; «Ausente» y «Desconectado» no
+             salen aquí porque los pone el sistema, no el usuario. -->
+        <div class="usuario-menu__rotulo">Mi estado</div>
+
+        @for (e of estadosElegibles; track e) {
+          <a href="javascript:;" class="dropdown-item cursor-pointer d-flex align-items-center usuario-menu__estado-item"
+             [class.is-elegido]="estadoElegido === e"
+             [title]="estiloDe(e).ayuda"
+             (click)="elegirEstado(e, $event)">
+            <i class="fa fa-fw me-2" [ngClass]="[estiloDe(e).icono, estiloDe(e).color]" aria-hidden="true"></i>
+            {{ estiloDe(e).nombre }}
+            @if (estadoElegido === e) {
+              <i class="fa fa-check ms-auto text-theme" aria-hidden="true"></i>
+            }
+          </a>
+        }
+
+        <!-- Lo que ve el resto, cuando no coincide con lo elegido -->
+        @if (presencia && presencia.efectivo !== presencia.estado) {
+          <div class="usuario-menu__aviso">
+            <i class="fa fa-circle-info me-1"></i>
+            Los demás te ven como <b>{{ estadoActual.nombre }}</b>
+            @if (presencia.efectivo === 'AUSENTE') { · llevas un rato sin tocar nada }
+          </div>
+        }
+
+        <div class="dropdown-divider"></div>
+
+        <a (click)="fun_salir();" class="dropdown-item cursor-pointer text-danger"><i class="fa fa-right-from-bracket fa-fw me-2"></i>Cerrar sesión</a>
+      </div>
     </div>
 
 

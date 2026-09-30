@@ -1,0 +1,447 @@
+:host {
+  display: block;
+}
+
+/* El cuerpo del modal, con el mismo fondo que el de usuarios */
+.bol-modal-body {
+  max-height: 74vh;
+  padding: 1rem;
+  overflow-y: auto;
+  background-color: var(--bs-tertiary-bg, #f5f6f8);
+}
+
+/* Cuerpo de cada panel (mismo nombre que en saveUser) */
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .75rem;
+}
+
+.campo {
+  margin-bottom: .75rem;
+}
+
+.bol-pista {
+  display: block;
+  margin-top: -.35rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 11px;
+}
+
+.bol-label {
+  display: block;
+  margin-bottom: .2rem;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El interruptor .estado-miswitch es global (scss/angular.scss) */
+.estado-miswitch + .estado-miswitch {
+  margin-top: .5rem;
+}
+
+/* ---------- Pestañas ----------
+   Las mismas que las del mapa: reparten el ancho, esquinas redondeadas
+   arriba y la abierta se monta sobre la línea inferior. */
+.bol-pestanas {
+  display: flex;
+  gap: .25rem;
+  margin: -.25rem -.25rem 1rem;
+  padding: .4rem .5rem 0;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.bol-pestana-btn {
+  flex: 1 1 0;
+  overflow: hidden;
+  padding: .45rem .5rem;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: .375rem .375rem 0 0;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bol-pestana-btn i {
+  margin-right: .25rem;
+}
+
+.bol-pestana-btn:hover:not(.is-activa) {
+  color: var(--bs-body-color, #212529);
+}
+
+.bol-pestana-btn.is-activa {
+  margin-bottom: -1px;
+  border-color: var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+/* Contadorcito, igual que el de la pestaña de capturas del mapa */
+.bol-pestana-btn__cuenta {
+  display: inline-block;
+  min-width: 16px;
+  margin-left: .2rem;
+  padding: 0 .25rem;
+  border-radius: 999px;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+  font-size: 9.5px;
+  line-height: 15px;
+}
+
+.bol-pestana-btn__aviso {
+  margin-left: .2rem;
+  color: var(--bs-danger, #ff5b57);
+  font-size: 11px;
+}
+
+/* ---------- Vigencia ---------- */
+/* ---------- Rango de fechas ----------
+   Mismo recuadro que el historial de acciones. Aquí NO se pone
+   position: relative: el calendario es absoluto y tomaría este recuadro
+   estrecho como referencia, los dos meses se apilarían y el desplegable
+   (800 px de alto) quedaría recortado por el cuerpo del modal. Sin
+   posicionar, se mide contra el modal entero y sale de una. */
+.date-range-input {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: 0 .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius, .375rem);
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.date-range-input > i {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+.date-range-input .form-control {
+  width: 100%;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 1.25rem;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  /* La flechita de desplegable, como en el historial */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 16px 12px;
+}
+
+/* El calendario es un overlay: tiene que ganarle al backdrop del modal */
+:host ::ng-deep .md-drppicker.shown {
+  z-index: 1060;
+}
+
+/* Modo oscuro: el calendario es claro por dentro; sus <select> también */
+:host ::ng-deep .md-drppicker {
+  color-scheme: light;
+}
+
+/* En celular los dos meses se apilan y el calendario mide casi 600 px: caiga
+   donde caiga el campo, no cabe debajo. Se planta centrado sobre la pantalla,
+   como un diálogo, y se desplaza por dentro si hace falta. */
+@media (max-width: 767.98px) {
+  :host ::ng-deep .md-drppicker.shown {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    margin: 0 !important;
+    transform: translate(-50%, -50%);
+    max-height: 82vh;
+    overflow-y: auto;
+  }
+}
+
+.bol-vigencia {
+  margin-top: .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bol-vigencia__estado {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .5rem .7rem;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bol-vigencia__estado.is-vigente    { background-color: rgba(0, 172, 172, .12); color: #00807f; }
+.bol-vigencia__estado.is-programado { background-color: rgba(52, 143, 226, .12); color: #2a6fb0; }
+.bol-vigencia__estado.is-caducado   { background-color: rgba(245, 156, 26, .14); color: #a96a08; }
+.bol-vigencia__estado.is-inactivo   { background-color: rgba(108, 117, 125, .14); color: #5a6268; }
+
+.bol-vigencia__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1.5rem;
+  margin: 0;
+  padding: .55rem .7rem;
+  list-style: none;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.bol-vigencia__datos li {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.bol-vigencia__datos span {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* ---------- Barra de cada panel ---------- */
+.bol-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin-bottom: .6rem;
+}
+
+.bol-barra__resumen {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.bol-barra__acciones {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+/* ---------- Imágenes ---------- */
+.bol-vacio {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .9rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  font-size: 11.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.bol-vacio i {
+  font-size: 1.4rem;
+  opacity: .4;
+}
+
+.bol-imagenes {
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+
+.bol-imagen {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.bol-imagen__miniatura {
+  position: relative;
+  flex: 0 0 auto;
+  width: 96px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 4px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+}
+
+.bol-imagen__miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-user-drag: none;
+}
+
+.bol-imagen__sin,
+.bol-imagen__subiendo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.bol-imagen__subiendo {
+  background-color: rgba(0, 0, 0, .35);
+  color: #fff;
+}
+
+.bol-imagen__orden {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  min-width: 17px;
+  padding: 0 .2rem;
+  border-radius: 3px;
+  background-color: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.bol-imagen__datos {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Tiempo en pantalla: un campo corto, que no se coma la fila */
+.bol-imagen__tiempo {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.bol-imagen__tiempo label {
+  margin: 0;
+  color: var(--bs-secondary-color);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.bol-imagen__tiempo .input-group {
+  width: 104px;
+}
+
+.bol-imagen__tiempo .input-group-text {
+  padding: .1rem .35rem;
+  font-size: 11px;
+}
+
+.bol-imagen__nota {
+  color: var(--bs-secondary-color);
+  font-size: 11px;
+  font-style: italic;
+}
+
+.bol-imagen__botones {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  flex: 0 0 auto;
+}
+
+/* ---------- Destinatarios ---------- */
+.bol-lista {
+  height: 100%;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.bol-lista__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4rem;
+  padding: .3rem .45rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  font-size: 11.5px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.bol-lista__cabecera i {
+  margin-right: .25rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.bol-lista__vacia {
+  padding: .6rem .5rem;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.bol-lista__items {
+  max-height: 168px;
+  margin: 0;
+  padding: .25rem;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.bol-item {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .22rem .3rem;
+  border-radius: 4px;
+}
+
+.bol-item:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
+}
+
+.bol-item.is-inactivo {
+  opacity: .6;
+}
+
+.bol-item__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+  line-height: 1.2;
+}
+
+.bol-item__texto b {
+  overflow: hidden;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bol-item__texto small {
+  overflow: hidden;
+  font-size: 10px;
+  color: var(--bs-secondary-color, #6c757d);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Párrafo corrido: en flex, cada <b> se volvía una columna aparte */
+.bol-ayuda {
+  margin: .75rem 0 0;
+  padding: .55rem .7rem;
+  border-radius: 6px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .035);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.bol-ayuda i {
+  margin-right: .3rem;
+  color: var(--bs-app-theme, #00acac);
+}

@@ -314,6 +314,9 @@ private params: any;
         this.gridApi.sizeColumnsToFit();
       }
     }
+    /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+    navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
+
     onCellClicked(e: CellClickedEvent): void {
         this.selectedRow = e.data;
     }

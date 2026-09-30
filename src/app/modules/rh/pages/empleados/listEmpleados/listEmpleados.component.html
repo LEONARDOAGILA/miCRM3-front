@@ -1,0 +1,117 @@
+<!-- ============================================================
+     SELECCIONAR EMPLEADO (modal)
+
+     Estructura:
+       1. Spinner de carga (clases globales de scss/angular.scss)
+       2. Cabecera del modal
+       3. Cuerpo: buscador + grilla + paginación
+       4. Pie: cancelar
+
+     Un clic en cualquier celda elige la fila y cierra el modal
+     (ver onCellClicked en el .ts). El empleado ya asignado se marca
+     con una barra lateral y la etiqueta «Actual».
+     ============================================================ -->
+
+<!-- 1. Spinner y velo mientras carga -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- 2. Cabecera -->
+<div appModalArrastrable class="modal-header">
+  <h4 class="modal-title">
+    <i class="fa fa-user me-2 text-primary"></i>Seleccionar empleado
+  </h4>
+  <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+</div>
+
+<!-- 3. Cuerpo -->
+<div class="modal-body">
+
+  <!-- Buscador: emite al pulsar Enter o el icono; el filtro va al servidor -->
+  <div class="row g-2 mb-3 align-items-center">
+    <div class="col">
+      <app-campoBusquedaPaginacion
+        [id]="'filter-text-box-empleados'"
+        [placeholder]="'Buscar por nombre, identificación, cargo o departamento...'"
+        [iconClass]="'fa fa-search fa-lg'"
+        [containerClass]="'position-relative w-100'"
+        (buscar)="onSearch($event)">
+      </app-campoBusquedaPaginacion>
+    </div>
+    <div class="col-auto">
+      <button type="button"
+              class="btn btn-outline-secondary lista-barra__btn"
+              title="Limpiar búsqueda"
+              (click)="limpiarBusqueda()">
+        <i class="fa fa-eraser"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Pista para el usuario -->
+  <p class="lista-ayuda">
+    <i class="fa fa-hand-pointer me-1"></i>
+    {{ ayuda }}
+  </p>
+
+  <!-- Grilla. El aspecto viene del skin global de ag-Grid (scss/angular.scss);
+       aquí sólo se añaden el cursor de mano y la fila «Actual» (ver .css).
+       [pagination]="false": la paginación la hace el servidor. -->
+  <ag-grid-angular
+    class="ag-theme-alpine ag-grid-transparente lista-grilla"
+    [rowData]="rowData"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="_appAgGridService.defaultColDef"
+    [localeText]="_appAgGridService.localeText"
+    [rowClassRules]="rowClassRules"
+    [rowHeight]="35"
+    [headerHeight]="35"
+    [rowSelection]="'single'"
+    [pagination]="false"
+    [enableCellTextSelection]="true"
+    [navigateToNextCell]="navegarConTeclado"
+    (cellKeyDown)="onCellKeyDown($event)"
+    (gridReady)="onGridReady($event)"
+    (cellClicked)="onCellClicked($event)">
+  </ag-grid-angular>
+
+  <!-- Paginación: mismo bloque que allUsers (btn-group del tema) -->
+  <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+
+    <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+      <button type="button" class="btn btn-sm btn-white" title="Primera página"
+              (click)="firstPage()" [disabled]="paginaActual === 1">
+        <i class="fa fa-angle-double-left"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+              (click)="prevPage()" [disabled]="paginaActual === 1">
+        <i class="fa fa-chevron-left"></i>
+      </button>
+      <span class="btn btn-sm btn-white pagination-page-badge disabled">
+        Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+      </span>
+      <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+              (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+        <i class="fa fa-chevron-right"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-white" title="Última página"
+              (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
+        <i class="fa fa-angle-double-right"></i>
+      </button>
+    </div>
+
+    <div class="pagination-info small text-muted">
+      Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> registros
+    </div>
+
+  </div>
+</div>
+
+<!-- 4. Pie -->
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" (click)="modal.dismiss()">
+    <i class="fa fa-times me-1"></i> Cancelar
+  </button>
+</div>

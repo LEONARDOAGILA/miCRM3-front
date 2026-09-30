@@ -1,0 +1,127 @@
+<!-- ============================================================
+     REASIGNAR CLIENTE (modal)
+
+     De qué vendedor sale y a cuál entra, por qué, y si se lleva
+     consigo lo que quedaba pendiente en la agenda.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Guardando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<app-modal-header title="Reasignar cliente" (onClose)="modal.dismiss()"></app-modal-header>
+
+<div class="modal-body reasignar-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- De quién a quién -->
+    <div class="reasignar-flujo">
+      <div class="reasignar-flujo__lado">
+        <span class="reasignar-flujo__etiqueta">Ahora lo atiende</span>
+        <span class="reasignar-flujo__nombre">
+          <i class="fa fa-user-tie fa-fw"></i>{{ vendedorActual }}
+        </span>
+      </div>
+      <i class="fa fa-arrow-right reasignar-flujo__flecha" aria-hidden="true"></i>
+      <div class="reasignar-flujo__lado reasignar-flujo__lado--destino">
+        <span class="reasignar-flujo__etiqueta">Pasa a</span>
+        <span class="reasignar-flujo__nombre">
+          <i class="fa fa-user-check fa-fw"></i>{{ vendedorNombreControl.value || 'Elija el vendedor' }}
+        </span>
+      </div>
+    </div>
+
+    <panel
+      headerClass="bg-gray-800"
+      title="Nuevo vendedor"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="usuarios"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+
+          <div class="reasignar-cliente">
+            <span class="reasignar-cliente__icono">
+              <i class="fa" [ngClass]="cliente?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user'"></i>
+            </span>
+            <div class="reasignar-cliente__texto">
+              <span class="reasignar-cliente__nombre">{{ cliente?.nombre_completo }}</span>
+              <span class="reasignar-cliente__dato">{{ cliente?.numero_identificacion }}</span>
+            </div>
+          </div>
+
+          <!-- Vendedor (ID + nombre + lupa, como el jefe en saveEmpleado) -->
+          <div class="campo campo-lookup">
+            <div class="row g-2 flex-nowrap">
+              <div class="col-4">
+                <app-campoNumeroEntero
+                  [control]="form.controls['empleado_id']"
+                  label="ID Vendedor"
+                  placeholder="ID"
+                  [maxLength]="10"
+                  (blur)="cargarVendedorPorId()">
+                </app-campoNumeroEntero>
+              </div>
+              <div class="col">
+                <app-campoTexto
+                  [control]="vendedorNombreControl"
+                  label="Vendedor"
+                  placeholder="Sin elegir">
+                </app-campoTexto>
+              </div>
+              <div class="col-auto">
+                <button type="button" class="btn btn-lookup" (click)="abrirModalVendedores()" title="Buscar vendedor">
+                  <i class="fa fa-search"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Qué pasa con lo pendiente -->
+          <div class="reasignar-agenda" [class.is-on]="ctrlMoverAgenda.value">
+            <span class="reasignar-agenda__icono"><i class="fa-solid fa-calendar-check"></i></span>
+            <div class="reasignar-agenda__texto">
+              <span class="reasignar-agenda__label">Llevarse la agenda</span>
+              <span class="reasignar-agenda__hint">
+                {{ ctrlMoverAgenda.value
+                   ? (pendientes ? pendientes + ' gestión(es) pendiente(s) pasan al nuevo vendedor' : 'Lo pendiente pasa al nuevo vendedor')
+                   : 'Lo pendiente se queda con el vendedor anterior' }}
+              </span>
+            </div>
+            <app-checkbox class="reasignar-agenda__switch"
+              [control]="ctrlMoverAgenda"
+              [label]="ctrlMoverAgenda.value ? 'Sí' : 'No'"
+              [id]="'ck-mover-agenda'">
+            </app-checkbox>
+          </div>
+
+          <app-campoTextoArea
+            [control]="form.controls['motivo']"
+            label="Motivo (opcional)"
+            placeholder="Cambio de zona, vacaciones, reparto de cartera…"
+            [maxLength]="1000"
+            [alto]="90">
+          </app-campoTextoArea>
+
+          <p class="reasignar-nota">
+            <i class="fa fa-info-circle fa-fw me-1"></i>
+            El cambio queda registrado en el historial de cartera del cliente, con quién lo tenía y quién lo recibe.
+          </p>
+
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<app-modal-footer
+  [isDisabled]="!guardando"
+  [textoCerrar]="'Salir'"
+  (onClose)="modal.dismiss()"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

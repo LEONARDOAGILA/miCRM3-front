@@ -13,6 +13,7 @@ import { AllProfilesComponent } from './pages/profiles/allProfiles/allProfiles.c
 import { AllMenusComponent } from './pages/menus/allMenus/allMenus.component';
 import { AllUsersComponent } from './pages/users/allUsers/allUsers.component';
 import { AllHorariosComponent } from './pages/horarios/allHorarios/allHorarios.component';
+import { UsuariosGruposComponent } from './pages/grupos/usuariosGrupos/usuariosGrupos.component';
 
 
 
@@ -30,6 +31,7 @@ const routes: Routes = [
         { path: 'allProfiles',component:AllProfilesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'allMenus',component:AllMenusComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},                  
         { path: 'allUsuarios',component:AllUsersComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        { path: 'usuariosGrupos',component:UsuariosGruposComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'allHorarios',component:AllHorariosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         

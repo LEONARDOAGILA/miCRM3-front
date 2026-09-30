@@ -1,0 +1,178 @@
+<!-- ============================================================
+     LECTOR DE CÓDIGOS QR Y DE BARRAS
+
+     Un solo visor, no dos: antes había el de la página y el del modal, con
+     el mismo código duplicado. Sirve tal cual como pantalla y también
+     incrustado en cualquier formulario que necesite leer un código.
+     ============================================================ -->
+
+<div class="lector">
+
+  <!-- ===================== EL VISOR ===================== -->
+  <div class="lector__visor" [class.is-encendida]="encendida">
+
+    @if (encendida) {
+      <zxing-scanner
+        [formats]="formatos"
+        [(device)]="camara"
+        [torch]="linterna"
+        [autofocusEnabled]="true"
+        [tryHarder]="true"
+        [delayBetweenScanSuccess]="500"
+        [delayBetweenScanAttempts]="100"
+        (camerasFound)="alEncontrarCamaras($event)"
+        (permissionResponse)="alResponderPermiso($event)"
+        (torchCompatible)="alSaberDeLaLinterna($event)"
+        (autostarted)="alArrancar()"
+        (scanComplete)="alCompletar($event)"
+        (scanSuccess)="alLeer($event)">
+      </zxing-scanner>
+
+      <!-- La mira: cuatro esquinas y la línea que recorre -->
+      <div class="lector__mira" aria-hidden="true">
+        <span class="lector__esquina is-ai"></span>
+        <span class="lector__esquina is-ad"></span>
+        <span class="lector__esquina is-bi"></span>
+        <span class="lector__esquina is-bd"></span>
+        <span class="lector__rayo"></span>
+      </div>
+
+      @if (arrancando) {
+        <div class="lector__cargando">
+          <span class="lector__girando"></span>
+          <span>Encendiendo la cámara…</span>
+        </div>
+      }
+    } @else {
+      <!-- Apagada: ni se pide permiso ni se gasta batería hasta que se pulsa -->
+      <div class="lector__apagado">
+        <i class="fa fa-qrcode"></i>
+        <span class="lector__apagado-titulo">Cámara apagada</span>
+        <span class="lector__apagado-ayuda">Apunta al código y lo lee solo</span>
+        <button type="button" class="btn btn-sm btn-primary" (click)="encender()">
+          <i class="fa fa-camera me-1"></i>Encender la cámara
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- Cuando el navegador no da la cámara, hay que decirlo -->
+  @if (problema) {
+    <div class="lector__problema">
+      <i class="fa fa-triangle-exclamation me-1"></i>{{ problema }}
+    </div>
+  }
+
+  <!-- ===================== CONTROLES ===================== -->
+  <div class="lector__barra">
+    <button type="button" class="lector__btn" [class.is-on]="encendida"
+            [title]="encendida ? 'Apagar la cámara' : 'Encender la cámara'"
+            (click)="alternarCamara()">
+      <i class="fa" [ngClass]="encendida ? 'fa-stop' : 'fa-play'"></i>
+      <span>{{ encendida ? 'Detener' : 'Leer' }}</span>
+    </button>
+
+    <button type="button" class="lector__btn" [disabled]="!encendida || camaras.length < 2"
+            title="Cambiar de cámara" (click)="siguienteCamara()">
+      <i class="fa fa-camera-rotate"></i>
+      <span class="d-none d-sm-inline">Cámara</span>
+    </button>
+
+    @if (hayLinterna) {
+      <button type="button" class="lector__btn" [class.is-on]="linterna"
+              [disabled]="!encendida" title="Linterna" (click)="alternarLinterna()">
+        <i class="fa fa-lightbulb"></i>
+        <span class="d-none d-sm-inline">Luz</span>
+      </button>
+    }
+
+    <button type="button" class="lector__btn" [class.is-on]="continuo"
+            [title]="continuo ? 'Ahora lee sin parar' : 'Ahora se detiene en cada código'"
+            (click)="alternarContinuo()">
+      <i class="fa" [ngClass]="continuo ? 'fa-infinity' : 'fa-1'"></i>
+      <span class="d-none d-sm-inline">{{ continuo ? 'Seguido' : 'De a uno' }}</span>
+    </button>
+
+    <!-- Con varias cámaras, elegir la que se quiera -->
+    @if (encendida && camaras.length > 1) {
+      <select class="form-select form-select-sm lector__camaras"
+              title="Elegir cámara"
+              (change)="elegirCamara($any($event.target).value)">
+        @for (c of camaras; track c.deviceId; let i = $index) {
+          <option [value]="i" [selected]="c.deviceId === camara?.deviceId">
+            {{ c.label || 'Cámara ' + (i + 1) }}{{ esTrasera(c) ? ' · trasera' : '' }}
+          </option>
+        }
+      </select>
+    }
+  </div>
+
+  <!-- ===================== LO ÚLTIMO LEÍDO ===================== -->
+  @if (ultimo) {
+    <div class="lector__ultimo">
+      <div class="lector__ultimo-cabecera">
+        <span class="lector__formato">{{ nombreFormato(ultimo.formato) }}</span>
+        <span class="lector__hora">{{ ultimo.fecha | date:'HH:mm:ss' }}</span>
+      </div>
+
+      <div class="lector__codigo">{{ ultimo.texto }}</div>
+
+      <div class="lector__ultimo-acciones">
+        <button type="button" class="btn btn-sm btn-white" (click)="copiar(ultimo.texto)">
+          <i class="fa fa-copy me-1"></i>Copiar
+        </button>
+        @if (esEnlace(ultimo.texto)) {
+          <button type="button" class="btn btn-sm btn-white text-primary" (click)="abrirEnlace(ultimo.texto)">
+            <i class="fa fa-arrow-up-right-from-square me-1"></i>Abrir
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ===================== HISTORIAL ===================== -->
+  @if (mostrarHistorial) {
+    <div class="lector__historial">
+      <div class="lector__historial-cabecera">
+        <span class="lector__rotulo">Leídos</span>
+
+        <span class="lector__cuentas">
+          <span title="Total">{{ total }}</span>
+          <span title="Códigos QR"><i class="fa fa-qrcode"></i>{{ totalQr }}</span>
+          <span title="Códigos de barras"><i class="fa fa-barcode"></i>{{ totalBarras }}</span>
+        </span>
+
+        <span class="lector__historial-acciones">
+          <button type="button" class="btn btn-xs btn-white" title="Descargar en CSV"
+                  [disabled]="!historial.length" (click)="exportar()">
+            <i class="fa fa-file-csv"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white text-danger" title="Borrar el historial"
+                  [disabled]="!historial.length" (click)="limpiarHistorial()">
+            <i class="fa fa-trash"></i>
+          </button>
+        </span>
+      </div>
+
+      @if (!historial.length) {
+        <div class="lector__vacio">Todavía no has leído ningún código.</div>
+      } @else {
+        <ul class="lector__lista">
+          @for (l of historial; track porFecha($index, l)) {
+            <li class="lector__item">
+              <span class="lector__item-formato">{{ nombreFormato(l.formato) }}</span>
+              <span class="lector__item-texto" [title]="l.texto">{{ l.texto }}</span>
+              <span class="lector__item-hora">{{ l.fecha | date:'dd/MM HH:mm' }}</span>
+              <button type="button" class="btn btn-xs btn-white" title="Copiar" (click)="copiar(l.texto)">
+                <i class="fa fa-copy"></i>
+              </button>
+              <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar" (click)="quitar(l)">
+                <i class="fa fa-xmark"></i>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</div>
