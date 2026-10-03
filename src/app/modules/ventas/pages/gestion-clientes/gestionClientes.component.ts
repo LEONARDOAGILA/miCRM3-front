@@ -14,6 +14,7 @@ import { ClienteService } from '../../services/cliente.service';
 import { GestionService, MetaAgenda } from '../../services/gestion.service';
 import { RecordatorioGestionesService } from '../../services/recordatorioGestiones.service';
 import { WhatsappService, MensajeWhatsapp, ResumenWhatsapp } from '../../services/whatsapp.service';
+import { SoftphoneService } from '../../services/softphone.service';
 import { SeguridadService } from '../../../seguridad/services/seguridad.service';
 import { AppAgGridService } from '../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../service/loading.service';
@@ -31,13 +32,14 @@ import {
 
 ///   COMPONENTES    ///
 import { ListClientesComponent } from '../clientes/listClientes/listClientes.component';
+import { ImagenVisor, VisorImagenesComponent } from '../../../../components/visorImagenes/visorImagenes.component';
 import { SaveClienteComponent } from '../clientes/saveCliente/saveCliente.component';
 import { SaveGestionComponent, ModoGestion } from './saveGestion/saveGestion.component';
 import { CerrarGestionComponent } from './cerrarGestion/cerrarGestion.component';
 import { ReasignarClienteComponent } from './reasignarCliente/reasignarCliente.component';
 import { ConversacionesWhatsappComponent } from './conversacionesWhatsapp/conversacionesWhatsapp.component';
 
-type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp';
+type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'comercial';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
 type Vista = 'agenda' | 'cliente';
 /** Atajos del rango de fechas de la agenda. */
@@ -341,6 +343,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     private _gestionService: GestionService,
     private _recordatorios: RecordatorioGestionesService,
     private _whatsappService: WhatsappService,
+    private _softphone: SoftphoneService,
     public _appAgGridService: AppAgGridService,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -484,8 +487,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         field: 'celular',
         cellStyle: { textAlign: 'center' },
         minWidth: 95,
-        maxWidth: 110,
+        maxWidth: 115,
         valueGetter: (p: any) => p.data?.celular || p.data?.telefono || '',
+        cellRenderer: this.celdaTelefono,
       },
     ];
   }
@@ -505,6 +509,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   /** Toda la fila abre el cliente, no hace falta apuntar a un botón. */
   onCellClickedClientes(e: CellClickedEvent): void {
+    // Marcar no debe abrir la ficha: son cinco peticiones al servidor para
+    // algo que no se ha pedido.
+    if (this.marcoDesdeLaCelda(e, e.data?.celular || e.data?.telefono, e.data?.nombre_completo)) { return; }
     if (e.data) { this.seleccionarCliente(e.data); }
   }
 
@@ -545,6 +552,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    */
   limpiarCliente(irALaAgenda: boolean = true): void {
     this.cliente = null;
+    this.urlFotoMapa = null;
+    this.urlFotoCasa = null;
     this.resumen = null;
     this.contactos = [];
     this.asignaciones = [];
@@ -870,6 +879,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         return;
       }
       this.cliente = res.data;
+      this.refrescarFotosDelLugar();
       // La marca de «Actual» viaja de una fila a otra
       this.gridApiClientes?.redrawRows();
       await Promise.all([
@@ -1115,6 +1125,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         // El de la gestión si se anotó; si no, el del cliente: esta grilla
         // es una lista de llamadas y el número tiene que estar a la vista
         valueGetter: (p: any) => p.data?.telefono || p.data?.cliente_telefono || '',
+        cellRenderer: this.celdaTelefono,
       },
       {
         headerName: 'Vendedor',
@@ -1170,6 +1181,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Teléfono', field: 'telefono', minWidth: 110, maxWidth: 140,
         cellStyle: { textAlign: 'left' },
         valueGetter: (p: any) => p.data?.telefono || p.data?.cliente_telefono || '',
+        cellRenderer: this.celdaTelefono,
       },
       { headerName: 'Responsable', field: 'empleado_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
       { headerName: 'Nota', field: 'nota', minWidth: 180, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
@@ -1195,7 +1207,11 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       },
       { headerName: 'Nombre', field: 'nombres', minWidth: 170, cellStyle: { textAlign: 'left', fontWeight: '600' } },
       { headerName: 'Cargo', field: 'cargo', minWidth: 130, cellStyle: { textAlign: 'left' } },
-      { headerName: 'Teléfono', field: 'telefono', minWidth: 110, maxWidth: 140, cellStyle: { textAlign: 'left' } },
+      {
+        headerName: 'Teléfono', field: 'telefono', minWidth: 110, maxWidth: 140,
+        cellStyle: { textAlign: 'left' },
+        cellRenderer: this.celdaTelefono,
+      },
       { headerName: 'Correo', field: 'email', minWidth: 180, cellStyle: { textAlign: 'left' } },
       {
         headerName: 'Activo', field: 'activo', minWidth: 80, maxWidth: 80,
@@ -1266,6 +1282,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       case 'cerrar':   this.cerrar(e.data); break;
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
+      case 'llamar':   this.llamarConSoftphone(e.data?.telefono || e.data?.cliente_telefono, this.cliente?.nombre_completo); break;
     }
   }
 
@@ -1293,6 +1310,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
     if (destino?.dataset['accion'] === 'cerrar') { this.cerrarDesdeAgenda(e.data); return; }
     if (destino?.dataset['accion'] === 'abrir')  { this.irAlCliente(e.data); return; }
+    if (destino?.dataset['accion'] === 'llamar') {
+      this.llamarConSoftphone(e.data?.telefono || e.data?.cliente_telefono, e.data?.cliente_nombre);
+      return;
+    }
   }
 
   onCellKeyDownAgenda(e: any): void {
@@ -1822,54 +1843,133 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // MARCAR CON EL SOFTPHONE (ZOIPER)
   // ================================================================
 
-  /**
-   * Protocolo que se le pasa al sistema operativo para marcar.
-   *
-   * Se envía con DOS PUNTOS y sin barras: zoiper:0991234567. Con «://»
-   * Windows le añade una barra al final (zoiper://0991234567/) y el softphone
-   * acabaría marcando ese carácter de más; comprobado mirando lo que recibe
-   * el manejador. El programa entiende además tel:, sip: y callto:.
-   *
-   * Se deja configurable por navegador para no tener que recompilar si se
-   * cambia de softphone (3CX, MicroSIP, X-Lite…):
-   *
-   *   localStorage.setItem('miCRM3.softphone', 'callto');   // o tel, sip…
-   */
-  private get protocoloLlamada(): string {
-    try { return localStorage.getItem('miCRM3.softphone') || 'zoiper'; } catch { return 'zoiper'; }
-  }
+  // Todo esto vive en SoftphoneService desde que la lista de clientes también
+  // marca; aquí quedan los dos métodos que usa la plantilla, delegando.
 
   /** La URL completa que se le entrega al sistema. */
   public enlaceSoftphone(numero?: string | null): string {
-    const n = this.numeroMarcable(numero);
-    return n ? `${this.protocoloLlamada}:${n}` : '';
+    return this._softphone.enlace(numero);
   }
 
-  /**
-   * El número tal como hay que marcarlo: sólo lo que sabe marcar una central
-   * (dígitos, +, * y #). Se quitan espacios, guiones y paréntesis, que es lo
-   * que suele traer un número tecleado a mano.
-   */
-  private numeroMarcable(numero?: string | null): string {
-    return String(numero ?? '').replace(/[^\d+*#]/g, '');
-  }
+  // ================================================================
+  // LAS FOTOS DEL LUGAR
+  // ================================================================
+  //
+  // Las mismas dos que toma el mapa al guardar la dirección en saveCliente:
+  // la vista de arriba y la fachada por Street View. Aquí sólo se miran.
+
+  public urlFotoMapa: string | null = null;
+  public urlFotoCasa: string | null = null;
 
   /**
-   * Marca con el softphone del puesto.
+   * Se calculan al abrir el cliente, no en un getter.
    *
-   * No navega a ningún sitio: el navegador le entrega el enlace al sistema,
-   * que abre Zoiper. La primera vez Chrome pregunta si se permite abrirlo;
-   * marcando «Permitir siempre» no vuelve a preguntar.
+   * La URL lleva `?t=` para saltarse la caché del navegador —si no, al cambiar
+   * la dirección seguiría viéndose la foto vieja—, y un getter devolvería una
+   * URL distinta en cada ciclo de detección: el navegador se pasaría la vida
+   * recargando las dos imágenes.
+   */
+  private refrescarFotosDelLugar(): void {
+    const id = this.cliente?.id;
+    this.urlFotoMapa = id && this.cliente?.url_foto_mapa
+      ? this._clienteService.getFotoUbicacion(id, 'mapa', true) : null;
+    this.urlFotoCasa = id && this.cliente?.url_foto_casa
+      ? this._clienteService.getFotoUbicacion(id, 'casa', true) : null;
+  }
+
+  /**
+   * Abre las fotos en el visor —ampliar, girar, arrastrar— en vez de en otra
+   * pestaña. Se le pasan las dos, así que desde una se llega a la otra con las
+   * flechas.
+   */
+  public verFotoDelLugar(cual: 'mapa' | 'casa'): void {
+    const imagenes: ImagenVisor[] = [];
+    if (this.urlFotoMapa) { imagenes.push({ url: this.urlFotoMapa, titulo: 'Vista del mapa', nombre: 'ubicacion-mapa.png' }); }
+    if (this.urlFotoCasa) { imagenes.push({ url: this.urlFotoCasa, titulo: 'Vista de la calle', nombre: 'ubicacion-fachada.jpg' }); }
+    if (!imagenes.length) { return; }
+
+    const modalRef = this.modal.open(VisorImagenesComponent, {
+      size: 'xl', centered: true, backdrop: true, keyboard: true, windowClass: 'visor-modal',
+    });
+    modalRef.componentInstance.imagenes = imagenes;
+    // Si sólo hay una, el índice que toca es el 0
+    modalRef.componentInstance.indice = cual === 'casa' && imagenes.length > 1 ? 1 : 0;
+  }
+
+  /**
+   * El teléfono de una grilla, pintado para poder marcarlo de un clic.
+   *
+   * Lo usan las cuatro grillas que muestran número (clientes, historial,
+   * pendientes y contactos). Va con data-accion como el resto de acciones de
+   * la aplicación, así que lo recoge el onCellClicked de cada una.
+   *
+   * Es una propiedad y no un método para que ag-Grid lo pueda llamar sin
+   * perder el `this` del componente.
+   */
+  public celdaTelefono = (p: any): string => {
+    const n = this._softphone.numeroMarcable(p.value);
+    if (!n) { return ''; }
+    return `<button type="button" class="gestion-llamar" data-accion="llamar" title="Marcar ${n} con el softphone">
+              <i class="fa fa-phone"></i><span>${p.value}</span>
+            </button>`;
+  };
+
+  /**
+   * ¿El clic cayó sobre un teléfono? Si sí, marca y lo dice, para que quien
+   * llama no siga con lo suyo (en la lista de clientes, por ejemplo, abrir la
+   * ficha entera por querer llamar sería un viaje de más).
+   */
+  private marcoDesdeLaCelda(e: CellClickedEvent, numero?: string | null, quien?: string | null): boolean {
+    if (!(e.event?.target as HTMLElement)?.closest('[data-accion="llamar"]')) { return false; }
+    this.llamarConSoftphone(numero, quien);
+    return true;
+  }
+
+  /**
+   * Marca con el softphone del puesto y deja lista la gestión.
+   *
+   * Mientras el teléfono suena, Zoiper se aparta solo (lo hace el ayudante del
+   * protocolo) y aquí se abre el formulario de gestión, para que el vendedor
+   * vaya escribiendo lo que habla en vez de reconstruirlo al colgar.
+   *
+   * Sólo se abre si hay un cliente en pantalla: la gestión cuelga de él. Al
+   * marcar desde la lista de clientes sin haberlo abierto, se marca y ya.
    */
   llamarConSoftphone(numero?: string | null, quien?: string | null): void {
-    const n = this.numeroMarcable(numero);
-    if (!n) {
+    const marcado = this._softphone.marcar(numero);
+    if (!marcado) {
       this._toastr.warning('No tiene teléfono registrado', 'Sin número');
       return;
     }
+    this._toastr.info('Marcando ' + marcado + '…', quien || 'Zoiper', { timeOut: 2500 });
 
-    this._toastr.info('Marcando ' + n + '…', quien || 'Zoiper', { timeOut: 2500 });
-    window.location.href = this.enlaceSoftphone(n);
+    if (this.cliente) { this.abrirGestionDeLlamada(marcado); }
+  }
+
+  /**
+   * El formulario de gestión que acompaña a la llamada.
+   *
+   * Va en un setTimeout corto porque el lanzamiento del protocolo y la
+   * apertura del modal caen en el mismo gesto: dándole ese respiro, el
+   * navegador termina de entregarle el enlace al sistema antes de ponerse a
+   * montar el diálogo.
+   */
+  private abrirGestionDeLlamada(numero: string): void {
+    if (this._seguridadService.isexpired()) { return; }
+
+    setTimeout(() => {
+      if (!this.cliente) { return; }
+
+      const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+      modalRef.componentInstance.modo = 'registrar';
+      modalRef.componentInstance.cliente = this.cliente;
+      modalRef.componentInstance.contactos = this.contactos;
+      modalRef.componentInstance.gestion = null;
+      // El tipo ya sale LLAMADA por defecto; lo que el formulario no puede
+      // saber es a qué número se llamó, que puede ser el de un contacto.
+      modalRef.componentInstance.telefonoInicial = numero;
+      this.escucharModal(modalRef, modalRef.componentInstance.guardado, () => this.refrescar());
+    }, 400);
   }
   enlaceWhatsapp(numero?: string | null, texto?: string | null): string {
     const internacional = this.numeroInternacional(numero);

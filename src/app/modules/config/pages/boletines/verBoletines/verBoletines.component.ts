@@ -65,6 +65,12 @@ export class VerBoletinesComponent implements OnInit, AfterViewInit, OnDestroy {
   /** El usuario marcó "no volver a mostrar" en el boletín que se ve. */
   noMostrar = new Set<number>();
 
+  // ---------- la vista se tapa sola ----------
+  /** Tapado: la ventana dejó de estar al frente, o se detectó una captura. */
+  tapado = false;
+  /** Fue por una captura; ese aviso sólo lo quita el usuario a mano. */
+  capturaDetectada = false;
+
   // ---------- pase automático ----------
   /** Lo que se queda una imagen que no trae su tiempo. */
   private readonly SEGUNDOS_POR_DEFECTO = 6;
@@ -211,7 +217,8 @@ export class VerBoletinesComponent implements OnInit, AfterViewInit, OnDestroy {
    * imagen ampliada o girada no se le puede cambiar debajo.
    */
   get paseEnMarcha(): boolean {
-    return this.reproduciendo && this.hayPase && !this.esUltima && this.vistaIntacta && !this.esMedio;
+    return this.reproduciendo && this.hayPase && !this.esUltima && this.vistaIntacta
+      && !this.esMedio && !this.tapado;
   }
 
   /** La lámina que se ve es un video o un audio. */
@@ -272,6 +279,22 @@ export class VerBoletinesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   onTecla(ev: KeyboardEvent): void {
+    if (this.esAtajoDeInspeccion(ev)) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      return;
+    }
+
+    if (this.esAtajoDeCaptura(ev)) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.alDetectarCaptura();
+      return;
+    }
+
+    // Tapado, lo único que se admite es cerrar: así nadie pasa láminas a ciegas
+    if (this.tapado && ev.key !== 'Escape') { return; }
+
     if (ev.key === 'ArrowRight') { ev.preventDefault(); this.siguiente(); }
     else if (ev.key === 'ArrowLeft') { ev.preventDefault(); this.anterior(); }
     else if (ev.key === 'Escape' && !this.debeConfirmar) { ev.preventDefault(); this.cerrar(); }
@@ -879,8 +902,213 @@ export class VerBoletinesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.modal.close(true);
   }
 
-  /** Evita el menú del botón derecho sobre el lienzo. */
+  // ================================================================
+  // QUITARLE AL USUARIO LOS CAMINOS CÓMODOS
+  // ================================================================
+
+  /**
+   * ¿Es una combinación de las que abren las herramientas del navegador, ven
+   * el código fuente o guardan la página?
+   *
+   * Conviene tener claro el alcance de esto, porque es menos de lo que
+   * parece:
+   *
+   * - Ctrl+U (código fuente), Ctrl+S (guardar) y Ctrl+P (imprimir) sí se
+   *   cancelan: el navegador deja que la página los anule.
+   * - **F12 y Ctrl+Shift+I no.** Chrome y Edge se los reservan y una página no
+   *   puede impedirlos. Se interceptan igual por los navegadores que sí lo
+   *   permiten, pero no hay que contar con ello.
+   * - Y de todas formas las herramientas se abren desde el menú (⋮ → Más
+   *   herramientas), que ninguna página puede tocar.
+   *
+   * O sea que esto estorba al usuario que descubre F12 de casualidad, y nada
+   * más. Quien sepa lo que hace mira la pestaña de red y se lleva el archivo
+   * original. Lo único que de verdad protege es que **toda copia salga con el
+   * nombre de quien la miraba**, y de eso se encarga el lienzo: por eso la
+   * captura de pantalla, que no hay forma de bloquear, tampoco hace daño.
+   */
+  private esAtajoDeInspeccion(ev: KeyboardEvent): boolean {
+    const tecla = (ev.key ?? '').toLowerCase();
+    const control = ev.ctrlKey || ev.metaKey;
+
+    if (tecla === 'f12') { return true; }
+
+    // Inspector, consola y selector de elementos. La K y la E son de Firefox
+    // (consola y red); la M, el modo móvil de Chrome.
+    if (control && ev.shiftKey && ['i', 'j', 'c', 'k', 'e', 'm'].includes(tecla)) { return true; }
+
+    // En Mac son Cmd+Alt+I / J / C / U
+    if (ev.metaKey && ev.altKey && ['i', 'j', 'c', 'u'].includes(tecla)) { return true; }
+
+    // Código fuente, guardar la página e imprimirla
+    if (control && !ev.shiftKey && !ev.altKey && ['u', 's', 'p'].includes(tecla)) { return true; }
+
+    return false;
+  }
+
+  /**
+   * Menú del botón derecho, arrastre, copiado y selección.
+   *
+   * Va a nivel de documento y no sólo del lienzo porque el menú del botón
+   * derecho sobre el fondo oscuro también ofrece «Ver código fuente» e
+   * «Inspeccionar». Angular quita estos escuchas al cerrarse el modal, así que
+   * fuera de los boletines el navegador se comporta como siempre.
+   *
+   * Sobre el <canvas> no hay «Guardar imagen como», pero sí «Copiar imagen»:
+   * eso es lo que se quita aquí.
+   */
+  @HostListener('document:contextmenu', ['$event'])
+  @HostListener('document:dragstart', ['$event'])
+  @HostListener('document:copy', ['$event'])
+  @HostListener('document:cut', ['$event'])
+  @HostListener('document:selectstart', ['$event'])
   sinMenu(ev: Event): void {
     ev.preventDefault();
+  }
+
+  // ================================================================
+  // CAPTURAS DE PANTALLA
+  // ================================================================
+  //
+  // Una página web NO puede impedir una captura de pantalla. No es que falte
+  // dar con el truco: no existe la manera.
+  //
+  //   - PrntScr la atiende el sistema operativo. Chrome ni siquiera genera
+  //     keydown: la tecla sólo se ve al soltarla, cuando la captura ya está
+  //     hecha.
+  //   - Win+Shift+S (Recortes) congela la pantalla ANTES de mostrar su capa,
+  //     así que cuando la página pierde el foco la imagen ya está tomada.
+  //   - Y contra la cámara de un teléfono no hay absolutamente nada que hacer.
+  //
+  // Lo único que de verdad bloquea una captura es el canal protegido de DRM, y
+  // sólo sirve para video empaquetado, no para un lienzo.
+  //
+  // Así que aquí no se intenta impedirlas, que sería mentirle al que lee este
+  // código. Se hacen tres cosas que sí se sostienen:
+  //
+  //   1. Tapar el boletín en cuanto la ventana deja de estar al frente. No
+  //      salva del Recortes, pero sí de lo que se graba o comparte mientras el
+  //      usuario está en otra ventana, y de quien se acerca al equipo.
+  //   2. Al ver PrntScr: tapar, parar el pase y pisar el portapapeles. La
+  //      captura que acaba de hacerse no se recupera; las siguientes, sí.
+  //   3. Decírselo a la cara: la imagen lleva su nombre, la fecha y la hora
+  //      repetidos por toda la superficie. Esa marca es la defensa de verdad,
+  //      porque sobrevive a la captura, al recorte y a la foto.
+
+  // Tres eventos, cada uno con un solo trabajo. Al principio estaban juntos
+  // en un manejador que exigía `visibilityState === 'visible'` **y**
+  // `document.hasFocus()` para destapar, y el boletín se quedaba tapado al
+  // volver a la pestaña: en ese instante la pestaña ya se ve, pero el foco
+  // todavía no ha vuelto. Para tapar basta cualquiera de los dos motivos;
+  // para destapar, también.
+
+  /** Se fue a otra ventana, o a la barra de direcciones. */
+  @HostListener('window:blur')
+  alPerderElFoco(): void {
+    this.tapar();
+  }
+
+  /** La ventana vuelve al frente. */
+  @HostListener('window:focus')
+  alRecuperarElFoco(): void {
+    this.destaparSiProcede();
+  }
+
+  /** Cambió de pestaña, o minimizó la ventana. */
+  @HostListener('document:visibilitychange')
+  alCambiarVisibilidad(): void {
+    if (document.visibilityState === 'hidden') { this.tapar(); return; }
+    this.destaparSiProcede();
+  }
+
+  /** Destapa, salvo que el aviso de captura esté puesto: ése lo quita el usuario. */
+  private destaparSiProcede(): void {
+    if (!this.tapado || this.capturaDetectada) { return; }
+    this.tapado = false;
+    this.programarPase();
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * PrintScreen no llega como keydown en Chrome, sólo al soltarla; por eso se
+   * mira aquí y no en el manejador de arriba.
+   */
+  @HostListener('document:keyup', ['$event'])
+  onTeclaArriba(ev: KeyboardEvent): void {
+    if ((ev.key ?? '').toLowerCase() === 'printscreen') { this.alDetectarCaptura(); }
+  }
+
+  /**
+   * Combinaciones de captura del sistema.
+   *
+   * Windows casi siempre se las queda y la página no las ve nunca. Se
+   * comprueban porque cuando sí llegan —según el teclado y la versión— tapar
+   * la vista llega a tiempo.
+   */
+  private esAtajoDeCaptura(ev: KeyboardEvent): boolean {
+    const tecla = (ev.key ?? '').toLowerCase();
+
+    if (tecla === 'printscreen') { return true; }
+    // Win+Shift+S es Recortes; Win+G abre la barra de juego, que graba vídeo
+    if (ev.metaKey && ev.shiftKey && tecla === 's') { return true; }
+    if (ev.metaKey && !ev.shiftKey && tecla === 'g') { return true; }
+
+    return false;
+  }
+
+  /** Tapa el boletín y para todo lo que estuviera corriendo detrás. */
+  private tapar(): void {
+    if (this.tapado) { return; }
+    this.tapado = true;
+    clearTimeout(this.temporizadorPase);
+    if (this.esMedio) { this.medio?.nativeElement.pause(); }
+    this.cdr.markForCheck();
+  }
+
+  /** Se vio una captura: tapar, avisar y dejar el portapapeles inservible. */
+  private alDetectarCaptura(): void {
+    const yaEstaba = this.capturaDetectada;
+    this.capturaDetectada = true;
+    this.tapar();
+    this.pisarPortapapeles();
+
+    // Si aporrea la tecla, no llenarle la pantalla de avisos iguales
+    if (!yaEstaba) {
+      this._toastr.warning(
+        'La imagen lleva su nombre, la fecha y la hora repetidos por toda la superficie.',
+        'Se detectó una captura de pantalla',
+        { timeOut: 9000 },
+      );
+    }
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Pisar lo que PrntScr acaba de dejar en el portapapeles.
+   *
+   * Es lo único que estorba al camino más corto: capturar y pegar en Word o en
+   * WhatsApp. Tiene un coste que conviene asumir a sabiendas: se pierde lo que
+   * el usuario tuviera copiado. Si el navegador no da permiso no pasa nada, la
+   * marca de agua sigue siendo la defensa.
+   */
+  private async pisarPortapapeles(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText('— captura no autorizada de un boletín —');
+    } catch {
+      // Sin permiso de portapapeles: no hay nada que hacer y no es grave
+    }
+  }
+
+  /** El texto que va estampado en la imagen, para poder enseñárselo. */
+  get marcaDeQuienMira(): string {
+    return (this.marcaTexto || this.textoDeSesion()).toUpperCase();
+  }
+
+  /** Quitar la tapa a mano. */
+  destapar(): void {
+    this.tapado = false;
+    this.capturaDetectada = false;
+    this.programarPase();
+    this.cdr.markForCheck();
   }
 }

@@ -1,301 +1,285 @@
 <!-- ============================================================
-     UBICACIÓN CON GOOGLE MAPS (demo)
-       1. Miga de pan
-       2. <panel>
-          2a. Barra: mi ubicación / centrar / copiar / abrir / cómo llegar /
-              limpiar · tipo de mapa
-          2b. Panel izquierdo (plegable): buscador con sugerencias + ficha
-          2c. Mapa de Google a la derecha
+     UBICACIÓN CON GOOGLE MAPS
+       1. Barra: mi ubicación / centrar / copiar / abrir / cómo llegar /
+          limpiar · tipo de mapa
+       2. Panel izquierdo (plegable): buscador con sugerencias + ficha
+       3. Mapa de Google a la derecha
+
+     Esto es sólo el mapa: no trae <panel> ni miga de pan. Quien lo usa pone
+     el marco, y así no salen dos barras de título una debajo de otra.
      ============================================================ -->
 
-<ol class="breadcrumb gm-breadcrumb">
-  <li class="breadcrumb-item"><a routerLink="/demo/home-demo">Demo</a></li>
-  <li class="breadcrumb-item active">Google Maps</li>
-</ol>
+<div class="gm">
 
-<panel
-  title="Ubicación con Google Maps"
-  [noButton]="false"
-  [noButtonReload]="true"
-  [noButtonCollapse]="true"
-  (panelExpanded)="alExpandirPanel($event)"
-  [closeRoute]="'/demo/home-demo'"
-  icono="map"
-  bodyClass="p-0"
-  panelClass="mb-0">
-
-  <div class="gm">
-
-    <!-- ---------- 2a. BARRA ---------- -->
-    <div class="gm-toolbar">
-      <div class="gm-buscar">
-        <div class="gm-buscar__fila">
-          <button type="button" class="btn btn-sm btn-white gm-btn" [disabled]="!lugar && !busqueda" title="Quitar el lugar" (click)="limpiar()">
-            <i class="fa fa-eraser"></i><span class="gm-btn__texto">Limpiar</span>
-          </button>
-
-          <div class="gm-buscar__caja">
-            <i class="fa gm-buscar__lupa" [ngClass]="buscando ? 'fa-spinner fa-spin' : 'fa-search'"></i>
-            <input type="text" class="form-control"
-                   placeholder="Buscar dirección o lugar en Ecuador…"
-                   autocomplete="off"
-                   [disabled]="estadoApi !== 'listo'"
-                   [(ngModel)]="busqueda"
-                   (input)="onBusquedaCambia()"
-                   (keydown)="onBusquedaTecla($event)">
-            @if (busqueda) {
-              <button type="button" class="gm-buscar__limpiar" title="Quitar la búsqueda" (click)="limpiar()">&times;</button>
-            }
-          </div>
-        </div>
-
-        @if (sugerencias.length) {
-          <ul class="gm-sugerencias" role="listbox">
-            @for (s of sugerencias; track s.placeId; let i = $index) {
-              <li class="gm-sugerencia" role="option" [class.is-activa]="i === sugerenciaActiva"
-                  (mouseenter)="sugerenciaActiva = i" (click)="elegir(s)">
-                <i class="fa fa-location-dot"></i>
-                <span class="gm-sugerencia__texto">
-                  <span class="gm-sugerencia__nombre">{{ s.principal }}</span>
-                  <span class="gm-sugerencia__detalle">{{ s.secundario }}</span>
-                </span>
-              </li>
-            }
-          </ul>
-        }
-      </div>
-
-      <div class="gm-solo-escritorio">
-        <ng-container *ngTemplateOutlet="botonesMapa"></ng-container>
-      </div>
-    </div>
-
-    <!-- Móvil: tres pestañas bajo el buscador -->
-    <div class="gm-pestanas" role="tablist">
-      <button type="button" class="gm-pestana-btn" role="tab" [class.is-activa]="pestanaMovil === 'mapa'"
-              [attr.aria-selected]="pestanaMovil === 'mapa'" (click)="cambiarPestana('mapa')">
-        <i class="fa fa-location-dot"></i> Mapa
-      </button>
-      <button type="button" class="gm-pestana-btn" role="tab" [class.is-activa]="pestanaMovil === 'info'"
-              [attr.aria-selected]="pestanaMovil === 'info'" (click)="cambiarPestana('info')">
-        <i class="fa fa-circle-info"></i> Info
-      </button>
-      @if (mostrarCapturas) {
-        <button type="button" class="gm-pestana-btn" role="tab" [class.is-activa]="pestanaMovil === 'capturas'"
-                [attr.aria-selected]="pestanaMovil === 'capturas'" (click)="cambiarPestana('capturas')">
-          <i class="fa fa-camera"></i> Capturas
-          @if (capturas.length) { <span class="gm-pestana-btn__cuenta">{{ capturas.length }}</span> }
+  <!-- ---------- 1. BARRA ---------- -->
+  <div class="gm-toolbar">
+    <div class="gm-buscar">
+      <div class="gm-buscar__fila">
+        <button type="button" class="btn btn-sm btn-white gm-btn" [disabled]="!lugar && !busqueda" title="Quitar el lugar" (click)="limpiar()">
+          <i class="fa fa-eraser"></i><span class="gm-btn__texto">Limpiar</span>
         </button>
+
+        <div class="gm-buscar__caja">
+          <i class="fa gm-buscar__lupa" [ngClass]="buscando ? 'fa-spinner fa-spin' : 'fa-search'"></i>
+          <input type="text" class="form-control"
+                 placeholder="Buscar dirección o lugar en Ecuador…"
+                 autocomplete="off"
+                 [disabled]="estadoApi !== 'listo'"
+                 [(ngModel)]="busqueda"
+                 (input)="onBusquedaCambia()"
+                 (keydown)="onBusquedaTecla($event)">
+          @if (busqueda) {
+            <button type="button" class="gm-buscar__limpiar" title="Quitar la búsqueda" (click)="limpiar()">&times;</button>
+          }
+        </div>
+      </div>
+
+      @if (sugerencias.length) {
+        <ul class="gm-sugerencias" role="listbox">
+          @for (s of sugerencias; track s.placeId; let i = $index) {
+            <li class="gm-sugerencia" role="option" [class.is-activa]="i === sugerenciaActiva"
+                (mouseenter)="sugerenciaActiva = i" (click)="elegir(s)">
+              <i class="fa fa-location-dot"></i>
+              <span class="gm-sugerencia__texto">
+                <span class="gm-sugerencia__nombre">{{ s.principal }}</span>
+                <span class="gm-sugerencia__detalle">{{ s.secundario }}</span>
+              </span>
+            </li>
+          }
+        </ul>
       }
     </div>
 
-    <div class="gm-cuerpo" [class.is-panel-oculto]="panelOculto" [ngClass]="'is-' + pestanaMovil">
-
-      <!-- Móvil: los botones del mapa viajan con él, dentro de su pestaña -->
-      <div class="gm-botones-movil">
-        <ng-container *ngTemplateOutlet="botonesMapa"></ng-container>
-      </div>
-
-      <!-- Móvil: las capturas tienen su propia pestaña -->
-      <div class="gm-capturas-movil">
-        @if (capturas.length) {
-          <ng-container *ngTemplateOutlet="bloqueCapturas"></ng-container>
-        } @else {
-          <div class="gm-sin-capturas">
-            <i class="fa fa-camera"></i>
-            <b>Todavía no hay capturas</b>
-            <span>Ve a la pestaña <b>Mapa</b> y pulsa <b>Capturar</b> para guardar la imagen del lugar. Con Street View abierto se guarda también la foto de la calle.</span>
-          </div>
-        }
-      </div>
-
-      <!-- Móvil: la división política se ve nada más buscar, sin bajar al panel -->
-      @if (lugar && estadoApi === 'listo') {
-        <div class="gm-division-movil">
-          <ng-container *ngTemplateOutlet="tarjetaDivision"></ng-container>
-        </div>
-      }
-
-      <!-- ---------- 2b. PANEL IZQUIERDO ---------- -->
-      <div class="gm-ficha" [attr.aria-hidden]="panelOculto">
-
-
-        @switch (estadoApi) {
-          @case ('cargando') {
-            <div class="gm-aviso"><span class="spinner-border spinner-border-sm me-2"></span> Cargando Google Maps…</div>
-          }
-          @case ('sin-clave') {
-            <div class="gm-aviso gm-aviso--error">
-              <i class="fa fa-key"></i>
-              <div>
-                <b>Falta la clave de Google Maps.</b><br>
-                Ponla en <code>environment.GOOGLE_MAPS_API_KEY</code> con las API <i>Maps JavaScript</i>,
-                <i>Places (New)</i> y <i>Geocoding</i> habilitadas en Google Cloud.
-              </div>
-            </div>
-          }
-          @case ('error') {
-            <div class="gm-aviso gm-aviso--error"><i class="fa fa-triangle-exclamation"></i> {{ errorApi }}</div>
-          }
-          @case ('listo') {
-            @if (resolviendoClic) {
-              <div class="gm-aviso"><span class="spinner-border spinner-border-sm me-2"></span> Buscando qué hay en ese punto…</div>
-            }
-            @if (lugar; as l) {
-              <!-- División política: en escritorio aquí; en móvil, arriba del mapa -->
-              <div class="gm-division-escritorio">
-                <ng-container *ngTemplateOutlet="tarjetaDivision"></ng-container>
-              </div>
-
-              <div class="gm-lugar">
-                <i class="fa fa-location-dot gm-lugar__pin"></i>
-                <div class="gm-lugar__texto">
-                  <span class="gm-lugar__nombre">{{ l.nombre }}</span>
-                  @if (distanciaTexto) {
-                    <span class="gm-lugar__distancia">a {{ distanciaTexto }} de ti</span>
-                  }
-                </div>
-              </div>
-            }
-
-            <!-- Capturas: en escritorio aquí; en móvil, en su pestaña -->
-            <div class="gm-capturas-escritorio">
-              <ng-container *ngTemplateOutlet="bloqueCapturas"></ng-container>
-            </div>
-
-            @if (lugar; as l) {
-              <!-- Coordenadas aparte, con su caja y su botón de copiar -->
-              <div class="gm-dato">
-                <div class="gm-dato__titulo"><i class="fa fa-crosshairs"></i> Coordenadas</div>
-                <div class="gm-dato__caja">
-                  <input type="text" class="form-control form-control-sm gm-dato__texto" readonly
-                         [value]="coordenadaTexto" title="Latitud, longitud" (click)="$any($event.target).select()">
-                  <button type="button" class="btn btn-sm btn-primary gm-dato__copiar" title="Copiar «latitud, longitud»" (click)="copiar()">
-                    <i class="fa fa-copy"></i>
-                  </button>
-                </div>
-                <!-- <div class="gm-dato__partes">
-                  <label class="gm-dato__parte">
-                    <span>Latitud</span>
-                    <input type="text" class="form-control form-control-sm gm-dato__texto" readonly
-                           [value]="l.lat.toFixed(6)" (click)="$any($event.target).select()">
-                    <button type="button" class="btn btn-sm btn-white" title="Copiar la latitud" (click)="copiarValor(l.lat.toFixed(6), 'Latitud')">
-                      <i class="fa fa-copy"></i>
-                    </button>
-                  </label>
-                  <label class="gm-dato__parte">
-                    <span>Longitud</span>
-                    <input type="text" class="form-control form-control-sm gm-dato__texto" readonly
-                           [value]="l.lng.toFixed(6)" (click)="$any($event.target).select()">
-                    <button type="button" class="btn btn-sm btn-white" title="Copiar la longitud" (click)="copiarValor(l.lng.toFixed(6), 'Longitud')">
-                      <i class="fa fa-copy"></i>
-                    </button>
-                  </label>
-                </div> -->
-                <div class="gm-acciones">
-                  <button type="button" class="btn btn-sm btn-primary" (click)="comoLlegar()"><i class="fa fa-diamond-turn-right me-1"></i> Cómo llegar</button>
-                  <button type="button" class="btn btn-sm btn-white" (click)="abrirEnGoogleMaps()"><i class="fa fa-arrow-up-right-from-square me-1"></i> Ir a Google Maps</button>
-                </div>
-
-              </div>
-
-              <!-- Compartir: enlace del lugar, de la vista, de esta pantalla o código para insertar -->
-              <div class="gm-compartir">
-                <div class="gm-compartir__titulo"><i class="fa fa-share-nodes"></i> Compartir</div>
-
-                <!-- <div class="btn-group gm-compartir__tipos" role="group" aria-label="Tipo de enlace">
-                  <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'lugar' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'lugar'">Lugar</button>
-                  <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'vista' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'vista'">Vista</button>
-                  <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'pantalla' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'pantalla'">Esta pantalla</button>
-                  <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'insertar' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'insertar'">Insertar</button>
-                </div> -->
-
-                <div class="gm-compartir__caja">
-                  @if (formatoEnlace === 'insertar') {
-                    <textarea class="form-control form-control-sm gm-compartir__texto" rows="4" readonly
-                              [value]="textoCompartir" (click)="$any($event.target).select()"></textarea>
-                  } @else {
-                    <input type="text" class="form-control form-control-sm gm-compartir__texto" readonly
-                           [value]="textoCompartir" (click)="$any($event.target).select()">
-                  }
-                  <button type="button" class="btn btn-sm btn-primary gm-compartir__copiar"
-                          [title]="formatoEnlace === 'insertar' ? 'Copiar el código' : 'Copiar el enlace'" (click)="copiarEnlace()">
-                    <i class="fa fa-copy"></i>
-                  </button>
-                </div>
-
-                @if (ayudaCompartir) {
-                  <div class="gm-compartir__pie"><small>{{ ayudaCompartir }}</small></div>
-                }
-
-                @if (formatoEnlace !== 'insertar') {
-                  <button type="button" class="btn btn-sm btn-white w-100 mt-2" [title]="textoBotonAbrir" (click)="abrirEnlace()">
-                    <i class="fa fa-arrow-up-right-from-square me-1"></i> {{ textoBotonAbrir }}
-                  </button>
-                }
-
-                <!-- Enviar a otras apps, como la hoja de compartir de Google Maps -->
-                <div class="gm-redes">
-                  <button type="button" class="btn btn-sm gm-red gm-red--whatsapp" title="Enviar por WhatsApp" (click)="compartirEn('whatsapp')">
-                    <i class="fab fa-whatsapp"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm gm-red gm-red--telegram" title="Enviar por Telegram" (click)="compartirEn('telegram')">
-                    <i class="fab fa-telegram"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm gm-red gm-red--correo" title="Enviar por correo" (click)="compartirEn('correo')">
-                    <i class="fa fa-envelope"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm gm-red gm-red--facebook" title="Compartir en Facebook" (click)="compartirEn('facebook')">
-                    <i class="fab fa-facebook-f"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm gm-red gm-red--x" title="Compartir en X" (click)="compartirEn('x')">
-                    <i class="fab fa-x-twitter"></i>
-                  </button>
-                  @if (puedeCompartirNativo) {
-                    <button type="button" class="btn btn-sm gm-red gm-red--mas" title="Compartir con otra app del dispositivo" (click)="compartir()">
-                      <i class="fa fa-ellipsis"></i>
-                    </button>
-                  }
-                </div>
-              </div>
-            } @else if (!resolviendoClic) {
-              <div class="gm-ayuda">
-                <i class="fa fa-hand-pointer"></i>
-                Escribe una dirección o el nombre de un lugar y elige una sugerencia,
-                o pulsa cualquier punto del mapa para saber qué hay ahí.
-              </div>
-            }
-
-            @if (miPosicion) {
-              <div class="gm-yo">
-                <span class="gm-yo__punto"></span>
-                Tu posición: {{ miPosicion.lat.toFixed(6) }}, {{ miPosicion.lng.toFixed(6) }}
-                @if (miPosicion.precision) { <span class="gm-yo__precision">± {{ miPosicion.precision | number:'1.0-0' }} m</span> }
-              </div>
-            }
-          }
-        }
-      </div>
-
-      <!-- ---------- 2c. MAPA ---------- -->
-      <div class="gm-mapa-wrap">
-        <div #mapContainer class="gm-mapa" [style.height]="altoMapa || null"></div>
-        <button type="button" class="gm-pestana"
-                [title]="panelOculto ? 'Mostrar el panel' : 'Ocultar el panel'"
-                (click)="alternarPanel()">
-          <i class="fa" [ngClass]="panelOculto ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
-        </button>
-        @if (estadoApi === 'sin-clave' || estadoApi === 'error') {
-          <div class="gm-mapa__vacio">
-            <i class="fa fa-map"></i>
-            <span>{{ estadoApi === 'sin-clave' ? 'El mapa se mostrará cuando haya una clave de Google Maps' : 'No se pudo cargar el mapa' }}</span>
-          </div>
-        }
-      </div>
-
+    <div class="gm-solo-escritorio">
+      <ng-container *ngTemplateOutlet="botonesMapa"></ng-container>
     </div>
   </div>
-</panel>
+
+  <!-- Móvil: tres pestañas bajo el buscador -->
+  <div class="gm-pestanas" role="tablist">
+    <button type="button" class="gm-pestana-btn" role="tab" [class.is-activa]="pestanaMovil === 'mapa'"
+            [attr.aria-selected]="pestanaMovil === 'mapa'" (click)="cambiarPestana('mapa')">
+      <i class="fa fa-location-dot"></i> Mapa
+    </button>
+    <button type="button" class="gm-pestana-btn" role="tab" [class.is-activa]="pestanaMovil === 'info'"
+            [attr.aria-selected]="pestanaMovil === 'info'" (click)="cambiarPestana('info')">
+      <i class="fa fa-circle-info"></i> Info
+    </button>
+    @if (mostrarCapturas) {
+      <button type="button" class="gm-pestana-btn" role="tab" [class.is-activa]="pestanaMovil === 'capturas'"
+              [attr.aria-selected]="pestanaMovil === 'capturas'" (click)="cambiarPestana('capturas')">
+        <i class="fa fa-camera"></i> Capturas
+        @if (capturas.length) { <span class="gm-pestana-btn__cuenta">{{ capturas.length }}</span> }
+      </button>
+    }
+  </div>
+
+  <div class="gm-cuerpo" [class.is-panel-oculto]="panelOculto" [ngClass]="'is-' + pestanaMovil">
+
+    <!-- Móvil: los botones del mapa viajan con él, dentro de su pestaña -->
+    <div class="gm-botones-movil">
+      <ng-container *ngTemplateOutlet="botonesMapa"></ng-container>
+    </div>
+
+    <!-- Móvil: las capturas tienen su propia pestaña -->
+    <div class="gm-capturas-movil">
+      @if (capturas.length) {
+        <ng-container *ngTemplateOutlet="bloqueCapturas"></ng-container>
+      } @else {
+        <div class="gm-sin-capturas">
+          <i class="fa fa-camera"></i>
+          <b>Todavía no hay capturas</b>
+          <span>Ve a la pestaña <b>Mapa</b> y pulsa <b>Capturar</b> para guardar la imagen del lugar. Con Street View abierto se guarda también la foto de la calle.</span>
+        </div>
+      }
+    </div>
+
+    <!-- Móvil: la división política se ve nada más buscar, sin bajar al panel -->
+    @if (lugar && estadoApi === 'listo') {
+      <div class="gm-division-movil">
+        <ng-container *ngTemplateOutlet="tarjetaDivision"></ng-container>
+      </div>
+    }
+
+    <!-- ---------- 2. PANEL IZQUIERDO ---------- -->
+    <div class="gm-ficha" [attr.aria-hidden]="panelOculto">
+
+
+      @switch (estadoApi) {
+        @case ('cargando') {
+          <div class="gm-aviso"><span class="spinner-border spinner-border-sm me-2"></span> Cargando Google Maps…</div>
+        }
+        @case ('sin-clave') {
+          <div class="gm-aviso gm-aviso--error">
+            <i class="fa fa-key"></i>
+            <div>
+              <b>Falta la clave de Google Maps.</b><br>
+              Ponla en <code>environment.GOOGLE_MAPS_API_KEY</code> con las API <i>Maps JavaScript</i>,
+              <i>Places (New)</i> y <i>Geocoding</i> habilitadas en Google Cloud.
+            </div>
+          </div>
+        }
+        @case ('error') {
+          <div class="gm-aviso gm-aviso--error"><i class="fa fa-triangle-exclamation"></i> {{ errorApi }}</div>
+        }
+        @case ('listo') {
+          @if (resolviendoClic) {
+            <div class="gm-aviso"><span class="spinner-border spinner-border-sm me-2"></span> Buscando qué hay en ese punto…</div>
+          }
+          @if (lugar; as l) {
+            <!-- División política: en escritorio aquí; en móvil, arriba del mapa -->
+            <div class="gm-division-escritorio">
+              <ng-container *ngTemplateOutlet="tarjetaDivision"></ng-container>
+            </div>
+
+            <div class="gm-lugar">
+              <i class="fa fa-location-dot gm-lugar__pin"></i>
+              <div class="gm-lugar__texto">
+                <span class="gm-lugar__nombre">{{ l.nombre }}</span>
+                @if (distanciaTexto) {
+                  <span class="gm-lugar__distancia">a {{ distanciaTexto }} de ti</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Capturas: en escritorio aquí; en móvil, en su pestaña -->
+          <div class="gm-capturas-escritorio">
+            <ng-container *ngTemplateOutlet="bloqueCapturas"></ng-container>
+          </div>
+
+          @if (lugar; as l) {
+            <!-- Coordenadas aparte, con su caja y su botón de copiar -->
+            <div class="gm-dato">
+              <div class="gm-dato__titulo"><i class="fa fa-crosshairs"></i> Coordenadas</div>
+              <div class="gm-dato__caja">
+                <input type="text" class="form-control form-control-sm gm-dato__texto" readonly
+                       [value]="coordenadaTexto" title="Latitud, longitud" (click)="$any($event.target).select()">
+                <button type="button" class="btn btn-sm btn-primary gm-dato__copiar" title="Copiar «latitud, longitud»" (click)="copiar()">
+                  <i class="fa fa-copy"></i>
+                </button>
+              </div>
+              <!-- <div class="gm-dato__partes">
+                <label class="gm-dato__parte">
+                  <span>Latitud</span>
+                  <input type="text" class="form-control form-control-sm gm-dato__texto" readonly
+                         [value]="l.lat.toFixed(6)" (click)="$any($event.target).select()">
+                  <button type="button" class="btn btn-sm btn-white" title="Copiar la latitud" (click)="copiarValor(l.lat.toFixed(6), 'Latitud')">
+                    <i class="fa fa-copy"></i>
+                  </button>
+                </label>
+                <label class="gm-dato__parte">
+                  <span>Longitud</span>
+                  <input type="text" class="form-control form-control-sm gm-dato__texto" readonly
+                         [value]="l.lng.toFixed(6)" (click)="$any($event.target).select()">
+                  <button type="button" class="btn btn-sm btn-white" title="Copiar la longitud" (click)="copiarValor(l.lng.toFixed(6), 'Longitud')">
+                    <i class="fa fa-copy"></i>
+                  </button>
+                </label>
+              </div> -->
+              <div class="gm-acciones">
+                <button type="button" class="btn btn-sm btn-primary" (click)="comoLlegar()"><i class="fa fa-diamond-turn-right me-1"></i> Cómo llegar</button>
+                <button type="button" class="btn btn-sm btn-white" (click)="abrirEnGoogleMaps()"><i class="fa fa-arrow-up-right-from-square me-1"></i> Ir a Google Maps</button>
+              </div>
+
+            </div>
+
+            <!-- Compartir: enlace del lugar, de la vista, de esta pantalla o código para insertar -->
+            <div class="gm-compartir">
+              <div class="gm-compartir__titulo"><i class="fa fa-share-nodes"></i> Compartir</div>
+
+              <!-- <div class="btn-group gm-compartir__tipos" role="group" aria-label="Tipo de enlace">
+                <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'lugar' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'lugar'">Lugar</button>
+                <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'vista' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'vista'">Vista</button>
+                <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'pantalla' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'pantalla'">Esta pantalla</button>
+                <button type="button" class="btn btn-xs" [ngClass]="formatoEnlace === 'insertar' ? 'btn-primary' : 'btn-white'" (click)="formatoEnlace = 'insertar'">Insertar</button>
+              </div> -->
+
+              <div class="gm-compartir__caja">
+                @if (formatoEnlace === 'insertar') {
+                  <textarea class="form-control form-control-sm gm-compartir__texto" rows="4" readonly
+                            [value]="textoCompartir" (click)="$any($event.target).select()"></textarea>
+                } @else {
+                  <input type="text" class="form-control form-control-sm gm-compartir__texto" readonly
+                         [value]="textoCompartir" (click)="$any($event.target).select()">
+                }
+                <button type="button" class="btn btn-sm btn-primary gm-compartir__copiar"
+                        [title]="formatoEnlace === 'insertar' ? 'Copiar el código' : 'Copiar el enlace'" (click)="copiarEnlace()">
+                  <i class="fa fa-copy"></i>
+                </button>
+              </div>
+
+              @if (ayudaCompartir) {
+                <div class="gm-compartir__pie"><small>{{ ayudaCompartir }}</small></div>
+              }
+
+              @if (formatoEnlace !== 'insertar') {
+                <button type="button" class="btn btn-sm btn-white w-100 mt-2" [title]="textoBotonAbrir" (click)="abrirEnlace()">
+                  <i class="fa fa-arrow-up-right-from-square me-1"></i> {{ textoBotonAbrir }}
+                </button>
+              }
+
+              <!-- Enviar a otras apps, como la hoja de compartir de Google Maps -->
+              <div class="gm-redes">
+                <button type="button" class="btn btn-sm gm-red gm-red--whatsapp" title="Enviar por WhatsApp" (click)="compartirEn('whatsapp')">
+                  <i class="fab fa-whatsapp"></i>
+                </button>
+                <button type="button" class="btn btn-sm gm-red gm-red--telegram" title="Enviar por Telegram" (click)="compartirEn('telegram')">
+                  <i class="fab fa-telegram"></i>
+                </button>
+                <button type="button" class="btn btn-sm gm-red gm-red--correo" title="Enviar por correo" (click)="compartirEn('correo')">
+                  <i class="fa fa-envelope"></i>
+                </button>
+                <button type="button" class="btn btn-sm gm-red gm-red--facebook" title="Compartir en Facebook" (click)="compartirEn('facebook')">
+                  <i class="fab fa-facebook-f"></i>
+                </button>
+                <button type="button" class="btn btn-sm gm-red gm-red--x" title="Compartir en X" (click)="compartirEn('x')">
+                  <i class="fab fa-x-twitter"></i>
+                </button>
+                @if (puedeCompartirNativo) {
+                  <button type="button" class="btn btn-sm gm-red gm-red--mas" title="Compartir con otra app del dispositivo" (click)="compartir()">
+                    <i class="fa fa-ellipsis"></i>
+                  </button>
+                }
+              </div>
+            </div>
+          } @else if (!resolviendoClic) {
+            <div class="gm-ayuda">
+              <i class="fa fa-hand-pointer"></i>
+              Escribe una dirección o el nombre de un lugar y elige una sugerencia,
+              o pulsa cualquier punto del mapa para saber qué hay ahí.
+            </div>
+          }
+
+          @if (miPosicion) {
+            <div class="gm-yo">
+              <span class="gm-yo__punto"></span>
+              Tu posición: {{ miPosicion.lat.toFixed(6) }}, {{ miPosicion.lng.toFixed(6) }}
+              @if (miPosicion.precision) { <span class="gm-yo__precision">± {{ miPosicion.precision | number:'1.0-0' }} m</span> }
+            </div>
+          }
+        }
+      }
+    </div>
+
+    <!-- ---------- 3. MAPA ---------- -->
+    <div class="gm-mapa-wrap">
+      <div #mapContainer class="gm-mapa" [style.height]="altoMapa || null"></div>
+      <button type="button" class="gm-pestana"
+              [title]="panelOculto ? 'Mostrar el panel' : 'Ocultar el panel'"
+              (click)="alternarPanel()">
+        <i class="fa" [ngClass]="panelOculto ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+      </button>
+      @if (estadoApi === 'sin-clave' || estadoApi === 'error') {
+        <div class="gm-mapa__vacio">
+          <i class="fa fa-map"></i>
+          <span>{{ estadoApi === 'sin-clave' ? 'El mapa se mostrará cuando haya una clave de Google Maps' : 'No se pudo cargar el mapa' }}</span>
+        </div>
+      }
+    </div>
+
+  </div>
+</div>
 
 <!-- Las capturas: en el panel (escritorio) o en su pestaña (móvil) -->
 <ng-template #bloqueCapturas>
@@ -446,16 +430,19 @@
           <span>Capturar</span>
         </button>
 
-        <!-- Street View: por botón, además del muñeco del mapa -->
+        <!-- Street View: por botón, además del muñeco del mapa.
+             Los dos estados llevan icono a propósito: en el teléfono los
+             botones van apretados y uno sin icono no se lee como el mismo
+             botón cambiado de estado, sino como otra cosa. -->
         @if (streetViewAbierto) {
           <button type="button" class="btn btn-xs btn-warning gm-btn" title="Volver al mapa" (click)="cerrarStreetView()">
-            <span>Ir a mapa</span>
+            <i class="fa fa-map"></i><span>Mapa</span>
           </button>
         } @else {
           <button type="button" class="btn btn-xs btn-warning gm-btn" [disabled]="estadoApi !== 'listo'"
                   [title]="lugar ? 'Ver Street View en «' + lugar.nombre + '»' : (miPosicion ? 'Ver Street View en mi posición' : 'Ver Street View en el centro del mapa')"
                   (click)="abrirStreetView()">
-            <i class="fa fa-street-view"></i><span >Ver</span>
+            <i class="fa fa-street-view"></i><span>Ver</span>
           </button>
         }
 
@@ -476,7 +463,7 @@
         
         <button type="button" class="btn btn-xs gm-btn" [ngClass]="coberturaVisible ? 'btn-info' : 'btn-white'" [disabled]="estadoApi !== 'listo'"
                 title="Pintar de azul las calles que tienen Street View" (click)="alternarCobertura()">
-          <i class="fa fa-road"></i><span class="gm-btn__texto">Calles con Street View</span>
+          <i class="fa fa-road"></i><span class="gm-btn__texto">Street View</span>
         </button>
 
         <div class="btn-group gm-tipos" role="group" aria-label="Tipo de mapa">

@@ -19,6 +19,10 @@
   /* Nada de seleccionar ni arrastrar: la imagen sale marcada, no suelta */
   user-select: none;
   -webkit-user-select: none;
+  /* En iOS, mantener pulsado saca el menú propio de Safari («Guardar imagen»),
+     que no es un contextmenu y no se puede cancelar por JavaScript. Esto es lo
+     único que lo quita. */
+  -webkit-touch-callout: none;
 }
 
 @keyframes bolAparece {
@@ -217,6 +221,58 @@
 
 .bol-visor__lienzo.is-oculto {
   display: none;
+}
+
+/* ---------- La tapa ----------
+   El lienzo se difumina en vez de esconderse: así no salta el hueco y se
+   entiende que el boletín sigue ahí, sólo cubierto. El desenfoque es grande a
+   propósito, para que no quede nada legible ni en una captura. */
+.bol-visor__lienzo.is-tapado {
+  filter: blur(26px) brightness(.4);
+  transition: filter .15s ease-out;
+}
+
+.bol-visor__tapa {
+  position: absolute;
+  inset: 0;
+  z-index: 5;            /* por encima de las flechas (3) y la barra (4) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .7rem;
+  padding: 2rem;
+  text-align: center;
+  color: rgba(255, 255, 255, .92);
+  background: rgba(0, 0, 0, .72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.bol-visor__tapa i {
+  font-size: 2.6rem;
+  opacity: .75;
+}
+
+.bol-visor__tapa-titulo {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.bol-visor__tapa-texto {
+  max-width: 460px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, .68);
+}
+
+.bol-visor__tapa-marca {
+  display: block;
+  margin-top: .45rem;
+  font-size: 12px;
+  letter-spacing: .4px;
+  color: rgba(255, 255, 255, .9);
+  overflow-wrap: anywhere;
 }
 
 .bol-visor__aviso {

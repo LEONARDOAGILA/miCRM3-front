@@ -8,7 +8,7 @@
        4. Pie flotante: contador, «no volver a mostrar» y cerrar
      ============================================================ -->
 
-<div class="bol-visor" (contextmenu)="sinMenu($event)">
+<div class="bol-visor">
 
   <!-- ---------- 1. CABECERA FLOTANTE ---------- -->
   @if (boletin; as b) {
@@ -96,6 +96,30 @@
       <div class="bol-visor__aviso"><i class="fa fa-triangle-exclamation"></i><span>No se pudo cargar este contenido.</span></div>
     }
 
+    <!-- La tapa: la ventana dejó de estar al frente, o se vio una captura.
+         No impide la captura (eso no se puede), pero deja claro que la copia
+         sale firmada y corta lo que se pudiera grabar de fondo. -->
+    @if (tapado) {
+      <div class="bol-visor__tapa">
+        <i class="fa" [class.fa-camera]="capturaDetectada" [class.fa-eye-slash]="!capturaDetectada"></i>
+        <span class="bol-visor__tapa-titulo">
+          @if (capturaDetectada) { Se detectó una captura de pantalla } @else { Boletín oculto }
+        </span>
+        <span class="bol-visor__tapa-texto">
+          @if (capturaDetectada) {
+            La imagen lleva esto repetido por toda su superficie, así que cualquier
+            copia queda identificada:
+            <strong class="bol-visor__tapa-marca">{{ marcaDeQuienMira }}</strong>
+          } @else {
+            Se tapa cuando la ventana deja de estar al frente.
+          }
+        </span>
+        <button type="button" class="btn btn-sm btn-light" (click)="destapar()">
+          <i class="fa fa-eye me-1"></i> Volver a ver el boletín
+        </button>
+      </div>
+    }
+
     <!-- El medio nunca se ve: lo que se ve es su cuadro ya marcado en el lienzo -->
     <video #medio class="bol-visor__medio" playsinline preload="auto"
            (loadedmetadata)="alCargarMedio()" (timeupdate)="alAvanzarMedio()"
@@ -104,9 +128,9 @@
     <canvas #lienzo class="bol-visor__lienzo"
             [class.is-oculto]="cargando || !laminas.length || lamina?.fallo"
             [class.is-movible]="puedeArrastrar"
+            [class.is-tapado]="tapado"
             [class.is-moviendo]="arrastrando"
             [style.transform]="transformacion"
-            (dragstart)="sinMenu($event)"
             (dblclick)="alternarZoom()"
             (wheel)="alRueda($event)"
             (mousedown)="empezarArrastre($event)"

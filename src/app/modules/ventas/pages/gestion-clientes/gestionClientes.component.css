@@ -294,7 +294,10 @@
   word-break: break-word;
 }
 
-.gc-campo__valor > a,
+/* Los enlaces de valor (correo, web) se leen como texto, no como enlace.
+   El :not() deja fuera los botones de acción, que sí llevan su propio color:
+   sin él, este `inherit` se lo pisaba y el del mapa salía gris. */
+.gc-campo__valor > a:not(.gc-campo__accion),
 .gc-campo__valor > span {
   color: inherit;
   text-decoration: none;
@@ -328,26 +331,105 @@
 
 /* Los iconos de al lado (llamar, WhatsApp, copiar, mapa): discretos hasta
    que se pasa por encima */
-.gc-campo__accion {
-  flex: 0 0 auto;
+/* ---------- El número, pulsable para marcar ----------
+   Mismo trato que en las grillas: se lee como un enlace y marca con el
+   softphone, en vez del tel: que abría lo que tuviera el sistema. */
+.gc-campo__numero {
+  flex: 0 1 auto;
+  min-width: 0;
   padding: 0;
   border: 0;
   background: none;
-  line-height: 1;
 
-  color: var(--bs-secondary-color, #adb5bd);
-  font-size: .75rem;
+  color: var(--bs-link-color, #0d6efd);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
   cursor: pointer;
+}
 
-  transition: color .12s ease;
+.gc-campo__numero:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Las acciones del campo ----------
+   Antes eran iconos sueltos: con tres seguidos (llamar, WhatsApp, copiar) no
+   se distinguía dónde acababa uno y empezaba el siguiente, y el blanco de
+   alrededor era tan pequeño que costaba acertarles. Ahora cada uno es un
+   botón con su caja, agrupados y separados del valor. */
+.gc-campo__acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  flex: 0 0 auto;
+  margin-left: .15rem;
+}
+
+/* Cada acción con su color desde el principio: en gris parecían
+   deshabilitadas y no se distinguía una de otra. El color va en el icono, en
+   el borde y en un fondo muy suave; al pasar por encima se rellena.
+   Cada acción sólo cambia esas tres variables.
+
+   Los tonos van escritos a mano en vez de calculados con color-mix(), que no
+   existe en iOS 15 y el front tiene que llegar al iPhone 7. */
+.gc-campo__accion {
+  --tinte: #00acac;
+  --tinte-borde: rgba(0, 172, 172, .38);
+  --tinte-fondo: rgba(0, 172, 172, .10);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 21px;
+  height: 21px;
+  padding: 0;
+  border: 1px solid var(--tinte-borde);
+  border-radius: 4px;
+  background-color: var(--tinte-fondo);
+
+  color: var(--tinte);
+  font-size: .7rem;
+  line-height: 1;
+  cursor: pointer;
+  /* El de Google Maps es un <a>: sin esto el tema le pone subrayado */
+  text-decoration: none;
+
+  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
 }
 
 .gc-campo__accion:hover {
-  color: var(--bs-app-theme, #00acac);
+  border-color: var(--tinte);
+  background-color: var(--tinte);
+  color: #fff;
+  text-decoration: none;
 }
 
-.gc-campo__accion--wa:hover {
-  color: #25d366;
+.gc-campo__accion:focus-visible {
+  outline: 2px solid var(--tinte);
+  outline-offset: 1px;
+}
+
+/* Llamar, en el azul del número que tiene al lado */
+.gc-campo__accion--llamar {
+  --tinte: #2f80ed;
+  --tinte-borde: rgba(47, 128, 237, .38);
+  --tinte-fondo: rgba(47, 128, 237, .10);
+}
+
+/* El verde de WhatsApp, que es el que la gente reconoce */
+.gc-campo__accion--wa {
+  --tinte: #25d366;
+  --tinte-borde: rgba(37, 211, 102, .40);
+  --tinte-fondo: rgba(37, 211, 102, .12);
+}
+
+/* El rojo del pin de Google Maps */
+.gc-campo__accion--mapa {
+  --tinte: #ea4335;
+  --tinte-borde: rgba(234, 67, 53, .38);
+  --tinte-fondo: rgba(234, 67, 53, .10);
 }
 
 /* Las observaciones: dos renglones como mucho, que no estiren la tarjeta */
@@ -1588,4 +1670,119 @@
   font-size: .625rem;
   color: var(--bs-secondary-color, #6c757d);
   text-align: right;
+}
+
+/* ---------- Teléfono pulsable en las grillas ----------
+   Mismo trato que en la lista de clientes: se pinta como enlace, no como
+   botón, para no llenar la columna de cajas. Lo que avisa de que se puede
+   pulsar es el icono y el subrayado al pasar por encima. */
+:host ::ng-deep .gestion-llamar {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bs-link-color, #0d6efd);
+  font: inherit;
+  cursor: pointer;
+}
+
+:host ::ng-deep .gestion-llamar:hover {
+  text-decoration: underline;
+}
+
+:host ::ng-deep .gestion-llamar i {
+  opacity: .6;
+  font-size: 10px;
+}
+
+:host ::ng-deep .gestion-llamar:hover i {
+  opacity: 1;
+}
+
+/* ---------- Pestaña «Comercial» ----------
+   Las condiciones vuelven a ir en tarjeta, como cuando estaban arriba: en
+   rejilla suelta los cuatro datos quedaban desperdigados por todo el ancho
+   del panel y costaba leerlos como un bloque.
+
+   La tarjeta no se estira a lo ancho entero: con cuatro renglones cortos
+   quedaría una banda vacía enorme a la derecha. */
+.gestion-comercial {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 24rem));
+  gap: .5rem;
+  align-content: start;
+  padding: .6rem .25rem;
+}
+
+/* Las observaciones pueden ser un párrafo: aquí sí se leen enteras, sin el
+   recorte a dos renglones que tenían en la ficha. */
+.gestion-comercial__notas {
+  margin: 0;
+  padding: .15rem 0;
+  font-size: .75rem;
+  line-height: 1.45;
+  color: var(--bs-body-color, #212529);
+  white-space: pre-line;
+}
+
+/* ---------- Fotos del lugar (pestaña «Comercial») ----------
+   Mismo trato que en la ficha del cliente, para que se reconozcan: recorte
+   parejo porque las dos vienen con proporciones distintas, y el pie encima
+   de la imagen para no robar alto. */
+.gestion-fotos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: .4rem;
+  margin-top: .2rem;
+}
+
+.gestion-foto {
+  position: relative;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .4rem;
+  background-color: var(--bs-component-bg, #fff);
+  cursor: zoom-in;
+  transition: border-color .12s ease;
+}
+
+.gestion-foto:hover {
+  border-color: var(--bs-app-theme, #00acac);
+}
+
+.gestion-foto img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.gestion-foto__pie {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: .15rem .3rem;
+  background-color: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* El enlace a Google Maps, en la cabecera de su tarjeta */
+.gestion-comercial__mapa {
+  margin-left: auto;
+  color: inherit;
+  opacity: .7;
+  text-decoration: none;
+}
+
+.gestion-comercial__mapa:hover {
+  opacity: 1;
 }

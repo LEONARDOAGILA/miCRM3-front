@@ -439,18 +439,27 @@
                         <span class="gc-campo__rotulo">Celular:</span>
                         <span class="gc-campo__valor">
                           @if (cliente?.celular) {
-                            <a [href]="enlaceTelefono(cliente?.celular)" title="Llamar">{{ cliente?.celular }}</a>
-                            <!-- WhatsApp con mensaje ya escrito: el menú va
-                                 flotando por encima (ver .menu-wa), porque
-                                 esta tarjeta recorta lo que se salga. -->
-                            <button type="button" class="gc-campo__accion gc-campo__accion--wa"
-                                    title="Escribir por WhatsApp"
-                                    (click)="abrirMenuWhatsapp($event, cliente?.celular)">
-                              <i class="fab fa-whatsapp"></i>
-                            </button>
-                            <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.celular, 'El celular')">
-                              <i class="fa fa-copy"></i>
-                            </button>
+                            <!-- El número marca, igual que en las grillas -->
+                            <button type="button" class="gc-campo__numero"
+                                    [title]="'Marcar ' + cliente?.celular + ' con el softphone'"
+                                    (click)="llamarConSoftphone(cliente?.celular, cliente?.nombre_completo)">{{ cliente?.celular }}</button>
+                            <span class="gc-campo__acciones">
+                              <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
+                                      (click)="llamarConSoftphone(cliente?.celular, cliente?.nombre_completo)">
+                                <i class="fa fa-phone"></i>
+                              </button>
+                              <!-- WhatsApp con mensaje ya escrito: el menú va
+                                   flotando por encima (ver .menu-wa), porque
+                                   esta tarjeta recorta lo que se salga. -->
+                              <button type="button" class="gc-campo__accion gc-campo__accion--wa"
+                                      title="Escribir por WhatsApp"
+                                      (click)="abrirMenuWhatsapp($event, cliente?.celular)">
+                                <i class="fab fa-whatsapp"></i>
+                              </button>
+                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.celular, 'El celular')">
+                                <i class="fa fa-copy"></i>
+                              </button>
+                            </span>
                           } @else { — }
                         </span>
                       </div>
@@ -458,10 +467,19 @@
                         <span class="gc-campo__rotulo">Teléfono:</span>
                         <span class="gc-campo__valor">
                           @if (cliente?.telefono) {
-                            <a [href]="enlaceTelefono(cliente?.telefono)" title="Llamar">{{ cliente?.telefono }}</a>
-                            <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.telefono, 'El teléfono')">
-                              <i class="fa fa-copy"></i>
-                            </button>
+                            <button type="button" class="gc-campo__numero"
+                                    [title]="'Marcar ' + cliente?.telefono + ' con el softphone'"
+                                    (click)="llamarConSoftphone(cliente?.telefono, cliente?.nombre_completo)">{{ cliente?.telefono }}</button>
+                            <span class="gc-campo__acciones">
+                              <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
+                                      (click)="llamarConSoftphone(cliente?.telefono, cliente?.nombre_completo)">
+                                <i class="fa fa-phone"></i>
+                              </button>
+                              <!-- Sin WhatsApp: es el fijo, y ahí no hay cuenta -->
+                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.telefono, 'El teléfono')">
+                                <i class="fa fa-copy"></i>
+                              </button>
+                            </span>
                           } @else { — }
                         </span>
                       </div>
@@ -470,9 +488,11 @@
                         <span class="gc-campo__valor">
                           @if (cliente?.email) {
                             <a [href]="'mailto:' + cliente?.email" [title]="cliente?.email">{{ cliente?.email }}</a>
-                            <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.email, 'El correo')">
-                              <i class="fa fa-copy"></i>
-                            </button>
+                            <span class="gc-campo__acciones">
+                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.email, 'El correo')">
+                                <i class="fa fa-copy"></i>
+                              </button>
+                            </span>
                           } @else { — }
                         </span>
                       </div>
@@ -528,7 +548,7 @@
                         <span class="gc-campo__valor">
                           <span [title]="direccionDelCliente">{{ direccionDelCliente || '—' }}</span>
                           @if (cliente?.link_coordenadas) {
-                            <a class="gc-campo__accion" [href]="cliente?.link_coordenadas" target="_blank" rel="noopener noreferrer" title="Ver en Google Maps">
+                            <a class="gc-campo__accion gc-campo__accion--mapa" [href]="cliente?.link_coordenadas" target="_blank" rel="noopener noreferrer" title="Ver en Google Maps">
                               <i class="fa fa-map-location-dot"></i>
                             </a>
                           }
@@ -543,34 +563,10 @@
                     </div>
                   </div>
 
-                  <!-- Cómo se le cobra -->
-                  <div class="gc-tarjeta">
-                    <div class="gc-tarjeta__titulo"><i class="fa fa-briefcase fa-fw"></i>Condiciones comerciales</div>
-                    <div class="gc-tarjeta__cuerpo">
-                      <div class="gc-campo">
-                        <span class="gc-campo__rotulo">Forma de pago:</span>
-                        <span class="gc-campo__valor">{{ cliente?.forma_pago }}</span>
-                      </div>
-                      <div class="gc-campo">
-                        <span class="gc-campo__rotulo">Crédito:</span>
-                        <span class="gc-campo__valor">{{ cliente?.dias_credito ? cliente?.dias_credito + ' días' : 'sin crédito' }}</span>
-                      </div>
-                      <div class="gc-campo">
-                        <span class="gc-campo__rotulo">Cupo:</span>
-                        <span class="gc-campo__valor">{{ cliente?.limite_credito ? (cliente?.limite_credito | number:'1.2-2') : '—' }}</span>
-                      </div>
-                      <div class="gc-campo">
-                        <span class="gc-campo__rotulo">Descuento:</span>
-                        <span class="gc-campo__valor">{{ cliente?.descuento ? cliente?.descuento + ' %' : '—' }}</span>
-                      </div>
-                      @if (cliente?.observaciones) {
-                        <div class="gc-campo gc-campo--largo">
-                          <span class="gc-campo__rotulo">Observaciones:</span>
-                          <span class="gc-campo__valor" [title]="cliente?.observaciones">{{ cliente?.observaciones }}</span>
-                        </div>
-                      }
-                    </div>
-                  </div>
+                  <!-- Las condiciones comerciales ya no están aquí: se
+                       consultan de vez en cuando y la tarjeta ocupaba sitio
+                       fijo. Ahora son la pestaña «Comercial», junto a
+                       WhatsApp. -->
 
                 </div>
 
@@ -717,6 +713,14 @@
                 } @else if (resumenWhatsapp?.total) {
                   <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ resumenWhatsapp?.total }}</span>
                 }
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link"
+                      [class.active]="pestana === 'comercial'"
+                      [attr.aria-selected]="pestana === 'comercial'"
+                      (click)="pestana = 'comercial'; replantear()">
+                <i class="fa fa-briefcase"></i> Comercial
               </button>
             </li>
           </ul>
@@ -979,6 +983,81 @@
                   </p>
                 </div>
               }
+            }
+
+            <!-- ===== COMERCIAL =====
+                 Cómo se le cobra. Estaba en una tarjeta de la ficha, pero se
+                 consulta de vez en cuando y ahí ocupaba sitio fijo a cambio de
+                 poco; como pestaña está igual de a mano y deja respirar al
+                 resto. -->
+            @if (pestana === 'comercial') {
+              <div class="gestion-comercial">
+                <div class="gc-tarjeta">
+                  <div class="gc-tarjeta__titulo"><i class="fa fa-briefcase fa-fw"></i>Condiciones comerciales</div>
+                  <div class="gc-tarjeta__cuerpo">
+                    <div class="gc-campo">
+                      <span class="gc-campo__rotulo">Forma de pago:</span>
+                      <span class="gc-campo__valor">{{ cliente?.forma_pago || '—' }}</span>
+                    </div>
+                    <div class="gc-campo">
+                      <span class="gc-campo__rotulo">Crédito:</span>
+                      <span class="gc-campo__valor">{{ cliente?.dias_credito ? cliente?.dias_credito + ' días' : 'sin crédito' }}</span>
+                    </div>
+                    <div class="gc-campo">
+                      <span class="gc-campo__rotulo">Cupo:</span>
+                      <span class="gc-campo__valor">{{ cliente?.limite_credito ? (cliente?.limite_credito | number:'1.2-2') : '—' }}</span>
+                    </div>
+                    <div class="gc-campo">
+                      <span class="gc-campo__rotulo">Descuento:</span>
+                      <span class="gc-campo__valor">{{ cliente?.descuento ? cliente?.descuento + ' %' : '—' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="gc-tarjeta">
+                  <div class="gc-tarjeta__titulo"><i class="fa fa-note-sticky fa-fw"></i>Observaciones</div>
+                  <div class="gc-tarjeta__cuerpo">
+                    <p class="gestion-comercial__notas">{{ cliente?.observaciones || 'Sin observaciones.' }}</p>
+                  </div>
+                </div>
+
+                <!-- Las dos fotos del lugar, las mismas que toma el mapa al
+                     guardar la dirección. Se pulsan para verlas en grande. -->
+                <div class="gc-tarjeta">
+                  <div class="gc-tarjeta__titulo">
+                    <i class="fa fa-map-location-dot fa-fw"></i>Fotos del lugar
+                    @if (cliente?.link_coordenadas) {
+                      <a class="gestion-comercial__mapa" [href]="cliente?.link_coordenadas"
+                         target="_blank" rel="noopener noreferrer" title="Abrir en Google Maps">
+                        <i class="fa fa-up-right-from-square"></i>
+                      </a>
+                    }
+                  </div>
+                  <div class="gc-tarjeta__cuerpo">
+                    @if (urlFotoMapa || urlFotoCasa) {
+                      <div class="gestion-fotos">
+                        @if (urlFotoMapa) {
+                          <button type="button" class="gestion-foto" title="Ver la vista del mapa" (click)="verFotoDelLugar('mapa')">
+                            <img [src]="urlFotoMapa" alt="Vista del mapa" loading="lazy" />
+                            <span class="gestion-foto__pie"><i class="fa fa-map me-1"></i>Mapa</span>
+                          </button>
+                        }
+                        @if (urlFotoCasa) {
+                          <button type="button" class="gestion-foto" title="Ver la vista de la calle" (click)="verFotoDelLugar('casa')">
+                            <img [src]="urlFotoCasa" alt="Vista de la calle" loading="lazy" />
+                            <span class="gestion-foto__pie"><i class="fa fa-house me-1"></i>Fachada</span>
+                          </button>
+                        }
+                      </div>
+                    } @else {
+                      <p class="gestion-comercial__notas">
+                        <i class="fa fa-image me-1"></i>
+                        Este cliente no tiene fotos del lugar. Se toman al elegir la dirección en el mapa, desde su ficha.
+                      </p>
+                    }
+                  </div>
+                </div>
+              </div>
             }
           </div>
             } @else {

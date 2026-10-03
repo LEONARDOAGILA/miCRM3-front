@@ -36,6 +36,14 @@ export class SaveGestionComponent implements OnInit {
   @Input() contactos: ContactoCliente[] = [];
   /** Sólo en 'editar' */
   @Input() gestion: GestionModel | null = null;
+  /**
+   * Con qué número se está hablando, cuando se abre después de marcar.
+   *
+   * Sin esto el formulario propone el celular del cliente, que es lo correcto
+   * casi siempre; pero si se llamó a una persona de contacto, el número bueno
+   * es el suyo y no el de la empresa.
+   */
+  @Input() telefonoInicial: string | null = null;
 
   @Output() guardado = new EventEmitter<GestionModel>();
 
@@ -92,7 +100,7 @@ export class SaveGestionComponent implements OnInit {
       estado:           [estadoInicial, [Validators.required]],
       asunto:           [g?.asunto ?? '', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
       contacto_id:      [g?.contacto_id ?? null],
-      telefono:         [g?.telefono ?? this.cliente?.celular ?? this.cliente?.telefono ?? '', [Validators.maxLength(20)]],
+      telefono:         [g?.telefono ?? this.telefonoInicial ?? this.cliente?.celular ?? this.cliente?.telefono ?? '', [Validators.maxLength(20)]],
       prioridad:        [g?.prioridad ?? 'MEDIA', [Validators.required]],
       fecha_programada: [this.paraInput(g?.fecha_programada) || (estadoInicial === 'PENDIENTE' ? this.enUnaHora() : '')],
       fecha_realizada:  [this.paraInput(g?.fecha_realizada) || (estadoInicial === 'REALIZADA' ? this.ahora() : '')],
