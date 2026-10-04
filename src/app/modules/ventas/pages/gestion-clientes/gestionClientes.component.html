@@ -1245,8 +1245,9 @@
           </div>
 
           @if (menuCtx.fila.estado === 'PENDIENTE') {
+            <!-- Cerrarla va con crear: se anota un trabajo hecho -->
             <button type="button" class="menu-ctx__item" role="menuitem"
-                    [disabled]="accesoModel?.editar === false"
+                    [disabled]="accesoModel?.crear === false"
                     (click)="cerrarMenu(); cerrar(menuCtx.fila)">
               <i class="fa fa-check fa-fw text-success"></i> Marcar como hecha
             </button>

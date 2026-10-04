@@ -1084,7 +1084,7 @@
   transition: color .12s ease, border-color .12s ease, background-color .12s ease;
 }
 
-:host ::ng-deep .gestion-acciones .btn-icon:hover {
+:host ::ng-deep .gestion-acciones .btn-icon:not(:disabled):hover {
   border-color: var(--tinte);
   background-color: var(--tinte);
   color: #fff;
@@ -1100,7 +1100,26 @@
 :host ::ng-deep .gestion-acciones .btn-abrir  { --tinte: #198754; --tinte-borde: rgba(25, 135, 84, .35);  --tinte-fondo: rgba(25, 135, 84, .08); }
 :host ::ng-deep .gestion-acciones .btn-quitar { --tinte: #dc3545; --tinte-borde: rgba(220, 53, 69, .35);  --tinte-fondo: rgba(220, 53, 69, .08); }
 
-:host ::ng-deep .gestion-acciones .btn-icon:disabled { opacity: .4; cursor: default; }
+/* Apagado por el perfil: se queda en gris.
+
+   Bajarle sólo la opacidad dejaba el color asomando y seguía pareciendo que
+   se podía pulsar —un rojo pálido sigue leyéndose como «eliminar»—. Aquí se
+   le cambian los tintes, que es de donde sacan el color todos: el icono se va
+   al gris, el fondo desaparece y queda un borde apenas marcado. Tampoco se
+   enciende al pasar por encima, de eso se encarga el :not(:disabled) de
+   arriba. */
+:host ::ng-deep .gestion-acciones .btn-icon:disabled {
+  --tinte: #adb5bd;
+  --tinte-borde: rgba(108, 117, 125, .22);
+  --tinte-fondo: transparent;
+
+  /* Gris y además apagado: el gris dice que no es una acción disponible y la
+     opacidad lo manda al fondo, para que el ojo vaya a los que sí se pueden
+     pulsar. No baja más de .5 porque el icono tiene que seguir leyéndose —hay
+     que poder ver cuál es la acción que falta para pedir el permiso—. */
+  opacity: .5;
+  cursor: not-allowed;
+}
 
 /* ============================================================
    RESPONSIVE

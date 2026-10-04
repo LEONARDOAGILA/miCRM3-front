@@ -1185,12 +1185,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         filter: false,
         suppressMenu: true,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        cellRenderer: () => `
-          <span class="gestion-acciones">
-            <button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button>
-            <button type="button" class="btn-icon btn-cerrar" data-accion="cerrar" title="Marcar como hecha"><i class="fa fa-check"></i></button>
-            <button type="button" class="btn-icon btn-abrir" data-accion="abrir" title="Abrir el cliente"><i class="fa fa-arrow-right"></i></button>
-          </span>`,
+        cellRenderer: () => {
+          // Marcar no escribe nada: basta con poder ver al cliente. Lo que pide
+          // crear es el formulario que se abre después, y de eso se encarga
+          // abrirGestionDeLlamada. Marcarla como hecha va también con crear:
+          // se anota un trabajo hecho, no se corrige lo que ya había.
+          const puedeCerrar = this.accesoModel?.crear !== false;
+          const puedeVer    = this.accesoModel?.ver !== false;
+          return `<span class="gestion-acciones">${this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar', puedeVer)}${this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Marcar como hecha', puedeCerrar)}${this.botonAccion('abrir', 'btn-abrir', 'fa fa-arrow-right', 'Abrir el cliente', puedeVer)}</span>`;
+        },
       },
     ];
   }
@@ -1231,12 +1234,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 142, maxWidth: 142,
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        cellRenderer: () => `<div class="gestion-acciones">
-            <button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button>
-            <button type="button" class="btn-icon btn-cerrar" data-accion="cerrar" title="Cerrar la gestión"><i class="fa fa-check"></i></button>
-            <button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen"></i></button>
-            <button type="button" class="btn-icon btn-quitar" data-accion="eliminar" title="Eliminar"><i class="fa fa-trash"></i></button>
-          </div>`,
+        cellRenderer: () => {
+          // Marcar no escribe nada: basta con poder ver al cliente. El
+          // formulario que se abre tras marcar sí pide crear, y eso lo mira
+          // abrirGestionDeLlamada. Cerrar la gestión también va con crear:
+          // se está anotando un trabajo hecho, no corrigiendo uno anterior.
+          const puedeVer    = this.accesoModel?.ver !== false;
+          const puedeCerrar = this.accesoModel?.crear !== false;
+          const puedeEditar = this.accesoModel?.editar !== false;
+          const puedeBorrar = this.accesoModel?.eliminar !== false;
+          return `<div class="gestion-acciones">${this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar', puedeVer)}${this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
+        },
       },
     ];
   }
@@ -1308,7 +1316,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           // Al desactivado no se le llama ni se le escribe por WhatsApp: para
           // eso se le dio de baja. Vuelve a aparecer si se reactiva.
           const tel = (activo && p.data?.telefono)
-            ? `<button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar con Zoiper"><i class="fa fa-phone"></i></button>`
+            ? this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar con Zoiper', this.accesoModel?.ver !== false)
             : '';
           // El de WhatsApp sólo si el número puede tener cuenta: a un fijo el
           // enlace le sale inservible, y mientras se teclea tampoco vale
@@ -1745,6 +1753,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   /** Cierra desde la agenda, sin tener que entrar al cliente. */
   cerrarDesdeAgenda(g: GestionModel): void {
+    if (!this.permiso(this.accesoModel?.crear, 'cerrar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.modal.open(CerrarGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.gestion = g;
@@ -1756,6 +1765,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   /** Salta al cliente de esa gestión, con su ficha y su historial. */
   irAlCliente(g: GestionModel): void {
+    if (!this.permiso(this.accesoModel?.ver, 'ver la ficha del cliente')) { return; }
     this.seleccionarCliente({ id: g.cliente_id });
   }
 
@@ -1809,13 +1819,16 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: (p: any) => {
+          // Cerrar una pendiente va con CREAR, no con editar: lo que se hace es
+          // dejar anotado un trabajo recién hecho, no corregir lo que ya estaba.
+          // Modificar sí es editar, y borrarla del historial es eliminar.
+          const puedeCerrar  = this.accesoModel?.crear !== false;
+          const puedeEditar  = this.accesoModel?.editar !== false;
+          const puedeBorrar  = this.accesoModel?.eliminar !== false;
           const cerrar = p.data?.estado === 'PENDIENTE'
-            ? `<button type="button" class="btn-icon btn-cerrar" data-accion="cerrar" title="Cerrar la gestión"><i class="fa fa-check"></i></button>`
+            ? this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)
             : '';
-          return `<div class="gestion-acciones">${cerrar}
-                    <button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen"></i></button>
-                    <button type="button" class="btn-icon btn-quitar" data-accion="eliminar" title="Eliminar"><i class="fa fa-trash"></i></button>
-                  </div>`;
+          return `<div class="gestion-acciones">${cerrar}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
         },
       },
     ];
@@ -1891,6 +1904,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   private abrirGestion(modo: ModoGestion, gestion: GestionModel | null = null): void {
     if (!this.cliente) { return; }
+    // Corregir una existente es editar; registrarla o programarla es crear
+    const puede = modo === 'editar' ? this.accesoModel?.editar : this.accesoModel?.crear;
+    if (!this.permiso(puede, modo === 'editar' ? 'modificar gestiones' : 'registrar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
@@ -1908,6 +1924,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   /** Cierra una pendiente y, si se quiere, deja programada la siguiente. */
   cerrar(g: GestionModel): void {
     if (!g || g.estado !== 'PENDIENTE') { return; }
+    if (!this.permiso(this.accesoModel?.crear, 'cerrar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     const modalRef = this.modal.open(CerrarGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
@@ -1917,6 +1934,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   async eliminarGestion(g: GestionModel): Promise<void> {
     if (!g?.id) { return; }
+    if (!this.permiso(this.accesoModel?.eliminar, 'eliminar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     const r = await Swal.fire({
@@ -2084,6 +2102,38 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Un botón de una columna ACCIONES, apagado si el perfil no lo permite.
+   *
+   * Mismo trato que app-action-buttons en la lista de clientes: el botón no
+   * se esconde, se deshabilita y el title lo explica. Escondiéndolo, la
+   * columna cambiaría de ancho según quién entre y el usuario no sabría que
+   * la acción existe —acabaría preguntando por qué a él no le sale—.
+   *
+   * Esto es presentación: quien de verdad corta es el método al que llama
+   * cada acción, porque al menú del clic derecho y al teclado no les afecta
+   * un `disabled` puesto aquí.
+   */
+  /**
+   * ¿El perfil deja hacer esto? Si no, lo dice y corta.
+   *
+   * El botón de la grilla ya sale apagado, pero la misma acción se alcanza
+   * desde el menú del clic derecho y con el teclado, así que la comprobación
+   * de verdad va aquí. El aviso es para que no parezca que la pantalla se
+   * quedó colgada: sin él, pulsar y que no pase nada se lee como un error.
+   */
+  private permiso(concedido: boolean | undefined, queHacer: string): boolean {
+    if (concedido !== false) { return true; }
+    this._toastr.info(`Tu perfil no permite ${queHacer}.`, 'Sin permiso');
+    return false;
+  }
+
+  private botonAccion(accion: string, clase: string, icono: string, titulo: string, permitido: boolean): string {
+    const t = permitido ? titulo : `${titulo} - Desactivado`;
+    return `<button type="button" class="btn-icon ${clase}" data-accion="${accion}" title="${t}"${permitido ? '' : ' disabled'}>`
+         + `<i class="${icono}"></i></button>`;
+  }
+
+  /**
    * El número de una celda, puesto donde no lo lea una extensión.
    *
    * Sale en un atributo y lo pinta el CSS (.numero-plano, en styles.css):
@@ -2188,6 +2238,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * montar el diálogo.
    */
   private abrirGestionDeLlamada(numero: string): void {
+    // Marcar sí se le deja a todo el que vea al cliente; lo que no se abre, si
+    // no puede crear, es el formulario. Sin aviso: la llamada ya está saliendo
+    // y un cartel de «sin permiso» justo ahí se lee como que falló el marcado.
+    if (this.accesoModel?.crear === false) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     setTimeout(() => {
