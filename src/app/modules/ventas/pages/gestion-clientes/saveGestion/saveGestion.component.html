@@ -16,57 +16,49 @@
 <div class="modal-body gestion-modal-body">
   <form [formGroup]="form" class="form-validate" novalidate>
 
-    <!-- ---------- Con quién ---------- -->
+    <!-- ---------- Con quién ----------
+         En una línea: es un recordatorio de con quién se está, no una ficha. -->
     <div class="gestion-cliente">
-      <span class="gestion-cliente__icono">
-        <i class="fa" [ngClass]="cliente?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user'"></i>
-      </span>
-      <div class="gestion-cliente__texto">
-        <span class="gestion-cliente__nombre">{{ cliente?.nombre_completo }}</span>
-        <span class="gestion-cliente__dato">{{ cliente?.numero_identificacion }}</span>
-      </div>
+      <i class="fa fa-fw" [ngClass]="cliente?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user'"></i>
+      <span class="gestion-cliente__nombre">{{ cliente?.nombre_completo }}</span>
+      <span class="gestion-cliente__dato">{{ cliente?.numero_identificacion }}</span>
     </div>
 
-    <panel
-      headerClass="bg-gray-800"
-      title="Datos de la gestión"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-3"
-      icono="phone"
-      fondoGris="true">
 
       <ng-container outsideBody>
         <div class="form-card__body">
 
-          <!-- Realizada o programada -->
+          <!-- Realizada o programada.
+               En una fila: el icono y el párrafo explicativo ocupaban tres
+               renglones para decir algo que ya dicen los dos botones. Lo que
+               cambia según el estado se queda como pista corta al lado. -->
           <div class="gestion-estado" [class.is-programada]="esProgramada">
-            <span class="gestion-estado__icono">
-              <i class="fa-solid" [ngClass]="esProgramada ? 'fa-calendar-plus' : 'fa-check'"></i>
-            </span>
-            <div class="gestion-estado__texto">
-              <span class="gestion-estado__label">{{ esProgramada ? 'Gestión programada' : 'Gestión realizada' }}</span>
-              <span class="gestion-estado__hint">
-                {{ esProgramada
-                   ? 'Queda pendiente en la agenda hasta que la cierres'
-                   : 'Se guarda en el historial con su resultado' }}
-              </span>
-            </div>
             <div class="gestion-estado__botones btn-group btn-group-sm" role="group">
-              <button type="button" class="btn" [class.btn-primary]="!esProgramada" [class.btn-white]="esProgramada"
-                      (click)="ctrlEstado.setValue('REALIZADA')">
+              <button type="button" class="btn" [class.btn-primary]="esAhora" [class.btn-white]="!esAhora"
+                      (click)="elegirMomento('ahora')">
+                <i class="fa fa-bolt me-1"></i>En este momento
+              </button>
+              <button type="button" class="btn" [class.btn-primary]="!esProgramada && !esAhora" [class.btn-white]="esProgramada || esAhora"
+                      (click)="elegirMomento('hecha')">
                 <i class="fa fa-check me-1"></i>Ya la hice
               </button>
               <button type="button" class="btn" [class.btn-primary]="esProgramada" [class.btn-white]="!esProgramada"
-                      (click)="ctrlEstado.setValue('PENDIENTE')">
+                      (click)="elegirMomento('programada')">
                 <i class="fa fa-clock me-1"></i>Programarla
               </button>
             </div>
+            <span class="gestion-estado__hint">
+              {{ esProgramada
+                 ? 'Queda pendiente en la agenda hasta que la cierres'
+                 : (esAhora
+                    ? 'La hora se guarda al pulsar Guardar, no la de ahora'
+                    : 'Se guarda en el historial con la fecha que indiques') }}
+            </span>
           </div>
 
           <div class="row g-2">
 
-            <div class="col-12 col-md-4">
+            <div [ngClass]="colTipo">
               <div class="campo-combo">
                 <app-combo
                   formControlName="tipo"
@@ -78,37 +70,30 @@
               </div>
             </div>
 
-            <div class="col-12 col-md-8">
-              <app-campoTexto
-                [control]="form.controls['asunto']"
-                label="Asunto"
-                placeholder="Ej: Llamada de seguimiento de la cotización"
-                [maxLength]="200"
-                [minLength]="3"
-                [trimEspacios]="true">
-              </app-campoTexto>
-            </div>
+            <!-- La fecha, salvo con «En este momento»: ahí la pone el guardado
+                 y enseñarla sólo confundiría. A cuatro columnas, que con tres
+                 el campo datetime recortaba la hora. -->
+            @if (!esAhora) {
+              <div class="col-12 col-md-4">
+                @if (esProgramada) {
+                  <app-campoTexto
+                    [control]="form.controls['fecha_programada']"
+                    label="Fecha y hora"
+                    type="datetime-local"
+                    [limpiable]="false">
+                  </app-campoTexto>
+                } @else {
+                  <app-campoTexto
+                    [control]="form.controls['fecha_realizada']"
+                    label="Fecha y hora"
+                    type="datetime-local"
+                    [limpiable]="false">
+                  </app-campoTexto>
+                }
+              </div>
+            }
 
-            <!-- La fecha que toca según el estado -->
-            <div class="col-12 col-md-4">
-              @if (esProgramada) {
-                <app-campoTexto
-                  [control]="form.controls['fecha_programada']"
-                  label="Fecha y hora"
-                  type="datetime-local"
-                  [limpiable]="false">
-                </app-campoTexto>
-              } @else {
-                <app-campoTexto
-                  [control]="form.controls['fecha_realizada']"
-                  label="Fecha y hora"
-                  type="datetime-local"
-                  [limpiable]="false">
-                </app-campoTexto>
-              }
-            </div>
-
-            <div class="col-6 col-md-4">
+            <div [ngClass]="colPrioridad">
               <div class="campo-combo">
                 <app-combo
                   formControlName="prioridad"
@@ -120,7 +105,7 @@
               </div>
             </div>
 
-            <div class="col-6 col-md-4">
+            <div [ngClass]="colDuracion">
               <app-campoNumeroEntero
                 [control]="form.controls['duracion_minutos']"
                 label="Duración (min)"
@@ -129,9 +114,23 @@
               </app-campoNumeroEntero>
             </div>
 
+            <!-- El asunto baja aquí, donde estaba el teléfono: es lo que se lee
+                 en la agenda y en el historial, así que merece la línea ancha.
+                 Ocupa lo que dejen libre el resultado y la persona de contacto. -->
+            <div [ngClass]="colAsunto">
+              <app-campoTexto
+                [control]="form.controls['asunto']"
+                label="Asunto"
+                placeholder="Ej: Llamada de seguimiento de la cotización"
+                [maxLength]="200"
+                [minLength]="3"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
             <!-- Sólo cuando ya se hizo -->
             @if (!esProgramada) {
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-3">
                 <div class="campo-combo">
                   <app-combo
                     formControlName="resultado"
@@ -144,27 +143,8 @@
               </div>
             }
 
-            <div class="col-12" [class.col-md-6]="!esProgramada">
-              <app-campoTexto
-                [control]="form.controls['telefono']"
-                label="Teléfono"
-                placeholder="Al que se llama"
-                [maxLength]="20"
-                icono="fa-phone">
-              </app-campoTexto>
-              @if (telefonos.length) {
-                <div class="gestion-telefonos">
-                  @for (t of telefonos; track t.id) {
-                    <button type="button" class="btn btn-xs btn-white" (click)="form.controls['telefono'].setValue(t.id)">
-                      <i class="fa fa-phone me-1"></i>{{ t.name }}
-                    </button>
-                  }
-                </div>
-              }
-            </div>
-
             @if (contactosCombo.length) {
-              <div class="col-12">
+              <div class="col-12 col-md-4">
                 <div class="campo-combo">
                   <app-combo
                     formControlName="contacto_id"
@@ -177,32 +157,62 @@
               </div>
             }
 
+            <!-- ---------- Los teléfonos y la nota, uno al lado del otro ----------
+                 La nota iba en un panel aparte: su cabecera y su separación
+                 costaban unos 45px para un solo campo. Puesta aquí, al lado de
+                 los teléfonos, las dos cosas caben en el alto de una. -->
+            @if (telefonos.length) {
+              <div class="col-12 col-md-5">
+                <div class="gestion-ficha">
+                  <div class="gestion-ficha__titulo"><i class="fa fa-phone fa-fw"></i>Teléfonos</div>
+                  <div class="gestion-ficha__cuerpo">
+                    @for (t of telefonos; track t.id) {
+                      <div class="gestion-tel">
+                        <button type="button" class="gestion-tel__numero"
+                                [title]="'Usar ' + t.name + ' en esta gestión'"
+                                (click)="usarNumero(t.id)"><span class="numero-plano"
+                                                                [attr.data-numero]="t.name"></span></button>
+                        <span class="gestion-tel__acciones">
+                          <button type="button" class="gestion-tel__accion gestion-tel__accion--llamar"
+                                  title="Llamar" (click)="llamar(t.id)">
+                            <i class="fa fa-phone"></i>
+                          </button>
+                          @if (tieneWhatsapp(t.id)) {
+                            <button type="button" class="gestion-tel__accion gestion-tel__accion--wa"
+                                    title="Escribir por WhatsApp" (click)="porWhatsapp(t.id)">
+                              <i class="fab fa-whatsapp"></i>
+                            </button>
+                          }
+                          <button type="button" class="gestion-tel__accion"
+                                  title="Copiar" (click)="copiar(t.id)">
+                            <i class="fa fa-copy"></i>
+                          </button>
+                        </span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            <div class="col-12" [class.col-md-7]="telefonos.length">
+              <div class="gestion-ficha">
+                <div class="gestion-ficha__titulo"><i class="fa fa-pen fa-fw"></i>Qué se habló</div>
+                <div class="gestion-ficha__cuerpo">
+                  <app-campoTextoArea
+                    [control]="form.controls['nota']"
+                    label="Qué se habló"
+                    placeholder="Lo que dijo el cliente, acuerdos, próximos pasos…"
+                    [maxLength]="4000"
+                    [alto]="86">
+                  </app-campoTextoArea>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </ng-container>
-    </panel>
-
-    <panel
-      headerClass="bg-gray-800"
-      title="Notas"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-0"
-      icono="editar"
-      fondoGris="true">
-
-      <ng-container outsideBody>
-        <div class="form-card__body">
-          <app-campoTextoArea
-            [control]="form.controls['nota']"
-            label="Qué se habló"
-            placeholder="Lo que dijo el cliente, acuerdos, próximos pasos…"
-            [maxLength]="4000"
-            [alto]="110">
-          </app-campoTextoArea>
-        </div>
-      </ng-container>
-    </panel>
 
   </form>
 </div>

@@ -9,44 +9,32 @@
   overflow-y: auto;
 }
 
-/* ---------- Qué se está cerrando ---------- */
+/* ---------- Qué se está cerrando ----------
+   Una línea: el asunto, el cliente y la fecha son contexto para saber qué se
+   cierra, no el formulario. Antes iban apilados junto a un círculo de 2rem. */
 .cerrar-cabecera {
   display: flex;
-  align-items: center;
-  gap: .625rem;
+  align-items: baseline;
+  gap: .5rem;
+  flex-wrap: wrap;
 
-  margin-bottom: .75rem;
-  padding: .5rem .75rem;
-  border-radius: .5rem;
+  margin-bottom: .5rem;
+  padding: .3rem .6rem;
+  border-radius: .375rem;
 
   background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .12);
+  font-size: .75rem;
 }
 
-.cerrar-cabecera__icono {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 2rem;
-  height: 2rem;
-  flex: 0 0 auto;
-  border-radius: 50%;
-
-  background-color: var(--bs-warning, #ffc107);
-  color: #212529;
-  font-size: .8125rem;
-}
-
-.cerrar-cabecera__texto {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.cerrar-cabecera > i {
+  color: var(--bs-warning, #ffc107);
 }
 
 .cerrar-cabecera__asunto {
+  flex: 1 1 10rem;
+  min-width: 0;
+
   font-weight: 600;
-  font-size: .8125rem;
-  line-height: 1.2;
 
   overflow: hidden;
   text-overflow: ellipsis;
@@ -54,20 +42,23 @@
 }
 
 .cerrar-cabecera__dato {
-  font-size: .75rem;
+  flex: 0 0 auto;
   color: var(--bs-secondary-color, #6c757d);
 }
 
-/* ---------- Interruptor del seguimiento ---------- */
+/* ---------- Interruptor del seguimiento ----------
+   El propio interruptor ya dice qué hace; al lado sólo queda la consecuencia
+   de dejarlo como está. */
 .cerrar-seguimiento {
   display: flex;
   align-items: center;
-  gap: .75rem;
+  gap: .6rem;
+  flex-wrap: wrap;
 
-  margin-bottom: 1rem;
-  padding: .625rem .75rem;
+  margin-bottom: .6rem;
+  padding: .35rem .6rem;
   border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .5rem;
+  border-radius: .375rem;
 
   transition: border-color .15s ease, background-color .15s ease;
 }
@@ -77,43 +68,18 @@
   background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
 }
 
-.cerrar-seguimiento__icono {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 2rem;
-  height: 2rem;
+.cerrar-seguimiento__switch {
   flex: 0 0 auto;
-  border-radius: 50%;
-
-  background-color: var(--bs-secondary-bg, #e9ecef);
-  color: var(--bs-body-color, #495057);
-}
-
-.cerrar-seguimiento.is-on .cerrar-seguimiento__icono {
-  background-color: var(--bs-app-theme, #00acac);
-  color: #fff;
-}
-
-.cerrar-seguimiento__texto {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.cerrar-seguimiento__label {
-  font-weight: 600;
-  font-size: .8125rem;
-  line-height: 1.2;
 }
 
 .cerrar-seguimiento__hint {
-  font-size: .75rem;
-  color: var(--bs-secondary-color, #6c757d);
-}
+  flex: 1 1 10rem;
+  min-width: 0;
 
-.cerrar-seguimiento__switch {
-  flex: 0 0 auto;
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

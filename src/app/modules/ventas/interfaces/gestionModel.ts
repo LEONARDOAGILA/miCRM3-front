@@ -27,6 +27,8 @@ export interface GestionModel {
   duracion_minutos?: number | null;
   /** Cómo terminó; sólo cuando está REALIZADA */
   resultado?: string | null;
+  /** Cómo se registró: AHORA, YA_HECHA o PROGRAMADA. Vacío en lo anterior a octubre de 2026. */
+  modo_registro?: ModoRegistro | null;
 
   /** La gestión que la generó, cuando es un seguimiento */
   gestion_origen_id?: number | null;
@@ -40,6 +42,21 @@ export interface GestionModel {
 }
 
 /** Contadores del cliente (ventas.fn_gestiones_resumen). */
+/**
+ * Cómo se registró la gestión, para poder medirlo después.
+ *
+ * Dice cómo NACIÓ, no en qué estado está: una PROGRAMADA que luego se
+ * cierra sigue siendo PROGRAMADA, y así se puede ver qué parte del trabajo
+ * sale de la agenda. Va vacío en lo registrado antes de octubre de 2026.
+ */
+export type ModoRegistro = 'AHORA' | 'YA_HECHA' | 'PROGRAMADA';
+
+export const MODOS_REGISTRO: { id: ModoRegistro; name: string; ayuda: string }[] = [
+  { id: 'AHORA',      name: 'En este momento', ayuda: 'Se escribió mientras se hablaba con el cliente' },
+  { id: 'YA_HECHA',   name: 'Ya la hice',      ayuda: 'Se anotó después, con la hora que puso el vendedor' },
+  { id: 'PROGRAMADA', name: 'Programada',      ayuda: 'Salió de la agenda: se dejó pendiente para una fecha' },
+];
+
 export interface ResumenGestiones {
   cliente_id: number;
   total: number;
@@ -126,3 +143,31 @@ export function claseDeResultado(resultado: string | null | undefined): string {
     default:                return 'bg-secondary';
   }
 }
+
+// ============================================================
+// QUIÉN ATIENDE AL CLIENTE
+// ============================================================
+
+/**
+ * Los papeles con los que se puede atender a un cliente.
+ *
+ * La base NO los valida a propósito: la lista vive aquí y en el validador del
+ * controlador, así que añadir un cuarto responsable no pide una migración.
+ * Al añadirlo, acuérdate del `in:` de GestionController@reasignar.
+ */
+export type RolResponsable = 'VENDEDOR' | 'COBRADOR' | 'ASISTENTE';
+
+export interface ResponsableCliente {
+  rol: RolResponsable;
+  empleado_id: number | null;
+  empleado_nombre: string | null;
+  /** Desde cuándo lo atiende; null si el puesto está vacío */
+  desde: string | null;
+}
+
+/** Cómo se presenta cada papel: rótulo, icono y para qué sirve. */
+export const ROLES_RESPONSABLE: { id: RolResponsable; name: string; icono: string; ayuda: string }[] = [
+  { id: 'VENDEDOR',  name: 'Vendedor',  icono: 'fa-user-tie',   ayuda: 'Le vende y se lleva su agenda al cambiar' },
+  { id: 'COBRADOR',  name: 'Cobrador',  icono: 'fa-hand-holding-dollar', ayuda: 'Le gestiona los pagos' },
+  { id: 'ASISTENTE', name: 'Asistente', icono: 'fa-headset',    ayuda: 'Le llama y coordina' },
+];

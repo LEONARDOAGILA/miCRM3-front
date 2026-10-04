@@ -20,14 +20,15 @@ import { AppAgGridService } from '../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../service/loading.service';
 
 ///   MODELOS    ///
-import { ClienteModel, ContactoCliente } from '../../interfaces/clienteModel';
+import { CARGOS_CONTACTO, ClienteModel, ContactoCliente } from '../../interfaces/clienteModel';
 import {
   AsignacionCliente, GestionModel, ResumenGestiones,
   ESTADOS_GESTION, TIPOS_GESTION, PRIORIDADES_GESTION, claseDeResultado, iconoDeTipo, nombreDe, RESULTADOS_GESTION,
+  ResponsableCliente, RolResponsable, ROLES_RESPONSABLE,
 } from '../../interfaces/gestionModel';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import {
-  PLANTILLAS_WHATSAPP, PlantillaWhatsapp, aplicarPlantilla, primerNombre,
+  PLANTILLAS_WHATSAPP, PlantillaWhatsapp, aplicarPlantilla, primerNombre, puedeTenerWhatsapp,
 } from '../../interfaces/plantillasWhatsapp';
 
 ///   COMPONENTES    ///
@@ -89,6 +90,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public resumen: ResumenGestiones | null = null;
   public contactos: ContactoCliente[] = [];
   public asignaciones: AsignacionCliente[] = [];
+  /** Quién lo atiende ahora en cada papel; siempre llegan los tres. */
+  public responsables: ResponsableCliente[] = [];
+  /** Para pintar rótulo, icono y ayuda de cada papel. */
+  public readonly rolesResponsable = ROLES_RESPONSABLE;
   public pendientes: GestionModel[] = [];
   public agenda: GestionModel[] = [];
 
@@ -288,6 +293,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   public rowClassRulesContactos = {
     'fila-excluida': (p: RowClassParams) => p.data?.activo === false,
+    // A medio escribir: avisa antes de intentar guardarla
+    'fila-incompleta': (p: RowClassParams) => !!p.data && !this.contactoCompleto(p.data),
   };
 
   public rowClassRulesAgenda = {
@@ -462,7 +469,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Cliente',
         field: 'nombre_completo',
         cellStyle: { textAlign: 'left' },
-        minWidth: 170,
+        minWidth: 310,
+        maxWidth: 390,
         cellRenderer: (params: any) => {
           const icono = params.data?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user';
           const nombre = params.value ?? '';
@@ -479,18 +487,30 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Identificación',
         field: 'numero_identificacion',
         cellStyle: { textAlign: 'center' },
-        minWidth: 95,
-        maxWidth: 110,
+        minWidth: 120,
+        maxWidth: 140,
+        // Una cédula son diez dígitos que empiezan por 0, igual que un
+        // celular: sin esto la extensión también le cuelga el logotipo
+        cellRenderer: this.celdaNumero,
       },
-      {
-        headerName: 'Teléfono',
-        field: 'celular',
-        cellStyle: { textAlign: 'center' },
-        minWidth: 95,
-        maxWidth: 115,
-        valueGetter: (p: any) => p.data?.celular || p.data?.telefono || '',
-        cellRenderer: this.celdaTelefono,
-      },
+      // {
+      //   headerName: 'Teléfono',
+      //   field: 'celular',
+      //   cellStyle: { textAlign: 'center' },
+      //   minWidth: 95,
+      //   maxWidth: 115,
+      //   valueGetter: (p: any) => p.data?.celular || p.data?.telefono || '',
+      //   cellRenderer: this.celdaNumero,
+      // },
+      // {
+      //   // El número es texto, así que marcar es cosa de este botón
+      //   headerName: '', field: 'acciones', pinned: 'right', minWidth: 46, maxWidth: 46,
+      //   sortable: false, filter: false, suppressMenu: true, resizable: false,
+      //   cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+      //   cellRenderer: (p: any) => p.data?.celular || p.data?.telefono
+      //     ? `<span class="gestion-acciones"><button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button></span>`
+      //     : '',
+      // },
     ];
   }
 
@@ -511,7 +531,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   onCellClickedClientes(e: CellClickedEvent): void {
     // Marcar no debe abrir la ficha: son cinco peticiones al servidor para
     // algo que no se ha pedido.
-    if (this.marcoDesdeLaCelda(e, e.data?.celular || e.data?.telefono, e.data?.nombre_completo)) { return; }
+    if ((e.event?.target as HTMLElement)?.closest('[data-accion="llamar"]')) {
+      this.llamarConSoftphone(e.data?.celular || e.data?.telefono, e.data?.nombre_completo);
+      return;
+    }
     if (e.data) { this.seleccionarCliente(e.data); }
   }
 
@@ -887,6 +910,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         this.cargarResumen(),
         this.cargarContactos(),
         this.cargarAsignaciones(),
+        this.cargarResponsables(),
         this.cargarPendientes(),
         this.cargarConversacion(),
       ]);
@@ -921,10 +945,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (!this.cliente?.id) { return; }
     try {
       const res: any = await firstValueFrom(this._clienteService.listContactos(this.cliente.id));
-      this.contactos = res?.status === 'success' ? (res.data ?? []) : [];
+      this.ponerContactos(res?.status === 'success' ? (res.data ?? []) : []);
     } catch (error) {
       console.error('Error al cargar los contactos:', error);
-      this.contactos = [];
+      this.ponerContactos([]);
     }
   }
 
@@ -934,8 +958,25 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       const res: any = await firstValueFrom(this._gestionService.asignaciones(this.cliente.id));
       this.asignaciones = res?.status === 'success' ? (res.data ?? []) : [];
     } catch (error) {
-      console.error('Error al cargar el historial de cartera:', error);
+      console.error('Error al cargar el historial de asignaciones:', error);
       this.asignaciones = [];
+    }
+  }
+
+  /**
+   * Quién atiende al cliente ahora mismo, en cada papel.
+   *
+   * El servidor devuelve siempre los tres, con el empleado en null cuando el
+   * puesto está vacío, así que la pantalla no tiene que componer la lista.
+   */
+  async cargarResponsables(): Promise<void> {
+    if (!this.cliente?.id) { this.responsables = []; return; }
+    try {
+      const res: any = await firstValueFrom(this._gestionService.responsables(this.cliente.id));
+      this.responsables = res?.status === 'success' ? (res.data ?? []) : [];
+    } catch (error) {
+      console.error('Error al cargar los responsables:', error);
+      this.responsables = [];
     }
   }
 
@@ -1125,7 +1166,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         // El de la gestión si se anotó; si no, el del cliente: esta grilla
         // es una lista de llamadas y el número tiene que estar a la vista
         valueGetter: (p: any) => p.data?.telefono || p.data?.cliente_telefono || '',
-        cellRenderer: this.celdaTelefono,
+        cellRenderer: this.celdaNumero,
       },
       {
         headerName: 'Vendedor',
@@ -1137,8 +1178,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Acciones',
         field: 'acciones',
         pinned: 'right',
-        minWidth: 86,
-        maxWidth: 86,
+        minWidth: 118,
+        maxWidth: 118,
         sortable: false,
         resizable: false,
         filter: false,
@@ -1146,8 +1187,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: () => `
           <span class="gestion-acciones">
-            <button type="button" class="btn btn-xs btn-success" data-accion="cerrar" title="Marcar como hecha"><i class="fa fa-check"></i></button>
-            <button type="button" class="btn btn-xs btn-white" data-accion="abrir" title="Abrir el cliente"><i class="fa fa-arrow-right"></i></button>
+            <button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button>
+            <button type="button" class="btn-icon btn-cerrar" data-accion="cerrar" title="Marcar como hecha"><i class="fa fa-check"></i></button>
+            <button type="button" class="btn-icon btn-abrir" data-accion="abrir" title="Abrir el cliente"><i class="fa fa-arrow-right"></i></button>
           </span>`,
       },
     ];
@@ -1181,15 +1223,16 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Teléfono', field: 'telefono', minWidth: 110, maxWidth: 140,
         cellStyle: { textAlign: 'left' },
         valueGetter: (p: any) => p.data?.telefono || p.data?.cliente_telefono || '',
-        cellRenderer: this.celdaTelefono,
+        cellRenderer: this.celdaNumero,
       },
       { headerName: 'Responsable', field: 'empleado_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
       { headerName: 'Nota', field: 'nota', minWidth: 180, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
       {
-        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 142, maxWidth: 142,
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: () => `<div class="gestion-acciones">
+            <button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button>
             <button type="button" class="btn-icon btn-cerrar" data-accion="cerrar" title="Cerrar la gestión"><i class="fa fa-check"></i></button>
             <button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen"></i></button>
             <button type="button" class="btn-icon btn-quitar" data-accion="eliminar" title="Eliminar"><i class="fa fa-trash"></i></button>
@@ -1199,43 +1242,219 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   /** Las personas de contacto del cliente. */
+  /**
+   * Los contactos se escriben en la propia grilla, igual que en la ficha del
+   * cliente: celdas editables, una fila nueva con el botón de arriba y quitar
+   * con la X. La diferencia es que aquí no hay un «guardar» del formulario
+   * entero, así que la lista tiene su propio botón.
+   */
   initializeGridContactos(): void {
+    const editable = this.accesoModel?.editar !== false;
+    const texto = (field: string, headerName: string, minWidth: number, maxWidth?: number, extra: any = {}) => ({
+      field, headerName, minWidth, maxWidth, editable, sortable: false, filter: false,
+      cellStyle: { textAlign: 'left' },
+      // El nombre y el teléfono son lo mínimo para que el contacto sirva
+      cellClass: (p: any) => (['nombres', 'telefono'].includes(field) && !String(p.value ?? '').trim()) ? 'celda-obligatoria' : '',
+      ...extra,
+    });
+
     this.columnDefsContactos = [
       {
-        headerName: 'Orden', field: 'prioridad', minWidth: 70, maxWidth: 80,
-        cellStyle: { textAlign: 'center' },
+        headerName: '#', field: 'prioridad', headerTooltip: 'Orden en que se debe llamar (1 = primero)',
+        minWidth: 56, maxWidth: 56, editable, sortable: false, filter: false,
+        cellStyle: { textAlign: 'center', fontWeight: '600' },
+        valueSetter: (p: any) => {
+          const n = parseInt(p.newValue, 10);
+          if (!n || n < 1) { this._toastr.warning('La prioridad debe ser 1 o mayor', 'Contactos'); return false; }
+          p.data.prioridad = n; return true;
+        },
       },
-      { headerName: 'Nombre', field: 'nombres', minWidth: 170, cellStyle: { textAlign: 'left', fontWeight: '600' } },
-      { headerName: 'Cargo', field: 'cargo', minWidth: 130, cellStyle: { textAlign: 'left' } },
+      texto('nombres', 'Nombres y apellidos', 170),
       {
-        headerName: 'Teléfono', field: 'telefono', minWidth: 110, maxWidth: 140,
-        cellStyle: { textAlign: 'left' },
-        cellRenderer: this.celdaTelefono,
+        ...texto('cargo', 'Cargo', 120, 150),
+        cellEditor: 'agSelectCellEditor',
+        cellEditorParams: { values: this.cargosContacto },
       },
-      { headerName: 'Correo', field: 'email', minWidth: 180, cellStyle: { textAlign: 'left' } },
+      // El número va como texto: aquí se escribe, y para llamar está el botón
+      // de la columna de acciones. Pulsarlo abre la edición, que es lo que se
+      // espera de una celda editable, y de paso es la forma de copiarlo, que
+      // con celdaNumero el número deja de poder seleccionarse con el ratón.
+      texto('telefono', 'Teléfono', 115, 145, { cellRenderer: this.celdaNumero }),
+      texto('telefono_alterno', 'Tel. alterno', 110, 140, { cellRenderer: this.celdaNumero }),
+      texto('email', 'Correo', 170),
       {
-        headerName: 'Activo', field: 'activo', minWidth: 80, maxWidth: 80,
+        headerName: 'Activo', field: 'activo', minWidth: 70, maxWidth: 70, sortable: false, filter: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: (p: any) => p.value === false
           ? '<span class="badge bg-danger fs-10px">NO</span>'
           : '<span class="badge bg-teal fs-10px">SÍ</span>',
       },
       {
-        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 140, maxWidth: 140,
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        /**
+         * Aquí no se borra un contacto: se desactiva. Un contacto borrado se
+         * lleva por delante el rastro de con quién se habló —las gestiones lo
+         * apuntan—, y lo normal es que la persona ya no esté, no que nunca
+         * haya estado. Para eso está la ficha del cliente, que sí borra.
+         *
+         * La excepción es una fila recién añadida y todavía sin guardar: ahí
+         * no hay nada que desactivar, y sin forma de quitarla una fila puesta
+         * por error bloquearía el guardado.
+         */
         cellRenderer: (p: any) => {
-          const tel = p.data?.telefono
-            ? `<button type="button" class="btn-icon btn-cerrar" data-accion="llamar" title="Llamar con Zoiper"><i class="fa fa-phone"></i></button>
-               <button type="button" class="btn-icon btn-editar" data-accion="whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`
+          const activo = p.data?.activo !== false;
+          // Al desactivado no se le llama ni se le escribe por WhatsApp: para
+          // eso se le dio de baja. Vuelve a aparecer si se reactiva.
+          const tel = (activo && p.data?.telefono)
+            ? `<button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar con Zoiper"><i class="fa fa-phone"></i></button>`
+            : '';
+          // El de WhatsApp sólo si el número puede tener cuenta: a un fijo el
+          // enlace le sale inservible, y mientras se teclea tampoco vale
+          const wa = (activo && puedeTenerWhatsapp(p.data?.telefono))
+            ? `<button type="button" class="btn-icon btn-wa" data-accion="whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`
             : '';
           const mail = p.data?.email
-            ? `<button type="button" class="btn-icon btn-editar" data-accion="correo" title="Escribir"><i class="fa fa-envelope"></i></button>`
+            ? `<button type="button" class="btn-icon btn-correo" data-accion="correo" title="Escribir"><i class="fa fa-envelope"></i></button>`
             : '';
-          return `<div class="gestion-acciones">${tel}${mail}</div>`;
+
+          let alta = '';
+          if (editable) {
+            alta = !p.data?.id
+              ? `<button type="button" class="btn-icon btn-quitar" data-accion="descartar" title="Descartar esta fila (todavía no se ha guardado)"><i class="fa fa-times"></i></button>`
+              : (p.data?.activo !== false
+                  ? `<button type="button" class="btn-icon btn-quitar" data-accion="alta" title="Desactivar: deja de aparecer para llamarle"><i class="fa fa-user-slash"></i></button>`
+                  : `<button type="button" class="btn-icon btn-cerrar" data-accion="alta" title="Volver a activar"><i class="fa fa-user-check"></i></button>`);
+          }
+
+          return `<div class="gestion-acciones">${tel}${wa}${mail}${alta}</div>`;
         },
       },
     ];
+  }
+
+  // ---------- Editar la lista de contactos ----------
+
+  public cargosContacto = CARGOS_CONTACTO;
+  /** Cómo estaba la lista al cargarla, para saber si hay algo que guardar. */
+  private contactosOriginal = '[]';
+  /** ag-Grid necesita una identidad estable; los nuevos todavía no tienen id. */
+  private claveContacto = 0;
+  public guardandoContactos = false;
+
+  getRowIdContacto = (p: any) => String(p.data._clave);
+
+  contactoCompleto(c: ContactoCliente): boolean {
+    return !!(c.nombres?.trim() && c.telefono?.trim());
+  }
+
+  get hayContactosIncompletos(): boolean { return this.contactos.some(c => !this.contactoCompleto(c)); }
+  get contactosCambiados(): boolean { return JSON.stringify(this.normalizarContactos()) !== this.contactosOriginal; }
+
+  agregarContacto(): void {
+    if (this.accesoModel?.editar === false) { return; }
+    const nuevo: any = {
+      _clave: ++this.claveContacto, id: null, nombres: '', cargo: '', telefono: '',
+      telefono_alterno: '', email: '', prioridad: this.contactos.length + 1, activo: true,
+    };
+    this.contactos = [...this.contactos, nuevo];
+    this.gridApiContactos?.setRowData(this.contactos);
+    // Abrir la celda del nombre: así se escribe sin tener que buscar dónde
+    setTimeout(() => {
+      const idx = this.contactos.length - 1;
+      this.gridApiContactos?.ensureIndexVisible(idx);
+      this.gridApiContactos?.startEditingCell({ rowIndex: idx, colKey: 'nombres' });
+    });
+  }
+
+  /**
+   * Al cambiar una celda se repinta su fila.
+   *
+   * Los botones de la columna ACCIONES miran el teléfono —el de WhatsApp
+   * sólo sale si el número puede tener cuenta—, y ag-Grid no repinta una
+   * columna porque haya cambiado otra: sin esto el botón no aparecería
+   * hasta recargar la ficha.
+   */
+  alCambiarContacto(e: any): void {
+    if (e?.node) { this.gridApiContactos?.redrawRows({ rowNodes: [e.node] }); }
+  }
+
+  /**
+   * Activar o desactivar: lo que aquí sustituye al borrado. El contacto se
+   * queda en la ficha pero deja de ofrecerse para llamar.
+   */
+  alternarActivoContacto(c: ContactoCliente): void {
+    if (this.accesoModel?.editar === false || !c) { return; }
+    c.activo = c.activo === false;
+
+    const nodo = this.gridApiContactos?.getRowNode(String((c as any)._clave));
+    if (nodo) { this.gridApiContactos.redrawRows({ rowNodes: [nodo] }); }
+  }
+
+  /**
+   * Sólo para filas que todavía no se han guardado. A las guardadas se las
+   * desactiva; para borrarlas de verdad está la ficha del cliente.
+   */
+  quitarContacto(c: ContactoCliente): void {
+    if (this.accesoModel?.editar === false || c?.id) { return; }
+    this.contactos = this.contactos.filter(x => x !== c);
+    this.contactos.forEach((x, i) => x.prioridad = i + 1);
+    this.gridApiContactos?.setRowData(this.contactos);
+  }
+
+  /** Lo que se le manda al servidor: la lista entera, que él sincroniza. */
+  private normalizarContactos(): any[] {
+    return this.contactos.map(c => ({
+      id: c.id ?? null,
+      nombres: (c.nombres ?? '').trim(),
+      cargo: (c.cargo ?? '').trim() || null,
+      telefono: (c.telefono ?? '').trim(),
+      telefono_alterno: ((c as any).telefono_alterno ?? '').trim() || null,
+      email: (c.email ?? '').trim() || null,
+      prioridad: c.prioridad || 1,
+      activo: c.activo !== false,
+    }));
+  }
+
+  /**
+   * Guarda la lista.
+   *
+   * El servidor recibe todas las filas y se encarga de insertar, actualizar y
+   * borrar las que falten: el mismo endpoint que usa la ficha del cliente, así
+   * que las dos pantallas se comportan igual.
+   */
+  async guardarContactos(): Promise<void> {
+    if (!this.cliente?.id || this.guardandoContactos) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    if (this.hayContactosIncompletos) {
+      this._toastr.warning('Hay contactos sin nombre o sin teléfono', 'Contactos', { timeOut: 4000 });
+      return;
+    }
+
+    try {
+      this.guardandoContactos = true;
+      const res: any = await firstValueFrom(this._clienteService.guardarContactos(this.cliente.id, this.normalizarContactos()));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudieron guardar los contactos', 'Error');
+        return;
+      }
+      this.ponerContactos(res.data ?? []);
+      this._toastr.success(res.message, 'Contactos', { timeOut: 2500 });
+    } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al guardar los contactos:', error);
+    } finally {
+      this.guardandoContactos = false;
+    }
+  }
+
+  /** Los deja en la grilla con su clave, y apunta cómo quedaron. */
+  private ponerContactos(lista: ContactoCliente[]): void {
+    this.contactos = (lista ?? []).map(c => ({ ...c, _clave: ++this.claveContacto } as any));
+    this.contactosOriginal = JSON.stringify(this.normalizarContactos());
+    this.gridApiContactos?.setRowData(this.contactos);
   }
 
   /** Por qué vendedores ha pasado el cliente. */
@@ -1243,14 +1462,25 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.columnDefsCartera = [
       { headerName: 'Cuándo', field: 'asignado_at', minWidth: 150, maxWidth: 180, cellStyle: { textAlign: 'left' } },
       {
+        headerName: 'Papel', field: 'rol', minWidth: 110, maxWidth: 130,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        // Lo de antes del cambio no tenía rol: todo era del vendedor
+        cellRenderer: (p: any) => {
+          const rol = this.rolesResponsable.find(r => r.id === (p.value || 'VENDEDOR'));
+          return `<span class="badge bg-secondary bg-opacity-25 text-body fs-10px">
+                    <i class="fa ${rol?.icono ?? 'fa-user'} me-1"></i>${rol?.name ?? p.value}
+                  </span>`;
+        },
+      },
+      {
         headerName: 'Antes lo atendía', field: 'empleado_anterior', minWidth: 160,
         cellStyle: { textAlign: 'left' },
-        valueGetter: (p: any) => p.data?.empleado_anterior || 'Sin vendedor',
+        valueGetter: (p: any) => p.data?.empleado_anterior || 'Nadie',
       },
       {
         headerName: 'Pasó a', field: 'empleado_nuevo', minWidth: 160,
         cellStyle: { textAlign: 'left', fontWeight: '600' },
-        valueGetter: (p: any) => p.data?.empleado_nuevo || 'Sin vendedor',
+        valueGetter: (p: any) => p.data?.empleado_nuevo || 'Nadie',
       },
       { headerName: 'Motivo', field: 'motivo', minWidth: 200, cellStyle: { textAlign: 'left' }, tooltipField: 'motivo' },
       { headerName: 'Lo hizo', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' } },
@@ -1286,15 +1516,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Llamar, WhatsApp o correo a la persona de contacto. */
+  /** Llamar, WhatsApp, correo o quitar a la persona de contacto. */
   onCellClickedContactos(e: CellClickedEvent): void {
     const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
     const accion = destino?.dataset['accion'];
     if (!accion) { return; }
 
-    if (accion === 'llamar')   { this.llamarConSoftphone(e.data?.telefono, e.data?.nombres); }
-    if (accion === 'whatsapp') { window.open(this.enlaceWhatsapp(e.data?.telefono), '_blank', 'noopener'); }
-    if (accion === 'correo')   { window.location.href = 'mailto:' + e.data?.email; }
+    if (accion === 'llamar')    { this.llamarConSoftphone(e.data?.telefono, e.data?.nombres); }
+    if (accion === 'whatsapp')  { window.open(this.enlaceWhatsapp(e.data?.telefono), '_blank', 'noopener'); }
+    if (accion === 'correo')    { window.location.href = 'mailto:' + e.data?.email; }
+    if (accion === 'alta')      { this.alternarActivoContacto(e.data); }
+    if (accion === 'descartar') { this.quitarContacto(e.data); }
   }
 
   onGridReadyAgenda(params: GridReadyEvent): void {
@@ -1717,18 +1949,33 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   /** Pasa el cliente a otro vendedor, con su agenda si se deja marcado. */
-  reasignar(): void {
+  /**
+   * Cambia quién atiende al cliente en un papel.
+   *
+   * Sin indicar papel es el vendedor, que es como se comportaba cuando un
+   * cliente sólo tenía uno.
+   */
+  reasignar(rol: RolResponsable = 'VENDEDOR'): void {
     if (!this.cliente) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     const modalRef = this.modal.open(ReasignarClienteComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.cliente = this.cliente;
-    modalRef.componentInstance.pendientes = this.resumen?.pendientes ?? 0;
+    modalRef.componentInstance.rol = rol;
+    modalRef.componentInstance.actualId = this.responsableDe(rol)?.empleado_id ?? null;
+    // Las gestiones sólo se mueven con el vendedor; al resto no les toca agenda
+    modalRef.componentInstance.pendientes = rol === 'VENDEDOR' ? (this.resumen?.pendientes ?? 0) : 0;
     this.escucharModal(modalRef, modalRef.componentInstance.reasignado, (data: any) => {
       if (data?.cliente) { this.cliente = data.cliente; }
       this.cargarAsignaciones();
+      this.cargarResponsables();
       this.refrescar();
     });
+  }
+
+  /** El responsable de un papel, o undefined si todavía no se ha cargado. */
+  responsableDe(rol: RolResponsable): ResponsableCliente | undefined {
+    return this.responsables.find(r => r.rol === rol);
   }
 
   /** La ficha completa del cliente, en sólo lectura. */
@@ -1767,7 +2014,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
   nombreResultado = (r: string) => nombreDe(RESULTADOS_GESTION, r);
 
-  /** «tel:» y «mailto:» para llamar o escribir desde el navegador o el móvil. */
   /**
    * Las conversaciones de WhatsApp que el CRM no pudo atar a ningún cliente.
    *
@@ -1837,19 +2083,35 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     return /^https?:\/\//i.test(url) ? url : 'https://' + url;
   }
 
-  enlaceTelefono(numero?: string | null): string { return numero ? 'tel:' + String(numero).replace(/\s/g, '') : ''; }
+  /**
+   * El número de una celda, puesto donde no lo lea una extensión.
+   *
+   * Sale en un atributo y lo pinta el CSS (.numero-plano, en styles.css):
+   * así no hay texto que recorrer y Zoiper Click2Dial no le engancha su
+   * logotipo ni la bandera del país. Se ve y se ordena igual, porque el
+   * valor de la celda no cambia; lo único que se pierde es seleccionarlo
+   * con el ratón, y para eso están el botón de copiar y, en contactos, la
+   * propia celda, que se edita.
+   *
+   * Es una propiedad y no un método para que ag-Grid lo llame sin perder
+   * el `this` del componente.
+   */
+  public celdaNumero = (p: any): string => {
+    const n = String(p.value ?? '').trim().replace(/["<>&]/g, '');
+    return n ? `<span class="numero-plano" data-numero="${n}"></span>` : '';
+  };
 
   // ================================================================
   // MARCAR CON EL SOFTPHONE (ZOIPER)
   // ================================================================
 
   // Todo esto vive en SoftphoneService desde que la lista de clientes también
-  // marca; aquí quedan los dos métodos que usa la plantilla, delegando.
-
-  /** La URL completa que se le entrega al sistema. */
-  public enlaceSoftphone(numero?: string | null): string {
-    return this._softphone.enlace(numero);
-  }
+  // marca; aquí sólo queda lo que usa la plantilla, delegando.
+  //
+  // No hay ningún método que devuelva la URL del softphone: se marca llamando
+  // al servicio, nunca poniéndola en un href. Un enlace saca el cartel de
+  // «¿abandonar la página?» y además Safari del iPhone y la integración de
+  // Zoiper en el navegador lo decoran con su icono y la bandera del país.
 
   // ================================================================
   // LAS FOTOS DEL LUGAR
@@ -1894,35 +2156,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.imagenes = imagenes;
     // Si sólo hay una, el índice que toca es el 0
     modalRef.componentInstance.indice = cual === 'casa' && imagenes.length > 1 ? 1 : 0;
-  }
-
-  /**
-   * El teléfono de una grilla, pintado para poder marcarlo de un clic.
-   *
-   * Lo usan las cuatro grillas que muestran número (clientes, historial,
-   * pendientes y contactos). Va con data-accion como el resto de acciones de
-   * la aplicación, así que lo recoge el onCellClicked de cada una.
-   *
-   * Es una propiedad y no un método para que ag-Grid lo pueda llamar sin
-   * perder el `this` del componente.
-   */
-  public celdaTelefono = (p: any): string => {
-    const n = this._softphone.numeroMarcable(p.value);
-    if (!n) { return ''; }
-    return `<button type="button" class="gestion-llamar" data-accion="llamar" title="Marcar ${n} con el softphone">
-              <i class="fa fa-phone"></i><span>${p.value}</span>
-            </button>`;
-  };
-
-  /**
-   * ¿El clic cayó sobre un teléfono? Si sí, marca y lo dice, para que quien
-   * llama no siga con lo suyo (en la lista de clientes, por ejemplo, abrir la
-   * ficha entera por querer llamar sería un viaje de más).
-   */
-  private marcoDesdeLaCelda(e: CellClickedEvent, numero?: string | null, quien?: string | null): boolean {
-    if (!(e.event?.target as HTMLElement)?.closest('[data-accion="llamar"]')) { return false; }
-    this.llamarConSoftphone(numero, quien);
-    return true;
   }
 
   /**
@@ -1992,6 +2225,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     // Ecuador: 0991234567 → 593991234567
     return limpio.startsWith('0') ? '593' + limpio.substring(1) : limpio;
   }
+
+  /**
+   * ¿A ese número se le puede escribir? Lo usan la plantilla y la grilla de
+   * contactos para no ofrecer el botón donde el enlace saldría inservible
+   * (un fijo, o un número a medio teclear). La regla vive en
+   * plantillasWhatsapp.ts, que es de donde la toma también saveGestion.
+   */
+  public tieneWhatsapp = puedeTenerWhatsapp;
 
   /** Dónde se abre el chat: en el navegador o en la aplicación instalada. */
   public get destinoWhatsapp(): 'web' | 'app' {

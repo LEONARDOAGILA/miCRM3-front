@@ -40,9 +40,9 @@
 
   <!-- Llamar -->
   <div class="recordatorio-llamar" *ngIf="telefono">
-    <a class="btn btn-success" [href]="enlaceTelefono">
+    <button type="button" class="btn btn-success" (click)="llamar()">
       <i class="fa fa-phone me-1"></i>Llamar al {{ telefono }}
-    </a>
+    </button>
     <a class="btn btn-white" [href]="enlaceWhatsapp" target="_blank" rel="noopener noreferrer" title="Abrir WhatsApp">
       <i class="fab fa-whatsapp"></i>
     </a>

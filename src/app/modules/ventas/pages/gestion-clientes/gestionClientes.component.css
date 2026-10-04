@@ -205,7 +205,10 @@
 }
 
 .gc-barra__acciones .btn {
-  font-size: .75rem;
+  /* Van a la misma escala que las pestañas y las grillas: en esta pantalla
+     caben muchas cosas y el tamaño del tema desperdiciaba alto. */
+  padding: .2rem .55rem;
+  font-size: .6875rem;
   white-space: nowrap;
 }
 
@@ -331,25 +334,16 @@
 
 /* Los iconos de al lado (llamar, WhatsApp, copiar, mapa): discretos hasta
    que se pasa por encima */
-/* ---------- El número, pulsable para marcar ----------
-   Mismo trato que en las grillas: se lee como un enlace y marca con el
-   softphone, en vez del tel: que abría lo que tuviera el sistema. */
+/* ---------- El número ----------
+   Texto, no enlace: para llamar está el botón de al lado. Se dejó de pintar
+   en azul a propósito, que invitaba a pulsarlo y marcaba sin querer. Se puede
+   seleccionar con el ratón para copiarlo a mano. */
 .gc-campo__numero {
   flex: 0 1 auto;
   min-width: 0;
-  padding: 0;
-  border: 0;
-  background: none;
 
-  color: var(--bs-link-color, #0d6efd);
-  font: inherit;
   font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-}
-
-.gc-campo__numero:hover {
-  text-decoration: underline;
+  user-select: text;
 }
 
 /* ---------- Las acciones del campo ----------
@@ -808,6 +802,10 @@
   align-items: baseline;
   gap: .25rem;
 
+  /* cada uno lleva un title explicando qué cuenta; que se note que hay algo
+     que leer, porque por el nombre solo no se adivina */
+  cursor: help;
+
   padding: .25rem .625rem;
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .25rem;
@@ -927,8 +925,28 @@
   }
 }
 
+/* ---------- El contenido de la pestaña abierta ----------
+   Se pinta como una hoja clara que continúa la pestaña activa: sin esto el
+   bloque de pestañas quedaba suelto sobre el fondo del panel y costaba ver
+   dónde empieza y dónde acaba. El borde arranca pegado a la barra de
+   pestañas, así que la activa se funde con él, que es lo que hace que se lea
+   como una carpeta. */
 .gestion-panel {
-  padding-top: .75rem;
+  padding: .75rem .75rem .5rem;
+  border: 1px solid var(--bs-border-color, #e2e8f0);
+  border-top: 0;
+  border-radius: 0 .35rem .35rem .35rem;
+
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 1px 3px rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+}
+
+/* Y el fondo de alrededor, un punto más apagado: es lo que hace que la hoja
+   parezca clara. Con un 2,5% no se notaba nada; a este nivel se distingue sin
+   llegar a verse gris. Sólo en la columna del cliente, que es donde están las
+   pestañas. */
+.gc-panel__contenido {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
 }
 
 /* ---------- Filtros del historial ---------- */
@@ -1041,15 +1059,48 @@
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .25rem;
 
-  background-color: var(--bs-body-bg, #fff);
-  color: var(--bs-secondary-color, #6c757d);
+  /* el color lo pone el tinte de cada acción, más abajo */
   font-size: .6875rem;
   cursor: pointer;
 }
 
-:host ::ng-deep .gestion-acciones .btn-cerrar:hover { border-color: var(--bs-teal, #20c997);   color: var(--bs-teal, #20c997); }
-:host ::ng-deep .gestion-acciones .btn-editar:hover { border-color: var(--bs-app-theme, #00acac); color: var(--bs-app-theme, #00acac); }
-:host ::ng-deep .gestion-acciones .btn-quitar:hover { border-color: var(--bs-danger, #dc3545); color: var(--bs-danger, #dc3545); }
+/* Cada botón con su color desde el principio: en gris sólo se distinguían al
+   pasar el ratón por encima y parecían apagados.
+
+   Los tintes son los mismos de los botones de la tarjeta Contactabilidad
+   (.gc-campo__accion), para que llamar sea el mismo azul en la ficha y en la
+   grilla y no haya que aprenderse dos códigos de color. Van en rgba y no en
+   color-mix(): el front tiene que funcionar en un iPhone 7, y ahí color-mix()
+   no existe (ver .browserslistrc). */
+:host ::ng-deep .gestion-acciones .btn-icon {
+  /* el gris es el de un botón sin acción conocida; cada uno pone el suyo */
+  --tinte: #6c757d;
+  --tinte-borde: rgba(108, 117, 125, .35);
+  --tinte-fondo: rgba(108, 117, 125, .08);
+
+  border-color: var(--tinte-borde);
+  background-color: var(--tinte-fondo);
+  color: var(--tinte);
+  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
+}
+
+:host ::ng-deep .gestion-acciones .btn-icon:hover {
+  border-color: var(--tinte);
+  background-color: var(--tinte);
+  color: #fff;
+}
+
+/* Llamar, en el azul de la tarjeta */
+:host ::ng-deep .gestion-acciones .btn-llamar { --tinte: #2f80ed; --tinte-borde: rgba(47, 128, 237, .38); --tinte-fondo: rgba(47, 128, 237, .10); }
+/* El verde de WhatsApp, que es el que la gente reconoce */
+:host ::ng-deep .gestion-acciones .btn-wa     { --tinte: #25d366; --tinte-borde: rgba(37, 211, 102, .40); --tinte-fondo: rgba(37, 211, 102, .12); }
+:host ::ng-deep .gestion-acciones .btn-cerrar { --tinte: #20c997; --tinte-borde: rgba(32, 201, 151, .40); --tinte-fondo: rgba(32, 201, 151, .10); }
+:host ::ng-deep .gestion-acciones .btn-editar { --tinte: #00acac; --tinte-borde: rgba(0, 172, 172, .38);  --tinte-fondo: rgba(0, 172, 172, .10); }
+:host ::ng-deep .gestion-acciones .btn-correo { --tinte: #6f42c1; --tinte-borde: rgba(111, 66, 193, .35); --tinte-fondo: rgba(111, 66, 193, .09); }
+:host ::ng-deep .gestion-acciones .btn-abrir  { --tinte: #198754; --tinte-borde: rgba(25, 135, 84, .35);  --tinte-fondo: rgba(25, 135, 84, .08); }
+:host ::ng-deep .gestion-acciones .btn-quitar { --tinte: #dc3545; --tinte-borde: rgba(220, 53, 69, .35);  --tinte-fondo: rgba(220, 53, 69, .08); }
+
+:host ::ng-deep .gestion-acciones .btn-icon:disabled { opacity: .4; cursor: default; }
 
 /* ============================================================
    RESPONSIVE
@@ -1229,7 +1280,10 @@
   align-items: center;
   gap: .4rem;
 
-  padding: .55rem 1rem;
+  /* Apretadas a propósito: eran 43px de alto, más que una fila de la grilla,
+     para cinco palabras. Con esto bajan a ~31px y esa diferencia se la queda
+     el contenido, que es lo que se viene a mirar. */
+  padding: .3rem .65rem;
 
   /* Pestaña con caja: borde arriba y a los lados, y abajo nada —ahí va la
      línea de la barra—. El de arriba es de 3px y se reserva en transparente
@@ -1244,7 +1298,7 @@
   z-index: 1;
 
   color: var(--bs-secondary-color, #6c757d);
-  font-size: .8125rem;
+  font-size: .75rem;
   font-weight: 600;
   white-space: nowrap;
   /* Las de atrás, ligeramente hundidas */
@@ -1317,8 +1371,10 @@
   margin-bottom: 1rem;
 }
 
+/* Las de arriba, un punto mayores que las del cliente pero sin pasarse:
+   estaban en 14px, el texto más grande de toda la pantalla. */
 .gestion-vistas .nav-link {
-  font-size: .875rem;
+  font-size: .75rem;
 }
 
 /* El cliente que se está trabajando, junto al rótulo de su pestaña */
@@ -1342,8 +1398,8 @@
 
 /* ---------- Las del cliente: un punto más compactas ---------- */
 .gestion-tabs .nav-link {
-  padding: .45rem .875rem;
-  font-size: .78125rem;
+  padding: .3rem .65rem;
+  font-size: .6875rem;
 }
 
 /* En pantallas estrechas caben menos: rótulos más juntos y una sombra al
@@ -1672,37 +1728,19 @@
   text-align: right;
 }
 
-/* ---------- Teléfono pulsable en las grillas ----------
-   Mismo trato que en la lista de clientes: se pinta como enlace, no como
-   botón, para no llenar la columna de cajas. Lo que avisa de que se puede
-   pulsar es el icono y el subrayado al pasar por encima. */
-:host ::ng-deep .gestion-llamar {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  min-height: 24px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--bs-link-color, #0d6efd);
-  font: inherit;
-  cursor: pointer;
+/* ---------- El teléfono de las grillas es texto ----------
+   Era un botón con el icono del teléfono y se marcaba de un clic. Molestaba
+   por dos lados: pintado como enlace, Safari del iPhone y la integración de
+   Zoiper en el navegador le añadían encima su propio icono y la bandera del
+   país; y al pulsarlo para copiarlo, marcaba. Ahora el número se lee y punto,
+   y quien marca es el botón del teléfono de la columna Acciones. */
+:host ::ng-deep .ag-cell[col-id="telefono"],
+:host ::ng-deep .ag-cell[col-id="celular"] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
-:host ::ng-deep .gestion-llamar:hover {
-  text-decoration: underline;
-}
-
-:host ::ng-deep .gestion-llamar i {
-  opacity: .6;
-  font-size: 10px;
-}
-
-:host ::ng-deep .gestion-llamar:hover i {
-  opacity: 1;
-}
-
-/* ---------- Pestaña «Comercial» ----------
+/* ---------- Pestaña «Más información» ----------
    Las condiciones vuelven a ir en tarjeta, como cuando estaban arriba: en
    rejilla suelta los cuatro datos quedaban desperdigados por todo el ancho
    del panel y costaba leerlos como un bloque.
@@ -1728,7 +1766,7 @@
   white-space: pre-line;
 }
 
-/* ---------- Fotos del lugar (pestaña «Comercial») ----------
+/* ---------- Fotos del lugar (pestaña «Más información») ----------
    Mismo trato que en la ficha del cliente, para que se reconozcan: recorte
    parejo porque las dos vienen con proporciones distintas, y el pie encima
    de la imagen para no robar alto. */
@@ -1785,4 +1823,149 @@
 
 .gestion-comercial__mapa:hover {
   opacity: 1;
+}
+
+/* ---------- Escala de las grillas ----------
+   La letra del tema (12px en celda) iba suelta respecto al resto de la
+   pantalla, que ya estaba en 11px. Con esto y el alto de fila bajado en el
+   HTML entran dos o tres filas más sin tener que desplazarse. */
+:host ::ng-deep .ag-theme-alpine {
+  --ag-cell-horizontal-padding: 8px;
+}
+
+/* La variable --ag-font-size ya vale 11px en los estilos globales, pero la
+   celda acaba en 12px igualmente; se fija aquí, que es donde se nota. */
+:host ::ng-deep .ag-theme-alpine .ag-cell {
+  font-size: 11px;
+}
+
+/* ---------- Los tres responsables ----------
+   Una ficha por papel, en rejilla: a un cliente lo atiende quien le vende,
+   quien le cobra y quien le llama, y cada uno se cambia por su cuenta. El
+   puesto vacío se marca en tenue para que se vea de un vistazo cuál falta. */
+.gestion-roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: .5rem;
+  margin-bottom: .6rem;
+}
+
+.gestion-rol {
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  overflow: hidden;
+}
+
+.gestion-rol.is-vacio {
+  border-style: dashed;
+}
+
+.gestion-rol__titulo {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .2rem .5rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .04);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .625rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.gestion-rol__cuerpo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .15rem;
+
+  padding: .4rem .5rem .5rem;
+  font-size: .75rem;
+}
+
+.gestion-rol.is-vacio .gestion-rol__quien b {
+  color: var(--bs-secondary-color, #adb5bd);
+  font-weight: 500;
+  font-style: italic;
+}
+
+.gestion-rol__desde,
+.gestion-rol__ayuda {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gestion-rol__cuerpo .btn {
+  margin-top: .3rem;
+  padding: .15rem .5rem;
+  font-size: .6875rem;
+}
+
+/* ---------- Barra de la pestaña Contactos ----------
+   Agregar y guardar, con el aviso de cambios pendientes al lado: esta
+   pantalla no tiene un «guardar» general, así que la lista avisa por su
+   cuenta de que queda algo sin mandar. */
+.gestion-contactos__barra {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+
+  margin-bottom: .4rem;
+}
+
+.gestion-contactos__barra .btn {
+  padding: .15rem .5rem;
+  font-size: .6875rem;
+}
+
+.gestion-contactos__aviso {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gestion-contactos__aviso.is-falta {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* La celda obligatoria vacía, marcada: el mismo aviso que en la ficha del
+   cliente, pero allí va acotado a .contactos-grid y aquí no existe esa clase. */
+:host ::ng-deep .gestion-grilla .ag-cell.celda-obligatoria {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
+  box-shadow: inset 0 0 0 1px rgba(var(--bs-danger-rgb, 220, 53, 69), .35);
+}
+
+/* ---------- Contacto desactivado ----------
+   La clase ya se aplicaba pero no tenía estilo, así que uno de baja se veía
+   igual que el resto. Tachado y apagado: se sigue leyendo —hace falta para
+   saber a quién NO llamar— pero no invita a usarlo. */
+:host ::ng-deep .gestion-grilla .ag-row.fila-excluida .ag-cell {
+  color: var(--bs-secondary-color, #adb5bd);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* La columna de acciones no se tacha: ahí está el botón de reactivar */
+:host ::ng-deep .gestion-grilla .ag-row.fila-excluida .ag-cell[col-id="acciones"] {
+  text-decoration: none;
+}
+
+/* Aviso dentro del menú de clic derecho, en lugar de los atajos */
+.menu-ctx__aviso {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .3rem .6rem;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  font-style: italic;
 }

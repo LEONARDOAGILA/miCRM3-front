@@ -10,7 +10,7 @@
   <div class="overlay1" aria-hidden="true"></div>
 }
 
-<app-modal-header title="Reasignar cliente" (onClose)="modal.dismiss()"></app-modal-header>
+<app-modal-header [title]="titulo" (onClose)="modal.dismiss()"></app-modal-header>
 
 <div class="modal-body reasignar-modal-body">
   <form [formGroup]="form" class="form-validate" novalidate>

@@ -9,6 +9,7 @@ import { GestionService } from '../../../services/gestion.service';
 import { EmpleadoService } from '../../../../rh/services/empleado.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ClienteModel } from '../../../interfaces/clienteModel';
+import { ROLES_RESPONSABLE, RolResponsable } from '../../../interfaces/gestionModel';
 // El vendedor es un empleado: se elige con el mismo selector que el jefe en RH
 import { ListEmpleadosComponent } from '../../../../rh/pages/empleados/listEmpleados/listEmpleados.component';
 
@@ -31,12 +32,25 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
   @Input() cliente: ClienteModel | null = null;
   /** Cuántas gestiones pendientes tiene ahora mismo (sólo informativo) */
   @Input() pendientes = 0;
+  /** Con qué papel se asigna. Sin indicar nada, el vendedor de siempre. */
+  @Input() rol: RolResponsable = 'VENDEDOR';
+  /**
+   * Quién lo tiene ahora en ese papel, para no proponer a la misma persona.
+   * Para el vendedor se cae a vendedor_id, que es donde vive.
+   */
+  @Input() actualId: number | null = null;
 
   @Output() reasignado = new EventEmitter<any>();
 
   public form!: FormGroup;
   public isLoading$ = this._loadingService.isLoading$;
   public guardando = false;
+
+  /** «Reasignar vendedor», «Reasignar cobrador»… según con qué papel se abra. */
+  get titulo(): string {
+    const r = ROLES_RESPONSABLE.find(x => x.id === this.rol);
+    return 'Reasignar ' + (r ? r.name.toLowerCase() : 'responsable');
+  }
 
   /** Nombre del vendedor elegido, de sólo lectura como en saveCliente */
   public vendedorNombreControl = new FormControl({ value: '', disabled: true });
@@ -129,8 +143,9 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
       this._toastr.error('Elija el vendedor que se hará cargo.', 'No se puede reasignar', { timeOut: 8000, closeButton: true });
       return;
     }
-    if (Number(this.form.get('empleado_id')?.value) === Number(this.cliente.vendedor_id)) {
-      this._toastr.warning('El cliente ya está asignado a ese vendedor.', 'Sin cambios');
+    const actual = this.actualId ?? (this.rol === 'VENDEDOR' ? this.cliente.vendedor_id : null);
+    if (actual && Number(this.form.get('empleado_id')?.value) === Number(actual)) {
+      this._toastr.warning('El cliente ya tiene a esa persona en ese papel.', 'Sin cambios');
       return;
     }
 
@@ -143,6 +158,7 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
         empleado_id: Number(v.empleado_id),
         motivo: (v.motivo ?? '').trim() || null,
         mover_agenda: v.mover_agenda !== false,
+        rol: this.rol,
       }));
 
       if (res?.status !== 'success') {
@@ -151,7 +167,7 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
       }
 
       this.reasignado.emit(res.data);
-      this._toastr.success(res.message, 'Cartera actualizada', { closeButton: true });
+      this._toastr.success(res.message, 'Asignación actualizada', { closeButton: true });
       this.modal.close(res.data);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP

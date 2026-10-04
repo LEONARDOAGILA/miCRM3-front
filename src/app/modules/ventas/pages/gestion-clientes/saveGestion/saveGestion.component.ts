@@ -5,6 +5,8 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
 import { GestionService } from '../../../services/gestion.service';
+import { SoftphoneService } from '../../../services/softphone.service';
+import { enlaceDeWhatsapp, puedeTenerWhatsapp } from '../../../interfaces/plantillasWhatsapp';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ClienteModel, ContactoCliente } from '../../../interfaces/clienteModel';
 import {
@@ -65,7 +67,68 @@ export class SaveGestionComponent implements OnInit {
     private _toastr: ToastrService,
     private _loadingService: LoadingService,
     private _gestionService: GestionService,
+    private _softphone: SoftphoneService,
   ) {}
+
+  // ================================================================
+  // LOS TELÉFONOS DEL CLIENTE
+  // ================================================================
+  //
+  // Las mismas tres acciones que en la ficha —llamar, WhatsApp y copiar—,
+  // para no tener que cerrar el formulario a mitad para buscarlas.
+
+  /**
+   * ¿Ese número puede tener WhatsApp? La regla está en plantillasWhatsapp.ts,
+   * compartida con la pantalla de detrás: tenerla escrita dos veces era pedir
+   * que un día dejaran de decir lo mismo.
+   */
+  public tieneWhatsapp = puedeTenerWhatsapp;
+
+  /** Lo pone en el campo, que es el número que se guarda con la gestión. */
+  usarNumero(numero: string): void {
+    this.form.controls['telefono'].setValue(numero);
+    this.form.controls['telefono'].markAsDirty();
+  }
+
+  /**
+   * Marca con el softphone.
+   *
+   * Aquí no se abre otra gestión al marcar, como sí hace la pantalla de
+   * detrás: ya se está escribiendo una.
+   */
+  llamar(numero: string): void {
+    const marcado = this._softphone.marcar(numero);
+    if (!marcado) { return; }
+
+    this.usarNumero(numero);
+    this._toastr.info('Marcando ' + marcado + '…', this.cliente?.nombre_completo || 'Zoiper', { timeOut: 2500 });
+  }
+
+  /**
+   * Abre la conversación de WhatsApp con ese número.
+   *
+   * Sin menú de plantillas: ese vive en la ficha, y aquí dentro un menú
+   * flotante sobre un modal se corta contra sus bordes.
+   */
+  porWhatsapp(numero: string): void {
+    const enlace = enlaceDeWhatsapp(numero);
+    if (!enlace) { return; }
+
+    this.usarNumero(numero);
+    window.open(enlace, '_blank', 'noopener');
+  }
+
+  /** Al portapapeles, para pegarlo donde haga falta. */
+  async copiar(numero: string): Promise<void> {
+    this.usarNumero(numero);
+    try {
+      await navigator.clipboard.writeText(numero);
+      this._toastr.success('El teléfono se copió al portapapeles', '', { timeOut: 1500 });
+    } catch {
+      // Sin permiso o sin https: no es grave, no se avisa con un error
+      console.warn('No se pudo copiar al portapapeles');
+    }
+  }
 
   ngOnInit(): void {
     this.titulo = this.modo === 'programar' ? 'Programar gestión'
@@ -85,6 +148,44 @@ export class SaveGestionComponent implements OnInit {
   /** Programada mientras esté PENDIENTE; el resto, realizada. */
   get esProgramada(): boolean {
     return this.form?.get('estado')?.value === 'PENDIENTE';
+  }
+
+  /**
+   * «En este momento»: realizada, pero la hora se pone al guardar.
+   *
+   * Es distinto de «Ya la hice»: ahí la hora que se propone es la de abrir el
+   * formulario, y entre abrirlo y guardarlo pueden pasar diez minutos de
+   * conversación. Para una llamada que se está atendiendo ahora, la hora buena
+   * es la de cuando se termina de escribir.
+   *
+   * No es un estado distinto para la base: sigue siendo REALIZADA.
+   */
+  public ahoraMismo = false;
+
+  get esAhora(): boolean { return this.ahoraMismo && !this.esProgramada; }
+
+  /** Las tres opciones del interruptor de arriba. */
+  elegirMomento(cual: 'ahora' | 'hecha' | 'programada'): void {
+    this.ahoraMismo = cual === 'ahora';
+    this.ctrlEstado.setValue(cual === 'programada' ? 'PENDIENTE' : 'REALIZADA');
+  }
+
+  // ---------- Anchos de la rejilla ----------
+  //
+  // Van aquí y no en la plantilla porque dependen de qué campos estén a la
+  // vista —la fecha desaparece con «En este momento», el resultado con
+  // «Programarla», y la persona de contacto sólo sale si el cliente tiene—.
+  // Calculados, las filas quedan siempre completas; a mano, cada combinación
+  // dejaba un hueco distinto.
+
+  get colTipo(): string      { return this.esAhora ? 'col-12 col-md-4' : 'col-12 col-md-3'; }
+  get colPrioridad(): string { return this.esAhora ? 'col-6 col-md-4'  : 'col-6 col-md-3'; }
+  get colDuracion(): string  { return this.esAhora ? 'col-6 col-md-4'  : 'col-6 col-md-2'; }
+
+  /** Lo que sobra en su fila: 12 menos el resultado y la persona de contacto. */
+  get colAsunto(): string {
+    const resto = 12 - (this.esProgramada ? 0 : 3) - (this.contactosCombo.length ? 4 : 0);
+    return 'col-12 col-md-' + resto;
   }
 
   get ctrlEstado(): FormControl { return this.form.controls['estado'] as FormControl; }
@@ -109,6 +210,11 @@ export class SaveGestionComponent implements OnInit {
       nota:             [g?.nota ?? '', [Validators.maxLength(4000)]],
     });
 
+    // Una gestión nueva que se registra es, casi siempre, la que se acaba de
+    // hacer: se arranca en «En este momento» y la hora la pone el guardado.
+    // Al corregir una existente se respeta lo que ya tenía.
+    this.ahoraMismo = this.modo === 'registrar';
+
     // Lo programado pide fecha futura; lo realizado, resultado
     this.aplicarReglasDelEstado(estadoInicial);
     this.form.get('estado')?.valueChanges.subscribe(v => this.aplicarReglasDelEstado(v));
@@ -132,6 +238,9 @@ export class SaveGestionComponent implements OnInit {
     if (estado === 'REALIZADA' && !this.form.get('fecha_realizada')?.value) {
       this.form.get('fecha_realizada')?.setValue(this.ahora(), { emitEvent: false });
     }
+
+    // Programar es lo contrario de «en este momento»: no pueden convivir
+    if (programada) { this.ahoraMismo = false; }
 
     fp?.updateValueAndValidity({ emitEvent: false });
     res?.updateValueAndValidity({ emitEvent: false });
@@ -183,8 +292,17 @@ export class SaveGestionComponent implements OnInit {
     }
 
     const v = this.form.getRawValue();
+
+    // «En este momento»: la hora es la de ahora, no la de cuando se abrió el
+    // formulario. Se calcula aquí, con el guardado ya en marcha.
+    if (this.esAhora) { v.fecha_realizada = this.ahora(); }
+
     const payload: any = {
       cliente_id:       this.cliente.id,
+      // Cuál de las tres eligió el vendedor. No lo sabe nadie más: a la base
+      // llegan iguales «en este momento» y «ya la hice» (REALIZADA con su
+      // fecha), y sin esto no habría forma de separarlas en un reporte.
+      modo_registro:    this.esProgramada ? 'PROGRAMADA' : (this.esAhora ? 'AHORA' : 'YA_HECHA'),
       tipo:             v.tipo,
       estado:           v.estado,
       asunto:           (v.asunto ?? '').trim(),

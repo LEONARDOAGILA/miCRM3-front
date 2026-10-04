@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { RolResponsable } from '../interfaces/gestionModel';
 
 /** Filtros de la grilla de gestiones. */
 export interface FiltrosGestion {
@@ -153,8 +154,13 @@ export class GestionService {
   //   ******   CARTERA   ******  //
 
   /** Cambia el vendedor del cliente y deja el movimiento en el historial. */
-  reasignar(clienteId: number, data: { empleado_id: number | null; motivo?: string | null; mover_agenda?: boolean }): Observable<any> {
+  reasignar(clienteId: number, data: { empleado_id: number | null; motivo?: string | null; mover_agenda?: boolean; rol?: RolResponsable }): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'reasignar/' + clienteId, data);
+  }
+
+  /** Quién atiende al cliente ahora mismo, en cada papel. */
+  responsables(clienteId: number): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'responsables/' + clienteId);
   }
 
   asignaciones(clienteId: number): Observable<any> {

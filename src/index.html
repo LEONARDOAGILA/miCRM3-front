@@ -9,6 +9,18 @@
 	<meta content="" name="description" />
   <meta content="" name="author" />
 
+  <!--
+    Que nadie convierta los números en enlaces por su cuenta.
+
+    Safari del iPhone y la integración de Zoiper en el navegador van leyendo
+    el texto de la página, y a todo lo que les parece un teléfono le ponen
+    encima un enlace para llamar, con su icono y la bandera del país. En el
+    CRM eso estorba: los números se marcan con el botón de llamar, que pasa
+    por el softphone del puesto, y el enlace automático se los lleva fuera
+    del navegador.
+  -->
+  <meta name="format-detection" content="telephone=no" />
+
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
 </head>
 <body detect-scroll (onScroll)="handleScroll($event)">
