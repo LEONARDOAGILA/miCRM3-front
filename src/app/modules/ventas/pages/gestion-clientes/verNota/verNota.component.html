@@ -16,10 +16,47 @@
        [noButtonCollapse]="true"
        [noButtonReload]="true"
        [noButtonRemove]="true"
-       ButtonPrint="true"
        ButtonRemoveModal="true"
-       (panelPrinted)="imprimir()"
        (panelRemovedModal)="modal.dismiss()">
+
+  <!-- ========================= LA CINTA =========================
+       La misma que la del editor (ver cintaNota.css), pero sin
+       pestañas: aquí sólo se lee, y una fila de pestañas para dos
+       botones es un piso de más que hay que bajar para llegar a lo
+       único que se puede hacer.
+
+       Imprimir ya no va en la barra de título del modal (era el
+       ButtonPrint del panel): los dos botones hacen lo mismo
+       —sacar la nota de la pantalla— y se leen mejor juntos y con
+       su nombre.
+       ============================================================ -->
+  <div class="cinta">
+    <div class="cinta__grupos">
+      <div class="cinta__grupo">
+        <div class="cinta__grupo__fila">
+          <button type="button" class="cinta__btn cinta__btn--grande cinta__btn--principal"
+                  title="Imprimir la nota (o guardarla como PDF)" (click)="imprimir()">
+            <i class="fa fa-print"></i><span>Imprimir</span>
+          </button>
+
+          <button type="button" class="cinta__btn cinta__btn--grande"
+                  title="Bajar la nota como documento de Word"
+                  [disabled]="exportando" (click)="exportarWord()">
+            @if (exportando) {
+              <i class="fa fa-spinner fa-spin"></i><span>Generando…</span>
+            } @else {
+              <i class="fa fa-file-word"></i><span>Exportar</span>
+            }
+          </button>
+        </div>
+        <div class="cinta__grupo__etiqueta">Documento</div>
+      </div>
+
+      <span class="cinta__ayuda">
+        <i class="fa fa-eye me-1"></i>Sólo lectura · para cambiarla, usa «Modificar» en la lista
+      </span>
+    </div>
+  </div>
 
   <div class="nota-ver">
     <div class="nota-ver__hoja">

@@ -77,8 +77,48 @@
   min-height: 0;
 }
 
+/* El buscador y el filtro por estado, en la misma línea: son lo mismo —acotar
+   la lista— y separarlos en dos renglones se come alto de la grilla, que es lo
+   que de verdad se viene a mirar. El buscador se queda con el sitio que sobra. */
 .gc-lista__buscador {
   flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+}
+
+.gc-lista__buscador > app-campoBusquedaPaginacion {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Ancho fijo: si se deja al contenido, cambia de tamaño al elegir
+   («Todos los estados» mide el doble que «Activo») y el buscador de al lado
+   se encoge y se estira cada vez */
+.gc-lista__estado {
+  flex: 0 0 auto;
+  width: 8.25rem;
+  font-size: .75rem;
+}
+
+/* Filtrando: se nota de un vistazo que la lista no está entera, que es lo que
+   evita el «me faltan clientes» */
+.gc-lista__estado.is-filtrando {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+@media (max-width: 575.98px) {
+  /* En un teléfono los dos no caben de lado: el filtro baja a su renglón */
+  .gc-lista__buscador {
+    flex-wrap: wrap;
+  }
+
+  .gc-lista__estado {
+    width: 100%;
+  }
 }
 
 /* La grilla de clientes, la misma de «Listar clientes».
@@ -1305,10 +1345,19 @@
   padding: .3rem .65rem;
 
   /* Pestaña con caja: borde arriba y a los lados, y abajo nada —ahí va la
-     línea de la barra—. El de arriba es de 3px y se reserva en transparente
-     para que la activa no cambie de alto al marcarse. */
+     línea de la barra—.
+
+     El de arriba mide 3px en todas, activa o no, para que marcarse no le
+     cambie el alto a ninguna; lo que cambia es el color. En las de atrás va
+     del mismo gris que los lados y que la línea que separa unas de otras
+     (--bs-border-color), así la pestaña se lee como una caja cerrada en vez
+     de quedar abierta por arriba. Antes ese borde era transparente y sólo se
+     reservaba el sitio.
+
+     La variable es la misma en claro y en oscuro —el tema le da #dee2e6 o
+     #495057—, así que no hace falta una regla aparte para el modo oscuro. */
   border: 1px solid var(--bs-border-color, #e2e8f0);
-  border-top: 3px solid transparent;
+  border-top: 3px solid var(--bs-border-color, #e2e8f0);
   border-bottom-color: transparent;
   border-radius: .35rem .35rem 0 0;
 

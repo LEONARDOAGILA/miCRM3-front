@@ -30,7 +30,18 @@ export interface ArchivoCliente {
 }
 
 /** Lo que se ve mientras un fichero está en la cola de subida. */
-export type EstadoSubida = 'pendiente' | 'subiendo' | 'guardando' | 'ok' | 'error';
+export type EstadoSubida =
+  | 'pendiente'
+  | 'subiendo'
+  | 'guardando'
+  | 'ok'
+  | 'error'
+  /**
+   * Lo paró el usuario. Se distingue de 'error' porque no hay nada que
+   * explicar ni que revisar: se vuelve a intentar cuando quiera, y mientras
+   * tanto la fila se queda en la lista como una pendiente más.
+   */
+  | 'cancelado';
 
 export interface FilaSubida {
   clave: number;

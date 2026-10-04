@@ -29,12 +29,23 @@ export class ClienteService {
   }
 
   //   ******   LISTADO CON PAGINACIÓN   ******  //
-  allClientes(page: number = 1, perPage: number = 10, search: string = ''): Observable<any> {
+  /**
+   * Una página de clientes.
+   *
+   * `estado` filtra por ACTIVO / INACTIVO / SUSPENDIDO / MOROSO, y va al
+   * servidor en vez de filtrarse aquí porque la lista está paginada allá: con
+   * mil clientes, filtrar en el navegador sólo miraría las quince filas de la
+   * página que se está viendo. Vacío = todos.
+   */
+  allClientes(page: number = 1, perPage: number = 10, search: string = '', estado: string = ''): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
     if (search) {
       params = params.set('search', search);
+    }
+    if (estado) {
+      params = params.set('estado', estado);
     }
     return this._http.get<any>(this.URL_SERVICIOS + 'allClientes', { params, observe: 'response' });
   }

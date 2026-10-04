@@ -246,6 +246,20 @@
                 (buscar)="buscarClientes($event)"
                 (limpiado)="alLimpiarBusquedaClientes()">
               </app-campoBusquedaPaginacion>
+
+              <!-- El filtro por estado va al servidor junto con la búsqueda: la
+                   lista está paginada allá, así que filtrar aquí sólo miraría
+                   las quince filas de la página que se está viendo. -->
+              <select class="form-select form-select-sm gc-lista__estado"
+                      title="Filtrar la lista por el estado del cliente"
+                      [class.is-filtrando]="estadoClientes"
+                      [ngModel]="estadoClientes"
+                      (ngModelChange)="filtrarPorEstado($event)">
+                <option value="">Todos los estados</option>
+                @for (e of estadosCliente; track e.id) {
+                  <option [value]="e.id">{{ e.name }}</option>
+                }
+              </select>
             </div>
 
             <!-- La misma grilla de «Listar clientes», aquí encajada: se puede

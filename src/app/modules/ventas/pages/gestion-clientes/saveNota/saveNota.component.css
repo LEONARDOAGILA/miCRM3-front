@@ -1,10 +1,18 @@
+/* La cinta la comparten el editor y el visor: ver cintaNota.css */
+@import '../cintaNota.css';
+
 /* ============================================================
    NOTA DEL CLIENTE (escribir / corregir)
 
-   Mismo lenguaje que el visor: fondo gris y la nota sobre una hoja
-   blanca. Se escribe sobre lo que luego se va a leer, así que los
-   tamaños y la tipografía son los mismos que allí; lo único que
-   cambia es que aquí los campos se pueden tocar.
+   Dos piezas: la cinta arriba y la hoja debajo, como Word.
+
+   La cinta reparte las acciones en pestañas y cada grupo lleva su
+   nombre debajo. No es decoración: con veinte controles seguidos en
+   una tira, encontrar «justificado» es cuestión de ir probando;
+   agrupados y con etiqueta, se busca por el nombre del grupo.
+
+   La hoja es blanca y el fondo gris, igual que el visor y que el
+   papel: se escribe sobre lo que luego se va a leer.
 
    Los tintes van en rgba y no en color-mix(): el front tiene que
    funcionar en un iPhone 7 (ver .browserslistrc).
@@ -15,15 +23,6 @@
   padding: 0;
 }
 
-/* ---------- Los botones de la barra de título ---------- */
-.nota-acciones {
-  display: flex;
-  align-items: center;
-  gap: .25rem;
-  margin-left: auto;
-  margin-right: .5rem;
-}
-
 /* ---------- La caja entera ---------- */
 .nota-edicion {
   display: flex;
@@ -31,39 +30,13 @@
   min-height: 0;
 }
 
-/* ---------- La barra de formato ----------
-   Arriba y fija: se usa mientras se escribe, así que tiene que seguir ahí al
-   bajar por la hoja. */
-.nota-barra {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .5rem;
-  flex: 0 0 auto;
-
-  padding: .25rem .5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, .15);
-  background-color: #f1f3f5;
-}
-
-.nota-ayuda {
-  margin-left: auto;
-  color: #6c757d;
-  font-size: .6875rem;
-  white-space: nowrap;
-}
-
-:host ::ng-deep .nota-barra .NgxEditor__MenuBar {
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-/* ---------- El fondo ---------- */
+/* ============================================================
+   LA HOJA
+   ============================================================ */
 .nota-fondo {
   flex: 1 1 auto;
   min-height: 0;
-  max-height: 64vh;
+  max-height: 60vh;
   padding: 1rem .75rem;
   overflow-y: auto;
 
@@ -71,7 +44,6 @@
   background-color: #525659;
 }
 
-/* ---------- La hoja ---------- */
 .nota-hoja {
   max-width: 820px;
   margin: 0 auto;
@@ -80,74 +52,6 @@
   background-color: #fff;
   color: #212529;
   box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
-}
-
-/* ---------- El membrete ---------- */
-.nota-membrete {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-
-  padding-bottom: .625rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.nota-membrete__color {
-  flex: 0 0 auto;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-/* Sin caja: se lee como el dato del membrete que es, y se nota que se puede
-   cambiar al pasar por encima */
-.nota-membrete__select {
-  width: auto;
-  height: 22px;
-  padding: 0 1.25rem 0 .25rem;
-  border-color: transparent;
-
-  background-color: transparent;
-  color: #495057;
-  font-size: .6875rem;
-  font-weight: 600;
-}
-
-.nota-membrete__select:hover {
-  border-color: #dee2e6;
-  background-color: #f8f9fa;
-}
-
-.nota-fijar {
-  display: inline-flex;
-  align-items: center;
-
-  margin-left: auto;
-  padding: .1rem .4rem;
-  border: 1px solid transparent;
-  border-radius: .25rem;
-
-  color: #6c757d;
-  font-size: .6875rem;
-  white-space: nowrap;
-  cursor: pointer;
-
-  transition: border-color .12s ease, background-color .12s ease, color .12s ease;
-}
-
-.nota-fijar input {
-  margin-right: .375rem;
-}
-
-.nota-fijar:hover {
-  border-color: #dee2e6;
-}
-
-.nota-fijar.is-activa {
-  border-color: rgba(240, 173, 78, .5);
-  background-color: rgba(240, 173, 78, .12);
-  color: #a86a12;
 }
 
 /* ---------- El título ----------
@@ -220,6 +124,15 @@
 :host ::ng-deep .nota-cuerpo .NgxEditor__Content h2 { font-size: 1.125rem; }
 :host ::ng-deep .nota-cuerpo .NgxEditor__Content h3 { font-size: 1.0625rem; }
 :host ::ng-deep .nota-cuerpo .NgxEditor__Content h4 { font-size: 1rem; }
+/* Los dos pequeños: se ofrecen en el desplegable, así que tienen que verse
+   distintos del texto normal o elegirlos parece no hacer nada */
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content h5 { font-size: .9375rem; }
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content h6 {
+  font-size: .875rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
 
 :host ::ng-deep .nota-cuerpo .NgxEditor__Content blockquote {
   margin: .85rem 0;
@@ -235,111 +148,6 @@
   margin: 1rem auto;
   border: 1px solid #e9ecef;
   border-radius: .25rem;
-}
-
-/* ---------- Expandido ----------
-   El tema convierte .panel en position:fixed inset:0 con display:flex, así que
-   ahí sí hay altura definida: se encadena flex hasta el fondo y se tira el tope
-   del 64vh. */
-:host ::ng-deep .panel.panel-expand > .panel-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: 0;
-  /* el tema lo deja en `scroll` y saca una barra fija aunque no haga falta */
-  overflow-x: auto;
-}
-
-:host ::ng-deep .panel.panel-expand .nota-edicion {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-:host ::ng-deep .panel.panel-expand .nota-fondo {
-  max-height: none;
-  padding: 1.5rem 1rem 2rem;
-}
-
-/* ---------- Móvil ----------
-   La hoja ocupa todo: los márgenes de papel en un teléfono son sitio que se le
-   quita al texto. */
-@media (max-width: 575.98px) {
-  .nota-fondo {
-    padding: 0;
-    background-color: #fff;
-  }
-
-  .nota-hoja {
-    padding: 1rem .875rem 1.5rem;
-    box-shadow: none;
-  }
-
-  .nota-ayuda { display: none; }
-  .nota-titulo { font-size: 1.125rem; }
-
-  :host ::ng-deep .nota-cuerpo .NgxEditor__Content {
-    min-height: 180px;
-    font-size: .875rem;
-  }
-}
-
-/* ---------- Los botones de tabla ----------
-   Van al lado de la barra de ngx-editor y no dentro, porque su barra no
-   contempla tablas: su esquema no las tiene. Se separan con una línea para que
-   se lean como otro grupo. */
-.nota-tablas {
-  display: inline-flex;
-  align-items: center;
-  gap: .125rem;
-
-  padding-left: .375rem;
-  border-left: 1px solid rgba(0, 0, 0, .15);
-}
-
-.nota-tablas__grupo {
-  display: inline-flex;
-  align-items: center;
-  gap: .125rem;
-}
-
-.nota-tablas__btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 26px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: .25rem;
-
-  background: transparent;
-  color: #495057;
-  font-size: .75rem;
-  cursor: pointer;
-
-  transition: background-color .12s ease, color .12s ease;
-}
-
-.nota-tablas__btn:hover {
-  background-color: rgba(0, 0, 0, .08);
-}
-
-.nota-tablas__btn--quitar:hover {
-  background-color: rgba(220, 53, 69, .15);
-  color: #dc3545;
-}
-
-/* La «f» y la «c» de quitar fila / quitar columna: con el icono del menos solo
-   no se distinguen, y dos iconos parecidos seguidos son una trampa */
-.nota-tablas__letra {
-  position: absolute;
-  right: 2px;
-  bottom: 1px;
-  font-size: .5rem;
-  font-weight: 700;
-  line-height: 1;
 }
 
 /* ---------- Las tablas dentro del editor ----------
@@ -395,4 +203,57 @@
 
 :host ::ng-deep .nota-cuerpo .NgxEditor__Content.resize-cursor {
   cursor: col-resize;
+}
+
+/* ---------- Expandido ----------
+   El tema convierte .panel en position:fixed inset:0 con display:flex, así que
+   ahí sí hay altura definida: se encadena flex hasta el fondo y se tira el tope
+   del 60vh. */
+:host ::ng-deep .panel.panel-expand > .panel-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  /* el tema lo deja en `scroll` y saca una barra fija aunque no haga falta */
+  overflow-x: auto;
+}
+
+:host ::ng-deep .panel.panel-expand .nota-edicion {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .panel.panel-expand .nota-fondo {
+  max-height: none;
+  padding: 1.5rem 1rem 2rem;
+}
+
+/* ---------- Móvil ----------
+   La hoja ocupa todo: los márgenes de papel en un teléfono son sitio que se le
+   quita al texto. */
+@media (max-width: 575.98px) {
+  .nota-fondo {
+    padding: 0;
+    background-color: #fff;
+  }
+
+  .nota-hoja {
+    padding: 1rem .875rem 1.5rem;
+    box-shadow: none;
+  }
+
+  .nota-titulo { font-size: 1.125rem; }
+
+  /* Lo de la cinta en móvil va en cintaNota.css, con el resto de la cinta */
+
+  :host ::ng-deep .nota-cuerpo .NgxEditor__Content {
+    min-height: 180px;
+    font-size: .875rem;
+  }
+
+  /* En oscuro, el fondo de detrás de la hoja se vuelve blanco para no gastar
+     sitio, y eso deja un marco blanco alrededor del papel */
+  :host-context([data-bs-theme='dark']) .nota-fondo {
+    background-color: var(--bs-body-bg, #212529);
+  }
 }

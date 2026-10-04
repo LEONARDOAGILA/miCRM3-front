@@ -214,3 +214,51 @@
   color: var(--bs-secondary-color, #6c757d);
   font-size: .75rem;
 }
+
+/* ---------- Parar la subida ----------
+   Cancelado no es error: va en ámbar y sin el rojo de «algo salió mal», porque
+   lo que pasó es que el usuario decidió pararlo. */
+.arch-fila.is-cancelado { background-color: rgba(255, 193, 7, .08); }
+
+.arch-fila__cancelado {
+  color: #a86a12;
+}
+
+/* El de cortar usa el mismo tinte ámbar, para que se lea como «parar» y no
+   como «borrar»: el rojo ya es el de quitar de la lista */
+.arch-fila .btn-cortar {
+  --tinte: #c77800;
+  --tinte-borde: rgba(199, 120, 0, .35);
+  --tinte-fondo: rgba(199, 120, 0, .09);
+  margin-left: .25rem;
+}
+
+/* El de detener la tanda: con color, porque mientras sube es el único botón
+   que se puede pulsar y tiene que verse */
+.btn-detener {
+  border-color: rgba(199, 120, 0, .45);
+  color: #c77800;
+}
+
+.btn-detener:not(:disabled):hover {
+  border-color: #c77800;
+  background-color: #c77800;
+  color: #fff;
+}
+
+/* Mientras se guarda la fila en la base no se puede cortar: dura un instante,
+   pero el botón tiene que decir por qué no responde en vez de quedarse mudo */
+.btn-detener:disabled {
+  border-color: rgba(108, 117, 125, .25);
+  color: #adb5bd;
+  cursor: progress;
+}
+
+:host-context([data-bs-theme='dark']) .arch-fila__cancelado,
+:host-context([data-bs-theme='dark']) .btn-detener {
+  color: #ffc107;
+}
+
+:host-context([data-bs-theme='dark']) .btn-detener {
+  border-color: rgba(255, 193, 7, .4);
+}

@@ -15,6 +15,10 @@ import { firstValueFrom } from 'rxjs';
 import { PanelModule } from '../../../../../components/panel/panel.module';
 import { NotaClienteService } from '../../../services/notaCliente.service';
 import { COLORES_NOTA, ColorNota, NotaCliente, tinteDeNota } from '../../../interfaces/notaCliente';
+import { DatosDocumentoNota, descargarNotaWord, imprimirNota, wordAHtml } from '../../../interfaces/notaDocumento';
+
+/** Las pestañas de la cinta. «tabla» es contextual: sólo dentro de una. */
+export type PestanaCinta = 'archivo' | 'inicio' | 'insertar' | 'tabla';
 
 /**
  * Escribir o corregir una nota del cliente.
@@ -24,10 +28,22 @@ import { COLORES_NOTA, ColorNota, NotaCliente, tinteDeNota } from '../../../inte
  * con los formularios de Angular y no arrastra jQuery como las alternativas
  * clásicas. No hacía falta traer otra librería sólo para esto.
  *
- * La barra lleva lo que se usa escribiendo sobre un cliente —negrita, listas,
- * un título, un enlace, color— y deja fuera lo que no pinta nada aquí: imágenes
- * (para eso está la pestaña de Archivos, que las guarda de verdad en el
- * servidor en vez de incrustarlas en el HTML y engordar la fila).
+ * Se parece a Word a propósito, y sin una sola dependencia de más: lo que falta
+ * en ngx-editor son las tablas (prosemirror-tables) y la tipografía (dos marcas
+ * del esquema, ver esquemaNotas.ts); el resto —negrita, títulos, listas,
+ * sangría, alineado, super/subíndice, color, deshacer— ya lo traía y sólo había
+ * que ponerlo en la barra.
+ *
+ * Lo que no se ve en la barra y también funciona, porque ngx-editor lo trae de
+ * serie (buildInputRules + su keymap):
+ *
+ *   · Ctrl+B / I / U, Ctrl+Z, Ctrl+Y
+ *   · «## » al empezar el renglón lo vuelve título; «1. » y «- », listas;
+ *     «> », cita; «``` », bloque de código
+ *   · las comillas se vuelven tipográficas, «--» se vuelve raya y «...» puntos
+ *     suspensivos
+ *   · Tabulador: sangra la lista, y dentro de una tabla pasa a la celda
+ *     siguiente (igual que Word)
  */
 @Component({
   selector: 'app-saveNota',
@@ -53,8 +69,13 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
   public guardando = false;
   /** Mientras sube una imagen: bloquea guardar para no dejarla a medias. */
   public subiendoImagen = false;
+  /** Mientras se arma el .docx: evita que dos clics generen dos ficheros. */
+  public exportando = false;
+  /** Mientras se lee un .docx y se suben sus imágenes. */
+  public importando = false;
 
   @ViewChild('selectorImagen') selectorImagen!: ElementRef<HTMLInputElement>;
+  @ViewChild('selectorWord') selectorWord!: ElementRef<HTMLInputElement>;
   @ViewChild('cajaEdicion') cajaEdicion!: ElementRef<HTMLElement>;
 
   public readonly colores = COLORES_NOTA;
@@ -62,22 +83,86 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly tinteDe = tinteDeNota;
 
   /**
-   * Lo que se ofrece al escribir.
+   * La barra de ngx-editor va partida en varias, una por grupo de la cinta.
    *
-   * Sin imágenes a propósito: una foto pegada aquí se guardaría dentro del HTML
-   * en base64 y una sola de 2 MB haría la fila ocho veces más grande que todas
-   * las demás notas juntas. Para eso está la pestaña de Archivos.
+   * Su <ngx-editor-menu> pinta una tira seguida y no sabe de grupos, así que la
+   * única forma de tener los recuadros con su etiqueta debajo —Fuente, Párrafo,
+   * Estilos, como en Word— es montar una barra por grupo. Todas apuntan al
+   * mismo editor, así que entre ellas no se pelean: cada una es una vista.
+   *
+   * Sin 'image': el de ngx-editor pide una URL a mano, y aquí la imagen se sube
+   * al servidor con el botón propio de la pestaña Insertar.
    */
-  public readonly toolbar: Toolbar = [
+  public readonly tbDeshacer: Toolbar = [['undo', 'redo']];
+  public readonly tbFuente: Toolbar = [
     ['bold', 'italic', 'underline', 'strike'],
-    ['ordered_list', 'bullet_list'],
-    [{ heading: ['h3', 'h4'] }],
-    ['link'],
+    ['superscript', 'subscript'],
     ['text_color', 'background_color'],
-    ['align_left', 'align_center', 'align_right'],
+    ['format_clear'],
+  ];
+  public readonly tbParrafo: Toolbar = [
+    ['ordered_list', 'bullet_list'],
+    ['indent', 'outdent'],
+    ['align_left', 'align_center', 'align_right', 'align_justify'],
+  ];
+  public readonly tbEstilos: Toolbar = [
+    [{ heading: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] }],
     ['blockquote', 'code'],
-    ['horizontal_rule', 'format_clear'],
-    ['undo', 'redo'],
+  ];
+  public readonly tbInsertar: Toolbar = [['link'], ['horizontal_rule']];
+
+  // ---------- Las pestañas de la cinta ----------
+
+  private _pestanaCinta: PestanaCinta = 'inicio';
+
+  /**
+   * La pestaña que se está viendo.
+   *
+   * La de «Tabla» es contextual, como las de Word: sólo existe con el cursor
+   * dentro de una tabla. Si uno se sale mientras la tiene abierta, la pestaña
+   * desaparece y hay que devolverlo a una que exista, o se quedaría mirando una
+   * cinta vacía.
+   */
+  get pestanaCinta(): PestanaCinta {
+    return (this._pestanaCinta === 'tabla' && !this.enTabla) ? 'inicio' : this._pestanaCinta;
+  }
+  set pestanaCinta(valor: PestanaCinta) { this._pestanaCinta = valor; }
+
+  /**
+   * Las letras del desplegable.
+   *
+   * Todas están en cualquier Windows, que es donde se trabaja: una tipografía
+   * bonita que haya que descargar se vería distinta en cada puesto y en el
+   * papel. Cada una lleva su familia de respaldo por si la nota se abre desde
+   * un móvil.
+   */
+  public readonly tipografias = [
+    // Corto porque el desplegable mide 130 px y el grupo ya se llama
+    // «Fuente»: «Letra de la nota» salía cortado en «Letra de la no»
+    { valor: '', nombre: 'Letra' },
+    { valor: "Arial, Helvetica, sans-serif", nombre: 'Arial' },
+    { valor: "Calibri, Candara, Segoe UI, sans-serif", nombre: 'Calibri' },
+    { valor: "Cambria, Georgia, serif", nombre: 'Cambria' },
+    { valor: "'Courier New', Courier, monospace", nombre: 'Courier New' },
+    { valor: "Georgia, 'Times New Roman', serif", nombre: 'Georgia' },
+    { valor: "'Segoe UI', Roboto, sans-serif", nombre: 'Segoe UI' },
+    { valor: "Tahoma, Verdana, sans-serif", nombre: 'Tahoma' },
+    { valor: "'Times New Roman', Times, serif", nombre: 'Times New Roman' },
+    { valor: "'Trebuchet MS', Tahoma, sans-serif", nombre: 'Trebuchet MS' },
+    { valor: "Verdana, Geneva, sans-serif", nombre: 'Verdana' },
+  ];
+
+  /**
+   * Los tamaños, en puntos y con los números de Word.
+   *
+   * En puntos y no en píxeles porque son los que la gente tiene en la cabeza
+   * («ponlo en 12») y porque son los que valen en el papel: la hoja de
+   * impresión del visor también está en puntos.
+   */
+  public readonly tamanos = [
+    { valor: '', nombre: 'Tam.' },
+    ...[8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72]
+      .map(n => ({ valor: `${n}pt`, nombre: String(n) })),
   ];
 
   constructor(
@@ -159,6 +244,193 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
       .replace(/&nbsp;/g, ' ')
       .trim();
     return sinEtiquetas.length > 0;
+  }
+
+  // ================================================================
+  // TIPOGRAFÍA Y TAMAÑO
+  // ================================================================
+
+  /**
+   * La letra de donde está el cursor, devuelta como la opción de la lista.
+   *
+   * No vale con devolver lo que guarda la marca: el navegador reescribe
+   * «Georgia, 'Times New Roman', serif» con comillas dobles al pintarlo, así
+   * que al volver a abrir la nota el valor ya no es idéntico al de ninguna
+   * opción y el desplegable se quedaba en blanco aunque el texto sí estuviera
+   * en Georgia. Se compara sin comillas ni espacios y se devuelve el valor de
+   * la opción, que es lo que el <select> necesita para marcarla.
+   */
+  get tipografiaActual(): string {
+    const guardada = this.valorDeMarca('tipografia', 'familia');
+    if (!guardada) { return ''; }
+
+    const igual = this.normalizarFamilia(guardada);
+    const deLaLista = this.tipografias
+      .find(t => t.valor && this.normalizarFamilia(t.valor) === igual);
+
+    // Si no es de la lista (viene de algo pegado), vale la suya tal cual:
+    // tipografiasVisibles le añade su propia opción
+    return deLaLista ? deLaLista.valor : guardada;
+  }
+
+  /** El tamaño de donde está el cursor. */
+  get tamanoActual(): string {
+    return this.valorDeMarca('tamano', 'tamano');
+  }
+
+  /** Dos familias son la misma aunque cambien las comillas o los espacios. */
+  private normalizarFamilia(familia: string): string {
+    return familia.replace(/["']/g, '').replace(/\s*,\s*/g, ',').trim().toLowerCase();
+  }
+
+  private _extraFamilia = '\u0000';
+  private _tipografiasVisibles = this.tipografias;
+
+  /**
+   * La lista del desplegable, con la letra de ahora añadida si no es de casa.
+   *
+   * Al pegar de una página o de Word llega cualquier familia. Sin esto el
+   * desplegable se queda en blanco y parece que el texto no tiene letra
+   * asignada; así se ve cuál es, como hace Word.
+   */
+  get tipografiasVisibles(): { valor: string; nombre: string }[] {
+    const actual = this.tipografiaActual;
+    if (actual === this._extraFamilia) { return this._tipografiasVisibles; }
+    this._extraFamilia = actual;
+
+    this._tipografiasVisibles = (!actual || this.tipografias.some(t => t.valor === actual))
+      ? this.tipografias
+      : [...this.tipografias, { valor: actual, nombre: this.nombreDeFamilia(actual) }];
+
+    return this._tipografiasVisibles;
+  }
+
+  private _extraTamano = '\u0000';
+  private _tamanosVisibles = this.tamanos;
+
+  /** Lo mismo con el tamaño: un «11.5pt» pegado no está en la lista. */
+  get tamanosVisibles(): { valor: string; nombre: string }[] {
+    const actual = this.tamanoActual;
+    if (actual === this._extraTamano) { return this._tamanosVisibles; }
+    this._extraTamano = actual;
+
+    this._tamanosVisibles = (!actual || this.tamanos.some(t => t.valor === actual))
+      ? this.tamanos
+      : [...this.tamanos, { valor: actual, nombre: actual }];
+
+    return this._tamanosVisibles;
+  }
+
+  /** De «Georgia, 'Times New Roman', serif» se lee «Georgia». */
+  private nombreDeFamilia(familia: string): string {
+    return familia.split(',')[0].replace(/["']/g, '').trim() || familia;
+  }
+
+  cambiarTipografia(valor: string): void {
+    this.aplicarMarca('tipografia', valor ? { familia: valor } : null);
+  }
+
+  cambiarTamano(valor: string): void {
+    this.aplicarMarca('tamano', valor ? { tamano: valor } : null);
+  }
+
+  /**
+   * Lee el valor de una marca donde está el cursor.
+   *
+   * Con texto seleccionado se usa marksAcross, que devuelve sólo las marcas que
+   * valen para TODO el trozo: si se eligen dos palabras de distinta letra, el
+   * desplegable se queda en blanco en vez de mentir con la de la primera.
+   *
+   * Sin selección manda storedMarks —lo que se acaba de elegir y aún no se ha
+   * escrito— y, si no hay, las marcas de lo que está justo detrás del cursor.
+   */
+  private valorDeMarca(nombre: string, atributo: string): string {
+    const vista = this.editor?.view;
+    if (!vista) { return ''; }
+
+    const tipo = vista.state.schema.marks[nombre];
+    if (!tipo) { return ''; }
+
+    const { empty, $from, $to } = vista.state.selection;
+    const marcas = empty
+      ? (vista.state.storedMarks ?? $from.marks())
+      : ($from.marksAcross($to) ?? []);
+
+    return marcas.find(m => m.type === tipo)?.attrs[atributo] ?? '';
+  }
+
+  /**
+   * Pone o quita una marca con atributos.
+   *
+   * No sirve el toggleMark de ProseMirror: mira sólo el tipo de marca y no sus
+   * atributos, así que pasar de 12 a 14 puntos lo entendería como «ya tiene
+   * tamaño, quítalo» y dejaría el texto sin tamaño en vez de cambiarlo. Hay que
+   * quitar la de antes y poner la nueva, en esa orden y en la misma
+   * transacción, para que un solo Ctrl+Z lo deshaga entero.
+   *
+   * Con attrs en null sólo se quita, que es lo que hace la opción en blanco del
+   * desplegable: «la letra de la nota».
+   */
+  private aplicarMarca(nombre: string, attrs: Record<string, unknown> | null): void {
+    const vista = this.editor?.view;
+    if (!vista) { return; }
+
+    const tipo = vista.state.schema.marks[nombre];
+    if (!tipo) { return; }
+
+    const { from, to, empty, $from } = vista.state.selection;
+    const tr = vista.state.tr;
+
+    if (empty) {
+      // Sin nada seleccionado se cambia lo que se vaya a escribir a partir de
+      // aquí, igual que al pulsar la negrita antes de escribir la palabra
+      const previas = (vista.state.storedMarks ?? $from.marks()).filter(m => m.type !== tipo);
+      tr.setStoredMarks(attrs ? previas.concat(tipo.create(attrs)) : previas);
+    } else {
+      tr.removeMark(from, to, tipo);
+      if (attrs) { tr.addMark(from, to, tipo.create(attrs)); }
+    }
+
+    vista.dispatch(tr);
+    vista.focus();
+  }
+
+  // ================================================================
+  // CUENTA DE PALABRAS
+  // ================================================================
+
+  private _htmlContado = '\u0000';
+  private _conteo = { palabras: 0, caracteres: 0 };
+
+  /**
+   * Palabras y caracteres, como la barra de estado de Word.
+   *
+   * Se calcula sobre el HTML y no sobre el documento de ProseMirror porque el
+   * HTML es lo que ya está en `contenido`, y se guarda el último contado para
+   * no repetir el trabajo en cada ciclo de detección de cambios de Angular
+   * —que con el editor abierto son muchos—. El valor inicial es un carácter
+   * imposible en un HTML para que la primera vez sí entre.
+   */
+  get conteo(): { palabras: number; caracteres: number } {
+    const html = this.contenido ?? '';
+    if (html === this._htmlContado) { return this._conteo; }
+    this._htmlContado = html;
+
+    const texto = html
+      // Las celdas y los bloques se separan: si no, «</td><td>» pega dos
+      // palabras y cuenta una
+      .replace(/<(\/(td|th|tr|p|div|li|h[1-6]|blockquote)|br\s*\/?)>/gi, ' ')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&[a-z]+;|&#\d+;/gi, 'x')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    this._conteo = {
+      palabras: texto ? texto.split(' ').length : 0,
+      caracteres: texto.length,
+    };
+    return this._conteo;
   }
 
   // ================================================================
@@ -415,6 +687,120 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.editor.commands.insertImage(url, { alt: fichero.name, title: fichero.name }).focus().exec();
     } finally {
       this.subiendoImagen = false;
+    }
+  }
+
+  // ================================================================
+  // IMPRIMIR Y WORD
+  // ================================================================
+
+  /**
+   * Lo que va al documento es lo que hay EN PANTALLA, no lo guardado.
+   *
+   * Se imprime y se exporta mientras se escribe, así que tomar los datos de
+   * `this.nota` daría la versión anterior y uno acabaría con un papel que no es
+   * lo que está viendo.
+   */
+  private get datosDocumento(): DatosDocumentoNota {
+    return {
+      titulo: this.titulo,
+      contenido: this.contenido,
+      color: this.color,
+      autor: this.nota?.created_by,
+      fecha: this.nota?.created_at,
+      cliente: this.clienteNombre,
+    };
+  }
+
+  imprimir(): void {
+    if (!imprimirNota(this.datosDocumento)) {
+      this._toastr.warning(
+        'El navegador bloqueó la ventana de impresión. Permite las ventanas emergentes de este sitio.',
+        'No se pudo imprimir', { timeOut: 8000 });
+    }
+  }
+
+  /** Baja lo escrito como documento de Word. */
+  async exportarWord(): Promise<void> {
+    if (this.exportando) { return; }
+
+    try {
+      this.exportando = true;
+      const perdidas = await descargarNotaWord(this.datosDocumento);
+
+      if (perdidas) {
+        this._toastr.warning(
+          `El documento se bajó, pero ${perdidas} imagen(es) no se pudieron incluir.`,
+          'Imágenes que faltan', { timeOut: 8000 });
+      } else {
+        this._toastr.success('Documento de Word descargado', 'Notas', { closeButton: true });
+      }
+    } catch (error) {
+      // El motivo va en el toast: un «no se pudo» a secas obliga a abrir la
+      // consola del navegador para saber qué pasó, y eso no lo va a hacer nadie
+      console.error('Error al exportar la nota a Word:', error);
+      const motivo = (error as any)?.message ? ': ' + (error as any).message : '';
+      this._toastr.error('No se pudo generar el documento de Word' + motivo, 'Error', { timeOut: 10000, closeButton: true });
+    } finally {
+      this.exportando = false;
+    }
+  }
+
+  abrirSelectorWord(): void { this.selectorWord?.nativeElement.click(); }
+
+  /**
+   * Mete un documento de Word dentro de la nota.
+   *
+   * Lo traduce mammoth: el estilo «Título 1» de Word sale como <h1> y no como
+   * un párrafo en negrita, así que el texto queda con la misma estructura que
+   * si se hubiera escrito aquí —y por tanto se puede buscar y tabular—.
+   *
+   * Las imágenes del documento llegan en base64 dentro del HTML, así que se
+   * pasan por el mismo camino que al pegar: se suben al servidor y el HTML se
+   * queda apuntando a nuestras urls. Sin eso el servidor las tiraría al
+   * guardar, como pasaba al pegar de una página.
+   */
+  async alElegirWord(ev: Event): Promise<void> {
+    const input = ev.target as HTMLInputElement;
+    const fichero = input.files?.[0];
+    input.value = '';
+    if (!fichero) { return; }
+
+    if (this.importando || this.subiendoImagen) { return; }
+
+    try {
+      this.importando = true;
+      const { html, avisos } = await wordAHtml(fichero);
+
+      if (!html.trim()) {
+        this._toastr.warning('El documento no tiene texto que traer', 'Nada que importar');
+        return;
+      }
+
+      // El mismo camino que al pegar: sube las imágenes y mete el resultado
+      await this.pegarHtmlConImagenes(html);
+
+      // Un documento recién traído suele ser la nota entera: si no hay título,
+      // el del fichero es mejor que nada
+      if (!this.titulo.trim()) {
+        this.titulo = fichero.name.replace(/\.docx?$/i, '').slice(0, 150);
+      }
+
+      // Los avisos de mammoth son cosas que Word tiene y una nota no (cuadros
+      // de texto, notas al pie…). No son un error, pero conviene decirlo.
+      if (avisos.length) {
+        console.warn('Al traer el documento de Word:', avisos);
+        this._toastr.info(
+          `Se trajo el documento. ${avisos.length} detalle(s) de formato no tienen equivalente en una nota.`,
+          'Documento importado', { timeOut: 7000 });
+      } else {
+        this._toastr.success('Documento de Word importado', 'Notas', { closeButton: true });
+      }
+    } catch (error) {
+      console.error('Error al importar un documento de Word:', error);
+      this._toastr.error('No se pudo leer el documento. ¿Es un .docx?', 'Error');
+    } finally {
+      this.importando = false;
     }
   }
 

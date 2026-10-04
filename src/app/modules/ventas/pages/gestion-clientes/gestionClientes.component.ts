@@ -20,7 +20,7 @@ import { AppAgGridService } from '../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../service/loading.service';
 
 ///   MODELOS    ///
-import { CARGOS_CONTACTO, ClienteModel, ContactoCliente } from '../../interfaces/clienteModel';
+import { CARGOS_CONTACTO, ClienteModel, ContactoCliente, ESTADOS_CLIENTE } from '../../interfaces/clienteModel';
 import {
   AsignacionCliente, GestionModel, ResumenGestiones,
   ESTADOS_GESTION, TIPOS_GESTION, PRIORIDADES_GESTION, claseDeResultado, iconoDeTipo, nombreDe, RESULTADOS_GESTION,
@@ -135,6 +135,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    */
   public listaClientes: ClienteModel[] = [];
   public terminoClientes = '';
+  /**
+   * El estado por el que se filtra la lista; vacío = todos.
+   *
+   * Va al servidor junto con el término de búsqueda y no se filtra aquí:
+   * la lista está paginada allá, así que filtrar en el navegador sólo
+   * miraría las quince filas de la página que se está viendo.
+   */
+  public estadoClientes = '';
+  public readonly estadosCliente = ESTADOS_CLIENTE;
   public paginaClientes = 1;
   public totalClientes = 0;
   public porPaginaClientes = 15;
@@ -447,7 +456,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this.cargandoClientes = true;
       this.gridApiClientes?.showLoadingOverlay();
       const res: any = await firstValueFrom(
-        this._clienteService.allClientes(page, this.porPaginaClientes, this.terminoClientes)
+        this._clienteService.allClientes(page, this.porPaginaClientes, this.terminoClientes, this.estadoClientes)
       );
 
       if (mia !== this.peticionClientes) { return; }
@@ -477,6 +486,23 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   buscarClientes(termino?: string): void {
     this.terminoClientes = (termino ?? '').trim();
     this.cargarClientes(1);
+  }
+
+  /**
+   * Cambia el filtro por estado.
+   *
+   * Vuelve a la página 1 a propósito: si uno está en la página 40 de los mil
+   * clientes y filtra por morosos —que son ciento y pico—, esa página ya no
+   * existe y la lista saldría vacía sin que se entienda por qué.
+   */
+  filtrarPorEstado(estado: string): void {
+    this.estadoClientes = estado ?? '';
+    this.cargarClientes(1);
+  }
+
+  /** El nombre bonito del estado elegido, para los carteles. */
+  private get nombreEstadoElegido(): string {
+    return this.estadosCliente.find(e => e.id === this.estadoClientes)?.name ?? '';
   }
 
   public get desdeClientes(): number {
@@ -515,8 +541,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           const icono = params.data?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user';
           const nombre = params.value ?? '';
           const actual = this.esElElegido(params.data)
-            ? ' <span class="gc-chip">Actual</span>'
-            : '';
+            // ? ' <span class="gc-chip">Actual</span>'
+            // : '';
           const estado = params.data?.estado && params.data.estado !== 'ACTIVO'
             ? ` <span class="gc-chip gc-chip--aviso">${params.data.estado}</span>`
             : '';
@@ -578,11 +604,27 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (e.data) { this.seleccionarCliente(e.data); }
   }
 
-  /** El cartel de «no hay filas», que cambia si hay una búsqueda escrita. */
+  /**
+   * El cartel de «no hay filas».
+   *
+   * Dice por qué está vacío, y eso incluye el filtro por estado: con un
+   * «Todavía no hay clientes registrados» delante de mil clientes filtrados por
+   * morosos, uno piensa que se rompió algo en vez de mirar el selector.
+   */
   public get vacioClientes(): string {
-    return this.terminoClientes
-      ? `<span>Ningún cliente coincide con «${this.terminoClientes}».</span>`
-      : '<span>Todavía no hay clientes registrados.</span>';
+    const termino = this.terminoClientes;
+    const estado = this.nombreEstadoElegido;
+
+    if (termino && estado) {
+      return `<span>Ningún cliente en estado «${estado}» coincide con «${termino}».</span>`;
+    }
+    if (estado) {
+      return `<span>No hay clientes en estado «${estado}».</span>`;
+    }
+    if (termino) {
+      return `<span>Ningún cliente coincide con «${termino}».</span>`;
+    }
+    return '<span>Todavía no hay clientes registrados.</span>';
   }
 
   // ================================================================

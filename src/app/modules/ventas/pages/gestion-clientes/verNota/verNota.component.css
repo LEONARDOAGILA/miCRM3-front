@@ -1,3 +1,6 @@
+/* La cinta la comparten el editor y el visor: ver cintaNota.css */
+@import '../cintaNota.css';
+
 /* ============================================================
    LEER UNA NOTA
 
@@ -17,7 +20,8 @@
 
 /* ---------- El fondo ---------- */
 .nota-ver {
-  max-height: 70vh;
+  /* 66 y no 70: lo que ocupa ahora la cinta de arriba */
+  max-height: 66vh;
   padding: 1rem .75rem;
   overflow-y: auto;
 
@@ -237,3 +241,14 @@
 
 :host ::ng-deep .nota-ver__cuerpo :is(td, th) > p { margin: 0; }
 :host ::ng-deep .nota-ver__cuerpo :is(td, th) > p + p { margin-top: .35rem; }
+
+/* Los dos títulos pequeños, que ahora se pueden elegir al escribir (ver la
+   barra de saveNota). Sin esto se guardan pero se leen como un párrafo. */
+:host ::ng-deep .nota-ver__cuerpo h5 { font-size: .9375rem; }
+:host ::ng-deep .nota-ver__cuerpo h6 {
+  font-size: .875rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
