@@ -108,6 +108,19 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   public pestana: Pestana = 'historial';
 
+  /**
+   * Las pestañas cuyos datos ya se pidieron para el cliente que está abierto.
+   *
+   * Abrir un cliente lanzaba de golpe todo lo de las siete pestañas, y cada
+   * petición cruzada arrastra además su preflight de CORS: dieciocho idas y
+   * vueltas que el servidor de desarrollo atiende de una en una. Ahora sólo se
+   * pide lo que se ve —la ficha, el historial y los contadores— y cada pestaña
+   * trae lo suyo la primera vez que se abre.
+   *
+   * Se vacía al cambiar de cliente: lo de uno no vale para el siguiente.
+   */
+  private pestanasCargadas = new Set<Pestana>();
+
   /** El aviso de «última / próxima»; se cierra a mano y vuelve con otro cliente. */
   public hitosVisible = true;
 
@@ -875,6 +888,45 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   /** Lo mismo, desde la plantilla: al cambiar de pestaña cambia lo que se ve. */
+  /**
+   * Cambia de pestaña y trae sus datos si es la primera vez.
+   *
+   * Antes cada botón hacía su propia mezcla en la plantilla («pestana = 'x';
+   * cargarAlgo(); replantear()»), que es donde se olvidan cosas. Con un solo
+   * sitio, añadir una pestaña es añadir un caso aquí.
+   */
+  async abrirPestana(p: Pestana): Promise<void> {
+    this.pestana = p;
+    this.replantear();
+    await this.cargarPestana(p);
+    if (p === 'whatsapp') { this.bajarAlUltimoMensaje(); }
+  }
+
+  /** Lo que necesita cada pestaña, una sola vez por cliente. */
+  private async cargarPestana(p: Pestana): Promise<void> {
+    if (!this.cliente?.id) { return; }
+    // El historial y los contadores llegan al abrir el cliente
+    if (p === 'historial' || this.pestanasCargadas.has(p)) { return; }
+
+    // Se marca antes de pedir: dos clics seguidos no deben lanzar dos veces
+    this.pestanasCargadas.add(p);
+    try {
+      switch (p) {
+        case 'pendientes': await this.cargarPendientes(); break;
+        case 'contactos':  await this.cargarContactos(); break;
+        // La cartera enseña las dos cosas a la vez
+        case 'cartera':    await Promise.all([this.cargarAsignaciones(), this.cargarResponsables()]); break;
+        case 'whatsapp':   await this.cargarConversacion(); break;
+        case 'notas':      await this.cargarNotas(); break;
+        case 'archivos':   await this.cargarArchivos(); break;
+      }
+    } catch (error) {
+      // Si falló, que se pueda reintentar volviendo a entrar
+      this.pestanasCargadas.delete(p);
+      console.error('Error al cargar la pestaña ' + p + ':', error);
+    }
+  }
+
   replantear(): void {
     this.replantearAltos(160);
   }
@@ -1002,6 +1054,13 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.notas = [];
     this.notasDe = null;
     this.buscaNotas = '';
+    // Lo de las pestañas del cliente anterior no vale
+    this.pestanasCargadas.clear();
+    this.pendientes = [];
+    this.conversacion = [];
+    this.asignaciones = [];
+    this.responsables = [];
+    this.ponerContactos([]);
 
     try {
       this._loadingService.setLoading(true);
@@ -1013,14 +1072,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this.cliente = res.data;
       // La marca de «Actual» viaja de una fila a otra
       this.gridApiClientes?.redrawRows();
+      // Sólo lo que se ve nada más abrir: la ficha ya está, el historial es la
+      // pestaña de entrada y el resumen llena los contadores de arriba y el de
+      // «Pendientes». El de WhatsApp es el que avisa de mensajes sin
+      // responder, así que también entra —es una petición pequeña y es un
+      // aviso, no un detalle—. Lo demás lo pide su pestaña al abrirse.
       await Promise.all([
         this.cargarGestiones(1),
         this.cargarResumen(),
-        this.cargarContactos(),
-        this.cargarAsignaciones(),
-        this.cargarResponsables(),
-        this.cargarPendientes(),
-        this.cargarConversacion(),
+        this.cargarResumenWhatsapp(),
       ]);
     } catch (error) {
       console.error('Error al abrir el cliente:', error);
@@ -1029,14 +1089,27 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Vuelve a pedirlo todo (tras guardar, cerrar o reasignar). */
+  /**
+   * Vuelve a pedir lo que está a la vista (tras guardar, cerrar o reasignar).
+   *
+   * Lo de las pestañas que nadie ha abierto todavía no se pide: se pedirá solo
+   * cuando se abran, y ya vendrá al día.
+   */
   private async refrescar(): Promise<void> {
     if (!this.cliente?.id) { return; }
-    await Promise.all([
+
+    const tareas: Promise<any>[] = [
       this.cargarGestiones(this.paginaActual),
       this.cargarResumen(),
-      this.cargarPendientes(),
-    ]);
+    ];
+    // Lo pendiente cambia al cerrar una gestión, así que se repite aunque su
+    // pestaña no esté abierta sólo si ya se había cargado
+    if (this.pestanasCargadas.has('pendientes')) { tareas.push(this.cargarPendientes()); }
+    if (this.pestanasCargadas.has('contactos'))  { tareas.push(this.cargarContactos()); }
+    if (this.pestanasCargadas.has('cartera'))    { tareas.push(this.cargarAsignaciones(), this.cargarResponsables()); }
+    if (this.pestanasCargadas.has('whatsapp'))   { tareas.push(this.cargarConversacion()); }
+
+    await Promise.all(tareas);
   }
 
   async cargarResumen(): Promise<void> {
@@ -1094,21 +1167,36 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * Se piden juntos al abrir el cliente: el resumen es lo que pone el número
    * en la pestaña, así que tiene que estar aunque nadie entre a leerla.
    */
+  /**
+   * Sólo el resumen: cuántos mensajes hay y cuántos sin responder.
+   *
+   * Va aparte del chat porque es lo que pinta el aviso rojo de la pestaña, y
+   * ese aviso tiene que verse sin entrar: es la razón por la que uno entra.
+   * Pesa un kilobyte; la conversación entera no.
+   */
+  async cargarResumenWhatsapp(): Promise<void> {
+    if (!this.cliente?.id) { return; }
+    try {
+      const res: any = await firstValueFrom(this._whatsappService.resumen(this.cliente.id));
+      this.resumenWhatsapp = res?.status === 'success' ? res.data : null;
+    } catch (error) {
+      console.error('Error al cargar el resumen de WhatsApp:', error);
+      this.resumenWhatsapp = null;
+    }
+  }
+
+  /** El chat, que es lo gordo: sólo al entrar en su pestaña. */
   async cargarConversacion(): Promise<void> {
     if (!this.cliente?.id) { return; }
     try {
       this.cargandoConversacion = true;
-      const [chat, resumen]: any[] = await Promise.all([
-        firstValueFrom(this._whatsappService.conversacion(this.cliente.id)),
-        firstValueFrom(this._whatsappService.resumen(this.cliente.id)),
-      ]);
-
+      const chat: any = await firstValueFrom(this._whatsappService.conversacion(this.cliente.id));
       this.conversacion = chat?.status === 'success' ? (chat.data ?? []) : [];
-      this.resumenWhatsapp = resumen?.status === 'success' ? resumen.data : null;
+      // Al abrir el chat se aprovecha para poner al día el contador
+      await this.cargarResumenWhatsapp();
     } catch (error) {
       console.error('Error al cargar la conversación de WhatsApp:', error);
       this.conversacion = [];
-      this.resumenWhatsapp = null;
     } finally {
       this.cargandoConversacion = false;
       // Al entrar en la pestaña se baja al último mensaje, como en un chat

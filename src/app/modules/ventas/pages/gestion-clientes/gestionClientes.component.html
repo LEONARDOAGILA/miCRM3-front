@@ -537,9 +537,12 @@
                       <div class="gc-campo">
                         <span class="gc-campo__rotulo">Personas:</span>
                         <span class="gc-campo__valor">
-                          @if (contactos.length) {
-                            <button type="button" class="gc-campo__enlace" (click)="pestana = 'contactos'">
-                              {{ contactos.length }} contacto{{ contactos.length === 1 ? '' : 's' }}
+                          <!-- De num_contactos y no de la lista: la lista ya no se
+                               pide al abrir el cliente, y decir «sin personas de
+                               contacto» cuando sólo es que no se ha mirado sería mentir -->
+                          @if (cliente?.num_contactos) {
+                            <button type="button" class="gc-campo__enlace" (click)="abrirPestana('contactos')">
+                              {{ cliente.num_contactos }} contacto{{ cliente.num_contactos === 1 ? '' : 's' }}
                             </button>
                           } @else { sin personas de contacto }
                         </span>
@@ -702,7 +705,7 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'historial'"
                       [attr.aria-selected]="pestana === 'historial'"
-                      (click)="pestana = 'historial'; replantear()">
+                      (click)="abrirPestana('historial')">
                 <i class="fa fa-list-ul"></i>
                 <span class="gestion-tabs__texto">Historial</span>
               </button>
@@ -711,27 +714,27 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'pendientes'"
                       [attr.aria-selected]="pestana === 'pendientes'"
-                      (click)="pestana = 'pendientes'; replantear()">
+                      (click)="abrirPestana('pendientes')">
                 <i class="fa fa-clock"></i>
                 <span class="gestion-tabs__texto">Pendientes</span>
-                @if (pendientes.length) { <span class="badge bg-warning fs-10px">{{ pendientes.length }}</span> }
+                @if (resumen?.pendientes) { <span class="badge bg-warning fs-10px">{{ resumen.pendientes }}</span> }
               </button>
             </li>
             <li class="nav-item flex-shrink-0" role="presentation">
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'contactos'"
                       [attr.aria-selected]="pestana === 'contactos'"
-                      (click)="pestana = 'contactos'; replantear()">
+                      (click)="abrirPestana('contactos')">
                 <i class="fa fa-address-book"></i>
                 <span class="gestion-tabs__texto">Contactos</span>
-                @if (contactos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ contactos.length }}</span> }
+                @if (cliente?.num_contactos) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ cliente.num_contactos }}</span> }
               </button>
             </li>
             <li class="nav-item flex-shrink-0" role="presentation">
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'cartera'"
                       [attr.aria-selected]="pestana === 'cartera'"
-                      (click)="pestana = 'cartera'; replantear()">
+                      (click)="abrirPestana('cartera')">
                 <i class="fa fa-users-gear"></i>
                 <span class="gestion-tabs__texto">Asignación</span>
                 @if (asignaciones.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ asignaciones.length }}</span> }
@@ -740,7 +743,7 @@
             <li class="nav-item">
               <button type="button" class="nav-link"
                       [class.active]="pestana === 'whatsapp'"
-                      (click)="pestana = 'whatsapp'; replantear(); bajarAlUltimoMensaje()">
+                      (click)="abrirPestana('whatsapp')">
                 <i class="fab fa-whatsapp"></i> WhatsApp
                 @if (resumenWhatsapp?.sin_responder) {
                   <span class="badge bg-danger fs-10px">{{ resumenWhatsapp?.sin_responder }}</span>
@@ -753,7 +756,7 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'notas'"
                       [attr.aria-selected]="pestana === 'notas'"
-                      (click)="pestana = 'notas'; cargarNotas(); replantear()">
+                      (click)="abrirPestana('notas')">
                 <i class="fa fa-note-sticky"></i>
                 <span class="gestion-tabs__texto">Notas</span>
                 @if (notas.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ notas.length }}</span> }
@@ -763,7 +766,7 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'archivos'"
                       [attr.aria-selected]="pestana === 'archivos'"
-                      (click)="pestana = 'archivos'; cargarArchivos(); replantear()">
+                      (click)="abrirPestana('archivos')">
                 <i class="fa fa-paperclip"></i>
                 <span class="gestion-tabs__texto">Archivos</span>
                 @if (archivos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ archivos.length }}</span> }
