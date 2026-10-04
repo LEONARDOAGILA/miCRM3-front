@@ -1,0 +1,216 @@
+/* ============================================================
+   SUBIR ARCHIVOS AL CLIENTE
+
+   Los tintes van en rgba y no en color-mix(): el front tiene que
+   funcionar en un iPhone 7 y ahí color-mix() no existe (ver
+   .browserslistrc).
+   ============================================================ */
+
+.arch-modal {
+  padding: .75rem;
+}
+
+/* ---------- La zona de soltar ---------- */
+.arch-zona {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+
+  padding: 1.25rem .75rem;
+  border: 2px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .02);
+  text-align: center;
+  cursor: pointer;
+
+  transition: border-color .12s ease, background-color .12s ease;
+}
+
+.arch-zona:hover,
+.arch-zona.is-encima {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+}
+
+.arch-zona__icono {
+  font-size: 1.5rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.arch-zona__texto {
+  font-size: .8125rem;
+}
+
+.arch-zona__ayuda {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+}
+
+/* ---------- La descripción ---------- */
+.arch-descripcion {
+  margin-top: .75rem;
+}
+
+.arch-etiqueta {
+  margin-bottom: .2rem;
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.arch-etiqueta__nota {
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 400;
+}
+
+/* ---------- La cola ----------
+   Alto limitado: con quince fotos la lista se comía la pantalla y el botón
+   de subir quedaba fuera de vista. */
+.arch-cola {
+  max-height: 38vh;
+  margin-top: .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  overflow-y: auto;
+}
+
+.arch-fila {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding: .375rem .5rem;
+  border-bottom: 1px solid rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+}
+
+.arch-fila:last-child { border-bottom: 0; }
+
+.arch-fila.is-ok    { background-color: rgba(25, 135, 84, .07); }
+.arch-fila.is-error { background-color: rgba(220, 53, 69, .07); }
+
+.arch-fila__cara {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+
+  background-color: #fff;
+  font-size: 1rem;
+  overflow: hidden;
+}
+
+.arch-fila__cara img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arch-fila__datos {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.arch-fila__nombre {
+  height: 24px;
+  padding: .1rem .375rem;
+  font-size: .75rem;
+}
+
+.arch-fila__pie {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arch-barra {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .1);
+  overflow: hidden;
+}
+
+.arch-barra__relleno {
+  display: block;
+  height: 100%;
+  background-color: var(--bs-app-theme, #00acac);
+  transition: width .15s ease;
+}
+
+.arch-fila__estado {
+  flex: 0 0 auto;
+  min-width: 34px;
+  text-align: right;
+  font-size: .75rem;
+}
+
+.arch-pct {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Botones de fila ---------- */
+.arch-fila .btn-icon {
+  --tinte: #6c757d;
+  --tinte-borde: rgba(108, 117, 125, .3);
+  --tinte-fondo: rgba(108, 117, 125, .07);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--tinte-borde);
+  border-radius: .25rem;
+
+  background-color: var(--tinte-fondo);
+  color: var(--tinte);
+  font-size: .625rem;
+  cursor: pointer;
+
+  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
+}
+
+.arch-fila .btn-icon:not(:disabled):hover {
+  border-color: var(--tinte);
+  background-color: var(--tinte);
+  color: #fff;
+}
+
+.arch-fila .btn-reintentar { --tinte: #fd7e14; --tinte-borde: rgba(253, 126, 20, .35); --tinte-fondo: rgba(253, 126, 20, .09); }
+.arch-fila .btn-quitar     { --tinte: #dc3545; --tinte-borde: rgba(220, 53, 69, .35);  --tinte-fondo: rgba(220, 53, 69, .08); }
+
+.arch-fila .btn-icon:disabled {
+  --tinte: #adb5bd;
+  --tinte-borde: rgba(108, 117, 125, .22);
+  --tinte-fondo: transparent;
+
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* ---------- El pie ---------- */
+.arch-pie {
+  padding: .5rem .75rem;
+}
+
+.arch-pie__cuenta {
+  margin-right: auto;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}

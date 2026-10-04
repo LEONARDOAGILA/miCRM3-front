@@ -39,8 +39,12 @@ import { SaveGestionComponent, ModoGestion } from './saveGestion/saveGestion.com
 import { CerrarGestionComponent } from './cerrarGestion/cerrarGestion.component';
 import { ReasignarClienteComponent } from './reasignarCliente/reasignarCliente.component';
 import { ConversacionesWhatsappComponent } from './conversacionesWhatsapp/conversacionesWhatsapp.component';
+import { SubirArchivosComponent } from './subirArchivos/subirArchivos.component';
+import { VisorArchivoComponent } from './visorArchivo/visorArchivo.component';
+import { ArchivoClienteService } from '../../services/archivoCliente.service';
+import { ArchivoCliente, formatoTamano, pintaDeTipo } from '../../interfaces/archivoCliente';
 
-type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'comercial';
+type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'comercial' | 'archivos';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
 type Vista = 'agenda' | 'cliente';
 /** Atajos del rango de fechas de la agenda. */
@@ -218,6 +222,21 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public tipos = TIPOS_GESTION;
   public estados = ESTADOS_GESTION;
 
+  // ---------- Archivos del cliente ----------
+  /**
+   * Fotos, videos y documentos del cliente.
+   *
+   * Se piden al entrar en la pestaña y no al abrir el cliente: son una
+   * petición más por cliente y la mayoría de las veces nadie los mira.
+   */
+  public archivos: ArchivoCliente[] = [];
+  public cargandoArchivos = false;
+  /** Para no volver a pedirlos cada vez que se entra y se sale de la pestaña. */
+  private archivosDe: number | null = null;
+
+  public readonly formatoTamano = formatoTamano;
+  public readonly pintaDeTipo = pintaDeTipo;
+
   // ---------- WhatsApp ----------
   /** Los mensajes que se ofrecen al escribir; ver plantillasWhatsapp.ts. */
   public plantillasWhatsapp = PLANTILLAS_WHATSAPP;
@@ -351,6 +370,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     private _recordatorios: RecordatorioGestionesService,
     private _whatsappService: WhatsappService,
     private _softphone: SoftphoneService,
+    private _archivoService: ArchivoClienteService,
     public _appAgGridService: AppAgGridService,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -893,6 +913,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.pestana = 'historial';
     this.hitosVisible = true;
     this.paginaActual = 1;
+    // Los del cliente anterior no valen; los nuevos se piden al entrar en la pestaña
+    this.archivos = [];
+    this.archivosDe = null;
 
     try {
       this._loadingService.setLoading(true);
@@ -2150,6 +2173,156 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const n = String(p.value ?? '').trim().replace(/["<>&]/g, '');
     return n ? `<span class="numero-plano" data-numero="${n}"></span>` : '';
   };
+
+  // ================================================================
+  // ARCHIVOS DEL CLIENTE
+  // ================================================================
+
+  /**
+   * Los archivos del cliente abierto.
+   *
+   * Con `forzar` se vuelven a pedir aunque ya se tengan: es lo que hace el
+   * botón de recargar y lo que se llama tras subir o borrar.
+   */
+  async cargarArchivos(forzar = false): Promise<void> {
+    const id = this.cliente?.id;
+    if (!id) { this.archivos = []; return; }
+    if (!forzar && this.archivosDe === id) { return; }
+
+    try {
+      this.cargandoArchivos = true;
+      const res: any = await firstValueFrom(this._archivoService.allArchivos(id));
+      this.archivos = res?.status === 'success' ? (res.data ?? []) : [];
+      this.archivosDe = id;
+    } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al cargar los archivos del cliente:', error);
+      this.archivos = [];
+    } finally {
+      this.cargandoArchivos = false;
+    }
+  }
+
+  /** Lo que ocupan todos juntos, que es lo que avisa de cuándo hay que limpiar. */
+  get pesoTotalArchivos(): string {
+    return formatoTamano(this.archivos.reduce((t, a) => t + Number(a.tamano ?? 0), 0));
+  }
+
+  /** La url con la que se ve un archivo (sin token: la usan <img> y <video>). */
+  urlArchivo(a: ArchivoCliente): string {
+    return this._archivoService.urlDe(a.id);
+  }
+
+  /**
+   * Abre el visor: ampliar, girar y pasar al siguiente sin salir de aquí.
+   *
+   * Antes mandaba el archivo a otra pestaña del navegador, que sirve para
+   * verlo pero no para trabajar con él: ni zoom sobre un detalle, ni
+   * enderezar una foto tomada de lado, y encima se pierde el cliente de
+   * vista. Se le pasan todos los archivos para poder recorrerlos con las
+   * flechas, y la forma de armar la url, que la sabe el servicio.
+   */
+  verArchivo(a: ArchivoCliente): void {
+    const ref = this.modal.open(VisorArchivoComponent, {
+      size: 'xl', centered: true, scrollable: false, windowClass: 'visor-ventana',
+    });
+    ref.componentInstance.archivos = this.archivos;
+    ref.componentInstance.indice = Math.max(0, this.archivos.findIndex(x => x.id === a.id));
+    ref.componentInstance.urlDe = (x: ArchivoCliente, descargar = false) =>
+      this._archivoService.urlDe(x.id, descargar);
+  }
+
+  descargarArchivo(a: ArchivoCliente): void {
+    window.open(this._archivoService.urlDe(a.id, true), '_blank', 'noopener');
+  }
+
+  agregarArchivos(): void {
+    if (!this.permiso(this.accesoModel?.crear, 'agregar archivos')) { return; }
+    if (!this.cliente?.id) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    const ref = this.modal.open(SubirArchivosComponent, { size: 'lg', centered: true, backdrop: 'static' });
+    ref.componentInstance.clienteId = this.cliente.id;
+    ref.componentInstance.clienteNombre = this.cliente.nombre_completo ?? '';
+    this.escucharModal(ref, ref.componentInstance.subidos, () => this.cargarArchivos(true));
+  }
+
+  /**
+   * Cambia el nombre y la descripción. El fichero no se toca: para eso se
+   * sube otro y se borra éste, que deja rastro en la auditoría.
+   */
+  async editarArchivo(a: ArchivoCliente): Promise<void> {
+    if (!this.permiso(this.accesoModel?.editar, 'modificar archivos')) { return; }
+
+    const r = await Swal.fire({
+      title: 'Modificar el archivo',
+      html:
+        `<input id="arch-nombre" class="swal2-input" maxlength="150" placeholder="Nombre"
+                value="${(a.nombre ?? '').replace(/"/g, '&quot;')}">` +
+        `<textarea id="arch-desc" class="swal2-textarea" maxlength="4000"
+                   placeholder="Para qué es este archivo">${a.descripcion ?? ''}</textarea>`,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#00acac',
+      cancelButtonColor: '#6c757d',
+      preConfirm: () => {
+        const nombre = (document.getElementById('arch-nombre') as HTMLInputElement)?.value?.trim();
+        const descripcion = (document.getElementById('arch-desc') as HTMLTextAreaElement)?.value?.trim();
+        if (!nombre) {
+          Swal.showValidationMessage('El nombre no puede quedar vacío');
+          return false;
+        }
+        return { nombre, descripcion };
+      },
+    });
+    if (!r.isConfirmed || !r.value) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._archivoService.editArchivo(a.id, {
+        nombre: r.value.nombre,
+        descripcion: r.value.descripcion || null,
+        activo: a.activo !== false,
+      }));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo guardar', 'Error');
+        return;
+      }
+      this._toastr.success(res.message, 'Archivos', { closeButton: true });
+      await this.cargarArchivos(true);
+    } catch (error) {
+      console.error('Error al modificar el archivo:', error);
+    }
+  }
+
+  async eliminarArchivo(a: ArchivoCliente): Promise<void> {
+    if (!this.permiso(this.accesoModel?.eliminar, 'eliminar archivos')) { return; }
+
+    const r = await Swal.fire({
+      title: '¿Eliminar este archivo?',
+      text: `«${a.nombre}» se borra del cliente y del servidor. El movimiento queda en la auditoría.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!r.isConfirmed) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._archivoService.deleteArchivo(a.id));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo eliminar', 'Error');
+        return;
+      }
+      this._toastr.success(res.message, 'Archivos', { closeButton: true });
+      await this.cargarArchivos(true);
+    } catch (error) {
+      console.error('Error al eliminar el archivo:', error);
+    }
+  }
 
   // ================================================================
   // MARCAR CON EL SOFTPHONE (ZOIPER)

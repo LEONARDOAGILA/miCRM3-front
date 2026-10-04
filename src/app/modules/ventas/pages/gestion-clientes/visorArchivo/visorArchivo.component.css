@@ -1,0 +1,257 @@
+/* ============================================================
+   VISOR DE ARCHIVOS
+
+   Oscuro y a pantalla completa: lo que se mira es el archivo. Los
+   colores van fijos y no por variables del tema porque el fondo es
+   siempre negro, dé igual el tema que tenga el usuario.
+   ============================================================ */
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.visor {
+  display: flex;
+  flex-direction: column;
+
+  height: 100%;
+  background-color: #111;
+  color: #e9ecef;
+}
+
+/* ---------- Barra ---------- */
+.visor__barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex: 0 0 auto;
+
+  padding: .375rem .625rem;
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  background-color: #1a1a1a;
+}
+
+.visor__titulo {
+  display: flex;
+  align-items: baseline;
+  gap: .375rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.visor__nombre {
+  font-size: .8125rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visor__meta {
+  flex: 0 0 auto;
+  color: #adb5bd;
+  font-size: .6875rem;
+}
+
+.visor__botones {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  flex: 0 0 auto;
+}
+
+.visor__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: .25rem;
+
+  background-color: rgba(255, 255, 255, .06);
+  color: #e9ecef;
+  font-size: .8125rem;
+  cursor: pointer;
+
+  transition: background-color .12s ease, border-color .12s ease;
+}
+
+.visor__btn:hover {
+  border-color: rgba(255, 255, 255, .35);
+  background-color: rgba(255, 255, 255, .16);
+}
+
+.visor__btn--cerrar:hover {
+  border-color: #dc3545;
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.visor__zoom {
+  min-width: 44px;
+  color: #adb5bd;
+  font-size: .6875rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.visor__sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 .125rem;
+  background-color: rgba(255, 255, 255, .15);
+}
+
+/* ---------- El escenario ----------
+   overflow hidden para que la imagen ampliada no empuje la página; lo que se
+   sale se ve arrastrando. */
+.visor__escenario {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+
+  min-height: 0;
+  overflow: hidden;
+}
+
+.visor__escenario.is-arrastrable { cursor: grab; }
+.visor__escenario.is-arrastrando { cursor: grabbing; }
+
+.visor__lamina {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+
+  /* El punto de giro y de zoom es el centro, que es lo que da la sensación de
+     estar moviendo la foto y no una capa */
+  transform-origin: center center;
+  /* Sin transición: con ella el arrastre va a remolque del ratón */
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.visor__video,
+.visor__pdf {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background-color: #000;
+}
+
+.visor__video {
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.visor__sinvista {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 2rem;
+  color: #adb5bd;
+  text-align: center;
+}
+
+.visor__sinvista__texto {
+  font-size: .8125rem;
+}
+
+/* ---------- Pasar al siguiente ---------- */
+.visor__paso {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 38px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: .375rem;
+
+  background-color: rgba(0, 0, 0, .45);
+  color: #fff;
+  font-size: 1.125rem;
+  cursor: pointer;
+
+  transition: background-color .12s ease;
+}
+
+.visor__paso:hover { background-color: rgba(0, 0, 0, .75); }
+
+.visor__paso--atras     { left: .5rem; }
+.visor__paso--siguiente { right: .5rem; }
+
+/* ---------- Descripción ---------- */
+.visor__desc {
+  flex: 0 0 auto;
+  padding: .5rem .75rem;
+  border-top: 1px solid rgba(255, 255, 255, .1);
+
+  background-color: #1a1a1a;
+  color: #dee2e6;
+  font-size: .75rem;
+  line-height: 1.4;
+}
+
+/* ---------- Miniaturas ---------- */
+.visor__tira {
+  display: flex;
+  gap: .375rem;
+  flex: 0 0 auto;
+
+  padding: .375rem .5rem;
+  border-top: 1px solid rgba(255, 255, 255, .1);
+  background-color: #1a1a1a;
+  overflow-x: auto;
+}
+
+.visor__mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 46px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: .25rem;
+
+  background-color: rgba(255, 255, 255, .06);
+  font-size: 1rem;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.visor__mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.visor__mini.is-actual {
+  border-color: var(--bs-app-theme, #00acac);
+}
+
+/* ---------- Móvil ---------- */
+@media (max-width: 575.98px) {
+  /* El nombre se queda; los datos sobran cuando el ancho es el enemigo */
+  .visor__meta { display: none; }
+
+  .visor__paso {
+    width: 32px;
+    height: 46px;
+  }
+}

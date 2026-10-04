@@ -735,6 +735,16 @@
                 }
               </button>
             </li>
+            <li class="nav-item flex-shrink-0" role="presentation">
+              <button type="button" class="nav-link" role="tab"
+                      [class.active]="pestana === 'archivos'"
+                      [attr.aria-selected]="pestana === 'archivos'"
+                      (click)="pestana = 'archivos'; cargarArchivos(); replantear()">
+                <i class="fa fa-paperclip"></i>
+                <span class="gestion-tabs__texto">Archivos</span>
+                @if (archivos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ archivos.length }}</span> }
+              </button>
+            </li>
             <li class="nav-item">
               <button type="button" class="nav-link"
                       [class.active]="pestana === 'comercial'"
@@ -1135,6 +1145,101 @@
                       </p>
                     }
                   </div>
+                </div>
+              </div>
+            }
+
+            <!-- ===== ARCHIVOS =====
+                 Lo que se le guarda al cliente y no cabe en la ficha: fotos del
+                 local, el RUC escaneado, el contrato, un video de la visita.
+                 En tarjetas y no en grilla porque la mitad son imágenes y lo
+                 que se busca es reconocerlas de un vistazo. -->
+            @if (pestana === 'archivos') {
+              <div class="gc-archivos">
+
+                <div class="gc-archivos__barra">
+                  <button type="button" class="btn btn-xs btn-primary"
+                          [disabled]="accesoModel?.crear === false"
+                          (click)="agregarArchivos()">
+                    <i class="fa fa-cloud-arrow-up me-1"></i>Agregar archivos
+                  </button>
+
+                  @if (archivos.length) {
+                    <span class="gc-archivos__cuenta">
+                      {{ archivos.length }} archivo(s) · {{ pesoTotalArchivos }}
+                    </span>
+                  }
+
+                  <button type="button" class="btn btn-xs btn-white ms-auto"
+                          title="Volver a cargar la lista"
+                          (click)="cargarArchivos(true)">
+                    <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoArchivos"></i>
+                  </button>
+                </div>
+
+                @if (cargandoArchivos && !archivos.length) {
+                  <div class="gc-archivos__vacio"><i class="fa fa-spinner fa-spin me-1"></i>Cargando…</div>
+                } @else if (!archivos.length) {
+                  <div class="gc-archivos__vacio">
+                    <i class="fa fa-paperclip me-1"></i>
+                    Este cliente no tiene archivos todavía. Con <b>Agregar archivos</b> se suben
+                    fotos, videos o documentos, y la descripción que escribas ahí es la que
+                    explica para qué son.
+                  </div>
+                }
+
+                <div class="gc-archivos__rejilla">
+                  @for (a of archivos; track a.id) {
+                    <div class="gc-archivo" [class.is-inactivo]="a.activo === false">
+
+                      <!-- La cara: la propia imagen si lo es, y si no el icono de su tipo -->
+                      <button type="button" class="gc-archivo__cara"
+                              [title]="'Abrir ' + a.nombre" (click)="verArchivo(a)">
+                        @if (a.tipo === 'imagen') {
+                          <img [src]="urlArchivo(a)" [alt]="a.nombre" loading="lazy" />
+                        } @else if (a.tipo === 'video') {
+                          <span class="gc-archivo__video">
+                            <i class="fa fa-circle-play"></i>
+                          </span>
+                        } @else {
+                          <i [ngClass]="pintaDeTipo(a.tipo).icono" [style.color]="pintaDeTipo(a.tipo).color"></i>
+                        }
+                      </button>
+
+                      <div class="gc-archivo__datos">
+                        <div class="gc-archivo__nombre" [title]="a.nombre">{{ a.nombre }}</div>
+                        @if (a.descripcion) {
+                          <div class="gc-archivo__desc" [title]="a.descripcion">{{ a.descripcion }}</div>
+                        } @else {
+                          <div class="gc-archivo__desc gc-archivo__desc--falta">Sin descripción</div>
+                        }
+                        <div class="gc-archivo__pie">
+                          {{ a.extension | uppercase }} · {{ formatoTamano(a.tamano) }}
+                          @if (a.created_at) { <span>· {{ a.created_at }}</span> }
+                          @if (a.created_by) { <span>· {{ a.created_by }}</span> }
+                        </div>
+                      </div>
+
+                      <div class="gestion-acciones gc-archivo__acciones">
+                        <button type="button" class="btn-icon btn-llamar" title="Abrir"
+                                (click)="verArchivo(a)">
+                          <i class="fa fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-abrir" title="Descargar"
+                                (click)="descargarArchivo(a)">
+                          <i class="fa fa-download"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-editar" title="Modificar el nombre y la descripción"
+                                [disabled]="accesoModel?.editar === false" (click)="editarArchivo(a)">
+                          <i class="fa fa-pen"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-quitar" title="Eliminar"
+                                [disabled]="accesoModel?.eliminar === false" (click)="eliminarArchivo(a)">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  }
                 </div>
               </div>
             }

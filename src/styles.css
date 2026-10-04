@@ -280,3 +280,23 @@ body {
 .numero-plano::after {
   content: attr(data-numero);
 }
+
+/* ================================================================
+   VENTANA DEL VISOR DE ARCHIVOS
+   ================================================================
+   La clase la pone ng-bootstrap en SU div, fuera del componente, así que
+   el css con alcance del visor no llega hasta aquí. Se le quitan los
+   márgenes y el blanco del modal para que el archivo ocupe la pantalla: un
+   visor con 40px de borde blanco alrededor es media pantalla desperdiciada. */
+.visor-ventana .modal-dialog {
+  max-width: 96vw;
+  height: 94vh;
+  margin: 3vh auto;
+}
+
+.visor-ventana .modal-content {
+  height: 100%;
+  border: 0;
+  background-color: #111;
+  overflow: hidden;
+}

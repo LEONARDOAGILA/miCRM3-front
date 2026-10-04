@@ -1,0 +1,127 @@
+<!-- ============================================================
+     VISOR DE ARCHIVOS DEL CLIENTE
+
+     A pantalla completa y oscuro: lo que se mira es el archivo, no
+     la pantalla que lo rodea. Barra arriba con lo que se puede
+     hacer, tiras de miniaturas abajo para saltar entre ellos.
+     ============================================================ -->
+
+<div class="visor">
+
+  <!-- ---------- Barra ---------- -->
+  <div class="visor__barra">
+    <div class="visor__titulo">
+      @if (actual) {
+        <i class="fa-fw me-1" [ngClass]="pintaDeTipo(actual.tipo).icono"
+           [style.color]="pintaDeTipo(actual.tipo).color"></i>
+        <span class="visor__nombre" [title]="actual.nombre">{{ actual.nombre }}</span>
+        <span class="visor__meta">
+          {{ actual.extension | uppercase }} · {{ formatoTamano(actual.tamano) }}
+          @if (hayVarios) { <span>· {{ indice + 1 }} de {{ archivos.length }}</span> }
+        </span>
+      }
+    </div>
+
+    <div class="visor__botones">
+      @if (esImagen) {
+        <button type="button" class="visor__btn" title="Alejar (−)" (click)="acercar(-0.25)">
+          <i class="fa fa-magnifying-glass-minus"></i>
+        </button>
+        <span class="visor__zoom" title="Zoom actual">{{ porcentaje }}%</span>
+        <button type="button" class="visor__btn" title="Ampliar (+)" (click)="acercar(0.25)">
+          <i class="fa fa-magnifying-glass-plus"></i>
+        </button>
+        <button type="button" class="visor__btn" title="Ajustar a la pantalla (0)" (click)="ajustar()">
+          <i class="fa fa-compress"></i>
+        </button>
+        <span class="visor__sep"></span>
+        <button type="button" class="visor__btn" title="Girar a la izquierda" (click)="girar(-90)">
+          <i class="fa fa-rotate-left"></i>
+        </button>
+        <button type="button" class="visor__btn" title="Girar a la derecha (R)" (click)="girar(90)">
+          <i class="fa fa-rotate-right"></i>
+        </button>
+        <span class="visor__sep"></span>
+      }
+
+      <button type="button" class="visor__btn" title="Descargar" (click)="descargar()">
+        <i class="fa fa-download"></i>
+      </button>
+      <button type="button" class="visor__btn visor__btn--cerrar" title="Cerrar (Esc)"
+              (click)="modal.dismiss()">
+        <i class="fa fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ---------- El archivo ---------- -->
+  <div class="visor__escenario" #escenario
+       [class.is-arrastrable]="puedeArrastrar"
+       [class.is-arrastrando]="arrastrando"
+       (wheel)="alRodar($event)"
+       (mousedown)="alPulsar($event)"
+       (touchstart)="alTocar($event)"
+       (touchmove)="alArrastrarDedo($event)"
+       (touchend)="alLevantarDedo()">
+
+    @if (hayVarios) {
+      <button type="button" class="visor__paso visor__paso--atras" title="Anterior (←)"
+              (click)="pasar(-1)">
+        <i class="fa fa-chevron-left"></i>
+      </button>
+      <button type="button" class="visor__paso visor__paso--siguiente" title="Siguiente (→)"
+              (click)="pasar(1)">
+        <i class="fa fa-chevron-right"></i>
+      </button>
+    }
+
+    @if (esImagen) {
+      <img #lamina class="visor__lamina" [src]="url" [alt]="actual?.nombre"
+           [style.transform]="transformacion" draggable="false" />
+
+    } @else if (esVideo) {
+      <!-- Con sus propios controles: reinventarlos no aporta nada -->
+      <video class="visor__video" [src]="url" controls autoplay playsinline></video>
+
+    } @else if (esPdf) {
+      <!-- Lo pinta el visor de PDF del navegador, que ya trae zoom y páginas -->
+      <iframe class="visor__pdf" [src]="urlSegura" title="Documento"></iframe>
+
+    } @else if (actual) {
+      <div class="visor__sinvista">
+        <i class="fa fa-4x mb-2" [ngClass]="pintaDeTipo(actual.tipo).icono"
+           [style.color]="pintaDeTipo(actual.tipo).color"></i>
+        <div class="visor__sinvista__texto">
+          Este tipo de archivo no se puede ver aquí.
+        </div>
+        <button type="button" class="btn btn-sm btn-primary mt-2" (click)="descargar()">
+          <i class="fa fa-download me-1"></i>Descargar «{{ actual.nombre }}»
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- ---------- Descripción ----------
+       Es el motivo de que la pestaña exista: aquí abajo, siempre a la vista -->
+  @if (actual?.descripcion) {
+    <div class="visor__desc">
+      <i class="fa fa-quote-left fa-fw me-1"></i>{{ actual?.descripcion }}
+    </div>
+  }
+
+  <!-- ---------- Miniaturas ---------- -->
+  @if (hayVarios) {
+    <div class="visor__tira">
+      @for (a of archivos; track a.id; let i = $index) {
+        <button type="button" class="visor__mini" [class.is-actual]="i === indice"
+                [title]="a.nombre" (click)="irA(i)">
+          @if (a.tipo === 'imagen') {
+            <img [src]="urlDe(a)" [alt]="a.nombre" loading="lazy" />
+          } @else {
+            <i [ngClass]="pintaDeTipo(a.tipo).icono" [style.color]="pintaDeTipo(a.tipo).color"></i>
+          }
+        </button>
+      }
+    </div>
+  }
+</div>
