@@ -149,6 +149,34 @@
   object-fit: contain;
 }
 
+/* ---------- Audio ----------
+   Un mp3 no tiene nada que mirar: lo que hace falta es saber cuál es y poder
+   darle al play. Se centra todo para que no quede una barrita perdida. */
+.visor__audio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+
+  padding: 2rem;
+  text-align: center;
+}
+
+.visor__audio__icono {
+  font-size: 3.5rem;
+  color: #fd7e14;
+}
+
+.visor__audio__nombre {
+  color: #dee2e6;
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.visor__audio__mando {
+  width: min(420px, 80vw);
+}
+
 .visor__sinvista {
   display: flex;
   flex-direction: column;

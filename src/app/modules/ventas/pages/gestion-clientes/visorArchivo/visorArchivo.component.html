@@ -87,6 +87,16 @@
       <!-- Lo pinta el visor de PDF del navegador, que ya trae zoom y páginas -->
       <iframe class="visor__pdf" [src]="urlSegura" title="Documento"></iframe>
 
+    } @else if (esAudio) {
+      <!-- Un audio no se ve: se enseña de qué es y se pone a sonar. El icono
+           grande está para que el escenario no quede casi vacío con una
+           barrita de 300px en medio de la pantalla. -->
+      <div class="visor__audio">
+        <i class="fa fa-file-audio visor__audio__icono"></i>
+        <div class="visor__audio__nombre">{{ actual?.nombre }}</div>
+        <audio class="visor__audio__mando" [src]="url" controls autoplay preload="metadata"></audio>
+      </div>
+
     } @else if (actual) {
       <div class="visor__sinvista">
         <i class="fa fa-4x mb-2" [ngClass]="pintaDeTipo(actual.tipo).icono"

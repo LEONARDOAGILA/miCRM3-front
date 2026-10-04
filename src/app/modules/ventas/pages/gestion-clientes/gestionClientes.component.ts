@@ -33,7 +33,6 @@ import {
 
 ///   COMPONENTES    ///
 import { ListClientesComponent } from '../clientes/listClientes/listClientes.component';
-import { ImagenVisor, VisorImagenesComponent } from '../../../../components/visorImagenes/visorImagenes.component';
 import { SaveClienteComponent } from '../clientes/saveCliente/saveCliente.component';
 import { SaveGestionComponent, ModoGestion } from './saveGestion/saveGestion.component';
 import { CerrarGestionComponent } from './cerrarGestion/cerrarGestion.component';
@@ -41,10 +40,14 @@ import { ReasignarClienteComponent } from './reasignarCliente/reasignarCliente.c
 import { ConversacionesWhatsappComponent } from './conversacionesWhatsapp/conversacionesWhatsapp.component';
 import { SubirArchivosComponent } from './subirArchivos/subirArchivos.component';
 import { VisorArchivoComponent } from './visorArchivo/visorArchivo.component';
+import { SaveNotaComponent } from './saveNota/saveNota.component';
+import { VerNotaComponent } from './verNota/verNota.component';
+import { NotaClienteService } from '../../services/notaCliente.service';
+import { NotaCliente, tinteDeNota, nombreDeColor } from '../../interfaces/notaCliente';
 import { ArchivoClienteService } from '../../services/archivoCliente.service';
 import { ArchivoCliente, formatoTamano, pintaDeTipo } from '../../interfaces/archivoCliente';
 
-type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'comercial' | 'archivos';
+type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'archivos' | 'notas';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
 type Vista = 'agenda' | 'cliente';
 /** Atajos del rango de fechas de la agenda. */
@@ -222,6 +225,22 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public tipos = TIPOS_GESTION;
   public estados = ESTADOS_GESTION;
 
+  // ---------- Notas del cliente ----------
+  /**
+   * Lo que hay que saber del cliente y no es una gestión.
+   *
+   * Igual que los archivos, se piden al entrar en la pestaña: es una
+   * petición más por cliente y no todo el mundo las mira.
+   */
+  public notas: NotaCliente[] = [];
+  public cargandoNotas = false;
+  public buscaNotas = '';
+  /** De qué cliente son las que hay cargadas, para no volver a pedirlas. */
+  private notasDe: number | null = null;
+
+  public readonly tinteDeNota = tinteDeNota;
+  public readonly nombreDeColor = nombreDeColor;
+
   // ---------- Archivos del cliente ----------
   /**
    * Fotos, videos y documentos del cliente.
@@ -371,6 +390,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     private _whatsappService: WhatsappService,
     private _softphone: SoftphoneService,
     private _archivoService: ArchivoClienteService,
+    private _notaService: NotaClienteService,
     public _appAgGridService: AppAgGridService,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -595,8 +615,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    */
   limpiarCliente(irALaAgenda: boolean = true): void {
     this.cliente = null;
-    this.urlFotoMapa = null;
-    this.urlFotoCasa = null;
     this.resumen = null;
     this.contactos = [];
     this.asignaciones = [];
@@ -916,6 +934,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     // Los del cliente anterior no valen; los nuevos se piden al entrar en la pestaña
     this.archivos = [];
     this.archivosDe = null;
+    this.notas = [];
+    this.notasDe = null;
+    this.buscaNotas = '';
 
     try {
       this._loadingService.setLoading(true);
@@ -925,7 +946,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         return;
       }
       this.cliente = res.data;
-      this.refrescarFotosDelLugar();
       // La marca de «Actual» viaja de una fila a otra
       this.gridApiClientes?.redrawRows();
       await Promise.all([
@@ -2175,6 +2195,126 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   };
 
   // ================================================================
+  // NOTAS DEL CLIENTE
+  // ================================================================
+
+  /**
+   * Las notas del cliente abierto.
+   *
+   * Con `forzar` se vuelven a pedir aunque ya se tengan: lo usan el botón de
+   * recargar, el buscador y lo que se llama tras guardar o borrar. El buscador
+   * va al servidor y no filtra en memoria porque busca también dentro del
+   * texto de la nota, que aquí sólo llega recortado a 220 caracteres.
+   */
+  async cargarNotas(forzar = false): Promise<void> {
+    const id = this.cliente?.id;
+    if (!id) { this.notas = []; return; }
+    if (!forzar && this.notasDe === id) { return; }
+
+    try {
+      this.cargandoNotas = true;
+      const res: any = await firstValueFrom(this._notaService.allNotas(id, this.buscaNotas));
+      this.notas = res?.status === 'success' ? (res.data ?? []) : [];
+      this.notasDe = id;
+    } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al cargar las notas del cliente:', error);
+      this.notas = [];
+    } finally {
+      this.cargandoNotas = false;
+    }
+  }
+
+  /**
+   * Abre la nota para leerla entera.
+   *
+   * En la tarjeta el cuerpo va recortado a seis renglones para que una nota
+   * larga no deje a las demás fuera de pantalla; aquí se lee completa y, con
+   * el botón de expandir del panel, a pantalla entera —que es lo que hace
+   * falta cuando lleva una captura—.
+   *
+   * Sólo se lee: para corregirla está el botón de modificar de la tarjeta, y
+   * para llevársela en papel el de imprimir de la barra del visor.
+   */
+  verNota(n: NotaCliente): void {
+    const ref = this.modal.open(VerNotaComponent, { size: 'lg', centered: true, scrollable: false });
+    ref.componentInstance.nota = n;
+    ref.componentInstance.clienteNombre = this.cliente?.nombre_completo ?? '';
+  }
+
+  nuevaNota(): void {
+    if (!this.permiso(this.accesoModel?.crear, 'crear notas')) { return; }
+    if (!this.cliente?.id) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+    this.abrirNota(null);
+  }
+
+  editarNota(n: NotaCliente): void {
+    if (!this.permiso(this.accesoModel?.editar, 'modificar notas')) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+    this.abrirNota(n);
+  }
+
+  private abrirNota(n: NotaCliente | null): void {
+    const ref = this.modal.open(SaveNotaComponent, { size: 'lg', centered: true, backdrop: 'static' });
+    ref.componentInstance.clienteId = this.cliente!.id;
+    ref.componentInstance.clienteNombre = this.cliente?.nombre_completo ?? '';
+    ref.componentInstance.nota = n;
+    this.escucharModal(ref, ref.componentInstance.guardado, () => this.cargarNotas(true));
+  }
+
+  /**
+   * Fijar o desfijar.
+   *
+   * Va por su propio endpoint y no por el de guardar: fijar no es editar la
+   * nota, y si contara como edición, subir una al principio la haría parecer
+   * además la más reciente.
+   */
+  async fijarNota(n: NotaCliente): Promise<void> {
+    if (!this.permiso(this.accesoModel?.editar, 'fijar notas')) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._notaService.fijarNota(n.id));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo fijar la nota', 'Error');
+        return;
+      }
+      this._toastr.success(res.message, 'Notas');
+      await this.cargarNotas(true);
+    } catch (error) {
+      console.error('Error al fijar la nota:', error);
+    }
+  }
+
+  async eliminarNota(n: NotaCliente): Promise<void> {
+    if (!this.permiso(this.accesoModel?.eliminar, 'eliminar notas')) { return; }
+
+    const r = await Swal.fire({
+      title: '¿Eliminar esta nota?',
+      text: `«${n.titulo}». Lo que dice no se puede volver a escribir de memoria; el contenido queda en la auditoría.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!r.isConfirmed) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._notaService.deleteNota(n.id));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo eliminar la nota', 'Error');
+        return;
+      }
+      this._toastr.success(res.message, 'Notas', { closeButton: true });
+      await this.cargarNotas(true);
+    } catch (error) {
+      console.error('Error al eliminar la nota:', error);
+    }
+  }
+
+  // ================================================================
   // ARCHIVOS DEL CLIENTE
   // ================================================================
 
@@ -2335,51 +2475,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // al servicio, nunca poniéndola en un href. Un enlace saca el cartel de
   // «¿abandonar la página?» y además Safari del iPhone y la integración de
   // Zoiper en el navegador lo decoran con su icono y la bandera del país.
-
-  // ================================================================
-  // LAS FOTOS DEL LUGAR
-  // ================================================================
-  //
-  // Las mismas dos que toma el mapa al guardar la dirección en saveCliente:
-  // la vista de arriba y la fachada por Street View. Aquí sólo se miran.
-
-  public urlFotoMapa: string | null = null;
-  public urlFotoCasa: string | null = null;
-
-  /**
-   * Se calculan al abrir el cliente, no en un getter.
-   *
-   * La URL lleva `?t=` para saltarse la caché del navegador —si no, al cambiar
-   * la dirección seguiría viéndose la foto vieja—, y un getter devolvería una
-   * URL distinta en cada ciclo de detección: el navegador se pasaría la vida
-   * recargando las dos imágenes.
-   */
-  private refrescarFotosDelLugar(): void {
-    const id = this.cliente?.id;
-    this.urlFotoMapa = id && this.cliente?.url_foto_mapa
-      ? this._clienteService.getFotoUbicacion(id, 'mapa', true) : null;
-    this.urlFotoCasa = id && this.cliente?.url_foto_casa
-      ? this._clienteService.getFotoUbicacion(id, 'casa', true) : null;
-  }
-
-  /**
-   * Abre las fotos en el visor —ampliar, girar, arrastrar— en vez de en otra
-   * pestaña. Se le pasan las dos, así que desde una se llega a la otra con las
-   * flechas.
-   */
-  public verFotoDelLugar(cual: 'mapa' | 'casa'): void {
-    const imagenes: ImagenVisor[] = [];
-    if (this.urlFotoMapa) { imagenes.push({ url: this.urlFotoMapa, titulo: 'Vista del mapa', nombre: 'ubicacion-mapa.png' }); }
-    if (this.urlFotoCasa) { imagenes.push({ url: this.urlFotoCasa, titulo: 'Vista de la calle', nombre: 'ubicacion-fachada.jpg' }); }
-    if (!imagenes.length) { return; }
-
-    const modalRef = this.modal.open(VisorImagenesComponent, {
-      size: 'xl', centered: true, backdrop: true, keyboard: true, windowClass: 'visor-modal',
-    });
-    modalRef.componentInstance.imagenes = imagenes;
-    // Si sólo hay una, el índice que toca es el 0
-    modalRef.componentInstance.indice = cual === 'casa' && imagenes.length > 1 ? 1 : 0;
-  }
 
   /**
    * Marca con el softphone del puesto y deja lista la gestión.

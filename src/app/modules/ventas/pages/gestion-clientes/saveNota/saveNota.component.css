@@ -1,0 +1,398 @@
+/* ============================================================
+   NOTA DEL CLIENTE (escribir / corregir)
+
+   Mismo lenguaje que el visor: fondo gris y la nota sobre una hoja
+   blanca. Se escribe sobre lo que luego se va a leer, así que los
+   tamaños y la tipografía son los mismos que allí; lo único que
+   cambia es que aquí los campos se pueden tocar.
+
+   Los tintes van en rgba y no en color-mix(): el front tiene que
+   funcionar en un iPhone 7 (ver .browserslistrc).
+   ============================================================ */
+
+/* El panel pone padding en su cuerpo; aquí estorba, el margen lo da la hoja */
+:host ::ng-deep .panel > .panel-body {
+  padding: 0;
+}
+
+/* ---------- Los botones de la barra de título ---------- */
+.nota-acciones {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  margin-left: auto;
+  margin-right: .5rem;
+}
+
+/* ---------- La caja entera ---------- */
+.nota-edicion {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ---------- La barra de formato ----------
+   Arriba y fija: se usa mientras se escribe, así que tiene que seguir ahí al
+   bajar por la hoja. */
+.nota-barra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  flex: 0 0 auto;
+
+  padding: .25rem .5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, .15);
+  background-color: #f1f3f5;
+}
+
+.nota-ayuda {
+  margin-left: auto;
+  color: #6c757d;
+  font-size: .6875rem;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .nota-barra .NgxEditor__MenuBar {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* ---------- El fondo ---------- */
+.nota-fondo {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 64vh;
+  padding: 1rem .75rem;
+  overflow-y: auto;
+
+  /* El mismo gris de detrás del papel que usa el visor */
+  background-color: #525659;
+}
+
+/* ---------- La hoja ---------- */
+.nota-hoja {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2rem 2.25rem 2.5rem;
+
+  background-color: #fff;
+  color: #212529;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
+
+/* ---------- El membrete ---------- */
+.nota-membrete {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding-bottom: .625rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.nota-membrete__color {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Sin caja: se lee como el dato del membrete que es, y se nota que se puede
+   cambiar al pasar por encima */
+.nota-membrete__select {
+  width: auto;
+  height: 22px;
+  padding: 0 1.25rem 0 .25rem;
+  border-color: transparent;
+
+  background-color: transparent;
+  color: #495057;
+  font-size: .6875rem;
+  font-weight: 600;
+}
+
+.nota-membrete__select:hover {
+  border-color: #dee2e6;
+  background-color: #f8f9fa;
+}
+
+.nota-fijar {
+  display: inline-flex;
+  align-items: center;
+
+  margin-left: auto;
+  padding: .1rem .4rem;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+
+  color: #6c757d;
+  font-size: .6875rem;
+  white-space: nowrap;
+  cursor: pointer;
+
+  transition: border-color .12s ease, background-color .12s ease, color .12s ease;
+}
+
+.nota-fijar input {
+  margin-right: .375rem;
+}
+
+.nota-fijar:hover {
+  border-color: #dee2e6;
+}
+
+.nota-fijar.is-activa {
+  border-color: rgba(240, 173, 78, .5);
+  background-color: rgba(240, 173, 78, .12);
+  color: #a86a12;
+}
+
+/* ---------- El título ----------
+   Del tamaño con el que se va a leer, no de campo de formulario: sin caja ni
+   etiqueta, porque el sitio ya dice lo que es. */
+.nota-titulo {
+  display: block;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+
+  background: transparent;
+  color: #212529;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.nota-titulo::placeholder {
+  color: #adb5bd;
+  font-weight: 600;
+}
+
+.nota-titulo:hover {
+  border-bottom-color: #e9ecef;
+}
+
+.nota-titulo:focus {
+  outline: none;
+  border-bottom-color: var(--bs-app-theme, #00acac);
+}
+
+/* ---------- El cuerpo ----------
+   Mismo tamaño e interlineado que el visor: lo que se escribe se ve ya como
+   quedará al leerlo. */
+:host ::ng-deep .nota-cuerpo .NgxEditor {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content {
+  min-height: 240px;
+  padding: 0;
+  font-size: .9375rem;
+  line-height: 1.7;
+  color: #212529;
+}
+
+:host ::ng-deep .nota-cuerpo .NgxEditor__Placeholder::before {
+  color: #adb5bd;
+}
+
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content :is(p, ul, ol) { margin: 0 0 .85rem; }
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content ul,
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content ol { padding-left: 1.5rem; }
+/* El tema quita las viñetas en toda la aplicación; en una nota sí hacen falta */
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content ul { list-style: disc outside; }
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content ol { list-style: decimal outside; }
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content li { margin-bottom: .25rem; }
+
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1.25rem 0 .5rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content h1 { font-size: 1.25rem; }
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content h2 { font-size: 1.125rem; }
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content h3 { font-size: 1.0625rem; }
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content h4 { font-size: 1rem; }
+
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content blockquote {
+  margin: .85rem 0;
+  padding: .25rem 0 .25rem 1rem;
+  border-left: 3px solid #dee2e6;
+  color: #6c757d;
+}
+
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem auto;
+  border: 1px solid #e9ecef;
+  border-radius: .25rem;
+}
+
+/* ---------- Expandido ----------
+   El tema convierte .panel en position:fixed inset:0 con display:flex, así que
+   ahí sí hay altura definida: se encadena flex hasta el fondo y se tira el tope
+   del 64vh. */
+:host ::ng-deep .panel.panel-expand > .panel-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  /* el tema lo deja en `scroll` y saca una barra fija aunque no haga falta */
+  overflow-x: auto;
+}
+
+:host ::ng-deep .panel.panel-expand .nota-edicion {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .panel.panel-expand .nota-fondo {
+  max-height: none;
+  padding: 1.5rem 1rem 2rem;
+}
+
+/* ---------- Móvil ----------
+   La hoja ocupa todo: los márgenes de papel en un teléfono son sitio que se le
+   quita al texto. */
+@media (max-width: 575.98px) {
+  .nota-fondo {
+    padding: 0;
+    background-color: #fff;
+  }
+
+  .nota-hoja {
+    padding: 1rem .875rem 1.5rem;
+    box-shadow: none;
+  }
+
+  .nota-ayuda { display: none; }
+  .nota-titulo { font-size: 1.125rem; }
+
+  :host ::ng-deep .nota-cuerpo .NgxEditor__Content {
+    min-height: 180px;
+    font-size: .875rem;
+  }
+}
+
+/* ---------- Los botones de tabla ----------
+   Van al lado de la barra de ngx-editor y no dentro, porque su barra no
+   contempla tablas: su esquema no las tiene. Se separan con una línea para que
+   se lean como otro grupo. */
+.nota-tablas {
+  display: inline-flex;
+  align-items: center;
+  gap: .125rem;
+
+  padding-left: .375rem;
+  border-left: 1px solid rgba(0, 0, 0, .15);
+}
+
+.nota-tablas__grupo {
+  display: inline-flex;
+  align-items: center;
+  gap: .125rem;
+}
+
+.nota-tablas__btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: .25rem;
+
+  background: transparent;
+  color: #495057;
+  font-size: .75rem;
+  cursor: pointer;
+
+  transition: background-color .12s ease, color .12s ease;
+}
+
+.nota-tablas__btn:hover {
+  background-color: rgba(0, 0, 0, .08);
+}
+
+.nota-tablas__btn--quitar:hover {
+  background-color: rgba(220, 53, 69, .15);
+  color: #dc3545;
+}
+
+/* La «f» y la «c» de quitar fila / quitar columna: con el icono del menos solo
+   no se distinguen, y dos iconos parecidos seguidos son una trampa */
+.nota-tablas__letra {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  font-size: .5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ---------- Las tablas dentro del editor ----------
+   prosemirror-tables pinta la tabla con <colgroup> y mete su propio asa para
+   arrastrar el ancho; lo que falta es que se vea como una tabla. */
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  overflow: hidden;
+}
+
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content td,
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content th {
+  position: relative;
+  padding: .375rem .5rem;
+  border: 1px solid #ced4da;
+  vertical-align: top;
+}
+
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content th {
+  background-color: #f1f3f5;
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Lo de dentro de una celda va más apretado: con el margen normal de párrafo,
+   una tabla de cuatro filas ocupaba media hoja */
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content :is(td, th) > p { margin: 0; }
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content :is(td, th) > p + p { margin-top: .35rem; }
+
+/* Las celdas elegidas, para que se vea qué se va a unir o borrar */
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(47, 128, 237, .2);
+  pointer-events: none;
+}
+
+/* El asa para arrastrar el ancho de la columna */
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: 0;
+  width: 4px;
+  background-color: #2f80ed;
+  pointer-events: none;
+  z-index: 20;
+}
+
+:host ::ng-deep .nota-cuerpo .NgxEditor__Content.resize-cursor {
+  cursor: col-resize;
+}

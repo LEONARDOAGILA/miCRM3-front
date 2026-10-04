@@ -1,0 +1,58 @@
+<!-- ============================================================
+     LEER UNA NOTA
+
+     Presentada como un documento: fondo gris y la nota sobre una
+     hoja blanca centrada, igual que el visor de PDF del navegador.
+     Es lo que es —algo escrito que se lee de arriba abajo—, y así
+     se lee mejor que como un formulario sin campos.
+
+     Sin pie y sólo para leer: imprimir, expandir y cerrar van en
+     la barra de título, que es donde el resto de la aplicación los
+     pone. Para corregir la nota está su botón en la tarjeta.
+     ============================================================ -->
+
+<panel [title]="titulo"
+       headerClass="bg-cyan-700"
+       [noButtonCollapse]="true"
+       [noButtonReload]="true"
+       [noButtonRemove]="true"
+       ButtonPrint="true"
+       ButtonRemoveModal="true"
+       (panelPrinted)="imprimir()"
+       (panelRemovedModal)="modal.dismiss()">
+
+  <div class="nota-ver">
+    <div class="nota-ver__hoja">
+
+      <!-- La cabecera de la hoja: de qué es y de quién, como el membrete de
+           un documento -->
+      <div class="nota-ver__membrete">
+        <div class="nota-ver__membrete__izq">
+          <span class="nota-ver__color" [style.background-color]="tinteDeNota(nota?.color)"></span>
+          <span class="nota-ver__etiqueta">{{ nombreDeColor(nota?.color) }}</span>
+          @if (nota?.fijada) {
+            <span class="nota-ver__fijada"><i class="fa fa-thumbtack me-1"></i>Fijada</span>
+          }
+        </div>
+
+        <div class="nota-ver__membrete__der">
+          <span><i class="fa fa-user fa-fw"></i>{{ nota?.created_by }} · {{ nota?.created_at }}</span>
+          @if (nota?.editada) {
+            <span [title]="'Editada por ' + nota?.updated_by">
+              <i class="fa fa-pen fa-fw"></i>editada el {{ nota?.updated_at }}
+            </span>
+          }
+          @if (clienteNombre) {
+            <span class="nota-ver__cliente"><i class="fa fa-address-card fa-fw"></i>{{ clienteNombre }}</span>
+          }
+        </div>
+      </div>
+
+      <h2 class="nota-ver__titulo">{{ nota?.titulo }}</h2>
+
+      <!-- El contenido entero, sin el recorte de la tarjeta. El HTML lo sanea
+           Angular al pintarlo, y el servidor ya lo limpió al guardarlo. -->
+      <div class="nota-ver__cuerpo" [innerHTML]="nota?.contenido"></div>
+    </div>
+  </div>
+</panel>

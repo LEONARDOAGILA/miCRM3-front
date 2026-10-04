@@ -113,10 +113,11 @@ export class VisorArchivoComponent implements OnInit {
   get esImagen(): boolean { return this.actual?.tipo === 'imagen'; }
   get esVideo(): boolean { return this.actual?.tipo === 'video'; }
   get esPdf(): boolean { return this.actual?.tipo === 'pdf'; }
+  get esAudio(): boolean { return this.actual?.tipo === 'audio'; }
 
   /** Ni se amplía ni se reproduce: lo único que se puede hacer es bajarlo. */
   get soloDescarga(): boolean {
-    return !!this.actual && !this.esImagen && !this.esVideo && !this.esPdf;
+    return !!this.actual && !this.esImagen && !this.esVideo && !this.esPdf && !this.esAudio;
   }
 
   get hayVarios(): boolean { return this.archivos.length > 1; }

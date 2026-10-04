@@ -737,20 +737,22 @@
             </li>
             <li class="nav-item flex-shrink-0" role="presentation">
               <button type="button" class="nav-link" role="tab"
+                      [class.active]="pestana === 'notas'"
+                      [attr.aria-selected]="pestana === 'notas'"
+                      (click)="pestana = 'notas'; cargarNotas(); replantear()">
+                <i class="fa fa-note-sticky"></i>
+                <span class="gestion-tabs__texto">Notas</span>
+                @if (notas.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ notas.length }}</span> }
+              </button>
+            </li>
+            <li class="nav-item flex-shrink-0" role="presentation">
+              <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'archivos'"
                       [attr.aria-selected]="pestana === 'archivos'"
                       (click)="pestana = 'archivos'; cargarArchivos(); replantear()">
                 <i class="fa fa-paperclip"></i>
                 <span class="gestion-tabs__texto">Archivos</span>
                 @if (archivos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ archivos.length }}</span> }
-              </button>
-            </li>
-            <li class="nav-item">
-              <button type="button" class="nav-link"
-                      [class.active]="pestana === 'comercial'"
-                      [attr.aria-selected]="pestana === 'comercial'"
-                      (click)="pestana = 'comercial'; replantear()">
-                <i class="fa fa-circle-info"></i> Más información
               </button>
             </li>
           </ul>
@@ -1074,77 +1076,111 @@
               }
             }
 
-            <!-- ===== MÁS INFORMACIÓN =====
-                 Cómo se le cobra. Estaba en una tarjeta de la ficha, pero se
-                 consulta de vez en cuando y ahí ocupaba sitio fijo a cambio de
-                 poco; como pestaña está igual de a mano y deja respirar al
-                 resto. -->
-            @if (pestana === 'comercial') {
-              <div class="gestion-comercial">
-                <div class="gc-tarjeta">
-                  <div class="gc-tarjeta__titulo"><i class="fa fa-briefcase fa-fw"></i>Condiciones comerciales</div>
-                  <div class="gc-tarjeta__cuerpo">
-                    <div class="gc-campo">
-                      <span class="gc-campo__rotulo">Forma de pago:</span>
-                      <span class="gc-campo__valor">{{ cliente?.forma_pago || '—' }}</span>
-                    </div>
-                    <div class="gc-campo">
-                      <span class="gc-campo__rotulo">Crédito:</span>
-                      <span class="gc-campo__valor">{{ cliente?.dias_credito ? cliente?.dias_credito + ' días' : 'sin crédito' }}</span>
-                    </div>
-                    <div class="gc-campo">
-                      <span class="gc-campo__rotulo">Cupo:</span>
-                      <span class="gc-campo__valor">{{ cliente?.limite_credito ? (cliente?.limite_credito | number:'1.2-2') : '—' }}</span>
-                    </div>
-                    <div class="gc-campo">
-                      <span class="gc-campo__rotulo">Descuento:</span>
-                      <span class="gc-campo__valor">{{ cliente?.descuento ? cliente?.descuento + ' %' : '—' }}</span>
-                    </div>
-                  </div>
-                </div>
 
-                <div class="gc-tarjeta">
-                  <div class="gc-tarjeta__titulo"><i class="fa fa-note-sticky fa-fw"></i>Observaciones</div>
-                  <div class="gc-tarjeta__cuerpo">
-                    <p class="gestion-comercial__notas">{{ cliente?.observaciones || 'Sin observaciones.' }}</p>
-                  </div>
-                </div>
+            <!-- ===== NOTAS =====
+                 Lo que hay que saber del cliente y no es una gestión: cómo le
+                 gusta que le llamen, que el gerente sólo atiende los martes, el
+                 acuerdo verbal del precio. En tarjetas, con las fijadas arriba,
+                 porque se leen de un vistazo y no se recorren como una tabla. -->
+            @if (pestana === 'notas') {
+              <div class="gc-notas">
 
-                <!-- Las dos fotos del lugar, las mismas que toma el mapa al
-                     guardar la dirección. Se pulsan para verlas en grande. -->
-                <div class="gc-tarjeta">
-                  <div class="gc-tarjeta__titulo">
-                    <i class="fa fa-map-location-dot fa-fw"></i>Fotos del lugar
-                    @if (cliente?.link_coordenadas) {
-                      <a class="gestion-comercial__mapa" [href]="cliente?.link_coordenadas"
-                         target="_blank" rel="noopener noreferrer" title="Abrir en Google Maps">
-                        <i class="fa fa-up-right-from-square"></i>
-                      </a>
+                <div class="gc-notas__barra">
+                  <button type="button" class="btn btn-xs btn-primary"
+                          [disabled]="accesoModel?.crear === false"
+                          (click)="nuevaNota()">
+                    <i class="fa fa-plus me-1"></i>Nueva nota
+                  </button>
+
+                  <div class="gc-notas__buscar">
+                    <i class="fa fa-magnifying-glass"></i>
+                    <input type="text" class="form-control form-control-sm"
+                           placeholder="Buscar en las notas…"
+                           [(ngModel)]="buscaNotas" (keyup.enter)="cargarNotas(true)">
+                    @if (buscaNotas) {
+                      <button type="button" class="gc-notas__limpiar" title="Limpiar"
+                              (click)="buscaNotas = ''; cargarNotas(true)">
+                        <i class="fa fa-xmark"></i>
+                      </button>
                     }
                   </div>
-                  <div class="gc-tarjeta__cuerpo">
-                    @if (urlFotoMapa || urlFotoCasa) {
-                      <div class="gestion-fotos">
-                        @if (urlFotoMapa) {
-                          <button type="button" class="gestion-foto" title="Ver la vista del mapa" (click)="verFotoDelLugar('mapa')">
-                            <img [src]="urlFotoMapa" alt="Vista del mapa" loading="lazy" />
-                            <span class="gestion-foto__pie"><i class="fa fa-map me-1"></i>Mapa</span>
-                          </button>
+
+                  <button type="button" class="btn btn-xs btn-white" title="Volver a cargar"
+                          (click)="cargarNotas(true)">
+                    <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoNotas"></i>
+                  </button>
+                </div>
+
+                @if (cargandoNotas && !notas.length) {
+                  <div class="gc-notas__vacio"><i class="fa fa-spinner fa-spin me-1"></i>Cargando…</div>
+                } @else if (!notas.length) {
+                  <div class="gc-notas__vacio">
+                    @if (buscaNotas) {
+                      <i class="fa fa-magnifying-glass me-1"></i>
+                      Ninguna nota dice «{{ buscaNotas }}».
+                    } @else {
+                      <i class="fa fa-note-sticky me-1"></i>
+                      Este cliente no tiene notas. Aquí va lo que hay que saber de él y no
+                      es una llamada concreta: con quién hablar, a qué hora, qué se le
+                      prometió. Lo que hoy se queda en la cabeza del vendedor.
+                    }
+                  </div>
+                }
+
+                <div class="gc-notas__rejilla">
+                  @for (n of notas; track n.id) {
+                    <div class="gc-nota" [class.is-fijada]="n.fijada"
+                         [style.--tinte]="tinteDeNota(n.color)">
+
+                      <div class="gc-nota__cabecera">
+                        @if (n.fijada) {
+                          <i class="fa fa-thumbtack gc-nota__chincheta" title="Fijada arriba"></i>
                         }
-                        @if (urlFotoCasa) {
-                          <button type="button" class="gestion-foto" title="Ver la vista de la calle" (click)="verFotoDelLugar('casa')">
-                            <img [src]="urlFotoCasa" alt="Vista de la calle" loading="lazy" />
-                            <span class="gestion-foto__pie"><i class="fa fa-house me-1"></i>Fachada</span>
-                          </button>
+                        <span class="gc-nota__titulo" [title]="n.titulo">{{ n.titulo }}</span>
+                        <span class="gc-nota__color" [title]="nombreDeColor(n.color)"></span>
+                      </div>
+
+                      <!-- El HTML lo sanea Angular al pintarlo con innerHTML, y el
+                           servidor ya lo limpió al guardarlo: dos puertas, porque la
+                           del servidor es la única que no se puede saltar nadie -->
+                      <!-- Pulsar el texto también abre: es lo que intenta cualquiera
+                           cuando ve que la nota está cortada -->
+                      <div class="gc-nota__cuerpo" [innerHTML]="n.contenido"
+                           title="Leer la nota entera" (click)="verNota(n)"></div>
+
+                      <div class="gc-nota__pie">
+                        <span>{{ n.created_by }} · {{ n.created_at }}</span>
+                        @if (n.editada) {
+                          <span class="gc-nota__editada" [title]="'Editada por ' + n.updated_by + ' el ' + n.updated_at">
+                            editada
+                          </span>
                         }
                       </div>
-                    } @else {
-                      <p class="gestion-comercial__notas">
-                        <i class="fa fa-image me-1"></i>
-                        Este cliente no tiene fotos del lugar. Se toman al elegir la dirección en el mapa, desde su ficha.
-                      </p>
-                    }
-                  </div>
+
+                      <div class="gestion-acciones gc-nota__acciones">
+                        <!-- Ver primero: en la tarjeta el cuerpo va recortado a seis
+                             renglones, así que leerla entera es lo más frecuente -->
+                        <button type="button" class="btn-icon btn-llamar" title="Leer la nota entera"
+                                (click)="verNota(n)">
+                          <i class="fa fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn-icon"
+                                [ngClass]="n.fijada ? 'btn-cerrar' : 'btn-editar'"
+                                [title]="n.fijada ? 'Quitar de arriba' : 'Fijar arriba'"
+                                [disabled]="accesoModel?.editar === false" (click)="fijarNota(n)">
+                          <i class="fa fa-thumbtack"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-editar" title="Modificar"
+                                [disabled]="accesoModel?.editar === false" (click)="editarNota(n)">
+                          <i class="fa fa-pen"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-quitar" title="Eliminar"
+                                [disabled]="accesoModel?.eliminar === false" (click)="eliminarNota(n)">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  }
                 </div>
               </div>
             }

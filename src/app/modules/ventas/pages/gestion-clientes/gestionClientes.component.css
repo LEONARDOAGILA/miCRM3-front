@@ -1759,91 +1759,6 @@
   user-select: text;
 }
 
-/* ---------- Pestaña «Más información» ----------
-   Las condiciones vuelven a ir en tarjeta, como cuando estaban arriba: en
-   rejilla suelta los cuatro datos quedaban desperdigados por todo el ancho
-   del panel y costaba leerlos como un bloque.
-
-   La tarjeta no se estira a lo ancho entero: con cuatro renglones cortos
-   quedaría una banda vacía enorme a la derecha. */
-.gestion-comercial {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(19rem, 24rem));
-  gap: .5rem;
-  align-content: start;
-  padding: .6rem .25rem;
-}
-
-/* Las observaciones pueden ser un párrafo: aquí sí se leen enteras, sin el
-   recorte a dos renglones que tenían en la ficha. */
-.gestion-comercial__notas {
-  margin: 0;
-  padding: .15rem 0;
-  font-size: .75rem;
-  line-height: 1.45;
-  color: var(--bs-body-color, #212529);
-  white-space: pre-line;
-}
-
-/* ---------- Fotos del lugar (pestaña «Más información») ----------
-   Mismo trato que en la ficha del cliente, para que se reconozcan: recorte
-   parejo porque las dos vienen con proporciones distintas, y el pie encima
-   de la imagen para no robar alto. */
-.gestion-fotos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: .4rem;
-  margin-top: .2rem;
-}
-
-.gestion-foto {
-  position: relative;
-  display: block;
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .4rem;
-  background-color: var(--bs-component-bg, #fff);
-  cursor: zoom-in;
-  transition: border-color .12s ease;
-}
-
-.gestion-foto:hover {
-  border-color: var(--bs-app-theme, #00acac);
-}
-
-.gestion-foto img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-}
-
-.gestion-foto__pie {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: .15rem .3rem;
-  background-color: rgba(0, 0, 0, .55);
-  color: #fff;
-  font-size: 9.5px;
-  font-weight: 600;
-  text-align: center;
-}
-
-/* El enlace a Google Maps, en la cabecera de su tarjeta */
-.gestion-comercial__mapa {
-  margin-left: auto;
-  color: inherit;
-  opacity: .7;
-  text-decoration: none;
-}
-
-.gestion-comercial__mapa:hover {
-  opacity: 1;
-}
-
 /* ---------- Escala de las grillas ----------
    La letra del tema (12px en celda) iba suelta respecto al resto de la
    pantalla, que ya estaba en 11px. Con esto y el alto de fila bajado en el
@@ -2148,3 +2063,239 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   PESTAÑA DE NOTAS
+
+   Tarjetas, no tabla: una nota se lee de un vistazo y lo que
+   importa es el contenido, no comparar columnas. Las fijadas
+   suben solas (lo ordena el servidor) y se marcan con la chincheta.
+
+   El color de la etiqueta entra por --tinte desde la plantilla,
+   que es donde se sabe cuál lleva cada nota.
+   ============================================================ */
+
+.gc-notas {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.gc-notas__barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding: .375rem .5rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.gc-notas__buscar {
+  position: relative;
+  flex: 1 1 auto;
+  max-width: 320px;
+}
+
+.gc-notas__buscar > i {
+  position: absolute;
+  top: 50%;
+  left: .5rem;
+  transform: translateY(-50%);
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  pointer-events: none;
+}
+
+.gc-notas__buscar input {
+  height: 26px;
+  padding: .1rem 1.5rem .1rem 1.5rem;
+  font-size: .75rem;
+}
+
+.gc-notas__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .25rem;
+  transform: translateY(-50%);
+
+  padding: 0 .25rem;
+  border: 0;
+  background: none;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  cursor: pointer;
+}
+
+.gc-notas__vacio {
+  padding: 1.5rem 1.25rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Columnas que se adaptan solas: en un monitor caben tres y en el teléfono una */
+.gc-notas__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: .5rem;
+  align-content: start;
+
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .5rem;
+  overflow-y: auto;
+}
+
+.gc-nota {
+  display: flex;
+  flex-direction: column;
+
+  padding: .5rem .625rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  /* La etiqueta de color, en una banda lateral: se ve sin leer nada */
+  border-left: 3px solid var(--tinte, #6c757d);
+  border-radius: .375rem;
+
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.gc-nota:hover {
+  border-color: var(--bs-border-color, #dee2e6);
+  border-left-color: var(--tinte, #6c757d);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+}
+
+/* Fijada: fondo tenue del propio color, para que destaque sin gritar */
+.gc-nota.is-fijada {
+  background-color: rgba(240, 173, 78, .07);
+  border-color: rgba(240, 173, 78, .35);
+}
+
+.gc-nota__cabecera {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  margin-bottom: .25rem;
+}
+
+.gc-nota__chincheta {
+  flex: 0 0 auto;
+  color: #f0ad4e;
+  font-size: .6875rem;
+  transform: rotate(35deg);
+}
+
+.gc-nota__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  font-size: .8125rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gc-nota__color {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--tinte, #6c757d);
+}
+
+/* El cuerpo es HTML del editor: se recorta a seis renglones para que una nota
+   larga no deje las demás fuera de pantalla. Se abre entera al modificarla. */
+:host ::ng-deep .gc-nota__cuerpo {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  font-size: .75rem;
+  line-height: 1.45;
+}
+
+/* Lo que se escribió dentro, a tamaño de tarjeta */
+:host ::ng-deep .gc-nota__cuerpo :is(p, ul, ol) { margin: 0 0 .25rem; }
+:host ::ng-deep .gc-nota__cuerpo ul,
+:host ::ng-deep .gc-nota__cuerpo ol { padding-left: 1.1rem; }
+/* El tema las quita en toda la aplicación; en una nota sí hacen falta */
+:host ::ng-deep .gc-nota__cuerpo ul { list-style: disc outside; }
+:host ::ng-deep .gc-nota__cuerpo ol { list-style: decimal outside; }
+:host ::ng-deep .gc-nota__cuerpo :is(h1, h2, h3, h4, h5, h6) { margin: 0 0 .25rem; font-size: .8125rem; }
+
+/* Una captura dentro de la nota: pequeña en la tarjeta, que lo que se lee ahí
+   es el texto. Entera se ve al abrir la nota para modificarla. */
+/* Se puede pulsar para abrirla entera */
+:host ::ng-deep .gc-nota__cuerpo {
+  cursor: pointer;
+}
+
+:host ::ng-deep .gc-nota__cuerpo img {
+  max-width: 100%;
+  max-height: 90px;
+  width: auto;
+  border-radius: .25rem;
+}
+
+:host ::ng-deep .gc-nota__cuerpo blockquote {
+  margin: .2rem 0;
+  padding-left: .5rem;
+  border-left: 2px solid var(--bs-border-color, #dee2e6);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gc-nota__pie {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  margin-top: .375rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .625rem;
+}
+
+.gc-nota__editada {
+  padding: 0 .3rem;
+  border-radius: .2rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .07);
+  cursor: help;
+}
+
+.gc-nota__acciones {
+  margin-top: .375rem;
+  justify-content: flex-end;
+}
+
+/* ---------- Móvil ---------- */
+@media (max-width: 575.98px) {
+  .gc-notas__rejilla { grid-template-columns: 1fr; }
+  .gc-notas__buscar  { max-width: none; }
+}
+
+/* ---------- Tablas dentro de una tarjeta de nota ----------
+   En la tarjeta el cuerpo va recortado a seis renglones, así que de una tabla
+   se verá sólo el principio: basta con que se entienda que es una tabla. */
+:host ::ng-deep .gc-nota__cuerpo table {
+  width: 100%;
+  margin: .25rem 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: .6875rem;
+}
+
+:host ::ng-deep .gc-nota__cuerpo :is(td, th) {
+  padding: .15rem .3rem;
+  border: 1px solid #dee2e6;
+}
+
+:host ::ng-deep .gc-nota__cuerpo th {
+  background-color: #f1f3f5;
+  font-weight: 600;
+}
+
+:host ::ng-deep .gc-nota__cuerpo :is(td, th) > p { margin: 0; }

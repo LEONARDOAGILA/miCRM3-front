@@ -1,0 +1,133 @@
+<!-- ============================================================
+     NOTA DEL CLIENTE (escribir / corregir)
+
+     Mismo lenguaje que el visor: fondo gris y la nota sobre una
+     hoja blanca. Se escribe sobre lo que luego se va a leer, en
+     vez de rellenar un formulario y descubrir después cómo queda.
+
+     Guardar, insertar imagen, expandir y cerrar van en la barra de
+     título, como en el visor; no hay pie.
+     ============================================================ -->
+
+<panel [title]="titulo_modal"
+       headerClass="bg-cyan-700"
+       [noButtonCollapse]="true"
+       [noButtonReload]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       (panelRemovedModal)="modal.dismiss()">
+
+  <div header class="nota-acciones">
+    <!-- El botón de imagen es nuestro y no el de ngx-editor: el suyo pide una
+         URL, y lo que hace falta es subir el fichero al servidor -->
+    <button type="button" class="btn btn-xs btn-white" title="Insertar una imagen en la nota"
+            [disabled]="subiendoImagen" (click)="abrirSelectorImagen()">
+      @if (subiendoImagen) {
+        <i class="fa fa-spinner fa-spin me-1"></i>Subiendo…
+      } @else {
+        <i class="fa fa-image me-1"></i>Imagen
+      }
+    </button>
+
+    <button type="button" class="btn btn-xs btn-primary" title="Guardar la nota"
+            [disabled]="guardando" (click)="guardar()">
+      @if (guardando) {
+        <i class="fa fa-spinner fa-spin me-1"></i>Guardando…
+      } @else {
+        <i class="fa fa-floppy-disk me-1"></i>Guardar
+      }
+    </button>
+  </div>
+  <input #selectorImagen type="file" accept="image/*" hidden (change)="alElegirImagen($event)">
+
+  <!-- Las escuchas de pegar y soltar se ponen a mano EN CAPTURA (ver
+       ngAfterViewInit): en burbujeo llegan después de que ProseMirror ya haya
+       pegado, y entonces ya no hay nada que cambiar. -->
+  <div class="nota-edicion" #cajaEdicion (dragover)="$event.preventDefault()">
+
+    <!-- La barra de formato, pegada arriba: se usa mientras se escribe, así que
+         tiene que seguir ahí al bajar por la hoja -->
+    <div class="nota-barra">
+      <ngx-editor-menu [editor]="editor" [toolbar]="toolbar"></ngx-editor-menu>
+
+      <!-- Las tablas van aparte de la barra de ngx-editor porque su barra no
+           las contempla: su esquema no tiene tablas (ver esquemaNotas.ts). -->
+      <span class="nota-tablas">
+        <button type="button" class="nota-tablas__btn" title="Insertar una tabla de 3x3"
+                (click)="insertarTabla()">
+          <i class="fa fa-table"></i>
+        </button>
+
+        <!-- El resto sólo tiene sentido con el cursor dentro de una tabla -->
+        @if (enTabla) {
+          <span class="nota-tablas__grupo">
+            <button type="button" class="nota-tablas__btn" title="Fila encima" (click)="filaArriba()">
+              <i class="fa fa-arrow-up"></i>
+            </button>
+            <button type="button" class="nota-tablas__btn" title="Fila debajo" (click)="filaAbajo()">
+              <i class="fa fa-arrow-down"></i>
+            </button>
+            <button type="button" class="nota-tablas__btn" title="Columna a la izquierda" (click)="columnaIzq()">
+              <i class="fa fa-arrow-left"></i>
+            </button>
+            <button type="button" class="nota-tablas__btn" title="Columna a la derecha" (click)="columnaDer()">
+              <i class="fa fa-arrow-right"></i>
+            </button>
+            <button type="button" class="nota-tablas__btn" title="Unir las celdas elegidas" (click)="unirCeldas()">
+              <i class="fa fa-compress"></i>
+            </button>
+            <button type="button" class="nota-tablas__btn" title="Partir la celda" (click)="partirCelda()">
+              <i class="fa fa-expand"></i>
+            </button>
+            <button type="button" class="nota-tablas__btn" title="Quitar esta fila" (click)="quitarFila()">
+              <i class="fa fa-minus"></i><span class="nota-tablas__letra">f</span>
+            </button>
+            <button type="button" class="nota-tablas__btn" title="Quitar esta columna" (click)="quitarColumna()">
+              <i class="fa fa-minus"></i><span class="nota-tablas__letra">c</span>
+            </button>
+            <button type="button" class="nota-tablas__btn nota-tablas__btn--quitar" title="Quitar la tabla entera"
+                    (click)="quitarTabla()">
+              <i class="fa fa-trash"></i>
+            </button>
+          </span>
+        }
+      </span>
+
+      <span class="nota-ayuda">
+        @if (enTabla) { Tabulador para pasar de celda · arrastra el borde para el ancho }
+        @else { Pega aquí texto e imágenes, o arrástralas }
+      </span>
+    </div>
+
+    <div class="nota-fondo">
+      <div class="nota-hoja">
+
+        <!-- El membrete, igual que en el visor pero editable -->
+        <div class="nota-membrete">
+          <span class="nota-membrete__color" [style.background-color]="tinteDe(color)"></span>
+          <select class="form-select form-select-sm nota-membrete__select"
+                  [(ngModel)]="color" title="Etiqueta de la nota">
+            @for (c of colores; track c.id) {
+              <option [value]="c.id">{{ c.nombre }}</option>
+            }
+          </select>
+
+          <!-- Fijar desde aquí ahorra el segundo clic en la lista cuando se está
+               escribiendo justo la nota que hay que tener siempre delante -->
+          <label class="nota-fijar" [class.is-activa]="fijada" title="Mantenerla arriba del todo">
+            <input type="checkbox" [(ngModel)]="fijada">
+            <i class="fa fa-thumbtack me-1"></i>Fijar
+          </label>
+        </div>
+
+        <!-- El título se escribe donde se va a leer: en grande, en su sitio -->
+        <input class="nota-titulo" maxlength="150"
+               placeholder="Título de la nota"
+               [(ngModel)]="titulo">
+
+        <ngx-editor class="nota-cuerpo" [editor]="editor" [(ngModel)]="contenido" outputFormat="html"
+                    placeholder="Escribe aquí lo que hay que saber de este cliente…"></ngx-editor>
+      </div>
+    </div>
+  </div>
+</panel>
