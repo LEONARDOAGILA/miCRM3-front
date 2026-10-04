@@ -8,6 +8,10 @@ import { RolResponsable } from '../interfaces/gestionModel';
 export interface FiltrosGestion {
   tipo?: string | null;
   estado?: string | null;
+  /** Cómo terminó: CONTACTADO, NO_CONTESTA… */
+  resultado?: string | null;
+  /** El login de quien la registró (gestiones.created_by) */
+  creado_por?: string | null;
   desde?: string | null;
   hasta?: string | null;
 }
@@ -72,6 +76,8 @@ export class GestionService {
     if (search) { params = params.set('search', search); }
     if (filtros.tipo)   { params = params.set('tipo', filtros.tipo); }
     if (filtros.estado) { params = params.set('estado', filtros.estado); }
+    if (filtros.resultado)  { params = params.set('resultado', filtros.resultado); }
+    if (filtros.creado_por) { params = params.set('creado_por', filtros.creado_por); }
     if (filtros.desde)  { params = params.set('desde', filtros.desde); }
     if (filtros.hasta)  { params = params.set('hasta', filtros.hasta); }
     return this._http.get<any>(this.URL_SERVICIOS + 'allGestiones', { params, observe: 'response' });

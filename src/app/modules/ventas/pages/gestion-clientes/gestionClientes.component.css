@@ -49,6 +49,11 @@
   max-width: var(--gc-ancho-columna, 27rem);
   min-height: 0;
 
+  /* El mismo hueco que deja la columna derecha con su padding-left: la grilla
+     estaba pegada al divisor, literalmente a 0 px, y el borde de la tabla se
+     confundía con el del divisor. */
+  padding-right: .75rem;
+
   /* El scroll lo lleva la lista por dentro, no la columna */
   overflow: hidden;
 
@@ -98,7 +103,7 @@
    se encoge y se estira cada vez */
 .gc-lista__estado {
   flex: 0 0 auto;
-  width: 8.25rem;
+  width: 9rem;
   font-size: .75rem;
 }
 
@@ -985,9 +990,15 @@
    parezca clara. Con un 2,5% no se notaba nada; a este nivel se distingue sin
    llegar a verse gris. Sólo en la columna del cliente, que es donde están las
    pestañas. */
-.gc-panel__contenido {
-  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
-}
+/* Sin velo de fondo.
+   Tenía `rgba(var(--bs-body-color-rgb), .05)`, es decir un velo hecho con el
+   color del TEXTO, y ese color se invierte con el tema. En claro oscurecía un
+   poco el contenedor y las tarjetas blancas flotaban encima, que es lo que uno
+   espera; en oscuro hacía lo contrario —aclaraba el contenedor— y las tarjetas
+   quedaban más oscuras que el hueco entre ellas. De ahí el efecto de parches:
+   dentro de la barra un tono y fuera otro.
+   Ahora la columna de trabajo es del mismo color que todo lo demás y las
+   tarjetas se distinguen por su borde, que ya tienen. */
 
 /* ---------- Filtros del historial ---------- */
 .gestion-filtros {
@@ -1032,9 +1043,34 @@
   color: var(--bs-app-theme, #00acac);
 }
 
-/* La flecha del desplegable, al final */
+/* La flecha del desplegable, al final.
+   Es un icono propio y no el ::after de Bootstrap: el tema no lo pinta en
+   estos botones, así que los filtros parecían botones normales y no se veía
+   que al pulsarlos se abría una lista. */
 .gestion-filtro.dropdown-toggle::after {
+  display: none;
+}
+
+.gestion-filtro__flecha {
   margin-left: auto;
+  padding-left: .25rem;
+  font-size: .5625rem;
+  opacity: .55;
+}
+
+.gestion-filtro:hover .gestion-filtro__flecha,
+.gestion-filtro[aria-expanded='true'] .gestion-filtro__flecha {
+  opacity: 1;
+}
+
+/* Abierto, la flecha mira hacia arriba: dice que volver a pulsar lo cierra */
+.gestion-filtro[aria-expanded='true'] .gestion-filtro__flecha {
+  transform: rotate(180deg);
+}
+
+/* Sin nadie que haya registrado nada todavía, el filtro no tiene sentido */
+.gestion-filtro:disabled {
+  opacity: .5;
 }
 
 .gestion-filtro__menu {

@@ -44,6 +44,8 @@ import { SaveNotaComponent } from './saveNota/saveNota.component';
 import { VerNotaComponent } from './verNota/verNota.component';
 import { NotaClienteService } from '../../services/notaCliente.service';
 import { NotaCliente, tinteDeNota, nombreDeColor } from '../../interfaces/notaCliente';
+import { CatalogoGestionService } from '../../services/catalogoGestion.service';
+import { TipoGestion } from '../../interfaces/catalogoGestion';
 import { ArchivoClienteService } from '../../services/archivoCliente.service';
 import { ArchivoCliente, formatoTamano, pintaDeTipo } from '../../interfaces/archivoCliente';
 
@@ -230,9 +232,26 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public ultimaPagina = 1;
   public filtroTipo: string | null = null;
   public filtroEstado: string | null = null;
+  public filtroResultado: string | null = null;
+  public filtroCreadoPor: string | null = null;
 
-  public tipos = TIPOS_GESTION;
+  /**
+   * Quiénes han registrado gestiones de ESTE cliente.
+   *
+   * Lo manda el servidor junto con la lista y no sale de la tabla de
+   * usuarios: lo que hace falta ofrecer son los que de verdad aparecen en
+   * este historial, no los trescientos del sistema.
+   */
+  public registradores: string[] = [];
+
+  /**
+   * Los tipos salen del catálogo (ventas.gestiones_tipos), el mismo del que
+   * los toma el formulario de gestión. La constante se queda de respaldo por
+   * si la petición falla: un filtro vacío sería peor que uno desactualizado.
+   */
+  public tipos: { id: string; name: string; icono: string }[] = TIPOS_GESTION;
   public estados = ESTADOS_GESTION;
+  public resultados = RESULTADOS_GESTION;
 
   // ---------- Notas del cliente ----------
   /**
@@ -400,6 +419,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     private _softphone: SoftphoneService,
     private _archivoService: ArchivoClienteService,
     private _notaService: NotaClienteService,
+    private _catalogoService: CatalogoGestionService,
     public _appAgGridService: AppAgGridService,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -414,6 +434,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.initializeGridCartera();
     this.cargarAgenda();
     this.cargarClientes(1);
+    this.cargarTiposDelCatalogo();
 
     // Se puede llegar con el cliente en la url (?cliente=9), que es como
     // entra el recordatorio cuando se pulsa «Abrir el cliente»
@@ -540,13 +561,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         cellRenderer: (params: any) => {
           const icono = params.data?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user';
           const nombre = params.value ?? '';
-          const actual = this.esElElegido(params.data)
-            // ? ' <span class="gc-chip">Actual</span>'
-            // : '';
+          // Aquí hubo un chip de «Actual» que se quitó; al comentar las dos
+          // ramas del ternario quedó `const actual = this.esElElegido(...)`, un
+          // booleano, y se colaba al nombre: «ALIMENTOS TOBAR S.A.true». Al
+          // cliente que se está gestionando ya lo marca la fila en dorado
+          // (rowClassRulesClientes), que es más discreto que un chip.
           const estado = params.data?.estado && params.data.estado !== 'ACTIVO'
             ? ` <span class="gc-chip gc-chip--aviso">${params.data.estado}</span>`
             : '';
-          return `<i class="fa ${icono} fa-fw me-1 text-secondary"></i>${nombre}${actual}${estado}`;
+          return `<i class="fa ${icono} fa-fw me-1 text-secondary"></i>${nombre}${estado}`;
         }
       },
       {
@@ -1944,9 +1967,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       const res: any = await firstValueFrom(
         this._gestionService.allGestiones(this.cliente.id, page, this.registrosPorPagina, '', {
           tipo: this.filtroTipo, estado: this.filtroEstado,
+          resultado: this.filtroResultado, creado_por: this.filtroCreadoPor,
         })
       );
       this.gestiones = res.body?.data?.data ?? [];
+      // La lista del desplegable «Registrado por» viene con los datos y se
+      // calcula sin los demás filtros, para que al elegir a alguien no
+      // desaparezcan los otros del menú
+      this.registradores = res.body?.data?.filtros?.registradores ?? this.registradores;
       const meta = res.body?.data?.meta;
       if (meta) {
         this.totalRegistros = meta.total;
@@ -1960,8 +1988,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
   }
 
-  cambiarFiltro(campo: 'tipo' | 'estado', valor: string | null): void {
-    if (campo === 'tipo') { this.filtroTipo = valor; } else { this.filtroEstado = valor; }
+  cambiarFiltro(campo: 'tipo' | 'estado' | 'resultado' | 'creadoPor', valor: string | null): void {
+    switch (campo) {
+      case 'tipo':      this.filtroTipo = valor; break;
+      case 'estado':    this.filtroEstado = valor; break;
+      case 'resultado': this.filtroResultado = valor; break;
+      case 'creadoPor': this.filtroCreadoPor = valor; break;
+    }
+    // Siempre a la página 1: con el filtro puesto puede que la que se estaba
+    // viendo ya no exista
     this.cargarGestiones(1);
   }
 
@@ -2094,10 +2129,20 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // AYUDAS PARA LA PLANTILLA
   // ================================================================
 
-  iconoTipo = iconoDeTipo;
   claseResultado = claseDeResultado;
-  nombreTipo = (tipo: string) => nombreDe(TIPOS_GESTION, tipo);
   nombreEstado = (estado: string) => nombreDe(ESTADOS_GESTION, estado);
+
+  /**
+   * El nombre y el icono del tipo salen de la lista cargada, no de la
+   * constante: si alguien añade un tipo en el catálogo, el historial tiene que
+   * saber cómo se llama. Si no está (un tipo que se desactivó), se cae a la
+   * constante y, en última instancia, al propio código.
+   */
+  nombreTipo = (tipo: string): string =>
+    this.tipos.find(t => t.id === tipo)?.name ?? nombreDe(TIPOS_GESTION, tipo);
+
+  iconoTipo = (tipo: string | null | undefined): string =>
+    this.tipos.find(t => t.id === tipo)?.icono || iconoDeTipo(tipo);
 
   /** El icono de cada estado, para el menú del filtro. */
   iconoEstado(estado?: string | null): string {
@@ -2109,11 +2154,42 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Quita los dos filtros de golpe y recarga. */
+  /** ¿Hay algún filtro puesto? Decide si se ve el botón de quitarlos. */
+  get hayFiltrosHistorial(): boolean {
+    return !!(this.filtroTipo || this.filtroEstado || this.filtroResultado || this.filtroCreadoPor);
+  }
+
+  /** Quita los cuatro filtros de golpe y recarga. */
   limpiarFiltrosHistorial(): void {
     this.filtroTipo = null;
     this.filtroEstado = null;
+    this.filtroResultado = null;
+    this.filtroCreadoPor = null;
     this.cargarGestiones(1);
+  }
+
+  /**
+   * Trae los tipos del catálogo para el filtro y para las grillas.
+   *
+   * El servicio lo guarda en memoria, así que abrir cliente tras cliente no
+   * repite la petición. Lo que se guarda en ventas.gestiones.tipo es el
+   * CÓDIGO, así que es lo que va como id del filtro.
+   */
+  private async cargarTiposDelCatalogo(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this._catalogoService.catalogo());
+      const lista: TipoGestion[] = res?.status === 'success' ? (res.data ?? []) : [];
+      if (lista.length) {
+        this.tipos = lista.map(t => ({
+          id: t.codigo,
+          name: t.nombre,
+          icono: t.icono || 'fa-comment-dots',
+        }));
+      }
+    } catch (error) {
+      // Se queda la constante: un filtro de tipos vacío sería peor
+      console.error('Error al cargar el catálogo de tipos de gestión:', error);
+    }
   }
   nombreResultado = (r: string) => nombreDe(RESULTADOS_GESTION, r);
 

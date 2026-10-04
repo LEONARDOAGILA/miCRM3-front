@@ -255,7 +255,7 @@
                       [class.is-filtrando]="estadoClientes"
                       [ngModel]="estadoClientes"
                       (ngModelChange)="filtrarPorEstado($event)">
-                <option value="">Todos los estados</option>
+                <option value="">Estado: todos</option>
                 @for (e of estadosCliente; track e.id) {
                   <option [value]="e.id">{{ e.name }}</option>
                 }
@@ -787,6 +787,7 @@
                           title="Filtrar por tipo de gestión">
                     <i class="fa fa-fw" [ngClass]="filtroTipo ? iconoTipo(filtroTipo) : 'fa-tag'"></i>
                     <span>{{ filtroTipo ? nombreTipo(filtroTipo) : 'Todos los tipos' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
                   </button>
                   <ul class="dropdown-menu gestion-filtro__menu">
                     <li>
@@ -814,6 +815,7 @@
                           title="Filtrar por estado">
                     <i class="fa fa-fw" [ngClass]="filtroEstado ? 'fa-circle-check' : 'fa-flag'"></i>
                     <span>{{ filtroEstado ? nombreEstado(filtroEstado) : 'Todos los estados' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
                   </button>
                   <ul class="dropdown-menu gestion-filtro__menu">
                     <li>
@@ -834,8 +836,70 @@
                   </ul>
                 </div>
 
+                <!-- Cómo terminó la gestión: es por lo que más se busca en un
+                     historial largo («¿cuándo fue la última que contestó?») -->
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroResultado"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por resultado de la gestión">
+                    <i class="fa fa-fw" [ngClass]="filtroResultado ? 'fa-bullseye' : 'fa-clipboard-check'"></i>
+                    <span>{{ filtroResultado ? nombreResultado(filtroResultado) : 'Todos los resultados' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroResultado"
+                              (click)="cambiarFiltro('resultado', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Todos los resultados
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (r of resultados; track r.id) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroResultado === r.id"
+                                (click)="cambiarFiltro('resultado', r.id)">
+                          <i class="fa fa-bullseye fa-fw me-1"></i>{{ r.name }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                <!-- Quién la registró. La lista la manda el servidor con los
+                     datos: sólo los que de verdad aparecen en este historial,
+                     no los trescientos usuarios del sistema. -->
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroCreadoPor"
+                          [disabled]="!registradores.length"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por quién registró la gestión">
+                    <i class="fa fa-fw" [ngClass]="filtroCreadoPor ? 'fa-user-check' : 'fa-user-pen'"></i>
+                    <span>{{ filtroCreadoPor || 'Registrado por' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroCreadoPor"
+                              (click)="cambiarFiltro('creadoPor', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Cualquiera
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (u of registradores; track u) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroCreadoPor === u"
+                                (click)="cambiarFiltro('creadoPor', u)">
+                          <i class="fa fa-user fa-fw me-1"></i>{{ u }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
                 <!-- Sólo aparece cuando hay algo que quitar -->
-                @if (filtroTipo || filtroEstado) {
+                @if (hayFiltrosHistorial) {
                   <button type="button" class="btn btn-xs btn-white gestion-filtro__limpiar"
                           title="Quitar los filtros" (click)="limpiarFiltrosHistorial()">
                     <i class="fa fa-xmark me-1"></i>Quitar filtros
