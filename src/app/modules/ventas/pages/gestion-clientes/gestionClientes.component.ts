@@ -138,8 +138,21 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public rango: Rango = 'todo';
   public desdeFiltro = '';
   public hastaFiltro = '';
-  /** Sólo lo que programó quien está usando el CRM; se puede apagar para ver todo. */
+  /**
+   * Sólo lo que le toca a quien está usando el CRM.
+   *
+   * Apagarlo NO enseña la agenda de la empresa: enseña la de la gente de la
+   * que uno responde según el árbol de grupos, y para quien no responde por
+   * nadie no cambia nada. Por eso el botón ni se ofrece si no hay equipo.
+   */
   public soloMias = true;
+  /**
+   * Si este usuario manda sobre alguien más. Lo dice el servidor en cada
+   * respuesta de la agenda; se guarda aparte de agendaMeta para que un error
+   * de red no haga desaparecer el botón y deje al jefe atrapado en «De mi
+   * equipo» sin manera de volver.
+   */
+  public puedeVerDeOtros = false;
   public cargandoAgenda = false;
 
   // ---------- La lista de clientes (columna izquierda) ----------
@@ -490,7 +503,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this.cargandoClientes = true;
       this.gridApiClientes?.showLoadingOverlay();
       const res: any = await firstValueFrom(
-        this._clienteService.allClientes(page, this.porPaginaClientes, this.terminoClientes, this.estadoClientes)
+        // true: aquí cada uno trabaja su cartera. Para repartir los que no tienen
+        // dueño está Ventas > Clientes, que sí los lista todos.
+        this._clienteService.allClientes(page, this.porPaginaClientes, this.terminoClientes, this.estadoClientes, true)
       );
 
       if (mia !== this.peticionClientes) { return; }
@@ -660,7 +675,13 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (termino) {
       return `<span>Ningún cliente coincide con «${termino}».</span>`;
     }
-    return '<span>Todavía no hay clientes registrados.</span>';
+    // Esta lista es la cartera propia, no el fichero de clientes: decir «todavía
+    // no hay clientes registrados» con mil en la base haría pensar que se
+    // rompió algo, cuando lo que pasa es que a esta persona no le han asignado
+    // ninguno todavía.
+    return '<span>No tienes clientes asignados.<br>'
+      + '<small class="text-muted">Pídele a quien reparte la cartera que te asigne alguno '
+      + 'desde Ventas › Clientes.</small></span>';
   }
 
   // ================================================================
@@ -1284,6 +1305,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         this.agendaMeta = res.data?.meta ?? { total: 0, vencidas: 0, hoy: 0, mostradas: 0 };
         this.paginaAgenda = this.agendaMeta.current_page ?? page;
         this.ultimaPaginaAgenda = this.agendaMeta.last_page ?? 1;
+        // Sólo desde una respuesta buena: así un fallo no esconde el botón
+        this.puedeVerDeOtros = this.agendaMeta.ve_de_otros === true;
       } else {
         this.agenda = [];
         this.agendaMeta = { total: 0, vencidas: 0, hoy: 0, mostradas: 0 };
@@ -1366,7 +1389,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       },
       {
         headerName: 'Vendedor',
-        field: 'empleado_nombre',
+        field: 'responsable_nombre',
         minWidth: 130,
         cellStyle: { textAlign: 'left' },
       },
@@ -1376,12 +1399,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: 118,
         maxWidth: 118,
+        headerComponentParams: this.cabeceraAcciones('Acciones'),
         sortable: false,
         resizable: false,
         filter: false,
         suppressMenu: true,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: () => {
+          if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
           // Marcar no escribe nada: basta con poder ver al cliente. Lo que pide
           // crear es el formulario que se abre después, y de eso se encarga
           // abrirGestionDeLlamada. Marcarla como hecha va también con crear:
@@ -1424,13 +1449,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         valueGetter: (p: any) => p.data?.telefono || p.data?.cliente_telefono || '',
         cellRenderer: this.celdaNumero,
       },
-      { headerName: 'Responsable', field: 'empleado_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Responsable', field: 'responsable_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
       { headerName: 'Nota', field: 'nota', minWidth: 180, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
       {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 142, maxWidth: 142,
+        headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: () => {
+          if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
           // Marcar no escribe nada: basta con poder ver al cliente. El
           // formulario que se abre tras marcar sí pide crear, y eso lo mira
           // abrirGestionDeLlamada. Cerrar la gestión también va con crear:
@@ -1495,6 +1522,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       },
       {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 140, maxWidth: 140,
+        headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         /**
@@ -1508,6 +1536,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
          * por error bloquearía el guardado.
          */
         cellRenderer: (p: any) => {
+          if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
           const activo = p.data?.activo !== false;
           // Al desactivado no se le llama ni se le escribe por WhatsApp: para
           // eso se le dio de baja. Vuelve a aparecer si se reactiva.
@@ -1677,14 +1706,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         },
       },
       {
-        headerName: 'Antes lo atendía', field: 'empleado_anterior', minWidth: 160,
+        headerName: 'Antes lo atendía', field: 'anterior', minWidth: 160,
         cellStyle: { textAlign: 'left' },
-        valueGetter: (p: any) => p.data?.empleado_anterior || 'Nadie',
+        valueGetter: (p: any) => p.data?.anterior || 'Nadie',
       },
       {
-        headerName: 'Pasó a', field: 'empleado_nuevo', minWidth: 160,
+        headerName: 'Pasó a', field: 'nuevo', minWidth: 160,
         cellStyle: { textAlign: 'left', fontWeight: '600' },
-        valueGetter: (p: any) => p.data?.empleado_nuevo || 'Nadie',
+        valueGetter: (p: any) => p.data?.nuevo || 'Nadie',
       },
       { headerName: 'Motivo', field: 'motivo', minWidth: 200, cellStyle: { textAlign: 'left' }, tooltipField: 'motivo' },
       { headerName: 'Lo hizo', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' } },
@@ -1713,6 +1742,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   onCellClickedPendientes(e: CellClickedEvent): void {
     const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
     switch (destino?.dataset['accion']) {
+      case 'desplegar-acciones': this.alternarAcciones(); break;
       case 'cerrar':   this.cerrar(e.data); break;
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
@@ -1726,6 +1756,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const accion = destino?.dataset['accion'];
     if (!accion) { return; }
 
+    if (accion === 'desplegar-acciones') { this.alternarAcciones(); return; }
     if (accion === 'llamar')    { this.llamarConSoftphone(e.data?.telefono, e.data?.nombres); }
     if (accion === 'whatsapp')  { window.open(this.enlaceWhatsapp(e.data?.telefono), '_blank', 'noopener'); }
     if (accion === 'correo')    { window.location.href = 'mailto:' + e.data?.email; }
@@ -1744,6 +1775,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   /** Los botones de la columna Acciones y el doble propósito de la fila. */
   onCellClickedAgenda(e: CellClickedEvent): void {
     const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
+    if (destino?.dataset['accion'] === 'desplegar-acciones') { this.alternarAcciones(); return; }
     if (destino?.dataset['accion'] === 'cerrar') { this.cerrarDesdeAgenda(e.data); return; }
     if (destino?.dataset['accion'] === 'abrir')  { this.irAlCliente(e.data); return; }
     if (destino?.dataset['accion'] === 'llamar') {
@@ -1885,9 +1917,16 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.cargarAgenda();
   }
 
-  alternarMias(): void {
+  /**
+   * Qué agenda se mira: la propia o la de todo el equipo.
+   *
+   * «Todo» es todo lo que ESE usuario puede ver, que no es lo mismo para un
+   * jefe de zona que para un administrador; el servidor ya pone ese límite.
+   */
+  verAgendaDe(soloMias: boolean): void {
+    if (this.soloMias === soloMias) { return; }
     this.paginaAgenda = 1;
-    this.soloMias = !this.soloMias;
+    this.soloMias = soloMias;
     this.cargarAgenda();
   }
 
@@ -2006,15 +2045,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Min.', field: 'duracion_minutos', minWidth: 70, maxWidth: 80,
         cellStyle: { textAlign: 'right' }, headerTooltip: 'Duración en minutos',
       },
-      { headerName: 'Responsable', field: 'empleado_nombre', minWidth: 150, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Responsable', field: 'responsable_nombre', minWidth: 150, cellStyle: { textAlign: 'left' } },
       { headerName: 'Contacto', field: 'contacto_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
       { headerName: 'Nota', field: 'nota', minWidth: 200, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
       { headerName: 'Registrado por', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' }, sortable: false },
       {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: (p: any) => {
+          if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
           // Cerrar una pendiente va con CREAR, no con editar: lo que se hace es
           // dejar anotado un trabajo recién hecho, no corregir lo que ya estaba.
           // Modificar sí es editar, y borrarla del historial es eliminar.
@@ -2043,6 +2084,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (e.column.getColId() !== 'acciones') { return; }
     const accion = ((e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement)?.dataset['accion'];
     switch (accion) {
+      case 'desplegar-acciones': this.alternarAcciones(); break;
       case 'cerrar':   this.cerrar(e.data); break;
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
@@ -2188,7 +2230,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const modalRef = this.modal.open(ReasignarClienteComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.cliente = this.cliente;
     modalRef.componentInstance.rol = rol;
-    modalRef.componentInstance.actualId = this.responsableDe(rol)?.empleado_id ?? null;
+    modalRef.componentInstance.actualId = this.responsableDe(rol)?.usuario_id ?? null;
     // Las gestiones sólo se mueven con el vendedor; al resto no les toca agenda
     modalRef.componentInstance.pendientes = rol === 'VENDEDOR' ? (this.resumen?.pendientes ?? 0) : 0;
     this.escucharModal(modalRef, modalRef.componentInstance.reasignado, (data: any) => {
@@ -2380,6 +2422,111 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const t = permitido ? titulo : `${titulo} - Desactivado`;
     return `<button type="button" class="btn-icon ${clase}" data-accion="${accion}" title="${t}"${permitido ? '' : ' disabled'}>`
          + `<i class="${icono}"></i></button>`;
+  }
+
+  // ================================================================
+  // PLEGAR LA COLUMNA DE ACCIONES
+  //
+  // Lo mismo que en seguridad > perfiles: se pulsa la cabecera ACCIONES y la
+  // columna se encoge, que en una pantalla estrecha son 140 píxeles que le
+  // hacen falta a lo que de verdad se viene a leer. Plegada, cada celda deja
+  // un botón ☰ para devolverla, así que nunca hay que adivinar que la cabecera
+  // responde al clic.
+  //
+  // Aquí hay CUATRO grillas con acciones (agenda, pendientes, contactos e
+  // historial) y por eso no se copió aquello tal cual: aquello busca la
+  // cabecera con un document.querySelector, que con varias grillas en la misma
+  // pantalla engancha siempre la primera. En su lugar va un solo escuchador
+  // delegado en el componente, que además sirve para las grillas de las
+  // pestañas que todavía no se han abierto.
+  //
+  // El estado es uno para las cuatro: es una preferencia de sitio en pantalla,
+  // y plegarlo en una pestaña y encontrárselo desplegado en la siguiente sería
+  // raro.
+  // ================================================================
+
+  /** true mientras la columna de acciones está encogida. */
+  public accionesPlegadas = false;
+
+  /** Lo que queda de ancho la columna plegada: justo para el botón. */
+  private readonly ANCHO_ACCIONES_PLEGADAS = 46;
+
+  /** Las grillas de esta pantalla que tienen columna de acciones. */
+  private get grillasConAcciones(): { api?: GridApi; defs: any[] }[] {
+    return [
+      { api: this.gridApiAgenda,     defs: this.columnDefsAgenda },
+      { api: this.gridApiPendientes, defs: this.columnDefsPendientes },
+      { api: this.gridApiContactos,  defs: this.columnDefsContactos },
+      { api: this.gridApi,           defs: this.columnDefs },
+    ];
+  }
+
+  /**
+   * Un clic en la cabecera ACCIONES de cualquier grilla la pliega o la
+   * despliega.
+   *
+   * Delegado en el componente entero a propósito: las grillas de las pestañas
+   * se crean al abrirlas, así que engancharse a cada cabecera obligaría a
+   * repetir el enganche en cada `onGridReady` y a soltarlo al destruir. Un
+   * escuchador de Angular se va solo con el componente.
+   */
+  @HostListener('click', ['$event'])
+  onClicEnLaPantalla(e: MouseEvent): void {
+    const cabecera = (e.target as HTMLElement)?.closest?.('.ag-header-cell[col-id="acciones"]');
+    if (cabecera) { this.alternarAcciones(); }
+  }
+
+  /** Pliega o despliega la columna de acciones en las cuatro grillas. */
+  alternarAcciones(): void {
+    this.accionesPlegadas = !this.accionesPlegadas;
+
+    for (const g of this.grillasConAcciones) {
+      const col = (g.defs ?? []).find((c: any) => c?.field === 'acciones');
+      if (!col) { continue; }
+
+      // La primera vez se guarda cómo venía: cada grilla tiene su propio ancho
+      // (118, 142, 140, 110) y hay que devolverle el suyo, no uno común.
+      if (col.anchoAbierto === undefined) {
+        col.anchoAbierto = col.minWidth;
+        col.rotuloAbierto = col.headerName;
+      }
+
+      const ancho = this.accionesPlegadas ? this.ANCHO_ACCIONES_PLEGADAS : col.anchoAbierto;
+      col.minWidth = ancho;
+      col.maxWidth = ancho;
+      col.headerName = this.accionesPlegadas ? '' : col.rotuloAbierto;
+      col.headerComponentParams = {
+        template: this.accionesPlegadas
+          ? `<div class="gc-acciones-cabecera" title="Mostrar los botones de acción"><i class="fa fa-bars"></i></div>`
+          : `<div class="gc-acciones-cabecera" title="Ocultar los botones de acción">`
+            + `<span>${col.rotuloAbierto}</span><i class="fa fa-arrow-right"></i></div>`,
+      };
+
+      g.api?.setColumnDefs(g.defs);
+      // Las celdas cambian de contenido, no sólo de ancho: con la columna
+      // plegada enseñan el botón de devolverla
+      g.api?.redrawRows();
+      g.api?.sizeColumnsToFit();
+    }
+  }
+
+  /**
+   * La cabecera de la columna de acciones, con la flecha que anuncia que se
+   * puede plegar. Va desde el principio: sin ella nadie adivina que la
+   * cabecera responde al clic.
+   */
+  private cabeceraAcciones(rotulo: string): { template: string } {
+    return {
+      template: `<div class="gc-acciones-cabecera" title="Ocultar los botones de acción">`
+              + `<span>${rotulo}</span><i class="fa fa-arrow-right"></i></div>`,
+    };
+  }
+
+  /** El botón que devuelve la columna, para que siempre haya algo pulsable. */
+  private botonDesplegarAcciones(): string {
+    return `<button type="button" class="btn-icon gc-desplegar" data-accion="desplegar-acciones"`
+         + ` title="Mostrar los botones de acción" aria-label="Mostrar los botones de acción">`
+         + `<i class="fa fa-bars"></i></button>`;
   }
 
   /**

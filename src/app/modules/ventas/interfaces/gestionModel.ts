@@ -5,6 +5,10 @@ export interface GestionModel {
   cliente_nombre?: string;
   /** Empleado que la hace o la tiene pendiente (rh.empleados) */
   empleado_id?: number | null;
+  usuario_id?: number | null;
+  usuario_nombre?: string | null;
+  /** Sirve para las gestiones de antes y las de ahora */
+  responsable_nombre?: string | null;
   empleado_nombre?: string | null;
   /** Persona de contacto del cliente con la que se habló */
   contacto_id?: number | null;
@@ -81,10 +85,14 @@ export interface ResumenGestiones {
 export interface AsignacionCliente {
   id: number;
   cliente_id: number;
+  usuario_anterior_id?: number | null;
+  usuario_nuevo_id?: number | null;
+  /** Histórico: las reasignaciones anteriores al cambio a usuarios */
   empleado_anterior_id?: number | null;
-  empleado_anterior?: string | null;
   empleado_nuevo_id?: number | null;
-  empleado_nuevo?: string | null;
+  /** El nombre de quien lo tenía y de quien lo tiene, venga de donde venga */
+  anterior?: string | null;
+  nuevo?: string | null;
   motivo?: string | null;
   asignado_at?: string;
   created_by?: string;
@@ -159,15 +167,27 @@ export function claseDeResultado(resultado: string | null | undefined): string {
  * Los papeles con los que se puede atender a un cliente.
  *
  * La base NO los valida a propósito: la lista vive aquí y en el validador del
- * controlador, así que añadir un cuarto responsable no pide una migración.
+ * controlador, así que añadir un responsable más no pide una migración.
  * Al añadirlo, acuérdate del `in:` de GestionController@reasignar.
+ *
+ * Añadir POSTVENTA sí costó una (2026-10-04_ventas_responsable_postventa.sql),
+ * porque tres funciones enumeraban los papeles a mano. Ya no lo hacen: ahora
+ * preguntan por el titular de cada papel, cualquiera que sea. El siguiente se
+ * añade de verdad con las dos líneas de aquí abajo y el `in:` del controlador.
  */
-export type RolResponsable = 'VENDEDOR' | 'COBRADOR' | 'ASISTENTE';
+export type RolResponsable = 'VENDEDOR' | 'COBRADOR' | 'ASISTENTE' | 'POSTVENTA';
 
 export interface ResponsableCliente {
   rol: RolResponsable;
-  empleado_id: number | null;
-  empleado_nombre: string | null;
+  /**
+   * El USUARIO que ocupa el papel.
+   *
+   * Antes era un empleado de recursos humanos, que no entra al sistema: por
+   * eso a quien se le asignaba un cliente no le aparecía nada en su agenda.
+   * El empleado se quedó donde le corresponde, en el módulo de RRHH.
+   */
+  usuario_id: number | null;
+  usuario_nombre: string | null;
   /** Desde cuándo lo atiende; null si el puesto está vacío */
   desde: string | null;
 }
@@ -177,4 +197,5 @@ export const ROLES_RESPONSABLE: { id: RolResponsable; name: string; icono: strin
   { id: 'VENDEDOR',  name: 'Vendedor',  icono: 'fa-user-tie',   ayuda: 'Le vende y se lleva su agenda al cambiar' },
   { id: 'COBRADOR',  name: 'Cobrador',  icono: 'fa-hand-holding-dollar', ayuda: 'Le gestiona los pagos' },
   { id: 'ASISTENTE', name: 'Asistente', icono: 'fa-headset',    ayuda: 'Le llama y coordina' },
+  { id: 'POSTVENTA', name: 'Postventa', icono: 'fa-screwdriver-wrench', ayuda: 'Le atiende garantías y reclamos' },
 ];

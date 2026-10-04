@@ -1,0 +1,195 @@
+/* ============================================================
+   ELEGIR UN USUARIO, CON SU GRUPO A LA VISTA
+
+   Dos columnas con el mismo reparto que la pantalla de Usuarios y
+   grupos: un lateral fijo para el árbol y el resto para la gente.
+   El alto se fija en vh porque dentro de un modal no hay altura
+   heredada: sin esto la grilla de ag-Grid colapsa a cero.
+
+   Los tintes van en rgba y no en color-mix(): el front tiene que
+   funcionar en un iPhone 7 (ver .browserslistrc).
+   ============================================================ */
+
+.lug {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.lug__ayuda {
+  margin: 0;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+.lug__cuerpo {
+  display: flex;
+  gap: .75rem;
+  align-items: stretch;
+
+  height: 62vh;
+  min-height: 20rem;
+}
+
+/* ---------- el árbol ---------- */
+/* 19rem y no 15: el árbol tiene cuatro niveles y cada uno se come sangría, así
+   que con menos los nombres salían cortados («AGENCIA AREN…») justo cuando el
+   nombre del grupo es lo único que se viene a leer aquí. */
+.lug__lateral {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  flex: 0 0 19rem;
+  min-width: 0;
+}
+
+.lug__buscador-grupo {
+  position: relative;
+}
+
+.lug__buscador-grupo i {
+  position: absolute;
+  top: 50%;
+  left: .5rem;
+  transform: translateY(-50%);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  pointer-events: none;
+}
+
+.lug__buscador-grupo input {
+  padding-left: 1.75rem;
+  font-size: .75rem;
+}
+
+.lug__arbol {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .35rem;
+  overflow: auto;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.lug__vacio {
+  padding: 1rem .5rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  text-align: center;
+}
+
+.lug__subgrupos {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  cursor: pointer;
+}
+
+/* ---------- la gente ---------- */
+.lug__panel {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lug__barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.lug__donde {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+
+  font-size: .8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Cuántos hay en lo que se está mirando: evita el «no aparece» cuando
+   simplemente el grupo está vacío */
+.lug__cuenta {
+  padding: 0 .4rem;
+  border-radius: .75rem;
+  background-color: rgba(0, 0, 0, .07);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lug__busqueda {
+  min-width: 12rem;
+}
+
+.lug__barra app-campoBusquedaPaginacion {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.lug__grilla {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Se elige con un clic, así que la mano lo anuncia */
+:host ::ng-deep .lug__grilla .ag-row {
+  cursor: pointer;
+}
+
+/* El que ya ocupa el puesto: una barra lateral, sin gritar */
+:host ::ng-deep .lug__grilla .ag-row.fila-actual {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .09);
+  box-shadow: inset 3px 0 0 var(--bs-app-theme, #00acac);
+}
+
+/* Los que no se pueden elegir: apagados y sin mano */
+:host ::ng-deep .lug__grilla .ag-row.fila-excluida {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.lug__paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.lug__info {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+/* ---------- Móvil ----------
+   El árbol pasa arriba y se encoge: en un teléfono las dos columnas
+   dejan al árbol sin sitio para leer el nombre del grupo. */
+@media (max-width: 767.98px) {
+  .lug__cuerpo {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .lug__lateral {
+    flex: 0 0 auto;
+  }
+
+  .lug__arbol {
+    max-height: 12rem;
+  }
+
+  .lug__grilla {
+    height: 22rem;
+  }
+}

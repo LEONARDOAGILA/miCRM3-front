@@ -389,7 +389,9 @@ export class SaveGestionComponent implements OnInit {
       asunto_id:        v.asunto_id ? Number(v.asunto_id) : null,
       nota:             (v.nota ?? '').trim() || null,
       // Quien atiende al cliente; si no tiene vendedor va sin dueño
-      empleado_id:      this.cliente.vendedor_id ?? null,
+      // El responsable de la gestión es el vendedor del cliente, que desde el
+      // cambio de responsables es un USUARIO: así le aparece en su agenda
+      usuario_id:       this.cliente.vendedor_id ?? null,
       contacto_id:      v.contacto_id || null,
       telefono:         (v.telefono ?? '').trim() || null,
       prioridad:        v.prioridad,

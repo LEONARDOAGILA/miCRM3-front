@@ -124,11 +124,38 @@
               </app-campoBusquedaPaginacion>
             </div>
 
-            <button type="button" class="btn btn-sm" [class.btn-primary]="soloMias" [class.btn-white]="!soloMias"
-                    [title]="soloMias ? 'Viendo sólo lo que tú programaste' : 'Viendo lo de todos'"
-                    (click)="alternarMias()">
-              <i class="fa fa-user me-1"></i>{{ soloMias ? 'Sólo lo mío' : 'De todos' }}
-            </button>
+            <!-- Una lista y no un botón que alterna: el botón enseñaba el
+                 estado en el que estaba, y se leía como el estado al que iba a
+                 cambiar. Aquí lo que se ve puesto es lo que está puesto.
+
+                 Sólo para quien tiene gente a cargo: al resto las dos opciones
+                 le darían lo mismo, porque el servidor no le va a dar más que
+                 lo suyo. -->
+            @if (puedeVerDeOtros) {
+              <div class="dropdown">
+                <button type="button" class="btn btn-sm btn-white dropdown-toggle gestion-filtro agenda-quien"
+                        data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                        title="Qué agenda se está viendo">
+                  <i class="fa fa-fw" [ngClass]="soloMias ? 'fa-user' : 'fa-users'"></i>
+                  <span>{{ soloMias ? 'Sólo lo mío' : 'Todo el equipo' }}</span>
+                  <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
+                </button>
+                <ul class="dropdown-menu gestion-filtro__menu">
+                  <li>
+                    <button type="button" class="dropdown-item" [class.active]="!soloMias"
+                            (click)="verAgendaDe(false)">
+                      <i class="fa fa-users fa-fw me-1"></i>Todo el equipo
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="dropdown-item" [class.active]="soloMias"
+                            (click)="verAgendaDe(true)">
+                      <i class="fa fa-user fa-fw me-1"></i>Sólo lo mío
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            }
             <button type="button" class="btn btn-sm btn-white" title="Recargar" (click)="cargarAgenda()">
               <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoAgenda"></i>
             </button>
@@ -1046,14 +1073,14 @@
             @if (pestana === 'cartera') {
               <div class="gestion-roles">
                 @for (r of rolesResponsable; track r.id) {
-                  <div class="gestion-rol" [class.is-vacio]="!responsableDe(r.id)?.empleado_id">
+                  <div class="gestion-rol" [class.is-vacio]="!responsableDe(r.id)?.usuario_id">
                     <div class="gestion-rol__titulo">
                       <i class="fa fa-fw" [ngClass]="r.icono"></i>{{ r.name }}
                     </div>
                     <div class="gestion-rol__cuerpo">
                       <span class="gestion-rol__quien">
                         Ahora lo atiende
-                        <b>{{ responsableDe(r.id)?.empleado_nombre || 'nadie' }}</b>
+                        <b>{{ responsableDe(r.id)?.usuario_nombre || 'nadie' }}</b>
                       </span>
                       @if (responsableDe(r.id)?.desde) {
                         <span class="gestion-rol__desde">desde {{ responsableDe(r.id)?.desde }}</span>

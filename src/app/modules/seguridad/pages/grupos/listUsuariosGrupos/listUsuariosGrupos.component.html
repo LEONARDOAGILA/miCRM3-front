@@ -1,0 +1,135 @@
+<!-- ============================================================
+     ELEGIR UN USUARIO, CON SU GRUPO A LA VISTA
+
+     Dos columnas, como la pantalla de Usuarios y grupos: a la
+     izquierda el árbol de grupos, a la derecha la gente del grupo
+     que se abra. Un clic en cualquier celda elige y cierra.
+
+     Con cincuenta usuarios, una lista de logins no dice quién es
+     quién; el grupo es lo que lo aclara, y por eso también va como
+     columna de la grilla además de como árbol.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div appModalArrastrable class="modal-header">
+  <h4 class="modal-title">
+    <i class="fa fa-sitemap me-2 text-primary"></i>Seleccionar usuario
+  </h4>
+  <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+</div>
+
+<div class="modal-body lug">
+
+  <p class="lug__ayuda">
+    <i class="fa fa-hand-pointer me-1"></i>{{ ayuda }}
+  </p>
+
+  <div class="lug__cuerpo">
+
+    <!-- ---------- izquierda: el árbol ---------- -->
+    <aside class="lug__lateral">
+      <div class="lug__buscador-grupo">
+        <i class="fa fa-search"></i>
+        <input type="text" class="form-control form-control-sm"
+               placeholder="Filtrar grupos…"
+               [(ngModel)]="filtroGrupo" (ngModelChange)="filtrarGrupos()">
+      </div>
+
+      <div class="lug__arbol">
+        @for (n of nodos; track n.id) {
+          <app-file-tree-node
+            [node]="n"
+            [isSelected]="!!n.isSelected"
+            (nodeSelected)="onNodeSelect($event)"
+            (nodeToggled)="onNodeToggle($event)">
+          </app-file-tree-node>
+        } @empty {
+          <div class="lug__vacio">
+            @if (cargandoArbol) { Cargando grupos… } @else { Ningún grupo coincide }
+          </div>
+        }
+      </div>
+
+      <!-- Encendido por defecto: quien abre «Cuenca» espera ver a sus
+           vendedores, que están en el subgrupo -->
+      <label class="lug__subgrupos">
+        <input type="checkbox" [(ngModel)]="incluirSubgrupos" (ngModelChange)="cambiarSubgrupos()">
+        Incluir subgrupos
+      </label>
+    </aside>
+
+    <!-- ---------- derecha: la gente ---------- -->
+    <section class="lug__panel">
+      <div class="lug__barra">
+        <span class="lug__donde">
+          <i class="fa fa-folder-open me-1"></i>{{ nombreSeleccion }}
+          <span class="lug__cuenta">{{ totalRegistros }}</span>
+        </span>
+
+        <app-campoBusquedaPaginacion
+          [id]="'buscar-usuario-grupo'"
+          [placeholder]="'Buscar por login, nombre o correo…'"
+          [iconClass]="'fa fa-search'"
+          [containerClass]="'position-relative lug__busqueda'"
+          (buscar)="onSearch($event)"
+          (limpiado)="limpiarBusqueda()">
+        </app-campoBusquedaPaginacion>
+      </div>
+
+      <ag-grid-angular
+        class="ag-theme-alpine ag-grid-transparente lug__grilla"
+        [rowData]="filas"
+        [columnDefs]="columnDefs"
+        [defaultColDef]="_appAgGridService.defaultColDef"
+        [localeText]="_appAgGridService.localeText"
+        [rowClassRules]="rowClassRules"
+        [rowHeight]="34"
+        [headerHeight]="34"
+        [rowSelection]="'single'"
+        [pagination]="false"
+        [enableCellTextSelection]="true"
+        (cellKeyDown)="onCellKeyDown($event)"
+        (gridReady)="onGridReady($event)"
+        (cellClicked)="onCellClicked($event)">
+      </ag-grid-angular>
+
+      <div class="lug__paginacion">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Paginación">
+          <button type="button" class="btn btn-white" title="Primera página"
+                  (click)="irA(1)" [disabled]="paginaActual === 1">
+            <i class="fa fa-angle-double-left"></i>
+          </button>
+          <button type="button" class="btn btn-white" title="Página anterior"
+                  (click)="irA(paginaActual - 1)" [disabled]="paginaActual === 1">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <span class="btn btn-white disabled">
+            Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+          </span>
+          <button type="button" class="btn btn-white" title="Página siguiente"
+                  (click)="irA(paginaActual + 1)" [disabled]="paginaActual === ultimaPagina">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+          <button type="button" class="btn btn-white" title="Última página"
+                  (click)="irA(ultimaPagina)" [disabled]="paginaActual === ultimaPagina">
+            <i class="fa fa-angle-double-right"></i>
+          </button>
+        </div>
+
+        <span class="lug__info">
+          Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b>
+        </span>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" (click)="modal.dismiss()">
+    <i class="fa fa-times me-1"></i>Cancelar
+  </button>
+</div>

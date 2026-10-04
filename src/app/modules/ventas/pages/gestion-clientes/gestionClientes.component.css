@@ -1124,6 +1124,82 @@
   gap: .25rem;
 }
 
+/* ---------- Plegar la columna de acciones ----------
+   La cabecera es el interruptor, así que tiene que parecerlo: mano encima y
+   la flecha en tenue hasta que se pasa por ella. Cuando está plegada, en su
+   sitio queda el ☰, que es lo que se vuelve a pulsar para devolverla. */
+:host ::ng-deep .ag-header-cell[col-id='acciones'] {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Ocupa toda la cabecera, no sólo el texto: así se puede pulsar en cualquier
+   punto de ella y no hay que apuntar al icono, que con el dedo se falla. */
+:host ::ng-deep .gc-acciones-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  width: 100%;
+  height: 100%;
+}
+
+:host ::ng-deep .gc-acciones-cabecera i {
+  font-size: .625rem;
+  opacity: .5;
+}
+
+:host ::ng-deep .ag-header-cell[col-id='acciones']:hover .gc-acciones-cabecera i {
+  opacity: 1;
+}
+
+/* El botón de la celda plegada: igual que los demás de la columna, para que
+   no parezca de otra familia */
+:host ::ng-deep .gc-desplegar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+
+  background-color: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  cursor: pointer;
+}
+
+:host ::ng-deep .gc-desplegar:hover {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Con el dedo, todo el ancho de la columna plegada es el botón.
+   Un blanco de 32x24 se falla con el ratón y se falla más con el dedo, y aquí
+   la celda entera no sirve para otra cosa. No se toca el alto: lo manda la
+   altura de fila de la grilla, no este CSS. */
+@media (pointer: coarse) {
+  /* En píxeles y no estirándose: ag-Grid envuelve lo que devuelve el renderer
+     en un <span> suyo que es display:inline y no tiene tamaño, así que ni el
+     100% ni el flex llegan a la celda —probado: dejaban el botón en 13x15—.
+     40x28 es prácticamente la celda entera (46 de ancho por 30 de alto de
+     fila), que es todo lo que se puede dar sin tocar la altura de la grilla. */
+  :host ::ng-deep .gc-desplegar {
+    width: 40px;
+    height: 28px;
+    border-color: transparent;
+    font-size: .8125rem;
+  }
+
+  :host ::ng-deep .gc-desplegar:active {
+    background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+    color: var(--bs-app-theme, #00acac);
+  }
+}
+
 :host ::ng-deep .gestion-acciones .btn-icon {
   display: inline-flex;
   align-items: center;
@@ -1563,6 +1639,16 @@
   padding: .2rem .55rem;
 }
 
+/* Qué agenda se mira. Reusa el aspecto de los filtros del historial —misma
+   flecha, mismo menú—, con su propio ancho: el de allí (9.5rem) va con letra
+   más pequeña. Lo que importa es que quepan las dos opciones sin recortarse,
+   porque si la más larga no cabe el <span> la corta con puntos suspensivos; y
+   que sea el mismo ancho en los dos casos, para que el botón no pegue un salto
+   al cambiar de una a otra. */
+.agenda-quien {
+  min-width: 9rem;
+}
+
 .agenda-filtros__etiqueta {
   margin: 0 .125rem 0 .375rem;
   font-size: .6875rem;
@@ -1858,13 +1944,20 @@
   font-size: 11px;
 }
 
-/* ---------- Los tres responsables ----------
+/* ---------- Los responsables ----------
    Una ficha por papel, en rejilla: a un cliente lo atiende quien le vende,
-   quien le cobra y quien le llama, y cada uno se cambia por su cuenta. El
-   puesto vacío se marca en tenue para que se vea de un vistazo cuál falta. */
+   quien le cobra, quien le llama y quien le atiende después de la venta, y
+   cada uno se cambia por su cuenta. El puesto vacío se marca en tenue para que
+   se vea de un vistazo cuál falta.
+
+   18rem y no 14: con tres fichas, 14rem las ponía justo en una fila. Al entrar
+   POSTVENTA quedaban tres arriba y una sola abajo, descolgada; pidiendo más
+   ancho por ficha caben dos, y salen dos filas de dos. Ocupa lo mismo de alto
+   y se lee como un bloque. En un panel de verdad ancho vuelven a salir las
+   cuatro seguidas, que es a lo que auto-fit sirve. */
 .gestion-roles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
   gap: .5rem;
   margin-bottom: .6rem;
 }

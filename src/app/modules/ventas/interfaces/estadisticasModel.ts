@@ -11,6 +11,15 @@ export interface EstadisticasVentas {
   /** Cuántos días trae la serie de `por_dia` */
   dias: number;
 
+  /**
+   * Hasta dónde llegan las cifras de abajo, según la jerarquía de grupos de
+   * quien mira: toda la empresa si es administrador, su equipo si manda sobre
+   * alguien, o sólo lo suyo. Lo decide el servidor, no la pantalla.
+   *
+   * `mias` queda fuera de esto: es siempre personal.
+   */
+  alcance: 'TODO' | 'EQUIPO' | 'PROPIO';
+
   clientes: {
     total: number;
     activos: number;
