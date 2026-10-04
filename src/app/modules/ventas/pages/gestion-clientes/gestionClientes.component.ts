@@ -458,6 +458,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.initializeGridPendientes();
     this.initializeGridContactos();
     this.initializeGridCartera();
+
+    // En un teléfono la columna de acciones entra plegada: son 110-142 píxeles
+    // de los 375 que hay, y lo primero que se viene a leer es el asunto, no
+    // los botones. Se despliega con el ☰ como en cualquier otro sitio.
+    // Sólo al entrar: si luego se gira el teléfono, manda lo que haya elegido
+    // quien lo usa.
+    if (window.innerWidth <= 767.98) { this.alternarAcciones(); }
+
     this.cargarAgenda();
     this.cargarClientes(1);
     this.cargarTiposDelCatalogo();
@@ -832,6 +840,34 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     return 432;
   }
 
+  /**
+   * En un teléfono la lista de clientes es un cajón, no una columna.
+   *
+   * Apilada se comía 364 de los 667 píxeles de un iPhone 7: había que pasar
+   * la lista entera para llegar al trabajo del cliente, que empezaba fuera de
+   * pantalla. Así que debajo de lg sale por encima, como el árbol de carpetas
+   * del administrador de archivos, y se quita de en medio al elegir.
+   *
+   * Entra ABIERTO: en un teléfono lo primero que hay que hacer es elegir
+   * cliente, y empezar con el cajón cerrado obligaba a descubrir la pestaña
+   * antes de poder trabajar. Se cierra solo al elegir, así que el estorbo dura
+   * lo que tarda el primer toque.
+   *
+   * El ancho se mira una vez, al construir: el cajón sólo existe por debajo de
+   * lg, y en escritorio esta bandera no la lee nadie. `panelOculto` es otra
+   * cosa y sigue siendo de escritorio.
+   */
+  public listaMovilAbierta = window.innerWidth <= 991.98;
+
+  alternarListaMovil(): void {
+    this.listaMovilAbierta = !this.listaMovilAbierta;
+    // La grilla se dibuja dentro de un cajón que estaba fuera de pantalla: sin
+    // esto sale con el ancho que tenía antes de abrirse
+    if (this.listaMovilAbierta) {
+      setTimeout(() => this.gridApiClientes?.sizeColumnsToFit(), 260);
+    }
+  }
+
   alternarPanel(): void {
     this.panelOculto = !this.panelOculto;
     try { localStorage.setItem('miCRM3.gestion.panelOculto', this.panelOculto ? '1' : '0'); } catch { /* sin storage */ }
@@ -1064,6 +1100,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   async seleccionarCliente(cliente: any): Promise<void> {
     if (!cliente?.id) { return; }
+    // Elegido el cliente, el cajón sobra: lo que se quiere ver es su trabajo
+    this.listaMovilAbierta = false;
     this.replantearAltos(200);
     this.vista = 'cliente';
     this.pestana = 'historial';
@@ -1399,6 +1437,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: 118,
         maxWidth: 118,
+        suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('Acciones'),
         sortable: false,
         resizable: false,
@@ -1453,6 +1492,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       { headerName: 'Nota', field: 'nota', minWidth: 180, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
       {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 142, maxWidth: 142,
+        suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
@@ -1522,6 +1562,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       },
       {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 140, maxWidth: 140,
+        suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
@@ -1742,7 +1783,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   onCellClickedPendientes(e: CellClickedEvent): void {
     const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
     switch (destino?.dataset['accion']) {
-      case 'desplegar-acciones': this.alternarAcciones(); break;
       case 'cerrar':   this.cerrar(e.data); break;
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
@@ -1756,7 +1796,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const accion = destino?.dataset['accion'];
     if (!accion) { return; }
 
-    if (accion === 'desplegar-acciones') { this.alternarAcciones(); return; }
     if (accion === 'llamar')    { this.llamarConSoftphone(e.data?.telefono, e.data?.nombres); }
     if (accion === 'whatsapp')  { window.open(this.enlaceWhatsapp(e.data?.telefono), '_blank', 'noopener'); }
     if (accion === 'correo')    { window.location.href = 'mailto:' + e.data?.email; }
@@ -1775,7 +1814,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   /** Los botones de la columna Acciones y el doble propósito de la fila. */
   onCellClickedAgenda(e: CellClickedEvent): void {
     const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
-    if (destino?.dataset['accion'] === 'desplegar-acciones') { this.alternarAcciones(); return; }
     if (destino?.dataset['accion'] === 'cerrar') { this.cerrarDesdeAgenda(e.data); return; }
     if (destino?.dataset['accion'] === 'abrir')  { this.irAlCliente(e.data); return; }
     if (destino?.dataset['accion'] === 'llamar') {
@@ -2051,6 +2089,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       { headerName: 'Registrado por', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' }, sortable: false },
       {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
@@ -2084,7 +2123,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (e.column.getColId() !== 'acciones') { return; }
     const accion = ((e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement)?.dataset['accion'];
     switch (accion) {
-      case 'desplegar-acciones': this.alternarAcciones(); break;
       case 'cerrar':   this.cerrar(e.data); break;
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
@@ -2461,19 +2499,53 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     ];
   }
 
+  /** Dónde empezó la pulsación, para no confundir un arrastre con un toque. */
+  private pulsacionEn: string | null = null;
+
   /**
-   * Un clic en la cabecera ACCIONES de cualquier grilla la pliega o la
-   * despliega.
+   * Qué se puede pulsar para plegar o desplegar: la cabecera ACCIONES de
+   * cualquier grilla, y el ☰ que queda en las celdas cuando está plegada.
+   *
+   * Devuelve QUÉ se ha pulsado, no el elemento: ag-Grid rehace la celda entre
+   * pointerdown y pointerup —al marcar el foco—, así que comparando elementos
+   * el botón de la celda no respondía nunca al ratón.
+   */
+  private objetivoPlegado(e: Event): string | null {
+    const t = e.target as HTMLElement;
+    if (!t?.closest) { return null; }
+    if (t.closest('.ag-header-cell[col-id="acciones"]')) { return 'cabecera'; }
+    if (t.closest('[data-accion="desplegar-acciones"]')) { return 'boton'; }
+    return null;
+  }
+
+  /**
+   * Va por pointerup y NO por click.
+   *
+   * Con el dedo, ag-Grid se queda el toque de la cabecera —llegan
+   * pointerdown, touchstart, pointerup y touchend, pero NUNCA un click—, así
+   * que escuchando `click` esto no funcionaba en el teléfono. `pointerup`
+   * sirve igual para el ratón y para el dedo.
+   *
+   * Se guarda dónde empezó la pulsación para que arrastrar el ancho de una
+   * columna y soltar encima de la cabecera no la pliegue sin querer.
    *
    * Delegado en el componente entero a propósito: las grillas de las pestañas
    * se crean al abrirlas, así que engancharse a cada cabecera obligaría a
    * repetir el enganche en cada `onGridReady` y a soltarlo al destruir. Un
    * escuchador de Angular se va solo con el componente.
    */
-  @HostListener('click', ['$event'])
-  onClicEnLaPantalla(e: MouseEvent): void {
-    const cabecera = (e.target as HTMLElement)?.closest?.('.ag-header-cell[col-id="acciones"]');
-    if (cabecera) { this.alternarAcciones(); }
+  @HostListener('pointerdown', ['$event'])
+  onPulsacionAbajo(e: PointerEvent): void {
+    this.pulsacionEn = this.objetivoPlegado(e);
+  }
+
+  @HostListener('pointerup', ['$event'])
+  onPulsacionArriba(e: PointerEvent): void {
+    const destino = this.objetivoPlegado(e);
+    const empezoAhi = !!destino && destino === this.pulsacionEn;
+    this.pulsacionEn = null;
+    // button 0 es el principal: con el dedo también llega como 0
+    if (empezoAhi && e.button === 0) { this.alternarAcciones(); }
   }
 
   /** Pliega o despliega la columna de acciones en las cuatro grillas. */
@@ -2496,10 +2568,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       col.maxWidth = ancho;
       col.headerName = this.accionesPlegadas ? '' : col.rotuloAbierto;
       col.headerComponentParams = {
-        template: this.accionesPlegadas
-          ? `<div class="gc-acciones-cabecera" title="Mostrar los botones de acción"><i class="fa fa-bars"></i></div>`
-          : `<div class="gc-acciones-cabecera" title="Ocultar los botones de acción">`
-            + `<span>${col.rotuloAbierto}</span><i class="fa fa-arrow-right"></i></div>`,
+        template: this.plantillaCabecera(col.rotuloAbierto, this.accionesPlegadas),
       };
 
       g.api?.setColumnDefs(g.defs);
@@ -2516,10 +2585,23 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * cabecera responde al clic.
    */
   private cabeceraAcciones(rotulo: string): { template: string } {
-    return {
-      template: `<div class="gc-acciones-cabecera" title="Ocultar los botones de acción">`
-              + `<span>${rotulo}</span><i class="fa fa-arrow-right"></i></div>`,
-    };
+    return { template: this.plantillaCabecera(rotulo, false) };
+  }
+
+  /**
+   * Lo que se pulsa en la cabecera, como <button> y no como <div>.
+   *
+   * No es cosmética: en iOS un elemento que no es interactivo pero tiene regla
+   * :hover pide DOS toques —el primero lo deja «por encima», el segundo
+   * pulsa—, y era lo que obligaba a dar doble toque para plegar la columna en
+   * el teléfono. Siendo un botón, el navegador dispara el clic a la primera.
+   */
+  private plantillaCabecera(rotulo: string, plegada: boolean): string {
+    const titulo = plegada ? 'Mostrar los botones de acción' : 'Ocultar los botones de acción';
+    const dentro = plegada
+      ? `<i class="fa fa-bars"></i>`
+      : `<span>${rotulo}</span><i class="fa fa-arrow-right"></i>`;
+    return `<button type="button" class="gc-acciones-cabecera" title="${titulo}" aria-label="${titulo}">${dentro}</button>`;
   }
 
   /** El botón que devuelve la columna, para que siempre haya algo pulsable. */

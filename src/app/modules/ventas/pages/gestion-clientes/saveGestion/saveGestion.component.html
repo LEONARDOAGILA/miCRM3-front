@@ -34,9 +34,11 @@
                cambia según el estado se queda como pista corta al lado. -->
           <div class="gestion-estado" [class.is-programada]="esProgramada">
             <div class="gestion-estado__botones btn-group btn-group-sm" role="group">
+              <!-- Dos rótulos para lo mismo: en 375px «En este momento» parte
+                   el botón en dos renglones y descuadra los tres -->
               <button type="button" class="btn" [class.btn-primary]="esAhora" [class.btn-white]="!esAhora"
                       (click)="elegirMomento('ahora')">
-                <i class="fa fa-bolt me-1"></i>En este momento
+                <i class="fa fa-bolt me-1"></i><span class="gestion-estado__largo">En este momento</span><span class="gestion-estado__corto">Ahora</span>
               </button>
               <button type="button" class="btn" [class.btn-primary]="!esProgramada && !esAhora" [class.btn-white]="esProgramada || esAhora"
                       (click)="elegirMomento('hecha')">

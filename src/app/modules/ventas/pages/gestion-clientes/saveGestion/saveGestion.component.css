@@ -221,13 +221,53 @@
   --tinte-fondo: rgba(37, 211, 102, .12);
 }
 
-/* ---------- Responsive ---------- */
+/* El rótulo corto del primer botón sólo sale en teléfono */
+.gestion-estado__corto {
+  display: none;
+}
+
+/* ---------- Responsive ----------
+   En un iPhone 7 el modal entraba sin desbordarse, pero había que recorrerlo
+   entero para llegar a Guardar: el cuerpo medía 722px de contenido en 457 de
+   hueco. El alto se iba en tres sitios, medidos uno a uno:
+
+     pie               117px   dos botones a lo ancho, uno encima del otro
+     momento            81px   «En este momento» partía el botón en dos líneas
+     cuatro campos     220px   55px cada uno
+
+   Aquí se recortan los dos primeros, que son los que sobran de verdad; los
+   campos se dejan como están, que apretarlos es empeorar el blanco para el
+   dedo. */
 @media (max-width: 575.98px) {
+  /* El cuerpo se queda con casi toda la pantalla: la cabecera y el pie ya no
+     se llevan 161px entre los dos */
+  .gestion-modal-body {
+    max-height: calc(100vh - 150px);
+    max-height: calc(100dvh - 150px);
+  }
+
   .gestion-estado__botones {
     width: 100%;
   }
 
   .gestion-estado__botones .btn {
     flex: 1 1 0;
+    min-width: 0;
+    padding-left: .25rem;
+    padding-right: .25rem;
+    white-space: nowrap;
   }
+
+  /* «Ahora» en vez de «En este momento» */
+  .gestion-estado__largo {
+    display: none;
+  }
+
+  .gestion-estado__corto {
+    display: inline;
+  }
+
+  /* El pie va en una sola fila, pero eso NO se arregla desde aquí: se corrigió
+     en app-modal-footer, que es de quien es la regla, y así lo ganan los trece
+     modales que lo usan. */
 }

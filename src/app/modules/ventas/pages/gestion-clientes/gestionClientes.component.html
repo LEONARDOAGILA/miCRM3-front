@@ -253,8 +253,32 @@
       <div class="gc-cuerpo"
            [class.is-panel-oculto]="panelOculto"
            [class.is-redimensionando]="redimensionando"
+           [class.is-lista-movil]="listaMovilAbierta"
            [style.--gc-ancho-columna]="anchoColumna + 'px'"
            >
+
+        <!-- ---------- La pestaña del cajón (sólo teléfono) ----------
+             Debajo de lg la lista de clientes no es una columna, es un cajón
+             que sale por encima: apilada se comía la primera pantalla entera.
+             Misma idea que el árbol de carpetas del administrador de archivos,
+             y por eso también la pestaña pegada al borde con el rótulo en
+             vertical: cerrada hay que entender qué abre. -->
+        <button type="button" class="gc-tirador"
+                [class.is-abierto]="listaMovilAbierta"
+                [attr.aria-expanded]="listaMovilAbierta"
+                [title]="listaMovilAbierta ? 'Cerrar la lista de clientes' : 'Ver la lista de clientes'"
+                (click)="alternarListaMovil()">
+          <i class="fa" [ngClass]="listaMovilAbierta ? 'fa-chevron-left' : 'fa-users'"></i>
+          @if (!listaMovilAbierta) {
+            <span class="gc-tirador__texto">Clientes</span>
+          }
+        </button>
+
+        <!-- Tocar fuera cierra: en un teléfono es lo que se espera de un
+             panel que sale por encima -->
+        @if (listaMovilAbierta) {
+          <div class="gc-velo" (click)="alternarListaMovil()" aria-hidden="true"></div>
+        }
 
         <!-- ---------- Columna izquierda: la grilla de clientes ----------
              La misma grilla de «Listar clientes», siempre a la vista y paginada

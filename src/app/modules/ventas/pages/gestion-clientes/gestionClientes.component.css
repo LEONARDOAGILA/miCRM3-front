@@ -1134,7 +1134,9 @@
 }
 
 /* Ocupa toda la cabecera, no sólo el texto: así se puede pulsar en cualquier
-   punto de ella y no hay que apuntar al icono, que con el dedo se falla. */
+   punto de ella y no hay que apuntar al icono, que con el dedo se falla.
+   Es un <button> (ver plantillaCabecera), así que hay que quitarle lo que el
+   navegador le pone de serie: borde, fondo y relleno. */
 :host ::ng-deep .gc-acciones-cabecera {
   display: flex;
   align-items: center;
@@ -1142,6 +1144,13 @@
   gap: .3rem;
   width: 100%;
   height: 100%;
+
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
 
 :host ::ng-deep .gc-acciones-cabecera i {
@@ -1149,8 +1158,15 @@
   opacity: .5;
 }
 
-:host ::ng-deep .ag-header-cell[col-id='acciones']:hover .gc-acciones-cabecera i {
-  opacity: 1;
+/* El realce al pasar por encima SÓLO donde hay ratón.
+   En iOS, un elemento que no es interactivo pero tiene regla :hover necesita
+   DOS toques: el primero lo deja «por encima» y el segundo pulsa. Era lo que
+   hacía falta dar doble toque para plegar la columna en el teléfono. Con la
+   consulta (hover: hover) la regla ni se carga en una pantalla táctil. */
+@media (hover: hover) and (pointer: fine) {
+  :host ::ng-deep .ag-header-cell[col-id='acciones']:hover .gc-acciones-cabecera i {
+    opacity: 1;
+  }
 }
 
 /* El botón de la celda plegada: igual que los demás de la columna, para que
@@ -1172,9 +1188,12 @@
   cursor: pointer;
 }
 
-:host ::ng-deep .gc-desplegar:hover {
-  border-color: var(--bs-app-theme, #00acac);
-  color: var(--bs-app-theme, #00acac);
+/* Igual que arriba: sólo donde hay ratón de verdad */
+@media (hover: hover) and (pointer: fine) {
+  :host ::ng-deep .gc-desplegar:hover {
+    border-color: var(--bs-app-theme, #00acac);
+    color: var(--bs-app-theme, #00acac);
+  }
 }
 
 /* Con el dedo, todo el ancho de la columna plegada es el botón.
@@ -1276,20 +1295,109 @@
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+/* ---------- El tirador y el velo del cajón ----------
+   De escritorio no existen: ahí la lista es una columna de verdad y se pliega
+   con el divisor. */
+.gc-tirador,
+.gc-velo {
+  display: none;
+}
+
 @media (max-width: 991.98px) {
-  /* Apiladas: la ficha arriba y el trabajo debajo, y el alto lo pone el
-     contenido (en móvil el que manda es el scroll de la página) */
+  /* ---------- La lista de clientes pasa a ser un cajón ----------
+     Apilada ocupaba 364 de los 667 píxeles de un iPhone 7 y dejaba el trabajo
+     del cliente fuera de pantalla: había que pasar la lista entera para llegar
+     a lo que se venía a ver. Ahora sale por encima, como el árbol de carpetas
+     del administrador de archivos. */
   .gc-cuerpo {
+    position: relative;
     flex-direction: column;
     height: auto;
+    /* Ancho del cajón: casi toda la pantalla, pero dejando ver que hay algo
+       detrás, que es lo que dice que se puede cerrar tocando fuera */
+    --gc-cajon: min(86vw, 22rem);
   }
 
+  /* Fijo tanto cerrado como abierto: así no salta de sitio al abrirse, y se
+     queda donde está mientras se recorre la lista.
+
+     Los z-index van por encima de 1020, que es lo que vale la cabecera de la
+     aplicación (medido, no supuesto: con 30 el cajón salía por debajo y se
+     perdían el buscador y el filtro de estado). Tapar la cabecera mientras se
+     elige cliente es lo normal en un cajón de teléfono, y el velo ya impide
+     tocar lo de detrás. */
   .gc-columna,
   .gc-cuerpo.is-panel-oculto .gc-columna {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--gc-cajon) - 1.5rem);
+    z-index: 1032;
+
     flex: 0 0 auto;
+    width: var(--gc-cajon);
     max-width: none;
-    width: 100%;
-    overflow: visible;
+    max-height: none;
+    padding: .5rem;
+    overflow: hidden;
+
+    border-right: 1px solid var(--bs-border-color, #dee2e6);
+    background-color: var(--bs-component-bg, #fff);
+    box-shadow: 6px 0 18px rgba(0, 0, 0, .18);
+    transition: left .22s ease;
+  }
+
+  .gc-cuerpo.is-lista-movil .gc-columna,
+  .gc-cuerpo.is-lista-movil.is-panel-oculto .gc-columna {
+    left: 0;
+  }
+
+  .gc-velo {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1031;
+    background-color: rgba(0, 0, 0, .35);
+  }
+
+  /* La pestaña: pegada al borde izquierdo y con el rótulo en vertical, que
+     cerrada hay que entender qué abre */
+  .gc-tirador {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+
+    position: fixed;
+    top: 40%;
+    left: 0;
+    z-index: 1033;
+
+    padding: .6rem .4rem .65rem;
+    border: 0;
+    border-radius: 0 .625rem .625rem 0;
+
+    background: var(--bs-app-theme, #00acac);
+    color: var(--bs-app-theme-color, #fff);
+    box-shadow: 3px 2px 10px rgba(0, 0, 0, .28);
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .gc-tirador__texto {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: .625rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  /* Abierta, la pestaña viaja con el cajón y le basta la flecha */
+  .gc-tirador.is-abierto {
+    left: var(--gc-cajon);
+    border-radius: 0 .625rem .625rem 0;
+    padding: .6rem .45rem;
   }
 
   /* Una encima de otra: no hay ancho que repartir */
@@ -1297,10 +1405,11 @@
     display: none;
   }
 
-  /* Apilada, la grilla no pelea por el alto: se le da uno fijo y ya */
+  /* Dentro del cajón la grilla ocupa lo que le dejen el buscador y el pie */
   .gc-grilla {
-    flex: 0 0 auto;
-    height: 16rem;
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
   }
 
   /* En estrecho, los botones pasan debajo del nombre y se reparten el ancho */
@@ -1321,47 +1430,22 @@
     grid-template-columns: 1fr;
   }
 
-  /* Plegada se recoge hacia arriba, no hacia el lado */
-  .gc-cuerpo.is-panel-oculto .gc-columna {
-    max-height: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-
   .gc-panel__contenido {
     height: auto;
     overflow: visible;
     padding-left: 0;
   }
 
-  /* Apiladas, el lomo es una barra: el texto vuelve a ser horizontal */
-  .gc-lomo {
-    flex: 0 0 auto;
-    width: 100%;
-    padding: .375rem 0;
-    margin-bottom: .5rem;
-  }
-
-  .gc-lomo__texto {
-    writing-mode: horizontal-tb;
-    transform: none;
-  }
-
-  /* La pestañita se pone arriba, centrada y tumbada */
+  /* El lomo y la pestañita son de escritorio: aquí quien abre y cierra la
+     lista es el tirador del cajón, y dos mandos para lo mismo confunden */
+  .gc-lomo,
   .gc-pestana {
-    position: static;
-    transform: none;
-    width: 100%;
-    height: 22px;
-    margin-bottom: .5rem;
-
-    border-left: 1px solid var(--bs-border-color, #dee2e6);
-    border-radius: .5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+    display: none;
   }
 
-  .gc-panel__contenido {
-    padding-left: 0;
+  /* El panel de trabajo manda en toda la pantalla: ya no comparte sitio */
+  .gc-panel {
+    width: 100%;
   }
 
   .gestion-grilla {
@@ -1380,6 +1464,29 @@
 
   .gestion-buscador__campo {
     flex: 1 1 100%;
+  }
+
+  /* Los cuatro filtros del historial, de dos en dos. En flex se ponían uno
+     por renglón —9.5rem de mínimo no caben dos veces en 375px— y se comían
+     cuatro líneas antes de llegar a la tabla. */
+  .gestion-filtros {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .3rem;
+  }
+
+  .gestion-filtros .dropdown {
+    min-width: 0;
+  }
+
+  .gestion-filtros .gestion-filtro {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* La cuenta de gestiones ocupa la fila entera, debajo de los filtros */
+  .gestion-filtros__cuenta {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1815,6 +1922,44 @@
 
   .agenda-rango {
     width: 100%;
+  }
+}
+
+/* En un teléfono esa rejilla de dos columnas se desborda: ya no son un rótulo
+   y su campo, son cinco cosas —fechas, buscador, de quién, recargar y
+   WhatsApp—. La columna `auto` se quedaba con el ancho del selector de fechas,
+   la rejilla salía más ancha que la pantalla y, como la fila se alinea a la
+   derecha, lo que sobraba se iba por la IZQUIERDA y quedaba cortado: se veía
+   «fechas» y «ío» en vez de los campos enteros.
+
+   Aquí vuelve a ser una fila que se parte: las dos cosas largas ocupan su
+   renglón y los tres mandos cortos se reparten el último. */
+@media (max-width: 575.98px) {
+  .agenda-filtros {
+    min-width: 0;
+  }
+
+  .agenda-filtros__fechas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: .375rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Sin esto un hijo con contenido ancho vuelve a estirar la fila */
+  .agenda-filtros__fechas > * {
+    min-width: 0;
+  }
+
+  .agenda-rango,
+  .agenda-filtros__buscador {
+    flex: 1 1 100%;
+  }
+
+  .agenda-quien {
+    flex: 1 1 auto;
   }
 }
 

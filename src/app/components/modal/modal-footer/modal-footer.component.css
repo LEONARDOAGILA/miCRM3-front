@@ -50,16 +50,25 @@
 }
 
 /* ---------- Responsive ---------- */
-/* En móvil los dos botones ocupan el ancho completo y se apilan: con 130px
-   de mínimo cada uno, en pantallas estrechas se salían del modal. */
+/* En móvil los dos botones se reparten el ancho, en una sola fila.
+
+   Antes se apilaban (column-reverse, Guardar arriba) y el motivo era el
+   min-width de 130px de aquí arriba: con dos botones pidiendo 130 cada uno no
+   cabían y se salían del modal. Pero eso se arregla dejándolos encogerse, no
+   apilándolos: con flex: 1 1 0 y min-width: 0 salen a ~160px en una pantalla
+   de 375, que para un dedo sobra de largo.
+
+   Apilados, el pie se llevaba 101 de los 667 píxeles de un iPhone 7; en fila
+   son 58, y eso es formulario que se ve sin tener que recorrerlo. */
 @media (max-width: 400px) {
   .pie-modal {
-    flex-direction: column-reverse;   /* Guardar arriba, la acción principal */
-    align-items: stretch;
+    gap: .5rem;
+    padding: .5rem .75rem;
   }
 
   .pie-modal__boton {
-    width: 100%;
+    flex: 1 1 0;
+    width: auto;
     min-width: 0;
   }
 }
