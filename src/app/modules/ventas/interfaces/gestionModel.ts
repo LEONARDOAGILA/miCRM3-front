@@ -27,6 +27,13 @@ export interface GestionModel {
   duracion_minutos?: number | null;
   /** Cómo terminó; sólo cuando está REALIZADA */
   resultado?: string | null;
+  /**
+   * El asunto del catálogo (ventas.gestiones_asuntos) al que apunta.
+   *
+   * Para agrupar en informes se usa esto; `asunto` guarda el texto tal como
+   * se vio el día que se registró, que es lo que se lee en el historial.
+   */
+  asunto_id?: number | null;
   /** Cómo se registró: AHORA, YA_HECHA o PROGRAMADA. Vacío en lo anterior a octubre de 2026. */
   modo_registro?: ModoRegistro | null;
 

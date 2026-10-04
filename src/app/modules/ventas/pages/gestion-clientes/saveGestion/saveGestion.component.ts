@@ -7,10 +7,12 @@ import { firstValueFrom } from 'rxjs';
 import { GestionService } from '../../../services/gestion.service';
 import { SoftphoneService } from '../../../services/softphone.service';
 import { enlaceDeWhatsapp, puedeTenerWhatsapp } from '../../../interfaces/plantillasWhatsapp';
+import { CatalogoGestionService } from '../../../services/catalogoGestion.service';
+import { TipoGestion, AsuntoGestion, asuntosDe } from '../../../interfaces/catalogoGestion';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ClienteModel, ContactoCliente } from '../../../interfaces/clienteModel';
 import {
-  GestionModel, PRIORIDADES_GESTION, RESULTADOS_GESTION, TIPOS_GESTION,
+  GestionModel, PRIORIDADES_GESTION, RESULTADOS_GESTION,
 } from '../../../interfaces/gestionModel';
 
 /** Para qué se abre el modal. */
@@ -54,7 +56,15 @@ export class SaveGestionComponent implements OnInit {
   public isLoading$ = this._loadingService.isLoading$;
   public guardando = false;
 
-  public tipos = TIPOS_GESTION;
+  /**
+   * Los tipos salen de la tabla, no de una lista escrita en el código.
+   *
+   * Mientras llegan, el combo queda vacío y el formulario sin poder
+   * guardarse: es un segundo y evita el caso feo de elegir un tipo que luego
+   * resulta que no está en el catálogo.
+   */
+  public tipos: TipoGestion[] = [];
+  public cargandoCatalogo = true;
   public prioridades = PRIORIDADES_GESTION;
   public resultados = RESULTADOS_GESTION;
   /** Los teléfonos del cliente, para no tener que escribirlos */
@@ -67,6 +77,7 @@ export class SaveGestionComponent implements OnInit {
     private _toastr: ToastrService,
     private _loadingService: LoadingService,
     private _gestionService: GestionService,
+    private _catalogoService: CatalogoGestionService,
     private _softphone: SoftphoneService,
   ) {}
 
@@ -130,6 +141,66 @@ export class SaveGestionComponent implements OnInit {
     }
   }
 
+  /**
+   * Los asuntos que se ofrecen ahora mismo: los del tipo elegido.
+   *
+   * El usuario no escribe el asunto, lo elige. Es lo que permite después
+   * agrupar por asunto sin que «Cobranza» y «cobranzas» cuenten como dos
+   * cosas distintas, que es justo lo que pasaba antes.
+   */
+  get asuntos(): AsuntoGestion[] {
+    const codigo = this.form?.get('tipo')?.value;
+    return asuntosDe(this.tipos.find(t => t.codigo === codigo));
+  }
+
+  /** Un tipo sin asuntos no deja registrar nada: hay que avisarlo, no callar. */
+  get sinAsuntos(): boolean {
+    return !this.cargandoCatalogo && !!this.form?.get('tipo')?.value && this.asuntos.length === 0;
+  }
+
+  /**
+   * Trae el catálogo y deja el asunto coherente con el tipo.
+   *
+   * Al cambiar de tipo el asunto anterior deja de valer —es de otro tipo y el
+   * servidor lo rechazaría—, así que se limpia. Al abrir para modificar una
+   * gestión vieja se respeta el que ya tenía si sigue en la lista.
+   */
+  private async cargarCatalogo(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this._catalogoService.catalogo());
+      this.tipos = res?.status === 'success' ? (res.data ?? []) : [];
+    } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al cargar el catálogo de gestión:', error);
+      this.tipos = [];
+    } finally {
+      this.cargandoCatalogo = false;
+    }
+
+    // El tipo que trae la gestión puede estar desactivado: se añade a la lista
+    // para que el combo no aparezca vacío al abrir una del historial.
+    const codigo = this.form?.get('tipo')?.value;
+    if (codigo && !this.tipos.some(t => t.codigo === codigo)) {
+      this.tipos = [...this.tipos, { id: 0, codigo, nombre: codigo, icono: null, asuntos: [] }];
+    }
+
+    this.ajustarAsunto();
+    this.form?.get('tipo')?.valueChanges.subscribe(() => this.ajustarAsunto(true));
+  }
+
+  /** El asunto tiene que ser de los del tipo; si no lo es, se queda vacío. */
+  private ajustarAsunto(cambioElTipo = false): void {
+    const ctrl = this.form?.get('asunto_id');
+    if (!ctrl) { return; }
+
+    const actual = Number(ctrl.value) || null;
+    const sigue = this.asuntos.some(a => a.id === actual);
+
+    if (cambioElTipo || !sigue) {
+      ctrl.setValue(sigue && !cambioElTipo ? actual : null);
+    }
+  }
+
   ngOnInit(): void {
     this.titulo = this.modo === 'programar' ? 'Programar gestión'
                 : this.modo === 'editar'    ? 'Modificar gestión'
@@ -143,6 +214,7 @@ export class SaveGestionComponent implements OnInit {
       .map(c => ({ id: c.id as number, name: c.cargo ? `${c.nombres} (${c.cargo})` : c.nombres }));
 
     this.initializeForm();
+    this.cargarCatalogo();
   }
 
   /** Programada mientras esté PENDIENTE; el resto, realizada. */
@@ -199,7 +271,10 @@ export class SaveGestionComponent implements OnInit {
     this.form = this.fb.group({
       tipo:             [g?.tipo ?? 'LLAMADA', [Validators.required]],
       estado:           [estadoInicial, [Validators.required]],
-      asunto:           [g?.asunto ?? '', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
+      // El texto se conserva para poder enseñar el de una gestión vieja, pero
+      // ya no se teclea: lo que se guarda y lo que valida es el asunto_id.
+      asunto:           [g?.asunto ?? ''],
+      asunto_id:        [g?.asunto_id ?? null, [Validators.required]],
       contacto_id:      [g?.contacto_id ?? null],
       telefono:         [g?.telefono ?? this.telefonoInicial ?? this.cliente?.celular ?? this.cliente?.telefono ?? '', [Validators.maxLength(20)]],
       prioridad:        [g?.prioridad ?? 'MEDIA', [Validators.required]],
@@ -282,11 +357,13 @@ export class SaveGestionComponent implements OnInit {
       return;
     }
     if (this.form.invalid) {
-      const falta = this.esProgramada && !this.form.get('fecha_programada')?.value
+      const falta = !this.form.get('asunto_id')?.value
+        ? 'Elija el asunto de la lista: ya no se escribe a mano.'
+        : this.esProgramada && !this.form.get('fecha_programada')?.value
         ? 'Indique la fecha y la hora de la gestión programada.'
-        : (!this.esProgramada && !this.form.get('resultado')?.value
-            ? 'Indique cómo terminó la gestión.'
-            : 'Revise los campos del formulario.');
+        : !this.esProgramada && !this.form.get('resultado')?.value
+        ? 'Indique cómo terminó la gestión.'
+        : 'Revise los campos del formulario.';
       this._toastr.error(falta, 'No se puede guardar', { timeOut: 8000, closeButton: true });
       return;
     }
@@ -305,7 +382,11 @@ export class SaveGestionComponent implements OnInit {
       modo_registro:    this.esProgramada ? 'PROGRAMADA' : (this.esAhora ? 'AHORA' : 'YA_HECHA'),
       tipo:             v.tipo,
       estado:           v.estado,
-      asunto:           (v.asunto ?? '').trim(),
+      // El texto lo pone el catálogo en el servidor a partir del id; se manda
+      // igualmente para que el historial viejo no se quede sin asunto si algún
+      // día se abre una gestión anterior al catálogo y se vuelve a guardar.
+      asunto:           (v.asunto ?? '').trim() || null,
+      asunto_id:        v.asunto_id ? Number(v.asunto_id) : null,
       nota:             (v.nota ?? '').trim() || null,
       // Quien atiende al cliente; si no tiene vendedor va sin dueño
       empleado_id:      this.cliente.vendedor_id ?? null,

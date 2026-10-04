@@ -60,12 +60,14 @@
 
             <div [ngClass]="colTipo">
               <div class="campo-combo">
+                <!-- Del catálogo (ventas.gestiones_tipos); el valor que se guarda
+                     sigue siendo el código, que es lo que hay en las 1399 gestiones -->
                 <app-combo
                   formControlName="tipo"
                   [items]="tipos"
                   [label]="'Tipo'"
-                  bindLabel="name"
-                  bindValue="id">
+                  bindLabel="nombre"
+                  bindValue="codigo">
                 </app-combo>
               </div>
             </div>
@@ -116,16 +118,28 @@
 
             <!-- El asunto baja aquí, donde estaba el teléfono: es lo que se lee
                  en la agenda y en el historial, así que merece la línea ancha.
-                 Ocupa lo que dejen libre el resultado y la persona de contacto. -->
+                 Ocupa lo que dejen libre el resultado y la persona de contacto.
+
+                 Se elige de la lista del tipo, no se escribe: es lo que permite
+                 después agrupar por asunto sin que «Cobranza» y «cobranzas»
+                 cuenten como dos cosas. La lista se mantiene en Ventas →
+                 Catálogo de gestión. -->
             <div [ngClass]="colAsunto">
-              <app-campoTexto
-                [control]="form.controls['asunto']"
-                label="Asunto"
-                placeholder="Ej: Llamada de seguimiento de la cotización"
-                [maxLength]="200"
-                [minLength]="3"
-                [trimEspacios]="true">
-              </app-campoTexto>
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="asunto_id"
+                  [items]="asuntos"
+                  [label]="'Asunto'"
+                  bindLabel="nombre"
+                  bindValue="id">
+                </app-combo>
+              </div>
+              @if (sinAsuntos) {
+                <small class="text-danger d-block mt-1">
+                  <i class="fa fa-triangle-exclamation me-1"></i>Este tipo todavía no tiene asuntos.
+                  Hay que darlos de alta en Ventas → Catálogo de gestión.
+                </small>
+              }
             </div>
 
             <!-- Sólo cuando ya se hizo -->

@@ -1,0 +1,278 @@
+/* ============================================================
+   CATÁLOGO DE GESTIÓN
+
+   Dos listas en cajas iguales. Las filas son de 28px porque hay
+   123 asuntos repartidos entre seis tipos y con el alto normal de
+   un formulario sólo caben cinco en pantalla.
+
+   Los colores van en rgba y no en color-mix(): el front tiene que
+   funcionar en un iPhone 7 y ahí color-mix() no existe (ver
+   .browserslistrc).
+   ============================================================ */
+
+.cat-contenido {
+  padding: .75rem;
+}
+
+/* ---------- El aviso de arriba ---------- */
+.cat-aviso {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  margin-bottom: .75rem;
+  padding: .5rem .75rem;
+  border: 1px solid rgba(var(--bs-app-theme-rgb, 0, 172, 172), .3);
+  border-radius: .375rem;
+
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
+  font-size: .75rem;
+  line-height: 1.4;
+}
+
+.cat-aviso__check {
+  margin-left: auto;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.cat-aviso__check input {
+  margin-right: .25rem;
+  vertical-align: middle;
+}
+
+/* ---------- Las cajas ---------- */
+.cat-caja {
+  display: flex;
+  flex-direction: column;
+
+  height: 100%;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  overflow: hidden;
+}
+
+.cat-caja__titulo {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .4rem .625rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .035);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.cat-caja__de {
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 400;
+}
+
+.cat-caja__cuenta {
+  margin-left: auto;
+  padding: .05rem .4rem;
+  border-radius: 1rem;
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  font-size: .6875rem;
+  font-weight: 600;
+}
+
+/* El alto fijo es lo que deja las dos listas a la par aunque una tenga
+   seis filas y la otra veintisiete */
+.cat-caja__cuerpo {
+  flex: 1 1 auto;
+  min-height: 260px;
+  max-height: 58vh;
+  overflow-y: auto;
+}
+
+/* ---------- Las filas ---------- */
+.cat-fila {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  min-height: 28px;
+  padding: .125rem .5rem;
+  border-bottom: 1px solid rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+
+  font-size: .75rem;
+}
+
+.cat-fila:last-child { border-bottom: 0; }
+
+.cat-fila:hover {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .06);
+}
+
+.cat-fila.is-elegida {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  box-shadow: inset 3px 0 0 var(--bs-app-theme, #00acac);
+}
+
+/* Desactivado: tachado, que es como se lee «esto ya no se ofrece» */
+.cat-fila.is-inactiva .cat-fila__texto,
+.cat-fila.is-inactiva .cat-fila__codigo {
+  text-decoration: line-through;
+  opacity: .55;
+}
+
+.cat-fila__nombre {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cat-fila__texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-fila__texto--solo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cat-fila__codigo {
+  flex: 0 0 auto;
+  padding: 0 .3rem;
+  border-radius: .2rem;
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .07);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .625rem;
+  letter-spacing: .02em;
+}
+
+/* Los dos contadores: cuántos asuntos tiene y en cuántas gestiones se usa.
+   El segundo es el que avisa de que algo no se va a poder borrar. */
+.cat-fila__dato {
+  flex: 0 0 auto;
+  min-width: 26px;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-fila__dato--uso {
+  min-width: 34px;
+  font-weight: 600;
+}
+
+/* ---------- Los campos en edición y en el alta ---------- */
+.cat-campo {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 24px;
+  padding: .1rem .375rem;
+  font-size: .75rem;
+}
+
+.cat-campo--codigo {
+  flex: 0 0 96px;
+  text-transform: uppercase;
+}
+
+.cat-campo--icono {
+  flex: 0 0 110px;
+}
+
+.cat-nuevo {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .4rem .5rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .025);
+}
+
+.cat-vacio {
+  padding: 1.25rem .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  text-align: center;
+}
+
+/* ---------- Los botones de cada fila ----------
+   Mismo lenguaje que la columna ACCIONES de gestión de clientes: cada acción
+   con su color desde el principio, apagado y en gris si el perfil no la deja. */
+.cat-acciones {
+  display: flex;
+  align-items: center;
+  gap: .2rem;
+  flex: 0 0 auto;
+}
+
+.cat-acciones .btn-icon {
+  --tinte: #6c757d;
+  --tinte-borde: rgba(108, 117, 125, .3);
+  --tinte-fondo: rgba(108, 117, 125, .07);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--tinte-borde);
+  border-radius: .25rem;
+
+  background-color: var(--tinte-fondo);
+  color: var(--tinte);
+  font-size: .625rem;
+  cursor: pointer;
+
+  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
+}
+
+.cat-acciones .btn-icon:not(:disabled):hover {
+  border-color: var(--tinte);
+  background-color: var(--tinte);
+  color: #fff;
+}
+
+.cat-acciones .btn-editar     { --tinte: #00acac; --tinte-borde: rgba(0, 172, 172, .38);  --tinte-fondo: rgba(0, 172, 172, .10); }
+.cat-acciones .btn-guardar    { --tinte: #20c997; --tinte-borde: rgba(32, 201, 151, .40); --tinte-fondo: rgba(32, 201, 151, .10); }
+.cat-acciones .btn-cancelar   { --tinte: #6c757d; --tinte-borde: rgba(108, 117, 125, .35); --tinte-fondo: rgba(108, 117, 125, .08); }
+.cat-acciones .btn-desactivar { --tinte: #fd7e14; --tinte-borde: rgba(253, 126, 20, .35); --tinte-fondo: rgba(253, 126, 20, .09); }
+.cat-acciones .btn-activar    { --tinte: #198754; --tinte-borde: rgba(25, 135, 84, .35);  --tinte-fondo: rgba(25, 135, 84, .08); }
+.cat-acciones .btn-quitar     { --tinte: #dc3545; --tinte-borde: rgba(220, 53, 69, .35);  --tinte-fondo: rgba(220, 53, 69, .08); }
+
+/* Apagado por el perfil: sin color y al fondo, igual que en gestión */
+.cat-acciones .btn-icon:disabled {
+  --tinte: #adb5bd;
+  --tinte-borde: rgba(108, 117, 125, .22);
+  --tinte-fondo: transparent;
+
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* ---------- Móvil ---------- */
+@media (max-width: 575.98px) {
+  /* El código y el icono se van: en un teléfono no caben cuatro campos en
+     una fila y lo que se viene a hacer aquí es dar de alta asuntos */
+  .cat-campo--codigo { flex: 0 0 76px; }
+  .cat-campo--icono  { display: none; }
+
+  .cat-fila__codigo { display: none; }
+}
