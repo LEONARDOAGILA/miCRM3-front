@@ -282,19 +282,17 @@
 }
 
 /* ---------- Pie ---------- */
+/* Ya sólo lleva la hora del cálculo: a la derecha, donde estaba el botón que
+   se quitó, en vez de suelta a la izquierda */
 .rv-pie {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: .5rem;
 
   margin-top: .625rem;
   font-size: .6875rem;
   color: var(--bs-secondary-color, #6c757d);
-}
-
-.rv-pie .btn {
-  font-size: .6875rem;
 }
 
 /* ---------- Modo oscuro ---------- */

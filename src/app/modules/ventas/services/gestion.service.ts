@@ -51,6 +51,16 @@ export interface MetaAgenda {
    * servidor con la jerarquía de grupos, pida lo que pida el navegador.
    */
   ve_de_otros?: boolean;
+
+  /**
+   * Si quien pregunta es administrador (es_administrador de su grupo).
+   *
+   * Viene aquí porque el login no lo dice —devuelve id, nombre, correo, avatar
+   * y perfil, nada más— y estas funciones ya lo resuelven para recortar lo que
+   * devuelven. Es la misma señal con la que el servidor cierra la ruta de
+   * reasignar, así que pantalla y servidor miran lo mismo.
+   */
+  es_admin?: boolean;
   /** Los de la paginación; sólo vienen de agendaPaginada */
   per_page?: number;
   current_page?: number;

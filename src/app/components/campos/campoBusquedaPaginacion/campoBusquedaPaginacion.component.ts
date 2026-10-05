@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
 
 /**
  * Campo de búsqueda de los listados que paginan en el servidor.
@@ -44,9 +44,20 @@ export class CampoBusquedaPaginacionComponent {
 
   @ViewChild('inputElement') inputElement!: ElementRef<HTMLInputElement>;
 
-  /** Mientras se teclea no se busca: sólo se anota, para mostrar u ocultar la ×. */
+  constructor(private cd: ChangeDetectorRef) {}
+
+  /**
+   * Mientras se teclea no se busca: sólo se anota, para mostrar u ocultar la ×.
+   *
+   * El detectChanges() no es un adorno: `valor` se actualizaba bien pero la
+   * vista no se volvía a pintar al teclear, así que la × no aparecía hasta que
+   * algo más forzaba un repaso —pulsar Enter, por ejemplo—. Comprobado en el
+   * navegador: con el campo escrito, comp.valor = 'tobar' y la × sin estar en
+   * el DOM. Refrescando aquí sale a la primera letra.
+   */
   onInput(event: Event): void {
     this.valor = (event.target as HTMLInputElement).value;
+    this.cd.detectChanges();
   }
 
   /**

@@ -19,7 +19,7 @@
 <panel [title]="titulo"
        [noButton]="false"
        [noButtonCollapse]="true"
-       (panelReloaded)="vista === 'cliente' && cliente ? seleccionarCliente(cliente) : cargarAgenda()"
+       (panelReloaded)="recargarVista()"
        (panelExpanded)="replantear()"
        [closeRoute]="'/ventas'"
        icono="phone">
@@ -54,10 +54,23 @@
                 [attr.aria-selected]="vista === 'cliente'"
                 (click)="vista = 'cliente'; replantear()">
           <i class="fa fa-headset"></i>
-          <span class="gestion-vistas__texto">Gestión de clientes</span>
+          <span class="gestion-vistas__texto">Gestión</span>
           @if (hayCliente) {
             <span class="gestion-vistas__cliente">{{ cliente?.nombre_completo }}</span>
           }
+        </button>
+      </li>
+      <!-- Las métricas, en su propia pestaña. Antes salían en el hueco de
+           «Gestión de clientes» mientras no hubiera ninguno elegido, así que
+           desaparecían en cuanto se empezaba a trabajar y no había forma de
+           volver a ellas sin soltar el cliente. -->
+      <li class="nav-item flex-shrink-0" role="presentation">
+        <button type="button" class="nav-link" role="tab"
+                [class.active]="vista === 'metricas'"
+                [attr.aria-selected]="vista === 'metricas'"
+                (click)="vista = 'metricas'; replantear()">
+          <i class="fa fa-chart-pie"></i>
+          <span class="gestion-vistas__texto">Métricas</span>
         </button>
       </li>
     </ul>
@@ -72,21 +85,36 @@
 
         <!-- Filtros -->
         <div class="agenda-filtros">
+          <!-- Los atajos de fecha, de dos maneras según el ancho: botones donde
+               caben de una fila, y un desplegable en el teléfono, que es donde
+               seis botones se parten en dos renglones y se comen la pantalla.
+               Los dos salen de la misma lista (rangos, en el .ts) y llaman a lo
+               mismo; lo que cambia es cuál se enseña, y eso lo decide el CSS. -->
           <div class="agenda-filtros__atajos">
-            <button type="button" class="btn btn-xs" [class.btn-danger]="rango === 'vencidas'" [class.btn-white]="rango !== 'vencidas'"
-                    (click)="elegirRango('vencidas')">
-              <i class="fa fa-triangle-exclamation me-1"></i>Vencidas
-            </button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'hoy'" [class.btn-white]="rango !== 'hoy'"
-                    (click)="elegirRango('hoy')">Hoy</button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'manana'" [class.btn-white]="rango !== 'manana'"
-                    (click)="elegirRango('manana')">Mañana</button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'semana'" [class.btn-white]="rango !== 'semana'"
-                    (click)="elegirRango('semana')">7 días</button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'mes'" [class.btn-white]="rango !== 'mes'"
-                    (click)="elegirRango('mes')">Este mes</button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'todo'" [class.btn-white]="rango !== 'todo'"
-                    (click)="elegirRango('todo')">Todo</button>
+            @for (r of rangos; track r.id) {
+              <button type="button" class="btn btn-xs agenda-atajos__boton"
+                      [ngClass]="rango === r.id ? r.tono : 'btn-white'"
+                      (click)="elegirRango(r.id)">
+                @if (r.icono) {
+                  <i class="fa {{ r.icono }} me-1"></i>
+                }{{ r.name }}
+              </button>
+            }
+
+            <select class="form-select form-select-sm agenda-atajos__select"
+                    title="Qué periodo se está viendo"
+                    [ngModel]="rango"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="elegirRango($event)">
+              @for (r of rangos; track r.id) {
+                <option [value]="r.id">{{ r.name }}</option>
+              }
+              <!-- Con fechas elegidas a mano en el calendario no hay atajo que
+                   marcar; se dice en vez de dejar el desplegable en blanco -->
+              @if (rango === 'rango') {
+                <option value="rango" disabled>Fechas elegidas</option>
+              }
+            </select>
           </div>
 
           <div class="agenda-filtros__fechas">
@@ -132,7 +160,7 @@
                  le darían lo mismo, porque el servidor no le va a dar más que
                  lo suyo. -->
             @if (puedeVerDeOtros) {
-              <div class="dropdown">
+              <div class="dropdown agenda-quien-caja">
                 <button type="button" class="btn btn-sm btn-white dropdown-toggle gestion-filtro agenda-quien"
                         data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
                         title="Qué agenda se está viendo">
@@ -156,14 +184,14 @@
                 </ul>
               </div>
             }
-            <button type="button" class="btn btn-sm btn-white" title="Recargar" (click)="cargarAgenda()">
+            <!-- <button type="button" class="btn btn-sm btn-white" title="Recargar" (click)="cargarAgenda()">
               <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoAgenda"></i>
-            </button>
-            <button type="button" class="btn btn-sm btn-white"
+            </button> -->
+            <!-- <button type="button" class="btn btn-sm btn-white"
                     title="Conversaciones de WhatsApp que no se pudieron atar a un cliente"
                     (click)="verConversacionesSueltas()">
               <i class="fab fa-whatsapp text-success"></i>
-            </button>
+            </button> -->
           </div>
         </div>
 
@@ -175,19 +203,19 @@
           <div class="gestion-chip"
                title="Gestiones sin cerrar que caen en el filtro de arriba, no sólo las de esta página.">
             <span class="gestion-chip__valor">{{ agendaMeta.total }}</span>
-            <span class="gestion-chip__texto">pendientes</span>
+            <span class="gestion-chip__texto">pendientes</span><span class="gestion-chip__corto">pend.</span>
           </div>
           @if (agendaMeta.vencidas) {
             <div class="gestion-chip gestion-chip--peligro"
                  title="De esas, las que ya se pasaron de fecha y hora.">
               <span class="gestion-chip__valor">{{ agendaMeta.vencidas }}</span>
-              <span class="gestion-chip__texto">vencidas</span>
+              <span class="gestion-chip__texto">vencidas</span><span class="gestion-chip__corto">venc.</span>
             </div>
           }
           <div class="gestion-chip gestion-chip--aviso"
                title="Las programadas para hoy. Las de hoy a las que ya se les pasó la hora cuentan también como vencidas.">
             <span class="gestion-chip__valor">{{ agendaMeta.hoy }}</span>
-            <span class="gestion-chip__texto">para hoy</span>
+            <span class="gestion-chip__texto">para hoy</span><span class="gestion-chip__corto">hoy</span>
           </div>
           @if (buscaAgenda) {
             <span class="agenda-tope">
@@ -289,11 +317,25 @@
           <div class="gc-lista">
 
             <div class="gc-lista__buscador">
+
+              <!-- Dejar la lista como al entrar. La × del campo sólo borra lo
+                   escrito; esto quita además el estado filtrado y suelta el
+                   cliente. Se queda apagado mientras no haya nada que quitar,
+                   en vez de aparecer y desaparecer, que movería el buscador. -->
+              <button type="button" class="btn btn-sm btn-white gc-lista__limpiar"
+                      [disabled]="!hayFiltroClientes"
+                      title="Quitar el filtro y soltar el cliente elegido"
+                      aria-label="Quitar el filtro y soltar el cliente elegido"
+                      (click)="limpiarFiltrosClientes()">
+                <i class="fa fa-filter-circle-xmark"></i>
+              </button>
+
               <app-campoBusquedaPaginacion
                 [id]="'buscar-cliente-gestion'"
                 [placeholder]="'Buscar por nombre, identificación o teléfono…'"
                 [iconClass]="'fa fa-search'"
                 [containerClass]="'position-relative w-100'"
+                [valorInicial]="terminoClientes"
                 (buscar)="buscarClientes($event)"
                 (limpiado)="alLimpiarBusquedaClientes()">
               </app-campoBusquedaPaginacion>
@@ -781,16 +823,22 @@
                 @if (cliente?.num_contactos) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ cliente.num_contactos }}</span> }
               </button>
             </li>
-            <li class="nav-item flex-shrink-0" role="presentation">
-              <button type="button" class="nav-link" role="tab"
-                      [class.active]="pestana === 'cartera'"
-                      [attr.aria-selected]="pestana === 'cartera'"
-                      (click)="abrirPestana('cartera')">
-                <i class="fa fa-users-gear"></i>
-                <span class="gestion-tabs__texto">Asignación</span>
-                @if (asignaciones.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ asignaciones.length }}</span> }
-              </button>
-            </li>
+            <!-- Quién atiende al cliente lo reparte un administrador, no quien
+                 lo trabaja: al resto ni se le ofrece la pestaña. Esto es sólo
+                 lo que se ve; quien puede reasignar de verdad lo decide el
+                 servidor. -->
+            @if (esAdministrador) {
+              <li class="nav-item flex-shrink-0" role="presentation">
+                <button type="button" class="nav-link" role="tab"
+                        [class.active]="pestana === 'cartera'"
+                        [attr.aria-selected]="pestana === 'cartera'"
+                        (click)="abrirPestana('cartera')">
+                  <i class="fa fa-users-gear"></i>
+                  <span class="gestion-tabs__texto">Asignación</span>
+                  @if (asignaciones.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ asignaciones.length }}</span> }
+                </button>
+              </li>
+            }
             <li class="nav-item">
               <button type="button" class="nav-link"
                       [class.active]="pestana === 'whatsapp'"
@@ -1094,7 +1142,7 @@
                  A un cliente lo atiende más de una persona: quien le vende,
                  quien le cobra y quien le llama. Cada papel se reasigna por su
                  cuenta; debajo, por dónde ha pasado cada uno. -->
-            @if (pestana === 'cartera') {
+            @if (pestana === 'cartera' && esAdministrador) {
               <div class="gestion-roles">
                 @for (r of rolesResponsable; track r.id) {
                   <div class="gestion-rol" [class.is-vacio]="!responsableDe(r.id)?.usuario_id">
@@ -1414,20 +1462,37 @@
           </div>
             } @else {
 
-              <!-- ---------- Sin cliente elegido: el tablero ----------
-                   Antes aquí sólo ponía «elige un cliente de la lista». Ya que
-                   la mitad de la pantalla está libre, se aprovecha para ver
-                   cómo va la cartera y cómo va el día; al elegir un cliente
-                   este bloque desaparece y no vuelve a consultarse. -->
-              <app-resumen-ventas (irALaAgenda)="vista = 'agenda'; replantear()"></app-resumen-ventas>
-
-              <p class="gestion-pista">
-                <i class="fa fa-arrow-left me-1"></i>
-                Elige un cliente de la lista de la izquierda para ver su ficha, su historial y programarle una gestión.
-              </p>
+              <!-- ---------- Sin cliente elegido ----------
+                   Aquí estaba el tablero; se fue a su propia pestaña. Lo que
+                   queda es decir qué hacer, y en el teléfono además el botón
+                   que abre el cajón, porque allí la lista no está «a la
+                   izquierda»: está escondida. -->
+              <div class="gestion-vacio">
+                <i class="fa fa-hand-pointer gestion-vacio__icono"></i>
+                <p class="gestion-vacio__texto">
+                  Elige un cliente de la lista para ver su ficha, su historial y programarle una gestión.
+                </p>
+                <button type="button" class="btn btn-sm btn-primary gestion-vacio__boton"
+                        (click)="alternarListaMovil()">
+                  <i class="fa fa-users me-1"></i>Ver la lista de clientes
+                </button>
+              </div>
             }
           </div>
         </div>
+      </div>
+    }
+
+    <!-- ============ 2c. MÉTRICAS ============
+         El mismo tablero de siempre, ahora con su sitio propio: cómo va la
+         cartera y cómo va el día, dentro de lo que a cada uno le toca ver.
+
+         Va con @if y no oculto con CSS: así no se piden las cifras hasta que
+         se entra en la pestaña, y al salir deja de ocupar memoria. Entrar de
+         nuevo las vuelve a pedir, que es lo que se quiere de unas métricas. -->
+    @if (vista === 'metricas') {
+      <div class="gestion-metricas">
+        <app-resumen-ventas (irALaAgenda)="vista = 'agenda'; replantear()"></app-resumen-ventas>
       </div>
     }
 

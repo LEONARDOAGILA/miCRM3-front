@@ -34,6 +34,7 @@ import {
 ///   COMPONENTES    ///
 import { ListClientesComponent } from '../clientes/listClientes/listClientes.component';
 import { SaveClienteComponent } from '../clientes/saveCliente/saveCliente.component';
+import { ResumenVentasComponent } from './resumenVentas/resumenVentas.component';
 import { SaveGestionComponent, ModoGestion } from './saveGestion/saveGestion.component';
 import { CerrarGestionComponent } from './cerrarGestion/cerrarGestion.component';
 import { ReasignarClienteComponent } from './reasignarCliente/reasignarCliente.component';
@@ -51,7 +52,7 @@ import { ArchivoCliente, formatoTamano, pintaDeTipo } from '../../interfaces/arc
 
 type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'archivos' | 'notas';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
-type Vista = 'agenda' | 'cliente';
+type Vista = 'agenda' | 'cliente' | 'metricas';
 /** Atajos del rango de fechas de la agenda. */
 type Rango = 'vencidas' | 'hoy' | 'manana' | 'semana' | 'mes' | 'todo' | 'rango';
 
@@ -136,6 +137,26 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // ---------- Agenda («Lo que toca hacer») ----------
   public agendaMeta: MetaAgenda = { total: 0, vencidas: 0, hoy: 0, mostradas: 0 };
   public rango: Rango = 'todo';
+
+  /**
+   * Los atajos de fecha de la agenda.
+   *
+   * En una lista y no escritos a mano en la plantilla porque se pintan de dos
+   * maneras: botones en pantalla ancha y un desplegable en el teléfono, donde
+   * seis botones se parten en dos renglones. Dos sitios con los mismos seis
+   * rótulos es como se acaba cambiando uno y olvidando el otro.
+   *
+   * 'rango' no está aquí: no es un atajo, es lo que queda cuando se eligen
+   * fechas a mano en el calendario.
+   */
+  public readonly rangos: { id: Rango; name: string; icono?: string; tono: string }[] = [
+    { id: 'vencidas', name: 'Vencidas', icono: 'fa-triangle-exclamation', tono: 'btn-danger' },
+    { id: 'hoy',      name: 'Hoy',      tono: 'btn-primary' },
+    { id: 'manana',   name: 'Mañana',   tono: 'btn-primary' },
+    { id: 'semana',   name: '7 días',   tono: 'btn-primary' },
+    { id: 'mes',      name: 'Este mes', tono: 'btn-primary' },
+    { id: 'todo',     name: 'Todo',     tono: 'btn-primary' },
+  ];
   public desdeFiltro = '';
   public hastaFiltro = '';
   /**
@@ -337,6 +358,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     { visible: false, x: 0, y: 0, numero: null, aQuien: null };
 
   @ViewChild('menuWaEl') menuWaEl?: ElementRef<HTMLElement>;
+
+  /** El tablero de métricas, para poder recargarlo desde el botón del panel. */
+  @ViewChild(ResumenVentasComponent) tablero?: ResumenVentasComponent;
 
   // ---------- La agenda, en grilla y paginada ----------
   /**
@@ -748,6 +772,47 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (this.cliente) { this.limpiarCliente(false); }
   }
 
+  /**
+   * Si quien está usando el CRM es administrador.
+   *
+   * Lo dice el servidor en la respuesta de la agenda (meta.es_admin), que se
+   * pide al entrar en la pantalla. No sale del usuario guardado porque el
+   * login no lo manda: devuelve id, nombre, login, correo, avatar y perfil, ni
+   * type_user ni grupo_id —comprobado contra el API—.
+   *
+   * Empieza en false y sólo lo levanta una respuesta buena: si la agenda falla,
+   * la pestaña de Asignación no sale, que es por donde hay que fallar.
+   *
+   * Es para decidir qué se ENSEÑA. Quién puede reasignar de verdad lo decide
+   * el servidor: esconder una pestaña no cierra una ruta.
+   */
+  public esAdministrador = false;
+
+  /** Si hay algo que quitar: texto buscado, estado filtrado o cliente elegido. */
+  get hayFiltroClientes(): boolean {
+    return !!this.terminoClientes || !!this.estadoClientes || !!this.cliente;
+  }
+
+  /**
+   * Deja la lista como al entrar: sin texto, sin estado y sin cliente elegido.
+   *
+   * La × del propio campo sólo borra lo escrito; esto quita además el filtro
+   * por estado y suelta el cliente, que es lo que hace falta cuando uno se ha
+   * dejado puesto un «morosos» de hace media hora y no entiende por qué no
+   * aparece quien busca.
+   *
+   * Una sola consulta: se ponen los dos filtros a cero y se pide la página 1
+   * una vez, en vez de encadenar una recarga por cada cosa que se limpia.
+   */
+  limpiarFiltrosClientes(): void {
+    if (!this.hayFiltroClientes) { return; }
+
+    this.terminoClientes = '';
+    this.estadoClientes = '';
+    if (this.cliente) { this.limpiarCliente(false); }
+    this.cargarClientes(1);
+  }
+
   // ================================================================
   // LA COLUMNA DE LA IZQUIERDA
   // ================================================================
@@ -952,7 +1017,23 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * cargarAlgo(); replantear()»), que es donde se olvidan cosas. Con un solo
    * sitio, añadir una pestaña es añadir un caso aquí.
    */
+  /**
+   * El botón de recargar del panel, aplicado a lo que se esté mirando.
+   *
+   * Antes era una condición en la plantilla que sólo conocía dos vistas, así
+   * que al entrar la de métricas recargaba la agenda, que no estaba delante.
+   */
+  recargarVista(): void {
+    if (this.vista === 'metricas') { this.tablero?.cargar(); return; }
+    if (this.vista === 'cliente' && this.cliente) { this.seleccionarCliente(this.cliente); return; }
+    this.cargarAgenda();
+  }
+
   async abrirPestana(p: Pestana): Promise<void> {
+    // La asignación es de administradores. Se comprueba aquí y no sólo al
+    // pintar la pestaña: así tampoco se llega por un estado anterior ni desde
+    // otro sitio que llame a este método.
+    if (p === 'cartera' && !this.esAdministrador) { p = 'historial'; }
     this.pestana = p;
     this.replantear();
     await this.cargarPestana(p);
@@ -1345,6 +1426,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         this.ultimaPaginaAgenda = this.agendaMeta.last_page ?? 1;
         // Sólo desde una respuesta buena: así un fallo no esconde el botón
         this.puedeVerDeOtros = this.agendaMeta.ve_de_otros === true;
+        this.esAdministrador = this.agendaMeta.es_admin === true;
       } else {
         this.agenda = [];
         this.agendaMeta = { total: 0, vencidas: 0, hoy: 0, mostradas: 0 };
@@ -1371,9 +1453,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   initializeGridAgenda(): void {
     this.columnDefsAgenda = [
       {
+        headerName: 'Tipo',
+        field: 'tipo',
+        minWidth: 85,
+        maxWidth: 125,
+        cellStyle: { textAlign: 'left' },
+        cellRenderer: (p: any) => `<i class="fa ${iconoDeTipo(p.value)} fa-fw me-1 text-muted"></i>${nombreDe(this.tipos, p.value)}`,
+      },
+      {
         headerName: 'Cuándo',
         field: 'fecha_programada',
-        minWidth: 135,
+        minWidth: 105,
         maxWidth: 165,
         cellStyle: { textAlign: 'left' },
         cellRenderer: (p: any) => {
@@ -1388,14 +1478,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         field: 'cliente_nombre',
         minWidth: 170,
         cellStyle: { textAlign: 'left' },
-      },
-      {
-        headerName: 'Tipo',
-        field: 'tipo',
-        minWidth: 105,
-        maxWidth: 125,
-        cellStyle: { textAlign: 'left' },
-        cellRenderer: (p: any) => `<i class="fa ${iconoDeTipo(p.value)} fa-fw me-1 text-muted"></i>${nombreDe(this.tipos, p.value)}`,
       },
       {
         headerName: 'Asunto',

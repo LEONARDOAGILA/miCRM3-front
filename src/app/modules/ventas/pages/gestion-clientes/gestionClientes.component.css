@@ -98,11 +98,48 @@
   min-width: 0;
 }
 
+/* El botón de dejarlo todo como al entrar, a la izquierda del buscador.
+
+   El alto NO va en píxeles: con `align-self: stretch` lo toma de la fila, que
+   lo marca el campo de búsqueda por ser el más alto. Así siguen cuadrando
+   aunque mañana cambie el tamaño del campo. Antes quedaba en 14px contra los
+   34 del input, porque al quitarle el relleno para centrar el icono se quedó
+   sin lo único que le daba altura.
+
+   El ancho sí es fijo, para que la caja de búsqueda no se mueva al activarse
+   o apagarse el botón. */
+.gc-lista__limpiar {
+  flex: 0 0 auto;
+  align-self: stretch;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.25rem;
+  padding: 0;
+}
+
+/* Apagado no grita: dice que no hay nada que quitar, no que esté roto */
+.gc-lista__limpiar:disabled {
+  opacity: .4;
+}
+
+/* Con filtro puesto se marca con el color de la aplicación, igual que el
+   selector de estado: así se ve que la lista no está completa */
+.gc-lista__limpiar:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
 /* Ancho fijo: si se deja al contenido, cambia de tamaño al elegir
    («Todos los estados» mide el doble que «Activo») y el buscador de al lado
    se encoge y se estira cada vez */
 .gc-lista__estado {
   flex: 0 0 auto;
+  /* Los tres de la fila al mismo alto: es form-select-sm y se quedaba 4px por
+     debajo del campo de búsqueda, que es form-control a secas */
+  align-self: stretch;
   width: 9rem;
   font-size: .75rem;
 }
@@ -867,6 +904,13 @@
   color: var(--bs-secondary-color, #6c757d);
 }
 
+/* El rótulo corto de los contadores de la agenda («pend.», «venc.», «hoy»).
+   Sólo sale en teléfono, donde los tres tienen que caber al lado del buscador;
+   de escritorio manda el largo. */
+.gestion-chip__corto {
+  display: none;
+}
+
 .gestion-chip--ok      { border-color: rgba(var(--bs-teal-rgb, 32, 201, 151), .5); }
 .gestion-chip--aviso   { border-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .6); }
 .gestion-chip--peligro {
@@ -1217,6 +1261,24 @@
     background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
     color: var(--bs-app-theme, #00acac);
   }
+
+  /* Los botones de acción, separados para el dedo.
+
+     Con ratón van a 24x22 con 4px de aire, que apunta bien; con el dedo son
+     tres blancos pegados y se falla de vecino. Aquí van a 28x26 con 8px entre
+     ellos, que es lo máximo que cabe sin tocar el ancho de las columnas ni la
+     altura de fila:
+
+       agenda      3 botones -> 3x28 + 2x8 = 100px en una columna de 118
+       historial   3 botones -> 100px en 110
+       pendientes  4 botones -> 4x28 + 3x8 = 136px en 142
+       contactos   hasta 4   -> 136px en 140
+
+     El alto se queda en 26: la fila mide 30 y pasarse recorta el botón. */
+  :host ::ng-deep .gestion-acciones {
+    gap: .5rem;
+  }
+
 }
 
 :host ::ng-deep .gestion-acciones .btn-icon {
@@ -1279,6 +1341,23 @@
    al gris, el fondo desaparece y queda un borde apenas marcado. Tampoco se
    enciende al pasar por encima, de eso se encarga el :not(:disabled) de
    arriba. */
+/* El tamaño para el dedo va AQUÍ y no arriba, junto al resto de lo táctil: las
+   reglas base que fijan 24x22 vienen después de aquel bloque y, a igualdad de
+   especificidad, manda la última. Comprobado: allí el gap sí entraba y el
+   tamaño no. */
+@media (pointer: coarse) {
+  :host ::ng-deep .gestion-acciones .btn-icon {
+    width: 28px;
+    height: 26px;
+  }
+
+  /* Que se note el toque: sin hover no hay otra señal de que se ha pulsado */
+  :host ::ng-deep .gestion-acciones .btn-icon:active {
+    background-color: var(--tinte-fondo);
+    border-color: var(--tinte-borde);
+  }
+}
+
 :host ::ng-deep .gestion-acciones .btn-icon:disabled {
   --tinte: #adb5bd;
   --tinte-borde: rgba(108, 117, 125, .22);
@@ -1746,6 +1825,30 @@
   padding: .2rem .55rem;
 }
 
+/* De escritorio mandan los botones; el desplegable no existe */
+.agenda-atajos__select {
+  display: none;
+}
+
+/* En el teléfono, al revés: seis botones se partían en dos renglones y se
+   llevaban por delante lo poco que hay de pantalla */
+@media (max-width: 575.98px) {
+  .agenda-atajos__boton {
+    display: none;
+  }
+
+  .agenda-atajos__select {
+    display: block;
+    width: 100%;
+    font-size: .75rem;
+  }
+
+  .agenda-filtros__atajos {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
 /* Qué agenda se mira. Reusa el aspecto de los filtros del historial —misma
    flecha, mismo menú—, con su propio ancho: el de allí (9.5rem) va con letra
    más pequeña. Lo que importa es que quepan las dos opciones sin recortarse,
@@ -1925,51 +2028,189 @@
   }
 }
 
-/* En un teléfono esa rejilla de dos columnas se desborda: ya no son un rótulo
-   y su campo, son cinco cosas —fechas, buscador, de quién, recargar y
-   WhatsApp—. La columna `auto` se quedaba con el ancho del selector de fechas,
-   la rejilla salía más ancha que la pantalla y, como la fila se alinea a la
-   derecha, lo que sobraba se iba por la IZQUIERDA y quedaba cortado: se veía
-   «fechas» y «ío» en vez de los campos enteros.
+/* En un teléfono la barra de la agenda se reparte en una rejilla de dos
+   columnas, y no en una fila que se parte:
 
-   Aquí vuelve a ser una fila que se parte: las dos cosas largas ocupan su
-   renglón y los tres mandos cortos se reparten el último. */
-@media (max-width: 575.98px) {
-  .agenda-filtros {
-    min-width: 0;
-  }
+       [ periodo        ] [ fechas         ]
+       [ buscador       ] [ pendientes/hoy ]
+       [ de quién ................... ancho ]
 
-  .agenda-filtros__fechas {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
+   Por qué `display: contents` en los dos envoltorios: el buscador cuelga de
+   .agenda-filtros__fechas y los contadores son hermanos de .agenda-filtros,
+   o sea que en el HTML tienen padres distintos y no hay forma de ponerlos en
+   el mismo renglón mientras esos padres sigan siendo cajas. Dejándolos sin
+   caja, sus hijos pasan a ser celdas de la rejilla de .gestion-agenda.
+
+   Y por qué `order`: una vez son celdas, el orden del HTML pondría el selector
+   de quién ANTES de los contadores, que es justo lo que no se quiere.
+
+   Llega hasta 767.98 y no hasta 575.98 porque un teléfono TUMBADO mide unos
+   667px: con el corte anterior, al girarlo volvía el reparto de escritorio y
+   el buscador se ponía otra vez al lado de las fechas, con los tres contadores
+   en línea. Ahora se ve igual de pie que tumbado. */
+@media (max-width: 767.98px) {
+  /* Diez columnas y no dos: las dos filas no se reparten igual. Arriba, mitad
+     y mitad; abajo, el buscador pequeño y los contadores con el resto, que es
+     lo que permite que los tres quepan en el mismo renglón. */
+  .gestion-agenda {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
     gap: .375rem;
-    width: 100%;
-    min-width: 0;
   }
 
-  /* Sin esto un hijo con contenido ancho vuelve a estirar la fila */
-  .agenda-filtros__fechas > * {
-    min-width: 0;
+  .agenda-filtros,
+  .agenda-filtros__fechas {
+    display: contents;
   }
 
+  .agenda-filtros__atajos   { order: 1; }
+  .agenda-rango             { order: 2; }
+  .agenda-filtros__buscador { order: 3; }
+  .agenda-resumen           { order: 4; }
+
+  /* Primera fila: mitad y mitad */
+  .agenda-filtros__atajos { grid-column: span 5; }
+  .agenda-rango           { grid-column: span 5; }
+
+  /* Segunda: el buscador estrecho y los contadores con lo que queda */
+  .agenda-filtros__buscador { grid-column: span 3; }
+  .agenda-resumen           { grid-column: span 7; }
+
+  /* Y éstos, el ancho entero */
+  .agenda-quien-caja,
+  .agenda-grilla,
+  .agenda-pie {
+    grid-column: 1 / -1;
+  }
+
+  .agenda-quien-caja { order: 5; }
+  .agenda-grilla     { order: 6; }
+  .agenda-pie        { order: 7; }
+
+  /* Sin esto, un contenido ancho estira su columna y rompe el 50/50 */
+  .agenda-filtros__atajos,
   .agenda-rango,
-  .agenda-filtros__buscador {
-    flex: 1 1 100%;
+  .agenda-filtros__buscador,
+  .agenda-resumen {
+    min-width: 0;
+  }
+
+  .agenda-atajos__boton {
+    display: none;
+  }
+
+  .agenda-atajos__select {
+    display: block;
+    width: 100%;
+    font-size: .75rem;
+  }
+
+  /* Los tres contadores en el mismo renglón que el buscador, sin partirse.
+     Para que quepan llevan el rótulo corto —«pend.», «venc.», «hoy»— y se
+     reparten a partes iguales lo que deja el buscador. */
+  .agenda-resumen {
+    margin: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: .25rem;
+  }
+
+  .agenda-resumen .gestion-chip {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    gap: .2rem;
+    padding: .25rem .25rem;
+    white-space: nowrap;
+  }
+
+  /* El rótulo largo se queda para pantalla ancha */
+  .agenda-resumen .gestion-chip__texto {
+    display: none;
+  }
+
+  .agenda-resumen .gestion-chip__corto {
+    display: inline;
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: .6875rem;
+  }
+
+  .agenda-resumen .gestion-chip__valor {
+    font-size: .8125rem;
+  }
+
+  /* El aviso de «Filtrando por …» no es una ficha: su renglón entero */
+  .agenda-resumen .agenda-tope {
+    grid-column: 1 / -1;
+  }
+
+  .agenda-resumen .gestion-chip__valor {
+    font-size: .8125rem;
+  }
+
+  .agenda-resumen .gestion-chip__texto {
+    font-size: .6875rem;
   }
 
   .agenda-quien {
-    flex: 1 1 auto;
+    width: 100%;
   }
 }
 
-/* La pista de «elige un cliente», debajo del tablero: ya no es el
-   protagonista de la pantalla, así que va en pequeño y en gris */
-.gestion-pista {
-  margin: .75rem 0 0;
+/* ---------- Sin cliente elegido ----------
+   Lo que queda en el panel derecho cuando aún no se ha elegido a nadie. Antes
+   aquí iba el tablero y debajo una línea de pista; el tablero se fue a su
+   pestaña, así que esto es ahora lo único que hay y se le da aire para que no
+   parezca una pantalla a medio cargar. */
+.gestion-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .625rem;
+
+  padding: 3rem 1rem;
   text-align: center;
-  font-size: .75rem;
   color: var(--bs-secondary-color, #6c757d);
+}
+
+.gestion-vacio__icono {
+  font-size: 1.75rem;
+  opacity: .35;
+}
+
+.gestion-vacio__texto {
+  max-width: 28rem;
+  margin: 0;
+  font-size: .8125rem;
+}
+
+/* El botón sólo hace falta en el teléfono: ahí la lista es un cajón que está
+   escondido. De escritorio la tiene al lado y sobra. */
+.gestion-vacio__boton {
+  display: none;
+}
+
+@media (max-width: 991.98px) {
+  .gestion-vacio__boton {
+    display: inline-flex;
+  }
+
+  .gestion-vacio {
+    padding: 2rem 1rem;
+  }
+}
+
+/* ---------- La pestaña de métricas ----------
+   El tablero manda en su propia vista: sin columnas ni divisor, sólo aire a
+   los lados para que no se pegue al borde de la tarjeta. */
+.gestion-metricas {
+  padding: .75rem;
+}
+
+@media (max-width: 575.98px) {
+  .gestion-metricas {
+    padding: .5rem .25rem;
+  }
 }
 
 /* ---------- Menú de WhatsApp ----------

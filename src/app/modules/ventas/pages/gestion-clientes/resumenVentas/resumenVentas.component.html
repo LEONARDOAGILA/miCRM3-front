@@ -252,10 +252,10 @@
     </div>
   </div>
 
+  <!-- Sin botón de actualizar: lo hace el de recargar del <panel> que envuelve
+       la pantalla, y dos mandos para lo mismo sobran. Se queda la hora, que es
+       lo que dice si lo que se está mirando es de hace un rato. -->
   <div class="rv-pie">
     <span>Calculado {{ datos.generado | date:'dd/MM/yyyy HH:mm' }}</span>
-    <button type="button" class="btn btn-sm btn-white" (click)="cargar()" title="Volver a calcular">
-      <i class="fa fa-redo me-1"></i>Actualizar
-    </button>
   </div>
 }
