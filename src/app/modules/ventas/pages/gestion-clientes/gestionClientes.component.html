@@ -19,7 +19,7 @@
 <panel [title]="titulo"
        [noButton]="false"
        [noButtonCollapse]="true"
-       (panelReloaded)="vista === 'cliente' && cliente ? seleccionarCliente(cliente) : cargarAgenda()"
+       (panelReloaded)="recargarVista()"
        (panelExpanded)="replantear()"
        [closeRoute]="'/ventas'"
        icono="phone">
@@ -54,10 +54,23 @@
                 [attr.aria-selected]="vista === 'cliente'"
                 (click)="vista = 'cliente'; replantear()">
           <i class="fa fa-headset"></i>
-          <span class="gestion-vistas__texto">Gestión de clientes</span>
+          <span class="gestion-vistas__texto">Gestión</span>
           @if (hayCliente) {
             <span class="gestion-vistas__cliente">{{ cliente?.nombre_completo }}</span>
           }
+        </button>
+      </li>
+      <!-- Las métricas, en su propia pestaña. Antes salían en el hueco de
+           «Gestión de clientes» mientras no hubiera ninguno elegido, así que
+           desaparecían en cuanto se empezaba a trabajar y no había forma de
+           volver a ellas sin soltar el cliente. -->
+      <li class="nav-item flex-shrink-0" role="presentation">
+        <button type="button" class="nav-link" role="tab"
+                [class.active]="vista === 'metricas'"
+                [attr.aria-selected]="vista === 'metricas'"
+                (click)="vista = 'metricas'; replantear()">
+          <i class="fa fa-chart-pie"></i>
+          <span class="gestion-vistas__texto">Métricas</span>
         </button>
       </li>
     </ul>
@@ -72,21 +85,36 @@
 
         <!-- Filtros -->
         <div class="agenda-filtros">
+          <!-- Los atajos de fecha, de dos maneras según el ancho: botones donde
+               caben de una fila, y un desplegable en el teléfono, que es donde
+               seis botones se parten en dos renglones y se comen la pantalla.
+               Los dos salen de la misma lista (rangos, en el .ts) y llaman a lo
+               mismo; lo que cambia es cuál se enseña, y eso lo decide el CSS. -->
           <div class="agenda-filtros__atajos">
-            <button type="button" class="btn btn-xs" [class.btn-danger]="rango === 'vencidas'" [class.btn-white]="rango !== 'vencidas'"
-                    (click)="elegirRango('vencidas')">
-              <i class="fa fa-triangle-exclamation me-1"></i>Vencidas
-            </button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'hoy'" [class.btn-white]="rango !== 'hoy'"
-                    (click)="elegirRango('hoy')">Hoy</button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'manana'" [class.btn-white]="rango !== 'manana'"
-                    (click)="elegirRango('manana')">Mañana</button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'semana'" [class.btn-white]="rango !== 'semana'"
-                    (click)="elegirRango('semana')">7 días</button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'mes'" [class.btn-white]="rango !== 'mes'"
-                    (click)="elegirRango('mes')">Este mes</button>
-            <button type="button" class="btn btn-xs" [class.btn-primary]="rango === 'todo'" [class.btn-white]="rango !== 'todo'"
-                    (click)="elegirRango('todo')">Todo</button>
+            @for (r of rangos; track r.id) {
+              <button type="button" class="btn btn-xs agenda-atajos__boton"
+                      [ngClass]="rango === r.id ? r.tono : 'btn-white'"
+                      (click)="elegirRango(r.id)">
+                @if (r.icono) {
+                  <i class="fa {{ r.icono }} me-1"></i>
+                }{{ r.name }}
+              </button>
+            }
+
+            <select class="form-select form-select-sm agenda-atajos__select"
+                    title="Qué periodo se está viendo"
+                    [ngModel]="rango"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="elegirRango($event)">
+              @for (r of rangos; track r.id) {
+                <option [value]="r.id">{{ r.name }}</option>
+              }
+              <!-- Con fechas elegidas a mano en el calendario no hay atajo que
+                   marcar; se dice en vez de dejar el desplegable en blanco -->
+              @if (rango === 'rango') {
+                <option value="rango" disabled>Fechas elegidas</option>
+              }
+            </select>
           </div>
 
           <div class="agenda-filtros__fechas">
@@ -124,37 +152,70 @@
               </app-campoBusquedaPaginacion>
             </div>
 
-            <button type="button" class="btn btn-sm" [class.btn-primary]="soloMias" [class.btn-white]="!soloMias"
-                    [title]="soloMias ? 'Viendo sólo lo que tú programaste' : 'Viendo lo de todos'"
-                    (click)="alternarMias()">
-              <i class="fa fa-user me-1"></i>{{ soloMias ? 'Sólo lo mío' : 'De todos' }}
-            </button>
-            <button type="button" class="btn btn-sm btn-white" title="Recargar" (click)="cargarAgenda()">
+            <!-- Una lista y no un botón que alterna: el botón enseñaba el
+                 estado en el que estaba, y se leía como el estado al que iba a
+                 cambiar. Aquí lo que se ve puesto es lo que está puesto.
+
+                 Sólo para quien tiene gente a cargo: al resto las dos opciones
+                 le darían lo mismo, porque el servidor no le va a dar más que
+                 lo suyo. -->
+            @if (puedeVerDeOtros) {
+              <div class="dropdown agenda-quien-caja">
+                <button type="button" class="btn btn-sm btn-white dropdown-toggle gestion-filtro agenda-quien"
+                        data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                        title="Qué agenda se está viendo">
+                  <i class="fa fa-fw" [ngClass]="soloMias ? 'fa-user' : 'fa-users'"></i>
+                  <span>{{ soloMias ? 'Sólo lo mío' : 'Todo el equipo' }}</span>
+                  <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
+                </button>
+                <ul class="dropdown-menu gestion-filtro__menu">
+                  <li>
+                    <button type="button" class="dropdown-item" [class.active]="!soloMias"
+                            (click)="verAgendaDe(false)">
+                      <i class="fa fa-users fa-fw me-1"></i>Todo el equipo
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="dropdown-item" [class.active]="soloMias"
+                            (click)="verAgendaDe(true)">
+                      <i class="fa fa-user fa-fw me-1"></i>Sólo lo mío
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            }
+            <!-- <button type="button" class="btn btn-sm btn-white" title="Recargar" (click)="cargarAgenda()">
               <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoAgenda"></i>
-            </button>
-            <button type="button" class="btn btn-sm btn-white"
+            </button> -->
+            <!-- <button type="button" class="btn btn-sm btn-white"
                     title="Conversaciones de WhatsApp que no se pudieron atar a un cliente"
                     (click)="verConversacionesSueltas()">
               <i class="fab fa-whatsapp text-success"></i>
-            </button>
+            </button> -->
           </div>
         </div>
 
-        <!-- Contadores: son de todo el filtro, no de la página -->
+        <!-- Contadores: son de todo el filtro, no de la página.
+
+             Aquí sólo entran las pendientes, así que quieren decir otra cosa
+             que los de la ficha del cliente; de ahí que cada uno lo explique. -->
         <div class="gestion-resumen agenda-resumen">
-          <div class="gestion-chip">
+          <div class="gestion-chip"
+               title="Gestiones sin cerrar que caen en el filtro de arriba, no sólo las de esta página.">
             <span class="gestion-chip__valor">{{ agendaMeta.total }}</span>
-            <span class="gestion-chip__texto">pendientes</span>
+            <span class="gestion-chip__texto">pendientes</span><span class="gestion-chip__corto">pend.</span>
           </div>
           @if (agendaMeta.vencidas) {
-            <div class="gestion-chip gestion-chip--peligro">
+            <div class="gestion-chip gestion-chip--peligro"
+                 title="De esas, las que ya se pasaron de fecha y hora.">
               <span class="gestion-chip__valor">{{ agendaMeta.vencidas }}</span>
-              <span class="gestion-chip__texto">vencidas</span>
+              <span class="gestion-chip__texto">vencidas</span><span class="gestion-chip__corto">venc.</span>
             </div>
           }
-          <div class="gestion-chip gestion-chip--aviso">
+          <div class="gestion-chip gestion-chip--aviso"
+               title="Las programadas para hoy. Las de hoy a las que ya se les pasó la hora cuentan también como vencidas.">
             <span class="gestion-chip__valor">{{ agendaMeta.hoy }}</span>
-            <span class="gestion-chip__texto">para hoy</span>
+            <span class="gestion-chip__texto">para hoy</span><span class="gestion-chip__corto">hoy</span>
           </div>
           @if (buscaAgenda) {
             <span class="agenda-tope">
@@ -171,8 +232,8 @@
           [defaultColDef]="_appAgGridService.defaultColDef"
           [localeText]="_appAgGridService.localeText"
           [rowClassRules]="rowClassRulesAgenda"
-          [rowHeight]="34"
-          [headerHeight]="34"
+          [rowHeight]="30"
+          [headerHeight]="30"
           [rowSelection]="'single'"
           [pagination]="false"
           [enableCellTextSelection]="true"
@@ -220,8 +281,32 @@
       <div class="gc-cuerpo"
            [class.is-panel-oculto]="panelOculto"
            [class.is-redimensionando]="redimensionando"
+           [class.is-lista-movil]="listaMovilAbierta"
            [style.--gc-ancho-columna]="anchoColumna + 'px'"
            >
+
+        <!-- ---------- La pestaña del cajón (sólo teléfono) ----------
+             Debajo de lg la lista de clientes no es una columna, es un cajón
+             que sale por encima: apilada se comía la primera pantalla entera.
+             Misma idea que el árbol de carpetas del administrador de archivos,
+             y por eso también la pestaña pegada al borde con el rótulo en
+             vertical: cerrada hay que entender qué abre. -->
+        <button type="button" class="gc-tirador"
+                [class.is-abierto]="listaMovilAbierta"
+                [attr.aria-expanded]="listaMovilAbierta"
+                [title]="listaMovilAbierta ? 'Cerrar la lista de clientes' : 'Ver la lista de clientes'"
+                (click)="alternarListaMovil()">
+          <i class="fa" [ngClass]="listaMovilAbierta ? 'fa-chevron-left' : 'fa-users'"></i>
+          @if (!listaMovilAbierta) {
+            <span class="gc-tirador__texto">Clientes</span>
+          }
+        </button>
+
+        <!-- Tocar fuera cierra: en un teléfono es lo que se espera de un
+             panel que sale por encima -->
+        @if (listaMovilAbierta) {
+          <div class="gc-velo" (click)="alternarListaMovil()" aria-hidden="true"></div>
+        }
 
         <!-- ---------- Columna izquierda: la grilla de clientes ----------
              La misma grilla de «Listar clientes», siempre a la vista y paginada
@@ -232,14 +317,42 @@
           <div class="gc-lista">
 
             <div class="gc-lista__buscador">
+
+              <!-- Dejar la lista como al entrar. La × del campo sólo borra lo
+                   escrito; esto quita además el estado filtrado y suelta el
+                   cliente. Se queda apagado mientras no haya nada que quitar,
+                   en vez de aparecer y desaparecer, que movería el buscador. -->
+              <button type="button" class="btn btn-sm btn-white gc-lista__limpiar"
+                      [disabled]="!hayFiltroClientes"
+                      title="Quitar el filtro y soltar el cliente elegido"
+                      aria-label="Quitar el filtro y soltar el cliente elegido"
+                      (click)="limpiarFiltrosClientes()">
+                <i class="fa fa-filter-circle-xmark"></i>
+              </button>
+
               <app-campoBusquedaPaginacion
                 [id]="'buscar-cliente-gestion'"
                 [placeholder]="'Buscar por nombre, identificación o teléfono…'"
                 [iconClass]="'fa fa-search'"
                 [containerClass]="'position-relative w-100'"
+                [valorInicial]="terminoClientes"
                 (buscar)="buscarClientes($event)"
                 (limpiado)="alLimpiarBusquedaClientes()">
               </app-campoBusquedaPaginacion>
+
+              <!-- El filtro por estado va al servidor junto con la búsqueda: la
+                   lista está paginada allá, así que filtrar aquí sólo miraría
+                   las quince filas de la página que se está viendo. -->
+              <select class="form-select form-select-sm gc-lista__estado"
+                      title="Filtrar la lista por el estado del cliente"
+                      [class.is-filtrando]="estadoClientes"
+                      [ngModel]="estadoClientes"
+                      (ngModelChange)="filtrarPorEstado($event)">
+                <option value="">Estado: todos</option>
+                @for (e of estadosCliente; track e.id) {
+                  <option [value]="e.id">{{ e.name }}</option>
+                }
+              </select>
             </div>
 
             <!-- La misma grilla de «Listar clientes», aquí encajada: se puede
@@ -252,8 +365,8 @@
               [defaultColDef]="_appAgGridService.defaultColDef"
               [localeText]="_appAgGridService.localeText"
               [rowClassRules]="rowClassRulesClientes"
-              [rowHeight]="32"
-              [headerHeight]="32"
+              [rowHeight]="29"
+              [headerHeight]="29"
               [rowSelection]="'single'"
               [pagination]="false"
               [enableCellTextSelection]="true"
@@ -358,16 +471,16 @@
                           title="Dejar agendada la siguiente" (click)="programarGestion()">
                     <i class="fa fa-calendar-plus me-1"></i>Programar
                   </button>
-                  <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="accesoModel?.editar === false"
+                  <!-- <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="accesoModel?.editar === false"
                           title="Pasar el cliente a otro vendedor" (click)="reasignar()">
                     <i class="fa fa-user-check me-1"></i>Reasignar
-                  </button>
-                  <button type="button" class="btn btn-outline-secondary btn-sm" title="Abrir la ficha completa del cliente" (click)="verFicha()">
-                    <i class="fa fa-address-card me-1"></i>Ver ficha
+                  </button> -->
+                  <button type="button" class="btn btn-success btn-sm" title="Abrir la ficha completa del cliente" (click)="verFicha()">
+                    <i class="fa fa-address-card me-1"></i>Ver ficha de Cliente
                   </button>
 
                   <!-- Los datos ocupan sitio; quien vive en el historial los pliega -->
-                  <button type="button" class="btn btn-outline-secondary btn-sm gc-barra__plegar"
+                  <button type="button" class="btn btn-secondary btn-sm gc-barra__plegar"
                           [title]="datosVisibles ? 'Ocultar los datos del cliente' : 'Mostrar los datos del cliente'"
                           (click)="alternarDatos()">
 
@@ -405,7 +518,7 @@
                       <div class="gc-campo">
                         <span class="gc-campo__rotulo">{{ rotuloIdentificacion }}:</span>
                         <span class="gc-campo__valor">
-                          {{ cliente?.numero_identificacion }}
+                          <span class="numero-plano" [attr.data-numero]="cliente?.numero_identificacion"></span>
                           <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.numero_identificacion, 'La identificación')">
                             <i class="fa fa-copy"></i>
                           </button>
@@ -439,18 +552,31 @@
                         <span class="gc-campo__rotulo">Celular:</span>
                         <span class="gc-campo__valor">
                           @if (cliente?.celular) {
-                            <a [href]="enlaceTelefono(cliente?.celular)" title="Llamar">{{ cliente?.celular }}</a>
-                            <!-- WhatsApp con mensaje ya escrito: el menú va
-                                 flotando por encima (ver .menu-wa), porque
-                                 esta tarjeta recorta lo que se salga. -->
-                            <button type="button" class="gc-campo__accion gc-campo__accion--wa"
-                                    title="Escribir por WhatsApp"
-                                    (click)="abrirMenuWhatsapp($event, cliente?.celular)">
-                              <i class="fab fa-whatsapp"></i>
-                            </button>
-                            <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.celular, 'El celular')">
-                              <i class="fa fa-copy"></i>
-                            </button>
+                            <!-- El número es sólo texto: para llamar está el
+                                 botón de al lado, y así no se marca por un
+                                 clic de más al ir a seleccionarlo. -->
+                            <span class="gc-campo__numero numero-plano" [attr.data-numero]="cliente?.celular"></span>
+                            <span class="gc-campo__acciones">
+                              <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
+                                      (click)="llamarConSoftphone(cliente?.celular, cliente?.nombre_completo)">
+                                <i class="fa fa-phone"></i>
+                              </button>
+                              <!-- WhatsApp con mensaje ya escrito: el menú va
+                                   flotando por encima (ver .menu-wa), porque
+                                   esta tarjeta recorta lo que se salga. Sólo si
+                                   el número puede tener cuenta: en Celular a
+                                   veces hay un fijo. -->
+                              @if (tieneWhatsapp(cliente?.celular)) {
+                                <button type="button" class="gc-campo__accion gc-campo__accion--wa"
+                                        title="Escribir por WhatsApp"
+                                        (click)="abrirMenuWhatsapp($event, cliente?.celular)">
+                                  <i class="fab fa-whatsapp"></i>
+                                </button>
+                              }
+                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.celular, 'El celular')">
+                                <i class="fa fa-copy"></i>
+                              </button>
+                            </span>
                           } @else { — }
                         </span>
                       </div>
@@ -458,10 +584,17 @@
                         <span class="gc-campo__rotulo">Teléfono:</span>
                         <span class="gc-campo__valor">
                           @if (cliente?.telefono) {
-                            <a [href]="enlaceTelefono(cliente?.telefono)" title="Llamar">{{ cliente?.telefono }}</a>
-                            <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.telefono, 'El teléfono')">
-                              <i class="fa fa-copy"></i>
-                            </button>
+                            <span class="gc-campo__numero numero-plano" [attr.data-numero]="cliente?.telefono"></span>
+                            <span class="gc-campo__acciones">
+                              <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
+                                      (click)="llamarConSoftphone(cliente?.telefono, cliente?.nombre_completo)">
+                                <i class="fa fa-phone"></i>
+                              </button>
+                              <!-- Sin WhatsApp: es el fijo, y ahí no hay cuenta -->
+                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.telefono, 'El teléfono')">
+                                <i class="fa fa-copy"></i>
+                              </button>
+                            </span>
                           } @else { — }
                         </span>
                       </div>
@@ -470,9 +603,11 @@
                         <span class="gc-campo__valor">
                           @if (cliente?.email) {
                             <a [href]="'mailto:' + cliente?.email" [title]="cliente?.email">{{ cliente?.email }}</a>
-                            <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.email, 'El correo')">
-                              <i class="fa fa-copy"></i>
-                            </button>
+                            <span class="gc-campo__acciones">
+                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.email, 'El correo')">
+                                <i class="fa fa-copy"></i>
+                              </button>
+                            </span>
                           } @else { — }
                         </span>
                       </div>
@@ -495,9 +630,12 @@
                       <div class="gc-campo">
                         <span class="gc-campo__rotulo">Personas:</span>
                         <span class="gc-campo__valor">
-                          @if (contactos.length) {
-                            <button type="button" class="gc-campo__enlace" (click)="pestana = 'contactos'">
-                              {{ contactos.length }} contacto{{ contactos.length === 1 ? '' : 's' }}
+                          <!-- De num_contactos y no de la lista: la lista ya no se
+                               pide al abrir el cliente, y decir «sin personas de
+                               contacto» cuando sólo es que no se ha mirado sería mentir -->
+                          @if (cliente?.num_contactos) {
+                            <button type="button" class="gc-campo__enlace" (click)="abrirPestana('contactos')">
+                              {{ cliente.num_contactos }} contacto{{ cliente.num_contactos === 1 ? '' : 's' }}
                             </button>
                           } @else { sin personas de contacto }
                         </span>
@@ -528,7 +666,7 @@
                         <span class="gc-campo__valor">
                           <span [title]="direccionDelCliente">{{ direccionDelCliente || '—' }}</span>
                           @if (cliente?.link_coordenadas) {
-                            <a class="gc-campo__accion" [href]="cliente?.link_coordenadas" target="_blank" rel="noopener noreferrer" title="Ver en Google Maps">
+                            <a class="gc-campo__accion gc-campo__accion--mapa" [href]="cliente?.link_coordenadas" target="_blank" rel="noopener noreferrer" title="Ver en Google Maps">
                               <i class="fa fa-map-location-dot"></i>
                             </a>
                           }
@@ -543,65 +681,14 @@
                     </div>
                   </div>
 
-                  <!-- Cómo se le cobra -->
-                  <div class="gc-tarjeta">
-                    <div class="gc-tarjeta__titulo"><i class="fa fa-briefcase fa-fw"></i>Condiciones comerciales</div>
-                    <div class="gc-tarjeta__cuerpo">
-                      <div class="gc-campo">
-                        <span class="gc-campo__rotulo">Forma de pago:</span>
-                        <span class="gc-campo__valor">{{ cliente?.forma_pago }}</span>
-                      </div>
-                      <div class="gc-campo">
-                        <span class="gc-campo__rotulo">Crédito:</span>
-                        <span class="gc-campo__valor">{{ cliente?.dias_credito ? cliente?.dias_credito + ' días' : 'sin crédito' }}</span>
-                      </div>
-                      <div class="gc-campo">
-                        <span class="gc-campo__rotulo">Cupo:</span>
-                        <span class="gc-campo__valor">{{ cliente?.limite_credito ? (cliente?.limite_credito | number:'1.2-2') : '—' }}</span>
-                      </div>
-                      <div class="gc-campo">
-                        <span class="gc-campo__rotulo">Descuento:</span>
-                        <span class="gc-campo__valor">{{ cliente?.descuento ? cliente?.descuento + ' %' : '—' }}</span>
-                      </div>
-                      @if (cliente?.observaciones) {
-                        <div class="gc-campo gc-campo--largo">
-                          <span class="gc-campo__rotulo">Observaciones:</span>
-                          <span class="gc-campo__valor" [title]="cliente?.observaciones">{{ cliente?.observaciones }}</span>
-                        </div>
-                      }
-                    </div>
-                  </div>
+                  <!-- Las condiciones comerciales ya no están aquí: se
+                       consultan de vez en cuando y la tarjeta ocupaba sitio
+                       fijo. Ahora están en la pestaña «Más información», junto a
+                       WhatsApp. -->
 
                 </div>
 
                 
-                  <!-- Contadores -->
-                  @if (resumen) {
-                    <div class="gestion-resumen">
-                      <div class="gestion-chip">
-                        <span class="gestion-chip__valor">{{ resumen.total }}</span>
-                        <span class="gestion-chip__texto">gestiones</span>
-                      </div>
-                      <div class="gestion-chip gestion-chip--ok">
-                        <span class="gestion-chip__valor">{{ resumen.realizadas }}</span>
-                        <span class="gestion-chip__texto">realizadas</span>
-                      </div>
-                      <div class="gestion-chip gestion-chip--aviso">
-                        <span class="gestion-chip__valor">{{ resumen.pendientes }}</span>
-                        <span class="gestion-chip__texto">pendientes</span>
-                      </div>
-                      @if (resumen.vencidas) {
-                        <div class="gestion-chip gestion-chip--peligro">
-                          <span class="gestion-chip__valor">{{ resumen.vencidas }}</span>
-                          <span class="gestion-chip__texto">vencidas</span>
-                        </div>
-                      }
-                      <div class="gestion-chip">
-                        <span class="gestion-chip__valor">{{ resumen.minutos }}</span>
-                        <span class="gestion-chip__texto">minutos</span>
-                      </div>
-                    </div>
-                  }
 
               }
 
@@ -665,6 +752,45 @@
             </div>
           } -->
 
+                            <!-- Contadores
+
+                       Cada uno lleva en el title qué cuenta exactamente, que
+                       por el nombre no se adivina: las vencidas van también
+                       dentro de las pendientes, y el total incluye las
+                       canceladas, así que realizadas + pendientes no tiene
+                       por qué dar el total. Lo cuenta ventas.fn_gestiones_resumen. -->
+                  @if (resumen) {
+                    <div class="gestion-resumen">
+                      <div class="gestion-chip"
+                           title="Todas las gestiones registradas con este cliente, en cualquier estado (las canceladas también).">
+                        <span class="gestion-chip__valor">{{ resumen.total }}</span>
+                        <span class="gestion-chip__texto">gestiones</span>
+                      </div>
+                      <div class="gestion-chip gestion-chip--ok"
+                           title="Las que ya se cerraron con su resultado. Son las que cuentan para los minutos.">
+                        <span class="gestion-chip__valor">{{ resumen.realizadas }}</span>
+                        <span class="gestion-chip__texto">realizadas</span>
+                      </div>
+                      <div class="gestion-chip gestion-chip--aviso"
+                           title="Programadas y todavía sin cerrar, tengan la fecha por delante o ya pasada. Las vencidas están contadas aquí dentro.">
+                        <span class="gestion-chip__valor">{{ resumen.pendientes }}</span>
+                        <span class="gestion-chip__texto">pendientes</span>
+                      </div>
+                      @if (resumen.vencidas) {
+                        <div class="gestion-chip gestion-chip--peligro"
+                             title="De las pendientes, las que ya se pasaron de fecha y hora: tocaba hacerlas y siguen abiertas.">
+                          <span class="gestion-chip__valor">{{ resumen.vencidas }}</span>
+                          <span class="gestion-chip__texto">vencidas</span>
+                        </div>
+                      }
+                      <div class="gestion-chip"
+                           title="Minutos sumados de las gestiones realizadas en las que se anotó cuánto duró. Las que se cerraron sin duración no suman.">
+                        <span class="gestion-chip__valor">{{ resumen.minutos }}</span>
+                        <span class="gestion-chip__texto">minutos</span>
+                      </div>
+                    </div>
+                  }
+
 
           <!-- Pestañas -->
           <ul class="nav nav-tabs gestion-tabs flex-nowrap py-0" role="tablist">
@@ -672,7 +798,7 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'historial'"
                       [attr.aria-selected]="pestana === 'historial'"
-                      (click)="pestana = 'historial'; replantear()">
+                      (click)="abrirPestana('historial')">
                 <i class="fa fa-list-ul"></i>
                 <span class="gestion-tabs__texto">Historial</span>
               </button>
@@ -681,42 +807,68 @@
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'pendientes'"
                       [attr.aria-selected]="pestana === 'pendientes'"
-                      (click)="pestana = 'pendientes'; replantear()">
+                      (click)="abrirPestana('pendientes')">
                 <i class="fa fa-clock"></i>
                 <span class="gestion-tabs__texto">Pendientes</span>
-                @if (pendientes.length) { <span class="badge bg-warning fs-10px">{{ pendientes.length }}</span> }
+                @if (resumen?.pendientes) { <span class="badge bg-warning fs-10px">{{ resumen.pendientes }}</span> }
               </button>
             </li>
             <li class="nav-item flex-shrink-0" role="presentation">
               <button type="button" class="nav-link" role="tab"
                       [class.active]="pestana === 'contactos'"
                       [attr.aria-selected]="pestana === 'contactos'"
-                      (click)="pestana = 'contactos'; replantear()">
+                      (click)="abrirPestana('contactos')">
                 <i class="fa fa-address-book"></i>
                 <span class="gestion-tabs__texto">Contactos</span>
-                @if (contactos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ contactos.length }}</span> }
+                @if (cliente?.num_contactos) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ cliente.num_contactos }}</span> }
               </button>
             </li>
-            <li class="nav-item flex-shrink-0" role="presentation">
-              <button type="button" class="nav-link" role="tab"
-                      [class.active]="pestana === 'cartera'"
-                      [attr.aria-selected]="pestana === 'cartera'"
-                      (click)="pestana = 'cartera'; replantear()">
-                <i class="fa fa-arrow-right-arrow-left"></i>
-                <span class="gestion-tabs__texto">Cartera</span>
-                @if (asignaciones.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ asignaciones.length }}</span> }
-              </button>
-            </li>
+            <!-- Quién atiende al cliente lo reparte un administrador, no quien
+                 lo trabaja: al resto ni se le ofrece la pestaña. Esto es sólo
+                 lo que se ve; quien puede reasignar de verdad lo decide el
+                 servidor. -->
+            @if (esAdministrador) {
+              <li class="nav-item flex-shrink-0" role="presentation">
+                <button type="button" class="nav-link" role="tab"
+                        [class.active]="pestana === 'cartera'"
+                        [attr.aria-selected]="pestana === 'cartera'"
+                        (click)="abrirPestana('cartera')">
+                  <i class="fa fa-users-gear"></i>
+                  <span class="gestion-tabs__texto">Asignación</span>
+                  @if (asignaciones.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ asignaciones.length }}</span> }
+                </button>
+              </li>
+            }
             <li class="nav-item">
               <button type="button" class="nav-link"
                       [class.active]="pestana === 'whatsapp'"
-                      (click)="pestana = 'whatsapp'; replantear(); bajarAlUltimoMensaje()">
+                      (click)="abrirPestana('whatsapp')">
                 <i class="fab fa-whatsapp"></i> WhatsApp
                 @if (resumenWhatsapp?.sin_responder) {
                   <span class="badge bg-danger fs-10px">{{ resumenWhatsapp?.sin_responder }}</span>
                 } @else if (resumenWhatsapp?.total) {
                   <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ resumenWhatsapp?.total }}</span>
                 }
+              </button>
+            </li>
+            <li class="nav-item flex-shrink-0" role="presentation">
+              <button type="button" class="nav-link" role="tab"
+                      [class.active]="pestana === 'notas'"
+                      [attr.aria-selected]="pestana === 'notas'"
+                      (click)="abrirPestana('notas')">
+                <i class="fa fa-note-sticky"></i>
+                <span class="gestion-tabs__texto">Notas</span>
+                @if (notas.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ notas.length }}</span> }
+              </button>
+            </li>
+            <li class="nav-item flex-shrink-0" role="presentation">
+              <button type="button" class="nav-link" role="tab"
+                      [class.active]="pestana === 'archivos'"
+                      [attr.aria-selected]="pestana === 'archivos'"
+                      (click)="abrirPestana('archivos')">
+                <i class="fa fa-paperclip"></i>
+                <span class="gestion-tabs__texto">Archivos</span>
+                @if (archivos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ archivos.length }}</span> }
               </button>
             </li>
           </ul>
@@ -737,6 +889,7 @@
                           title="Filtrar por tipo de gestión">
                     <i class="fa fa-fw" [ngClass]="filtroTipo ? iconoTipo(filtroTipo) : 'fa-tag'"></i>
                     <span>{{ filtroTipo ? nombreTipo(filtroTipo) : 'Todos los tipos' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
                   </button>
                   <ul class="dropdown-menu gestion-filtro__menu">
                     <li>
@@ -764,6 +917,7 @@
                           title="Filtrar por estado">
                     <i class="fa fa-fw" [ngClass]="filtroEstado ? 'fa-circle-check' : 'fa-flag'"></i>
                     <span>{{ filtroEstado ? nombreEstado(filtroEstado) : 'Todos los estados' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
                   </button>
                   <ul class="dropdown-menu gestion-filtro__menu">
                     <li>
@@ -784,8 +938,70 @@
                   </ul>
                 </div>
 
+                <!-- Cómo terminó la gestión: es por lo que más se busca en un
+                     historial largo («¿cuándo fue la última que contestó?») -->
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroResultado"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por resultado de la gestión">
+                    <i class="fa fa-fw" [ngClass]="filtroResultado ? 'fa-bullseye' : 'fa-clipboard-check'"></i>
+                    <span>{{ filtroResultado ? nombreResultado(filtroResultado) : 'Todos los resultados' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroResultado"
+                              (click)="cambiarFiltro('resultado', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Todos los resultados
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (r of resultados; track r.id) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroResultado === r.id"
+                                (click)="cambiarFiltro('resultado', r.id)">
+                          <i class="fa fa-bullseye fa-fw me-1"></i>{{ r.name }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                <!-- Quién la registró. La lista la manda el servidor con los
+                     datos: sólo los que de verdad aparecen en este historial,
+                     no los trescientos usuarios del sistema. -->
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroCreadoPor"
+                          [disabled]="!registradores.length"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por quién registró la gestión">
+                    <i class="fa fa-fw" [ngClass]="filtroCreadoPor ? 'fa-user-check' : 'fa-user-pen'"></i>
+                    <span>{{ filtroCreadoPor || 'Registrado por' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroCreadoPor"
+                              (click)="cambiarFiltro('creadoPor', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Cualquiera
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (u of registradores; track u) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroCreadoPor === u"
+                                (click)="cambiarFiltro('creadoPor', u)">
+                          <i class="fa fa-user fa-fw me-1"></i>{{ u }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
                 <!-- Sólo aparece cuando hay algo que quitar -->
-                @if (filtroTipo || filtroEstado) {
+                @if (hayFiltrosHistorial) {
                   <button type="button" class="btn btn-xs btn-white gestion-filtro__limpiar"
                           title="Quitar los filtros" (click)="limpiarFiltrosHistorial()">
                     <i class="fa fa-xmark me-1"></i>Quitar filtros
@@ -802,8 +1018,8 @@
                 [defaultColDef]="_appAgGridService.defaultColDef"
                 [localeText]="_appAgGridService.localeText"
                 [rowClassRules]="rowClassRules"
-                [rowHeight]="35"
-                [headerHeight]="35"
+                [rowHeight]="30"
+                [headerHeight]="30"
                 [rowSelection]="'single'"
                 [pagination]="false"
                 [enableCellTextSelection]="true"
@@ -848,8 +1064,8 @@
                 [defaultColDef]="_appAgGridService.defaultColDef"
                 [localeText]="_appAgGridService.localeText"
                 [rowClassRules]="rowClassRulesPendientes"
-                [rowHeight]="34"
-                [headerHeight]="34"
+                [rowHeight]="30"
+                [headerHeight]="30"
                 [rowSelection]="'single'"
                 [pagination]="false"
                 [enableCellTextSelection]="true"
@@ -864,6 +1080,40 @@
                  Los botones de ACCIONES llaman, escriben por WhatsApp o
                  abren el correo; los datos se editan en la ficha del cliente. -->
             @if (pestana === 'contactos') {
+              <!-- Se escriben aquí mismo, igual que en la ficha del cliente.
+                   Como esta pantalla no tiene un «guardar» general, la lista
+                   lleva el suyo y avisa cuando hay cambios sin guardar. -->
+              <div class="gestion-contactos__barra">
+                <button type="button" class="btn btn-xs btn-primary"
+                        [disabled]="accesoModel?.editar === false"
+                        title="Añadir una fila y escribir los datos del contacto"
+                        (click)="agregarContacto()">
+                  <i class="fa fa-plus me-1"></i>Agregar contacto
+                </button>
+
+                <button type="button" class="btn btn-xs btn-success"
+                        [disabled]="accesoModel?.editar === false || !contactosCambiados || guardandoContactos"
+                        [title]="contactosCambiados ? 'Guardar la lista' : 'No hay cambios que guardar'"
+                        (click)="guardarContactos()">
+                  @if (guardandoContactos) {
+                    <i class="fa fa-circle-notch fa-spin me-1"></i>Guardando…
+                  } @else {
+                    <i class="fa fa-floppy-disk me-1"></i>Guardar
+                  }
+                </button>
+
+                @if (contactosCambiados) {
+                  <span class="gestion-contactos__aviso">
+                    <i class="fa fa-circle-exclamation me-1"></i>Hay cambios sin guardar
+                  </span>
+                }
+                @if (hayContactosIncompletos) {
+                  <span class="gestion-contactos__aviso is-falta">
+                    <i class="fa fa-triangle-exclamation me-1"></i>Falta nombre o teléfono en alguna fila
+                  </span>
+                }
+              </div>
+
               <ag-grid-angular
                 class="ag-theme-alpine ag-grid-transparente gestion-grilla"
                 [rowData]="contactos"
@@ -871,27 +1121,52 @@
                 [defaultColDef]="_appAgGridService.defaultColDef"
                 [localeText]="_appAgGridService.localeText"
                 [rowClassRules]="rowClassRulesContactos"
-                [rowHeight]="34"
-                [headerHeight]="34"
+                [getRowId]="getRowIdContacto"
+                [rowHeight]="30"
+                [headerHeight]="30"
                 [rowSelection]="'single'"
                 [pagination]="false"
+                [singleClickEdit]="true"
+                [stopEditingWhenCellsLoseFocus]="true"
+                [suppressRowClickSelection]="true"
                 [enableCellTextSelection]="true"
-                [overlayNoRowsTemplate]="'<span>Este cliente no tiene personas de contacto. Se agregan en su ficha, en <b>Personas de contacto</b>.</span>'"
+                [overlayNoRowsTemplate]="'<span>Este cliente no tiene personas de contacto. Usa <b>Agregar contacto</b> y escribe directamente en las celdas.</span>'"
                 [navigateToNextCell]="navegarConTeclado"
                 (gridReady)="onGridReadyContactos($event)"
+                (cellValueChanged)="alCambiarContacto($event)"
                 (cellClicked)="onCellClickedContactos($event)">
               </ag-grid-angular>
             }
 
-            <!-- ===== CARTERA =====
-                 Quién lo atiende ahora, y debajo por dónde ha pasado. -->
-            @if (pestana === 'cartera') {
-              <div class="gestion-cartera__actual">
-                <i class="fa fa-user-tie fa-fw"></i>
-                Ahora lo atiende <b>{{ cliente?.vendedor_nombre || 'nadie' }}</b>
-                <button type="button" class="btn btn-xs btn-white ms-2" [disabled]="accesoModel?.editar === false" (click)="reasignar()">
-                  <i class="fa fa-user-check me-1"></i>Reasignar
-                </button>
+            <!-- ===== ASIGNACIÓN =====
+                 A un cliente lo atiende más de una persona: quien le vende,
+                 quien le cobra y quien le llama. Cada papel se reasigna por su
+                 cuenta; debajo, por dónde ha pasado cada uno. -->
+            @if (pestana === 'cartera' && esAdministrador) {
+              <div class="gestion-roles">
+                @for (r of rolesResponsable; track r.id) {
+                  <div class="gestion-rol" [class.is-vacio]="!responsableDe(r.id)?.usuario_id">
+                    <div class="gestion-rol__titulo">
+                      <i class="fa fa-fw" [ngClass]="r.icono"></i>{{ r.name }}
+                    </div>
+                    <div class="gestion-rol__cuerpo">
+                      <span class="gestion-rol__quien">
+                        Ahora lo atiende
+                        <b>{{ responsableDe(r.id)?.usuario_nombre || 'nadie' }}</b>
+                      </span>
+                      @if (responsableDe(r.id)?.desde) {
+                        <span class="gestion-rol__desde">desde {{ responsableDe(r.id)?.desde }}</span>
+                      }
+                      <span class="gestion-rol__ayuda">{{ r.ayuda }}</span>
+                      <button type="button" class="btn btn-xs btn-white"
+                              [disabled]="accesoModel?.editar === false"
+                              [title]="'Cambiar quién atiende como ' + r.name.toLowerCase()"
+                              (click)="reasignar(r.id)">
+                        <i class="fa fa-user-check me-1"></i>Reasignar
+                      </button>
+                    </div>
+                  </div>
+                }
               </div>
 
               <ag-grid-angular
@@ -900,8 +1175,8 @@
                 [columnDefs]="columnDefsCartera"
                 [defaultColDef]="_appAgGridService.defaultColDef"
                 [localeText]="_appAgGridService.localeText"
-                [rowHeight]="34"
-                [headerHeight]="34"
+                [rowHeight]="30"
+                [headerHeight]="30"
                 [rowSelection]="'single'"
                 [pagination]="false"
                 [enableCellTextSelection]="true"
@@ -933,7 +1208,7 @@
                         (click)="cargarConversacion()">
                   <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoConversacion"></i>
                 </button>
-                @if (cliente?.celular) {
+                @if (tieneWhatsapp(cliente?.celular)) {
                   <button type="button" class="btn btn-xs btn-success"
                           title="Escribir por WhatsApp"
                           (click)="abrirMenuWhatsapp($event, cliente?.celular)">
@@ -980,23 +1255,244 @@
                 </div>
               }
             }
+
+
+            <!-- ===== NOTAS =====
+                 Lo que hay que saber del cliente y no es una gestión: cómo le
+                 gusta que le llamen, que el gerente sólo atiende los martes, el
+                 acuerdo verbal del precio. En tarjetas, con las fijadas arriba,
+                 porque se leen de un vistazo y no se recorren como una tabla. -->
+            @if (pestana === 'notas') {
+              <div class="gc-notas">
+
+                <div class="gc-notas__barra">
+                  <button type="button" class="btn btn-xs btn-primary"
+                          [disabled]="accesoModel?.crear === false"
+                          (click)="nuevaNota()">
+                    <i class="fa fa-plus me-1"></i>Nueva nota
+                  </button>
+
+                  <div class="gc-notas__buscar">
+                    <i class="fa fa-magnifying-glass"></i>
+                    <input type="text" class="form-control form-control-sm"
+                           placeholder="Buscar en las notas…"
+                           [(ngModel)]="buscaNotas" (keyup.enter)="cargarNotas(true)">
+                    @if (buscaNotas) {
+                      <button type="button" class="gc-notas__limpiar" title="Limpiar"
+                              (click)="buscaNotas = ''; cargarNotas(true)">
+                        <i class="fa fa-xmark"></i>
+                      </button>
+                    }
+                  </div>
+
+                  <button type="button" class="btn btn-xs btn-white" title="Volver a cargar"
+                          (click)="cargarNotas(true)">
+                    <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoNotas"></i>
+                  </button>
+                </div>
+
+                @if (cargandoNotas && !notas.length) {
+                  <div class="gc-notas__vacio"><i class="fa fa-spinner fa-spin me-1"></i>Cargando…</div>
+                } @else if (!notas.length) {
+                  <div class="gc-notas__vacio">
+                    @if (buscaNotas) {
+                      <i class="fa fa-magnifying-glass me-1"></i>
+                      Ninguna nota dice «{{ buscaNotas }}».
+                    } @else {
+                      <i class="fa fa-note-sticky me-1"></i>
+                      Este cliente no tiene notas. Aquí va lo que hay que saber de él y no
+                      es una llamada concreta: con quién hablar, a qué hora, qué se le
+                      prometió. Lo que hoy se queda en la cabeza del vendedor.
+                    }
+                  </div>
+                }
+
+                <div class="gc-notas__rejilla">
+                  @for (n of notas; track n.id) {
+                    <div class="gc-nota" [class.is-fijada]="n.fijada"
+                         [style.--tinte]="tinteDeNota(n.color)">
+
+                      <div class="gc-nota__cabecera">
+                        @if (n.fijada) {
+                          <i class="fa fa-thumbtack gc-nota__chincheta" title="Fijada arriba"></i>
+                        }
+                        <span class="gc-nota__titulo" [title]="n.titulo">{{ n.titulo }}</span>
+                        <span class="gc-nota__color" [title]="nombreDeColor(n.color)"></span>
+                      </div>
+
+                      <!-- El HTML lo sanea Angular al pintarlo con innerHTML, y el
+                           servidor ya lo limpió al guardarlo: dos puertas, porque la
+                           del servidor es la única que no se puede saltar nadie -->
+                      <!-- Pulsar el texto también abre: es lo que intenta cualquiera
+                           cuando ve que la nota está cortada -->
+                      <div class="gc-nota__cuerpo" [innerHTML]="n.contenido"
+                           title="Leer la nota entera" (click)="verNota(n)"></div>
+
+                      <div class="gc-nota__pie">
+                        <span>{{ n.created_by }} · {{ n.created_at }}</span>
+                        @if (n.editada) {
+                          <span class="gc-nota__editada" [title]="'Editada por ' + n.updated_by + ' el ' + n.updated_at">
+                            editada
+                          </span>
+                        }
+                      </div>
+
+                      <div class="gestion-acciones gc-nota__acciones">
+                        <!-- Ver primero: en la tarjeta el cuerpo va recortado a seis
+                             renglones, así que leerla entera es lo más frecuente -->
+                        <button type="button" class="btn-icon btn-llamar" title="Leer la nota entera"
+                                (click)="verNota(n)">
+                          <i class="fa fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn-icon"
+                                [ngClass]="n.fijada ? 'btn-cerrar' : 'btn-editar'"
+                                [title]="n.fijada ? 'Quitar de arriba' : 'Fijar arriba'"
+                                [disabled]="accesoModel?.editar === false" (click)="fijarNota(n)">
+                          <i class="fa fa-thumbtack"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-editar" title="Modificar"
+                                [disabled]="accesoModel?.editar === false" (click)="editarNota(n)">
+                          <i class="fa fa-pen"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-quitar" title="Eliminar"
+                                [disabled]="accesoModel?.eliminar === false" (click)="eliminarNota(n)">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- ===== ARCHIVOS =====
+                 Lo que se le guarda al cliente y no cabe en la ficha: fotos del
+                 local, el RUC escaneado, el contrato, un video de la visita.
+                 En tarjetas y no en grilla porque la mitad son imágenes y lo
+                 que se busca es reconocerlas de un vistazo. -->
+            @if (pestana === 'archivos') {
+              <div class="gc-archivos">
+
+                <div class="gc-archivos__barra">
+                  <button type="button" class="btn btn-xs btn-primary"
+                          [disabled]="accesoModel?.crear === false"
+                          (click)="agregarArchivos()">
+                    <i class="fa fa-cloud-arrow-up me-1"></i>Agregar archivos
+                  </button>
+
+                  @if (archivos.length) {
+                    <span class="gc-archivos__cuenta">
+                      {{ archivos.length }} archivo(s) · {{ pesoTotalArchivos }}
+                    </span>
+                  }
+
+                  <button type="button" class="btn btn-xs btn-white ms-auto"
+                          title="Volver a cargar la lista"
+                          (click)="cargarArchivos(true)">
+                    <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoArchivos"></i>
+                  </button>
+                </div>
+
+                @if (cargandoArchivos && !archivos.length) {
+                  <div class="gc-archivos__vacio"><i class="fa fa-spinner fa-spin me-1"></i>Cargando…</div>
+                } @else if (!archivos.length) {
+                  <div class="gc-archivos__vacio">
+                    <i class="fa fa-paperclip me-1"></i>
+                    Este cliente no tiene archivos todavía. Con <b>Agregar archivos</b> se suben
+                    fotos, videos o documentos, y la descripción que escribas ahí es la que
+                    explica para qué son.
+                  </div>
+                }
+
+                <div class="gc-archivos__rejilla">
+                  @for (a of archivos; track a.id) {
+                    <div class="gc-archivo" [class.is-inactivo]="a.activo === false">
+
+                      <!-- La cara: la propia imagen si lo es, y si no el icono de su tipo -->
+                      <button type="button" class="gc-archivo__cara"
+                              [title]="'Abrir ' + a.nombre" (click)="verArchivo(a)">
+                        @if (a.tipo === 'imagen') {
+                          <img [src]="urlArchivo(a)" [alt]="a.nombre" loading="lazy" />
+                        } @else if (a.tipo === 'video') {
+                          <span class="gc-archivo__video">
+                            <i class="fa fa-circle-play"></i>
+                          </span>
+                        } @else {
+                          <i [ngClass]="pintaDeTipo(a.tipo).icono" [style.color]="pintaDeTipo(a.tipo).color"></i>
+                        }
+                      </button>
+
+                      <div class="gc-archivo__datos">
+                        <div class="gc-archivo__nombre" [title]="a.nombre">{{ a.nombre }}</div>
+                        @if (a.descripcion) {
+                          <div class="gc-archivo__desc" [title]="a.descripcion">{{ a.descripcion }}</div>
+                        } @else {
+                          <div class="gc-archivo__desc gc-archivo__desc--falta">Sin descripción</div>
+                        }
+                        <div class="gc-archivo__pie">
+                          {{ a.extension | uppercase }} · {{ formatoTamano(a.tamano) }}
+                          @if (a.created_at) { <span>· {{ a.created_at }}</span> }
+                          @if (a.created_by) { <span>· {{ a.created_by }}</span> }
+                        </div>
+                      </div>
+
+                      <div class="gestion-acciones gc-archivo__acciones">
+                        <button type="button" class="btn-icon btn-llamar" title="Abrir"
+                                (click)="verArchivo(a)">
+                          <i class="fa fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-abrir" title="Descargar"
+                                (click)="descargarArchivo(a)">
+                          <i class="fa fa-download"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-editar" title="Modificar el nombre y la descripción"
+                                [disabled]="accesoModel?.editar === false" (click)="editarArchivo(a)">
+                          <i class="fa fa-pen"></i>
+                        </button>
+                        <button type="button" class="btn-icon btn-quitar" title="Eliminar"
+                                [disabled]="accesoModel?.eliminar === false" (click)="eliminarArchivo(a)">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
           </div>
             } @else {
 
-              <!-- ---------- Sin cliente elegido: el tablero ----------
-                   Antes aquí sólo ponía «elige un cliente de la lista». Ya que
-                   la mitad de la pantalla está libre, se aprovecha para ver
-                   cómo va la cartera y cómo va el día; al elegir un cliente
-                   este bloque desaparece y no vuelve a consultarse. -->
-              <app-resumen-ventas (irALaAgenda)="vista = 'agenda'; replantear()"></app-resumen-ventas>
-
-              <p class="gestion-pista">
-                <i class="fa fa-arrow-left me-1"></i>
-                Elige un cliente de la lista de la izquierda para ver su ficha, su historial y programarle una gestión.
-              </p>
+              <!-- ---------- Sin cliente elegido ----------
+                   Aquí estaba el tablero; se fue a su propia pestaña. Lo que
+                   queda es decir qué hacer, y en el teléfono además el botón
+                   que abre el cajón, porque allí la lista no está «a la
+                   izquierda»: está escondida. -->
+              <div class="gestion-vacio">
+                <i class="fa fa-hand-pointer gestion-vacio__icono"></i>
+                <p class="gestion-vacio__texto">
+                  Elige un cliente de la lista para ver su ficha, su historial y programarle una gestión.
+                </p>
+                <button type="button" class="btn btn-sm btn-primary gestion-vacio__boton"
+                        (click)="alternarListaMovil()">
+                  <i class="fa fa-users me-1"></i>Ver la lista de clientes
+                </button>
+              </div>
             }
           </div>
         </div>
+      </div>
+    }
+
+    <!-- ============ 2c. MÉTRICAS ============
+         El mismo tablero de siempre, ahora con su sitio propio: cómo va la
+         cartera y cómo va el día, dentro de lo que a cada uno le toca ver.
+
+         Va con @if y no oculto con CSS: así no se piden las cifras hasta que
+         se entra en la pestaña, y al salir deja de ocupar memoria. Entrar de
+         nuevo las vuelve a pedir, que es lo que se quiere de unas métricas. -->
+    @if (vista === 'metricas') {
+      <div class="gestion-metricas">
+        <app-resumen-ventas (irALaAgenda)="vista = 'agenda'; replantear()"></app-resumen-ventas>
       </div>
     }
 
@@ -1064,14 +1560,17 @@
             <i class="fa fa-arrow-right fa-fw text-success"></i> Abrir este cliente
           </button>
           @if (telefonoDelObjetivo) {
-            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(telefonoDelObjetivo)" (click)="cerrarMenu()">
-              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
-              <span class="menu-ctx__detalle">{{ telefonoDelObjetivo }}</span>
-            </a>
             <button type="button" class="menu-ctx__item" role="menuitem"
-                    (click)="cerrarMenu(); escribirPorWhatsapp(telefonoDelObjetivo)">
-              <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
+                    (click)="cerrarMenu(); llamarConSoftphone(telefonoDelObjetivo, cliente?.nombre_completo)">
+              <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
+              <span class="menu-ctx__detalle numero-plano" [attr.data-numero]="telefonoDelObjetivo"></span>
             </button>
+            @if (tieneWhatsapp(telefonoDelObjetivo)) {
+              <button type="button" class="menu-ctx__item" role="menuitem"
+                      (click)="cerrarMenu(); escribirPorWhatsapp(telefonoDelObjetivo)">
+                <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
+              </button>
+            }
           }
 
           <div class="menu-ctx__sep"></div>
@@ -1084,8 +1583,9 @@
           </div>
 
           @if (menuCtx.fila.estado === 'PENDIENTE') {
+            <!-- Cerrarla va con crear: se anota un trabajo hecho -->
             <button type="button" class="menu-ctx__item" role="menuitem"
-                    [disabled]="accesoModel?.editar === false"
+                    [disabled]="accesoModel?.crear === false"
                     (click)="cerrarMenu(); cerrar(menuCtx.fila)">
               <i class="fa fa-check fa-fw text-success"></i> Marcar como hecha
             </button>
@@ -1108,10 +1608,11 @@
             </button>
           }
           @if (telefonoDelObjetivo && menuCtx.fila.cliente_id !== cliente?.id) {
-            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(telefonoDelObjetivo)" (click)="cerrarMenu()">
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); llamarConSoftphone(telefonoDelObjetivo, cliente?.nombre_completo)">
               <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
-              <span class="menu-ctx__detalle">{{ telefonoDelObjetivo }}</span>
-            </a>
+              <span class="menu-ctx__detalle numero-plano" [attr.data-numero]="telefonoDelObjetivo"></span>
+            </button>
           }
 
           <div class="menu-ctx__sep"></div>
@@ -1123,16 +1624,24 @@
             <span class="text-truncate">{{ menuCtx.fila.nombres }}</span>
           </div>
 
-          @if (menuCtx.fila.telefono) {
+          <!-- A un contacto dado de baja no se le llama ni se le escribe: el
+               número sigue a la vista por si hace falta, pero sin atajos. -->
+          @if (menuCtx.fila.activo === false) {
+            <div class="menu-ctx__aviso">
+              <i class="fa fa-user-slash fa-fw"></i> Contacto desactivado
+            </div>
+          } @else if (menuCtx.fila.telefono) {
             <button type="button" class="menu-ctx__item" role="menuitem"
                     (click)="cerrarMenu(); llamarConSoftphone(menuCtx.fila.telefono, menuCtx.fila.nombres)">
               <i class="fa fa-phone fa-fw text-secondary"></i> Llamar con Zoiper
-              <span class="menu-ctx__detalle">{{ menuCtx.fila.telefono }}</span>
+              <span class="menu-ctx__detalle numero-plano" [attr.data-numero]="menuCtx.fila.telefono"></span>
             </button>
-            <button type="button" class="menu-ctx__item" role="menuitem"
-                    (click)="cerrarMenu(); escribirPorWhatsapp(menuCtx.fila.telefono, null, menuCtx.fila.nombres)">
-              <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
-            </button>
+            @if (tieneWhatsapp(menuCtx.fila.telefono)) {
+              <button type="button" class="menu-ctx__item" role="menuitem"
+                      (click)="cerrarMenu(); escribirPorWhatsapp(menuCtx.fila.telefono, null, menuCtx.fila.nombres)">
+                <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
+              </button>
+            }
           }
           @if (menuCtx.fila.email) {
             <a class="menu-ctx__item" role="menuitem" [href]="'mailto:' + menuCtx.fila.email" (click)="cerrarMenu()">
@@ -1172,10 +1681,11 @@
             <i class="fa fa-address-card fa-fw text-secondary"></i> Ver la ficha completa
           </button>
           @if (cliente?.celular || cliente?.telefono) {
-            <a class="menu-ctx__item" role="menuitem" [href]="enlaceTelefono(cliente?.celular || cliente?.telefono)" (click)="cerrarMenu()">
+            <button type="button" class="menu-ctx__item" role="menuitem"
+                    (click)="cerrarMenu(); llamarConSoftphone(cliente?.celular || cliente?.telefono, cliente?.nombre_completo)">
               <i class="fa fa-mobile-screen fa-fw text-secondary"></i> Llamar
-              <span class="menu-ctx__detalle">{{ cliente?.celular || cliente?.telefono }}</span>
-            </a>
+              <span class="menu-ctx__detalle numero-plano" [attr.data-numero]="cliente?.celular || cliente?.telefono"></span>
+            </button>
           }
 
           <div class="menu-ctx__sep"></div>

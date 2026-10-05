@@ -49,6 +49,11 @@
   max-width: var(--gc-ancho-columna, 27rem);
   min-height: 0;
 
+  /* El mismo hueco que deja la columna derecha con su padding-left: la grilla
+     estaba pegada al divisor, literalmente a 0 px, y el borde de la tabla se
+     confundía con el del divisor. */
+  padding-right: .75rem;
+
   /* El scroll lo lleva la lista por dentro, no la columna */
   overflow: hidden;
 
@@ -77,8 +82,85 @@
   min-height: 0;
 }
 
+/* El buscador y el filtro por estado, en la misma línea: son lo mismo —acotar
+   la lista— y separarlos en dos renglones se come alto de la grilla, que es lo
+   que de verdad se viene a mirar. El buscador se queda con el sitio que sobra. */
 .gc-lista__buscador {
   flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+}
+
+.gc-lista__buscador > app-campoBusquedaPaginacion {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* El botón de dejarlo todo como al entrar, a la izquierda del buscador.
+
+   El alto NO va en píxeles: con `align-self: stretch` lo toma de la fila, que
+   lo marca el campo de búsqueda por ser el más alto. Así siguen cuadrando
+   aunque mañana cambie el tamaño del campo. Antes quedaba en 14px contra los
+   34 del input, porque al quitarle el relleno para centrar el icono se quedó
+   sin lo único que le daba altura.
+
+   El ancho sí es fijo, para que la caja de búsqueda no se mueva al activarse
+   o apagarse el botón. */
+.gc-lista__limpiar {
+  flex: 0 0 auto;
+  align-self: stretch;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.25rem;
+  padding: 0;
+}
+
+/* Apagado no grita: dice que no hay nada que quitar, no que esté roto */
+.gc-lista__limpiar:disabled {
+  opacity: .4;
+}
+
+/* Con filtro puesto se marca con el color de la aplicación, igual que el
+   selector de estado: así se ve que la lista no está completa */
+.gc-lista__limpiar:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Ancho fijo: si se deja al contenido, cambia de tamaño al elegir
+   («Todos los estados» mide el doble que «Activo») y el buscador de al lado
+   se encoge y se estira cada vez */
+.gc-lista__estado {
+  flex: 0 0 auto;
+  /* Los tres de la fila al mismo alto: es form-select-sm y se quedaba 4px por
+     debajo del campo de búsqueda, que es form-control a secas */
+  align-self: stretch;
+  width: 9rem;
+  font-size: .75rem;
+}
+
+/* Filtrando: se nota de un vistazo que la lista no está entera, que es lo que
+   evita el «me faltan clientes» */
+.gc-lista__estado.is-filtrando {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+@media (max-width: 575.98px) {
+  /* En un teléfono los dos no caben de lado: el filtro baja a su renglón */
+  .gc-lista__buscador {
+    flex-wrap: wrap;
+  }
+
+  .gc-lista__estado {
+    width: 100%;
+  }
 }
 
 /* La grilla de clientes, la misma de «Listar clientes».
@@ -205,7 +287,10 @@
 }
 
 .gc-barra__acciones .btn {
-  font-size: .75rem;
+  /* Van a la misma escala que las pestañas y las grillas: en esta pantalla
+     caben muchas cosas y el tamaño del tema desperdiciaba alto. */
+  padding: .2rem .55rem;
+  font-size: .6875rem;
   white-space: nowrap;
 }
 
@@ -294,7 +379,10 @@
   word-break: break-word;
 }
 
-.gc-campo__valor > a,
+/* Los enlaces de valor (correo, web) se leen como texto, no como enlace.
+   El :not() deja fuera los botones de acción, que sí llevan su propio color:
+   sin él, este `inherit` se lo pisaba y el del mapa salía gris. */
+.gc-campo__valor > a:not(.gc-campo__accion),
 .gc-campo__valor > span {
   color: inherit;
   text-decoration: none;
@@ -328,26 +416,96 @@
 
 /* Los iconos de al lado (llamar, WhatsApp, copiar, mapa): discretos hasta
    que se pasa por encima */
-.gc-campo__accion {
+/* ---------- El número ----------
+   Texto, no enlace: para llamar está el botón de al lado. Se dejó de pintar
+   en azul a propósito, que invitaba a pulsarlo y marcaba sin querer. Se puede
+   seleccionar con el ratón para copiarlo a mano. */
+.gc-campo__numero {
+  flex: 0 1 auto;
+  min-width: 0;
+
+  font-weight: 500;
+  user-select: text;
+}
+
+/* ---------- Las acciones del campo ----------
+   Antes eran iconos sueltos: con tres seguidos (llamar, WhatsApp, copiar) no
+   se distinguía dónde acababa uno y empezaba el siguiente, y el blanco de
+   alrededor era tan pequeño que costaba acertarles. Ahora cada uno es un
+   botón con su caja, agrupados y separados del valor. */
+.gc-campo__acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
   flex: 0 0 auto;
+  margin-left: .15rem;
+}
+
+/* Cada acción con su color desde el principio: en gris parecían
+   deshabilitadas y no se distinguía una de otra. El color va en el icono, en
+   el borde y en un fondo muy suave; al pasar por encima se rellena.
+   Cada acción sólo cambia esas tres variables.
+
+   Los tonos van escritos a mano en vez de calculados con color-mix(), que no
+   existe en iOS 15 y el front tiene que llegar al iPhone 7. */
+.gc-campo__accion {
+  --tinte: #00acac;
+  --tinte-borde: rgba(0, 172, 172, .38);
+  --tinte-fondo: rgba(0, 172, 172, .10);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 21px;
+  height: 21px;
   padding: 0;
-  border: 0;
-  background: none;
+  border: 1px solid var(--tinte-borde);
+  border-radius: 4px;
+  background-color: var(--tinte-fondo);
+
+  color: var(--tinte);
+  font-size: .7rem;
   line-height: 1;
-
-  color: var(--bs-secondary-color, #adb5bd);
-  font-size: .75rem;
   cursor: pointer;
+  /* El de Google Maps es un <a>: sin esto el tema le pone subrayado */
+  text-decoration: none;
 
-  transition: color .12s ease;
+  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
 }
 
 .gc-campo__accion:hover {
-  color: var(--bs-app-theme, #00acac);
+  border-color: var(--tinte);
+  background-color: var(--tinte);
+  color: #fff;
+  text-decoration: none;
 }
 
-.gc-campo__accion--wa:hover {
-  color: #25d366;
+.gc-campo__accion:focus-visible {
+  outline: 2px solid var(--tinte);
+  outline-offset: 1px;
+}
+
+/* Llamar, en el azul del número que tiene al lado */
+.gc-campo__accion--llamar {
+  --tinte: #2f80ed;
+  --tinte-borde: rgba(47, 128, 237, .38);
+  --tinte-fondo: rgba(47, 128, 237, .10);
+}
+
+/* El verde de WhatsApp, que es el que la gente reconoce */
+.gc-campo__accion--wa {
+  --tinte: #25d366;
+  --tinte-borde: rgba(37, 211, 102, .40);
+  --tinte-fondo: rgba(37, 211, 102, .12);
+}
+
+/* El rojo del pin de Google Maps */
+.gc-campo__accion--mapa {
+  --tinte: #ea4335;
+  --tinte-borde: rgba(234, 67, 53, .38);
+  --tinte-fondo: rgba(234, 67, 53, .10);
 }
 
 /* Las observaciones: dos renglones como mucho, que no estiren la tarjeta */
@@ -726,6 +884,10 @@
   align-items: baseline;
   gap: .25rem;
 
+  /* cada uno lleva un title explicando qué cuenta; que se note que hay algo
+     que leer, porque por el nombre solo no se adivina */
+  cursor: help;
+
   padding: .25rem .625rem;
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .25rem;
@@ -740,6 +902,13 @@
 
 .gestion-chip__texto {
   color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El rótulo corto de los contadores de la agenda («pend.», «venc.», «hoy»).
+   Sólo sale en teléfono, donde los tres tienen que caber al lado del buscador;
+   de escritorio manda el largo. */
+.gestion-chip__corto {
+  display: none;
 }
 
 .gestion-chip--ok      { border-color: rgba(var(--bs-teal-rgb, 32, 201, 151), .5); }
@@ -845,9 +1014,35 @@
   }
 }
 
+/* ---------- El contenido de la pestaña abierta ----------
+   Se pinta como una hoja clara que continúa la pestaña activa: sin esto el
+   bloque de pestañas quedaba suelto sobre el fondo del panel y costaba ver
+   dónde empieza y dónde acaba. El borde arranca pegado a la barra de
+   pestañas, así que la activa se funde con él, que es lo que hace que se lea
+   como una carpeta. */
 .gestion-panel {
-  padding-top: .75rem;
+  padding: .75rem .75rem .5rem;
+  border: 1px solid var(--bs-border-color, #e2e8f0);
+  border-top: 0;
+  border-radius: 0 .35rem .35rem .35rem;
+
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 1px 3px rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
 }
+
+/* Y el fondo de alrededor, un punto más apagado: es lo que hace que la hoja
+   parezca clara. Con un 2,5% no se notaba nada; a este nivel se distingue sin
+   llegar a verse gris. Sólo en la columna del cliente, que es donde están las
+   pestañas. */
+/* Sin velo de fondo.
+   Tenía `rgba(var(--bs-body-color-rgb), .05)`, es decir un velo hecho con el
+   color del TEXTO, y ese color se invierte con el tema. En claro oscurecía un
+   poco el contenedor y las tarjetas blancas flotaban encima, que es lo que uno
+   espera; en oscuro hacía lo contrario —aclaraba el contenedor— y las tarjetas
+   quedaban más oscuras que el hueco entre ellas. De ahí el efecto de parches:
+   dentro de la barra un tono y fuera otro.
+   Ahora la columna de trabajo es del mismo color que todo lo demás y las
+   tarjetas se distinguen por su borde, que ya tienen. */
 
 /* ---------- Filtros del historial ---------- */
 .gestion-filtros {
@@ -892,9 +1087,34 @@
   color: var(--bs-app-theme, #00acac);
 }
 
-/* La flecha del desplegable, al final */
+/* La flecha del desplegable, al final.
+   Es un icono propio y no el ::after de Bootstrap: el tema no lo pinta en
+   estos botones, así que los filtros parecían botones normales y no se veía
+   que al pulsarlos se abría una lista. */
 .gestion-filtro.dropdown-toggle::after {
+  display: none;
+}
+
+.gestion-filtro__flecha {
   margin-left: auto;
+  padding-left: .25rem;
+  font-size: .5625rem;
+  opacity: .55;
+}
+
+.gestion-filtro:hover .gestion-filtro__flecha,
+.gestion-filtro[aria-expanded='true'] .gestion-filtro__flecha {
+  opacity: 1;
+}
+
+/* Abierto, la flecha mira hacia arriba: dice que volver a pulsar lo cierra */
+.gestion-filtro[aria-expanded='true'] .gestion-filtro__flecha {
+  transform: rotate(180deg);
+}
+
+/* Sin nadie que haya registrado nada todavía, el filtro no tiene sentido */
+.gestion-filtro:disabled {
+  opacity: .5;
 }
 
 .gestion-filtro__menu {
@@ -948,6 +1168,119 @@
   gap: .25rem;
 }
 
+/* ---------- Plegar la columna de acciones ----------
+   La cabecera es el interruptor, así que tiene que parecerlo: mano encima y
+   la flecha en tenue hasta que se pasa por ella. Cuando está plegada, en su
+   sitio queda el ☰, que es lo que se vuelve a pulsar para devolverla. */
+:host ::ng-deep .ag-header-cell[col-id='acciones'] {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Ocupa toda la cabecera, no sólo el texto: así se puede pulsar en cualquier
+   punto de ella y no hay que apuntar al icono, que con el dedo se falla.
+   Es un <button> (ver plantillaCabecera), así que hay que quitarle lo que el
+   navegador le pone de serie: borde, fondo y relleno. */
+:host ::ng-deep .gc-acciones-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  width: 100%;
+  height: 100%;
+
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+:host ::ng-deep .gc-acciones-cabecera i {
+  font-size: .625rem;
+  opacity: .5;
+}
+
+/* El realce al pasar por encima SÓLO donde hay ratón.
+   En iOS, un elemento que no es interactivo pero tiene regla :hover necesita
+   DOS toques: el primero lo deja «por encima» y el segundo pulsa. Era lo que
+   hacía falta dar doble toque para plegar la columna en el teléfono. Con la
+   consulta (hover: hover) la regla ni se carga en una pantalla táctil. */
+@media (hover: hover) and (pointer: fine) {
+  :host ::ng-deep .ag-header-cell[col-id='acciones']:hover .gc-acciones-cabecera i {
+    opacity: 1;
+  }
+}
+
+/* El botón de la celda plegada: igual que los demás de la columna, para que
+   no parezca de otra familia */
+:host ::ng-deep .gc-desplegar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+
+  background-color: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  cursor: pointer;
+}
+
+/* Igual que arriba: sólo donde hay ratón de verdad */
+@media (hover: hover) and (pointer: fine) {
+  :host ::ng-deep .gc-desplegar:hover {
+    border-color: var(--bs-app-theme, #00acac);
+    color: var(--bs-app-theme, #00acac);
+  }
+}
+
+/* Con el dedo, todo el ancho de la columna plegada es el botón.
+   Un blanco de 32x24 se falla con el ratón y se falla más con el dedo, y aquí
+   la celda entera no sirve para otra cosa. No se toca el alto: lo manda la
+   altura de fila de la grilla, no este CSS. */
+@media (pointer: coarse) {
+  /* En píxeles y no estirándose: ag-Grid envuelve lo que devuelve el renderer
+     en un <span> suyo que es display:inline y no tiene tamaño, así que ni el
+     100% ni el flex llegan a la celda —probado: dejaban el botón en 13x15—.
+     40x28 es prácticamente la celda entera (46 de ancho por 30 de alto de
+     fila), que es todo lo que se puede dar sin tocar la altura de la grilla. */
+  :host ::ng-deep .gc-desplegar {
+    width: 40px;
+    height: 28px;
+    border-color: transparent;
+    font-size: .8125rem;
+  }
+
+  :host ::ng-deep .gc-desplegar:active {
+    background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+    color: var(--bs-app-theme, #00acac);
+  }
+
+  /* Los botones de acción, separados para el dedo.
+
+     Con ratón van a 24x22 con 4px de aire, que apunta bien; con el dedo son
+     tres blancos pegados y se falla de vecino. Aquí van a 28x26 con 8px entre
+     ellos, que es lo máximo que cabe sin tocar el ancho de las columnas ni la
+     altura de fila:
+
+       agenda      3 botones -> 3x28 + 2x8 = 100px en una columna de 118
+       historial   3 botones -> 100px en 110
+       pendientes  4 botones -> 4x28 + 3x8 = 136px en 142
+       contactos   hasta 4   -> 136px en 140
+
+     El alto se queda en 26: la fila mide 30 y pasarse recorta el botón. */
+  :host ::ng-deep .gestion-acciones {
+    gap: .5rem;
+  }
+
+}
+
 :host ::ng-deep .gestion-acciones .btn-icon {
   display: inline-flex;
   align-items: center;
@@ -959,33 +1292,191 @@
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .25rem;
 
-  background-color: var(--bs-body-bg, #fff);
-  color: var(--bs-secondary-color, #6c757d);
+  /* el color lo pone el tinte de cada acción, más abajo */
   font-size: .6875rem;
   cursor: pointer;
 }
 
-:host ::ng-deep .gestion-acciones .btn-cerrar:hover { border-color: var(--bs-teal, #20c997);   color: var(--bs-teal, #20c997); }
-:host ::ng-deep .gestion-acciones .btn-editar:hover { border-color: var(--bs-app-theme, #00acac); color: var(--bs-app-theme, #00acac); }
-:host ::ng-deep .gestion-acciones .btn-quitar:hover { border-color: var(--bs-danger, #dc3545); color: var(--bs-danger, #dc3545); }
+/* Cada botón con su color desde el principio: en gris sólo se distinguían al
+   pasar el ratón por encima y parecían apagados.
+
+   Los tintes son los mismos de los botones de la tarjeta Contactabilidad
+   (.gc-campo__accion), para que llamar sea el mismo azul en la ficha y en la
+   grilla y no haya que aprenderse dos códigos de color. Van en rgba y no en
+   color-mix(): el front tiene que funcionar en un iPhone 7, y ahí color-mix()
+   no existe (ver .browserslistrc). */
+:host ::ng-deep .gestion-acciones .btn-icon {
+  /* el gris es el de un botón sin acción conocida; cada uno pone el suyo */
+  --tinte: #6c757d;
+  --tinte-borde: rgba(108, 117, 125, .35);
+  --tinte-fondo: rgba(108, 117, 125, .08);
+
+  border-color: var(--tinte-borde);
+  background-color: var(--tinte-fondo);
+  color: var(--tinte);
+  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
+}
+
+:host ::ng-deep .gestion-acciones .btn-icon:not(:disabled):hover {
+  border-color: var(--tinte);
+  background-color: var(--tinte);
+  color: #fff;
+}
+
+/* Llamar, en el azul de la tarjeta */
+:host ::ng-deep .gestion-acciones .btn-llamar { --tinte: #2f80ed; --tinte-borde: rgba(47, 128, 237, .38); --tinte-fondo: rgba(47, 128, 237, .10); }
+/* El verde de WhatsApp, que es el que la gente reconoce */
+:host ::ng-deep .gestion-acciones .btn-wa     { --tinte: #25d366; --tinte-borde: rgba(37, 211, 102, .40); --tinte-fondo: rgba(37, 211, 102, .12); }
+:host ::ng-deep .gestion-acciones .btn-cerrar { --tinte: #20c997; --tinte-borde: rgba(32, 201, 151, .40); --tinte-fondo: rgba(32, 201, 151, .10); }
+:host ::ng-deep .gestion-acciones .btn-editar { --tinte: #00acac; --tinte-borde: rgba(0, 172, 172, .38);  --tinte-fondo: rgba(0, 172, 172, .10); }
+:host ::ng-deep .gestion-acciones .btn-correo { --tinte: #6f42c1; --tinte-borde: rgba(111, 66, 193, .35); --tinte-fondo: rgba(111, 66, 193, .09); }
+:host ::ng-deep .gestion-acciones .btn-abrir  { --tinte: #198754; --tinte-borde: rgba(25, 135, 84, .35);  --tinte-fondo: rgba(25, 135, 84, .08); }
+:host ::ng-deep .gestion-acciones .btn-quitar { --tinte: #dc3545; --tinte-borde: rgba(220, 53, 69, .35);  --tinte-fondo: rgba(220, 53, 69, .08); }
+
+/* Apagado por el perfil: se queda en gris.
+
+   Bajarle sólo la opacidad dejaba el color asomando y seguía pareciendo que
+   se podía pulsar —un rojo pálido sigue leyéndose como «eliminar»—. Aquí se
+   le cambian los tintes, que es de donde sacan el color todos: el icono se va
+   al gris, el fondo desaparece y queda un borde apenas marcado. Tampoco se
+   enciende al pasar por encima, de eso se encarga el :not(:disabled) de
+   arriba. */
+/* El tamaño para el dedo va AQUÍ y no arriba, junto al resto de lo táctil: las
+   reglas base que fijan 24x22 vienen después de aquel bloque y, a igualdad de
+   especificidad, manda la última. Comprobado: allí el gap sí entraba y el
+   tamaño no. */
+@media (pointer: coarse) {
+  :host ::ng-deep .gestion-acciones .btn-icon {
+    width: 28px;
+    height: 26px;
+  }
+
+  /* Que se note el toque: sin hover no hay otra señal de que se ha pulsado */
+  :host ::ng-deep .gestion-acciones .btn-icon:active {
+    background-color: var(--tinte-fondo);
+    border-color: var(--tinte-borde);
+  }
+}
+
+:host ::ng-deep .gestion-acciones .btn-icon:disabled {
+  --tinte: #adb5bd;
+  --tinte-borde: rgba(108, 117, 125, .22);
+  --tinte-fondo: transparent;
+
+  /* Gris y además apagado: el gris dice que no es una acción disponible y la
+     opacidad lo manda al fondo, para que el ojo vaya a los que sí se pueden
+     pulsar. No baja más de .5 porque el icono tiene que seguir leyéndose —hay
+     que poder ver cuál es la acción que falta para pedir el permiso—. */
+  opacity: .5;
+  cursor: not-allowed;
+}
 
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+/* ---------- El tirador y el velo del cajón ----------
+   De escritorio no existen: ahí la lista es una columna de verdad y se pliega
+   con el divisor. */
+.gc-tirador,
+.gc-velo {
+  display: none;
+}
+
 @media (max-width: 991.98px) {
-  /* Apiladas: la ficha arriba y el trabajo debajo, y el alto lo pone el
-     contenido (en móvil el que manda es el scroll de la página) */
+  /* ---------- La lista de clientes pasa a ser un cajón ----------
+     Apilada ocupaba 364 de los 667 píxeles de un iPhone 7 y dejaba el trabajo
+     del cliente fuera de pantalla: había que pasar la lista entera para llegar
+     a lo que se venía a ver. Ahora sale por encima, como el árbol de carpetas
+     del administrador de archivos. */
   .gc-cuerpo {
+    position: relative;
     flex-direction: column;
     height: auto;
+    /* Ancho del cajón: casi toda la pantalla, pero dejando ver que hay algo
+       detrás, que es lo que dice que se puede cerrar tocando fuera */
+    --gc-cajon: min(86vw, 22rem);
   }
 
+  /* Fijo tanto cerrado como abierto: así no salta de sitio al abrirse, y se
+     queda donde está mientras se recorre la lista.
+
+     Los z-index van por encima de 1020, que es lo que vale la cabecera de la
+     aplicación (medido, no supuesto: con 30 el cajón salía por debajo y se
+     perdían el buscador y el filtro de estado). Tapar la cabecera mientras se
+     elige cliente es lo normal en un cajón de teléfono, y el velo ya impide
+     tocar lo de detrás. */
   .gc-columna,
   .gc-cuerpo.is-panel-oculto .gc-columna {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--gc-cajon) - 1.5rem);
+    z-index: 1032;
+
     flex: 0 0 auto;
+    width: var(--gc-cajon);
     max-width: none;
-    width: 100%;
-    overflow: visible;
+    max-height: none;
+    padding: .5rem;
+    overflow: hidden;
+
+    border-right: 1px solid var(--bs-border-color, #dee2e6);
+    background-color: var(--bs-component-bg, #fff);
+    box-shadow: 6px 0 18px rgba(0, 0, 0, .18);
+    transition: left .22s ease;
+  }
+
+  .gc-cuerpo.is-lista-movil .gc-columna,
+  .gc-cuerpo.is-lista-movil.is-panel-oculto .gc-columna {
+    left: 0;
+  }
+
+  .gc-velo {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1031;
+    background-color: rgba(0, 0, 0, .35);
+  }
+
+  /* La pestaña: pegada al borde izquierdo y con el rótulo en vertical, que
+     cerrada hay que entender qué abre */
+  .gc-tirador {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+
+    position: fixed;
+    top: 40%;
+    left: 0;
+    z-index: 1033;
+
+    padding: .6rem .4rem .65rem;
+    border: 0;
+    border-radius: 0 .625rem .625rem 0;
+
+    background: var(--bs-app-theme, #00acac);
+    color: var(--bs-app-theme-color, #fff);
+    box-shadow: 3px 2px 10px rgba(0, 0, 0, .28);
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .gc-tirador__texto {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: .625rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  /* Abierta, la pestaña viaja con el cajón y le basta la flecha */
+  .gc-tirador.is-abierto {
+    left: var(--gc-cajon);
+    border-radius: 0 .625rem .625rem 0;
+    padding: .6rem .45rem;
   }
 
   /* Una encima de otra: no hay ancho que repartir */
@@ -993,10 +1484,11 @@
     display: none;
   }
 
-  /* Apilada, la grilla no pelea por el alto: se le da uno fijo y ya */
+  /* Dentro del cajón la grilla ocupa lo que le dejen el buscador y el pie */
   .gc-grilla {
-    flex: 0 0 auto;
-    height: 16rem;
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
   }
 
   /* En estrecho, los botones pasan debajo del nombre y se reparten el ancho */
@@ -1017,47 +1509,22 @@
     grid-template-columns: 1fr;
   }
 
-  /* Plegada se recoge hacia arriba, no hacia el lado */
-  .gc-cuerpo.is-panel-oculto .gc-columna {
-    max-height: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-
   .gc-panel__contenido {
     height: auto;
     overflow: visible;
     padding-left: 0;
   }
 
-  /* Apiladas, el lomo es una barra: el texto vuelve a ser horizontal */
-  .gc-lomo {
-    flex: 0 0 auto;
-    width: 100%;
-    padding: .375rem 0;
-    margin-bottom: .5rem;
-  }
-
-  .gc-lomo__texto {
-    writing-mode: horizontal-tb;
-    transform: none;
-  }
-
-  /* La pestañita se pone arriba, centrada y tumbada */
+  /* El lomo y la pestañita son de escritorio: aquí quien abre y cierra la
+     lista es el tirador del cajón, y dos mandos para lo mismo confunden */
+  .gc-lomo,
   .gc-pestana {
-    position: static;
-    transform: none;
-    width: 100%;
-    height: 22px;
-    margin-bottom: .5rem;
-
-    border-left: 1px solid var(--bs-border-color, #dee2e6);
-    border-radius: .5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+    display: none;
   }
 
-  .gc-panel__contenido {
-    padding-left: 0;
+  /* El panel de trabajo manda en toda la pantalla: ya no comparte sitio */
+  .gc-panel {
+    width: 100%;
   }
 
   .gestion-grilla {
@@ -1076,6 +1543,29 @@
 
   .gestion-buscador__campo {
     flex: 1 1 100%;
+  }
+
+  /* Los cuatro filtros del historial, de dos en dos. En flex se ponían uno
+     por renglón —9.5rem de mínimo no caben dos veces en 375px— y se comían
+     cuatro líneas antes de llegar a la tabla. */
+  .gestion-filtros {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .3rem;
+  }
+
+  .gestion-filtros .dropdown {
+    min-width: 0;
+  }
+
+  .gestion-filtros .gestion-filtro {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* La cuenta de gestiones ocupa la fila entera, debajo de los filtros */
+  .gestion-filtros__cuenta {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1147,13 +1637,25 @@
   align-items: center;
   gap: .4rem;
 
-  padding: .55rem 1rem;
+  /* Apretadas a propósito: eran 43px de alto, más que una fila de la grilla,
+     para cinco palabras. Con esto bajan a ~31px y esa diferencia se la queda
+     el contenido, que es lo que se viene a mirar. */
+  padding: .3rem .65rem;
 
   /* Pestaña con caja: borde arriba y a los lados, y abajo nada —ahí va la
-     línea de la barra—. El de arriba es de 3px y se reserva en transparente
-     para que la activa no cambie de alto al marcarse. */
+     línea de la barra—.
+
+     El de arriba mide 3px en todas, activa o no, para que marcarse no le
+     cambie el alto a ninguna; lo que cambia es el color. En las de atrás va
+     del mismo gris que los lados y que la línea que separa unas de otras
+     (--bs-border-color), así la pestaña se lee como una caja cerrada en vez
+     de quedar abierta por arriba. Antes ese borde era transparente y sólo se
+     reservaba el sitio.
+
+     La variable es la misma en claro y en oscuro —el tema le da #dee2e6 o
+     #495057—, así que no hace falta una regla aparte para el modo oscuro. */
   border: 1px solid var(--bs-border-color, #e2e8f0);
-  border-top: 3px solid transparent;
+  border-top: 3px solid var(--bs-border-color, #e2e8f0);
   border-bottom-color: transparent;
   border-radius: .35rem .35rem 0 0;
 
@@ -1162,7 +1664,7 @@
   z-index: 1;
 
   color: var(--bs-secondary-color, #6c757d);
-  font-size: .8125rem;
+  font-size: .75rem;
   font-weight: 600;
   white-space: nowrap;
   /* Las de atrás, ligeramente hundidas */
@@ -1235,8 +1737,10 @@
   margin-bottom: 1rem;
 }
 
+/* Las de arriba, un punto mayores que las del cliente pero sin pasarse:
+   estaban en 14px, el texto más grande de toda la pantalla. */
 .gestion-vistas .nav-link {
-  font-size: .875rem;
+  font-size: .75rem;
 }
 
 /* El cliente que se está trabajando, junto al rótulo de su pestaña */
@@ -1260,8 +1764,8 @@
 
 /* ---------- Las del cliente: un punto más compactas ---------- */
 .gestion-tabs .nav-link {
-  padding: .45rem .875rem;
-  font-size: .78125rem;
+  padding: .3rem .65rem;
+  font-size: .6875rem;
 }
 
 /* En pantallas estrechas caben menos: rótulos más juntos y una sombra al
@@ -1319,6 +1823,40 @@
 .agenda-filtros__atajos .btn {
   font-size: .6875rem;
   padding: .2rem .55rem;
+}
+
+/* De escritorio mandan los botones; el desplegable no existe */
+.agenda-atajos__select {
+  display: none;
+}
+
+/* En el teléfono, al revés: seis botones se partían en dos renglones y se
+   llevaban por delante lo poco que hay de pantalla */
+@media (max-width: 575.98px) {
+  .agenda-atajos__boton {
+    display: none;
+  }
+
+  .agenda-atajos__select {
+    display: block;
+    width: 100%;
+    font-size: .75rem;
+  }
+
+  .agenda-filtros__atajos {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+/* Qué agenda se mira. Reusa el aspecto de los filtros del historial —misma
+   flecha, mismo menú—, con su propio ancho: el de allí (9.5rem) va con letra
+   más pequeña. Lo que importa es que quepan las dos opciones sin recortarse,
+   porque si la más larga no cabe el <span> la corta con puntos suspensivos; y
+   que sea el mismo ancho en los dos casos, para que el botón no pegue un salto
+   al cambiar de una a otra. */
+.agenda-quien {
+  min-width: 9rem;
 }
 
 .agenda-filtros__etiqueta {
@@ -1490,13 +2028,189 @@
   }
 }
 
-/* La pista de «elige un cliente», debajo del tablero: ya no es el
-   protagonista de la pantalla, así que va en pequeño y en gris */
-.gestion-pista {
-  margin: .75rem 0 0;
+/* En un teléfono la barra de la agenda se reparte en una rejilla de dos
+   columnas, y no en una fila que se parte:
+
+       [ periodo        ] [ fechas         ]
+       [ buscador       ] [ pendientes/hoy ]
+       [ de quién ................... ancho ]
+
+   Por qué `display: contents` en los dos envoltorios: el buscador cuelga de
+   .agenda-filtros__fechas y los contadores son hermanos de .agenda-filtros,
+   o sea que en el HTML tienen padres distintos y no hay forma de ponerlos en
+   el mismo renglón mientras esos padres sigan siendo cajas. Dejándolos sin
+   caja, sus hijos pasan a ser celdas de la rejilla de .gestion-agenda.
+
+   Y por qué `order`: una vez son celdas, el orden del HTML pondría el selector
+   de quién ANTES de los contadores, que es justo lo que no se quiere.
+
+   Llega hasta 767.98 y no hasta 575.98 porque un teléfono TUMBADO mide unos
+   667px: con el corte anterior, al girarlo volvía el reparto de escritorio y
+   el buscador se ponía otra vez al lado de las fechas, con los tres contadores
+   en línea. Ahora se ve igual de pie que tumbado. */
+@media (max-width: 767.98px) {
+  /* Diez columnas y no dos: las dos filas no se reparten igual. Arriba, mitad
+     y mitad; abajo, el buscador pequeño y los contadores con el resto, que es
+     lo que permite que los tres quepan en el mismo renglón. */
+  .gestion-agenda {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: .375rem;
+  }
+
+  .agenda-filtros,
+  .agenda-filtros__fechas {
+    display: contents;
+  }
+
+  .agenda-filtros__atajos   { order: 1; }
+  .agenda-rango             { order: 2; }
+  .agenda-filtros__buscador { order: 3; }
+  .agenda-resumen           { order: 4; }
+
+  /* Primera fila: mitad y mitad */
+  .agenda-filtros__atajos { grid-column: span 5; }
+  .agenda-rango           { grid-column: span 5; }
+
+  /* Segunda: el buscador estrecho y los contadores con lo que queda */
+  .agenda-filtros__buscador { grid-column: span 3; }
+  .agenda-resumen           { grid-column: span 7; }
+
+  /* Y éstos, el ancho entero */
+  .agenda-quien-caja,
+  .agenda-grilla,
+  .agenda-pie {
+    grid-column: 1 / -1;
+  }
+
+  .agenda-quien-caja { order: 5; }
+  .agenda-grilla     { order: 6; }
+  .agenda-pie        { order: 7; }
+
+  /* Sin esto, un contenido ancho estira su columna y rompe el 50/50 */
+  .agenda-filtros__atajos,
+  .agenda-rango,
+  .agenda-filtros__buscador,
+  .agenda-resumen {
+    min-width: 0;
+  }
+
+  .agenda-atajos__boton {
+    display: none;
+  }
+
+  .agenda-atajos__select {
+    display: block;
+    width: 100%;
+    font-size: .75rem;
+  }
+
+  /* Los tres contadores en el mismo renglón que el buscador, sin partirse.
+     Para que quepan llevan el rótulo corto —«pend.», «venc.», «hoy»— y se
+     reparten a partes iguales lo que deja el buscador. */
+  .agenda-resumen {
+    margin: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: .25rem;
+  }
+
+  .agenda-resumen .gestion-chip {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    gap: .2rem;
+    padding: .25rem .25rem;
+    white-space: nowrap;
+  }
+
+  /* El rótulo largo se queda para pantalla ancha */
+  .agenda-resumen .gestion-chip__texto {
+    display: none;
+  }
+
+  .agenda-resumen .gestion-chip__corto {
+    display: inline;
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: .6875rem;
+  }
+
+  .agenda-resumen .gestion-chip__valor {
+    font-size: .8125rem;
+  }
+
+  /* El aviso de «Filtrando por …» no es una ficha: su renglón entero */
+  .agenda-resumen .agenda-tope {
+    grid-column: 1 / -1;
+  }
+
+  .agenda-resumen .gestion-chip__valor {
+    font-size: .8125rem;
+  }
+
+  .agenda-resumen .gestion-chip__texto {
+    font-size: .6875rem;
+  }
+
+  .agenda-quien {
+    width: 100%;
+  }
+}
+
+/* ---------- Sin cliente elegido ----------
+   Lo que queda en el panel derecho cuando aún no se ha elegido a nadie. Antes
+   aquí iba el tablero y debajo una línea de pista; el tablero se fue a su
+   pestaña, así que esto es ahora lo único que hay y se le da aire para que no
+   parezca una pantalla a medio cargar. */
+.gestion-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .625rem;
+
+  padding: 3rem 1rem;
   text-align: center;
-  font-size: .75rem;
   color: var(--bs-secondary-color, #6c757d);
+}
+
+.gestion-vacio__icono {
+  font-size: 1.75rem;
+  opacity: .35;
+}
+
+.gestion-vacio__texto {
+  max-width: 28rem;
+  margin: 0;
+  font-size: .8125rem;
+}
+
+/* El botón sólo hace falta en el teléfono: ahí la lista es un cajón que está
+   escondido. De escritorio la tiene al lado y sobra. */
+.gestion-vacio__boton {
+  display: none;
+}
+
+@media (max-width: 991.98px) {
+  .gestion-vacio__boton {
+    display: inline-flex;
+  }
+
+  .gestion-vacio {
+    padding: 2rem 1rem;
+  }
+}
+
+/* ---------- La pestaña de métricas ----------
+   El tablero manda en su propia vista: sin columnas ni divisor, sólo aire a
+   los lados para que no se pegue al borde de la tarjeta. */
+.gestion-metricas {
+  padding: .75rem;
+}
+
+@media (max-width: 575.98px) {
+  .gestion-metricas {
+    padding: .5rem .25rem;
+  }
 }
 
 /* ---------- Menú de WhatsApp ----------
@@ -1589,3 +2303,563 @@
   color: var(--bs-secondary-color, #6c757d);
   text-align: right;
 }
+
+/* ---------- El teléfono de las grillas es texto ----------
+   Era un botón con el icono del teléfono y se marcaba de un clic. Molestaba
+   por dos lados: pintado como enlace, Safari del iPhone y la integración de
+   Zoiper en el navegador le añadían encima su propio icono y la bandera del
+   país; y al pulsarlo para copiarlo, marcaba. Ahora el número se lee y punto,
+   y quien marca es el botón del teléfono de la columna Acciones. */
+:host ::ng-deep .ag-cell[col-id="telefono"],
+:host ::ng-deep .ag-cell[col-id="celular"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ---------- Escala de las grillas ----------
+   La letra del tema (12px en celda) iba suelta respecto al resto de la
+   pantalla, que ya estaba en 11px. Con esto y el alto de fila bajado en el
+   HTML entran dos o tres filas más sin tener que desplazarse. */
+:host ::ng-deep .ag-theme-alpine {
+  --ag-cell-horizontal-padding: 8px;
+}
+
+/* La variable --ag-font-size ya vale 11px en los estilos globales, pero la
+   celda acaba en 12px igualmente; se fija aquí, que es donde se nota. */
+:host ::ng-deep .ag-theme-alpine .ag-cell {
+  font-size: 11px;
+}
+
+/* ---------- Los responsables ----------
+   Una ficha por papel, en rejilla: a un cliente lo atiende quien le vende,
+   quien le cobra, quien le llama y quien le atiende después de la venta, y
+   cada uno se cambia por su cuenta. El puesto vacío se marca en tenue para que
+   se vea de un vistazo cuál falta.
+
+   18rem y no 14: con tres fichas, 14rem las ponía justo en una fila. Al entrar
+   POSTVENTA quedaban tres arriba y una sola abajo, descolgada; pidiendo más
+   ancho por ficha caben dos, y salen dos filas de dos. Ocupa lo mismo de alto
+   y se lee como un bloque. En un panel de verdad ancho vuelven a salir las
+   cuatro seguidas, que es a lo que auto-fit sirve. */
+.gestion-roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: .5rem;
+  margin-bottom: .6rem;
+}
+
+.gestion-rol {
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  overflow: hidden;
+}
+
+.gestion-rol.is-vacio {
+  border-style: dashed;
+}
+
+.gestion-rol__titulo {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .2rem .5rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .04);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .625rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.gestion-rol__cuerpo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .15rem;
+
+  padding: .4rem .5rem .5rem;
+  font-size: .75rem;
+}
+
+.gestion-rol.is-vacio .gestion-rol__quien b {
+  color: var(--bs-secondary-color, #adb5bd);
+  font-weight: 500;
+  font-style: italic;
+}
+
+.gestion-rol__desde,
+.gestion-rol__ayuda {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gestion-rol__cuerpo .btn {
+  margin-top: .3rem;
+  padding: .15rem .5rem;
+  font-size: .6875rem;
+}
+
+/* ---------- Barra de la pestaña Contactos ----------
+   Agregar y guardar, con el aviso de cambios pendientes al lado: esta
+   pantalla no tiene un «guardar» general, así que la lista avisa por su
+   cuenta de que queda algo sin mandar. */
+.gestion-contactos__barra {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+
+  margin-bottom: .4rem;
+}
+
+.gestion-contactos__barra .btn {
+  padding: .15rem .5rem;
+  font-size: .6875rem;
+}
+
+.gestion-contactos__aviso {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gestion-contactos__aviso.is-falta {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* La celda obligatoria vacía, marcada: el mismo aviso que en la ficha del
+   cliente, pero allí va acotado a .contactos-grid y aquí no existe esa clase. */
+:host ::ng-deep .gestion-grilla .ag-cell.celda-obligatoria {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
+  box-shadow: inset 0 0 0 1px rgba(var(--bs-danger-rgb, 220, 53, 69), .35);
+}
+
+/* ---------- Contacto desactivado ----------
+   La clase ya se aplicaba pero no tenía estilo, así que uno de baja se veía
+   igual que el resto. Tachado y apagado: se sigue leyendo —hace falta para
+   saber a quién NO llamar— pero no invita a usarlo. */
+:host ::ng-deep .gestion-grilla .ag-row.fila-excluida .ag-cell {
+  color: var(--bs-secondary-color, #adb5bd);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* La columna de acciones no se tacha: ahí está el botón de reactivar */
+:host ::ng-deep .gestion-grilla .ag-row.fila-excluida .ag-cell[col-id="acciones"] {
+  text-decoration: none;
+}
+
+/* Aviso dentro del menú de clic derecho, en lugar de los atajos */
+.menu-ctx__aviso {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .3rem .6rem;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  font-style: italic;
+}
+
+/* ============================================================
+   PESTAÑA DE ARCHIVOS
+
+   En tarjetas y no en grilla: la mitad de lo que se sube son fotos
+   y lo que se busca es reconocerlas de un vistazo, no leer una fila.
+
+   Los tintes van en rgba y no en color-mix(): el front tiene que
+   funcionar en un iPhone 7 (ver .browserslistrc).
+   ============================================================ */
+
+.gc-archivos {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.gc-archivos__barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding: .375rem .5rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.gc-archivos__cuenta {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+.gc-archivos__vacio {
+  padding: 1.5rem 1rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Rejilla que se adapta sola: en un monitor caben cuatro o cinco y en el
+   teléfono una, sin un media query por cada tamaño */
+.gc-archivos__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: .5rem;
+
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .5rem;
+  overflow-y: auto;
+}
+
+.gc-archivo {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+
+  padding: .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.gc-archivo:hover {
+  border-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .5);
+}
+
+.gc-archivo.is-inactivo {
+  opacity: .55;
+}
+
+/* La cara: la propia imagen, o el icono de su tipo */
+.gc-archivo__cara {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+  font-size: 1.375rem;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.gc-archivo__cara img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gc-archivo__video {
+  color: #6f42c1;
+}
+
+.gc-archivo__datos {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gc-archivo__nombre {
+  font-size: .75rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La descripción es el motivo de que esta pestaña exista: se le dejan dos
+   renglones, no uno, porque un archivo sin contexto no sirve de nada */
+.gc-archivo__desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  color: var(--bs-body-color, #212529);
+  font-size: .6875rem;
+  line-height: 1.3;
+}
+
+.gc-archivo__desc--falta {
+  color: var(--bs-secondary-color, #6c757d);
+  font-style: italic;
+}
+
+.gc-archivo__pie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .625rem;
+}
+
+.gc-archivo__acciones {
+  flex: 0 0 auto;
+  flex-direction: column;
+}
+
+/* En móvil los cuatro botones en columna hacían la tarjeta muy alta */
+@media (max-width: 575.98px) {
+  .gc-archivo__acciones {
+    flex-direction: row;
+  }
+
+  .gc-archivos__rejilla {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   PESTAÑA DE NOTAS
+
+   Tarjetas, no tabla: una nota se lee de un vistazo y lo que
+   importa es el contenido, no comparar columnas. Las fijadas
+   suben solas (lo ordena el servidor) y se marcan con la chincheta.
+
+   El color de la etiqueta entra por --tinte desde la plantilla,
+   que es donde se sabe cuál lleva cada nota.
+   ============================================================ */
+
+.gc-notas {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.gc-notas__barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding: .375rem .5rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.gc-notas__buscar {
+  position: relative;
+  flex: 1 1 auto;
+  max-width: 320px;
+}
+
+.gc-notas__buscar > i {
+  position: absolute;
+  top: 50%;
+  left: .5rem;
+  transform: translateY(-50%);
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  pointer-events: none;
+}
+
+.gc-notas__buscar input {
+  height: 26px;
+  padding: .1rem 1.5rem .1rem 1.5rem;
+  font-size: .75rem;
+}
+
+.gc-notas__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .25rem;
+  transform: translateY(-50%);
+
+  padding: 0 .25rem;
+  border: 0;
+  background: none;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+  cursor: pointer;
+}
+
+.gc-notas__vacio {
+  padding: 1.5rem 1.25rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Columnas que se adaptan solas: en un monitor caben tres y en el teléfono una */
+.gc-notas__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: .5rem;
+  align-content: start;
+
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .5rem;
+  overflow-y: auto;
+}
+
+.gc-nota {
+  display: flex;
+  flex-direction: column;
+
+  padding: .5rem .625rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  /* La etiqueta de color, en una banda lateral: se ve sin leer nada */
+  border-left: 3px solid var(--tinte, #6c757d);
+  border-radius: .375rem;
+
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.gc-nota:hover {
+  border-color: var(--bs-border-color, #dee2e6);
+  border-left-color: var(--tinte, #6c757d);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+}
+
+/* Fijada: fondo tenue del propio color, para que destaque sin gritar */
+.gc-nota.is-fijada {
+  background-color: rgba(240, 173, 78, .07);
+  border-color: rgba(240, 173, 78, .35);
+}
+
+.gc-nota__cabecera {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  margin-bottom: .25rem;
+}
+
+.gc-nota__chincheta {
+  flex: 0 0 auto;
+  color: #f0ad4e;
+  font-size: .6875rem;
+  transform: rotate(35deg);
+}
+
+.gc-nota__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  font-size: .8125rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gc-nota__color {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--tinte, #6c757d);
+}
+
+/* El cuerpo es HTML del editor: se recorta a seis renglones para que una nota
+   larga no deje las demás fuera de pantalla. Se abre entera al modificarla. */
+:host ::ng-deep .gc-nota__cuerpo {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  font-size: .75rem;
+  line-height: 1.45;
+}
+
+/* Lo que se escribió dentro, a tamaño de tarjeta */
+:host ::ng-deep .gc-nota__cuerpo :is(p, ul, ol) { margin: 0 0 .25rem; }
+:host ::ng-deep .gc-nota__cuerpo ul,
+:host ::ng-deep .gc-nota__cuerpo ol { padding-left: 1.1rem; }
+/* El tema las quita en toda la aplicación; en una nota sí hacen falta */
+:host ::ng-deep .gc-nota__cuerpo ul { list-style: disc outside; }
+:host ::ng-deep .gc-nota__cuerpo ol { list-style: decimal outside; }
+:host ::ng-deep .gc-nota__cuerpo :is(h1, h2, h3, h4, h5, h6) { margin: 0 0 .25rem; font-size: .8125rem; }
+
+/* Una captura dentro de la nota: pequeña en la tarjeta, que lo que se lee ahí
+   es el texto. Entera se ve al abrir la nota para modificarla. */
+/* Se puede pulsar para abrirla entera */
+:host ::ng-deep .gc-nota__cuerpo {
+  cursor: pointer;
+}
+
+:host ::ng-deep .gc-nota__cuerpo img {
+  max-width: 100%;
+  max-height: 90px;
+  width: auto;
+  border-radius: .25rem;
+}
+
+:host ::ng-deep .gc-nota__cuerpo blockquote {
+  margin: .2rem 0;
+  padding-left: .5rem;
+  border-left: 2px solid var(--bs-border-color, #dee2e6);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gc-nota__pie {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  margin-top: .375rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .625rem;
+}
+
+.gc-nota__editada {
+  padding: 0 .3rem;
+  border-radius: .2rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .07);
+  cursor: help;
+}
+
+.gc-nota__acciones {
+  margin-top: .375rem;
+  justify-content: flex-end;
+}
+
+/* ---------- Móvil ---------- */
+@media (max-width: 575.98px) {
+  .gc-notas__rejilla { grid-template-columns: 1fr; }
+  .gc-notas__buscar  { max-width: none; }
+}
+
+/* ---------- Tablas dentro de una tarjeta de nota ----------
+   En la tarjeta el cuerpo va recortado a seis renglones, así que de una tabla
+   se verá sólo el principio: basta con que se entienda que es una tabla. */
+:host ::ng-deep .gc-nota__cuerpo table {
+  width: 100%;
+  margin: .25rem 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: .6875rem;
+}
+
+:host ::ng-deep .gc-nota__cuerpo :is(td, th) {
+  padding: .15rem .3rem;
+  border: 1px solid #dee2e6;
+}
+
+:host ::ng-deep .gc-nota__cuerpo th {
+  background-color: #f1f3f5;
+  font-weight: 600;
+}
+
+:host ::ng-deep .gc-nota__cuerpo :is(td, th) > p { margin: 0; }

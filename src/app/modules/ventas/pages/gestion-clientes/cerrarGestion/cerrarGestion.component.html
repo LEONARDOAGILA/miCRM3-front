@@ -16,21 +16,17 @@
 <div class="modal-body cerrar-modal-body">
   <form [formGroup]="form" class="form-validate" novalidate>
 
-    <!-- Qué se cierra -->
+    <!-- Qué se cierra. En una línea: es contexto, no el formulario. -->
     <div class="cerrar-cabecera">
-      <span class="cerrar-cabecera__icono"><i class="fa fa-clock"></i></span>
-      <div class="cerrar-cabecera__texto">
-        <span class="cerrar-cabecera__asunto">{{ gestion?.asunto }}</span>
-        <span class="cerrar-cabecera__dato">
-          <i class="fa fa-user fa-fw"></i>{{ gestion?.cliente_nombre }}
-          @if (gestion?.fecha_programada) {
-            <span class="ms-2"><i class="fa fa-calendar fa-fw"></i>{{ gestion?.fecha_programada }}</span>
-          }
-          @if (gestion?.vencida) {
-            <span class="badge bg-danger fs-10px ms-2">Vencida</span>
-          }
-        </span>
-      </div>
+      <i class="fa fa-clock fa-fw"></i>
+      <span class="cerrar-cabecera__asunto">{{ gestion?.asunto }}</span>
+      <span class="cerrar-cabecera__dato"><i class="fa fa-user fa-fw"></i>{{ gestion?.cliente_nombre }}</span>
+      @if (gestion?.fecha_programada) {
+        <span class="cerrar-cabecera__dato"><i class="fa fa-calendar fa-fw"></i>{{ gestion?.fecha_programada }}</span>
+      }
+      @if (gestion?.vencida) {
+        <span class="badge bg-danger fs-10px">Vencida</span>
+      }
     </div>
 
     <panel
@@ -45,7 +41,7 @@
       <ng-container outsideBody>
         <div class="form-card__body">
           <div class="row g-2">
-            <div class="col-12 col-md-7">
+            <div class="col-8 col-md-9">
               <div class="campo-combo">
                 <app-combo
                   formControlName="resultado"
@@ -56,7 +52,7 @@
                 </app-combo>
               </div>
             </div>
-            <div class="col-12 col-md-5">
+            <div class="col-4 col-md-3">
               <app-campoNumeroEntero
                 [control]="form.controls['duracion_minutos']"
                 label="Duración (min)"
@@ -70,7 +66,7 @@
                 label="Qué se habló"
                 placeholder="Lo que dijo el cliente, acuerdos, próximos pasos…"
                 [maxLength]="4000"
-                [alto]="100">
+                [alto]="78">
               </app-campoTextoArea>
             </div>
           </div>
@@ -91,26 +87,23 @@
       <ng-container outsideBody>
         <div class="form-card__body">
 
+          <!-- El interruptor, en una línea con su pista al lado -->
           <div class="cerrar-seguimiento" [class.is-on]="quiereSeguimiento">
-            <span class="cerrar-seguimiento__icono"><i class="fa-solid fa-calendar-plus"></i></span>
-            <div class="cerrar-seguimiento__texto">
-              <span class="cerrar-seguimiento__label">Programar el seguimiento</span>
-              <span class="cerrar-seguimiento__hint">
-                {{ quiereSeguimiento
-                   ? 'Queda en la agenda enganchado a esta gestión'
-                   : 'El cliente se queda sin próxima acción' }}
-              </span>
-            </div>
             <app-checkbox class="cerrar-seguimiento__switch"
               [control]="ctrlProgramar"
-              [label]="quiereSeguimiento ? 'Sí' : 'No'"
+              [label]="'Programar el seguimiento'"
               [id]="'ck-programar-seguimiento'">
             </app-checkbox>
+            <span class="cerrar-seguimiento__hint">
+              {{ quiereSeguimiento
+                 ? 'Queda en la agenda enganchado a esta gestión'
+                 : 'El cliente se queda sin próxima acción' }}
+            </span>
           </div>
 
           @if (quiereSeguimiento) {
             <div class="row g-2">
-              <div class="col-12 col-md-5">
+              <div class="col-12 col-md-3">
                 <app-campoTexto
                   [control]="form.controls['sig_fecha']"
                   label="Fecha y hora"
@@ -118,7 +111,7 @@
                   [limpiable]="false">
                 </app-campoTexto>
               </div>
-              <div class="col-6 col-md-4">
+              <div class="col-6 col-md-3">
                 <div class="campo-combo">
                   <app-combo
                     formControlName="sig_tipo"
@@ -129,7 +122,7 @@
                   </app-combo>
                 </div>
               </div>
-              <div class="col-6 col-md-3">
+              <div class="col-6 col-md-2">
                 <div class="campo-combo">
                   <app-combo
                     formControlName="sig_prioridad"
@@ -140,7 +133,9 @@
                   </app-combo>
                 </div>
               </div>
-              <div class="col-12">
+              <!-- Los cuatro en una fila (3+3+2+4): antes el asunto se iba
+                   solo a la siguiente y dejaba media fila vacía. -->
+              <div class="col-12 col-md-4">
                 <app-campoTexto
                   [control]="form.controls['sig_asunto']"
                   label="Asunto"

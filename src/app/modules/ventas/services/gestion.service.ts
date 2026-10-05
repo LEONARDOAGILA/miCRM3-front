@@ -2,11 +2,16 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { RolResponsable } from '../interfaces/gestionModel';
 
 /** Filtros de la grilla de gestiones. */
 export interface FiltrosGestion {
   tipo?: string | null;
   estado?: string | null;
+  /** Cómo terminó: CONTACTADO, NO_CONTESTA… */
+  resultado?: string | null;
+  /** El login de quien la registró (gestiones.created_by) */
+  creado_por?: string | null;
   desde?: string | null;
   hasta?: string | null;
 }
@@ -17,8 +22,8 @@ export interface FiltrosAgenda {
   mias?: boolean;
   /** Sólo lo que ya se pasó de hora */
   soloVencidas?: boolean;
-  /** La agenda de un vendedor concreto */
-  empleadoId?: number | null;
+  /** La agenda de un vendedor concreto, por su id de USUARIO */
+  usuarioId?: number | null;
   /** AAAA-MM-DD */
   desde?: string | null;
   hasta?: string | null;
@@ -37,6 +42,25 @@ export interface MetaAgenda {
   vencidas: number;
   hoy: number;
   mostradas: number;
+  /**
+   * Si este usuario manda sobre alguien más (jefe de zona, supervisor,
+   * administrador…). Sirve para no enseñarle el botón de «De mi equipo» a
+   * quien no tiene equipo, porque no le cambiaría nada.
+   *
+   * Es una pista para la pantalla, NO el permiso: el límite lo pone siempre el
+   * servidor con la jerarquía de grupos, pida lo que pida el navegador.
+   */
+  ve_de_otros?: boolean;
+
+  /**
+   * Si quien pregunta es administrador (es_administrador de su grupo).
+   *
+   * Viene aquí porque el login no lo dice —devuelve id, nombre, correo, avatar
+   * y perfil, nada más— y estas funciones ya lo resuelven para recortar lo que
+   * devuelven. Es la misma señal con la que el servidor cierra la ruta de
+   * reasignar, así que pantalla y servidor miran lo mismo.
+   */
+  es_admin?: boolean;
   /** Los de la paginación; sólo vienen de agendaPaginada */
   per_page?: number;
   current_page?: number;
@@ -71,6 +95,8 @@ export class GestionService {
     if (search) { params = params.set('search', search); }
     if (filtros.tipo)   { params = params.set('tipo', filtros.tipo); }
     if (filtros.estado) { params = params.set('estado', filtros.estado); }
+    if (filtros.resultado)  { params = params.set('resultado', filtros.resultado); }
+    if (filtros.creado_por) { params = params.set('creado_por', filtros.creado_por); }
     if (filtros.desde)  { params = params.set('desde', filtros.desde); }
     if (filtros.hasta)  { params = params.set('hasta', filtros.hasta); }
     return this._http.get<any>(this.URL_SERVICIOS + 'allGestiones', { params, observe: 'response' });
@@ -96,7 +122,7 @@ export class GestionService {
     let params = new HttpParams().set('limite', String(filtros.limite ?? 200));
     if (filtros.mias) { params = params.set('mias', '1'); }
     if (filtros.soloVencidas) { params = params.set('vencidas', '1'); }
-    if (filtros.empleadoId) { params = params.set('empleado_id', String(filtros.empleadoId)); }
+    if (filtros.usuarioId) { params = params.set('usuario_id', String(filtros.usuarioId)); }
     if (filtros.desde) { params = params.set('desde', filtros.desde); }
     if (filtros.hasta) { params = params.set('hasta', filtros.hasta); }
     return this._http.get(this.URL_SERVICIOS + 'agenda', { params });
@@ -114,7 +140,7 @@ export class GestionService {
 
     if (filtros.mias) { params = params.set('mias', '1'); }
     if (filtros.soloVencidas) { params = params.set('vencidas', '1'); }
-    if (filtros.empleadoId) { params = params.set('empleado_id', String(filtros.empleadoId)); }
+    if (filtros.usuarioId) { params = params.set('usuario_id', String(filtros.usuarioId)); }
     if (filtros.desde) { params = params.set('desde', filtros.desde); }
     if (filtros.hasta) { params = params.set('hasta', filtros.hasta); }
     if (filtros.search) { params = params.set('search', filtros.search); }
@@ -153,8 +179,13 @@ export class GestionService {
   //   ******   CARTERA   ******  //
 
   /** Cambia el vendedor del cliente y deja el movimiento en el historial. */
-  reasignar(clienteId: number, data: { empleado_id: number | null; motivo?: string | null; mover_agenda?: boolean }): Observable<any> {
+  reasignar(clienteId: number, data: { usuario_id: number | null; motivo?: string | null; mover_agenda?: boolean; rol?: RolResponsable }): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'reasignar/' + clienteId, data);
+  }
+
+  /** Quién atiende al cliente ahora mismo, en cada papel. */
+  responsables(clienteId: number): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'responsables/' + clienteId);
   }
 
   asignaciones(clienteId: number): Observable<any> {

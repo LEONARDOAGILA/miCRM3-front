@@ -124,6 +124,21 @@ export class ResumenVentasComponent implements OnInit {
     return `${Math.floor(m / 60)} h ${m % 60} min`;
   }
 
+  /**
+   * Qué abarcan las cifras, en una línea.
+   *
+   * El mismo tablero lo mira un vendedor y lo mira gerencia, y las cifras ya
+   * no son las mismas para los dos: sin decir cuáles son, «1001 clientes» y
+   * «3 clientes» se leen igual de bien y significan cosas distintas.
+   */
+  public get alcance(): { icono: string; texto: string } {
+    switch (this.datos?.alcance) {
+      case 'TODO':   return { icono: 'fa-building', texto: 'Cifras de toda la empresa' };
+      case 'EQUIPO': return { icono: 'fa-users',    texto: 'Cifras de tu equipo' };
+      default:       return { icono: 'fa-user',     texto: 'Tus cifras' };
+    }
+  }
+
   /** Qué parte de la cartera está al día, en porcentaje entero. */
   public get porcentajeActivos(): number {
     const c = this.datos?.clientes;

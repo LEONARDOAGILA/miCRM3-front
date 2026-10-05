@@ -1,43 +1,45 @@
 <!-- ============================================================
      ELEGIR LA DIRECCIÓN EN EL MAPA (modal)
      Envuelve al mapa y devuelve la dirección desmenuzada con sus fotos.
+
+     La barra de título es la del <panel>, no un modal-header: el mapa ya no
+     trae la suya y así no se ven dos, igual que en auditoria-modal. La X de
+     cerrar sale del propio panel (ButtonRemoveModal).
+
+     Tampoco hay pie: las dos acciones van en esa misma barra, en la ranura
+     [header] del panel. Así el mapa se queda con todo el alto, que es lo que
+     se viene a mirar.
      ============================================================ -->
 
-<div class="modal-header su-cabecera">
-  <h5 class="modal-title"><i class="fa fa-map-location-dot me-2"></i>{{ titulo }}</h5>
-  <button type="button" class="btn-close" aria-label="Cerrar" (click)="activeModal.dismiss()"></button>
-</div>
+<panel [title]="titulo"
+       icono="map-location-dot"
+       [noButtonReload]="true"
+       [noButtonCollapse]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       bodyClass="p-0"
+       panelClass="mb-0"
+       (panelRemovedModal)="activeModal.dismiss()"
+       (panelExpanded)="alExpandirElPanel($event)">
 
-<div class="modal-body su-cuerpo">
-  <app-ubicacion-google-maps
-    [lugarInicial]="lugarInicial"
-    [altoMapa]="'min(58vh, 520px)'"
-    (lugarElegido)="alElegirEnElMapa($event)">
-  </app-ubicacion-google-maps>
-</div>
-
-<div class="modal-footer su-pie">
-  <!-- Qué se va a guardar, para que no haya sorpresas -->
-  <div class="su-resumen">
-    @if (lugar) {
-      <i class="fa fa-location-dot"></i>
-      <span class="su-resumen__texto">
-        <b>{{ lugar.nombre }}</b>
-        <small>{{ lugar.direccion }}</small>
-        <small class="su-resumen__coords">{{ coordenadas }}</small>
+  <!-- Las acciones, en la barra de título. Lo que se va a guardar se dice
+       aquí mismo en una línea, para no necesitar un pie. -->
+  <div header class="su-acciones">
+    <!-- @if (lugar) {
+      <span class="su-elegido" [title]="lugar.direccion + ' · ' + coordenadas">
+        <i class="fa fa-location-dot"></i>
+        <span class="su-elegido__texto">{{ lugar.nombre }}</span>
       </span>
     } @else {
-      <span class="su-resumen__vacio">
+      <span class="su-elegido su-elegido--vacio">
         <i class="fa fa-circle-info"></i>
-        Busca la dirección arriba o pulsa en el mapa.
+        <span class="su-elegido__texto">Busca la dirección o pulsa en el mapa</span>
       </span>
-    }
-  </div>
+    } -->
 
-  <div class="su-botones">
-    <button type="button" class="btn btn-sm btn-white" (click)="activeModal.dismiss()">
+    <!-- <button type="button" class="btn btn-sm btn-white" (click)="activeModal.dismiss()">
       <i class="fa fa-xmark me-1"></i>Cancelar
-    </button>
+    </button> -->
     <button type="button" class="btn btn-sm btn-primary" [disabled]="!lugar || guardando" (click)="usarEstaDireccion()">
       @if (guardando) {
         <i class="fa fa-circle-notch fa-spin me-1"></i>Tomando las fotos…
@@ -46,4 +48,13 @@
       }
     </button>
   </div>
-</div>
+
+  <!-- Sin [altoMapa]: el mapa llena la caja que le deje el modal, y al
+       expandir el panel crece con ella. -->
+  <div class="su-cuerpo">
+    <app-ubicacion-google-maps
+      [lugarInicial]="lugarInicial"
+      (lugarElegido)="alElegirEnElMapa($event)">
+    </app-ubicacion-google-maps>
+  </div>
+</panel>

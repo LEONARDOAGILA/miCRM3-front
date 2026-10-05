@@ -5,6 +5,10 @@ export interface GestionModel {
   cliente_nombre?: string;
   /** Empleado que la hace o la tiene pendiente (rh.empleados) */
   empleado_id?: number | null;
+  usuario_id?: number | null;
+  usuario_nombre?: string | null;
+  /** Sirve para las gestiones de antes y las de ahora */
+  responsable_nombre?: string | null;
   empleado_nombre?: string | null;
   /** Persona de contacto del cliente con la que se habló */
   contacto_id?: number | null;
@@ -27,6 +31,15 @@ export interface GestionModel {
   duracion_minutos?: number | null;
   /** Cómo terminó; sólo cuando está REALIZADA */
   resultado?: string | null;
+  /**
+   * El asunto del catálogo (ventas.gestiones_asuntos) al que apunta.
+   *
+   * Para agrupar en informes se usa esto; `asunto` guarda el texto tal como
+   * se vio el día que se registró, que es lo que se lee en el historial.
+   */
+  asunto_id?: number | null;
+  /** Cómo se registró: AHORA, YA_HECHA o PROGRAMADA. Vacío en lo anterior a octubre de 2026. */
+  modo_registro?: ModoRegistro | null;
 
   /** La gestión que la generó, cuando es un seguimiento */
   gestion_origen_id?: number | null;
@@ -40,6 +53,21 @@ export interface GestionModel {
 }
 
 /** Contadores del cliente (ventas.fn_gestiones_resumen). */
+/**
+ * Cómo se registró la gestión, para poder medirlo después.
+ *
+ * Dice cómo NACIÓ, no en qué estado está: una PROGRAMADA que luego se
+ * cierra sigue siendo PROGRAMADA, y así se puede ver qué parte del trabajo
+ * sale de la agenda. Va vacío en lo registrado antes de octubre de 2026.
+ */
+export type ModoRegistro = 'AHORA' | 'YA_HECHA' | 'PROGRAMADA';
+
+export const MODOS_REGISTRO: { id: ModoRegistro; name: string; ayuda: string }[] = [
+  { id: 'AHORA',      name: 'En este momento', ayuda: 'Se escribió mientras se hablaba con el cliente' },
+  { id: 'YA_HECHA',   name: 'Ya la hice',      ayuda: 'Se anotó después, con la hora que puso el vendedor' },
+  { id: 'PROGRAMADA', name: 'Programada',      ayuda: 'Salió de la agenda: se dejó pendiente para una fecha' },
+];
+
 export interface ResumenGestiones {
   cliente_id: number;
   total: number;
@@ -57,10 +85,14 @@ export interface ResumenGestiones {
 export interface AsignacionCliente {
   id: number;
   cliente_id: number;
+  usuario_anterior_id?: number | null;
+  usuario_nuevo_id?: number | null;
+  /** Histórico: las reasignaciones anteriores al cambio a usuarios */
   empleado_anterior_id?: number | null;
-  empleado_anterior?: string | null;
   empleado_nuevo_id?: number | null;
-  empleado_nuevo?: string | null;
+  /** El nombre de quien lo tenía y de quien lo tiene, venga de donde venga */
+  anterior?: string | null;
+  nuevo?: string | null;
   motivo?: string | null;
   asignado_at?: string;
   created_by?: string;
@@ -126,3 +158,44 @@ export function claseDeResultado(resultado: string | null | undefined): string {
     default:                return 'bg-secondary';
   }
 }
+
+// ============================================================
+// QUIÉN ATIENDE AL CLIENTE
+// ============================================================
+
+/**
+ * Los papeles con los que se puede atender a un cliente.
+ *
+ * La base NO los valida a propósito: la lista vive aquí y en el validador del
+ * controlador, así que añadir un responsable más no pide una migración.
+ * Al añadirlo, acuérdate del `in:` de GestionController@reasignar.
+ *
+ * Añadir POSTVENTA sí costó una (2026-10-04_ventas_responsable_postventa.sql),
+ * porque tres funciones enumeraban los papeles a mano. Ya no lo hacen: ahora
+ * preguntan por el titular de cada papel, cualquiera que sea. El siguiente se
+ * añade de verdad con las dos líneas de aquí abajo y el `in:` del controlador.
+ */
+export type RolResponsable = 'VENDEDOR' | 'COBRADOR' | 'ASISTENTE' | 'POSTVENTA';
+
+export interface ResponsableCliente {
+  rol: RolResponsable;
+  /**
+   * El USUARIO que ocupa el papel.
+   *
+   * Antes era un empleado de recursos humanos, que no entra al sistema: por
+   * eso a quien se le asignaba un cliente no le aparecía nada en su agenda.
+   * El empleado se quedó donde le corresponde, en el módulo de RRHH.
+   */
+  usuario_id: number | null;
+  usuario_nombre: string | null;
+  /** Desde cuándo lo atiende; null si el puesto está vacío */
+  desde: string | null;
+}
+
+/** Cómo se presenta cada papel: rótulo, icono y para qué sirve. */
+export const ROLES_RESPONSABLE: { id: RolResponsable; name: string; icono: string; ayuda: string }[] = [
+  { id: 'VENDEDOR',  name: 'Vendedor',  icono: 'fa-user-tie',   ayuda: 'Le vende y se lleva su agenda al cambiar' },
+  { id: 'COBRADOR',  name: 'Cobrador',  icono: 'fa-hand-holding-dollar', ayuda: 'Le gestiona los pagos' },
+  { id: 'ASISTENTE', name: 'Asistente', icono: 'fa-headset',    ayuda: 'Le llama y coordina' },
+  { id: 'POSTVENTA', name: 'Postventa', icono: 'fa-screwdriver-wrench', ayuda: 'Le atiende garantías y reclamos' },
+];

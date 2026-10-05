@@ -28,12 +28,12 @@ interface Acceso {
 }
 
 interface ModuloCard {
+  /** La ruta del módulo. Su primer tramo es lo que se compara con los accesos. */
   url: string;
   label: string;
   icon: string;
   color: string;
   descripcion: string;
-  action?: string;
 }
 
 interface ActivityItem {
@@ -116,7 +116,10 @@ export class HomePage implements OnInit, OnDestroy {
     { url: '/logistica', label: 'Logística', icon: 'fa-truck', color: 'bg-teal', descripcion: 'Transporte, rutas, entregas' },
     { url: '/rh', label: 'RRHH', icon: 'fa-users-gear', color: 'bg-orange', descripcion: 'Cargos, empleados, nómina, reclutamiento' },
     { url: '/reportes', label: 'Reportes', icon: 'fa-chart-pie', color: 'bg-indigo', descripcion: 'Dashboards, BI, análisis' },
-    { url: '', label: 'Seguridad', icon: 'fa-shield-alt', color: 'bg-dark', descripcion: 'Roles, permisos, auditoría', action: 'seguridad' }
+    // Seguridad va como una más. Antes tenía la url vacía, y por eso había que
+    // exceptuarla del filtro a mano («Seguridad siempre visible»): esa línea
+    // era la que se la enseñaba a todo el mundo.
+    { url: '/seguridad', label: 'Seguridad', icon: 'fa-shield-alt', color: 'bg-dark', descripcion: 'Roles, permisos, auditoría' }
   ];
 
   constructor(
@@ -254,42 +257,54 @@ export class HomePage implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Las tarjetas de módulo que puede ver quien ha entrado.
+   *
+   * Sale de `accesos`, lo que el login dejó en localStorage, que ya viene
+   * filtrado por el permiso de EJECUTAR: si una opción está ahí es que su
+   * perfil la puede abrir. Así que aquí no hay que consultar permisos, sólo
+   * agrupar lo que hay por módulos.
+   *
+   * Se compara el PRIMER TRAMO de la ruta: «ventas/gestionClientes» es del
+   * módulo «/ventas». Antes se miraba si una cadena contenía a la otra, y de
+   * ahí salían dos fallos: un acceso con la url vacía los habría enseñado
+   * todos (cualquier cadena contiene a la vacía), y «/rh» casaba con cualquier
+   * ruta que llevase «rh» dentro.
+   *
+   * Si no hay accesos no se enseña nada. Antes se enseñaban TODOS, que es lo
+   * contrario de lo que conviene cuando no se sabe qué puede hacer el usuario.
+   */
   cargarModulosPermitidos(): void {
-    const accesosString = localStorage.getItem('accesos');
-    
-    if (accesosString) {
-      try {
-        const accesos: Acceso[] = JSON.parse(accesosString);
-        const urlsPermitidas = accesos.map(a => a.url);
-        
-        // Filtrar módulos según accesos
-        this.modulosPermitidos = this.TODOS_LOS_MODULOS.filter(modulo => {
-          if (modulo.action === 'seguridad') return true; // Seguridad siempre visible
-          if (!modulo.url) return false;
-          // Verificar si la URL está en los accesos
-          return urlsPermitidas.some(url => modulo.url.includes(url) || url.includes(modulo.url.replace('/', '')));
-        });
-        
-      } catch (error) {
-        console.error('Error al parsear accesos:', error);
-        this.cargarModulosPorDefecto();
+    let permitidos = new Set<string>();
+
+    try {
+      const guardado = localStorage.getItem('accesos');
+      const accesos = JSON.parse(guardado ?? '[]');
+      if (Array.isArray(accesos)) {
+        permitidos = new Set((accesos as Acceso[])
+          .map(a => this.moduloDe(a?.url))
+          .filter(m => !!m));
       }
-    } else {
-      this.cargarModulosPorDefecto();
+    } catch (error) {
+      // Sin accesos legibles no se abre nada: más vale un inicio vacío que uno
+      // que ofrece puertas que luego dan un 403
+      console.error('Error al parsear accesos:', error);
     }
+
+    this.modulosPermitidos = this.TODOS_LOS_MODULOS.filter(m => permitidos.has(this.moduloDe(m.url)));
   }
 
-  cargarModulosPorDefecto(): void {
-    this.modulosPermitidos = [...this.TODOS_LOS_MODULOS];
+  /**
+   * A qué módulo pertenece una ruta: su primer tramo, sin barras ni mayúsculas.
+   * «/ventas» y «ventas/gestionClientes» dan los dos «ventas».
+   */
+  private moduloDe(url: string | null | undefined): string {
+    return (url ?? '').trim().toLowerCase().replace(/^\/+/, '').split('/')[0];
   }
 
   navegarA(url: string): void {
     if (url) {
       this.router.navigate([url]);
     }
-  }
-
-  fun_seguridad(): void {
-    this.router.navigate(['/seguridad']);
   }
 }

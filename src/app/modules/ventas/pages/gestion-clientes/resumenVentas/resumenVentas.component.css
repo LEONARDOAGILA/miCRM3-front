@@ -7,6 +7,17 @@
    que le queda al panel.
    ============================================================ */
 
+/* Qué abarcan las cifras. Va en tenue a propósito: es la letra pequeña de lo
+   que viene debajo, no un titular que compita con los números gordos. */
+.rv-alcance {
+  display: flex;
+  align-items: center;
+
+  margin: 0 0 .5rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
 .rv-cargando {
   display: flex;
   flex-direction: column;
@@ -271,19 +282,17 @@
 }
 
 /* ---------- Pie ---------- */
+/* Ya sólo lleva la hora del cálculo: a la derecha, donde estaba el botón que
+   se quitó, en vez de suelta a la izquierda */
 .rv-pie {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: .5rem;
 
   margin-top: .625rem;
   font-size: .6875rem;
   color: var(--bs-secondary-color, #6c757d);
-}
-
-.rv-pie .btn {
-  font-size: .6875rem;
 }
 
 /* ---------- Modo oscuro ---------- */

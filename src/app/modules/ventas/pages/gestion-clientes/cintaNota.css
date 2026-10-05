@@ -1,0 +1,379 @@
+/* ============================================================
+   LA CINTA DE LAS NOTAS
+
+   La barra de acciones al estilo de la cinta de Word: pestañas
+   arriba y, debajo, los controles repartidos en grupos con su
+   nombre. No es decoración: con veinte controles seguidos en una
+   tira, encontrar «justificado» es cuestión de ir probando;
+   agrupados y con etiqueta, se busca por el nombre del grupo.
+
+   Vive en su propio fichero porque la usan el editor (saveNota) y
+   el visor (verNota), y las dos tienen que verse igual. Se trae
+   con @import desde el css de cada componente —y no desde el
+   styles.css global— para que siga siendo css de componente: así
+   se queda encapsulada, :host-context funciona y no viaja a las
+   pantallas que no la usan.
+
+   Los tintes van en rgba y no en color-mix(): el front tiene que
+   funcionar en un iPhone 7 (ver .browserslistrc).
+   ============================================================ */
+
+.cinta {
+  flex: 0 0 auto;
+  border-bottom: 1px solid rgba(0, 0, 0, .15);
+  background-color: #f8f9fa;
+}
+
+/* ---------- La fila de pestañas ---------- */
+.cinta__pestanas {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+
+  padding: 0 .5rem;
+  background-color: #e9ecef;
+  border-bottom: 1px solid rgba(0, 0, 0, .08);
+}
+
+.cinta__pestana {
+  padding: .3rem .7rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+
+  background: transparent;
+  color: #495057;
+  font-size: .75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+
+.cinta__pestana:hover {
+  background-color: rgba(0, 0, 0, .05);
+}
+
+/* La activa se funde con los grupos de abajo, como en Word: se lee que lo de
+   debajo es lo suyo y no una barra suelta */
+.cinta__pestana.is-activa {
+  background-color: #f8f9fa;
+  border-bottom-color: var(--bs-app-theme, #00acac);
+  color: #212529;
+}
+
+/* La contextual de tabla, en el color del tema para que se note que apareció
+   sola y que no está siempre */
+.cinta__pestana--contextual {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.cinta__cuenta {
+  margin-left: auto;
+  align-self: center;
+
+  padding: .05rem .4rem;
+  border-radius: .75rem;
+  background-color: rgba(0, 0, 0, .06);
+  color: #6c757d;
+  font-size: .6875rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- Los grupos ---------- */
+.cinta__grupos {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: .25rem;
+  padding: .25rem .5rem .125rem;
+}
+
+.cinta__grupo {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  padding: 0 .4rem;
+  border-right: 1px solid rgba(0, 0, 0, .1);
+}
+
+.cinta__grupo:last-of-type {
+  border-right: 0;
+}
+
+.cinta__grupo__fila {
+  display: flex;
+  align-items: center;
+  gap: .125rem;
+  min-height: 30px;
+}
+
+/* El nombre del grupo: pequeño y apagado, porque se lee cuando se busca algo,
+   no mientras se escribe */
+.cinta__grupo__etiqueta {
+  padding-top: .1rem;
+  color: #868e96;
+  font-size: .625rem;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cinta__ayuda {
+  align-self: center;
+  margin-left: auto;
+  padding-left: .5rem;
+
+  color: #868e96;
+  font-size: .6875rem;
+  white-space: nowrap;
+}
+
+/* ---------- Los botones ---------- */
+.cinta__btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: .25rem;
+
+  background: transparent;
+  color: #495057;
+  font-size: .75rem;
+  cursor: pointer;
+
+  transition: background-color .12s ease, color .12s ease;
+}
+
+.cinta__btn:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, .08);
+}
+
+.cinta__btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+/* El grande lleva el icono encima del nombre, como los de la cinta de Word:
+   son las acciones que no se usan a cada rato y que conviene poder leer */
+.cinta__btn--grande {
+  flex-direction: column;
+  justify-content: center;
+  gap: .1rem;
+
+  width: auto;
+  min-width: 52px;
+  height: auto;
+  padding: .25rem .4rem;
+  font-size: .625rem;
+  line-height: 1.1;
+}
+
+.cinta__btn--grande i {
+  font-size: 1rem;
+}
+
+/* El principal es el único con color: en el editor es Guardar, que es lo que
+   hay que pulsar para que lo escrito no se pierda */
+.cinta__btn--principal {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.cinta__btn--principal:hover:not(:disabled) {
+  background-color: rgba(0, 172, 172, .12);
+}
+
+.cinta__btn--quitar:hover:not(:disabled) {
+  background-color: rgba(220, 53, 69, .15);
+  color: #dc3545;
+}
+
+/* La «f» y la «c» de quitar fila / quitar columna: con el icono del menos solo
+   no se distinguen, y dos iconos parecidos seguidos son una trampa */
+.cinta__btn__letra {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  font-size: .5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ---------- Los desplegables ---------- */
+.cinta__select {
+  height: 26px;
+  padding: 0 1.1rem 0 .25rem;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+
+  background-color: transparent;
+  color: #495057;
+  font-size: .75rem;
+  cursor: pointer;
+
+  transition: border-color .12s ease, background-color .12s ease;
+}
+
+.cinta__select:hover {
+  border-color: #dee2e6;
+  background-color: #fff;
+}
+
+.cinta__select:focus {
+  outline: none;
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: #fff;
+}
+
+/* Anchos fijos: si se dejan al contenido, el desplegable cambia de tamaño al
+   elegir («Arial» mide la mitad que «Times New Roman») y la cinta entera baila */
+.cinta__select--familia { width: 130px; }
+.cinta__select--tamano  { width: 62px; }
+
+/* ---------- La etiqueta de color y el «fijar» ---------- */
+.cinta__color {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.cinta__color__punto {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.cinta__fijar {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+
+  padding: .2rem .4rem;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+
+  color: #6c757d;
+  font-size: .6875rem;
+  white-space: nowrap;
+  cursor: pointer;
+
+  transition: border-color .12s ease, background-color .12s ease, color .12s ease;
+}
+
+.cinta__fijar:hover {
+  border-color: #dee2e6;
+}
+
+.cinta__fijar.is-activa {
+  border-color: rgba(240, 173, 78, .5);
+  background-color: rgba(240, 173, 78, .12);
+  color: #a86a12;
+}
+
+/* La barra de ngx-editor se mete dentro de un grupo: sin caja propia, para que
+   parezca parte del grupo y no otra barra */
+:host ::ng-deep .cinta .NgxEditor__MenuBar {
+  padding: 0;
+  border: 0;
+  min-height: 0;
+  background: transparent;
+}
+
+/* ---------- Móvil ----------
+   En una pantalla estrecha no caben las etiquetas de los grupos ni los textos
+   de ayuda; los controles sí, que es lo que hace falta. */
+@media (max-width: 575.98px) {
+  .cinta__grupo__etiqueta,
+  .cinta__ayuda { display: none; }
+
+  .cinta__grupos { padding-bottom: .25rem; }
+  .cinta__select--familia { width: 92px; }
+}
+
+/* ============================================================
+   MODO OSCURO
+
+   El tema pone data-bs-theme="dark" en <html>; se usa :host-context
+   porque eso vive fuera del componente (mismo patrón que
+   auditoria-modal).
+
+   Qué estaba mal: ngx-editor dibuja sus iconos con fill="currentColor"
+   (DEFAULT_ICON_FILL), así que heredan el color del texto. En oscuro ese
+   color es claro, pero la cinta conservaba su fondo claro: iconos claros
+   sobre fondo claro, que es exactamente lo que se ve como
+   «desactivado». No era opacidad; era contraste.
+   ============================================================ */
+:host-context([data-bs-theme='dark']) .cinta {
+  background-color: var(--bs-secondary-bg, #343a40);
+  border-bottom-color: rgba(255, 255, 255, .12);
+  color: #e9ecef;
+
+  /* Las ventanitas de ngx-editor (el desplegable de títulos, el selector
+     de color, el de enlace) se pintan con fondo blanco fijo y su texto
+     hereda el claro de arriba: quedaban ilegibles */
+  --ngx-editor-popup-bg-color: #2b3035;
+  --ngx-editor-popup-shadow: rgba(0, 0, 0, .5) 0 2px 8px 2px;
+  --ngx-editor-menu-item-hover-bg-color: rgba(255, 255, 255, .12);
+  --ngx-editor-menu-item-active-bg-color: rgba(110, 168, 254, .22);
+  --ngx-editor-menu-item-active-color: #6ea8fe;
+  --ngx-editor-seperator-color: rgba(255, 255, 255, .2);
+  --ngx-editor-text-color: #e9ecef;
+  --ngx-editor-border-color: rgba(255, 255, 255, .2);
+  --ngx-editor-background-color: #2b3035;
+}
+
+:host-context([data-bs-theme='dark']) .cinta__pestanas {
+  background-color: rgba(0, 0, 0, .25);
+  border-bottom-color: rgba(255, 255, 255, .1);
+}
+
+:host-context([data-bs-theme='dark']) .cinta__pestana {
+  color: #ced4da;
+}
+
+:host-context([data-bs-theme='dark']) .cinta__pestana:hover {
+  background-color: rgba(255, 255, 255, .1);
+}
+
+:host-context([data-bs-theme='dark']) .cinta__pestana.is-activa {
+  background-color: var(--bs-secondary-bg, #343a40);
+  color: #fff;
+}
+
+:host-context([data-bs-theme='dark']) .cinta__grupo {
+  border-right-color: rgba(255, 255, 255, .15);
+}
+
+:host-context([data-bs-theme='dark']) .cinta__btn,
+:host-context([data-bs-theme='dark']) .cinta__select {
+  color: #e9ecef;
+}
+
+:host-context([data-bs-theme='dark']) .cinta__btn:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, .12);
+}
+
+:host-context([data-bs-theme='dark']) .cinta__select:hover,
+:host-context([data-bs-theme='dark']) .cinta__select:focus {
+  border-color: rgba(255, 255, 255, .25);
+  background-color: rgba(255, 255, 255, .08);
+}
+
+:host-context([data-bs-theme='dark']) .cinta__grupo__etiqueta,
+:host-context([data-bs-theme='dark']) .cinta__ayuda,
+:host-context([data-bs-theme='dark']) .cinta__fijar {
+  color: #adb5bd;
+}
+
+:host-context([data-bs-theme='dark']) .cinta__cuenta {
+  background-color: rgba(255, 255, 255, .1);
+  color: #ced4da;
+}

@@ -1,0 +1,217 @@
+<!-- ============================================================
+     CATÁLOGO DE GESTIÓN
+
+     Tipos a la izquierda, los asuntos del tipo elegido a la derecha.
+     Lo que se da de alta aquí es lo que puede elegirse al registrar
+     una gestión: desde que el asunto se elige en vez de escribirse,
+     esta pantalla es la que decide qué hay en ese combo.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Ventas</a></li>
+  <li class="breadcrumb-item active">Catálogo de gestión</li>
+</ol>
+
+<panel title="Tipos y asuntos de gestión"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       (panelReloaded)="cargarTipos()"
+       [closeRoute]="'/ventas'"
+       icono="list-check">
+
+  <div class="content-container1 cat-contenido">
+
+    <!-- Para qué sirve esto, en una línea: quien entra por primera vez no
+         tiene por qué saber qué cambia al tocar esta lista -->
+    <div class="cat-aviso">
+      <i class="fa fa-circle-info fa-fw me-1"></i>
+      Al registrar una gestión el asunto <b>se elige de aquí</b>, no se escribe.
+      Es lo que permite después agrupar por asunto sin que «Cobranza» y «cobranzas»
+      cuenten como dos cosas distintas.
+      <label class="cat-aviso__check">
+        <input type="checkbox" [(ngModel)]="verInactivos"> Ver los desactivados
+      </label>
+    </div>
+
+    <div class="row g-3">
+
+      <!-- ================= TIPOS ================= -->
+      <div class="col-12 col-lg-5">
+        <div class="cat-caja">
+          <div class="cat-caja__titulo">
+            <i class="fa fa-tags fa-fw me-1"></i>Tipos
+            <span class="cat-caja__cuenta">{{ tiposVisibles.length }}</span>
+          </div>
+
+          <div class="cat-caja__cuerpo">
+            @if (cargandoTipos) {
+              <div class="cat-vacio"><i class="fa fa-spinner fa-spin me-1"></i>Cargando…</div>
+            } @else if (!tiposVisibles.length) {
+              <div class="cat-vacio">No hay tipos. Crea el primero abajo.</div>
+            }
+
+            @for (t of tiposVisibles; track t.id) {
+              <div class="cat-fila"
+                   [class.is-elegida]="tipoElegido?.id === t.id"
+                   [class.is-inactiva]="t.activo === false">
+
+                @if (editandoTipo === t.id) {
+                  <!-- En edición: los tres campos en la misma fila -->
+                  <input class="form-control form-control-sm cat-campo cat-campo--codigo"
+                         [(ngModel)]="borrador.codigo" placeholder="CÓDIGO" maxlength="20">
+                  <input class="form-control form-control-sm cat-campo"
+                         [(ngModel)]="borrador.nombre" placeholder="Nombre" maxlength="60">
+                  <input class="form-control form-control-sm cat-campo cat-campo--icono"
+                         [(ngModel)]="borrador.icono" placeholder="fa-phone" maxlength="40"
+                         title="Clase de Font Awesome, por ejemplo fa-phone o fab fa-whatsapp">
+                  <span class="cat-acciones">
+                    <button type="button" class="btn-icon btn-guardar" title="Guardar"
+                            [disabled]="guardando" (click)="guardarTipoEditado(t)">
+                      <i class="fa fa-check"></i>
+                    </button>
+                    <button type="button" class="btn-icon btn-cancelar" title="Cancelar" (click)="cancelarTipo()">
+                      <i class="fa fa-xmark"></i>
+                    </button>
+                  </span>
+
+                } @else {
+                  <button type="button" class="cat-fila__nombre" (click)="elegirTipo(t)">
+                    <i class="fa-fw me-1" [ngClass]="icono(t)"></i>
+                    <span class="cat-fila__texto">{{ t.nombre }}</span>
+                    <span class="cat-fila__codigo">{{ t.codigo }}</span>
+                  </button>
+
+                  <span class="cat-fila__dato" [title]="cuantosAsuntos(t) + ' asunto(s)'">
+                    {{ cuantosAsuntos(t) }}
+                  </span>
+                  <span class="cat-fila__dato cat-fila__dato--uso" [title]="(t.en_uso ?? 0) + ' gestión(es) de este tipo'">
+                    {{ t.en_uso ?? 0 }}
+                  </span>
+
+                  <span class="cat-acciones">
+                    <button type="button" class="btn-icon btn-editar" title="Modificar"
+                            [disabled]="accesoModel?.editar === false" (click)="editarTipo(t)">
+                      <i class="fa fa-pen"></i>
+                    </button>
+                    <button type="button" class="btn-icon"
+                            [ngClass]="t.activo === false ? 'btn-activar' : 'btn-desactivar'"
+                            [title]="t.activo === false ? 'Volver a ofrecerlo' : 'Dejar de ofrecerlo'"
+                            [disabled]="accesoModel?.editar === false" (click)="alternarTipo(t)">
+                      <i class="fa" [ngClass]="t.activo === false ? 'fa-eye' : 'fa-eye-slash'"></i>
+                    </button>
+                    <button type="button" class="btn-icon btn-quitar" title="Eliminar"
+                            [disabled]="accesoModel?.eliminar === false" (click)="eliminarTipo(t)">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Alta: en la misma caja, para no abrir una ventana por cada tipo -->
+          <div class="cat-nuevo">
+            <input class="form-control form-control-sm cat-campo cat-campo--codigo"
+                   [(ngModel)]="nuevoTipo.codigo" placeholder="CÓDIGO" maxlength="20"
+                   [disabled]="accesoModel?.crear === false">
+            <input class="form-control form-control-sm cat-campo"
+                   [(ngModel)]="nuevoTipo.nombre" placeholder="Nombre del tipo" maxlength="60"
+                   [disabled]="accesoModel?.crear === false"
+                   (keyup.enter)="crearTipo()">
+            <input class="form-control form-control-sm cat-campo cat-campo--icono"
+                   [(ngModel)]="nuevoTipo.icono" placeholder="fa-phone" maxlength="40"
+                   [disabled]="accesoModel?.crear === false"
+                   title="Clase de Font Awesome, por ejemplo fa-phone o fab fa-whatsapp">
+            <button type="button" class="btn btn-xs btn-primary"
+                    [disabled]="accesoModel?.crear === false || guardando" (click)="crearTipo()">
+              <i class="fa fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= ASUNTOS ================= -->
+      <div class="col-12 col-lg-7">
+        <div class="cat-caja">
+          <div class="cat-caja__titulo">
+            <i class="fa fa-list fa-fw me-1"></i>Asuntos
+            @if (tipoElegido) {
+              <span class="cat-caja__de">de {{ tipoElegido.nombre }}</span>
+            }
+            <span class="cat-caja__cuenta">{{ asuntosVisibles.length }}</span>
+          </div>
+
+          <div class="cat-caja__cuerpo">
+            @if (!tipoElegido) {
+              <div class="cat-vacio">Elige un tipo de la izquierda.</div>
+            } @else if (cargandoAsuntos) {
+              <div class="cat-vacio"><i class="fa fa-spinner fa-spin me-1"></i>Cargando…</div>
+            } @else if (!asuntosVisibles.length) {
+              <div class="cat-vacio">
+                <i class="fa fa-triangle-exclamation me-1 text-warning"></i>
+                Este tipo no tiene asuntos: con él no se puede registrar ninguna gestión.
+              </div>
+            }
+
+            @for (a of asuntosVisibles; track a.id) {
+              <div class="cat-fila" [class.is-inactiva]="a.activo === false">
+
+                @if (editandoAsunto === a.id) {
+                  <input class="form-control form-control-sm cat-campo"
+                         [(ngModel)]="borrador.nombre" placeholder="Asunto" maxlength="200"
+                         (keyup.enter)="guardarAsuntoEditado(a)">
+                  <span class="cat-acciones">
+                    <button type="button" class="btn-icon btn-guardar" title="Guardar"
+                            [disabled]="guardando" (click)="guardarAsuntoEditado(a)">
+                      <i class="fa fa-check"></i>
+                    </button>
+                    <button type="button" class="btn-icon btn-cancelar" title="Cancelar" (click)="cancelarAsunto()">
+                      <i class="fa fa-xmark"></i>
+                    </button>
+                  </span>
+
+                } @else {
+                  <span class="cat-fila__texto cat-fila__texto--solo">{{ a.nombre }}</span>
+
+                  <span class="cat-fila__dato cat-fila__dato--uso" [title]="(a.en_uso ?? 0) + ' gestión(es) con este asunto'">
+                    {{ a.en_uso ?? 0 }}
+                  </span>
+
+                  <span class="cat-acciones">
+                    <button type="button" class="btn-icon btn-editar" title="Modificar"
+                            [disabled]="accesoModel?.editar === false" (click)="editarAsunto(a)">
+                      <i class="fa fa-pen"></i>
+                    </button>
+                    <button type="button" class="btn-icon"
+                            [ngClass]="a.activo === false ? 'btn-activar' : 'btn-desactivar'"
+                            [title]="a.activo === false ? 'Volver a ofrecerlo' : 'Dejar de ofrecerlo'"
+                            [disabled]="accesoModel?.editar === false" (click)="alternarAsunto(a)">
+                      <i class="fa" [ngClass]="a.activo === false ? 'fa-eye' : 'fa-eye-slash'"></i>
+                    </button>
+                    <button type="button" class="btn-icon btn-quitar" title="Eliminar"
+                            [disabled]="accesoModel?.eliminar === false" (click)="eliminarAsunto(a)">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="cat-nuevo">
+            <input class="form-control form-control-sm cat-campo"
+                   [(ngModel)]="nuevoAsunto" placeholder="Nuevo asunto para este tipo" maxlength="200"
+                   [disabled]="!tipoElegido || accesoModel?.crear === false"
+                   (keyup.enter)="crearAsunto()">
+            <button type="button" class="btn btn-xs btn-primary"
+                    [disabled]="!tipoElegido || accesoModel?.crear === false || guardando"
+                    (click)="crearAsunto()">
+              <i class="fa fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</panel>

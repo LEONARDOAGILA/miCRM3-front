@@ -174,3 +174,16 @@ cambiarPasswordRecuperacion(data: {
 
 }
 
+/**
+ * El nombre de un usuario tal como se enseña.
+ *
+ * Un usuario NO tiene «nombre_completo» como el empleado: tiene name y surname
+ * sueltos. Al cambiar los responsables de empleados a usuarios, los sitios que
+ * leían nombre_completo se quedaban con undefined y el campo salía en blanco.
+ * Si no tiene nombre cargado se cae al login, que al menos identifica a alguien.
+ */
+export function nombreDeUsuario(u: any): string {
+  if (!u) { return ''; }
+  const nombre = [u.name, u.surname].filter(Boolean).join(' ').trim();
+  return nombre || u.login_user || '';
+}

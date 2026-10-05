@@ -1,74 +1,104 @@
 /* ============================================================
    ELEGIR LA DIRECCIÓN EN EL MAPA (modal)
+
+   No hay pie: las acciones van en la barra de título, y todo el alto que
+   queda es para el mapa.
    ============================================================ */
 
-.su-cabecera {
-  padding: .75rem 1rem;
+/* ---------- Las acciones, en la barra del panel ---------- */
+.su-acciones {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  /* El .panel-title ya lleva flex:1 y empuja esto a la derecha; el auto es
+     por si algún día el panel va sin título. */
+  margin-left: auto;
+  margin-right: .5rem;
+  min-width: 0;
 }
 
-/* El mapa trae sus propios márgenes: aquí no se le añaden más */
+/* La barra es flex-wrap:nowrap: sin esto, los botones se estrujan antes que
+   el texto y se parten las etiquetas. */
+.su-acciones .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Lo que se va a guardar, en una línea */
+.su-elegido {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  min-width: 0;
+  margin-right: .25rem;
+  font-size: 12px;
+  color: #fff;
+}
+
+.su-elegido i {
+  flex: 0 0 auto;
+  opacity: .85;
+}
+
+.su-elegido__texto {
+  overflow: hidden;
+  max-width: 34ch;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.su-elegido--vacio {
+  opacity: .75;
+  font-style: italic;
+}
+
+/* En pantallas estrechas la barra no da para tanto texto: manda el botón.
+   Se va el resumen y también el título, que es «Dirección de Fulano de Tal» y
+   se come la barra entera; el nombre del cliente ya se ve en el formulario
+   que hay detrás, así que aquí no hace falta. */
+@media (max-width: 767.98px) {
+  .su-elegido { display: none; }
+
+  :host ::ng-deep .panel-heading > .panel-title {
+    display: none;
+  }
+}
+
+/* ---------- El cuerpo ----------
+   La cadena de alturas: el cuerpo del panel manda, y de ahí para abajo todo
+   es flex con min-height:0 para que el mapa pueda encoger en vez de desbordar. */
 .su-cuerpo {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding: .5rem;
 }
 
-.su-pie {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75rem;
-  flex-wrap: wrap;
+.su-cuerpo > app-ubicacion-google-maps {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.su-resumen {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  flex: 1 1 260px;
-  min-width: 0;
-  font-size: 12px;
-}
-
-.su-resumen > i {
-  color: var(--bs-app-theme, #00acac);
-}
-
-.su-resumen__texto {
+/* ---------- Panel expandido ----------
+   Estas reglas vivían en el CSS del mapa, cuando el <panel> estaba dentro de
+   él. Ahora el panel lo pone este modal, así que el mapa ya no puede
+   alcanzarlo con :host ::ng-deep y las reglas tienen que estar aquí. */
+:host ::ng-deep .panel.panel-expand > .panel-body {
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  line-height: 1.3;
-}
-
-.su-resumen__texto b {
+  min-height: 0;
   overflow: hidden;
-  font-size: 12.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.su-resumen__texto small {
-  overflow: hidden;
-  font-size: 10.5px;
-  color: var(--bs-secondary-color, #6c757d);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+:host ::ng-deep .panel.panel-expand .su-cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.su-resumen__coords {
-  font-family: var(--bs-font-monospace, monospace);
-}
-
-.su-resumen__vacio {
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.su-resumen__vacio i {
-  margin-right: .3rem;
-  color: var(--bs-app-theme, #00acac);
-}
-
-.su-botones {
-  display: flex;
-  gap: .4rem;
-  flex: 0 0 auto;
+/* Sin esto el mapa se quedaría con el alto fijo de su clamp y sobraría
+   blanco debajo, que es justo lo que se viene a evitar al expandir. */
+:host ::ng-deep .panel.panel-expand .gm-cuerpo {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
 }

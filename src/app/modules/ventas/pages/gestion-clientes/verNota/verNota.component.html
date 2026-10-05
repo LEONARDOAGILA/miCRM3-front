@@ -1,0 +1,95 @@
+<!-- ============================================================
+     LEER UNA NOTA
+
+     Presentada como un documento: fondo gris y la nota sobre una
+     hoja blanca centrada, igual que el visor de PDF del navegador.
+     Es lo que es —algo escrito que se lee de arriba abajo—, y así
+     se lee mejor que como un formulario sin campos.
+
+     Sin pie y sólo para leer: imprimir, expandir y cerrar van en
+     la barra de título, que es donde el resto de la aplicación los
+     pone. Para corregir la nota está su botón en la tarjeta.
+     ============================================================ -->
+
+<panel [title]="titulo"
+       headerClass="bg-cyan-700"
+       [noButtonCollapse]="true"
+       [noButtonReload]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       (panelRemovedModal)="modal.dismiss()">
+
+  <!-- ========================= LA CINTA =========================
+       La misma que la del editor (ver cintaNota.css), pero sin
+       pestañas: aquí sólo se lee, y una fila de pestañas para dos
+       botones es un piso de más que hay que bajar para llegar a lo
+       único que se puede hacer.
+
+       Imprimir ya no va en la barra de título del modal (era el
+       ButtonPrint del panel): los dos botones hacen lo mismo
+       —sacar la nota de la pantalla— y se leen mejor juntos y con
+       su nombre.
+       ============================================================ -->
+  <div class="cinta">
+    <div class="cinta__grupos">
+      <div class="cinta__grupo">
+        <div class="cinta__grupo__fila">
+          <button type="button" class="cinta__btn cinta__btn--grande cinta__btn--principal"
+                  title="Imprimir la nota (o guardarla como PDF)" (click)="imprimir()">
+            <i class="fa fa-print"></i><span>Imprimir</span>
+          </button>
+
+          <button type="button" class="cinta__btn cinta__btn--grande"
+                  title="Bajar la nota como documento de Word"
+                  [disabled]="exportando" (click)="exportarWord()">
+            @if (exportando) {
+              <i class="fa fa-spinner fa-spin"></i><span>Generando…</span>
+            } @else {
+              <i class="fa fa-file-word"></i><span>Exportar</span>
+            }
+          </button>
+        </div>
+        <div class="cinta__grupo__etiqueta">Documento</div>
+      </div>
+
+      <span class="cinta__ayuda">
+        <i class="fa fa-eye me-1"></i>Sólo lectura · para cambiarla, usa «Modificar» en la lista
+      </span>
+    </div>
+  </div>
+
+  <div class="nota-ver">
+    <div class="nota-ver__hoja">
+
+      <!-- La cabecera de la hoja: de qué es y de quién, como el membrete de
+           un documento -->
+      <div class="nota-ver__membrete">
+        <div class="nota-ver__membrete__izq">
+          <span class="nota-ver__color" [style.background-color]="tinteDeNota(nota?.color)"></span>
+          <span class="nota-ver__etiqueta">{{ nombreDeColor(nota?.color) }}</span>
+          @if (nota?.fijada) {
+            <span class="nota-ver__fijada"><i class="fa fa-thumbtack me-1"></i>Fijada</span>
+          }
+        </div>
+
+        <div class="nota-ver__membrete__der">
+          <span><i class="fa fa-user fa-fw"></i>{{ nota?.created_by }} · {{ nota?.created_at }}</span>
+          @if (nota?.editada) {
+            <span [title]="'Editada por ' + nota?.updated_by">
+              <i class="fa fa-pen fa-fw"></i>editada el {{ nota?.updated_at }}
+            </span>
+          }
+          @if (clienteNombre) {
+            <span class="nota-ver__cliente"><i class="fa fa-address-card fa-fw"></i>{{ clienteNombre }}</span>
+          }
+        </div>
+      </div>
+
+      <h2 class="nota-ver__titulo">{{ nota?.titulo }}</h2>
+
+      <!-- El contenido entero, sin el recorte de la tarjeta. El HTML lo sanea
+           Angular al pintarlo, y el servidor ya lo limpió al guardarlo. -->
+      <div class="nota-ver__cuerpo" [innerHTML]="nota?.contenido"></div>
+    </div>
+  </div>
+</panel>

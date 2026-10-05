@@ -6,11 +6,14 @@ import { Observable, Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 
 import { GestionService } from '../../../services/gestion.service';
-import { EmpleadoService } from '../../../../rh/services/empleado.service';
+import { UserService, nombreDeUsuario } from '../../../../seguridad/services/user.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ClienteModel } from '../../../interfaces/clienteModel';
-// El vendedor es un empleado: se elige con el mismo selector que el jefe en RH
-import { ListEmpleadosComponent } from '../../../../rh/pages/empleados/listEmpleados/listEmpleados.component';
+import { ROLES_RESPONSABLE, RolResponsable } from '../../../interfaces/gestionModel';
+// Se asigna a un USUARIO, no a un empleado: el responsable tiene que poder
+// entrar al sistema para que el cliente le aparezca en su agenda. La ficha de
+// recursos humanos se quedó en su módulo.
+import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/listUsuariosGrupos/listUsuariosGrupos.component';
 
 /**
  * Pasar el cliente a otro vendedor (ventas.fn_clientes_reasignar).
@@ -31,12 +34,25 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
   @Input() cliente: ClienteModel | null = null;
   /** Cuántas gestiones pendientes tiene ahora mismo (sólo informativo) */
   @Input() pendientes = 0;
+  /** Con qué papel se asigna. Sin indicar nada, el vendedor de siempre. */
+  @Input() rol: RolResponsable = 'VENDEDOR';
+  /**
+   * Quién lo tiene ahora en ese papel, para no proponer a la misma persona.
+   * Para el vendedor se cae a vendedor_id, que es donde vive.
+   */
+  @Input() actualId: number | null = null;
 
   @Output() reasignado = new EventEmitter<any>();
 
   public form!: FormGroup;
   public isLoading$ = this._loadingService.isLoading$;
   public guardando = false;
+
+  /** «Reasignar vendedor», «Reasignar cobrador»… según con qué papel se abra. */
+  get titulo(): string {
+    const r = ROLES_RESPONSABLE.find(x => x.id === this.rol);
+    return 'Reasignar ' + (r ? r.name.toLowerCase() : 'responsable');
+  }
 
   /** Nombre del vendedor elegido, de sólo lectura como en saveCliente */
   public vendedorNombreControl = new FormControl({ value: '', disabled: true });
@@ -50,12 +66,12 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
     private _toastr: ToastrService,
     private _loadingService: LoadingService,
     private _gestionService: GestionService,
-    private _empleadoService: EmpleadoService,
+    private _userService: UserService,
   ) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      empleado_id:  [null, [Validators.required]],
+      usuario_id:   [null, [Validators.required]],
       motivo:       ['', [Validators.maxLength(1000)]],
       mover_agenda: [true],
     });
@@ -83,20 +99,20 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
 
   /** Escribir el ID y salir del campo también resuelve el vendedor. */
   async cargarVendedorPorId(): Promise<void> {
-    const id = this.form.get('empleado_id')?.value;
+    const id = this.form.get('usuario_id')?.value;
     if (!id) { this.vendedorNombreControl.setValue(''); return; }
     try {
       this._loadingService.setLoading(true);
-      const res: any = await firstValueFrom(this._empleadoService.findByIdEmpleado(id));
+      const res: any = await firstValueFrom(this._userService.findByIdUser(id));
       if (res?.status === 'success') {
-        this.vendedorNombreControl.setValue(res.data.nombre_completo);
+        this.vendedorNombreControl.setValue(nombreDeUsuario(res.data));
       } else {
         this.vendedorNombreControl.setValue('');
-        this.form.patchValue({ empleado_id: null });
-        this._toastr.warning('Empleado no encontrado');
+        this.form.patchValue({ usuario_id: null });
+        this._toastr.warning('Usuario no encontrado');
       }
     } catch (error) {
-      this.form.patchValue({ empleado_id: null });
+      this.form.patchValue({ usuario_id: null });
       this.vendedorNombreControl.setValue('');
     } finally {
       this._loadingService.setLoading(false);
@@ -104,14 +120,14 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
   }
 
   abrirModalVendedores(): void {
-    const modalRef = this.modalService.open(ListEmpleadosComponent, { size: 'lg', centered: true, backdrop: 'static' });
-    modalRef.componentInstance.empleadoSeleccionadoId = this.form.get('empleado_id')?.value;
+    const modalRef = this.modalService.open(ListUsuariosGruposComponent, { size: 'xl', centered: true, backdrop: 'static' });
+    modalRef.componentInstance.usuarioSeleccionadoId = this.form.get('usuario_id')?.value;
     modalRef.componentInstance.ayuda = 'Haz clic sobre el vendedor que se hará cargo del cliente.';
     modalRef.componentInstance.seleccionado
       .pipe(takeUntil(this.hastaQueCierre(modalRef)))
       .subscribe((vendedor: any) => {
-        this.form.patchValue({ empleado_id: vendedor.id });
-        this.vendedorNombreControl.setValue(vendedor.nombre_completo);
+        this.form.patchValue({ usuario_id: vendedor.id });
+        this.vendedorNombreControl.setValue(nombreDeUsuario(vendedor));
       });
   }
 
@@ -125,12 +141,13 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
     this.form.markAllAsTouched();
 
     if (!this.cliente?.id) { return; }
-    if (!this.form.get('empleado_id')?.value) {
+    if (!this.form.get('usuario_id')?.value) {
       this._toastr.error('Elija el vendedor que se hará cargo.', 'No se puede reasignar', { timeOut: 8000, closeButton: true });
       return;
     }
-    if (Number(this.form.get('empleado_id')?.value) === Number(this.cliente.vendedor_id)) {
-      this._toastr.warning('El cliente ya está asignado a ese vendedor.', 'Sin cambios');
+    const actual = this.actualId ?? (this.rol === 'VENDEDOR' ? this.cliente.vendedor_id : null);
+    if (actual && Number(this.form.get('usuario_id')?.value) === Number(actual)) {
+      this._toastr.warning('El cliente ya tiene a esa persona en ese papel.', 'Sin cambios');
       return;
     }
 
@@ -140,9 +157,10 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
 
       const res: any = await firstValueFrom(this._gestionService.reasignar(this.cliente.id, {
-        empleado_id: Number(v.empleado_id),
+        usuario_id: Number(v.usuario_id),
         motivo: (v.motivo ?? '').trim() || null,
         mover_agenda: v.mover_agenda !== false,
+        rol: this.rol,
       }));
 
       if (res?.status !== 'success') {
@@ -151,7 +169,7 @@ export class ReasignarClienteComponent implements OnInit, OnDestroy {
       }
 
       this.reasignado.emit(res.data);
-      this._toastr.success(res.message, 'Cartera actualizada', { closeButton: true });
+      this._toastr.success(res.message, 'Asignación actualizada', { closeButton: true });
       this.modal.close(res.data);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP

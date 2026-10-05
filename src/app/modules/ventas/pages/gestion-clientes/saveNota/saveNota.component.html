@@ -1,0 +1,304 @@
+<!-- ============================================================
+     NOTA DEL CLIENTE (escribir / corregir)
+
+     Mismo lenguaje que el visor: fondo gris y la nota sobre una
+     hoja blanca. Se escribe sobre lo que luego se va a leer, en
+     vez de rellenar un formulario y descubrir después cómo queda.
+
+     Las acciones van en una cinta con pestañas, como la de Word, y
+     no en la barra de título del modal: ahí sólo caben cuatro
+     botones pequeños, y cuando pasan de cuatro ya no se distingue
+     lo que hace cada uno. En la cinta cada grupo lleva su nombre
+     debajo, que es lo que permite buscar sin tener que probar.
+
+     La barra de título se queda con lo del modal —expandir y
+     cerrar—, que es de la ventana y no del documento.
+     ============================================================ -->
+
+<panel [title]="titulo_modal"
+       headerClass="bg-cyan-700"
+       [noButtonCollapse]="true"
+       [noButtonReload]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       (panelRemovedModal)="modal.dismiss()">
+
+  <input #selectorImagen type="file" accept="image/*" hidden (change)="alElegirImagen($event)">
+  <input #selectorWord type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+         hidden (change)="alElegirWord($event)">
+
+  <!-- Las escuchas de pegar y soltar se ponen a mano EN CAPTURA (ver
+       ngAfterViewInit): en burbujeo llegan después de que ProseMirror ya haya
+       pegado, y entonces ya no hay nada que cambiar. -->
+  <div class="nota-edicion" #cajaEdicion (dragover)="$event.preventDefault()">
+
+    <!-- ========================= LA CINTA ========================= -->
+    <div class="cinta">
+
+      <!-- Las pestañas -->
+      <div class="cinta__pestanas">
+        <button type="button" class="cinta__pestana" [class.is-activa]="pestanaCinta === 'archivo'"
+                (click)="pestanaCinta = 'archivo'">Archivo</button>
+        <button type="button" class="cinta__pestana" [class.is-activa]="pestanaCinta === 'inicio'"
+                (click)="pestanaCinta = 'inicio'">Inicio</button>
+        <button type="button" class="cinta__pestana" [class.is-activa]="pestanaCinta === 'insertar'"
+                (click)="pestanaCinta = 'insertar'">Insertar</button>
+
+        <!-- Contextual, como las «Herramientas de tabla» de Word: aparece sola
+             al meter el cursor en una tabla y se va al salir -->
+        @if (enTabla) {
+          <button type="button" class="cinta__pestana cinta__pestana--contextual"
+                  [class.is-activa]="pestanaCinta === 'tabla'"
+                  (click)="pestanaCinta = 'tabla'">Tabla</button>
+        }
+
+        <!-- La cuenta, como la barra de estado de Word pero arriba: aquí no hay
+             pie donde ponerla -->
+        <span class="cinta__cuenta" title="Palabras y caracteres de la nota">
+          {{ conteo.palabras }} {{ conteo.palabras === 1 ? 'palabra' : 'palabras' }} · {{ conteo.caracteres }}
+        </span>
+      </div>
+
+      <!-- Los grupos de la pestaña abierta -->
+      <div class="cinta__grupos">
+        @switch (pestanaCinta) {
+
+          <!-- ---------------- ARCHIVO ---------------- -->
+          @case ('archivo') {
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <button type="button" class="cinta__btn cinta__btn--grande cinta__btn--principal"
+                        title="Guardar la nota" [disabled]="guardando" (click)="guardar()">
+                  @if (guardando) {
+                    <i class="fa fa-spinner fa-spin"></i><span>Guardando…</span>
+                  } @else {
+                    <i class="fa fa-floppy-disk"></i><span>Guardar</span>
+                  }
+                </button>
+
+                <button type="button" class="cinta__btn cinta__btn--grande"
+                        title="Imprimir la nota (o guardarla como PDF)" (click)="imprimir()">
+                  <i class="fa fa-print"></i><span>Imprimir</span>
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Documento</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <!-- Traer un .docx: lo que ya está escrito en Word no hay que
+                     volver a escribirlo aquí -->
+                <button type="button" class="cinta__btn cinta__btn--grande"
+                        title="Traer el contenido de un documento de Word"
+                        [disabled]="importando || subiendoImagen" (click)="abrirSelectorWord()">
+                  @if (importando) {
+                    <i class="fa fa-spinner fa-spin"></i><span>Leyendo…</span>
+                  } @else {
+                    <i class="fa fa-file-import"></i><span>Importar</span>
+                  }
+                </button>
+
+                <button type="button" class="cinta__btn cinta__btn--grande"
+                        title="Bajar la nota como documento de Word"
+                        [disabled]="exportando" (click)="exportarWord()">
+                  @if (exportando) {
+                    <i class="fa fa-spinner fa-spin"></i><span>Generando…</span>
+                  } @else {
+                    <i class="fa fa-file-word"></i><span>Exportar</span>
+                  }
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Word</div>
+            </div>
+
+            <div class="cinta__grupo cinta__grupo--ancho">
+              <div class="cinta__grupo__fila">
+                <span class="cinta__color">
+                  <span class="cinta__color__punto" [style.background-color]="tinteDe(color)"></span>
+                  <select class="cinta__select" [(ngModel)]="color" title="Etiqueta de la nota">
+                    @for (c of colores; track c.id) {
+                      <option [value]="c.id">{{ c.nombre }}</option>
+                    }
+                  </select>
+                </span>
+
+                <!-- Fijar desde aquí ahorra el segundo clic en la lista cuando
+                     se está escribiendo justo la nota que hay que tener siempre
+                     delante -->
+                <label class="cinta__fijar" [class.is-activa]="fijada" title="Mantenerla arriba del todo">
+                  <input type="checkbox" [(ngModel)]="fijada">
+                  <i class="fa fa-thumbtack"></i>Fijar
+                </label>
+              </div>
+              <div class="cinta__grupo__etiqueta">Propiedades</div>
+            </div>
+          }
+
+          <!-- ---------------- INICIO ---------------- -->
+          @case ('inicio') {
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbDeshacer"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Deshacer</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <!-- La letra y el tamaño son nuestros: la barra de ngx-editor no
+                     los tiene, son dos marcas del esquema (ver esquemaNotas.ts).
+                     Van de desplegable porque son listas, no interruptores. -->
+                <select class="cinta__select cinta__select--familia"
+                        title="Tipo de letra del texto seleccionado"
+                        [value]="tipografiaActual"
+                        (change)="cambiarTipografia($any($event.target).value)">
+                  @for (t of tipografiasVisibles; track t.valor) {
+                    <option [value]="t.valor" [style.font-family]="t.valor || null">{{ t.nombre }}</option>
+                  }
+                </select>
+
+                <select class="cinta__select cinta__select--tamano"
+                        title="Tamaño de letra, en puntos"
+                        [value]="tamanoActual"
+                        (change)="cambiarTamano($any($event.target).value)">
+                  @for (t of tamanosVisibles; track t.valor) {
+                    <option [value]="t.valor">{{ t.nombre }}</option>
+                  }
+                </select>
+
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbFuente"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Fuente</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbParrafo"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Párrafo</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbEstilos"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Estilos</div>
+            </div>
+          }
+
+          <!-- ---------------- INSERTAR ---------------- -->
+          @case ('insertar') {
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <!-- El botón de imagen es nuestro y no el de ngx-editor: el suyo
+                     pide una URL, y lo que hace falta es subir el fichero -->
+                <button type="button" class="cinta__btn cinta__btn--grande"
+                        title="Insertar una imagen en la nota"
+                        [disabled]="subiendoImagen" (click)="abrirSelectorImagen()">
+                  @if (subiendoImagen) {
+                    <i class="fa fa-spinner fa-spin"></i><span>Subiendo…</span>
+                  } @else {
+                    <i class="fa fa-image"></i><span>Imagen</span>
+                  }
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Ilustraciones</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <button type="button" class="cinta__btn cinta__btn--grande"
+                        title="Insertar una tabla de 3x3" (click)="insertarTabla()">
+                  <i class="fa fa-table"></i><span>Tabla</span>
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Tablas</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbInsertar"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Enlaces y líneas</div>
+            </div>
+
+            <span class="cinta__ayuda">También puedes pegar texto e imágenes, o arrastrarlas a la hoja</span>
+          }
+
+          <!-- ---------------- TABLA (contextual) ---------------- -->
+          @case ('tabla') {
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <button type="button" class="cinta__btn" title="Fila encima" (click)="filaArriba()">
+                  <i class="fa fa-arrow-up"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Fila debajo" (click)="filaAbajo()">
+                  <i class="fa fa-arrow-down"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Columna a la izquierda" (click)="columnaIzq()">
+                  <i class="fa fa-arrow-left"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Columna a la derecha" (click)="columnaDer()">
+                  <i class="fa fa-arrow-right"></i>
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Insertar</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <button type="button" class="cinta__btn" title="Unir las celdas elegidas" (click)="unirCeldas()">
+                  <i class="fa fa-compress"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Partir la celda" (click)="partirCelda()">
+                  <i class="fa fa-expand"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Poner o quitar la fila de cabecera"
+                        (click)="alternarCabecera()">
+                  <i class="fa fa-heading"></i>
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Celdas</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <!-- La «f» y la «c»: con el icono del menos solo no se
+                     distinguen, y dos iconos iguales seguidos son una trampa -->
+                <button type="button" class="cinta__btn" title="Quitar esta fila" (click)="quitarFila()">
+                  <i class="fa fa-minus"></i><span class="cinta__btn__letra">f</span>
+                </button>
+                <button type="button" class="cinta__btn" title="Quitar esta columna" (click)="quitarColumna()">
+                  <i class="fa fa-minus"></i><span class="cinta__btn__letra">c</span>
+                </button>
+                <button type="button" class="cinta__btn cinta__btn--quitar" title="Quitar la tabla entera"
+                        (click)="quitarTabla()">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Quitar</div>
+            </div>
+
+            <span class="cinta__ayuda">Tabulador para pasar de celda · arrastra el borde para el ancho</span>
+          }
+        }
+      </div>
+    </div>
+
+    <!-- ========================= LA HOJA ========================= -->
+    <div class="nota-fondo">
+      <div class="nota-hoja">
+
+        <!-- El título se escribe donde se va a leer: en grande, en su sitio.
+             La etiqueta y el «fijar» se fueron a la cinta (Archivo >
+             Propiedades), que es donde van las propiedades del documento. -->
+        <input class="nota-titulo" maxlength="150"
+               placeholder="Título de la nota"
+               [(ngModel)]="titulo">
+
+        <ngx-editor class="nota-cuerpo" [editor]="editor" [(ngModel)]="contenido" outputFormat="html"
+                    placeholder="Escribe aquí lo que hay que saber de este cliente…"></ngx-editor>
+      </div>
+    </div>
+  </div>
+</panel>

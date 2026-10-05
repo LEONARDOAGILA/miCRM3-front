@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
+import { PanelComponent } from '../panel/panel.component';
+import { PanelModule } from '../panel/panel.module';
 import { CapturaMapa, LugarGm, UbicacionGoogleMapsComponent } from './ubicacion-google-maps.component';
 
 /** Lo que devuelve el modal: la dirección desmenuzada y sus dos fotos. */
@@ -41,19 +43,22 @@ export interface UbicacionElegida {
 @Component({
   selector: 'app-seleccionar-ubicacion',
   standalone: true,
-  imports: [CommonModule, UbicacionGoogleMapsComponent],
+  imports: [CommonModule, PanelModule, UbicacionGoogleMapsComponent],
   templateUrl: './seleccionarUbicacion.component.html',
   styleUrls: ['./seleccionarUbicacion.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SeleccionarUbicacionComponent {
+export class SeleccionarUbicacionComponent implements AfterViewInit {
 
   /** Dónde abrir el mapa: la dirección que ya tuviera el registro. */
   @Input() lugarInicial: { lat: number; lng: number; nombre?: string } | null = null;
   /** Para la cabecera: «Dirección de Juan Pérez». */
   @Input() titulo = 'Elegir la dirección en el mapa';
+  /** Abrir ya a pantalla completa. Se puede apagar desde quien lo abre. */
+  @Input() expandido = true;
 
   @ViewChild(UbicacionGoogleMapsComponent) mapa?: UbicacionGoogleMapsComponent;
+  @ViewChild(PanelComponent) panel?: PanelComponent;
 
   lugar: LugarGm | null = null;
   /** Mientras se completan las dos fotos del lugar. */
@@ -65,6 +70,25 @@ export class SeleccionarUbicacionComponent {
     private _cd: ChangeDetectorRef,
   ) {}
 
+  /**
+   * Arranca expandido: elegir una dirección se hace mirando el mapa, y en el
+   * tamaño del modal se ve poco.
+   *
+   * Se llama al método del panel en vez de poner `panel.expand = true` para
+   * que emita `panelExpanded` y el mapa se entere del cambio de tamaño; si no,
+   * Google Maps se queda dibujado a la medida vieja.
+   *
+   * Va en un setTimeout porque `expand` alimenta un [ngClass] que Angular
+   * acaba de comprobar: tocarlo aquí mismo da NG0100.
+   */
+  ngAfterViewInit(): void {
+    if (!this.expandido) { return; }
+    setTimeout(() => {
+      if (this.panel && !this.panel.expand) { this.panel.panelExpand(); }
+      this._cd.markForCheck();
+    });
+  }
+
   alElegirEnElMapa(l: LugarGm): void {
     this.lugar = l;
     this._cd.markForCheck();
@@ -73,6 +97,17 @@ export class SeleccionarUbicacionComponent {
   /** Lo que se ve en el resumen de abajo. */
   get coordenadas(): string {
     return this.lugar ? `${this.lugar.lat.toFixed(6)}, ${this.lugar.lng.toFixed(6)}` : '';
+  }
+
+  /**
+   * El botón de expandir del panel cambia el tamaño de la caja, y Google Maps
+   * no se entera solo: saldría cortado y descentrado.
+   *
+   * Antes lo ataba el <panel> que el mapa traía dentro; ahora que el marco lo
+   * pone este modal, el aviso tiene que salir de aquí.
+   */
+  alExpandirElPanel(expandido: boolean): void {
+    this.mapa?.alExpandirPanel(expandido);
   }
 
   /**

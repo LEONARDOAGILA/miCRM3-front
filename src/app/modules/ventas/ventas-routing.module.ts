@@ -8,6 +8,7 @@ import { ErrorPage } from '../../pages/error/error';
 import { HomeComponent } from './pages/home/home.component';
 import { AllClientesComponent } from './pages/clientes/allClientes/allClientes.component';
 import { GestionClientesComponent } from './pages/gestion-clientes/gestionClientes.component';
+import { CatalogoGestionComponent } from './pages/catalogo-gestion/catalogoGestion.component';
 
 const routes: Routes = [
 {
@@ -17,6 +18,7 @@ const routes: Routes = [
 
         { path: 'allClientes', component: AllClientesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'gestionClientes', component: GestionClientesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        { path: 'catalogoGestion', component: CatalogoGestionComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         { path: 'home-ventas', component: HomeComponent, data: { title: 'Ventas' }, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
         { path: '**', component: ErrorPage },

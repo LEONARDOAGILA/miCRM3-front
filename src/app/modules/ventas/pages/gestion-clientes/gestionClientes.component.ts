@@ -14,32 +14,45 @@ import { ClienteService } from '../../services/cliente.service';
 import { GestionService, MetaAgenda } from '../../services/gestion.service';
 import { RecordatorioGestionesService } from '../../services/recordatorioGestiones.service';
 import { WhatsappService, MensajeWhatsapp, ResumenWhatsapp } from '../../services/whatsapp.service';
+import { SoftphoneService } from '../../services/softphone.service';
 import { SeguridadService } from '../../../seguridad/services/seguridad.service';
 import { AppAgGridService } from '../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../service/loading.service';
 
 ///   MODELOS    ///
-import { ClienteModel, ContactoCliente } from '../../interfaces/clienteModel';
+import { CARGOS_CONTACTO, ClienteModel, ContactoCliente, ESTADOS_CLIENTE } from '../../interfaces/clienteModel';
 import {
   AsignacionCliente, GestionModel, ResumenGestiones,
   ESTADOS_GESTION, TIPOS_GESTION, PRIORIDADES_GESTION, claseDeResultado, iconoDeTipo, nombreDe, RESULTADOS_GESTION,
+  ResponsableCliente, RolResponsable, ROLES_RESPONSABLE,
 } from '../../interfaces/gestionModel';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import {
-  PLANTILLAS_WHATSAPP, PlantillaWhatsapp, aplicarPlantilla, primerNombre,
+  PLANTILLAS_WHATSAPP, PlantillaWhatsapp, aplicarPlantilla, primerNombre, puedeTenerWhatsapp,
 } from '../../interfaces/plantillasWhatsapp';
 
 ///   COMPONENTES    ///
 import { ListClientesComponent } from '../clientes/listClientes/listClientes.component';
 import { SaveClienteComponent } from '../clientes/saveCliente/saveCliente.component';
+import { ResumenVentasComponent } from './resumenVentas/resumenVentas.component';
 import { SaveGestionComponent, ModoGestion } from './saveGestion/saveGestion.component';
 import { CerrarGestionComponent } from './cerrarGestion/cerrarGestion.component';
 import { ReasignarClienteComponent } from './reasignarCliente/reasignarCliente.component';
 import { ConversacionesWhatsappComponent } from './conversacionesWhatsapp/conversacionesWhatsapp.component';
+import { SubirArchivosComponent } from './subirArchivos/subirArchivos.component';
+import { VisorArchivoComponent } from './visorArchivo/visorArchivo.component';
+import { SaveNotaComponent } from './saveNota/saveNota.component';
+import { VerNotaComponent } from './verNota/verNota.component';
+import { NotaClienteService } from '../../services/notaCliente.service';
+import { NotaCliente, tinteDeNota, nombreDeColor } from '../../interfaces/notaCliente';
+import { CatalogoGestionService } from '../../services/catalogoGestion.service';
+import { TipoGestion } from '../../interfaces/catalogoGestion';
+import { ArchivoClienteService } from '../../services/archivoCliente.service';
+import { ArchivoCliente, formatoTamano, pintaDeTipo } from '../../interfaces/archivoCliente';
 
-type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp';
+type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'archivos' | 'notas';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
-type Vista = 'agenda' | 'cliente';
+type Vista = 'agenda' | 'cliente' | 'metricas';
 /** Atajos del rango de fechas de la agenda. */
 type Rango = 'vencidas' | 'hoy' | 'manana' | 'semana' | 'mes' | 'todo' | 'rango';
 
@@ -87,10 +100,27 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public resumen: ResumenGestiones | null = null;
   public contactos: ContactoCliente[] = [];
   public asignaciones: AsignacionCliente[] = [];
+  /** Quién lo atiende ahora en cada papel; siempre llegan los tres. */
+  public responsables: ResponsableCliente[] = [];
+  /** Para pintar rótulo, icono y ayuda de cada papel. */
+  public readonly rolesResponsable = ROLES_RESPONSABLE;
   public pendientes: GestionModel[] = [];
   public agenda: GestionModel[] = [];
 
   public pestana: Pestana = 'historial';
+
+  /**
+   * Las pestañas cuyos datos ya se pidieron para el cliente que está abierto.
+   *
+   * Abrir un cliente lanzaba de golpe todo lo de las siete pestañas, y cada
+   * petición cruzada arrastra además su preflight de CORS: dieciocho idas y
+   * vueltas que el servidor de desarrollo atiende de una en una. Ahora sólo se
+   * pide lo que se ve —la ficha, el historial y los contadores— y cada pestaña
+   * trae lo suyo la primera vez que se abre.
+   *
+   * Se vacía al cambiar de cliente: lo de uno no vale para el siguiente.
+   */
+  private pestanasCargadas = new Set<Pestana>();
 
   /** El aviso de «última / próxima»; se cierra a mano y vuelve con otro cliente. */
   public hitosVisible = true;
@@ -107,10 +137,43 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // ---------- Agenda («Lo que toca hacer») ----------
   public agendaMeta: MetaAgenda = { total: 0, vencidas: 0, hoy: 0, mostradas: 0 };
   public rango: Rango = 'todo';
+
+  /**
+   * Los atajos de fecha de la agenda.
+   *
+   * En una lista y no escritos a mano en la plantilla porque se pintan de dos
+   * maneras: botones en pantalla ancha y un desplegable en el teléfono, donde
+   * seis botones se parten en dos renglones. Dos sitios con los mismos seis
+   * rótulos es como se acaba cambiando uno y olvidando el otro.
+   *
+   * 'rango' no está aquí: no es un atajo, es lo que queda cuando se eligen
+   * fechas a mano en el calendario.
+   */
+  public readonly rangos: { id: Rango; name: string; icono?: string; tono: string }[] = [
+    { id: 'vencidas', name: 'Vencidas', icono: 'fa-triangle-exclamation', tono: 'btn-danger' },
+    { id: 'hoy',      name: 'Hoy',      tono: 'btn-primary' },
+    { id: 'manana',   name: 'Mañana',   tono: 'btn-primary' },
+    { id: 'semana',   name: '7 días',   tono: 'btn-primary' },
+    { id: 'mes',      name: 'Este mes', tono: 'btn-primary' },
+    { id: 'todo',     name: 'Todo',     tono: 'btn-primary' },
+  ];
   public desdeFiltro = '';
   public hastaFiltro = '';
-  /** Sólo lo que programó quien está usando el CRM; se puede apagar para ver todo. */
+  /**
+   * Sólo lo que le toca a quien está usando el CRM.
+   *
+   * Apagarlo NO enseña la agenda de la empresa: enseña la de la gente de la
+   * que uno responde según el árbol de grupos, y para quien no responde por
+   * nadie no cambia nada. Por eso el botón ni se ofrece si no hay equipo.
+   */
   public soloMias = true;
+  /**
+   * Si este usuario manda sobre alguien más. Lo dice el servidor en cada
+   * respuesta de la agenda; se guarda aparte de agendaMeta para que un error
+   * de red no haga desaparecer el botón y deje al jefe atrapado en «De mi
+   * equipo» sin manera de volver.
+   */
+  public puedeVerDeOtros = false;
   public cargandoAgenda = false;
 
   // ---------- La lista de clientes (columna izquierda) ----------
@@ -121,6 +184,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    */
   public listaClientes: ClienteModel[] = [];
   public terminoClientes = '';
+  /**
+   * El estado por el que se filtra la lista; vacío = todos.
+   *
+   * Va al servidor junto con el término de búsqueda y no se filtra aquí:
+   * la lista está paginada allá, así que filtrar en el navegador sólo
+   * miraría las quince filas de la página que se está viendo.
+   */
+  public estadoClientes = '';
+  public readonly estadosCliente = ESTADOS_CLIENTE;
   public paginaClientes = 1;
   public totalClientes = 0;
   public porPaginaClientes = 15;
@@ -207,9 +279,57 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public ultimaPagina = 1;
   public filtroTipo: string | null = null;
   public filtroEstado: string | null = null;
+  public filtroResultado: string | null = null;
+  public filtroCreadoPor: string | null = null;
 
-  public tipos = TIPOS_GESTION;
+  /**
+   * Quiénes han registrado gestiones de ESTE cliente.
+   *
+   * Lo manda el servidor junto con la lista y no sale de la tabla de
+   * usuarios: lo que hace falta ofrecer son los que de verdad aparecen en
+   * este historial, no los trescientos del sistema.
+   */
+  public registradores: string[] = [];
+
+  /**
+   * Los tipos salen del catálogo (ventas.gestiones_tipos), el mismo del que
+   * los toma el formulario de gestión. La constante se queda de respaldo por
+   * si la petición falla: un filtro vacío sería peor que uno desactualizado.
+   */
+  public tipos: { id: string; name: string; icono: string }[] = TIPOS_GESTION;
   public estados = ESTADOS_GESTION;
+  public resultados = RESULTADOS_GESTION;
+
+  // ---------- Notas del cliente ----------
+  /**
+   * Lo que hay que saber del cliente y no es una gestión.
+   *
+   * Igual que los archivos, se piden al entrar en la pestaña: es una
+   * petición más por cliente y no todo el mundo las mira.
+   */
+  public notas: NotaCliente[] = [];
+  public cargandoNotas = false;
+  public buscaNotas = '';
+  /** De qué cliente son las que hay cargadas, para no volver a pedirlas. */
+  private notasDe: number | null = null;
+
+  public readonly tinteDeNota = tinteDeNota;
+  public readonly nombreDeColor = nombreDeColor;
+
+  // ---------- Archivos del cliente ----------
+  /**
+   * Fotos, videos y documentos del cliente.
+   *
+   * Se piden al entrar en la pestaña y no al abrir el cliente: son una
+   * petición más por cliente y la mayoría de las veces nadie los mira.
+   */
+  public archivos: ArchivoCliente[] = [];
+  public cargandoArchivos = false;
+  /** Para no volver a pedirlos cada vez que se entra y se sale de la pestaña. */
+  private archivosDe: number | null = null;
+
+  public readonly formatoTamano = formatoTamano;
+  public readonly pintaDeTipo = pintaDeTipo;
 
   // ---------- WhatsApp ----------
   /** Los mensajes que se ofrecen al escribir; ver plantillasWhatsapp.ts. */
@@ -238,6 +358,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     { visible: false, x: 0, y: 0, numero: null, aQuien: null };
 
   @ViewChild('menuWaEl') menuWaEl?: ElementRef<HTMLElement>;
+
+  /** El tablero de métricas, para poder recargarlo desde el botón del panel. */
+  @ViewChild(ResumenVentasComponent) tablero?: ResumenVentasComponent;
 
   // ---------- La agenda, en grilla y paginada ----------
   /**
@@ -286,6 +409,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   public rowClassRulesContactos = {
     'fila-excluida': (p: RowClassParams) => p.data?.activo === false,
+    // A medio escribir: avisa antes de intentar guardarla
+    'fila-incompleta': (p: RowClassParams) => !!p.data && !this.contactoCompleto(p.data),
   };
 
   public rowClassRulesAgenda = {
@@ -341,6 +466,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     private _gestionService: GestionService,
     private _recordatorios: RecordatorioGestionesService,
     private _whatsappService: WhatsappService,
+    private _softphone: SoftphoneService,
+    private _archivoService: ArchivoClienteService,
+    private _notaService: NotaClienteService,
+    private _catalogoService: CatalogoGestionService,
     public _appAgGridService: AppAgGridService,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -353,8 +482,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.initializeGridPendientes();
     this.initializeGridContactos();
     this.initializeGridCartera();
+
+    // En un teléfono la columna de acciones entra plegada: son 110-142 píxeles
+    // de los 375 que hay, y lo primero que se viene a leer es el asunto, no
+    // los botones. Se despliega con el ☰ como en cualquier otro sitio.
+    // Sólo al entrar: si luego se gira el teléfono, manda lo que haya elegido
+    // quien lo usa.
+    if (window.innerWidth <= 767.98) { this.alternarAcciones(); }
+
     this.cargarAgenda();
     this.cargarClientes(1);
+    this.cargarTiposDelCatalogo();
 
     // Se puede llegar con el cliente en la url (?cliente=9), que es como
     // entra el recordatorio cuando se pulsa «Abrir el cliente»
@@ -397,7 +535,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this.cargandoClientes = true;
       this.gridApiClientes?.showLoadingOverlay();
       const res: any = await firstValueFrom(
-        this._clienteService.allClientes(page, this.porPaginaClientes, this.terminoClientes)
+        // true: aquí cada uno trabaja su cartera. Para repartir los que no tienen
+        // dueño está Ventas > Clientes, que sí los lista todos.
+        this._clienteService.allClientes(page, this.porPaginaClientes, this.terminoClientes, this.estadoClientes, true)
       );
 
       if (mia !== this.peticionClientes) { return; }
@@ -427,6 +567,23 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   buscarClientes(termino?: string): void {
     this.terminoClientes = (termino ?? '').trim();
     this.cargarClientes(1);
+  }
+
+  /**
+   * Cambia el filtro por estado.
+   *
+   * Vuelve a la página 1 a propósito: si uno está en la página 40 de los mil
+   * clientes y filtra por morosos —que son ciento y pico—, esa página ya no
+   * existe y la lista saldría vacía sin que se entienda por qué.
+   */
+  filtrarPorEstado(estado: string): void {
+    this.estadoClientes = estado ?? '';
+    this.cargarClientes(1);
+  }
+
+  /** El nombre bonito del estado elegido, para los carteles. */
+  private get nombreEstadoElegido(): string {
+    return this.estadosCliente.find(e => e.id === this.estadoClientes)?.name ?? '';
   }
 
   public get desdeClientes(): number {
@@ -459,34 +616,50 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Cliente',
         field: 'nombre_completo',
         cellStyle: { textAlign: 'left' },
-        minWidth: 170,
+        minWidth: 310,
+        maxWidth: 390,
         cellRenderer: (params: any) => {
           const icono = params.data?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user';
           const nombre = params.value ?? '';
-          const actual = this.esElElegido(params.data)
-            ? ' <span class="gc-chip">Actual</span>'
-            : '';
+          // Aquí hubo un chip de «Actual» que se quitó; al comentar las dos
+          // ramas del ternario quedó `const actual = this.esElElegido(...)`, un
+          // booleano, y se colaba al nombre: «ALIMENTOS TOBAR S.A.true». Al
+          // cliente que se está gestionando ya lo marca la fila en dorado
+          // (rowClassRulesClientes), que es más discreto que un chip.
           const estado = params.data?.estado && params.data.estado !== 'ACTIVO'
             ? ` <span class="gc-chip gc-chip--aviso">${params.data.estado}</span>`
             : '';
-          return `<i class="fa ${icono} fa-fw me-1 text-secondary"></i>${nombre}${actual}${estado}`;
+          return `<i class="fa ${icono} fa-fw me-1 text-secondary"></i>${nombre}${estado}`;
         }
       },
       {
         headerName: 'Identificación',
         field: 'numero_identificacion',
         cellStyle: { textAlign: 'center' },
-        minWidth: 95,
-        maxWidth: 110,
+        minWidth: 120,
+        maxWidth: 140,
+        // Una cédula son diez dígitos que empiezan por 0, igual que un
+        // celular: sin esto la extensión también le cuelga el logotipo
+        cellRenderer: this.celdaNumero,
       },
-      {
-        headerName: 'Teléfono',
-        field: 'celular',
-        cellStyle: { textAlign: 'center' },
-        minWidth: 95,
-        maxWidth: 110,
-        valueGetter: (p: any) => p.data?.celular || p.data?.telefono || '',
-      },
+      // {
+      //   headerName: 'Teléfono',
+      //   field: 'celular',
+      //   cellStyle: { textAlign: 'center' },
+      //   minWidth: 95,
+      //   maxWidth: 115,
+      //   valueGetter: (p: any) => p.data?.celular || p.data?.telefono || '',
+      //   cellRenderer: this.celdaNumero,
+      // },
+      // {
+      //   // El número es texto, así que marcar es cosa de este botón
+      //   headerName: '', field: 'acciones', pinned: 'right', minWidth: 46, maxWidth: 46,
+      //   sortable: false, filter: false, suppressMenu: true, resizable: false,
+      //   cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+      //   cellRenderer: (p: any) => p.data?.celular || p.data?.telefono
+      //     ? `<span class="gestion-acciones"><button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button></span>`
+      //     : '',
+      // },
     ];
   }
 
@@ -505,14 +678,42 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   /** Toda la fila abre el cliente, no hace falta apuntar a un botón. */
   onCellClickedClientes(e: CellClickedEvent): void {
+    // Marcar no debe abrir la ficha: son cinco peticiones al servidor para
+    // algo que no se ha pedido.
+    if ((e.event?.target as HTMLElement)?.closest('[data-accion="llamar"]')) {
+      this.llamarConSoftphone(e.data?.celular || e.data?.telefono, e.data?.nombre_completo);
+      return;
+    }
     if (e.data) { this.seleccionarCliente(e.data); }
   }
 
-  /** El cartel de «no hay filas», que cambia si hay una búsqueda escrita. */
+  /**
+   * El cartel de «no hay filas».
+   *
+   * Dice por qué está vacío, y eso incluye el filtro por estado: con un
+   * «Todavía no hay clientes registrados» delante de mil clientes filtrados por
+   * morosos, uno piensa que se rompió algo en vez de mirar el selector.
+   */
   public get vacioClientes(): string {
-    return this.terminoClientes
-      ? `<span>Ningún cliente coincide con «${this.terminoClientes}».</span>`
-      : '<span>Todavía no hay clientes registrados.</span>';
+    const termino = this.terminoClientes;
+    const estado = this.nombreEstadoElegido;
+
+    if (termino && estado) {
+      return `<span>Ningún cliente en estado «${estado}» coincide con «${termino}».</span>`;
+    }
+    if (estado) {
+      return `<span>No hay clientes en estado «${estado}».</span>`;
+    }
+    if (termino) {
+      return `<span>Ningún cliente coincide con «${termino}».</span>`;
+    }
+    // Esta lista es la cartera propia, no el fichero de clientes: decir «todavía
+    // no hay clientes registrados» con mil en la base haría pensar que se
+    // rompió algo, cuando lo que pasa es que a esta persona no le han asignado
+    // ninguno todavía.
+    return '<span>No tienes clientes asignados.<br>'
+      + '<small class="text-muted">Pídele a quien reparte la cartera que te asigne alguno '
+      + 'desde Ventas › Clientes.</small></span>';
   }
 
   // ================================================================
@@ -569,6 +770,47 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    */
   alLimpiarBusquedaClientes(): void {
     if (this.cliente) { this.limpiarCliente(false); }
+  }
+
+  /**
+   * Si quien está usando el CRM es administrador.
+   *
+   * Lo dice el servidor en la respuesta de la agenda (meta.es_admin), que se
+   * pide al entrar en la pantalla. No sale del usuario guardado porque el
+   * login no lo manda: devuelve id, nombre, login, correo, avatar y perfil, ni
+   * type_user ni grupo_id —comprobado contra el API—.
+   *
+   * Empieza en false y sólo lo levanta una respuesta buena: si la agenda falla,
+   * la pestaña de Asignación no sale, que es por donde hay que fallar.
+   *
+   * Es para decidir qué se ENSEÑA. Quién puede reasignar de verdad lo decide
+   * el servidor: esconder una pestaña no cierra una ruta.
+   */
+  public esAdministrador = false;
+
+  /** Si hay algo que quitar: texto buscado, estado filtrado o cliente elegido. */
+  get hayFiltroClientes(): boolean {
+    return !!this.terminoClientes || !!this.estadoClientes || !!this.cliente;
+  }
+
+  /**
+   * Deja la lista como al entrar: sin texto, sin estado y sin cliente elegido.
+   *
+   * La × del propio campo sólo borra lo escrito; esto quita además el filtro
+   * por estado y suelta el cliente, que es lo que hace falta cuando uno se ha
+   * dejado puesto un «morosos» de hace media hora y no entiende por qué no
+   * aparece quien busca.
+   *
+   * Una sola consulta: se ponen los dos filtros a cero y se pide la página 1
+   * una vez, en vez de encadenar una recarga por cada cosa que se limpia.
+   */
+  limpiarFiltrosClientes(): void {
+    if (!this.hayFiltroClientes) { return; }
+
+    this.terminoClientes = '';
+    this.estadoClientes = '';
+    if (this.cliente) { this.limpiarCliente(false); }
+    this.cargarClientes(1);
   }
 
   // ================================================================
@@ -663,6 +905,34 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     return 432;
   }
 
+  /**
+   * En un teléfono la lista de clientes es un cajón, no una columna.
+   *
+   * Apilada se comía 364 de los 667 píxeles de un iPhone 7: había que pasar
+   * la lista entera para llegar al trabajo del cliente, que empezaba fuera de
+   * pantalla. Así que debajo de lg sale por encima, como el árbol de carpetas
+   * del administrador de archivos, y se quita de en medio al elegir.
+   *
+   * Entra ABIERTO: en un teléfono lo primero que hay que hacer es elegir
+   * cliente, y empezar con el cajón cerrado obligaba a descubrir la pestaña
+   * antes de poder trabajar. Se cierra solo al elegir, así que el estorbo dura
+   * lo que tarda el primer toque.
+   *
+   * El ancho se mira una vez, al construir: el cajón sólo existe por debajo de
+   * lg, y en escritorio esta bandera no la lee nadie. `panelOculto` es otra
+   * cosa y sigue siendo de escritorio.
+   */
+  public listaMovilAbierta = window.innerWidth <= 991.98;
+
+  alternarListaMovil(): void {
+    this.listaMovilAbierta = !this.listaMovilAbierta;
+    // La grilla se dibuja dentro de un cajón que estaba fuera de pantalla: sin
+    // esto sale con el ancho que tenía antes de abrirse
+    if (this.listaMovilAbierta) {
+      setTimeout(() => this.gridApiClientes?.sizeColumnsToFit(), 260);
+    }
+  }
+
   alternarPanel(): void {
     this.panelOculto = !this.panelOculto;
     try { localStorage.setItem('miCRM3.gestion.panelOculto', this.panelOculto ? '1' : '0'); } catch { /* sin storage */ }
@@ -740,6 +1010,61 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   /** Lo mismo, desde la plantilla: al cambiar de pestaña cambia lo que se ve. */
+  /**
+   * Cambia de pestaña y trae sus datos si es la primera vez.
+   *
+   * Antes cada botón hacía su propia mezcla en la plantilla («pestana = 'x';
+   * cargarAlgo(); replantear()»), que es donde se olvidan cosas. Con un solo
+   * sitio, añadir una pestaña es añadir un caso aquí.
+   */
+  /**
+   * El botón de recargar del panel, aplicado a lo que se esté mirando.
+   *
+   * Antes era una condición en la plantilla que sólo conocía dos vistas, así
+   * que al entrar la de métricas recargaba la agenda, que no estaba delante.
+   */
+  recargarVista(): void {
+    if (this.vista === 'metricas') { this.tablero?.cargar(); return; }
+    if (this.vista === 'cliente' && this.cliente) { this.seleccionarCliente(this.cliente); return; }
+    this.cargarAgenda();
+  }
+
+  async abrirPestana(p: Pestana): Promise<void> {
+    // La asignación es de administradores. Se comprueba aquí y no sólo al
+    // pintar la pestaña: así tampoco se llega por un estado anterior ni desde
+    // otro sitio que llame a este método.
+    if (p === 'cartera' && !this.esAdministrador) { p = 'historial'; }
+    this.pestana = p;
+    this.replantear();
+    await this.cargarPestana(p);
+    if (p === 'whatsapp') { this.bajarAlUltimoMensaje(); }
+  }
+
+  /** Lo que necesita cada pestaña, una sola vez por cliente. */
+  private async cargarPestana(p: Pestana): Promise<void> {
+    if (!this.cliente?.id) { return; }
+    // El historial y los contadores llegan al abrir el cliente
+    if (p === 'historial' || this.pestanasCargadas.has(p)) { return; }
+
+    // Se marca antes de pedir: dos clics seguidos no deben lanzar dos veces
+    this.pestanasCargadas.add(p);
+    try {
+      switch (p) {
+        case 'pendientes': await this.cargarPendientes(); break;
+        case 'contactos':  await this.cargarContactos(); break;
+        // La cartera enseña las dos cosas a la vez
+        case 'cartera':    await Promise.all([this.cargarAsignaciones(), this.cargarResponsables()]); break;
+        case 'whatsapp':   await this.cargarConversacion(); break;
+        case 'notas':      await this.cargarNotas(); break;
+        case 'archivos':   await this.cargarArchivos(); break;
+      }
+    } catch (error) {
+      // Si falló, que se pueda reintentar volviendo a entrar
+      this.pestanasCargadas.delete(p);
+      console.error('Error al cargar la pestaña ' + p + ':', error);
+    }
+  }
+
   replantear(): void {
     this.replantearAltos(160);
   }
@@ -856,11 +1181,26 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   async seleccionarCliente(cliente: any): Promise<void> {
     if (!cliente?.id) { return; }
+    // Elegido el cliente, el cajón sobra: lo que se quiere ver es su trabajo
+    this.listaMovilAbierta = false;
     this.replantearAltos(200);
     this.vista = 'cliente';
     this.pestana = 'historial';
     this.hitosVisible = true;
     this.paginaActual = 1;
+    // Los del cliente anterior no valen; los nuevos se piden al entrar en la pestaña
+    this.archivos = [];
+    this.archivosDe = null;
+    this.notas = [];
+    this.notasDe = null;
+    this.buscaNotas = '';
+    // Lo de las pestañas del cliente anterior no vale
+    this.pestanasCargadas.clear();
+    this.pendientes = [];
+    this.conversacion = [];
+    this.asignaciones = [];
+    this.responsables = [];
+    this.ponerContactos([]);
 
     try {
       this._loadingService.setLoading(true);
@@ -872,13 +1212,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this.cliente = res.data;
       // La marca de «Actual» viaja de una fila a otra
       this.gridApiClientes?.redrawRows();
+      // Sólo lo que se ve nada más abrir: la ficha ya está, el historial es la
+      // pestaña de entrada y el resumen llena los contadores de arriba y el de
+      // «Pendientes». El de WhatsApp es el que avisa de mensajes sin
+      // responder, así que también entra —es una petición pequeña y es un
+      // aviso, no un detalle—. Lo demás lo pide su pestaña al abrirse.
       await Promise.all([
         this.cargarGestiones(1),
         this.cargarResumen(),
-        this.cargarContactos(),
-        this.cargarAsignaciones(),
-        this.cargarPendientes(),
-        this.cargarConversacion(),
+        this.cargarResumenWhatsapp(),
       ]);
     } catch (error) {
       console.error('Error al abrir el cliente:', error);
@@ -887,14 +1229,27 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Vuelve a pedirlo todo (tras guardar, cerrar o reasignar). */
+  /**
+   * Vuelve a pedir lo que está a la vista (tras guardar, cerrar o reasignar).
+   *
+   * Lo de las pestañas que nadie ha abierto todavía no se pide: se pedirá solo
+   * cuando se abran, y ya vendrá al día.
+   */
   private async refrescar(): Promise<void> {
     if (!this.cliente?.id) { return; }
-    await Promise.all([
+
+    const tareas: Promise<any>[] = [
       this.cargarGestiones(this.paginaActual),
       this.cargarResumen(),
-      this.cargarPendientes(),
-    ]);
+    ];
+    // Lo pendiente cambia al cerrar una gestión, así que se repite aunque su
+    // pestaña no esté abierta sólo si ya se había cargado
+    if (this.pestanasCargadas.has('pendientes')) { tareas.push(this.cargarPendientes()); }
+    if (this.pestanasCargadas.has('contactos'))  { tareas.push(this.cargarContactos()); }
+    if (this.pestanasCargadas.has('cartera'))    { tareas.push(this.cargarAsignaciones(), this.cargarResponsables()); }
+    if (this.pestanasCargadas.has('whatsapp'))   { tareas.push(this.cargarConversacion()); }
+
+    await Promise.all(tareas);
   }
 
   async cargarResumen(): Promise<void> {
@@ -911,10 +1266,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (!this.cliente?.id) { return; }
     try {
       const res: any = await firstValueFrom(this._clienteService.listContactos(this.cliente.id));
-      this.contactos = res?.status === 'success' ? (res.data ?? []) : [];
+      this.ponerContactos(res?.status === 'success' ? (res.data ?? []) : []);
     } catch (error) {
       console.error('Error al cargar los contactos:', error);
-      this.contactos = [];
+      this.ponerContactos([]);
     }
   }
 
@@ -924,8 +1279,25 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       const res: any = await firstValueFrom(this._gestionService.asignaciones(this.cliente.id));
       this.asignaciones = res?.status === 'success' ? (res.data ?? []) : [];
     } catch (error) {
-      console.error('Error al cargar el historial de cartera:', error);
+      console.error('Error al cargar el historial de asignaciones:', error);
       this.asignaciones = [];
+    }
+  }
+
+  /**
+   * Quién atiende al cliente ahora mismo, en cada papel.
+   *
+   * El servidor devuelve siempre los tres, con el empleado en null cuando el
+   * puesto está vacío, así que la pantalla no tiene que componer la lista.
+   */
+  async cargarResponsables(): Promise<void> {
+    if (!this.cliente?.id) { this.responsables = []; return; }
+    try {
+      const res: any = await firstValueFrom(this._gestionService.responsables(this.cliente.id));
+      this.responsables = res?.status === 'success' ? (res.data ?? []) : [];
+    } catch (error) {
+      console.error('Error al cargar los responsables:', error);
+      this.responsables = [];
     }
   }
 
@@ -935,21 +1307,36 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * Se piden juntos al abrir el cliente: el resumen es lo que pone el número
    * en la pestaña, así que tiene que estar aunque nadie entre a leerla.
    */
+  /**
+   * Sólo el resumen: cuántos mensajes hay y cuántos sin responder.
+   *
+   * Va aparte del chat porque es lo que pinta el aviso rojo de la pestaña, y
+   * ese aviso tiene que verse sin entrar: es la razón por la que uno entra.
+   * Pesa un kilobyte; la conversación entera no.
+   */
+  async cargarResumenWhatsapp(): Promise<void> {
+    if (!this.cliente?.id) { return; }
+    try {
+      const res: any = await firstValueFrom(this._whatsappService.resumen(this.cliente.id));
+      this.resumenWhatsapp = res?.status === 'success' ? res.data : null;
+    } catch (error) {
+      console.error('Error al cargar el resumen de WhatsApp:', error);
+      this.resumenWhatsapp = null;
+    }
+  }
+
+  /** El chat, que es lo gordo: sólo al entrar en su pestaña. */
   async cargarConversacion(): Promise<void> {
     if (!this.cliente?.id) { return; }
     try {
       this.cargandoConversacion = true;
-      const [chat, resumen]: any[] = await Promise.all([
-        firstValueFrom(this._whatsappService.conversacion(this.cliente.id)),
-        firstValueFrom(this._whatsappService.resumen(this.cliente.id)),
-      ]);
-
+      const chat: any = await firstValueFrom(this._whatsappService.conversacion(this.cliente.id));
       this.conversacion = chat?.status === 'success' ? (chat.data ?? []) : [];
-      this.resumenWhatsapp = resumen?.status === 'success' ? resumen.data : null;
+      // Al abrir el chat se aprovecha para poner al día el contador
+      await this.cargarResumenWhatsapp();
     } catch (error) {
       console.error('Error al cargar la conversación de WhatsApp:', error);
       this.conversacion = [];
-      this.resumenWhatsapp = null;
     } finally {
       this.cargandoConversacion = false;
       // Al entrar en la pestaña se baja al último mensaje, como en un chat
@@ -1037,6 +1424,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         this.agendaMeta = res.data?.meta ?? { total: 0, vencidas: 0, hoy: 0, mostradas: 0 };
         this.paginaAgenda = this.agendaMeta.current_page ?? page;
         this.ultimaPaginaAgenda = this.agendaMeta.last_page ?? 1;
+        // Sólo desde una respuesta buena: así un fallo no esconde el botón
+        this.puedeVerDeOtros = this.agendaMeta.ve_de_otros === true;
+        this.esAdministrador = this.agendaMeta.es_admin === true;
       } else {
         this.agenda = [];
         this.agendaMeta = { total: 0, vencidas: 0, hoy: 0, mostradas: 0 };
@@ -1063,9 +1453,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   initializeGridAgenda(): void {
     this.columnDefsAgenda = [
       {
+        headerName: 'Tipo',
+        field: 'tipo',
+        minWidth: 85,
+        maxWidth: 125,
+        cellStyle: { textAlign: 'left' },
+        cellRenderer: (p: any) => `<i class="fa ${iconoDeTipo(p.value)} fa-fw me-1 text-muted"></i>${nombreDe(this.tipos, p.value)}`,
+      },
+      {
         headerName: 'Cuándo',
         field: 'fecha_programada',
-        minWidth: 135,
+        minWidth: 105,
         maxWidth: 165,
         cellStyle: { textAlign: 'left' },
         cellRenderer: (p: any) => {
@@ -1080,14 +1478,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         field: 'cliente_nombre',
         minWidth: 170,
         cellStyle: { textAlign: 'left' },
-      },
-      {
-        headerName: 'Tipo',
-        field: 'tipo',
-        minWidth: 105,
-        maxWidth: 125,
-        cellStyle: { textAlign: 'left' },
-        cellRenderer: (p: any) => `<i class="fa ${iconoDeTipo(p.value)} fa-fw me-1 text-muted"></i>${nombreDe(this.tipos, p.value)}`,
       },
       {
         headerName: 'Asunto',
@@ -1115,10 +1505,11 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         // El de la gestión si se anotó; si no, el del cliente: esta grilla
         // es una lista de llamadas y el número tiene que estar a la vista
         valueGetter: (p: any) => p.data?.telefono || p.data?.cliente_telefono || '',
+        cellRenderer: this.celdaNumero,
       },
       {
         headerName: 'Vendedor',
-        field: 'empleado_nombre',
+        field: 'responsable_nombre',
         minWidth: 130,
         cellStyle: { textAlign: 'left' },
       },
@@ -1126,18 +1517,25 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Acciones',
         field: 'acciones',
         pinned: 'right',
-        minWidth: 86,
-        maxWidth: 86,
+        minWidth: 118,
+        maxWidth: 118,
+        suppressMovable: true,
+        headerComponentParams: this.cabeceraAcciones('Acciones'),
         sortable: false,
         resizable: false,
         filter: false,
         suppressMenu: true,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        cellRenderer: () => `
-          <span class="gestion-acciones">
-            <button type="button" class="btn btn-xs btn-success" data-accion="cerrar" title="Marcar como hecha"><i class="fa fa-check"></i></button>
-            <button type="button" class="btn btn-xs btn-white" data-accion="abrir" title="Abrir el cliente"><i class="fa fa-arrow-right"></i></button>
-          </span>`,
+        cellRenderer: () => {
+          if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
+          // Marcar no escribe nada: basta con poder ver al cliente. Lo que pide
+          // crear es el formulario que se abre después, y de eso se encarga
+          // abrirGestionDeLlamada. Marcarla como hecha va también con crear:
+          // se anota un trabajo hecho, no se corrige lo que ya había.
+          const puedeCerrar = this.accesoModel?.crear !== false;
+          const puedeVer    = this.accesoModel?.ver !== false;
+          return `<span class="gestion-acciones">${this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar', puedeVer)}${this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Marcar como hecha', puedeCerrar)}${this.botonAccion('abrir', 'btn-abrir', 'fa fa-arrow-right', 'Abrir el cliente', puedeVer)}</span>`;
+        },
       },
     ];
   }
@@ -1170,56 +1568,249 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Teléfono', field: 'telefono', minWidth: 110, maxWidth: 140,
         cellStyle: { textAlign: 'left' },
         valueGetter: (p: any) => p.data?.telefono || p.data?.cliente_telefono || '',
+        cellRenderer: this.celdaNumero,
       },
-      { headerName: 'Responsable', field: 'empleado_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Responsable', field: 'responsable_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
       { headerName: 'Nota', field: 'nota', minWidth: 180, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
       {
-        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 142, maxWidth: 142,
+        suppressMovable: true,
+        headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        cellRenderer: () => `<div class="gestion-acciones">
-            <button type="button" class="btn-icon btn-cerrar" data-accion="cerrar" title="Cerrar la gestión"><i class="fa fa-check"></i></button>
-            <button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen"></i></button>
-            <button type="button" class="btn-icon btn-quitar" data-accion="eliminar" title="Eliminar"><i class="fa fa-trash"></i></button>
-          </div>`,
+        cellRenderer: () => {
+          if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
+          // Marcar no escribe nada: basta con poder ver al cliente. El
+          // formulario que se abre tras marcar sí pide crear, y eso lo mira
+          // abrirGestionDeLlamada. Cerrar la gestión también va con crear:
+          // se está anotando un trabajo hecho, no corrigiendo uno anterior.
+          const puedeVer    = this.accesoModel?.ver !== false;
+          const puedeCerrar = this.accesoModel?.crear !== false;
+          const puedeEditar = this.accesoModel?.editar !== false;
+          const puedeBorrar = this.accesoModel?.eliminar !== false;
+          return `<div class="gestion-acciones">${this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar', puedeVer)}${this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
+        },
       },
     ];
   }
 
   /** Las personas de contacto del cliente. */
+  /**
+   * Los contactos se escriben en la propia grilla, igual que en la ficha del
+   * cliente: celdas editables, una fila nueva con el botón de arriba y quitar
+   * con la X. La diferencia es que aquí no hay un «guardar» del formulario
+   * entero, así que la lista tiene su propio botón.
+   */
   initializeGridContactos(): void {
+    const editable = this.accesoModel?.editar !== false;
+    const texto = (field: string, headerName: string, minWidth: number, maxWidth?: number, extra: any = {}) => ({
+      field, headerName, minWidth, maxWidth, editable, sortable: false, filter: false,
+      cellStyle: { textAlign: 'left' },
+      // El nombre y el teléfono son lo mínimo para que el contacto sirva
+      cellClass: (p: any) => (['nombres', 'telefono'].includes(field) && !String(p.value ?? '').trim()) ? 'celda-obligatoria' : '',
+      ...extra,
+    });
+
     this.columnDefsContactos = [
       {
-        headerName: 'Orden', field: 'prioridad', minWidth: 70, maxWidth: 80,
-        cellStyle: { textAlign: 'center' },
+        headerName: '#', field: 'prioridad', headerTooltip: 'Orden en que se debe llamar (1 = primero)',
+        minWidth: 56, maxWidth: 56, editable, sortable: false, filter: false,
+        cellStyle: { textAlign: 'center', fontWeight: '600' },
+        valueSetter: (p: any) => {
+          const n = parseInt(p.newValue, 10);
+          if (!n || n < 1) { this._toastr.warning('La prioridad debe ser 1 o mayor', 'Contactos'); return false; }
+          p.data.prioridad = n; return true;
+        },
       },
-      { headerName: 'Nombre', field: 'nombres', minWidth: 170, cellStyle: { textAlign: 'left', fontWeight: '600' } },
-      { headerName: 'Cargo', field: 'cargo', minWidth: 130, cellStyle: { textAlign: 'left' } },
-      { headerName: 'Teléfono', field: 'telefono', minWidth: 110, maxWidth: 140, cellStyle: { textAlign: 'left' } },
-      { headerName: 'Correo', field: 'email', minWidth: 180, cellStyle: { textAlign: 'left' } },
+      texto('nombres', 'Nombres y apellidos', 170),
       {
-        headerName: 'Activo', field: 'activo', minWidth: 80, maxWidth: 80,
+        ...texto('cargo', 'Cargo', 120, 150),
+        cellEditor: 'agSelectCellEditor',
+        cellEditorParams: { values: this.cargosContacto },
+      },
+      // El número va como texto: aquí se escribe, y para llamar está el botón
+      // de la columna de acciones. Pulsarlo abre la edición, que es lo que se
+      // espera de una celda editable, y de paso es la forma de copiarlo, que
+      // con celdaNumero el número deja de poder seleccionarse con el ratón.
+      texto('telefono', 'Teléfono', 115, 145, { cellRenderer: this.celdaNumero }),
+      texto('telefono_alterno', 'Tel. alterno', 110, 140, { cellRenderer: this.celdaNumero }),
+      texto('email', 'Correo', 170),
+      {
+        headerName: 'Activo', field: 'activo', minWidth: 70, maxWidth: 70, sortable: false, filter: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: (p: any) => p.value === false
           ? '<span class="badge bg-danger fs-10px">NO</span>'
           : '<span class="badge bg-teal fs-10px">SÍ</span>',
       },
       {
-        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 140, maxWidth: 140,
+        suppressMovable: true,
+        headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        /**
+         * Aquí no se borra un contacto: se desactiva. Un contacto borrado se
+         * lleva por delante el rastro de con quién se habló —las gestiones lo
+         * apuntan—, y lo normal es que la persona ya no esté, no que nunca
+         * haya estado. Para eso está la ficha del cliente, que sí borra.
+         *
+         * La excepción es una fila recién añadida y todavía sin guardar: ahí
+         * no hay nada que desactivar, y sin forma de quitarla una fila puesta
+         * por error bloquearía el guardado.
+         */
         cellRenderer: (p: any) => {
-          const tel = p.data?.telefono
-            ? `<button type="button" class="btn-icon btn-cerrar" data-accion="llamar" title="Llamar con Zoiper"><i class="fa fa-phone"></i></button>
-               <button type="button" class="btn-icon btn-editar" data-accion="whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`
+          if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
+          const activo = p.data?.activo !== false;
+          // Al desactivado no se le llama ni se le escribe por WhatsApp: para
+          // eso se le dio de baja. Vuelve a aparecer si se reactiva.
+          const tel = (activo && p.data?.telefono)
+            ? this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar con Zoiper', this.accesoModel?.ver !== false)
+            : '';
+          // El de WhatsApp sólo si el número puede tener cuenta: a un fijo el
+          // enlace le sale inservible, y mientras se teclea tampoco vale
+          const wa = (activo && puedeTenerWhatsapp(p.data?.telefono))
+            ? `<button type="button" class="btn-icon btn-wa" data-accion="whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`
             : '';
           const mail = p.data?.email
-            ? `<button type="button" class="btn-icon btn-editar" data-accion="correo" title="Escribir"><i class="fa fa-envelope"></i></button>`
+            ? `<button type="button" class="btn-icon btn-correo" data-accion="correo" title="Escribir"><i class="fa fa-envelope"></i></button>`
             : '';
-          return `<div class="gestion-acciones">${tel}${mail}</div>`;
+
+          let alta = '';
+          if (editable) {
+            alta = !p.data?.id
+              ? `<button type="button" class="btn-icon btn-quitar" data-accion="descartar" title="Descartar esta fila (todavía no se ha guardado)"><i class="fa fa-times"></i></button>`
+              : (p.data?.activo !== false
+                  ? `<button type="button" class="btn-icon btn-quitar" data-accion="alta" title="Desactivar: deja de aparecer para llamarle"><i class="fa fa-user-slash"></i></button>`
+                  : `<button type="button" class="btn-icon btn-cerrar" data-accion="alta" title="Volver a activar"><i class="fa fa-user-check"></i></button>`);
+          }
+
+          return `<div class="gestion-acciones">${tel}${wa}${mail}${alta}</div>`;
         },
       },
     ];
+  }
+
+  // ---------- Editar la lista de contactos ----------
+
+  public cargosContacto = CARGOS_CONTACTO;
+  /** Cómo estaba la lista al cargarla, para saber si hay algo que guardar. */
+  private contactosOriginal = '[]';
+  /** ag-Grid necesita una identidad estable; los nuevos todavía no tienen id. */
+  private claveContacto = 0;
+  public guardandoContactos = false;
+
+  getRowIdContacto = (p: any) => String(p.data._clave);
+
+  contactoCompleto(c: ContactoCliente): boolean {
+    return !!(c.nombres?.trim() && c.telefono?.trim());
+  }
+
+  get hayContactosIncompletos(): boolean { return this.contactos.some(c => !this.contactoCompleto(c)); }
+  get contactosCambiados(): boolean { return JSON.stringify(this.normalizarContactos()) !== this.contactosOriginal; }
+
+  agregarContacto(): void {
+    if (this.accesoModel?.editar === false) { return; }
+    const nuevo: any = {
+      _clave: ++this.claveContacto, id: null, nombres: '', cargo: '', telefono: '',
+      telefono_alterno: '', email: '', prioridad: this.contactos.length + 1, activo: true,
+    };
+    this.contactos = [...this.contactos, nuevo];
+    this.gridApiContactos?.setRowData(this.contactos);
+    // Abrir la celda del nombre: así se escribe sin tener que buscar dónde
+    setTimeout(() => {
+      const idx = this.contactos.length - 1;
+      this.gridApiContactos?.ensureIndexVisible(idx);
+      this.gridApiContactos?.startEditingCell({ rowIndex: idx, colKey: 'nombres' });
+    });
+  }
+
+  /**
+   * Al cambiar una celda se repinta su fila.
+   *
+   * Los botones de la columna ACCIONES miran el teléfono —el de WhatsApp
+   * sólo sale si el número puede tener cuenta—, y ag-Grid no repinta una
+   * columna porque haya cambiado otra: sin esto el botón no aparecería
+   * hasta recargar la ficha.
+   */
+  alCambiarContacto(e: any): void {
+    if (e?.node) { this.gridApiContactos?.redrawRows({ rowNodes: [e.node] }); }
+  }
+
+  /**
+   * Activar o desactivar: lo que aquí sustituye al borrado. El contacto se
+   * queda en la ficha pero deja de ofrecerse para llamar.
+   */
+  alternarActivoContacto(c: ContactoCliente): void {
+    if (this.accesoModel?.editar === false || !c) { return; }
+    c.activo = c.activo === false;
+
+    const nodo = this.gridApiContactos?.getRowNode(String((c as any)._clave));
+    if (nodo) { this.gridApiContactos.redrawRows({ rowNodes: [nodo] }); }
+  }
+
+  /**
+   * Sólo para filas que todavía no se han guardado. A las guardadas se las
+   * desactiva; para borrarlas de verdad está la ficha del cliente.
+   */
+  quitarContacto(c: ContactoCliente): void {
+    if (this.accesoModel?.editar === false || c?.id) { return; }
+    this.contactos = this.contactos.filter(x => x !== c);
+    this.contactos.forEach((x, i) => x.prioridad = i + 1);
+    this.gridApiContactos?.setRowData(this.contactos);
+  }
+
+  /** Lo que se le manda al servidor: la lista entera, que él sincroniza. */
+  private normalizarContactos(): any[] {
+    return this.contactos.map(c => ({
+      id: c.id ?? null,
+      nombres: (c.nombres ?? '').trim(),
+      cargo: (c.cargo ?? '').trim() || null,
+      telefono: (c.telefono ?? '').trim(),
+      telefono_alterno: ((c as any).telefono_alterno ?? '').trim() || null,
+      email: (c.email ?? '').trim() || null,
+      prioridad: c.prioridad || 1,
+      activo: c.activo !== false,
+    }));
+  }
+
+  /**
+   * Guarda la lista.
+   *
+   * El servidor recibe todas las filas y se encarga de insertar, actualizar y
+   * borrar las que falten: el mismo endpoint que usa la ficha del cliente, así
+   * que las dos pantallas se comportan igual.
+   */
+  async guardarContactos(): Promise<void> {
+    if (!this.cliente?.id || this.guardandoContactos) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    if (this.hayContactosIncompletos) {
+      this._toastr.warning('Hay contactos sin nombre o sin teléfono', 'Contactos', { timeOut: 4000 });
+      return;
+    }
+
+    try {
+      this.guardandoContactos = true;
+      const res: any = await firstValueFrom(this._clienteService.guardarContactos(this.cliente.id, this.normalizarContactos()));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudieron guardar los contactos', 'Error');
+        return;
+      }
+      this.ponerContactos(res.data ?? []);
+      this._toastr.success(res.message, 'Contactos', { timeOut: 2500 });
+    } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al guardar los contactos:', error);
+    } finally {
+      this.guardandoContactos = false;
+    }
+  }
+
+  /** Los deja en la grilla con su clave, y apunta cómo quedaron. */
+  private ponerContactos(lista: ContactoCliente[]): void {
+    this.contactos = (lista ?? []).map(c => ({ ...c, _clave: ++this.claveContacto } as any));
+    this.contactosOriginal = JSON.stringify(this.normalizarContactos());
+    this.gridApiContactos?.setRowData(this.contactos);
   }
 
   /** Por qué vendedores ha pasado el cliente. */
@@ -1227,14 +1818,25 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.columnDefsCartera = [
       { headerName: 'Cuándo', field: 'asignado_at', minWidth: 150, maxWidth: 180, cellStyle: { textAlign: 'left' } },
       {
-        headerName: 'Antes lo atendía', field: 'empleado_anterior', minWidth: 160,
-        cellStyle: { textAlign: 'left' },
-        valueGetter: (p: any) => p.data?.empleado_anterior || 'Sin vendedor',
+        headerName: 'Papel', field: 'rol', minWidth: 110, maxWidth: 130,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        // Lo de antes del cambio no tenía rol: todo era del vendedor
+        cellRenderer: (p: any) => {
+          const rol = this.rolesResponsable.find(r => r.id === (p.value || 'VENDEDOR'));
+          return `<span class="badge bg-secondary bg-opacity-25 text-body fs-10px">
+                    <i class="fa ${rol?.icono ?? 'fa-user'} me-1"></i>${rol?.name ?? p.value}
+                  </span>`;
+        },
       },
       {
-        headerName: 'Pasó a', field: 'empleado_nuevo', minWidth: 160,
+        headerName: 'Antes lo atendía', field: 'anterior', minWidth: 160,
+        cellStyle: { textAlign: 'left' },
+        valueGetter: (p: any) => p.data?.anterior || 'Nadie',
+      },
+      {
+        headerName: 'Pasó a', field: 'nuevo', minWidth: 160,
         cellStyle: { textAlign: 'left', fontWeight: '600' },
-        valueGetter: (p: any) => p.data?.empleado_nuevo || 'Sin vendedor',
+        valueGetter: (p: any) => p.data?.nuevo || 'Nadie',
       },
       { headerName: 'Motivo', field: 'motivo', minWidth: 200, cellStyle: { textAlign: 'left' }, tooltipField: 'motivo' },
       { headerName: 'Lo hizo', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' } },
@@ -1266,18 +1868,21 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       case 'cerrar':   this.cerrar(e.data); break;
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
+      case 'llamar':   this.llamarConSoftphone(e.data?.telefono || e.data?.cliente_telefono, this.cliente?.nombre_completo); break;
     }
   }
 
-  /** Llamar, WhatsApp o correo a la persona de contacto. */
+  /** Llamar, WhatsApp, correo o quitar a la persona de contacto. */
   onCellClickedContactos(e: CellClickedEvent): void {
     const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
     const accion = destino?.dataset['accion'];
     if (!accion) { return; }
 
-    if (accion === 'llamar')   { this.llamarConSoftphone(e.data?.telefono, e.data?.nombres); }
-    if (accion === 'whatsapp') { window.open(this.enlaceWhatsapp(e.data?.telefono), '_blank', 'noopener'); }
-    if (accion === 'correo')   { window.location.href = 'mailto:' + e.data?.email; }
+    if (accion === 'llamar')    { this.llamarConSoftphone(e.data?.telefono, e.data?.nombres); }
+    if (accion === 'whatsapp')  { window.open(this.enlaceWhatsapp(e.data?.telefono), '_blank', 'noopener'); }
+    if (accion === 'correo')    { window.location.href = 'mailto:' + e.data?.email; }
+    if (accion === 'alta')      { this.alternarActivoContacto(e.data); }
+    if (accion === 'descartar') { this.quitarContacto(e.data); }
   }
 
   onGridReadyAgenda(params: GridReadyEvent): void {
@@ -1293,6 +1898,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const destino = (e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement | null;
     if (destino?.dataset['accion'] === 'cerrar') { this.cerrarDesdeAgenda(e.data); return; }
     if (destino?.dataset['accion'] === 'abrir')  { this.irAlCliente(e.data); return; }
+    if (destino?.dataset['accion'] === 'llamar') {
+      this.llamarConSoftphone(e.data?.telefono || e.data?.cliente_telefono, e.data?.cliente_nombre);
+      return;
+    }
   }
 
   onCellKeyDownAgenda(e: any): void {
@@ -1428,9 +2037,16 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.cargarAgenda();
   }
 
-  alternarMias(): void {
+  /**
+   * Qué agenda se mira: la propia o la de todo el equipo.
+   *
+   * «Todo» es todo lo que ESE usuario puede ver, que no es lo mismo para un
+   * jefe de zona que para un administrador; el servidor ya pone ese límite.
+   */
+  verAgendaDe(soloMias: boolean): void {
+    if (this.soloMias === soloMias) { return; }
     this.paginaAgenda = 1;
-    this.soloMias = !this.soloMias;
+    this.soloMias = soloMias;
     this.cargarAgenda();
   }
 
@@ -1492,6 +2108,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   /** Cierra desde la agenda, sin tener que entrar al cliente. */
   cerrarDesdeAgenda(g: GestionModel): void {
+    if (!this.permiso(this.accesoModel?.crear, 'cerrar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.modal.open(CerrarGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.gestion = g;
@@ -1503,6 +2120,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   /** Salta al cliente de esa gestión, con su ficha y su historial. */
   irAlCliente(g: GestionModel): void {
+    if (!this.permiso(this.accesoModel?.ver, 'ver la ficha del cliente')) { return; }
     this.seleccionarCliente({ id: g.cliente_id });
   }
 
@@ -1547,22 +2165,28 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Min.', field: 'duracion_minutos', minWidth: 70, maxWidth: 80,
         cellStyle: { textAlign: 'right' }, headerTooltip: 'Duración en minutos',
       },
-      { headerName: 'Responsable', field: 'empleado_nombre', minWidth: 150, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Responsable', field: 'responsable_nombre', minWidth: 150, cellStyle: { textAlign: 'left' } },
       { headerName: 'Contacto', field: 'contacto_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
       { headerName: 'Nota', field: 'nota', minWidth: 200, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
       { headerName: 'Registrado por', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' }, sortable: false },
       {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        suppressMovable: true,
+        headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: (p: any) => {
+          if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
+          // Cerrar una pendiente va con CREAR, no con editar: lo que se hace es
+          // dejar anotado un trabajo recién hecho, no corregir lo que ya estaba.
+          // Modificar sí es editar, y borrarla del historial es eliminar.
+          const puedeCerrar  = this.accesoModel?.crear !== false;
+          const puedeEditar  = this.accesoModel?.editar !== false;
+          const puedeBorrar  = this.accesoModel?.eliminar !== false;
           const cerrar = p.data?.estado === 'PENDIENTE'
-            ? `<button type="button" class="btn-icon btn-cerrar" data-accion="cerrar" title="Cerrar la gestión"><i class="fa fa-check"></i></button>`
+            ? this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)
             : '';
-          return `<div class="gestion-acciones">${cerrar}
-                    <button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen"></i></button>
-                    <button type="button" class="btn-icon btn-quitar" data-accion="eliminar" title="Eliminar"><i class="fa fa-trash"></i></button>
-                  </div>`;
+          return `<div class="gestion-acciones">${cerrar}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
         },
       },
     ];
@@ -1593,9 +2217,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       const res: any = await firstValueFrom(
         this._gestionService.allGestiones(this.cliente.id, page, this.registrosPorPagina, '', {
           tipo: this.filtroTipo, estado: this.filtroEstado,
+          resultado: this.filtroResultado, creado_por: this.filtroCreadoPor,
         })
       );
       this.gestiones = res.body?.data?.data ?? [];
+      // La lista del desplegable «Registrado por» viene con los datos y se
+      // calcula sin los demás filtros, para que al elegir a alguien no
+      // desaparezcan los otros del menú
+      this.registradores = res.body?.data?.filtros?.registradores ?? this.registradores;
       const meta = res.body?.data?.meta;
       if (meta) {
         this.totalRegistros = meta.total;
@@ -1609,8 +2238,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
   }
 
-  cambiarFiltro(campo: 'tipo' | 'estado', valor: string | null): void {
-    if (campo === 'tipo') { this.filtroTipo = valor; } else { this.filtroEstado = valor; }
+  cambiarFiltro(campo: 'tipo' | 'estado' | 'resultado' | 'creadoPor', valor: string | null): void {
+    switch (campo) {
+      case 'tipo':      this.filtroTipo = valor; break;
+      case 'estado':    this.filtroEstado = valor; break;
+      case 'resultado': this.filtroResultado = valor; break;
+      case 'creadoPor': this.filtroCreadoPor = valor; break;
+    }
+    // Siempre a la página 1: con el filtro puesto puede que la que se estaba
+    // viendo ya no exista
     this.cargarGestiones(1);
   }
 
@@ -1638,6 +2274,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   private abrirGestion(modo: ModoGestion, gestion: GestionModel | null = null): void {
     if (!this.cliente) { return; }
+    // Corregir una existente es editar; registrarla o programarla es crear
+    const puede = modo === 'editar' ? this.accesoModel?.editar : this.accesoModel?.crear;
+    if (!this.permiso(puede, modo === 'editar' ? 'modificar gestiones' : 'registrar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
@@ -1655,6 +2294,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   /** Cierra una pendiente y, si se quiere, deja programada la siguiente. */
   cerrar(g: GestionModel): void {
     if (!g || g.estado !== 'PENDIENTE') { return; }
+    if (!this.permiso(this.accesoModel?.crear, 'cerrar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     const modalRef = this.modal.open(CerrarGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
@@ -1664,6 +2304,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   async eliminarGestion(g: GestionModel): Promise<void> {
     if (!g?.id) { return; }
+    if (!this.permiso(this.accesoModel?.eliminar, 'eliminar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     const r = await Swal.fire({
@@ -1696,18 +2337,33 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   /** Pasa el cliente a otro vendedor, con su agenda si se deja marcado. */
-  reasignar(): void {
+  /**
+   * Cambia quién atiende al cliente en un papel.
+   *
+   * Sin indicar papel es el vendedor, que es como se comportaba cuando un
+   * cliente sólo tenía uno.
+   */
+  reasignar(rol: RolResponsable = 'VENDEDOR'): void {
     if (!this.cliente) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     const modalRef = this.modal.open(ReasignarClienteComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.cliente = this.cliente;
-    modalRef.componentInstance.pendientes = this.resumen?.pendientes ?? 0;
+    modalRef.componentInstance.rol = rol;
+    modalRef.componentInstance.actualId = this.responsableDe(rol)?.usuario_id ?? null;
+    // Las gestiones sólo se mueven con el vendedor; al resto no les toca agenda
+    modalRef.componentInstance.pendientes = rol === 'VENDEDOR' ? (this.resumen?.pendientes ?? 0) : 0;
     this.escucharModal(modalRef, modalRef.componentInstance.reasignado, (data: any) => {
       if (data?.cliente) { this.cliente = data.cliente; }
       this.cargarAsignaciones();
+      this.cargarResponsables();
       this.refrescar();
     });
+  }
+
+  /** El responsable de un papel, o undefined si todavía no se ha cargado. */
+  responsableDe(rol: RolResponsable): ResponsableCliente | undefined {
+    return this.responsables.find(r => r.rol === rol);
   }
 
   /** La ficha completa del cliente, en sólo lectura. */
@@ -1723,10 +2379,20 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // AYUDAS PARA LA PLANTILLA
   // ================================================================
 
-  iconoTipo = iconoDeTipo;
   claseResultado = claseDeResultado;
-  nombreTipo = (tipo: string) => nombreDe(TIPOS_GESTION, tipo);
   nombreEstado = (estado: string) => nombreDe(ESTADOS_GESTION, estado);
+
+  /**
+   * El nombre y el icono del tipo salen de la lista cargada, no de la
+   * constante: si alguien añade un tipo en el catálogo, el historial tiene que
+   * saber cómo se llama. Si no está (un tipo que se desactivó), se cae a la
+   * constante y, en última instancia, al propio código.
+   */
+  nombreTipo = (tipo: string): string =>
+    this.tipos.find(t => t.id === tipo)?.name ?? nombreDe(TIPOS_GESTION, tipo);
+
+  iconoTipo = (tipo: string | null | undefined): string =>
+    this.tipos.find(t => t.id === tipo)?.icono || iconoDeTipo(tipo);
 
   /** El icono de cada estado, para el menú del filtro. */
   iconoEstado(estado?: string | null): string {
@@ -1738,15 +2404,45 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Quita los dos filtros de golpe y recarga. */
+  /** ¿Hay algún filtro puesto? Decide si se ve el botón de quitarlos. */
+  get hayFiltrosHistorial(): boolean {
+    return !!(this.filtroTipo || this.filtroEstado || this.filtroResultado || this.filtroCreadoPor);
+  }
+
+  /** Quita los cuatro filtros de golpe y recarga. */
   limpiarFiltrosHistorial(): void {
     this.filtroTipo = null;
     this.filtroEstado = null;
+    this.filtroResultado = null;
+    this.filtroCreadoPor = null;
     this.cargarGestiones(1);
+  }
+
+  /**
+   * Trae los tipos del catálogo para el filtro y para las grillas.
+   *
+   * El servicio lo guarda en memoria, así que abrir cliente tras cliente no
+   * repite la petición. Lo que se guarda en ventas.gestiones.tipo es el
+   * CÓDIGO, así que es lo que va como id del filtro.
+   */
+  private async cargarTiposDelCatalogo(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this._catalogoService.catalogo());
+      const lista: TipoGestion[] = res?.status === 'success' ? (res.data ?? []) : [];
+      if (lista.length) {
+        this.tipos = lista.map(t => ({
+          id: t.codigo,
+          name: t.nombre,
+          icono: t.icono || 'fa-comment-dots',
+        }));
+      }
+    } catch (error) {
+      // Se queda la constante: un filtro de tipos vacío sería peor
+      console.error('Error al cargar el catálogo de tipos de gestión:', error);
+    }
   }
   nombreResultado = (r: string) => nombreDe(RESULTADOS_GESTION, r);
 
-  /** «tel:» y «mailto:» para llamar o escribir desde el navegador o el móvil. */
   /**
    * Las conversaciones de WhatsApp que el CRM no pudo atar a ningún cliente.
    *
@@ -1816,60 +2512,536 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     return /^https?:\/\//i.test(url) ? url : 'https://' + url;
   }
 
-  enlaceTelefono(numero?: string | null): string { return numero ? 'tel:' + String(numero).replace(/\s/g, '') : ''; }
+  /**
+   * Un botón de una columna ACCIONES, apagado si el perfil no lo permite.
+   *
+   * Mismo trato que app-action-buttons en la lista de clientes: el botón no
+   * se esconde, se deshabilita y el title lo explica. Escondiéndolo, la
+   * columna cambiaría de ancho según quién entre y el usuario no sabría que
+   * la acción existe —acabaría preguntando por qué a él no le sale—.
+   *
+   * Esto es presentación: quien de verdad corta es el método al que llama
+   * cada acción, porque al menú del clic derecho y al teclado no les afecta
+   * un `disabled` puesto aquí.
+   */
+  /**
+   * ¿El perfil deja hacer esto? Si no, lo dice y corta.
+   *
+   * El botón de la grilla ya sale apagado, pero la misma acción se alcanza
+   * desde el menú del clic derecho y con el teclado, así que la comprobación
+   * de verdad va aquí. El aviso es para que no parezca que la pantalla se
+   * quedó colgada: sin él, pulsar y que no pase nada se lee como un error.
+   */
+  private permiso(concedido: boolean | undefined, queHacer: string): boolean {
+    if (concedido !== false) { return true; }
+    this._toastr.info(`Tu perfil no permite ${queHacer}.`, 'Sin permiso');
+    return false;
+  }
+
+  private botonAccion(accion: string, clase: string, icono: string, titulo: string, permitido: boolean): string {
+    const t = permitido ? titulo : `${titulo} - Desactivado`;
+    return `<button type="button" class="btn-icon ${clase}" data-accion="${accion}" title="${t}"${permitido ? '' : ' disabled'}>`
+         + `<i class="${icono}"></i></button>`;
+  }
+
+  // ================================================================
+  // PLEGAR LA COLUMNA DE ACCIONES
+  //
+  // Lo mismo que en seguridad > perfiles: se pulsa la cabecera ACCIONES y la
+  // columna se encoge, que en una pantalla estrecha son 140 píxeles que le
+  // hacen falta a lo que de verdad se viene a leer. Plegada, cada celda deja
+  // un botón ☰ para devolverla, así que nunca hay que adivinar que la cabecera
+  // responde al clic.
+  //
+  // Aquí hay CUATRO grillas con acciones (agenda, pendientes, contactos e
+  // historial) y por eso no se copió aquello tal cual: aquello busca la
+  // cabecera con un document.querySelector, que con varias grillas en la misma
+  // pantalla engancha siempre la primera. En su lugar va un solo escuchador
+  // delegado en el componente, que además sirve para las grillas de las
+  // pestañas que todavía no se han abierto.
+  //
+  // El estado es uno para las cuatro: es una preferencia de sitio en pantalla,
+  // y plegarlo en una pestaña y encontrárselo desplegado en la siguiente sería
+  // raro.
+  // ================================================================
+
+  /** true mientras la columna de acciones está encogida. */
+  public accionesPlegadas = false;
+
+  /** Lo que queda de ancho la columna plegada: justo para el botón. */
+  private readonly ANCHO_ACCIONES_PLEGADAS = 46;
+
+  /** Las grillas de esta pantalla que tienen columna de acciones. */
+  private get grillasConAcciones(): { api?: GridApi; defs: any[] }[] {
+    return [
+      { api: this.gridApiAgenda,     defs: this.columnDefsAgenda },
+      { api: this.gridApiPendientes, defs: this.columnDefsPendientes },
+      { api: this.gridApiContactos,  defs: this.columnDefsContactos },
+      { api: this.gridApi,           defs: this.columnDefs },
+    ];
+  }
+
+  /** Dónde empezó la pulsación, para no confundir un arrastre con un toque. */
+  private pulsacionEn: string | null = null;
+
+  /**
+   * Qué se puede pulsar para plegar o desplegar: la cabecera ACCIONES de
+   * cualquier grilla, y el ☰ que queda en las celdas cuando está plegada.
+   *
+   * Devuelve QUÉ se ha pulsado, no el elemento: ag-Grid rehace la celda entre
+   * pointerdown y pointerup —al marcar el foco—, así que comparando elementos
+   * el botón de la celda no respondía nunca al ratón.
+   */
+  private objetivoPlegado(e: Event): string | null {
+    const t = e.target as HTMLElement;
+    if (!t?.closest) { return null; }
+    if (t.closest('.ag-header-cell[col-id="acciones"]')) { return 'cabecera'; }
+    if (t.closest('[data-accion="desplegar-acciones"]')) { return 'boton'; }
+    return null;
+  }
+
+  /**
+   * Va por pointerup y NO por click.
+   *
+   * Con el dedo, ag-Grid se queda el toque de la cabecera —llegan
+   * pointerdown, touchstart, pointerup y touchend, pero NUNCA un click—, así
+   * que escuchando `click` esto no funcionaba en el teléfono. `pointerup`
+   * sirve igual para el ratón y para el dedo.
+   *
+   * Se guarda dónde empezó la pulsación para que arrastrar el ancho de una
+   * columna y soltar encima de la cabecera no la pliegue sin querer.
+   *
+   * Delegado en el componente entero a propósito: las grillas de las pestañas
+   * se crean al abrirlas, así que engancharse a cada cabecera obligaría a
+   * repetir el enganche en cada `onGridReady` y a soltarlo al destruir. Un
+   * escuchador de Angular se va solo con el componente.
+   */
+  @HostListener('pointerdown', ['$event'])
+  onPulsacionAbajo(e: PointerEvent): void {
+    this.pulsacionEn = this.objetivoPlegado(e);
+  }
+
+  @HostListener('pointerup', ['$event'])
+  onPulsacionArriba(e: PointerEvent): void {
+    const destino = this.objetivoPlegado(e);
+    const empezoAhi = !!destino && destino === this.pulsacionEn;
+    this.pulsacionEn = null;
+    // button 0 es el principal: con el dedo también llega como 0
+    if (empezoAhi && e.button === 0) { this.alternarAcciones(); }
+  }
+
+  /** Pliega o despliega la columna de acciones en las cuatro grillas. */
+  alternarAcciones(): void {
+    this.accionesPlegadas = !this.accionesPlegadas;
+
+    for (const g of this.grillasConAcciones) {
+      const col = (g.defs ?? []).find((c: any) => c?.field === 'acciones');
+      if (!col) { continue; }
+
+      // La primera vez se guarda cómo venía: cada grilla tiene su propio ancho
+      // (118, 142, 140, 110) y hay que devolverle el suyo, no uno común.
+      if (col.anchoAbierto === undefined) {
+        col.anchoAbierto = col.minWidth;
+        col.rotuloAbierto = col.headerName;
+      }
+
+      const ancho = this.accionesPlegadas ? this.ANCHO_ACCIONES_PLEGADAS : col.anchoAbierto;
+      col.minWidth = ancho;
+      col.maxWidth = ancho;
+      col.headerName = this.accionesPlegadas ? '' : col.rotuloAbierto;
+      col.headerComponentParams = {
+        template: this.plantillaCabecera(col.rotuloAbierto, this.accionesPlegadas),
+      };
+
+      g.api?.setColumnDefs(g.defs);
+      // Las celdas cambian de contenido, no sólo de ancho: con la columna
+      // plegada enseñan el botón de devolverla
+      g.api?.redrawRows();
+      g.api?.sizeColumnsToFit();
+    }
+  }
+
+  /**
+   * La cabecera de la columna de acciones, con la flecha que anuncia que se
+   * puede plegar. Va desde el principio: sin ella nadie adivina que la
+   * cabecera responde al clic.
+   */
+  private cabeceraAcciones(rotulo: string): { template: string } {
+    return { template: this.plantillaCabecera(rotulo, false) };
+  }
+
+  /**
+   * Lo que se pulsa en la cabecera, como <button> y no como <div>.
+   *
+   * No es cosmética: en iOS un elemento que no es interactivo pero tiene regla
+   * :hover pide DOS toques —el primero lo deja «por encima», el segundo
+   * pulsa—, y era lo que obligaba a dar doble toque para plegar la columna en
+   * el teléfono. Siendo un botón, el navegador dispara el clic a la primera.
+   */
+  private plantillaCabecera(rotulo: string, plegada: boolean): string {
+    const titulo = plegada ? 'Mostrar los botones de acción' : 'Ocultar los botones de acción';
+    const dentro = plegada
+      ? `<i class="fa fa-bars"></i>`
+      : `<span>${rotulo}</span><i class="fa fa-arrow-right"></i>`;
+    return `<button type="button" class="gc-acciones-cabecera" title="${titulo}" aria-label="${titulo}">${dentro}</button>`;
+  }
+
+  /** El botón que devuelve la columna, para que siempre haya algo pulsable. */
+  private botonDesplegarAcciones(): string {
+    return `<button type="button" class="btn-icon gc-desplegar" data-accion="desplegar-acciones"`
+         + ` title="Mostrar los botones de acción" aria-label="Mostrar los botones de acción">`
+         + `<i class="fa fa-bars"></i></button>`;
+  }
+
+  /**
+   * El número de una celda, puesto donde no lo lea una extensión.
+   *
+   * Sale en un atributo y lo pinta el CSS (.numero-plano, en styles.css):
+   * así no hay texto que recorrer y Zoiper Click2Dial no le engancha su
+   * logotipo ni la bandera del país. Se ve y se ordena igual, porque el
+   * valor de la celda no cambia; lo único que se pierde es seleccionarlo
+   * con el ratón, y para eso están el botón de copiar y, en contactos, la
+   * propia celda, que se edita.
+   *
+   * Es una propiedad y no un método para que ag-Grid lo llame sin perder
+   * el `this` del componente.
+   */
+  public celdaNumero = (p: any): string => {
+    const n = String(p.value ?? '').trim().replace(/["<>&]/g, '');
+    return n ? `<span class="numero-plano" data-numero="${n}"></span>` : '';
+  };
+
+  // ================================================================
+  // NOTAS DEL CLIENTE
+  // ================================================================
+
+  /**
+   * Las notas del cliente abierto.
+   *
+   * Con `forzar` se vuelven a pedir aunque ya se tengan: lo usan el botón de
+   * recargar, el buscador y lo que se llama tras guardar o borrar. El buscador
+   * va al servidor y no filtra en memoria porque busca también dentro del
+   * texto de la nota, que aquí sólo llega recortado a 220 caracteres.
+   */
+  async cargarNotas(forzar = false): Promise<void> {
+    const id = this.cliente?.id;
+    if (!id) { this.notas = []; return; }
+    if (!forzar && this.notasDe === id) { return; }
+
+    try {
+      this.cargandoNotas = true;
+      const res: any = await firstValueFrom(this._notaService.allNotas(id, this.buscaNotas));
+      this.notas = res?.status === 'success' ? (res.data ?? []) : [];
+      this.notasDe = id;
+    } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al cargar las notas del cliente:', error);
+      this.notas = [];
+    } finally {
+      this.cargandoNotas = false;
+    }
+  }
+
+  /**
+   * Abre la nota para leerla entera.
+   *
+   * En la tarjeta el cuerpo va recortado a seis renglones para que una nota
+   * larga no deje a las demás fuera de pantalla; aquí se lee completa y, con
+   * el botón de expandir del panel, a pantalla entera —que es lo que hace
+   * falta cuando lleva una captura—.
+   *
+   * Sólo se lee: para corregirla está el botón de modificar de la tarjeta, y
+   * para llevársela en papel el de imprimir de la barra del visor.
+   */
+  verNota(n: NotaCliente): void {
+    const ref = this.modal.open(VerNotaComponent, { size: 'lg', centered: true, scrollable: false });
+    ref.componentInstance.nota = n;
+    ref.componentInstance.clienteNombre = this.cliente?.nombre_completo ?? '';
+  }
+
+  nuevaNota(): void {
+    if (!this.permiso(this.accesoModel?.crear, 'crear notas')) { return; }
+    if (!this.cliente?.id) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+    this.abrirNota(null);
+  }
+
+  editarNota(n: NotaCliente): void {
+    if (!this.permiso(this.accesoModel?.editar, 'modificar notas')) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+    this.abrirNota(n);
+  }
+
+  private abrirNota(n: NotaCliente | null): void {
+    const ref = this.modal.open(SaveNotaComponent, { size: 'lg', centered: true, backdrop: 'static' });
+    ref.componentInstance.clienteId = this.cliente!.id;
+    ref.componentInstance.clienteNombre = this.cliente?.nombre_completo ?? '';
+    ref.componentInstance.nota = n;
+    this.escucharModal(ref, ref.componentInstance.guardado, () => this.cargarNotas(true));
+  }
+
+  /**
+   * Fijar o desfijar.
+   *
+   * Va por su propio endpoint y no por el de guardar: fijar no es editar la
+   * nota, y si contara como edición, subir una al principio la haría parecer
+   * además la más reciente.
+   */
+  async fijarNota(n: NotaCliente): Promise<void> {
+    if (!this.permiso(this.accesoModel?.editar, 'fijar notas')) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._notaService.fijarNota(n.id));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo fijar la nota', 'Error');
+        return;
+      }
+      this._toastr.success(res.message, 'Notas');
+      await this.cargarNotas(true);
+    } catch (error) {
+      console.error('Error al fijar la nota:', error);
+    }
+  }
+
+  async eliminarNota(n: NotaCliente): Promise<void> {
+    if (!this.permiso(this.accesoModel?.eliminar, 'eliminar notas')) { return; }
+
+    const r = await Swal.fire({
+      title: '¿Eliminar esta nota?',
+      text: `«${n.titulo}». Lo que dice no se puede volver a escribir de memoria; el contenido queda en la auditoría.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!r.isConfirmed) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._notaService.deleteNota(n.id));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo eliminar la nota', 'Error');
+        return;
+      }
+      this._toastr.success(res.message, 'Notas', { closeButton: true });
+      await this.cargarNotas(true);
+    } catch (error) {
+      console.error('Error al eliminar la nota:', error);
+    }
+  }
+
+  // ================================================================
+  // ARCHIVOS DEL CLIENTE
+  // ================================================================
+
+  /**
+   * Los archivos del cliente abierto.
+   *
+   * Con `forzar` se vuelven a pedir aunque ya se tengan: es lo que hace el
+   * botón de recargar y lo que se llama tras subir o borrar.
+   */
+  async cargarArchivos(forzar = false): Promise<void> {
+    const id = this.cliente?.id;
+    if (!id) { this.archivos = []; return; }
+    if (!forzar && this.archivosDe === id) { return; }
+
+    try {
+      this.cargandoArchivos = true;
+      const res: any = await firstValueFrom(this._archivoService.allArchivos(id));
+      this.archivos = res?.status === 'success' ? (res.data ?? []) : [];
+      this.archivosDe = id;
+    } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al cargar los archivos del cliente:', error);
+      this.archivos = [];
+    } finally {
+      this.cargandoArchivos = false;
+    }
+  }
+
+  /** Lo que ocupan todos juntos, que es lo que avisa de cuándo hay que limpiar. */
+  get pesoTotalArchivos(): string {
+    return formatoTamano(this.archivos.reduce((t, a) => t + Number(a.tamano ?? 0), 0));
+  }
+
+  /** La url con la que se ve un archivo (sin token: la usan <img> y <video>). */
+  urlArchivo(a: ArchivoCliente): string {
+    return this._archivoService.urlDe(a.id);
+  }
+
+  /**
+   * Abre el visor: ampliar, girar y pasar al siguiente sin salir de aquí.
+   *
+   * Antes mandaba el archivo a otra pestaña del navegador, que sirve para
+   * verlo pero no para trabajar con él: ni zoom sobre un detalle, ni
+   * enderezar una foto tomada de lado, y encima se pierde el cliente de
+   * vista. Se le pasan todos los archivos para poder recorrerlos con las
+   * flechas, y la forma de armar la url, que la sabe el servicio.
+   */
+  verArchivo(a: ArchivoCliente): void {
+    const ref = this.modal.open(VisorArchivoComponent, {
+      size: 'xl', centered: true, scrollable: false, windowClass: 'visor-ventana',
+    });
+    ref.componentInstance.archivos = this.archivos;
+    ref.componentInstance.indice = Math.max(0, this.archivos.findIndex(x => x.id === a.id));
+    ref.componentInstance.urlDe = (x: ArchivoCliente, descargar = false) =>
+      this._archivoService.urlDe(x.id, descargar);
+  }
+
+  descargarArchivo(a: ArchivoCliente): void {
+    window.open(this._archivoService.urlDe(a.id, true), '_blank', 'noopener');
+  }
+
+  agregarArchivos(): void {
+    if (!this.permiso(this.accesoModel?.crear, 'agregar archivos')) { return; }
+    if (!this.cliente?.id) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    const ref = this.modal.open(SubirArchivosComponent, { size: 'lg', centered: true, backdrop: 'static' });
+    ref.componentInstance.clienteId = this.cliente.id;
+    ref.componentInstance.clienteNombre = this.cliente.nombre_completo ?? '';
+    this.escucharModal(ref, ref.componentInstance.subidos, () => this.cargarArchivos(true));
+  }
+
+  /**
+   * Cambia el nombre y la descripción. El fichero no se toca: para eso se
+   * sube otro y se borra éste, que deja rastro en la auditoría.
+   */
+  async editarArchivo(a: ArchivoCliente): Promise<void> {
+    if (!this.permiso(this.accesoModel?.editar, 'modificar archivos')) { return; }
+
+    const r = await Swal.fire({
+      title: 'Modificar el archivo',
+      html:
+        `<input id="arch-nombre" class="swal2-input" maxlength="150" placeholder="Nombre"
+                value="${(a.nombre ?? '').replace(/"/g, '&quot;')}">` +
+        `<textarea id="arch-desc" class="swal2-textarea" maxlength="4000"
+                   placeholder="Para qué es este archivo">${a.descripcion ?? ''}</textarea>`,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#00acac',
+      cancelButtonColor: '#6c757d',
+      preConfirm: () => {
+        const nombre = (document.getElementById('arch-nombre') as HTMLInputElement)?.value?.trim();
+        const descripcion = (document.getElementById('arch-desc') as HTMLTextAreaElement)?.value?.trim();
+        if (!nombre) {
+          Swal.showValidationMessage('El nombre no puede quedar vacío');
+          return false;
+        }
+        return { nombre, descripcion };
+      },
+    });
+    if (!r.isConfirmed || !r.value) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._archivoService.editArchivo(a.id, {
+        nombre: r.value.nombre,
+        descripcion: r.value.descripcion || null,
+        activo: a.activo !== false,
+      }));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo guardar', 'Error');
+        return;
+      }
+      this._toastr.success(res.message, 'Archivos', { closeButton: true });
+      await this.cargarArchivos(true);
+    } catch (error) {
+      console.error('Error al modificar el archivo:', error);
+    }
+  }
+
+  async eliminarArchivo(a: ArchivoCliente): Promise<void> {
+    if (!this.permiso(this.accesoModel?.eliminar, 'eliminar archivos')) { return; }
+
+    const r = await Swal.fire({
+      title: '¿Eliminar este archivo?',
+      text: `«${a.nombre}» se borra del cliente y del servidor. El movimiento queda en la auditoría.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!r.isConfirmed) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._archivoService.deleteArchivo(a.id));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo eliminar', 'Error');
+        return;
+      }
+      this._toastr.success(res.message, 'Archivos', { closeButton: true });
+      await this.cargarArchivos(true);
+    } catch (error) {
+      console.error('Error al eliminar el archivo:', error);
+    }
+  }
 
   // ================================================================
   // MARCAR CON EL SOFTPHONE (ZOIPER)
   // ================================================================
 
-  /**
-   * Protocolo que se le pasa al sistema operativo para marcar.
-   *
-   * Se envía con DOS PUNTOS y sin barras: zoiper:0991234567. Con «://»
-   * Windows le añade una barra al final (zoiper://0991234567/) y el softphone
-   * acabaría marcando ese carácter de más; comprobado mirando lo que recibe
-   * el manejador. El programa entiende además tel:, sip: y callto:.
-   *
-   * Se deja configurable por navegador para no tener que recompilar si se
-   * cambia de softphone (3CX, MicroSIP, X-Lite…):
-   *
-   *   localStorage.setItem('miCRM3.softphone', 'callto');   // o tel, sip…
-   */
-  private get protocoloLlamada(): string {
-    try { return localStorage.getItem('miCRM3.softphone') || 'zoiper'; } catch { return 'zoiper'; }
-  }
-
-  /** La URL completa que se le entrega al sistema. */
-  public enlaceSoftphone(numero?: string | null): string {
-    const n = this.numeroMarcable(numero);
-    return n ? `${this.protocoloLlamada}:${n}` : '';
-  }
+  // Todo esto vive en SoftphoneService desde que la lista de clientes también
+  // marca; aquí sólo queda lo que usa la plantilla, delegando.
+  //
+  // No hay ningún método que devuelva la URL del softphone: se marca llamando
+  // al servicio, nunca poniéndola en un href. Un enlace saca el cartel de
+  // «¿abandonar la página?» y además Safari del iPhone y la integración de
+  // Zoiper en el navegador lo decoran con su icono y la bandera del país.
 
   /**
-   * El número tal como hay que marcarlo: sólo lo que sabe marcar una central
-   * (dígitos, +, * y #). Se quitan espacios, guiones y paréntesis, que es lo
-   * que suele traer un número tecleado a mano.
-   */
-  private numeroMarcable(numero?: string | null): string {
-    return String(numero ?? '').replace(/[^\d+*#]/g, '');
-  }
-
-  /**
-   * Marca con el softphone del puesto.
+   * Marca con el softphone del puesto y deja lista la gestión.
    *
-   * No navega a ningún sitio: el navegador le entrega el enlace al sistema,
-   * que abre Zoiper. La primera vez Chrome pregunta si se permite abrirlo;
-   * marcando «Permitir siempre» no vuelve a preguntar.
+   * Mientras el teléfono suena, Zoiper se aparta solo (lo hace el ayudante del
+   * protocolo) y aquí se abre el formulario de gestión, para que el vendedor
+   * vaya escribiendo lo que habla en vez de reconstruirlo al colgar.
+   *
+   * Sólo se abre si hay un cliente en pantalla: la gestión cuelga de él. Al
+   * marcar desde la lista de clientes sin haberlo abierto, se marca y ya.
    */
   llamarConSoftphone(numero?: string | null, quien?: string | null): void {
-    const n = this.numeroMarcable(numero);
-    if (!n) {
+    const marcado = this._softphone.marcar(numero);
+    if (!marcado) {
       this._toastr.warning('No tiene teléfono registrado', 'Sin número');
       return;
     }
+    this._toastr.info('Marcando ' + marcado + '…', quien || 'Zoiper', { timeOut: 2500 });
 
-    this._toastr.info('Marcando ' + n + '…', quien || 'Zoiper', { timeOut: 2500 });
-    window.location.href = this.enlaceSoftphone(n);
+    if (this.cliente) { this.abrirGestionDeLlamada(marcado); }
+  }
+
+  /**
+   * El formulario de gestión que acompaña a la llamada.
+   *
+   * Va en un setTimeout corto porque el lanzamiento del protocolo y la
+   * apertura del modal caen en el mismo gesto: dándole ese respiro, el
+   * navegador termina de entregarle el enlace al sistema antes de ponerse a
+   * montar el diálogo.
+   */
+  private abrirGestionDeLlamada(numero: string): void {
+    // Marcar sí se le deja a todo el que vea al cliente; lo que no se abre, si
+    // no puede crear, es el formulario. Sin aviso: la llamada ya está saliendo
+    // y un cartel de «sin permiso» justo ahí se lee como que falló el marcado.
+    if (this.accesoModel?.crear === false) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    setTimeout(() => {
+      if (!this.cliente) { return; }
+
+      const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+      modalRef.componentInstance.modo = 'registrar';
+      modalRef.componentInstance.cliente = this.cliente;
+      modalRef.componentInstance.contactos = this.contactos;
+      modalRef.componentInstance.gestion = null;
+      // El tipo ya sale LLAMADA por defecto; lo que el formulario no puede
+      // saber es a qué número se llamó, que puede ser el de un contacto.
+      modalRef.componentInstance.telefonoInicial = numero;
+      this.escucharModal(modalRef, modalRef.componentInstance.guardado, () => this.refrescar());
+    }, 400);
   }
   enlaceWhatsapp(numero?: string | null, texto?: string | null): string {
     const internacional = this.numeroInternacional(numero);
@@ -1892,6 +3064,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     // Ecuador: 0991234567 → 593991234567
     return limpio.startsWith('0') ? '593' + limpio.substring(1) : limpio;
   }
+
+  /**
+   * ¿A ese número se le puede escribir? Lo usan la plantilla y la grilla de
+   * contactos para no ofrecer el botón donde el enlace saldría inservible
+   * (un fijo, o un número a medio teclear). La regla vive en
+   * plantillasWhatsapp.ts, que es de donde la toma también saveGestion.
+   */
+  public tieneWhatsapp = puedeTenerWhatsapp;
 
   /** Dónde se abre el chat: en el navegador o en la aplicación instalada. */
   public get destinoWhatsapp(): 'web' | 'app' {

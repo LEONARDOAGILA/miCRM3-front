@@ -254,3 +254,49 @@ body {
   border-radius: 0;
   background: transparent;
 }
+
+/* ================================================================
+   NÚMEROS QUE NINGUNA EXTENSIÓN DEBE TOCAR
+   ================================================================
+   La extensión Zoiper Click2Dial (y las de Skype, RingCentral y
+   compañía) recorren el texto de la página, y a todo lo que les parece
+   un teléfono le enganchan encima su logotipo y la bandera del país. En
+   el CRM eso ensucia las fichas y las grillas, y encima el enlace que
+   dejan se lleva al usuario fuera del navegador: aquí se marca con los
+   botones de llamar, que pasan por el softphone del puesto.
+
+   El truco es que el número NO esté en el documento como texto: se
+   guarda en un atributo y lo pinta el CSS. Lo que recorre el texto no
+   encuentra nada, y el usuario lo ve igual.
+
+       <span class="numero-plano" data-numero="0991234567"></span>
+
+   A cambio no se puede seleccionar con el ratón, así que donde haga
+   falta copiarlo tiene que haber un botón de copiar (o una celda que se
+   pueda editar, como en la grilla de contactos).
+
+   Esto no apaga la extensión: es cosa de cada navegador. Se apaga en sus
+   opciones, con «hide logo & flag» o metiendo el sitio en su lista negra. */
+.numero-plano::after {
+  content: attr(data-numero);
+}
+
+/* ================================================================
+   VENTANA DEL VISOR DE ARCHIVOS
+   ================================================================
+   La clase la pone ng-bootstrap en SU div, fuera del componente, así que
+   el css con alcance del visor no llega hasta aquí. Se le quitan los
+   márgenes y el blanco del modal para que el archivo ocupe la pantalla: un
+   visor con 40px de borde blanco alrededor es media pantalla desperdiciada. */
+.visor-ventana .modal-dialog {
+  max-width: 96vw;
+  height: 94vh;
+  margin: 3vh auto;
+}
+
+.visor-ventana .modal-content {
+  height: 100%;
+  border: 0;
+  background-color: #111;
+  overflow: hidden;
+}

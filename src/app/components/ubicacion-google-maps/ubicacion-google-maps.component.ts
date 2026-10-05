@@ -8,7 +8,6 @@ import { ToastrService } from 'ngx-toastr';
 
 import { environment } from '../../../environments/environment';
 import { GoogleMapsLoaderService } from '../../service/google-maps-loader.service';
-import { PanelModule } from '../panel/panel.module';
 
 /** Lugar elegido en el buscador o pulsado en el mapa. */
 export interface LugarGm {
@@ -97,7 +96,7 @@ interface SugerenciaGm {
 @Component({
   selector: 'app-ubicacion-google-maps',
   standalone: true,
-  imports: [CommonModule, FormsModule, PanelModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './ubicacion-google-maps.component.html',
   styleUrls: ['./ubicacion-google-maps.component.css'],
 })
@@ -340,8 +339,11 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * Botón de expandir del <panel>: al pasar a pantalla completa (y al volver)
-   * el mapa cambia de tamaño, así que se le avisa y se recupera el centro.
+   * El marco cambió de tamaño: al expandir el <panel> que envuelve al mapa, o
+   * al volver del modo pantalla completa. Google Maps no se da cuenta solo, así
+   * que se le avisa y se le devuelve el centro que tenía.
+   *
+   * La llama quien pone el marco, porque el <panel> ya no está aquí dentro.
    */
   alExpandirPanel(_expandido: boolean): void {
     const centro = this.mapa?.getCenter?.();

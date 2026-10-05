@@ -1,0 +1,156 @@
+<!-- ============================================================
+     SUBIR ARCHIVOS AL CLIENTE (modal)
+
+     La descripción se escribe una vez y vale para toda la tanda: las
+     ocho fotos de una visita comparten el porqué. El nombre sí es de
+     cada fichero, porque es lo que luego se lee en la lista.
+     ============================================================ -->
+
+<app-modal-header [title]="'Agregar archivos' + (clienteNombre ? ' · ' + clienteNombre : '')"
+                  (onClose)="cancelar()"></app-modal-header>
+
+<div class="modal-body arch-modal">
+
+  <!-- Dónde se sueltan -->
+  <div class="arch-zona"
+       [class.is-encima]="arrastrando"
+       (click)="abrirSelector()"
+       (dragover)="alArrastrar($event, true)"
+       (dragleave)="alArrastrar($event, false)"
+       (drop)="alSoltar($event)">
+    <i class="fa fa-cloud-arrow-up arch-zona__icono"></i>
+    <div class="arch-zona__texto">
+      Arrastra aquí los archivos o <b>haz clic para elegirlos</b>
+    </div>
+    <div class="arch-zona__ayuda">
+      Fotos, videos, PDF, Excel, Word… lo que haya que guardar de este cliente
+    </div>
+  </div>
+  <input #selector type="file" multiple hidden (change)="alElegir($event)">
+
+  <!-- La descripción, una para todos -->
+  <div class="arch-descripcion">
+    <label class="form-label arch-etiqueta" for="arch-desc">
+      Descripción <span class="arch-etiqueta__nota">— se guarda igual en todos los de esta tanda</span>
+    </label>
+    <textarea id="arch-desc" class="form-control form-control-sm" rows="2"
+              maxlength="4000"
+              placeholder="Ej: Fotos de la visita del 3 de octubre, para ubicar la entrega"
+              [(ngModel)]="descripcion"></textarea>
+  </div>
+
+  <!-- La cola -->
+  @if (filas.length) {
+    <div class="arch-cola">
+      @for (f of filas; track f.clave) {
+        <div class="arch-fila"
+             [class.is-ok]="f.estado === 'ok'"
+             [class.is-error]="f.estado === 'error'"
+             [class.is-cancelado]="f.estado === 'cancelado'">
+
+          <!-- Miniatura si es imagen; si no, el icono de su tipo -->
+          <span class="arch-fila__cara">
+            @if (f.vistaPrevia) {
+              <img [src]="f.vistaPrevia" [alt]="f.nombre">
+            } @else {
+              <i [ngClass]="pintaDeTipo(f.tipo).icono"
+                 [style.color]="pintaDeTipo(f.tipo).color"></i>
+            }
+          </span>
+
+          <span class="arch-fila__datos">
+            <input class="form-control form-control-sm arch-fila__nombre"
+                   [(ngModel)]="f.nombre" maxlength="150" placeholder="Nombre"
+                   [disabled]="f.estado === 'subiendo' || f.estado === 'guardando' || f.estado === 'ok'">
+            <span class="arch-fila__pie">
+              {{ f.extension | uppercase }} · {{ formatoTamano(f.tamano) }}
+              @if (f.estado === 'error') {
+                <span class="text-danger">· {{ f.error }}</span>
+              }
+              @if (f.estado === 'cancelado') {
+                <span class="arch-fila__cancelado">· lo paraste · se vuelve a intentar con «Subir»</span>
+              }
+            </span>
+
+            @if (f.estado === 'subiendo' || f.estado === 'guardando') {
+              <span class="arch-barra">
+                <span class="arch-barra__relleno" [style.width.%]="f.estado === 'guardando' ? 100 : f.progreso"></span>
+              </span>
+            }
+          </span>
+
+          <span class="arch-fila__estado">
+            @switch (f.estado) {
+              @case ('ok')        { <i class="fa fa-circle-check text-success" title="Guardado"></i> }
+              @case ('subiendo')  {
+                <span class="arch-pct">{{ f.progreso }}%</span>
+                <!-- Cancelar sólo éste y seguir con los demás: es el caso de
+                     «me equivoqué de archivo», que no tiene por qué tirar
+                     abajo la tanda entera -->
+                <button type="button" class="btn-icon btn-cortar"
+                        title="Cancelar este archivo y seguir con los demás"
+                        (click)="cancelarFila(f)">
+                  <i class="fa fa-xmark"></i>
+                </button>
+              }
+              @case ('guardando') { <i class="fa fa-spinner fa-spin text-muted" title="Guardando"></i> }
+              @case ('error')     {
+                <button type="button" class="btn-icon btn-reintentar" title="Reintentar"
+                        [disabled]="subiendo" (click)="reintentar(f)">
+                  <i class="fa fa-rotate-right"></i>
+                </button>
+              }
+              @default {
+                <button type="button" class="btn-icon btn-quitar" title="Quitar de la lista"
+                        (click)="quitar(f)">
+                  <i class="fa fa-xmark"></i>
+                </button>
+              }
+            }
+          </span>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<div class="modal-footer arch-pie">
+  <span class="arch-pie__cuenta">
+    @if (filas.length) {
+      {{ filas.length }} archivo(s)
+      @if (hechos) { <span class="text-success">· {{ hechos }} subido(s)</span> }
+      @if (fallidos) { <span class="text-danger">· {{ fallidos }} con error</span> }
+      @if (cancelados) { <span class="text-warning">· {{ cancelados }} cancelado(s)</span> }
+    }
+  </span>
+
+  <!-- Mientras sube, el botón de salir se convierte en el de parar: es lo que
+       se busca en ese momento, y antes aquí sólo había un botón apagado -->
+  @if (subiendo) {
+    <button type="button" class="btn btn-white btn-sm btn-detener"
+            [disabled]="!sePuedeCortar"
+            [title]="sePuedeCortar
+              ? 'Parar la subida. Lo que ya se guardó se queda'
+              : 'Guardando el archivo que acaba de subir; termina en un instante'"
+            (click)="detener()">
+      <i class="fa fa-stop me-1"></i>Detener
+    </button>
+  } @else {
+    <button type="button" class="btn btn-white btn-sm" (click)="cancelar()">
+      {{ hechos ? 'Cerrar' : 'Cancelar' }}
+    </button>
+  }
+
+  <button type="button" class="btn btn-primary btn-sm"
+          [disabled]="subiendo || !pendientes.length"
+          (click)="subirTodo()">
+    @if (subiendo) {
+      <i class="fa fa-spinner fa-spin me-1"></i>
+      @if (filaEnCurso) {
+        Subiendo {{ filaEnCurso.estado === 'guardando' ? '…' : filaEnCurso.progreso + '%' }}
+      } @else { Subiendo… }
+    } @else {
+      <i class="fa fa-cloud-arrow-up me-1"></i>Subir {{ pendientes.length || '' }}
+    }
+  </button>
+</div>

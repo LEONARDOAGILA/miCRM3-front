@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
 import { GestionService } from '../../../services/gestion.service';
+import { SoftphoneService } from '../../../services/softphone.service';
 import { GestionModel, RESULTADOS_GESTION, iconoDeTipo, nombreDe, TIPOS_GESTION } from '../../../interfaces/gestionModel';
 
 /** Lo que el usuario decidió hacer con el recordatorio. */
@@ -55,6 +56,7 @@ export class RecordatorioGestionComponent implements OnInit {
     private router: Router,
     private _toastr: ToastrService,
     private _gestionService: GestionService,
+    private _softphone: SoftphoneService,
   ) {}
 
   ngOnInit(): void {
@@ -67,8 +69,19 @@ export class RecordatorioGestionComponent implements OnInit {
 
   get telefono(): string { return (this.gestion?.telefono ?? '').trim(); }
 
-  get enlaceTelefono(): string {
-    return this.telefono ? 'tel:' + this.telefono.replace(/\s/g, '') : '';
+  /**
+   * Marca con el softphone del puesto.
+   *
+   * Antes era un enlace `tel:`, y eso traía dos molestias: el navegador
+   * avisaba de que se abandonaba la página (hay un `beforeunload` puesto a
+   * propósito en app.component) y la integración de Zoiper en el navegador le
+   * pintaba encima su icono y la bandera del país. El servicio lo lanza en un
+   * marco oculto: marca igual, sin cartel y sin que nadie decore el botón.
+   */
+  llamar(): void {
+    if (!this._softphone.marcar(this.telefono)) {
+      this._toastr.info('Esta gestión no tiene teléfono', 'Sin número');
+    }
   }
 
   get enlaceWhatsapp(): string {

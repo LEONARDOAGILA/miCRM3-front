@@ -9,7 +9,7 @@ import { ToastrService } from 'ngx-toastr';
 
 // Servicios
 import { ClienteService } from '../../../services/cliente.service';
-import { EmpleadoService } from '../../../../rh/services/empleado.service';
+import { UserService, nombreDeUsuario } from '../../../../seguridad/services/user.service';
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ComprimirImagen } from '../../../../../service/comprimirImagen';
@@ -19,8 +19,10 @@ import {
   CARGOS_CONTACTO, ClienteModel, ContactoCliente, ESTADOS_CLIENTE, FORMAS_PAGO,
   GENEROS, TIPOS_CLIENTE, TIPOS_IDENTIFICACION,
 } from '../../../interfaces/clienteModel';
-// El vendedor es un empleado: se elige con el mismo selector que el jefe
-import { ListEmpleadosComponent } from '../../../../rh/pages/empleados/listEmpleados/listEmpleados.component';
+// El vendedor es un USUARIO del sistema: es quien atiende al cliente y a quien
+// le aparecen sus gestiones en la agenda. La ficha de recursos humanos no entra
+// al sistema, por eso dejo de servir aqui.
+import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/listUsuariosGrupos/listUsuariosGrupos.component';
 import {
   SeleccionarUbicacionComponent, UbicacionElegida,
 } from '../../../../../components/ubicacion-google-maps/seleccionarUbicacion.component';
@@ -114,7 +116,7 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
     private _loadingService: LoadingService,
     private _seguridadService: SeguridadService,
     private _clienteService: ClienteService,
-    private _empleadoService: EmpleadoService,
+    private _userService: UserService,
     public _appAgGridService: AppAgGridService,
   ) {}
 
@@ -505,13 +507,13 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
     if (!id) { this.vendedorNombreControl.setValue(''); return; }
     try {
       this._loadingService.setLoading(true);
-      const res: any = await firstValueFrom(this._empleadoService.findByIdEmpleado(id));
+      const res: any = await firstValueFrom(this._userService.findByIdUser(id));
       if (res?.status === 'success') {
-        this.vendedorNombreControl.setValue(res.data.nombre_completo);
+        this.vendedorNombreControl.setValue(nombreDeUsuario(res.data));
       } else {
         this.vendedorNombreControl.setValue('');
         this.form.patchValue({ vendedor_id: null });
-        this._toastr.warning('Empleado no encontrado');
+        this._toastr.warning('Usuario no encontrado');
       }
     } catch (error) {
       this.form.patchValue({ vendedor_id: null });
@@ -523,14 +525,14 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
 
   abrirModalVendedores() {
     if (this.isdisabled) return;
-    const modalRef = this.modalService.open(ListEmpleadosComponent, { size: 'lg', centered: true, backdrop: 'static' });
-    modalRef.componentInstance.empleadoSeleccionadoId = this.form.get('vendedor_id')?.value;
+    const modalRef = this.modalService.open(ListUsuariosGruposComponent, { size: 'xl', centered: true, backdrop: 'static' });
+    modalRef.componentInstance.usuarioSeleccionadoId = this.form.get('vendedor_id')?.value;
     modalRef.componentInstance.ayuda = 'Haz clic sobre el vendedor que atiende a este cliente.';
     modalRef.componentInstance.seleccionado
       .pipe(takeUntil(this.hastaQueCierre(modalRef)))
       .subscribe((vendedor: any) => {
         this.form.patchValue({ vendedor_id: vendedor.id });
-        this.vendedorNombreControl.setValue(vendedor.nombre_completo);
+        this.vendedorNombreControl.setValue(nombreDeUsuario(vendedor));
       });
   }
 

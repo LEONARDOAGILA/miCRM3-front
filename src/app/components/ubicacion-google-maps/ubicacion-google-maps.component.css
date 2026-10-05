@@ -4,13 +4,19 @@
    búsqueda a la izquierda (plegable) y el mapa a la derecha.
    ============================================================ */
 
+/* El alto lo manda quien use el componente: aquí sólo se deja pasar, con
+   min-height:0 para que el mapa pueda encoger en vez de desbordar la caja. */
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .gm {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* ---------- Barra ---------- */
@@ -796,22 +802,9 @@ textarea.gm-compartir__texto {
   color: var(--bs-body-color, #212529);
 }
 
-/* ---------- Panel expandido (botón de expandir del <panel>) ----------
-   El panel pasa a pantalla completa y su cuerpo es un flex: la barra queda
-   arriba y la tarjeta de información y el mapa llenan lo que sobra. */
-:host ::ng-deep .panel.panel-expand > .panel-body {
-  overflow: hidden;
-}
-
-:host ::ng-deep .panel.panel-expand .gm {
-  height: 100%;
-}
-
-:host ::ng-deep .panel.panel-expand .gm-cuerpo {
-  flex: 1 1 auto;
-  height: auto;
-  min-height: 0;
-}
+/* Las reglas del panel expandido ya no están aquí: el <panel> dejó de vivir
+   dentro de este componente, así que :host ::ng-deep no lo alcanza. Las pone
+   quien monte el marco (ver seleccionarUbicacion.component.css). */
 
 /* ---------- Visor de capturas ---------- */
 .gm-visor {
@@ -1252,8 +1245,18 @@ textarea.gm-compartir__texto {
     display: none;
   }
 
+  /* La pestaña se queda con el alto que sobra y se desplaza ella sola.
+     Hace falta porque con dos capturas la lista mide bastante más que la
+     pantalla, y el cuerpo del panel —expandido— recorta en vez de dejar
+     bajar: sin esto sólo se veía la primera. El min-height:0 es lo que le
+     permite encoger por debajo de su contenido, que en flex no es el valor
+     por defecto. */
   .gm-cuerpo.is-capturas .gm-capturas-movil {
     display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .gm-cuerpo.is-info .gm-division-movil {
@@ -1291,6 +1294,17 @@ textarea.gm-compartir__texto {
   .gm-capturas-movil {
     min-height: clamp(220px, 45vh, 420px);
     padding-bottom: .75rem;
+  }
+
+  /* En el teléfono casi siempre hay dos capturas —la del mapa y la de la
+     calle— y a tamaño completo sólo cabía la primera: la segunda quedaba
+     fuera de la pantalla y parecía que no estaba. Recortada entran las dos
+     de un vistazo, que es lo que se viene a comprobar; para verla entera se
+     pulsa y se abre el visor. */
+  .gm-captura__img {
+    max-height: 22vh;
+    object-fit: cover;
+    object-position: center;
   }
 }
 

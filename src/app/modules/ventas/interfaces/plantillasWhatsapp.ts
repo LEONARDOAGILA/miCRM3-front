@@ -108,3 +108,51 @@ export function primerNombre(nombreCompleto?: string | null, esEmpresa = false):
   if (esEmpresa) { return n; }
   return n.split(/\s+/)[0];
 }
+
+/**
+ * «0991234567» → «593991234567», que es lo que pide WhatsApp.
+ *
+ * Devuelve '' si no hay nada que convertir, para que quien llame decida.
+ */
+export function numeroInternacional(numero?: string | null): string {
+  const limpio = (numero ?? '').replace(/\D/g, '');
+  if (!limpio) { return ''; }
+  // Ecuador: el 0 inicial se cambia por el código de país
+  return limpio.startsWith('0') ? '593' + limpio.substring(1) : limpio;
+}
+
+/**
+ * ¿Ese número puede tener WhatsApp?
+ *
+ * En Ecuador los celulares son 09xxxxxxxx (y 5939xxxxxxxx escritos con el
+ * código de país). A un fijo no se le ofrece el botón porque el enlace
+ * saldría inservible: «4074589» no lleva el 0 que dispara el prefijo, así
+ * que acabaría en wa.me/4074589, que no es nadie. Un número a medio
+ * teclear tampoco pasa, que es lo que hay en la grilla de contactos
+ * mientras se escribe.
+ */
+export function puedeTenerWhatsapp(numero?: string | null): boolean {
+  const n = (numero ?? '').replace(/\D/g, '');
+  return (n.startsWith('09') && n.length === 10) || (n.startsWith('593') && n.length === 12);
+}
+
+/**
+ * El enlace que abre la conversación con ese número.
+ *
+ * «app» abre el WhatsApp instalado; «web» pasa por el navegador y deja que el
+ * sistema decida. Se elige por navegador y vale para toda la aplicación:
+ *
+ *   localStorage.setItem('miCRM3.whatsapp', 'app');
+ */
+export function enlaceDeWhatsapp(numero?: string | null, texto?: string | null): string {
+  const internacional = numeroInternacional(numero);
+  if (!internacional) { return ''; }
+
+  let destino: 'web' | 'app' = 'web';
+  try { destino = localStorage.getItem('miCRM3.whatsapp') === 'app' ? 'app' : 'web'; } catch { /* sin storage */ }
+
+  if (destino === 'app') {
+    return `whatsapp://send?phone=${internacional}` + (texto ? '&text=' + encodeURIComponent(texto) : '');
+  }
+  return `https://wa.me/${internacional}` + (texto ? '?text=' + encodeURIComponent(texto) : '');
+}
