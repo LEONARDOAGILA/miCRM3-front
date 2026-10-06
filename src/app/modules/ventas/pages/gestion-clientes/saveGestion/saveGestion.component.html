@@ -195,7 +195,8 @@
                           </button>
                           @if (tieneWhatsapp(t.id)) {
                             <button type="button" class="gestion-tel__accion gestion-tel__accion--wa"
-                                    title="Escribir por WhatsApp" (click)="porWhatsapp(t.id)">
+                                    title="Escribir por WhatsApp"
+                                    (click)="abrirMenuWhatsapp($event, t.id)">
                               <i class="fab fa-whatsapp"></i>
                             </button>
                           }
@@ -222,6 +223,18 @@
                     [maxLength]="4000"
                     [alto]="86">
                   </app-campoTextoArea>
+
+                  <!-- Que se vea que hay un mensaje en cola, y no sólo en el
+                       botón del pie: aquí es donde se está mirando -->
+                  @if (hayWhatsappPendiente) {
+                    <p class="gestion-wa-encola">
+                      <i class="fab fa-whatsapp fa-fw text-success"></i>
+                      Se enviará a <b>{{ whatsappPendiente?.numero }}</b> al guardar.
+                      <button type="button" class="gestion-wa-encola__quitar"
+                              title="No enviar el mensaje, sólo guardar la gestión"
+                              (click)="cancelarWhatsappPendiente()">No enviar</button>
+                    </p>
+                  }
                 </div>
               </div>
             </div>
@@ -233,9 +246,57 @@
   </form>
 </div>
 
+<!-- «Guardar y enviar» cuando hay un WhatsApp esperando: primero se guarda la
+     gestión y, con eso hecho, se abre el chat. El botón lo dice para que no
+     haya que adivinar en qué orden pasan las cosas. -->
 <app-modal-footer
   [isDisabled]="!guardando"
   [textoCerrar]="'Salir'"
+  [textoGuardar]="hayWhatsappPendiente ? 'Guardar y enviar' : 'Guardar'"
+  [iconoGuardar]="hayWhatsappPendiente ? 'fa-paper-plane' : 'fa-save'"
   (onClose)="modal.dismiss()"
   (onSubmit)="onSubmitForm($event)">
 </app-modal-footer>
+
+<!-- ============================================================
+     MENÚ DE RESPUESTAS DE WHATSAPP
+
+     Las mismas que ofrece la ficha de detrás. Va fuera del formulario y con
+     position: fixed porque dentro del cuerpo del modal lo recortaría su
+     scroll; y al elegir una, además de abrir el chat, el texto se queda
+     escrito en «Qué se habló».
+     ============================================================ -->
+@if (menuWa.visible) {
+  <div #menuWaEl
+       class="menu-ctx menu-wa"
+       role="menu"
+       [style.left.px]="menuWa.x"
+       [style.top.px]="menuWa.y"
+       (click)="$event.stopPropagation()">
+
+    <div class="menu-ctx__cabecera">
+      <i class="fab fa-whatsapp fa-fw text-success"></i>
+      <span class="text-truncate">Escribir a {{ menuWa.numero }}</span>
+    </div>
+
+    @for (p of plantillasWhatsapp; track p.id) {
+      <button type="button" class="menu-ctx__item" role="menuitem"
+              [title]="textoDePlantilla(p)"
+              (click)="cerrarMenuWhatsapp(); escribirPorWhatsapp(p)">
+        <i class="fa {{ p.icono }} fa-fw text-success"></i> {{ p.nombre }}
+      </button>
+    }
+
+    <div class="menu-ctx__sep"></div>
+
+    <button type="button" class="menu-ctx__item" role="menuitem"
+            (click)="cerrarMenuWhatsapp(); escribirPorWhatsapp(null)">
+      <i class="fa fa-comment fa-fw text-secondary"></i> Abrir el chat sin mensaje
+    </button>
+    <button type="button" class="menu-ctx__item" role="menuitem"
+            (click)="cerrarMenuWhatsapp(); alternarDestinoWhatsapp()">
+      <i class="fa fa-fw text-secondary" [ngClass]="destinoWhatsapp === 'app' ? 'fa-desktop' : 'fa-globe'"></i>
+      {{ destinoWhatsapp === 'app' ? 'Abriendo en la aplicación' : 'Abriendo en WhatsApp Web' }}
+    </button>
+  </div>
+}

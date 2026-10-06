@@ -30,6 +30,15 @@ export class ModalFooterComponent {
   @Input() textoCerrar = 'Salir';
   @Input() textoGuardar = 'Guardar';
 
+  /**
+   * El icono del botón de guardar, por si el verbo no es guardar.
+   *
+   * Lo pide «Guardar y enviar» de las gestiones de WhatsApp: con el disquete
+   * de siempre no se ve que además se manda algo. El resto de pantallas no
+   * lo pasan y siguen con fa-save.
+   */
+  @Input() iconoGuardar = 'fa-save';
+
   @Output() onClose = new EventEmitter<void>();
   @Output() onSubmit = new EventEmitter<void>();
 

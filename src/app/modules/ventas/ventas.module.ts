@@ -43,6 +43,9 @@ import { SaveGestionComponent } from './pages/gestion-clientes/saveGestion/saveG
 import { CerrarGestionComponent } from './pages/gestion-clientes/cerrarGestion/cerrarGestion.component';
 import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCliente/reasignarCliente.component';
 
+// Las pantallas de «Respuestas de WhatsApp» no se declaran aquí: son
+// standalone y se traen solas lo que usan, igual que el catálogo de gestiones.
+
 /**
  * Módulo Ventas. Mismo esquema que RhModule y SeguridadModule: un home con
  * tarjetas por opción y, por cada entidad, all* (grilla) + save* (modal alta /

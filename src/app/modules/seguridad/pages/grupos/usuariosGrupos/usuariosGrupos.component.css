@@ -364,15 +364,42 @@ button.ug-ruta__tramo:hover {
   color: var(--bs-secondary-color, #adb5bd);
 }
 
-.ug-ruta__nota {
+/* La casilla de «+ subgrupos», al lado de la ruta del grupo.
+   Mantiene el aire de la pastilla que había antes —cuando sólo informaba— para
+   que no cante en la fila de migas, pero ahora se pulsa. */
+.ug-ruta__subgrupos {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+
   flex: 0 0 auto;
   margin-left: .375rem;
-  padding: .1rem .45rem;
+  margin-bottom: 0;
+  padding: .1rem .45rem .1rem .3rem;
   border-radius: 2rem;
+
   background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
   color: var(--bs-secondary-color, #6c757d);
   font-size: 10px;
+  cursor: pointer;
+  user-select: none;
 }
+
+/* Marcada se tiñe con el color de la aplicación: dice de un vistazo que lo de
+   la derecha no es sólo de este grupo */
+.ug-ruta__subgrupos.is-activo {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+.ug-ruta__subgrupos .form-check-input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  cursor: pointer;
+}
+
 
 .ug-buscador {
   display: flex;

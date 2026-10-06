@@ -271,3 +271,125 @@
      en app-modal-footer, que es de quien es la regla, y así lo ganan los trece
      modales que lo usan. */
 }
+
+/* ============================================================
+   MENÚ DE RESPUESTAS DE WHATSAPP
+
+   Mismo aspecto que el de la ficha de detrás (gestionClientes.component.css):
+   son el mismo menú visto desde dos sitios, y que se parecieran «bastante»
+   habría sido peor que copiarlo.
+
+   position: fixed y z-index 1080 para que no lo recorte el cuerpo del modal
+   (que lleva su propio scroll) ni quede por debajo de él (1055).
+
+   Los tintes van en rgba y no en color-mix(): esto corre en un iPhone 7.
+   ============================================================ */
+.menu-ctx {
+  position: fixed;
+  z-index: 1080;
+  min-width: 230px;
+  max-width: 300px;
+  padding: .375rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+
+  font-size: 12px;
+  animation: menu-ctx-entrada .1s ease-out;
+}
+
+@keyframes menu-ctx-entrada {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.menu-ctx__cabecera {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+
+  padding: .375rem .625rem .5rem;
+  margin-bottom: .25rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.menu-ctx__item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  width: 100%;
+  padding: .4rem .625rem;
+  border: 0;
+  border-radius: .375rem;
+
+  background: transparent;
+  color: var(--bs-body-color, #212529);
+  text-align: left;
+  white-space: nowrap;
+
+  transition: background-color .1s ease;
+}
+
+.menu-ctx__item:hover,
+.menu-ctx__item:focus-visible {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-body-color, #212529);
+  outline: none;
+}
+
+.menu-ctx__sep {
+  height: 1px;
+  margin: .25rem .375rem;
+  background-color: var(--bs-border-color, #dee2e6);
+}
+
+/* Con muchas respuestas, que el menu no se salga de la pantalla */
+.menu-wa {
+  min-width: 15rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-ctx {
+    animation: none;
+  }
+}
+
+/* El aviso de que hay un WhatsApp en cola, debajo de la nota */
+.gestion-wa-encola {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+
+  margin: .375rem 0 0;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gestion-wa-encola b {
+  color: var(--bs-body-color, #212529);
+  font-weight: 600;
+}
+
+.gestion-wa-encola__quitar {
+  margin-left: auto;
+  padding: 0 .25rem;
+  border: 0;
+  border-radius: .25rem;
+
+  background: transparent;
+  color: var(--bs-danger, #dc3545);
+  font-size: .75rem;
+  text-decoration: underline;
+}
+
+.gestion-wa-encola__quitar:hover {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .1);
+}

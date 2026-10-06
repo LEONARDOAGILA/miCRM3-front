@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -6,7 +6,11 @@ import { firstValueFrom } from 'rxjs';
 
 import { GestionService } from '../../../services/gestion.service';
 import { SoftphoneService } from '../../../services/softphone.service';
-import { enlaceDeWhatsapp, puedeTenerWhatsapp } from '../../../interfaces/plantillasWhatsapp';
+import { WhatsappPlantillaService } from '../../../services/whatsappPlantilla.service';
+import { WhatsappPlantillaModel } from '../../../interfaces/whatsappPlantillaModel';
+import {
+  abrirWhatsapp, aplicarPlantilla, enlaceDeWhatsapp, primerNombre, puedeTenerWhatsapp,
+} from '../../../interfaces/plantillasWhatsapp';
 import { CatalogoGestionService } from '../../../services/catalogoGestion.service';
 import { TipoGestion, AsuntoGestion, asuntosDe } from '../../../interfaces/catalogoGestion';
 import { LoadingService } from '../../../../../service/loading.service';
@@ -49,6 +53,33 @@ export class SaveGestionComponent implements OnInit {
    */
   @Input() telefonoInicial: string | null = null;
 
+  /**
+   * Con qué tipo, asunto y nota nace el formulario.
+   *
+   * Los usa la ficha cuando el vendedor elige una respuesta de WhatsApp: la
+   * gestión se abre con el mensaje ya escrito en «Qué se habló» y el tipo
+   * puesto en WHATSAPP, que es de lo que va.
+   *
+   * `asuntoInicial` es el texto del asunto de la plantilla, no un id: se
+   * busca en el catálogo cuando éste termina de cargar, y si no aparece se
+   * deja el combo vacío para que lo elija quien escribe.
+   */
+  @Input() tipoInicial: string | null = null;
+  @Input() notaInicial: string | null = null;
+  @Input() asuntoInicial: string | null = null;
+  @Input() contactoInicial: number | null = null;
+
+  /**
+   * El WhatsApp que se manda DESPUÉS de guardar.
+   *
+   * Antes el chat se abría al elegir la respuesta y la gestión se registraba
+   * por detrás; si eso fallaba, el mensaje ya había salido y el CRM no se
+   * enteraba. Ahora es al revés: primero se guarda y, con el guardado hecho,
+   * se abre el chat. Mientras esté puesto, el botón del pie dice «Guardar y
+   * enviar», que es exactamente lo que va a pasar.
+   */
+  @Input() whatsappPendiente: { numero: string; texto: string } | null = null;
+
   @Output() guardado = new EventEmitter<GestionModel>();
 
   public form!: FormGroup;
@@ -71,6 +102,15 @@ export class SaveGestionComponent implements OnInit {
   public telefonos: { id: string; name: string }[] = [];
   public contactosCombo: { id: number; name: string }[] = [];
 
+  /** Las respuestas que se ofrecen al escribir por WhatsApp. */
+  public plantillasWhatsapp: WhatsappPlantillaModel[] = [];
+
+  /** Dónde se pinta el menú de respuestas y a qué número escribe. */
+  public menuWa: { visible: boolean; x: number; y: number; numero: string | null } =
+    { visible: false, x: 0, y: 0, numero: null };
+
+  @ViewChild('menuWaEl') menuWaEl?: ElementRef<HTMLElement>;
+
   constructor(
     private fb: FormBuilder,
     public modal: NgbActiveModal,
@@ -79,6 +119,7 @@ export class SaveGestionComponent implements OnInit {
     private _gestionService: GestionService,
     private _catalogoService: CatalogoGestionService,
     private _softphone: SoftphoneService,
+    private _plantillaWaService: WhatsappPlantillaService,
   ) {}
 
   // ================================================================
@@ -115,18 +156,174 @@ export class SaveGestionComponent implements OnInit {
     this._toastr.info('Marcando ' + marcado + '…', this.cliente?.nombre_completo || 'Zoiper', { timeOut: 2500 });
   }
 
-  /**
-   * Abre la conversación de WhatsApp con ese número.
-   *
-   * Sin menú de plantillas: ese vive en la ficha, y aquí dentro un menú
-   * flotante sobre un modal se corta contra sus bordes.
-   */
-  porWhatsapp(numero: string): void {
-    const enlace = enlaceDeWhatsapp(numero);
-    if (!enlace) { return; }
+  // ---------- WhatsApp: las mismas respuestas que en la ficha ----------
+  //
+  // Aquí también se ofrecen, y no sólo el chat en blanco: se escribe al
+  // cliente desde este formulario tanto como desde la ficha de detrás, y
+  // tener las plantillas sólo allí obligaba a cerrar el modal para usarlas.
+  //
+  // El menú va con position: fixed y z-index por encima del modal, que es lo
+  // que evita que se corte contra sus bordes.
 
+  /** Abre el menú de respuestas junto al botón que se pulsó. */
+  abrirMenuWhatsapp(ev: MouseEvent, numero: string): void {
+    ev.stopPropagation();
+    if (!enlaceDeWhatsapp(numero)) { return; }
+
+    const r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    this.menuWa = { visible: true, x: r.left, y: r.bottom + 4, numero };
+
+    // Si no cabe hacia abajo o hacia la derecha, se recoloca: el modal no
+    // ocupa toda la pantalla y el menú puede nacer pegado a un borde.
+    setTimeout(() => {
+      const el = this.menuWaEl?.nativeElement;
+      if (!el) { return; }
+      const m = el.getBoundingClientRect();
+      if (m.right > window.innerWidth)   { this.menuWa.x = Math.max(8, window.innerWidth - m.width - 8); }
+      if (m.bottom > window.innerHeight) { this.menuWa.y = Math.max(8, r.top - m.height - 4); }
+    });
+  }
+
+  cerrarMenuWhatsapp(): void {
+    if (this.menuWa.visible) { this.menuWa.visible = false; }
+  }
+
+  /** Un clic fuera o la tecla Escape lo cierran, como cualquier menú. */
+  @HostListener('document:click')
+  alPulsarFuera(): void { this.cerrarMenuWhatsapp(); }
+
+  @HostListener('document:keydown.escape')
+  alPulsarEscape(): void { this.cerrarMenuWhatsapp(); }
+
+  /**
+   * Deja el mensaje preparado: lo escribe en «Qué se habló» y lo deja en cola
+   * para mandarlo al guardar.
+   *
+   * No se abre el chat aquí a propósito. Si se abriera, el mensaje podría
+   * salir y la gestión quedarse sin guardar —porque el formulario está a
+   * medias, porque el servidor falla, porque alguien cierra el modal—, y el
+   * historial volvería a mentir. Guardando primero, lo que se envía siempre
+   * está escrito.
+   *
+   * @param plantilla null abre el chat en blanco ahora mismo: no hay mensaje
+   *        del que dejar constancia, puede que sólo se vaya a leer la
+   *        conversación.
+   */
+  escribirPorWhatsapp(plantilla: WhatsappPlantillaModel | null = null): void {
+    const numero = this.menuWa.numero;
+    if (!numero) { return; }
     this.usarNumero(numero);
-    window.open(enlace, '_blank', 'noopener');
+
+    if (!plantilla) {
+      abrirWhatsapp(numero);
+      return;
+    }
+
+    const texto = this.textoDePlantilla(plantilla);
+    this.volcarEnNota(texto);
+    this.whatsappPendiente = { numero, texto };
+
+    // La gestión es de WhatsApp, y su asunto el de la plantilla: se ponen
+    // solos porque ya se sabe, no por ahorrarle dos clics a nadie.
+    this.form.controls['tipo'].setValue('WHATSAPP');
+    this.form.controls['asunto'].setValue(plantilla.asunto ?? '');
+    this.asuntoInicial = plantilla.asunto ?? null;
+    this.preseleccionarAsunto();
+
+    this._toastr.info(
+      'Se enviará al guardar la gestión.', plantilla.nombre, { timeOut: 3500 },
+    );
+  }
+
+  /** El texto de una respuesta, ya con el nombre del cliente y el del vendedor. */
+  textoDePlantilla(plantilla: WhatsappPlantillaModel): string {
+    const esEmpresa = this.cliente?.tipo_cliente === 'EMPRESA';
+    return aplicarPlantilla(plantilla.texto, {
+      cliente:  this.cliente?.nombre_completo,
+      nombre:   primerNombre(this.cliente?.nombre_completo, esEmpresa),
+      vendedor: this.nombreDelUsuario,
+      empresa:  this.nombreDeLaEmpresa,
+    });
+  }
+
+  /**
+   * Pone el mensaje en «Qué se habló».
+   *
+   * Si ya había algo escrito no se pisa: se añade debajo. Lo que estaba
+   * puesto lo escribió alguien a mano, y perderlo por pulsar una respuesta
+   * sería la peor forma de enterarse.
+   */
+  private volcarEnNota(texto: string): void {
+    const nota = this.form.controls['nota'];
+    const loQueHay = (nota.value ?? '').trim();
+
+    nota.setValue(loQueHay ? loQueHay + '\n\n' + texto : texto);
+    nota.markAsDirty();
+    nota.markAsTouched();
+  }
+
+  /** ¿Hay un WhatsApp esperando a que se guarde? Lo dice el botón del pie. */
+  get hayWhatsappPendiente(): boolean {
+    return !!this.whatsappPendiente?.numero;
+  }
+
+  /**
+   * Deja la gestión pero no manda el mensaje.
+   *
+   * Hace falta porque el texto se escribe en la nota: puede que se haya
+   * elegido una respuesta para apuntar de qué se habló y el mensaje ya se
+   * mandara por otro lado. El botón vuelve a decir «Guardar».
+   */
+  cancelarWhatsappPendiente(): void {
+    this.whatsappPendiente = null;
+  }
+
+  /**
+   * Abre el chat con el mensaje, ya con la gestión guardada.
+   *
+   * Si el navegador bloquea la pestaña no se pierde nada: la gestión está
+   * escrita y el aviso dice qué pasó, con lo que se puede abrir a mano.
+   */
+  private enviarWhatsappPendiente(): void {
+    const pendiente = this.whatsappPendiente;
+    if (!pendiente?.numero) { return; }
+
+    const comoFue = abrirWhatsapp(pendiente.numero, pendiente.texto);
+    this.whatsappPendiente = null;
+
+    if (comoFue === 'bloqueado') {
+      this._toastr.warning(
+        'La gestión quedó guardada, pero el navegador no dejó abrir WhatsApp. Permita las ventanas emergentes de esta página.',
+        'WhatsApp', { timeOut: 8000, closeButton: true },
+      );
+    }
+  }
+
+  /** Quien está usando el CRM, para firmar el mensaje. */
+  private get nombreDelUsuario(): string {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') ?? '{}');
+      return u?.name || u?.login_user || '';
+    } catch { return ''; }
+  }
+
+  /** Cómo se llama la empresa en los mensajes (la misma clave que la ficha). */
+  private get nombreDeLaEmpresa(): string {
+    try { return localStorage.getItem('miCRM3.empresa') ?? ''; } catch { return ''; }
+  }
+
+  /** De WhatsApp Web a la aplicación instalada y al revés. */
+  public get destinoWhatsapp(): 'web' | 'app' {
+    try { return localStorage.getItem('miCRM3.whatsapp') === 'app' ? 'app' : 'web'; } catch { return 'web'; }
+  }
+
+  alternarDestinoWhatsapp(): void {
+    const nuevo = this.destinoWhatsapp === 'app' ? 'web' : 'app';
+    try { localStorage.setItem('miCRM3.whatsapp', nuevo); } catch { /* sin storage */ }
+    this._toastr.info(
+      nuevo === 'app' ? 'Los chats se abrirán en la aplicación instalada' : 'Los chats se abrirán en WhatsApp Web',
+      'WhatsApp', { timeOut: 2500 },
+    );
   }
 
   /** Al portapapeles, para pegarlo donde haga falta. */
@@ -185,7 +382,27 @@ export class SaveGestionComponent implements OnInit {
     }
 
     this.ajustarAsunto();
+    this.preseleccionarAsunto();
     this.form?.get('tipo')?.valueChanges.subscribe(() => this.ajustarAsunto(true));
+  }
+
+  /**
+   * Busca en el catálogo el asunto que trae la respuesta de WhatsApp.
+   *
+   * La plantilla guarda su asunto como texto («Seguimiento por WhatsApp») y
+   * aquí hace falta el id. Si está en el catálogo, el combo queda resuelto y
+   * no hay que elegir nada; si no está, se deja vacío y lo elige quien
+   * escribe, que es mejor que inventarle un asunto a su gestión.
+   */
+  private preseleccionarAsunto(): void {
+    const texto = (this.asuntoInicial ?? '').trim().toLowerCase();
+    if (!texto) { return; }
+
+    const ctrl = this.form?.get('asunto_id');
+    if (!ctrl || ctrl.value) { return; }
+
+    const encontrado = this.asuntos.find(a => (a.nombre ?? '').trim().toLowerCase() === texto);
+    if (encontrado) { ctrl.setValue(encontrado.id); }
   }
 
   /** El asunto tiene que ser de los del tipo; si no lo es, se queda vacío. */
@@ -215,6 +432,24 @@ export class SaveGestionComponent implements OnInit {
 
     this.initializeForm();
     this.cargarCatalogo();
+    this.cargarPlantillasWhatsapp();
+  }
+
+  /**
+   * Las respuestas de WhatsApp (ventas.whatsapp_plantillas).
+   *
+   * El servicio las guarda en memoria, así que abrir el modal diez veces no
+   * son diez consultas. Si falla, el menú se queda con «Abrir el chat sin
+   * mensaje»: se puede escribir igual, que es lo que importa.
+   */
+  private async cargarPlantillasWhatsapp(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this._plantillaWaService.activas());
+      this.plantillasWhatsapp = res?.status === 'success' ? (res.data ?? []) : [];
+    } catch (error) {
+      console.error('Error al cargar las respuestas de WhatsApp:', error);
+      this.plantillasWhatsapp = [];
+    }
   }
 
   /** Programada mientras esté PENDIENTE; el resto, realizada. */
@@ -269,20 +504,20 @@ export class SaveGestionComponent implements OnInit {
                         : 'REALIZADA';
 
     this.form = this.fb.group({
-      tipo:             [g?.tipo ?? 'LLAMADA', [Validators.required]],
+      tipo:             [g?.tipo ?? this.tipoInicial ?? 'LLAMADA', [Validators.required]],
       estado:           [estadoInicial, [Validators.required]],
       // El texto se conserva para poder enseñar el de una gestión vieja, pero
       // ya no se teclea: lo que se guarda y lo que valida es el asunto_id.
-      asunto:           [g?.asunto ?? ''],
+      asunto:           [g?.asunto ?? this.asuntoInicial ?? ''],
       asunto_id:        [g?.asunto_id ?? null, [Validators.required]],
-      contacto_id:      [g?.contacto_id ?? null],
+      contacto_id:      [g?.contacto_id ?? this.contactoInicial ?? null],
       telefono:         [g?.telefono ?? this.telefonoInicial ?? this.cliente?.celular ?? this.cliente?.telefono ?? '', [Validators.maxLength(20)]],
       prioridad:        [g?.prioridad ?? 'MEDIA', [Validators.required]],
       fecha_programada: [this.paraInput(g?.fecha_programada) || (estadoInicial === 'PENDIENTE' ? this.enUnaHora() : '')],
       fecha_realizada:  [this.paraInput(g?.fecha_realizada) || (estadoInicial === 'REALIZADA' ? this.ahora() : '')],
       duracion_minutos: [g?.duracion_minutos ?? null, [Validators.min(0), Validators.max(1440)]],
       resultado:        [g?.resultado ?? (estadoInicial === 'REALIZADA' ? 'CONTACTADO' : null)],
-      nota:             [g?.nota ?? '', [Validators.maxLength(4000)]],
+      nota:             [g?.nota ?? this.notaInicial ?? '', [Validators.maxLength(4000)]],
     });
 
     // Una gestión nueva que se registra es, casi siempre, la que se acaba de
@@ -416,6 +651,13 @@ export class SaveGestionComponent implements OnInit {
 
       this.guardado.emit(res.data);
       this._toastr.success(res.message, 'Éxito', { closeButton: true });
+
+      // Ya está guardada: ahora sí se abre el chat. Va antes de cerrar el
+      // modal porque window.open cuelga del gesto que empezó todo esto, y
+      // cerrando primero algunos navegadores lo toman por una ventana
+      // emergente y la bloquean.
+      this.enviarWhatsappPendiente();
+
       this.modal.close(res.data);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP

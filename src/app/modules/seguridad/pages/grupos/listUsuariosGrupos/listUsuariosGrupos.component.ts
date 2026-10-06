@@ -153,6 +153,18 @@ export class ListUsuariosGruposComponent implements OnInit {
     return buscarNodo(this.nodos, this.seleccionId)?.nombre ?? 'Grupo';
   }
 
+  /**
+   * Si el grupo abierto tiene subgrupos, que es cuando la casilla de
+   * «+ subgrupos» pinta algo.
+   *
+   * En «Todos» no sale: ahí no se filtra por grupo, así que incluirlos o no da
+   * exactamente la misma lista.
+   */
+  get tieneSubgrupos(): boolean {
+    if (this.seleccionId === NODO_TODOS) { return false; }
+    return (buscarNodo(this.nodos, this.seleccionId)?.children?.length ?? 0) > 0;
+  }
+
   // ================================================================
   // LA GRILLA
   // ================================================================

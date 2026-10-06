@@ -1567,7 +1567,7 @@
             </button>
             @if (tieneWhatsapp(telefonoDelObjetivo)) {
               <button type="button" class="menu-ctx__item" role="menuitem"
-                      (click)="cerrarMenu(); escribirPorWhatsapp(telefonoDelObjetivo)">
+                      (click)="abrirMenuWhatsapp($event, telefonoDelObjetivo); cerrarMenu()">
                 <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
               </button>
             }
@@ -1638,7 +1638,7 @@
             </button>
             @if (tieneWhatsapp(menuCtx.fila.telefono)) {
               <button type="button" class="menu-ctx__item" role="menuitem"
-                      (click)="cerrarMenu(); escribirPorWhatsapp(menuCtx.fila.telefono, null, menuCtx.fila.nombres)">
+                      (click)="abrirMenuWhatsapp($event, menuCtx.fila.telefono, menuCtx.fila.nombres); cerrarMenu()">
                 <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
               </button>
             }

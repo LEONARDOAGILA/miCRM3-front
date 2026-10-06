@@ -1,9 +1,11 @@
 /**
- * Mensajes de WhatsApp que se ofrecen al escribirle a un cliente.
+ * Lo que hace falta para escribirle a un cliente por WhatsApp: rellenar los
+ * huecos de un mensaje, armar el enlace y decidir qué número puede tener
+ * WhatsApp.
  *
- * El enlace de WhatsApp admite el texto ya escrito (?text=), así que el
- * vendedor elige de qué va el mensaje y el chat se abre con todo puesto: no
- * hay que teclear lo mismo cincuenta veces al día ni copiar y pegar.
+ * El enlace admite el texto ya escrito (?text=), así que el vendedor elige de
+ * qué va el mensaje y el chat se abre con todo puesto: no hay que teclear lo
+ * mismo cincuenta veces al día ni copiar y pegar.
  *
  * Los huecos entre llaves los rellena la pantalla:
  *   {cliente}   nombre completo o razón social
@@ -11,64 +13,15 @@
  *   {vendedor}  quien está usando el CRM
  *   {empresa}   la nuestra
  *
- * Es un catálogo en código a propósito: son pocos y estables. Si algún día
- * hay que editarlos desde la pantalla, se mueven a una tabla sin tocar lo
- * demás, porque todo lo que los usa pasa por aquí.
+ * LOS MENSAJES YA NO ESTÁN AQUÍ. Estaban, y este archivo decía que «si algún
+ * día hay que editarlos desde la pantalla, se mueven a una tabla sin tocar lo
+ * demás». Eso es lo que se hizo: viven en ventas.whatsapp_plantillas y se
+ * mantienen desde Ventas > Respuestas de WhatsApp
+ * (ver interfaces/whatsappPlantillaModel.ts). Aquí se queda lo que sigue
+ * siendo código, que es lo de abajo.
  */
-export interface PlantillaWhatsapp {
-  id: string;
-  /** Lo que se lee en el menú */
-  nombre: string;
-  icono: string;
-  /** Lo que se escribe en la gestión que queda registrada */
-  asunto: string;
-  texto: string;
-}
 
-export const PLANTILLAS_WHATSAPP: PlantillaWhatsapp[] = [
-  {
-    id: 'saludo',
-    nombre: 'Presentación',
-    icono: 'fa-hand',
-    asunto: 'Presentación por WhatsApp',
-    texto: 'Hola {nombre}, le saluda {vendedor} de {empresa}. Le escribo para ponerme a sus órdenes; cualquier consulta que tenga, con gusto le ayudo.',
-  },
-  {
-    id: 'seguimiento',
-    nombre: 'Seguimiento',
-    icono: 'fa-rotate-right',
-    asunto: 'Seguimiento por WhatsApp',
-    texto: 'Hola {nombre}, le saluda {vendedor} de {empresa}. Le escribo para dar seguimiento a lo que conversamos. ¿Cómo va el tema?',
-  },
-  {
-    id: 'cotizacion',
-    nombre: 'Envío de cotización',
-    icono: 'fa-file-invoice-dollar',
-    asunto: 'Envío de cotización por WhatsApp',
-    texto: 'Hola {nombre}, le saluda {vendedor} de {empresa}. Le hago llegar la cotización que me solicitó. Quedo atento a sus comentarios.',
-  },
-  {
-    id: 'pago',
-    nombre: 'Recordatorio de pago',
-    icono: 'fa-money-bill',
-    asunto: 'Recordatorio de pago por WhatsApp',
-    texto: 'Estimado/a {nombre}, le saluda {vendedor} de {empresa}. Le recuerdo con respeto que tiene un saldo pendiente con nosotros. ¿Me confirma cuándo podríamos coordinar el pago?',
-  },
-  {
-    id: 'visita',
-    nombre: 'Confirmar visita',
-    icono: 'fa-person-walking',
-    asunto: 'Confirmación de visita por WhatsApp',
-    texto: 'Hola {nombre}, le saluda {vendedor} de {empresa}. Le escribo para confirmar nuestra visita. ¿Le queda bien la fecha y hora que acordamos?',
-  },
-  {
-    id: 'gracias',
-    nombre: 'Agradecimiento',
-    icono: 'fa-heart',
-    asunto: 'Agradecimiento por WhatsApp',
-    texto: '{nombre}, gracias por su compra. Le saluda {vendedor} de {empresa}; cualquier cosa que necesite, quedo a sus órdenes.',
-  },
-];
+import { lanzarProtocolo } from '../../../service/lanzarProtocolo';
 
 /**
  * Rellena los huecos de una plantilla.
@@ -155,4 +108,34 @@ export function enlaceDeWhatsapp(numero?: string | null, texto?: string | null):
     return `whatsapp://send?phone=${internacional}` + (texto ? '&text=' + encodeURIComponent(texto) : '');
   }
   return `https://wa.me/${internacional}` + (texto ? '?text=' + encodeURIComponent(texto) : '');
+}
+
+/**
+ * Abre la conversación. Úsese esto y no window.open a pelo.
+ *
+ * Los dos enlaces no se abren igual, y ésa es toda la razón de que esta
+ * función exista:
+ *
+ *   · `https://wa.me/…` es una página: va en una pestaña nueva, como
+ *     cualquier enlace externo.
+ *   · `whatsapp://send?…` NO es una página, es una orden para el sistema, y
+ *     lanzarla tiene sus trampas: window.open deja una pestaña en blanco con
+ *     la dirección cruda a la vista, y location.href saca el cartel de
+ *     «¿salir de esta página?». Las dos las sortea lanzarProtocolo(), que
+ *     está documentado en su archivo.
+ *
+ * Devuelve qué pasó, para que quien llame avise sólo cuando hay algo que
+ * avisar: del protocolo no se puede saber si hubo quien lo atendiera, pero
+ * de la pestaña sí se sabe si el navegador la bloqueó.
+ */
+export function abrirWhatsapp(numero?: string | null, texto?: string | null): 'ok' | 'bloqueado' | 'sin-numero' {
+  const enlace = enlaceDeWhatsapp(numero, texto);
+  if (!enlace) { return 'sin-numero'; }
+
+  if (enlace.startsWith('whatsapp://')) {
+    lanzarProtocolo(enlace);
+    return 'ok';
+  }
+
+  return window.open(enlace, '_blank', 'noopener') ? 'ok' : 'bloqueado';
 }
