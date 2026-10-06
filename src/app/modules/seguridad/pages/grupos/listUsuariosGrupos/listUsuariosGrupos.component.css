@@ -80,13 +80,36 @@
   text-align: center;
 }
 
+/* La casilla de «+ subgrupos», al lado del nombre del grupo. Misma pastilla
+   que en la pantalla de Usuarios y grupos, para que se reconozca. */
 .lug__subgrupos {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: .4rem;
+  gap: .3rem;
 
+  flex: 0 0 auto;
+  margin: 0;
+  padding: .1rem .45rem .1rem .3rem;
+  border-radius: 2rem;
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
   color: var(--bs-secondary-color, #6c757d);
-  font-size: .75rem;
+  font-size: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Marcada se tiñe: dice de un vistazo que la lista no es sólo de este grupo */
+.lug__subgrupos.is-activo {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+.lug__subgrupos .form-check-input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
   cursor: pointer;
 }
 

@@ -1,12 +1,20 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
+
+import Swal from 'sweetalert2';
 
 import { GestionService } from '../../../services/gestion.service';
-import { SoftphoneService } from '../../../services/softphone.service';
-import { enlaceDeWhatsapp, puedeTenerWhatsapp } from '../../../interfaces/plantillasWhatsapp';
+import { ArchivoClienteService } from '../../../services/archivoCliente.service';
+import {
+  ArchivoCliente, extensionDe, formatoTamano, pintaDeTipo, tipoPorExtension,
+} from '../../../interfaces/archivoCliente';
+import { abrirWhatsapp } from '../../../interfaces/plantillasWhatsapp';
+import { lanzarProtocolo } from '../../../../../service/lanzarProtocolo';
 import { CatalogoGestionService } from '../../../services/catalogoGestion.service';
 import { TipoGestion, AsuntoGestion, asuntosDe } from '../../../interfaces/catalogoGestion';
 import { LoadingService } from '../../../../../service/loading.service';
@@ -32,7 +40,7 @@ export type ModoGestion = 'registrar' | 'programar' | 'editar';
   styleUrls: ['./saveGestion.component.css'],
   standalone: false,
 })
-export class SaveGestionComponent implements OnInit {
+export class SaveGestionComponent implements OnInit, OnDestroy {
 
   @Input() modo: ModoGestion = 'registrar';
   @Input() cliente: ClienteModel | null = null;
@@ -48,6 +56,33 @@ export class SaveGestionComponent implements OnInit {
    * es el suyo y no el de la empresa.
    */
   @Input() telefonoInicial: string | null = null;
+
+  /**
+   * Con qué tipo, asunto y nota nace el formulario.
+   *
+   * Los usa la ficha cuando el vendedor elige una respuesta de WhatsApp: la
+   * gestión se abre con el mensaje ya escrito en «Qué se habló» y el tipo
+   * puesto en WHATSAPP, que es de lo que va.
+   *
+   * `asuntoInicial` es el texto del asunto de la plantilla, no un id: se
+   * busca en el catálogo cuando éste termina de cargar, y si no aparece se
+   * deja el combo vacío para que lo elija quien escribe.
+   */
+  @Input() tipoInicial: string | null = null;
+  @Input() notaInicial: string | null = null;
+  @Input() asuntoInicial: string | null = null;
+  @Input() contactoInicial: number | null = null;
+
+  /**
+   * El WhatsApp que se manda DESPUÉS de guardar.
+   *
+   * Antes el chat se abría al elegir la respuesta y la gestión se registraba
+   * por detrás; si eso fallaba, el mensaje ya había salido y el CRM no se
+   * enteraba. Ahora es al revés: primero se guarda y, con el guardado hecho,
+   * se abre el chat. Mientras esté puesto, el botón del pie dice «Guardar y
+   * enviar», que es exactamente lo que va a pasar.
+   */
+  @Input() whatsappPendiente: { numero: string; texto: string } | null = null;
 
   @Output() guardado = new EventEmitter<GestionModel>();
 
@@ -67,9 +102,32 @@ export class SaveGestionComponent implements OnInit {
   public cargandoCatalogo = true;
   public prioridades = PRIORIDADES_GESTION;
   public resultados = RESULTADOS_GESTION;
-  /** Los teléfonos del cliente, para no tener que escribirlos */
-  public telefonos: { id: string; name: string }[] = [];
   public contactosCombo: { id: number; name: string }[] = [];
+
+  // ---------- Adjuntos ----------
+  //
+  // Lo que se le manda al cliente en esa conversación: la cotización, la
+  // factura, la foto. Se suben AL GUARDAR y no al elegirlos, porque hasta
+  // entonces la gestión no existe y no habría a qué colgarlos; si se subieran
+  // antes y luego se cerrara el formulario, quedarían ficheros sueltos en el
+  // disco del servidor sin fila que los nombre.
+
+  /** Los que se acaban de elegir y todavía no están en el servidor. */
+  public adjuntos: {
+    clave: number; fichero: File; nombre: string;
+    extension: string; tipo: string; tamano: number; vistaPrevia: string | null;
+  }[] = [];
+
+  /** Los que ya estaban (al modificar una gestión). */
+  public adjuntosGuardados: ArchivoCliente[] = [];
+
+  private claveAdjunto = 0;
+
+  /** Los ids que acaban de guardarse, para mandarlos al portapapeles. */
+  private idsParaCopiar: number[] = [];
+
+  public formatoTamano = formatoTamano;
+  public pintaDeTipo = pintaDeTipo;
 
   constructor(
     private fb: FormBuilder,
@@ -78,67 +136,226 @@ export class SaveGestionComponent implements OnInit {
     private _loadingService: LoadingService,
     private _gestionService: GestionService,
     private _catalogoService: CatalogoGestionService,
-    private _softphone: SoftphoneService,
+    private _archivoService: ArchivoClienteService,
   ) {}
 
   // ================================================================
-  // LOS TELÉFONOS DEL CLIENTE
+  // ADJUNTOS
   // ================================================================
-  //
-  // Las mismas tres acciones que en la ficha —llamar, WhatsApp y copiar—,
-  // para no tener que cerrar el formulario a mitad para buscarlas.
 
-  /**
-   * ¿Ese número puede tener WhatsApp? La regla está en plantillasWhatsapp.ts,
-   * compartida con la pantalla de detrás: tenerla escrita dos veces era pedir
-   * que un día dejaran de decir lo mismo.
-   */
-  public tieneWhatsapp = puedeTenerWhatsapp;
-
-  /** Lo pone en el campo, que es el número que se guarda con la gestión. */
-  usarNumero(numero: string): void {
-    this.form.controls['telefono'].setValue(numero);
-    this.form.controls['telefono'].markAsDirty();
+  /** Los que hay ahora mismo, de los dos tipos: para enseñar u ocultar el bloque. */
+  get hayAdjuntos(): boolean {
+    return this.adjuntos.length > 0 || this.adjuntosGuardados.length > 0;
   }
 
-  /**
-   * Marca con el softphone.
-   *
-   * Aquí no se abre otra gestión al marcar, como sí hace la pantalla de
-   * detrás: ya se está escribiendo una.
-   */
-  llamar(numero: string): void {
-    const marcado = this._softphone.marcar(numero);
-    if (!marcado) { return; }
-
-    this.usarNumero(numero);
-    this._toastr.info('Marcando ' + marcado + '…', this.cliente?.nombre_completo || 'Zoiper', { timeOut: 2500 });
+  elegirAdjuntos(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    this.encolarAdjuntos(Array.from(input.files ?? []));
+    // Para poder volver a elegir el mismo fichero si se quitó de la lista
+    input.value = '';
   }
 
-  /**
-   * Abre la conversación de WhatsApp con ese número.
-   *
-   * Sin menú de plantillas: ese vive en la ficha, y aquí dentro un menú
-   * flotante sobre un modal se corta contra sus bordes.
-   */
-  porWhatsapp(numero: string): void {
-    const enlace = enlaceDeWhatsapp(numero);
-    if (!enlace) { return; }
-
-    this.usarNumero(numero);
-    window.open(enlace, '_blank', 'noopener');
+  alSoltarAdjuntos(ev: DragEvent): void {
+    ev.preventDefault();
+    this.arrastrando = false;
+    this.encolarAdjuntos(Array.from(ev.dataTransfer?.files ?? []));
   }
 
-  /** Al portapapeles, para pegarlo donde haga falta. */
-  async copiar(numero: string): Promise<void> {
-    this.usarNumero(numero);
-    try {
-      await navigator.clipboard.writeText(numero);
-      this._toastr.success('El teléfono se copió al portapapeles', '', { timeOut: 1500 });
-    } catch {
-      // Sin permiso o sin https: no es grave, no se avisa con un error
-      console.warn('No se pudo copiar al portapapeles');
+  alArrastrarAdjuntos(ev: DragEvent, entra: boolean): void {
+    ev.preventDefault();
+    this.arrastrando = entra;
+  }
+
+  public arrastrando = false;
+
+  private encolarAdjuntos(ficheros: File[]): void {
+    for (const f of ficheros) {
+      const extension = extensionDe(f.name);
+      if (!extension) {
+        this._toastr.warning(`«${f.name}» no tiene extensión, no se puede clasificar`, 'Archivo descartado');
+        continue;
+      }
+      const tipo = tipoPorExtension(extension);
+      this.adjuntos = [...this.adjuntos, {
+        clave: ++this.claveAdjunto,
+        fichero: f,
+        nombre: f.name.replace(/\.[^.]+$/, '').substring(0, 150),
+        extension,
+        tipo,
+        tamano: f.size,
+        // La miniatura sólo para imágenes; para un vídeo haría falta un
+        // <video> oculto por cada uno y no compensa
+        vistaPrevia: tipo === 'imagen' ? URL.createObjectURL(f) : null,
+      }];
     }
+  }
+
+  quitarAdjunto(clave: number): void {
+    const f = this.adjuntos.find(a => a.clave === clave);
+    if (f?.vistaPrevia) { URL.revokeObjectURL(f.vistaPrevia); }
+    this.adjuntos = this.adjuntos.filter(a => a.clave !== clave);
+  }
+
+  /** El enlace con el que se ve uno ya guardado. */
+  urlDelAdjunto(a: ArchivoCliente): string {
+    return this._archivoService.urlDe(a.id);
+  }
+
+  /**
+   * Quitar uno que ya estaba.
+   *
+   * Se borra de verdad y en el acto, no al guardar: estos adjuntos no salen en
+   * la pestaña de Archivos del cliente —son de esta conversación—, así que si
+   * no se pudieran quitar desde aquí no se podrían quitar desde ningún sitio.
+   */
+  async borrarAdjuntoGuardado(a: ArchivoCliente): Promise<void> {
+    const confirmar = await Swal.fire({
+      title: '¿Quitar el adjunto?',
+      html: `Se va a borrar <b>${a.nombre}</b> de esta gestión.<br>`
+          + '<span class="text-muted">El archivo se elimina del servidor.</span>',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, quitar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+    });
+    if (!confirmar.isConfirmed) { return; }
+
+    try {
+      const res: any = await firstValueFrom(this._archivoService.deleteArchivo(a.id));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo quitar el adjunto', 'Error');
+        return;
+      }
+      this.adjuntosGuardados = this.adjuntosGuardados.filter(x => x.id !== a.id);
+      this._toastr.success(res.message, '', { timeOut: 2000 });
+    } catch (error) {
+      console.error('Error al quitar el adjunto:', error);
+    }
+  }
+
+  /** Los que ya tiene la gestión que se está modificando. */
+  private async cargarAdjuntos(): Promise<void> {
+    if (!this.gestion?.id) { return; }
+    try {
+      const res: any = await firstValueFrom(this._archivoService.archivosDeGestion(this.gestion.id));
+      this.adjuntosGuardados = res?.status === 'success' ? (res.data ?? []) : [];
+    } catch (error) {
+      console.error('Error al cargar los adjuntos de la gestión:', error);
+      this.adjuntosGuardados = [];
+    }
+  }
+
+  /**
+   * Sube los elegidos y los cuelga de la gestión que acaba de guardarse.
+   *
+   * Si uno falla se avisa y se sigue con los demás: la gestión ya está
+   * guardada y perderla por un fichero sería el peor cambio posible.
+   *
+   * Devuelve los ids que sí quedaron, que son los que se van al portapapeles.
+   */
+  private async subirAdjuntos(gestionId: number): Promise<number[]> {
+    const ids: number[] = [];
+    if (!this.adjuntos.length || !this.cliente?.id) { return ids; }
+
+    for (const a of this.adjuntos) {
+      try {
+        const subida: any = await firstValueFrom(
+          this._archivoService.subirArchivo(this.cliente.id, a.fichero).pipe(
+            filter((e: HttpEvent<any>) => e.type === HttpEventType.Response),
+            map((e: any) => e.body),
+          ));
+        if (subida?.status !== 'success') { throw new Error(subida?.message || 'No se pudo subir'); }
+
+        const d = subida.data;
+        const res: any = await firstValueFrom(this._archivoService.addArchivo({
+          cliente_id: this.cliente.id,
+          gestion_id: gestionId,
+          origen: 'gestion',
+          nombre: (a.nombre ?? '').trim() || d.nombre_original,
+          archivo: d.archivo,
+          tipo: d.tipo,
+          extension: d.extension,
+          mime: d.mime,
+          tamano: d.tamano,
+        }));
+        if (res?.status !== 'success') { throw new Error(res?.message || 'No se pudo guardar el registro'); }
+
+        if (res.data?.id) { ids.push(res.data.id); }
+      } catch (error: any) {
+        console.error('Error al adjuntar un archivo a la gestión:', error);
+        this._toastr.warning(
+          `«${a.nombre}» no se pudo adjuntar. La gestión sí quedó guardada.`,
+          'Adjunto', { timeOut: 7000, closeButton: true },
+        );
+      }
+    }
+    return ids;
+  }
+
+  /** ¿Hay un WhatsApp esperando a que se guarde? Lo dice el botón del pie. */
+  get hayWhatsappPendiente(): boolean {
+    return !!this.whatsappPendiente?.numero;
+  }
+
+  /**
+   * Deja la gestión pero no manda el mensaje.
+   *
+   * Hace falta porque el texto se escribe en la nota: puede que se haya
+   * elegido una respuesta para apuntar de qué se habló y el mensaje ya se
+   * mandara por otro lado. El botón vuelve a decir «Guardar».
+   */
+  cancelarWhatsappPendiente(): void {
+    this.whatsappPendiente = null;
+  }
+
+  /**
+   * Abre el chat con el mensaje, ya con la gestión guardada.
+   *
+   * CON ADJUNTOS cambia quién abre el chat. Se avisa UNA sola vez al ayudante
+   * del puesto y él hace todo en orden: copia los archivos, abre la
+   * conversación y pega. No es un capricho: Chrome sólo deja abrir una
+   * aplicación externa durante unos segundos después del clic, y entre guardar
+   * la gestión y subir los archivos ese permiso se agota, así que el primer
+   * aviso sale y el segundo se pierde en silencio. Con uno solo no hay segundo
+   * que perder.
+   *
+   * Si el puesto no tiene el ayudante instalado, Windows no reconoce micrm3:
+   * y no pasa nada; por eso ahí se abre el chat por las bravas, sin adjuntos,
+   * que es mejor que no abrir nada.
+   */
+  private enviarWhatsappPendiente(idsAdjuntos: number[] = []): void {
+    const pendiente = this.whatsappPendiente;
+    if (!pendiente?.numero) { return; }
+    this.whatsappPendiente = null;
+
+    if (idsAdjuntos.length) {
+      lanzarProtocolo('micrm3://enviar'
+        + '?ids=' + idsAdjuntos.join(',')
+        + '&tel=' + encodeURIComponent(pendiente.numero)
+        + '&via=' + this.destinoWhatsapp
+        + '&texto=' + encodeURIComponent(pendiente.texto));
+
+      this._toastr.info(
+        (idsAdjuntos.length === 1 ? 'El adjunto se copia' : `Los ${idsAdjuntos.length} adjuntos se copian`)
+          + ' y se pegan en la conversación. Si no se pegan solos, Ctrl+V en WhatsApp.',
+        'Adjuntos', { timeOut: 7000, closeButton: true },
+      );
+      return;
+    }
+
+    const comoFue = abrirWhatsapp(pendiente.numero, pendiente.texto);
+    if (comoFue === 'bloqueado') {
+      this._toastr.warning(
+        'La gestión quedó guardada, pero el navegador no dejó abrir WhatsApp. Permita las ventanas emergentes de esta página.',
+        'WhatsApp', { timeOut: 8000, closeButton: true },
+      );
+    }
+  }
+
+  /** De WhatsApp Web a la aplicación instalada: lo elige la ficha, aquí se lee. */
+  private get destinoWhatsapp(): 'web' | 'app' {
+    try { return localStorage.getItem('miCRM3.whatsapp') === 'app' ? 'app' : 'web'; } catch { return 'web'; }
   }
 
   /**
@@ -185,7 +402,27 @@ export class SaveGestionComponent implements OnInit {
     }
 
     this.ajustarAsunto();
+    this.preseleccionarAsunto();
     this.form?.get('tipo')?.valueChanges.subscribe(() => this.ajustarAsunto(true));
+  }
+
+  /**
+   * Busca en el catálogo el asunto que trae la respuesta de WhatsApp.
+   *
+   * La plantilla guarda su asunto como texto («Seguimiento por WhatsApp») y
+   * aquí hace falta el id. Si está en el catálogo, el combo queda resuelto y
+   * no hay que elegir nada; si no está, se deja vacío y lo elige quien
+   * escribe, que es mejor que inventarle un asunto a su gestión.
+   */
+  private preseleccionarAsunto(): void {
+    const texto = (this.asuntoInicial ?? '').trim().toLowerCase();
+    if (!texto) { return; }
+
+    const ctrl = this.form?.get('asunto_id');
+    if (!ctrl || ctrl.value) { return; }
+
+    const encontrado = this.asuntos.find(a => (a.nombre ?? '').trim().toLowerCase() === texto);
+    if (encontrado) { ctrl.setValue(encontrado.id); }
   }
 
   /** El asunto tiene que ser de los del tipo; si no lo es, se queda vacío. */
@@ -206,15 +443,20 @@ export class SaveGestionComponent implements OnInit {
                 : this.modo === 'editar'    ? 'Modificar gestión'
                 : 'Registrar gestión';
 
-    this.telefonos = [this.cliente?.celular, this.cliente?.telefono]
-      .filter(Boolean)
-      .map(t => ({ id: String(t), name: String(t) }));
     this.contactosCombo = (this.contactos ?? [])
       .filter(c => c.id)
       .map(c => ({ id: c.id as number, name: c.cargo ? `${c.nombres} (${c.cargo})` : c.nombres }));
 
     this.initializeForm();
     this.cargarCatalogo();
+    this.cargarAdjuntos();
+  }
+
+  /** Las miniaturas son URLs de objeto: si no se sueltan, el navegador se las queda. */
+  ngOnDestroy(): void {
+    for (const a of this.adjuntos) {
+      if (a.vistaPrevia) { URL.revokeObjectURL(a.vistaPrevia); }
+    }
   }
 
   /** Programada mientras esté PENDIENTE; el resto, realizada. */
@@ -269,20 +511,20 @@ export class SaveGestionComponent implements OnInit {
                         : 'REALIZADA';
 
     this.form = this.fb.group({
-      tipo:             [g?.tipo ?? 'LLAMADA', [Validators.required]],
+      tipo:             [g?.tipo ?? this.tipoInicial ?? 'LLAMADA', [Validators.required]],
       estado:           [estadoInicial, [Validators.required]],
       // El texto se conserva para poder enseñar el de una gestión vieja, pero
       // ya no se teclea: lo que se guarda y lo que valida es el asunto_id.
-      asunto:           [g?.asunto ?? ''],
+      asunto:           [g?.asunto ?? this.asuntoInicial ?? ''],
       asunto_id:        [g?.asunto_id ?? null, [Validators.required]],
-      contacto_id:      [g?.contacto_id ?? null],
+      contacto_id:      [g?.contacto_id ?? this.contactoInicial ?? null],
       telefono:         [g?.telefono ?? this.telefonoInicial ?? this.cliente?.celular ?? this.cliente?.telefono ?? '', [Validators.maxLength(20)]],
       prioridad:        [g?.prioridad ?? 'MEDIA', [Validators.required]],
       fecha_programada: [this.paraInput(g?.fecha_programada) || (estadoInicial === 'PENDIENTE' ? this.enUnaHora() : '')],
       fecha_realizada:  [this.paraInput(g?.fecha_realizada) || (estadoInicial === 'REALIZADA' ? this.ahora() : '')],
       duracion_minutos: [g?.duracion_minutos ?? null, [Validators.min(0), Validators.max(1440)]],
       resultado:        [g?.resultado ?? (estadoInicial === 'REALIZADA' ? 'CONTACTADO' : null)],
-      nota:             [g?.nota ?? '', [Validators.maxLength(4000)]],
+      nota:             [g?.nota ?? this.notaInicial ?? '', [Validators.maxLength(4000)]],
     });
 
     // Una gestión nueva que se registra es, casi siempre, la que se acaba de
@@ -414,8 +656,20 @@ export class SaveGestionComponent implements OnInit {
         return;
       }
 
+      // Los adjuntos van ahora, que ya hay gestión a la que colgarlos. Antes
+      // de avisar de que todo fue bien: si alguno falla, el aviso sale junto
+      // al éxito y no después de haberse cerrado el modal.
+      const idsAdjuntos = await this.subirAdjuntos(res.data?.id ?? this.gestion?.id);
+
       this.guardado.emit(res.data);
       this._toastr.success(res.message, 'Éxito', { closeButton: true });
+
+      // Ya está guardada: ahora sí se abre el chat. Va antes de cerrar el
+      // modal porque window.open cuelga del gesto que empezó todo esto, y
+      // cerrando primero algunos navegadores lo toman por una ventana
+      // emergente y la bloquean.
+      this.enviarWhatsappPendiente(idsAdjuntos);
+
       this.modal.close(res.data);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP

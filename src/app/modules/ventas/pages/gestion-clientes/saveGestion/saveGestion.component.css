@@ -137,90 +137,6 @@
   border: 0;
 }
 
-/* ---------- Cada teléfono con sus acciones ---------- */
-.gestion-tel {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-
-  padding: .2rem 0;
-}
-
-.gestion-tel + .gestion-tel {
-  border-top: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-/* El número se pulsa para dejarlo en el campo de la gestión */
-.gestion-tel__numero {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-
-  color: var(--bs-link-color, #0d6efd);
-  font: inherit;
-  font-size: .75rem;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-}
-
-.gestion-tel__numero:hover {
-  text-decoration: underline;
-}
-
-.gestion-tel__acciones {
-  display: inline-flex;
-  align-items: center;
-  gap: .2rem;
-  flex: 0 0 auto;
-}
-
-/* Mismos colores que en la ficha del cliente: en gris parecían apagados */
-.gestion-tel__accion {
-  --tinte: #00acac;
-  --tinte-borde: rgba(0, 172, 172, .38);
-  --tinte-fondo: rgba(0, 172, 172, .10);
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-
-  width: 21px;
-  height: 21px;
-  padding: 0;
-  border: 1px solid var(--tinte-borde);
-  border-radius: 4px;
-  background-color: var(--tinte-fondo);
-
-  color: var(--tinte);
-  font-size: .7rem;
-  line-height: 1;
-  cursor: pointer;
-
-  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
-}
-
-.gestion-tel__accion:hover {
-  border-color: var(--tinte);
-  background-color: var(--tinte);
-  color: #fff;
-}
-
-.gestion-tel__accion--llamar {
-  --tinte: #2f80ed;
-  --tinte-borde: rgba(47, 128, 237, .38);
-  --tinte-fondo: rgba(47, 128, 237, .10);
-}
-
-.gestion-tel__accion--wa {
-  --tinte: #25d366;
-  --tinte-borde: rgba(37, 211, 102, .40);
-  --tinte-fondo: rgba(37, 211, 102, .12);
-}
-
 /* El rótulo corto del primer botón sólo sale en teléfono */
 .gestion-estado__corto {
   display: none;
@@ -270,4 +186,153 @@
   /* El pie va en una sola fila, pero eso NO se arregla desde aquí: se corrigió
      en app-modal-footer, que es de quien es la regla, y así lo ganan los trece
      modales que lo usan. */
+}
+
+/* El aviso de que hay un WhatsApp en cola, debajo de la nota */
+.gestion-wa-encola {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+
+  margin: .375rem 0 0;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gestion-wa-encola b {
+  color: var(--bs-body-color, #212529);
+  font-weight: 600;
+}
+
+.gestion-wa-encola__quitar {
+  margin-left: auto;
+  padding: 0 .25rem;
+  border: 0;
+  border-radius: .25rem;
+
+  background: transparent;
+  color: var(--bs-danger, #dc3545);
+  font-size: .75rem;
+  text-decoration: underline;
+}
+
+.gestion-wa-encola__quitar:hover {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .1);
+}
+
+/* ---------- Adjuntos de la gestion ---------- */
+.gestion-adj__cuenta {
+  margin-left: .35rem;
+  padding: 0 .35rem;
+  border-radius: .75rem;
+
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .15);
+  color: var(--bs-app-theme, #00acac);
+  font-size: .6875rem;
+  font-weight: 600;
+}
+
+.gestion-adj {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .25rem .4rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .35rem;
+  margin-bottom: .25rem;
+
+  font-size: .75rem;
+}
+
+.gestion-adj__mini {
+  width: 22px;
+  height: 22px;
+  border-radius: .2rem;
+  object-fit: cover;
+}
+
+.gestion-adj__nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--bs-body-color, #212529);
+  text-decoration: none;
+}
+
+a.gestion-adj__nombre:hover {
+  text-decoration: underline;
+}
+
+.gestion-adj__peso {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+}
+
+.gestion-adj__quitar {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: .25rem;
+
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+}
+
+.gestion-adj__quitar:hover {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);
+  color: var(--bs-danger, #dc3545);
+}
+
+/* La zona de soltar: un boton que ademas acepta arrastrar */
+.gestion-adj__soltar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: .4rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .35rem;
+  margin: 0;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  cursor: pointer;
+}
+
+.gestion-adj__soltar:hover,
+.gestion-adj__soltar.is-encima {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.gestion-adj__pista {
+  margin-left: .25rem;
+  opacity: .7;
+}
+
+.gestion-adj__aviso {
+  margin: .375rem 0 0;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+}
+
+/* Con el dedo no se arrastra: la pista sobra y el boton tiene que ser mayor */
+@media (pointer: coarse) {
+  .gestion-adj__pista {
+    display: none;
+  }
+
+  .gestion-adj__soltar {
+    padding: .6rem;
+  }
+
+  .gestion-adj__quitar {
+    width: 28px;
+    height: 26px;
+  }
 }

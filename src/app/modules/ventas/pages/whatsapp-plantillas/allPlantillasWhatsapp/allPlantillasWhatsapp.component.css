@@ -1,0 +1,102 @@
+/* ============================================================
+   RESPUESTAS DE WHATSAPP (listado)
+
+   Los tintes van en rgba y no en color-mix(): el front tiene que funcionar
+   en un iPhone 7 (ver .browserslistrc).
+   ============================================================ */
+
+.plantillas-ayuda {
+  margin: 0 .75rem .5rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+.plantillas-ayuda code {
+  padding: 0 .2rem;
+  border-radius: .2rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .07);
+  color: inherit;
+}
+
+/* Alto fijo y no al contenido: con seis filas la grilla quedaría de un palmo
+   y el panel medio vacío; así se ve igual con seis que con treinta. */
+.plantillas-grilla {
+  height: calc(100vh - 330px);
+  min-height: 18rem;
+  padding: 0 .75rem;
+}
+
+.plantillas-pie {
+  padding: .375rem .75rem .5rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+/* Las inactivas, apagadas: siguen estando pero no se ofrecen */
+:host ::ng-deep .ag-row.fila-inactiva .ag-cell {
+  opacity: .55;
+}
+
+:host ::ng-deep .ag-row {
+  cursor: pointer;
+}
+
+/* ---------- Los botones de la columna ACCIONES ----------
+   Mismo tamaño y mismos tintes que en gestión de clientes, para que se
+   reconozcan de una pantalla a otra. */
+:host ::ng-deep .plantillas-acciones {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+:host ::ng-deep .plantillas-acciones .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+
+  background-color: transparent;
+  color: var(--tinte, #6c757d);
+  font-size: .6875rem;
+  cursor: pointer;
+}
+
+:host ::ng-deep .plantillas-acciones .btn-ver     { --tinte: #2f80ed; }
+:host ::ng-deep .plantillas-acciones .btn-editar  { --tinte: #f59c1a; }
+:host ::ng-deep .plantillas-acciones .btn-clonar  { --tinte: #6c757d; }
+:host ::ng-deep .plantillas-acciones .btn-quitar  { --tinte: #dc3545; }
+
+:host ::ng-deep .plantillas-acciones .btn-icon:not(:disabled):hover {
+  border-color: var(--tinte);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .05);
+}
+
+:host ::ng-deep .plantillas-acciones .btn-icon:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* Con el dedo, más grandes y más separados (lo mismo que en la agenda) */
+@media (pointer: coarse) {
+  :host ::ng-deep .plantillas-acciones {
+    gap: .5rem;
+  }
+
+  :host ::ng-deep .plantillas-acciones .btn-icon {
+    width: 28px;
+    height: 26px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .plantillas-grilla {
+    height: 24rem;
+    padding: 0 .25rem;
+  }
+}

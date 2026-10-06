@@ -185,12 +185,11 @@
           </ng-scrollbar>
         </div>
 
-        <!-- Pie: incluir subgrupos -->
+        <!-- Pie del árbol. La casilla de «incluir subgrupos» estaba aquí y se
+             fue arriba, junto a la ruta del grupo: ahí se ve a qué grupo
+             afecta, y aquí abajo pasaba desapercibida. Dos interruptores para
+             lo mismo confunden, así que sólo queda el de allí. -->
         <div class="file-manager-sidebar-footer ug-lateral__pie">
-          <label class="ug-switch" title="Con la casilla marcada se ven también los usuarios de los subgrupos del grupo seleccionado; sin marcar, sólo los que están directamente en él">
-            <input type="checkbox" class="form-check-input" [checked]="incluirSubgrupos" (change)="toggleIncluirSubgrupos()">
-            <span>Incluir subgrupos</span>
-          </label>
           <span class="ug-lateral__ayuda" title="Arrastre usuarios de la lista a un grupo del árbol para moverlos; arrastre un grupo sobre otro para colgarlo de él">
             <i class="fa fa-hand-pointer"></i>
           </span>
@@ -230,8 +229,21 @@
                 <button type="button" class="ug-ruta__tramo" (click)="seleccionar(g.id)">{{ g.nombre }}</button>
               }
             }
+            <!-- Antes esto era un rótulo que sólo DECÍA si entraban los
+                 subgrupos; el interruptor estaba abajo del todo, en el pie del
+                 árbol, donde no se ve. Ahora es la casilla, al lado del grupo
+                 al que se refiere. -->
             @if (grupoActual && (grupoActual.num_hijos || 0) > 0) {
-              <span class="ug-ruta__nota" [title]="incluirSubgrupos ? 'Se muestran también los usuarios de los subgrupos' : 'Sólo los usuarios que están directamente en este grupo'">{{ incluirSubgrupos ? '+ subgrupos' : 'sólo directos' }}</span>
+              <label class="ug-ruta__subgrupos"
+                     [class.is-activo]="incluirSubgrupos"
+                     [title]="incluirSubgrupos
+                        ? 'Marcado: se ven también los usuarios de los subgrupos'
+                        : 'Sin marcar: sólo los que están directamente en este grupo'">
+                <input type="checkbox" class="form-check-input"
+                       [checked]="incluirSubgrupos"
+                       (change)="toggleIncluirSubgrupos()">
+                <span>+ subgrupos</span>
+              </label>
             }
           </nav>
 
@@ -239,6 +251,7 @@
             <button type="button" class="btn btn-sm btn-outline-secondary" title="Limpiar filtros" (click)="clearAllFilters()">
               <i class="fas fa-filter-circle-xmark"></i>
             </button>
+
             <app-campoBusquedaPaginacion
               [id]="'ug-filter'"
               [placeholder]="'Buscar usuario'"

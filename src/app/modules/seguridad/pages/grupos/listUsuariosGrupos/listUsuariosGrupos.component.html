@@ -54,12 +54,9 @@
         }
       </div>
 
-      <!-- Encendido por defecto: quien abre «Cuenca» espera ver a sus
-           vendedores, que están en el subgrupo -->
-      <label class="lug__subgrupos">
-        <input type="checkbox" [(ngModel)]="incluirSubgrupos" (ngModelChange)="cambiarSubgrupos()">
-        Incluir subgrupos
-      </label>
+      <!-- La casilla de «incluir subgrupos» estaba aquí, debajo del árbol, y
+           se fue a la derecha, junto al nombre del grupo: ahí se ve a qué
+           grupo afecta. Igual que en la pantalla de Usuarios y grupos. -->
     </aside>
 
     <!-- ---------- derecha: la gente ---------- -->
@@ -69,6 +66,22 @@
           <i class="fa fa-folder-open me-1"></i>{{ nombreSeleccion }}
           <span class="lug__cuenta">{{ totalRegistros }}</span>
         </span>
+
+        <!-- Sólo con subgrupos debajo: en los demás grupos marcar o no marcar
+             daría la misma lista. Encendida por defecto, porque quien abre
+             «Cuenca» espera ver a sus vendedores, que están en el subgrupo. -->
+        @if (tieneSubgrupos) {
+          <label class="lug__subgrupos"
+                 [class.is-activo]="incluirSubgrupos"
+                 [title]="incluirSubgrupos
+                    ? 'Marcado: se ven también los usuarios de los subgrupos'
+                    : 'Sin marcar: sólo los que están directamente en este grupo'">
+            <input type="checkbox" class="form-check-input"
+                   [(ngModel)]="incluirSubgrupos"
+                   (ngModelChange)="cambiarSubgrupos()">
+            <span>+ subgrupos</span>
+          </label>
+        }
 
         <app-campoBusquedaPaginacion
           [id]="'buscar-usuario-grupo'"

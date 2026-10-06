@@ -28,8 +28,10 @@ import {
 } from '../../interfaces/gestionModel';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import {
-  PLANTILLAS_WHATSAPP, PlantillaWhatsapp, aplicarPlantilla, primerNombre, puedeTenerWhatsapp,
+  abrirWhatsapp, aplicarPlantilla, numeroInternacional, primerNombre, puedeTenerWhatsapp,
 } from '../../interfaces/plantillasWhatsapp';
+import { WhatsappPlantillaModel } from '../../interfaces/whatsappPlantillaModel';
+import { WhatsappPlantillaService } from '../../services/whatsappPlantilla.service';
 
 ///   COMPONENTES    ///
 import { ListClientesComponent } from '../clientes/listClientes/listClientes.component';
@@ -332,8 +334,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public readonly pintaDeTipo = pintaDeTipo;
 
   // ---------- WhatsApp ----------
-  /** Los mensajes que se ofrecen al escribir; ver plantillasWhatsapp.ts. */
-  public plantillasWhatsapp = PLANTILLAS_WHATSAPP;
+  /**
+   * Los mensajes que se ofrecen al escribir.
+   *
+   * Vienen de la base (Ventas > Respuestas de WhatsApp), no del codigo: se
+   * piden una vez al entrar y el servicio los recuerda, porque el menu se
+   * abre muchas veces al dia y la lista cambia de tarde en tarde.
+   */
+  public plantillasWhatsapp: WhatsappPlantillaModel[] = [];
 
   /**
    * La conversación de WhatsApp del cliente.
@@ -470,6 +478,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     private _archivoService: ArchivoClienteService,
     private _notaService: NotaClienteService,
     private _catalogoService: CatalogoGestionService,
+    private _plantillaWaService: WhatsappPlantillaService,
     public _appAgGridService: AppAgGridService,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -493,6 +502,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.cargarAgenda();
     this.cargarClientes(1);
     this.cargarTiposDelCatalogo();
+    this.cargarPlantillasWhatsapp();
 
     // Se puede llegar con el cliente en la url (?cliente=9), que es como
     // entra el recordatorio cuando se pulsa «Abrir el cliente»
@@ -1879,7 +1889,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (!accion) { return; }
 
     if (accion === 'llamar')    { this.llamarConSoftphone(e.data?.telefono, e.data?.nombres); }
-    if (accion === 'whatsapp')  { window.open(this.enlaceWhatsapp(e.data?.telefono), '_blank', 'noopener'); }
+    // El menú de plantillas, igual que en la ficha de contactabilidad: antes
+    // este botón abría el chat en blanco y había que escribirlo todo a mano
+    if (accion === 'whatsapp')  { this.abrirMenuWhatsapp(e.event as MouseEvent, e.data?.telefono, e.data?.nombres, destino); }
     if (accion === 'correo')    { window.location.href = 'mailto:' + e.data?.email; }
     if (accion === 'alta')      { this.alternarActivoContacto(e.data); }
     if (accion === 'descartar') { this.quitarContacto(e.data); }
@@ -3043,27 +3055,11 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this.escucharModal(modalRef, modalRef.componentInstance.guardado, () => this.refrescar());
     }, 400);
   }
-  enlaceWhatsapp(numero?: string | null, texto?: string | null): string {
-    const internacional = this.numeroInternacional(numero);
-    if (!internacional) { return ''; }
-
-    const mensaje = texto ? '?text=' + encodeURIComponent(texto) : '';
-
-    // «app» abre el WhatsApp instalado; «web» pasa por el navegador y deja
-    // que el sistema decida. Se elige por navegador:
-    //   localStorage.setItem('miCRM3.whatsapp', 'app');
-    return this.destinoWhatsapp === 'app'
-      ? `whatsapp://send?phone=${internacional}${texto ? '&text=' + encodeURIComponent(texto) : ''}`
-      : `https://wa.me/${internacional}${mensaje}`;
-  }
-
-  /** «0991234567» → «593991234567», que es lo que pide WhatsApp. */
-  private numeroInternacional(numero?: string | null): string {
-    const limpio = (numero ?? '').replace(/\D/g, '');
-    if (!limpio) { return ''; }
-    // Ecuador: 0991234567 → 593991234567
-    return limpio.startsWith('0') ? '593' + limpio.substring(1) : limpio;
-  }
+  // El enlace y el número internacional los arma plantillasWhatsapp.ts, que es
+  // de donde los toma también el formulario de gestión. Aquí había una copia
+  // igual de las dos funciones; lo mismo escrito dos veces es lo mismo hasta
+  // que alguien arregla una sola, que es justo lo que pasó con la pestaña en
+  // blanco del enlace whatsapp://.
 
   /**
    * ¿A ese número se le puede escribir? Lo usan la plantilla y la grilla de
@@ -3088,8 +3084,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     );
   }
 
-  /** Abre el menú de plantillas junto al botón que se pulsó. */
-  abrirMenuWhatsapp(ev: MouseEvent, numero?: string | null, aQuien?: string | null): void {
+  /**
+   * Abre el menú de plantillas junto al botón que se pulsó.
+   *
+   * `ancla` es para los botones que pinta ag-Grid: ahí el manejador lo llama
+   * el grid y `currentTarget` ya no es el botón, así que se le pasa el
+   * elemento a mano. Sin ella sigue valiendo el del propio evento, que es como
+   * lo llaman los botones de la ficha.
+   */
+  abrirMenuWhatsapp(ev: MouseEvent, numero?: string | null, aQuien?: string | null, ancla?: HTMLElement | null): void {
     ev.stopPropagation();
 
     if (!numero) {
@@ -3097,7 +3100,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    const base = ancla ?? (ev.currentTarget as HTMLElement) ?? (ev.target as HTMLElement);
+    const r = base.getBoundingClientRect();
     this.menuWa = { visible: true, x: r.left, y: r.bottom + 4, numero, aQuien: aQuien ?? null };
 
     // Si no cabe hacia abajo o hacia la derecha, se recoloca
@@ -3114,8 +3118,25 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (this.menuWa.visible) { this.menuWa.visible = false; }
   }
 
+  /**
+   * Las plantillas que se ofrecen en el menú de WhatsApp.
+   *
+   * Si falla, el menú se queda sin plantillas pero con «Abrir el chat sin
+   * mensaje»: se puede seguir escribiendo al cliente a mano, que es lo que
+   * importa. No se interrumpe con un error rojo por esto.
+   */
+  private async cargarPlantillasWhatsapp(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this._plantillaWaService.activas());
+      this.plantillasWhatsapp = res?.status === 'success' ? (res.data ?? []) : [];
+    } catch (error) {
+      console.error('Error al cargar las plantillas de WhatsApp:', error);
+      this.plantillasWhatsapp = [];
+    }
+  }
+
   /** El texto de una plantilla, ya con el nombre del cliente y el del vendedor. */
-  textoDePlantilla(plantilla: PlantillaWhatsapp): string {
+  textoDePlantilla(plantilla: WhatsappPlantillaModel): string {
     const esEmpresa = this.cliente?.tipo_cliente === 'EMPRESA';
     return aplicarPlantilla(plantilla.texto, {
       cliente:  this.cliente?.nombre_completo,
@@ -3123,6 +3144,30 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       vendedor: this.nombreDelUsuario,
       empresa:  this.nombreDeLaEmpresa,
     });
+  }
+
+  /**
+   * A qué contacto del cliente corresponde ese mensaje.
+   *
+   * Se busca primero por el número, que es dato duro, y sólo si no aparece
+   * por el nombre que enseñaba la grilla. Si no es de ninguno —lo normal
+   * cuando se escribe al celular del cliente— se devuelve null y el combo
+   * queda vacío.
+   */
+  private contactoLlamado(aQuien?: string | null, numero?: string | null): number | null {
+    const soloDigitos = (s?: string | null) => (s ?? '').replace(/\D/g, '');
+    const buscado = soloDigitos(numero);
+
+    const porNumero = buscado
+      ? this.contactos.find(c => soloDigitos(c.telefono) === buscado || soloDigitos(c.telefono_alterno) === buscado)
+      : undefined;
+    if (porNumero?.id) { return porNumero.id; }
+
+    const nombre = (aQuien ?? '').trim().toLowerCase();
+    const porNombre = nombre
+      ? this.contactos.find(c => (c.nombres ?? '').trim().toLowerCase() === nombre)
+      : undefined;
+    return porNombre?.id ?? null;
   }
 
   /** Quien está usando el CRM, para firmar el mensaje. */
@@ -3148,59 +3193,53 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Abre el chat de WhatsApp y deja constancia en el CRM.
+   * Elegir una respuesta abre la gestión; el chat se abre al guardarla.
    *
-   * Lo segundo es lo que importa: hasta ahora se escribía al cliente por
-   * WhatsApp y el CRM no se enteraba, así que el historial mentía. Se
-   * registra como gestión REALIZADA con el texto que se envió.
+   * Antes era al revés: se abría el chat y la gestión se registraba sola por
+   * detrás. Parecía cómodo y era frágil —si el registro fallaba, el mensaje
+   * ya había salido y el historial mentía— y además dejaba la gestión sin
+   * nada que contar: el vendedor no podía escribir lo que de verdad pasó en
+   * la conversación, porque nadie le preguntaba.
    *
-   * @param plantilla null abre el chat en blanco (no se registra nada: puede
-   *        que sólo se vaya a mirar la conversación).
+   * Ahora se hace como con las llamadas: se abre el formulario con el mensaje
+   * ya puesto en «Qué se habló», y el botón pasa a ser «Guardar y enviar».
+   * Primero queda escrito, después se manda.
+   *
+   * @param plantilla null abre el chat en blanco ahora mismo: no hay mensaje
+   *        del que dejar constancia, puede que sólo se vaya a leer la
+   *        conversación.
    */
-  async escribirPorWhatsapp(numero?: string | null, plantilla: PlantillaWhatsapp | null = null, aQuien?: string | null): Promise<void> {
-    if (!this.numeroInternacional(numero)) {
+  escribirPorWhatsapp(numero?: string | null, plantilla: WhatsappPlantillaModel | null = null, aQuien?: string | null): void {
+    if (!numeroInternacional(numero)) {
       this._toastr.warning('No tiene un número al que escribir', 'WhatsApp');
       return;
     }
 
     const texto = plantilla ? this.textoDePlantilla(plantilla) : null;
-    window.open(this.enlaceWhatsapp(numero, texto), '_blank', 'noopener');
 
-    if (!plantilla || !this.cliente?.id) { return; }
-
-    // La gestión queda registrada sola; si falla, el chat ya está abierto y
-    // no hay por qué interrumpir al vendedor con un error rojo
-    try {
-      const res: any = await firstValueFrom(this._gestionService.addGestion({
-        cliente_id: this.cliente.id,
-        tipo: 'WHATSAPP',
-        estado: 'REALIZADA',
-        prioridad: 'MEDIA',
-        asunto: plantilla.asunto + (aQuien ? ' — ' + aQuien : ''),
-        nota: texto,
-        telefono: numero,
-        fecha_realizada: this.ahoraParaElServidor(),
-        resultado: 'CONTACTADO',
-      }));
-
-      if (res?.status === 'success') {
-        this._toastr.success('Se registró la gestión de WhatsApp', plantilla.nombre, { timeOut: 2500 });
-        await this.refrescarTrasWhatsapp();
-      }
-    } catch (error) {
-      console.error('No se pudo registrar la gestión de WhatsApp:', error);
+    // Sin plantilla no hay gestión que abrir; y sin permiso para crearlas,
+    // tampoco: se escribe al cliente igual, que es lo que no se le puede
+    // quitar a nadie, aunque esa vez no quede registrada.
+    if (!plantilla || !texto || !this.cliente?.id || this.accesoModel?.crear === false) {
+      abrirWhatsapp(numero, texto);
+      return;
     }
-  }
+    if (this._seguridadService.isexpired()) { return; }
 
-  /** «AAAA-MM-DD HH:mm:ss» de ahora mismo, que es lo que espera el back. */
-  private ahoraParaElServidor(): string {
-    const d = new Date();
-    const dos = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())} ${dos(d.getHours())}:${dos(d.getMinutes())}:${dos(d.getSeconds())}`;
-  }
-
-  private async refrescarTrasWhatsapp(): Promise<void> {
-    await Promise.all([this.cargarGestiones(this.paginaActual), this.cargarResumen()]);
+    const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+    modalRef.componentInstance.modo = 'registrar';
+    modalRef.componentInstance.cliente = this.cliente;
+    modalRef.componentInstance.contactos = this.contactos;
+    modalRef.componentInstance.gestion = null;
+    modalRef.componentInstance.telefonoInicial = numero;
+    modalRef.componentInstance.tipoInicial = 'WHATSAPP';
+    modalRef.componentInstance.notaInicial = texto;
+    modalRef.componentInstance.asuntoInicial = plantilla.asunto;
+    // Con quién se habló: antes se pegaba al asunto porque no había dónde
+    // ponerlo; ahora va en su campo, que es de donde salen los informes.
+    modalRef.componentInstance.contactoInicial = this.contactoLlamado(aQuien, numero);
+    modalRef.componentInstance.whatsappPendiente = { numero: String(numero), texto };
+    this.escucharModal(modalRef, modalRef.componentInstance.guardado, () => this.refrescar());
   }
 
   get hayCliente(): boolean { return !!this.cliente?.id; }

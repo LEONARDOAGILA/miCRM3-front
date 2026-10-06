@@ -469,14 +469,14 @@
                   </button>
                   <button type="button" class="btn btn-warning btn-sm" [disabled]="accesoModel?.crear === false"
                           title="Dejar agendada la siguiente" (click)="programarGestion()">
-                    <i class="fa fa-calendar-plus me-1"></i>Programar
+                    <i class="fa fa-calendar-plus me-1"></i>Cotizar
                   </button>
                   <!-- <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="accesoModel?.editar === false"
                           title="Pasar el cliente a otro vendedor" (click)="reasignar()">
                     <i class="fa fa-user-check me-1"></i>Reasignar
                   </button> -->
                   <button type="button" class="btn btn-success btn-sm" title="Abrir la ficha completa del cliente" (click)="verFicha()">
-                    <i class="fa fa-address-card me-1"></i>Ver ficha de Cliente
+                    <i class="fa fa-address-card me-1"></i>Ver Cliente
                   </button>
 
                   <!-- Los datos ocupan sitio; quien vive en el historial los pliega -->
@@ -1567,7 +1567,7 @@
             </button>
             @if (tieneWhatsapp(telefonoDelObjetivo)) {
               <button type="button" class="menu-ctx__item" role="menuitem"
-                      (click)="cerrarMenu(); escribirPorWhatsapp(telefonoDelObjetivo)">
+                      (click)="abrirMenuWhatsapp($event, telefonoDelObjetivo); cerrarMenu()">
                 <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
               </button>
             }
@@ -1638,7 +1638,7 @@
             </button>
             @if (tieneWhatsapp(menuCtx.fila.telefono)) {
               <button type="button" class="menu-ctx__item" role="menuitem"
-                      (click)="cerrarMenu(); escribirPorWhatsapp(menuCtx.fila.telefono, null, menuCtx.fila.nombres)">
+                      (click)="abrirMenuWhatsapp($event, menuCtx.fila.telefono, menuCtx.fila.nombres); cerrarMenu()">
                 <i class="fab fa-whatsapp fa-fw text-success"></i> Escribir por WhatsApp
               </button>
             }

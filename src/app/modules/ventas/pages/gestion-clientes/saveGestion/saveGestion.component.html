@@ -173,45 +173,14 @@
               </div>
             }
 
-            <!-- ---------- Los teléfonos y la nota, uno al lado del otro ----------
-                 La nota iba en un panel aparte: su cabecera y su separación
-                 costaban unos 45px para un solo campo. Puesta aquí, al lado de
-                 los teléfonos, las dos cosas caben en el alto de una. -->
-            @if (telefonos.length) {
-              <div class="col-12 col-md-5">
-                <div class="gestion-ficha">
-                  <div class="gestion-ficha__titulo"><i class="fa fa-phone fa-fw"></i>Teléfonos</div>
-                  <div class="gestion-ficha__cuerpo">
-                    @for (t of telefonos; track t.id) {
-                      <div class="gestion-tel">
-                        <button type="button" class="gestion-tel__numero"
-                                [title]="'Usar ' + t.name + ' en esta gestión'"
-                                (click)="usarNumero(t.id)"><span class="numero-plano"
-                                                                [attr.data-numero]="t.name"></span></button>
-                        <span class="gestion-tel__acciones">
-                          <button type="button" class="gestion-tel__accion gestion-tel__accion--llamar"
-                                  title="Llamar" (click)="llamar(t.id)">
-                            <i class="fa fa-phone"></i>
-                          </button>
-                          @if (tieneWhatsapp(t.id)) {
-                            <button type="button" class="gestion-tel__accion gestion-tel__accion--wa"
-                                    title="Escribir por WhatsApp" (click)="porWhatsapp(t.id)">
-                              <i class="fab fa-whatsapp"></i>
-                            </button>
-                          }
-                          <button type="button" class="gestion-tel__accion"
-                                  title="Copiar" (click)="copiar(t.id)">
-                            <i class="fa fa-copy"></i>
-                          </button>
-                        </span>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-
-            <div class="col-12" [class.col-md-7]="telefonos.length">
+            <!-- ---------- Qué se habló ----------
+                 Aquí había al lado una tarjeta de «Teléfonos» con llamar,
+                 WhatsApp y copiar. Sobra desde que a este formulario se llega
+                 DESDE esas acciones: se marca o se elige la respuesta en la
+                 ficha y el formulario se abre ya con el número puesto, así
+                 que volver a ofrecerlas aquí era dar la vuelta a lo que se
+                 acaba de hacer. La nota se queda con todo el ancho. -->
+            <div class="col-12">
               <div class="gestion-ficha">
                 <div class="gestion-ficha__titulo"><i class="fa fa-pen fa-fw"></i>Qué se habló</div>
                 <div class="gestion-ficha__cuerpo">
@@ -222,6 +191,91 @@
                     [maxLength]="4000"
                     [alto]="86">
                   </app-campoTextoArea>
+
+                  <!-- Que se vea que hay un mensaje en cola, y no sólo en el
+                       botón del pie: aquí es donde se está mirando -->
+                  @if (hayWhatsappPendiente) {
+                    <p class="gestion-wa-encola">
+                      <i class="fab fa-whatsapp fa-fw text-success"></i>
+                      Se enviará a <b>{{ whatsappPendiente?.numero }}</b> al guardar.
+                      <button type="button" class="gestion-wa-encola__quitar"
+                              title="No enviar el mensaje, sólo guardar la gestión"
+                              (click)="cancelarWhatsappPendiente()">No enviar</button>
+                    </p>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- ---------- Adjuntos ----------
+                 Lo que se le mandó al cliente en esta conversación. Se suben
+                 al guardar, no al elegirlos: hasta entonces no hay gestión de
+                 la que colgarlos. -->
+            <div class="col-12">
+              <div class="gestion-ficha">
+                <div class="gestion-ficha__titulo">
+                  <i class="fa fa-paperclip fa-fw"></i>Adjuntos
+                  @if (hayAdjuntos) {
+                    <span class="gestion-adj__cuenta">{{ adjuntos.length + adjuntosGuardados.length }}</span>
+                  }
+                </div>
+                <div class="gestion-ficha__cuerpo">
+
+                  <!-- Los que ya estaban (al modificar una gestión) -->
+                  @for (a of adjuntosGuardados; track a.id) {
+                    <div class="gestion-adj gestion-adj--guardado">
+                      <i class="fa fa-fw {{ pintaDeTipo(a.tipo).icono }}"
+                         [style.color]="pintaDeTipo(a.tipo).color"></i>
+                      <a class="gestion-adj__nombre text-truncate"
+                         [href]="urlDelAdjunto(a)" target="_blank" rel="noopener"
+                         [title]="'Abrir ' + a.nombre">{{ a.nombre }}</a>
+                      <span class="gestion-adj__peso">{{ formatoTamano(a.tamano) }}</span>
+                      <button type="button" class="gestion-adj__quitar"
+                              title="Quitar el adjunto" (click)="borrarAdjuntoGuardado(a)">
+                        <i class="fa fa-trash"></i>
+                      </button>
+                    </div>
+                  }
+
+                  <!-- Los recién elegidos, todavía sin subir -->
+                  @for (a of adjuntos; track a.clave) {
+                    <div class="gestion-adj">
+                      @if (a.vistaPrevia) {
+                        <img class="gestion-adj__mini" [src]="a.vistaPrevia" [alt]="a.nombre">
+                      } @else {
+                        <i class="fa fa-fw {{ pintaDeTipo(a.tipo).icono }}"
+                           [style.color]="pintaDeTipo(a.tipo).color"></i>
+                      }
+                      <span class="gestion-adj__nombre text-truncate"
+                            [title]="a.fichero.name">{{ a.fichero.name }}</span>
+                      <span class="gestion-adj__peso">{{ formatoTamano(a.tamano) }}</span>
+                      <button type="button" class="gestion-adj__quitar"
+                              title="Quitar de la lista" (click)="quitarAdjunto(a.clave)">
+                        <i class="fa fa-times"></i>
+                      </button>
+                    </div>
+                  }
+
+                  <!-- Elegir: botón y zona para soltar -->
+                  <label class="gestion-adj__soltar"
+                         [class.is-encima]="arrastrando"
+                         (dragover)="alArrastrarAdjuntos($event, true)"
+                         (dragleave)="alArrastrarAdjuntos($event, false)"
+                         (drop)="alSoltarAdjuntos($event)">
+                    <input type="file" multiple hidden (change)="elegirAdjuntos($event)">
+                    <i class="fa fa-paperclip me-1"></i>
+                    Añadir archivos <span class="gestion-adj__pista">o suéltalos aquí</span>
+                  </label>
+
+                  @if (adjuntos.length && hayWhatsappPendiente) {
+                    <p class="gestion-adj__aviso">
+                      <i class="fa fa-circle-info fa-fw"></i>
+                      Al guardar se copian y se pegan en WhatsApp; si no se pegan
+                      solos, <b>Ctrl+V</b> en la conversación. Hace falta el
+                      copiador instalado en el equipo.
+                    </p>
+                  }
+
                 </div>
               </div>
             </div>
@@ -233,9 +287,14 @@
   </form>
 </div>
 
+<!-- «Guardar y enviar» cuando hay un WhatsApp esperando: primero se guarda la
+     gestión y, con eso hecho, se abre el chat. El botón lo dice para que no
+     haya que adivinar en qué orden pasan las cosas. -->
 <app-modal-footer
   [isDisabled]="!guardando"
   [textoCerrar]="'Salir'"
+  [textoGuardar]="hayWhatsappPendiente ? 'Guardar y enviar' : 'Guardar'"
+  [iconoGuardar]="hayWhatsappPendiente ? 'fa-paper-plane' : 'fa-save'"
   (onClose)="modal.dismiss()"
   (onSubmit)="onSubmitForm($event)">
 </app-modal-footer>

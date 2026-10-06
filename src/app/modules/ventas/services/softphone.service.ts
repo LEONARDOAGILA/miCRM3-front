@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 
+import { lanzarProtocolo } from '../../../service/lanzarProtocolo';
+
 /**
  * Marcar con el softphone del puesto (Zoiper, y cualquiera que registre su
  * protocolo).
@@ -68,36 +70,10 @@ export class SoftphoneService {
    * Entrega el enlace al sistema operativo sin que el navegador crea que se
    * está abandonando la página.
    *
-   * Con `window.location.href` Chrome lo trata como salir del documento, y
-   * como la aplicación tiene un `beforeunload` registrado a propósito (ver
-   * app.component), salía el cartel de «¿desea salir de esta página?» antes de
-   * abrir el softphone: había que contestar «abandonar» en cada llamada.
-   *
-   * Dentro de un iframe la navegación no es la del documento principal, así
-   * que el protocolo se lanza igual y el cartel no aparece. Lo comprobé con
-   * las tres formas posibles:
-   *
-   *     location.href      lanza · SACA EL CARTEL
-   *     clic a un <a>      lanza · SACA EL CARTEL
-   *     iframe oculto      lanza · sin cartel
-   *
-   * El marco se quita después, no en el acto: borrarlo de inmediato cancela el
-   * lanzamiento antes de que el sistema lo atienda.
+   * El cómo y el porqué están en lanzarProtocolo(): esto se peleó aquí
+   * primero, y se movió allí cuando WhatsApp tropezó con lo mismo.
    */
   private lanzar(url: string): void {
-    const marco = document.createElement('iframe');
-    marco.style.display = 'none';
-    marco.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(marco);
-
-    try {
-      if (marco.contentWindow) { marco.contentWindow.location.href = url; }
-      else { marco.src = url; }
-    } catch {
-      // Si el navegador no deja, mejor marcar con el cartel que no marcar
-      window.location.href = url;
-    }
-
-    setTimeout(() => marco.remove(), 2000);
+    lanzarProtocolo(url);
   }
 }
