@@ -1,16 +1,20 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
+
+import Swal from 'sweetalert2';
 
 import { GestionService } from '../../../services/gestion.service';
-import { SoftphoneService } from '../../../services/softphone.service';
-import { WhatsappPlantillaService } from '../../../services/whatsappPlantilla.service';
-import { WhatsappPlantillaModel } from '../../../interfaces/whatsappPlantillaModel';
+import { ArchivoClienteService } from '../../../services/archivoCliente.service';
 import {
-  abrirWhatsapp, aplicarPlantilla, enlaceDeWhatsapp, primerNombre, puedeTenerWhatsapp,
-} from '../../../interfaces/plantillasWhatsapp';
+  ArchivoCliente, extensionDe, formatoTamano, pintaDeTipo, tipoPorExtension,
+} from '../../../interfaces/archivoCliente';
+import { abrirWhatsapp } from '../../../interfaces/plantillasWhatsapp';
+import { lanzarProtocolo } from '../../../../../service/lanzarProtocolo';
 import { CatalogoGestionService } from '../../../services/catalogoGestion.service';
 import { TipoGestion, AsuntoGestion, asuntosDe } from '../../../interfaces/catalogoGestion';
 import { LoadingService } from '../../../../../service/loading.service';
@@ -36,7 +40,7 @@ export type ModoGestion = 'registrar' | 'programar' | 'editar';
   styleUrls: ['./saveGestion.component.css'],
   standalone: false,
 })
-export class SaveGestionComponent implements OnInit {
+export class SaveGestionComponent implements OnInit, OnDestroy {
 
   @Input() modo: ModoGestion = 'registrar';
   @Input() cliente: ClienteModel | null = null;
@@ -98,18 +102,32 @@ export class SaveGestionComponent implements OnInit {
   public cargandoCatalogo = true;
   public prioridades = PRIORIDADES_GESTION;
   public resultados = RESULTADOS_GESTION;
-  /** Los teléfonos del cliente, para no tener que escribirlos */
-  public telefonos: { id: string; name: string }[] = [];
   public contactosCombo: { id: number; name: string }[] = [];
 
-  /** Las respuestas que se ofrecen al escribir por WhatsApp. */
-  public plantillasWhatsapp: WhatsappPlantillaModel[] = [];
+  // ---------- Adjuntos ----------
+  //
+  // Lo que se le manda al cliente en esa conversación: la cotización, la
+  // factura, la foto. Se suben AL GUARDAR y no al elegirlos, porque hasta
+  // entonces la gestión no existe y no habría a qué colgarlos; si se subieran
+  // antes y luego se cerrara el formulario, quedarían ficheros sueltos en el
+  // disco del servidor sin fila que los nombre.
 
-  /** Dónde se pinta el menú de respuestas y a qué número escribe. */
-  public menuWa: { visible: boolean; x: number; y: number; numero: string | null } =
-    { visible: false, x: 0, y: 0, numero: null };
+  /** Los que se acaban de elegir y todavía no están en el servidor. */
+  public adjuntos: {
+    clave: number; fichero: File; nombre: string;
+    extension: string; tipo: string; tamano: number; vistaPrevia: string | null;
+  }[] = [];
 
-  @ViewChild('menuWaEl') menuWaEl?: ElementRef<HTMLElement>;
+  /** Los que ya estaban (al modificar una gestión). */
+  public adjuntosGuardados: ArchivoCliente[] = [];
+
+  private claveAdjunto = 0;
+
+  /** Los ids que acaban de guardarse, para mandarlos al portapapeles. */
+  private idsParaCopiar: number[] = [];
+
+  public formatoTamano = formatoTamano;
+  public pintaDeTipo = pintaDeTipo;
 
   constructor(
     private fb: FormBuilder,
@@ -118,148 +136,161 @@ export class SaveGestionComponent implements OnInit {
     private _loadingService: LoadingService,
     private _gestionService: GestionService,
     private _catalogoService: CatalogoGestionService,
-    private _softphone: SoftphoneService,
-    private _plantillaWaService: WhatsappPlantillaService,
+    private _archivoService: ArchivoClienteService,
   ) {}
 
   // ================================================================
-  // LOS TELÉFONOS DEL CLIENTE
+  // ADJUNTOS
   // ================================================================
-  //
-  // Las mismas tres acciones que en la ficha —llamar, WhatsApp y copiar—,
-  // para no tener que cerrar el formulario a mitad para buscarlas.
 
-  /**
-   * ¿Ese número puede tener WhatsApp? La regla está en plantillasWhatsapp.ts,
-   * compartida con la pantalla de detrás: tenerla escrita dos veces era pedir
-   * que un día dejaran de decir lo mismo.
-   */
-  public tieneWhatsapp = puedeTenerWhatsapp;
-
-  /** Lo pone en el campo, que es el número que se guarda con la gestión. */
-  usarNumero(numero: string): void {
-    this.form.controls['telefono'].setValue(numero);
-    this.form.controls['telefono'].markAsDirty();
+  /** Los que hay ahora mismo, de los dos tipos: para enseñar u ocultar el bloque. */
+  get hayAdjuntos(): boolean {
+    return this.adjuntos.length > 0 || this.adjuntosGuardados.length > 0;
   }
 
-  /**
-   * Marca con el softphone.
-   *
-   * Aquí no se abre otra gestión al marcar, como sí hace la pantalla de
-   * detrás: ya se está escribiendo una.
-   */
-  llamar(numero: string): void {
-    const marcado = this._softphone.marcar(numero);
-    if (!marcado) { return; }
-
-    this.usarNumero(numero);
-    this._toastr.info('Marcando ' + marcado + '…', this.cliente?.nombre_completo || 'Zoiper', { timeOut: 2500 });
+  elegirAdjuntos(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    this.encolarAdjuntos(Array.from(input.files ?? []));
+    // Para poder volver a elegir el mismo fichero si se quitó de la lista
+    input.value = '';
   }
 
-  // ---------- WhatsApp: las mismas respuestas que en la ficha ----------
-  //
-  // Aquí también se ofrecen, y no sólo el chat en blanco: se escribe al
-  // cliente desde este formulario tanto como desde la ficha de detrás, y
-  // tener las plantillas sólo allí obligaba a cerrar el modal para usarlas.
-  //
-  // El menú va con position: fixed y z-index por encima del modal, que es lo
-  // que evita que se corte contra sus bordes.
-
-  /** Abre el menú de respuestas junto al botón que se pulsó. */
-  abrirMenuWhatsapp(ev: MouseEvent, numero: string): void {
-    ev.stopPropagation();
-    if (!enlaceDeWhatsapp(numero)) { return; }
-
-    const r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
-    this.menuWa = { visible: true, x: r.left, y: r.bottom + 4, numero };
-
-    // Si no cabe hacia abajo o hacia la derecha, se recoloca: el modal no
-    // ocupa toda la pantalla y el menú puede nacer pegado a un borde.
-    setTimeout(() => {
-      const el = this.menuWaEl?.nativeElement;
-      if (!el) { return; }
-      const m = el.getBoundingClientRect();
-      if (m.right > window.innerWidth)   { this.menuWa.x = Math.max(8, window.innerWidth - m.width - 8); }
-      if (m.bottom > window.innerHeight) { this.menuWa.y = Math.max(8, r.top - m.height - 4); }
-    });
+  alSoltarAdjuntos(ev: DragEvent): void {
+    ev.preventDefault();
+    this.arrastrando = false;
+    this.encolarAdjuntos(Array.from(ev.dataTransfer?.files ?? []));
   }
 
-  cerrarMenuWhatsapp(): void {
-    if (this.menuWa.visible) { this.menuWa.visible = false; }
+  alArrastrarAdjuntos(ev: DragEvent, entra: boolean): void {
+    ev.preventDefault();
+    this.arrastrando = entra;
   }
 
-  /** Un clic fuera o la tecla Escape lo cierran, como cualquier menú. */
-  @HostListener('document:click')
-  alPulsarFuera(): void { this.cerrarMenuWhatsapp(); }
+  public arrastrando = false;
 
-  @HostListener('document:keydown.escape')
-  alPulsarEscape(): void { this.cerrarMenuWhatsapp(); }
-
-  /**
-   * Deja el mensaje preparado: lo escribe en «Qué se habló» y lo deja en cola
-   * para mandarlo al guardar.
-   *
-   * No se abre el chat aquí a propósito. Si se abriera, el mensaje podría
-   * salir y la gestión quedarse sin guardar —porque el formulario está a
-   * medias, porque el servidor falla, porque alguien cierra el modal—, y el
-   * historial volvería a mentir. Guardando primero, lo que se envía siempre
-   * está escrito.
-   *
-   * @param plantilla null abre el chat en blanco ahora mismo: no hay mensaje
-   *        del que dejar constancia, puede que sólo se vaya a leer la
-   *        conversación.
-   */
-  escribirPorWhatsapp(plantilla: WhatsappPlantillaModel | null = null): void {
-    const numero = this.menuWa.numero;
-    if (!numero) { return; }
-    this.usarNumero(numero);
-
-    if (!plantilla) {
-      abrirWhatsapp(numero);
-      return;
+  private encolarAdjuntos(ficheros: File[]): void {
+    for (const f of ficheros) {
+      const extension = extensionDe(f.name);
+      if (!extension) {
+        this._toastr.warning(`«${f.name}» no tiene extensión, no se puede clasificar`, 'Archivo descartado');
+        continue;
+      }
+      const tipo = tipoPorExtension(extension);
+      this.adjuntos = [...this.adjuntos, {
+        clave: ++this.claveAdjunto,
+        fichero: f,
+        nombre: f.name.replace(/\.[^.]+$/, '').substring(0, 150),
+        extension,
+        tipo,
+        tamano: f.size,
+        // La miniatura sólo para imágenes; para un vídeo haría falta un
+        // <video> oculto por cada uno y no compensa
+        vistaPrevia: tipo === 'imagen' ? URL.createObjectURL(f) : null,
+      }];
     }
-
-    const texto = this.textoDePlantilla(plantilla);
-    this.volcarEnNota(texto);
-    this.whatsappPendiente = { numero, texto };
-
-    // La gestión es de WhatsApp, y su asunto el de la plantilla: se ponen
-    // solos porque ya se sabe, no por ahorrarle dos clics a nadie.
-    this.form.controls['tipo'].setValue('WHATSAPP');
-    this.form.controls['asunto'].setValue(plantilla.asunto ?? '');
-    this.asuntoInicial = plantilla.asunto ?? null;
-    this.preseleccionarAsunto();
-
-    this._toastr.info(
-      'Se enviará al guardar la gestión.', plantilla.nombre, { timeOut: 3500 },
-    );
   }
 
-  /** El texto de una respuesta, ya con el nombre del cliente y el del vendedor. */
-  textoDePlantilla(plantilla: WhatsappPlantillaModel): string {
-    const esEmpresa = this.cliente?.tipo_cliente === 'EMPRESA';
-    return aplicarPlantilla(plantilla.texto, {
-      cliente:  this.cliente?.nombre_completo,
-      nombre:   primerNombre(this.cliente?.nombre_completo, esEmpresa),
-      vendedor: this.nombreDelUsuario,
-      empresa:  this.nombreDeLaEmpresa,
-    });
+  quitarAdjunto(clave: number): void {
+    const f = this.adjuntos.find(a => a.clave === clave);
+    if (f?.vistaPrevia) { URL.revokeObjectURL(f.vistaPrevia); }
+    this.adjuntos = this.adjuntos.filter(a => a.clave !== clave);
+  }
+
+  /** El enlace con el que se ve uno ya guardado. */
+  urlDelAdjunto(a: ArchivoCliente): string {
+    return this._archivoService.urlDe(a.id);
   }
 
   /**
-   * Pone el mensaje en «Qué se habló».
+   * Quitar uno que ya estaba.
    *
-   * Si ya había algo escrito no se pisa: se añade debajo. Lo que estaba
-   * puesto lo escribió alguien a mano, y perderlo por pulsar una respuesta
-   * sería la peor forma de enterarse.
+   * Se borra de verdad y en el acto, no al guardar: estos adjuntos no salen en
+   * la pestaña de Archivos del cliente —son de esta conversación—, así que si
+   * no se pudieran quitar desde aquí no se podrían quitar desde ningún sitio.
    */
-  private volcarEnNota(texto: string): void {
-    const nota = this.form.controls['nota'];
-    const loQueHay = (nota.value ?? '').trim();
+  async borrarAdjuntoGuardado(a: ArchivoCliente): Promise<void> {
+    const confirmar = await Swal.fire({
+      title: '¿Quitar el adjunto?',
+      html: `Se va a borrar <b>${a.nombre}</b> de esta gestión.<br>`
+          + '<span class="text-muted">El archivo se elimina del servidor.</span>',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, quitar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc3545',
+    });
+    if (!confirmar.isConfirmed) { return; }
 
-    nota.setValue(loQueHay ? loQueHay + '\n\n' + texto : texto);
-    nota.markAsDirty();
-    nota.markAsTouched();
+    try {
+      const res: any = await firstValueFrom(this._archivoService.deleteArchivo(a.id));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo quitar el adjunto', 'Error');
+        return;
+      }
+      this.adjuntosGuardados = this.adjuntosGuardados.filter(x => x.id !== a.id);
+      this._toastr.success(res.message, '', { timeOut: 2000 });
+    } catch (error) {
+      console.error('Error al quitar el adjunto:', error);
+    }
+  }
+
+  /** Los que ya tiene la gestión que se está modificando. */
+  private async cargarAdjuntos(): Promise<void> {
+    if (!this.gestion?.id) { return; }
+    try {
+      const res: any = await firstValueFrom(this._archivoService.archivosDeGestion(this.gestion.id));
+      this.adjuntosGuardados = res?.status === 'success' ? (res.data ?? []) : [];
+    } catch (error) {
+      console.error('Error al cargar los adjuntos de la gestión:', error);
+      this.adjuntosGuardados = [];
+    }
+  }
+
+  /**
+   * Sube los elegidos y los cuelga de la gestión que acaba de guardarse.
+   *
+   * Si uno falla se avisa y se sigue con los demás: la gestión ya está
+   * guardada y perderla por un fichero sería el peor cambio posible.
+   *
+   * Devuelve los ids que sí quedaron, que son los que se van al portapapeles.
+   */
+  private async subirAdjuntos(gestionId: number): Promise<number[]> {
+    const ids: number[] = [];
+    if (!this.adjuntos.length || !this.cliente?.id) { return ids; }
+
+    for (const a of this.adjuntos) {
+      try {
+        const subida: any = await firstValueFrom(
+          this._archivoService.subirArchivo(this.cliente.id, a.fichero).pipe(
+            filter((e: HttpEvent<any>) => e.type === HttpEventType.Response),
+            map((e: any) => e.body),
+          ));
+        if (subida?.status !== 'success') { throw new Error(subida?.message || 'No se pudo subir'); }
+
+        const d = subida.data;
+        const res: any = await firstValueFrom(this._archivoService.addArchivo({
+          cliente_id: this.cliente.id,
+          gestion_id: gestionId,
+          origen: 'gestion',
+          nombre: (a.nombre ?? '').trim() || d.nombre_original,
+          archivo: d.archivo,
+          tipo: d.tipo,
+          extension: d.extension,
+          mime: d.mime,
+          tamano: d.tamano,
+        }));
+        if (res?.status !== 'success') { throw new Error(res?.message || 'No se pudo guardar el registro'); }
+
+        if (res.data?.id) { ids.push(res.data.id); }
+      } catch (error: any) {
+        console.error('Error al adjuntar un archivo a la gestión:', error);
+        this._toastr.warning(
+          `«${a.nombre}» no se pudo adjuntar. La gestión sí quedó guardada.`,
+          'Adjunto', { timeOut: 7000, closeButton: true },
+        );
+      }
+    }
+    return ids;
   }
 
   /** ¿Hay un WhatsApp esperando a que se guarde? Lo dice el botón del pie. */
@@ -281,16 +312,39 @@ export class SaveGestionComponent implements OnInit {
   /**
    * Abre el chat con el mensaje, ya con la gestión guardada.
    *
-   * Si el navegador bloquea la pestaña no se pierde nada: la gestión está
-   * escrita y el aviso dice qué pasó, con lo que se puede abrir a mano.
+   * CON ADJUNTOS cambia quién abre el chat. Se avisa UNA sola vez al ayudante
+   * del puesto y él hace todo en orden: copia los archivos, abre la
+   * conversación y pega. No es un capricho: Chrome sólo deja abrir una
+   * aplicación externa durante unos segundos después del clic, y entre guardar
+   * la gestión y subir los archivos ese permiso se agota, así que el primer
+   * aviso sale y el segundo se pierde en silencio. Con uno solo no hay segundo
+   * que perder.
+   *
+   * Si el puesto no tiene el ayudante instalado, Windows no reconoce micrm3:
+   * y no pasa nada; por eso ahí se abre el chat por las bravas, sin adjuntos,
+   * que es mejor que no abrir nada.
    */
-  private enviarWhatsappPendiente(): void {
+  private enviarWhatsappPendiente(idsAdjuntos: number[] = []): void {
     const pendiente = this.whatsappPendiente;
     if (!pendiente?.numero) { return; }
-
-    const comoFue = abrirWhatsapp(pendiente.numero, pendiente.texto);
     this.whatsappPendiente = null;
 
+    if (idsAdjuntos.length) {
+      lanzarProtocolo('micrm3://enviar'
+        + '?ids=' + idsAdjuntos.join(',')
+        + '&tel=' + encodeURIComponent(pendiente.numero)
+        + '&via=' + this.destinoWhatsapp
+        + '&texto=' + encodeURIComponent(pendiente.texto));
+
+      this._toastr.info(
+        (idsAdjuntos.length === 1 ? 'El adjunto se copia' : `Los ${idsAdjuntos.length} adjuntos se copian`)
+          + ' y se pegan en la conversación. Si no se pegan solos, Ctrl+V en WhatsApp.',
+        'Adjuntos', { timeOut: 7000, closeButton: true },
+      );
+      return;
+    }
+
+    const comoFue = abrirWhatsapp(pendiente.numero, pendiente.texto);
     if (comoFue === 'bloqueado') {
       this._toastr.warning(
         'La gestión quedó guardada, pero el navegador no dejó abrir WhatsApp. Permita las ventanas emergentes de esta página.',
@@ -299,43 +353,9 @@ export class SaveGestionComponent implements OnInit {
     }
   }
 
-  /** Quien está usando el CRM, para firmar el mensaje. */
-  private get nombreDelUsuario(): string {
-    try {
-      const u = JSON.parse(localStorage.getItem('user') ?? '{}');
-      return u?.name || u?.login_user || '';
-    } catch { return ''; }
-  }
-
-  /** Cómo se llama la empresa en los mensajes (la misma clave que la ficha). */
-  private get nombreDeLaEmpresa(): string {
-    try { return localStorage.getItem('miCRM3.empresa') ?? ''; } catch { return ''; }
-  }
-
-  /** De WhatsApp Web a la aplicación instalada y al revés. */
-  public get destinoWhatsapp(): 'web' | 'app' {
+  /** De WhatsApp Web a la aplicación instalada: lo elige la ficha, aquí se lee. */
+  private get destinoWhatsapp(): 'web' | 'app' {
     try { return localStorage.getItem('miCRM3.whatsapp') === 'app' ? 'app' : 'web'; } catch { return 'web'; }
-  }
-
-  alternarDestinoWhatsapp(): void {
-    const nuevo = this.destinoWhatsapp === 'app' ? 'web' : 'app';
-    try { localStorage.setItem('miCRM3.whatsapp', nuevo); } catch { /* sin storage */ }
-    this._toastr.info(
-      nuevo === 'app' ? 'Los chats se abrirán en la aplicación instalada' : 'Los chats se abrirán en WhatsApp Web',
-      'WhatsApp', { timeOut: 2500 },
-    );
-  }
-
-  /** Al portapapeles, para pegarlo donde haga falta. */
-  async copiar(numero: string): Promise<void> {
-    this.usarNumero(numero);
-    try {
-      await navigator.clipboard.writeText(numero);
-      this._toastr.success('El teléfono se copió al portapapeles', '', { timeOut: 1500 });
-    } catch {
-      // Sin permiso o sin https: no es grave, no se avisa con un error
-      console.warn('No se pudo copiar al portapapeles');
-    }
   }
 
   /**
@@ -423,32 +443,19 @@ export class SaveGestionComponent implements OnInit {
                 : this.modo === 'editar'    ? 'Modificar gestión'
                 : 'Registrar gestión';
 
-    this.telefonos = [this.cliente?.celular, this.cliente?.telefono]
-      .filter(Boolean)
-      .map(t => ({ id: String(t), name: String(t) }));
     this.contactosCombo = (this.contactos ?? [])
       .filter(c => c.id)
       .map(c => ({ id: c.id as number, name: c.cargo ? `${c.nombres} (${c.cargo})` : c.nombres }));
 
     this.initializeForm();
     this.cargarCatalogo();
-    this.cargarPlantillasWhatsapp();
+    this.cargarAdjuntos();
   }
 
-  /**
-   * Las respuestas de WhatsApp (ventas.whatsapp_plantillas).
-   *
-   * El servicio las guarda en memoria, así que abrir el modal diez veces no
-   * son diez consultas. Si falla, el menú se queda con «Abrir el chat sin
-   * mensaje»: se puede escribir igual, que es lo que importa.
-   */
-  private async cargarPlantillasWhatsapp(): Promise<void> {
-    try {
-      const res: any = await firstValueFrom(this._plantillaWaService.activas());
-      this.plantillasWhatsapp = res?.status === 'success' ? (res.data ?? []) : [];
-    } catch (error) {
-      console.error('Error al cargar las respuestas de WhatsApp:', error);
-      this.plantillasWhatsapp = [];
+  /** Las miniaturas son URLs de objeto: si no se sueltan, el navegador se las queda. */
+  ngOnDestroy(): void {
+    for (const a of this.adjuntos) {
+      if (a.vistaPrevia) { URL.revokeObjectURL(a.vistaPrevia); }
     }
   }
 
@@ -649,6 +656,11 @@ export class SaveGestionComponent implements OnInit {
         return;
       }
 
+      // Los adjuntos van ahora, que ya hay gestión a la que colgarlos. Antes
+      // de avisar de que todo fue bien: si alguno falla, el aviso sale junto
+      // al éxito y no después de haberse cerrado el modal.
+      const idsAdjuntos = await this.subirAdjuntos(res.data?.id ?? this.gestion?.id);
+
       this.guardado.emit(res.data);
       this._toastr.success(res.message, 'Éxito', { closeButton: true });
 
@@ -656,7 +668,7 @@ export class SaveGestionComponent implements OnInit {
       // modal porque window.open cuelga del gesto que empezó todo esto, y
       // cerrando primero algunos navegadores lo toman por una ventana
       // emergente y la bloquean.
-      this.enviarWhatsappPendiente();
+      this.enviarWhatsappPendiente(idsAdjuntos);
 
       this.modal.close(res.data);
     } catch (error) {

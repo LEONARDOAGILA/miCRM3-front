@@ -30,6 +30,19 @@ export class ArchivoClienteService {
     return this._http.get(this.URL_SERVICIOS + 'allArchivos', { params });
   }
 
+  /**
+   * Los adjuntos de una gestión.
+   *
+   * No salen en la pestaña de Archivos del cliente: son lo que se mandó en una
+   * conversación concreta, no documentos suyos.
+   */
+  archivosDeGestion(gestionId: number, incluirInactivos = true): Observable<any> {
+    const params = new HttpParams()
+      .set('gestion_id', String(gestionId ?? ''))
+      .set('inactivos', incluirInactivos ? '1' : '0');
+    return this._http.get(this.URL_SERVICIOS + 'allArchivos', { params });
+  }
+
   /** Sólo deja el fichero en disco; devuelve nombre, tipo, tamaño y mime. */
   subirArchivo(clienteId: number, fichero: File): Observable<HttpEvent<any>> {
     const datos = new FormData();

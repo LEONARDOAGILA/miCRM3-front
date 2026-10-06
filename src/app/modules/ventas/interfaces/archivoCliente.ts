@@ -10,6 +10,8 @@
 export interface ArchivoCliente {
   id: number;
   cliente_id?: number;
+  /** La gestión a la que se adjuntó, si salió de ahí y no de la pestaña */
+  gestion_id?: number | null;
   /** Lo que se lee en la lista */
   nombre: string;
   /** Para qué es. Es el motivo de que esto exista: un archivo sin contexto no sirve */
