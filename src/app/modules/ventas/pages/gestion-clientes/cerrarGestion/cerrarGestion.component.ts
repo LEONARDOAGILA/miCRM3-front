@@ -5,6 +5,7 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
 import { GestionService } from '../../../services/gestion.service';
+import { soloTexto } from '../../../interfaces/plantillasWhatsapp';
 import { LoadingService } from '../../../../../service/loading.service';
 import {
   GestionModel, PRIORIDADES_GESTION, RESULTADOS_GESTION, TIPOS_GESTION, nombreDe,
@@ -45,6 +46,8 @@ export class CerrarGestionComponent implements OnInit {
     private _loadingService: LoadingService,
     private _gestionService: GestionService,
   ) {}
+
+  get ctrlNota(): FormControl { return this.form.controls['nota'] as FormControl; }
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -105,7 +108,8 @@ export class CerrarGestionComponent implements OnInit {
 
     const payload: any = {
       resultado: v.resultado,
-      nota: (v.nota ?? '').trim() || null,
+      // «<p></p>» es el editor vacio, no una nota
+      nota: soloTexto(v.nota) ? (v.nota ?? '').trim() : null,
       duracion_minutos: v.duracion_minutos === '' || v.duracion_minutos === null ? null : Number(v.duracion_minutos),
     };
     if (v.programar) {

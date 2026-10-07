@@ -1,137 +1,72 @@
 <!-- ============================================================
-     NOTA DEL CLIENTE (escribir / corregir)
+     CAMPO DE TEXTO CON FORMATO
 
-     Mismo lenguaje que el visor: fondo gris y la nota sobre una
-     hoja blanca. Se escribe sobre lo que luego se va a leer, en
-     vez de rellenar un formulario y descubrir después cómo queda.
+     Dos piezas: la barra arriba y el área de escritura debajo.
 
-     Las acciones van en una cinta con pestañas, como la de Word, y
-     no en la barra de título del modal: ahí sólo caben cuatro
-     botones pequeños, y cuando pasan de cuatro ya no se distingue
-     lo que hace cada uno. En la cinta cada grupo lleva su nombre
-     debajo, que es lo que permite buscar sin tener que probar.
+     La barra viene de dos formas. Por defecto, una tira seguida: vale para un
+     campo de dos líneas. Con [cinta], la de Word —pestañas y grupos con su
+     nombre debajo—, que es la que hace falta cuando lo que se escribe es un
+     correo entero.
 
-     La barra de título se queda con lo del modal —expandir y
-     cerrar—, que es de la ventana y no del documento.
+     Con [hoja] el área se convierte en un papel blanco centrado sobre fondo
+     gris, como en la pestaña Notas; con [expandible] hay un botón que lo lleva
+     a pantalla completa.
      ============================================================ -->
 
-<panel [title]="titulo_modal"
-       headerClass="bg-cyan-700"
-       [noButtonCollapse]="true"
-       [noButtonReload]="true"
-       [noButtonRemove]="true"
-       ButtonRemoveModal="true"
-       (panelRemovedModal)="modal.dismiss()">
+<div class="cne" #caja
+     [class.is-expandido]="expandido"
+     [class.is-bloqueado]="soloLectura"
+     [class.is-cinta]="cinta">
 
+  <!-- El selector de fichero, escondido: el botón de la cinta lo dispara. El
+       de ngx-editor pide una URL, y lo que hace falta es coger un fichero. -->
   <input #selectorImagen type="file" accept="image/*" hidden (change)="alElegirImagen($event)">
-  <input #selectorWord type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-         hidden (change)="alElegirWord($event)">
 
-  <!-- Las escuchas de pegar y soltar se ponen a mano EN CAPTURA (ver
-       ngAfterViewInit): en burbujeo llegan después de que ProseMirror ya haya
-       pegado, y entonces ya no hay nada que cambiar. -->
-  <div class="nota-edicion" #cajaEdicion (dragover)="$event.preventDefault()">
+  @if (cinta) {
 
     <!-- ========================= LA CINTA ========================= -->
     <div class="cinta">
 
-      <!-- Las pestañas -->
       <div class="cinta__pestanas">
-        <button type="button" class="cinta__pestana" [class.is-activa]="pestanaCinta === 'archivo'"
-                (click)="pestanaCinta = 'archivo'">Archivo</button>
-        <button type="button" class="cinta__pestana" [class.is-activa]="pestanaCinta === 'inicio'"
-                (click)="pestanaCinta = 'inicio'">Inicio</button>
-        <button type="button" class="cinta__pestana" [class.is-activa]="pestanaCinta === 'insertar'"
-                (click)="pestanaCinta = 'insertar'">Insertar</button>
+        @if (archivo) {
+          <button type="button" class="cinta__pestana" [class.is-activa]="pestana === 'archivo'"
+                  (click)="pestana = 'archivo'">Archivo</button>
+        }
+        <button type="button" class="cinta__pestana" [class.is-activa]="pestana === 'inicio'"
+                (click)="pestana = 'inicio'">Inicio</button>
+        <button type="button" class="cinta__pestana" [class.is-activa]="pestana === 'insertar'"
+                (click)="pestana = 'insertar'">Insertar</button>
 
         <!-- Contextual, como las «Herramientas de tabla» de Word: aparece sola
              al meter el cursor en una tabla y se va al salir -->
         @if (enTabla) {
           <button type="button" class="cinta__pestana cinta__pestana--contextual"
-                  [class.is-activa]="pestanaCinta === 'tabla'"
-                  (click)="pestanaCinta = 'tabla'">Tabla</button>
+                  [class.is-activa]="pestana === 'tabla'"
+                  (click)="pestana = 'tabla'">Tabla</button>
+        }
+
+        @if (expandible) {
+          <button type="button" class="cne__expandir cne__expandir--cinta"
+                  [title]="expandido ? 'Volver al tamaño normal (Esc)' : 'Pantalla completa'"
+                  (click)="alternarExpandido()">
+            <i class="fa" [ngClass]="expandido ? 'fa-compress' : 'fa-expand'"></i>
+          </button>
         }
 
         <!-- La cuenta, como la barra de estado de Word pero arriba: aquí no hay
              pie donde ponerla -->
-        <span class="cinta__cuenta" title="Palabras y caracteres de la nota">
+        <span class="cinta__cuenta" title="Palabras y caracteres">
           {{ conteo.palabras }} {{ conteo.palabras === 1 ? 'palabra' : 'palabras' }} · {{ conteo.caracteres }}
         </span>
       </div>
 
       <!-- Los grupos de la pestaña abierta -->
       <div class="cinta__grupos">
-        @switch (pestanaCinta) {
+        @switch (pestana) {
 
-          <!-- ---------------- ARCHIVO ---------------- -->
+          <!-- ---------------- ARCHIVO (lo pone la pantalla) ---------------- -->
           @case ('archivo') {
-            <div class="cinta__grupo">
-              <div class="cinta__grupo__fila">
-                <button type="button" class="cinta__btn cinta__btn--grande cinta__btn--principal"
-                        title="Guardar la nota" [disabled]="guardando" (click)="guardar()">
-                  @if (guardando) {
-                    <i class="fa fa-spinner fa-spin"></i><span>Guardando…</span>
-                  } @else {
-                    <i class="fa fa-floppy-disk"></i><span>Guardar</span>
-                  }
-                </button>
-
-                <button type="button" class="cinta__btn cinta__btn--grande"
-                        title="Imprimir la nota (o guardarla como PDF)" (click)="imprimir()">
-                  <i class="fa fa-print"></i><span>Imprimir</span>
-                </button>
-              </div>
-              <div class="cinta__grupo__etiqueta">Documento</div>
-            </div>
-
-            <div class="cinta__grupo">
-              <div class="cinta__grupo__fila">
-                <!-- Traer un .docx: lo que ya está escrito en Word no hay que
-                     volver a escribirlo aquí -->
-                <button type="button" class="cinta__btn cinta__btn--grande"
-                        title="Traer el contenido de un documento de Word"
-                        [disabled]="importando || subiendoImagen" (click)="abrirSelectorWord()">
-                  @if (importando) {
-                    <i class="fa fa-spinner fa-spin"></i><span>Leyendo…</span>
-                  } @else {
-                    <i class="fa fa-file-import"></i><span>Importar</span>
-                  }
-                </button>
-
-                <button type="button" class="cinta__btn cinta__btn--grande"
-                        title="Bajar la nota como documento de Word"
-                        [disabled]="exportando" (click)="exportarWord()">
-                  @if (exportando) {
-                    <i class="fa fa-spinner fa-spin"></i><span>Generando…</span>
-                  } @else {
-                    <i class="fa fa-file-word"></i><span>Exportar</span>
-                  }
-                </button>
-              </div>
-              <div class="cinta__grupo__etiqueta">Word</div>
-            </div>
-
-            <div class="cinta__grupo cinta__grupo--ancho">
-              <div class="cinta__grupo__fila">
-                <span class="cinta__color">
-                  <span class="cinta__color__punto" [style.background-color]="tinteDe(color)"></span>
-                  <select class="cinta__select" [(ngModel)]="color" title="Etiqueta de la nota">
-                    @for (c of colores; track c.id) {
-                      <option [value]="c.id">{{ c.nombre }}</option>
-                    }
-                  </select>
-                </span>
-
-                <!-- Fijar desde aquí ahorra el segundo clic en la lista cuando
-                     se está escribiendo justo la nota que hay que tener siempre
-                     delante -->
-                <label class="cinta__fijar" [class.is-activa]="fijada" title="Mantenerla arriba del todo">
-                  <input type="checkbox" [(ngModel)]="fijada">
-                  <i class="fa fa-thumbtack"></i>Fijar
-                </label>
-              </div>
-              <div class="cinta__grupo__etiqueta">Propiedades</div>
-            </div>
+            <ng-container *ngTemplateOutlet="archivo"></ng-container>
           }
 
           <!-- ---------------- INICIO ---------------- -->
@@ -150,6 +85,7 @@
                      Van de desplegable porque son listas, no interruptores. -->
                 <select class="cinta__select cinta__select--familia"
                         title="Tipo de letra del texto seleccionado"
+                        [disabled]="soloLectura"
                         [value]="tipografiaActual"
                         (change)="cambiarTipografia($any($event.target).value)">
                   @for (t of tipografiasVisibles; track t.valor) {
@@ -159,6 +95,7 @@
 
                 <select class="cinta__select cinta__select--tamano"
                         title="Tamaño de letra, en puntos"
+                        [disabled]="soloLectura"
                         [value]="tamanoActual"
                         (change)="cambiarTamano($any($event.target).value)">
                   @for (t of tamanosVisibles; track t.valor) {
@@ -190,11 +127,9 @@
           @case ('insertar') {
             <div class="cinta__grupo">
               <div class="cinta__grupo__fila">
-                <!-- El botón de imagen es nuestro y no el de ngx-editor: el suyo
-                     pide una URL, y lo que hace falta es subir el fichero -->
                 <button type="button" class="cinta__btn cinta__btn--grande"
-                        title="Insertar una imagen en la nota"
-                        [disabled]="subiendoImagen" (click)="abrirSelectorImagen()">
+                        title="Insertar una imagen"
+                        [disabled]="subiendoImagen || soloLectura" (click)="abrirSelectorImagen()">
                   @if (subiendoImagen) {
                     <i class="fa fa-spinner fa-spin"></i><span>Subiendo…</span>
                   } @else {
@@ -208,7 +143,8 @@
             <div class="cinta__grupo">
               <div class="cinta__grupo__fila">
                 <button type="button" class="cinta__btn cinta__btn--grande"
-                        title="Insertar una tabla de 3x3" (click)="insertarTabla()">
+                        title="Insertar una tabla de 3x3"
+                        [disabled]="soloLectura" (click)="insertarTabla()">
                   <i class="fa fa-table"></i><span>Tabla</span>
                 </button>
               </div>
@@ -217,22 +153,25 @@
 
             <div class="cinta__grupo">
               <div class="cinta__grupo__fila">
-                <ngx-editor-menu [editor]="editor" [toolbar]="tbInsertar"></ngx-editor-menu>
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbEnlaces"></ngx-editor-menu>
               </div>
               <div class="cinta__grupo__etiqueta">Enlaces y líneas</div>
             </div>
 
-            <!-- Se guarda el hueco, no el dato: se cambia al leer la nota, al
-                 imprimirla y al exportarla (ver huecosPlantilla.ts) -->
-            <div class="cinta__grupo">
-              <div class="cinta__grupo__fila">
-                <app-huecosPlantilla [grupos]="grupos" (elegido)="insertarHueco($event)">
-                </app-huecosPlantilla>
+            @if (huecos) {
+              <div class="cinta__grupo">
+                <div class="cinta__grupo__fila">
+                  <app-huecosPlantilla
+                    [grupos]="huecos"
+                    [desactivado]="soloLectura"
+                    (elegido)="insertarTexto($event)">
+                  </app-huecosPlantilla>
+                </div>
+                <div class="cinta__grupo__etiqueta">Datos del cliente</div>
               </div>
-              <div class="cinta__grupo__etiqueta">Datos del cliente</div>
-            </div>
+            }
 
-            <span class="cinta__ayuda">También puedes pegar texto e imágenes, o arrastrarlas a la hoja</span>
+            <span class="cinta__ayuda">También puedes pegar texto e imágenes</span>
           }
 
           <!-- ---------------- TABLA (contextual) ---------------- -->
@@ -295,20 +234,78 @@
       </div>
     </div>
 
-    <!-- ========================= LA HOJA ========================= -->
-    <div class="nota-fondo">
-      <div class="nota-hoja">
+  } @else {
 
-        <!-- El título se escribe donde se va a leer: en grande, en su sitio.
-             La etiqueta y el «fijar» se fueron a la cinta (Archivo >
-             Propiedades), que es donde van las propiedades del documento. -->
-        <input class="nota-titulo" maxlength="150"
-               placeholder="Título de la nota"
-               [(ngModel)]="titulo">
+    <!-- ---------- La barra de una tira ---------- -->
+    <div class="cne__barra">
+      <ngx-editor-menu [editor]="editor" [toolbar]="tbDeshacer"></ngx-editor-menu>
 
-        <ngx-editor class="nota-cuerpo" [editor]="editor" [(ngModel)]="contenido" outputFormat="html"
-                    placeholder="Escribe aquí lo que hay que saber de este cliente…"></ngx-editor>
-      </div>
+      @if (!barraCorta) {
+        <!-- La letra y el tamaño son nuestros: ngx-editor no los trae -->
+        <span class="cne__selects">
+          <select class="form-select form-select-sm cne__letra"
+                  title="Letra"
+                  [disabled]="soloLectura"
+                  [ngModel]="tipografiaActual"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="cambiarTipografia($event)">
+            @for (t of tipografiasVisibles; track t.valor) {
+              <option [value]="t.valor" [style.font-family]="t.valor || null">{{ t.nombre }}</option>
+            }
+          </select>
+          <select class="form-select form-select-sm cne__tamano"
+                  title="Tamaño de letra"
+                  [disabled]="soloLectura"
+                  [ngModel]="tamanoActual"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="cambiarTamano($event)">
+            @for (t of tamanosVisibles; track t.valor) {
+              <option [value]="t.valor">{{ t.nombre }}</option>
+            }
+          </select>
+        </span>
+      }
+
+      <ngx-editor-menu [editor]="editor" [toolbar]="tbFuente"></ngx-editor-menu>
+
+      @if (!barraCorta) {
+        <ngx-editor-menu [editor]="editor" [toolbar]="tbParrafo"></ngx-editor-menu>
+        <ngx-editor-menu [editor]="editor" [toolbar]="tbEstilos"></ngx-editor-menu>
+        <ngx-editor-menu [editor]="editor" [toolbar]="tbInsertar"></ngx-editor-menu>
+      }
+
+      @if (expandible) {
+        <button type="button" class="cne__expandir"
+                [title]="expandido ? 'Volver al tamaño normal (Esc)' : 'Pantalla completa'"
+                (click)="alternarExpandido()">
+          <i class="fa" [ngClass]="expandido ? 'fa-compress' : 'fa-expand'"></i>
+        </button>
+      }
+    </div>
+  }
+
+  <!-- ---------- Donde se escribe ---------- -->
+  <div class="cne__fondo" [class.is-hoja]="hoja" [style.--cne-alto]="alto">
+    <div class="cne__hoja">
+      <ngx-editor [editor]="editor"
+                  [ngModel]="valor"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="alEscribir($event)"
+                  [placeholder]="placeholder"
+                  outputFormat="html">
+      </ngx-editor>
     </div>
   </div>
-</panel>
+
+  @if (subiendoImagen) {
+    <p class="cne__subiendo">
+      <i class="fa fa-spinner fa-spin fa-fw"></i>Subiendo la imagen…
+    </p>
+  }
+</div>
+
+<!-- A pantalla completa el campo sale de su sitio, así que se deja un hueco
+     del mismo alto: sin esto, lo de debajo del formulario da un salto. -->
+@if (expandido) {
+  <div class="cne__hueco" [style.height]="alto"></div>
+}

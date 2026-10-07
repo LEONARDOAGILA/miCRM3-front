@@ -45,6 +45,14 @@ export interface GestionModel {
   gestion_origen_id?: number | null;
   /** Pendiente cuya hora ya pasó (lo calcula la base) */
   vencida?: boolean;
+  /**
+   * Cuántos archivos se adjuntaron (lo cuenta ventas.fn_gestiones_json).
+   *
+   * Lo trae la fila para que el historial pueda pintar el clip sólo donde hay
+   * algo: con el clip siempre, el vendedor tiene que ir pulsando una por una
+   * para descubrir que no hay nada, y eso no lo hace nadie.
+   */
+  num_adjuntos?: number;
 
   created_at?: string;
   updated_at?: string;

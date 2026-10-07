@@ -178,6 +178,15 @@
                   </span>
 
                   <span class="cat-acciones">
+                    <!-- El mensaje que se le ofrece mandar al cliente con este
+                         asunto. Encendido cuando lo tiene: así se ve de un
+                         vistazo cuáles salen en el menú de respuestas. -->
+                    <button type="button" class="btn-icon btn-mensaje"
+                            [class.tiene-mensaje]="tieneMensaje(a)"
+                            [title]="tieneMensaje(a) ? 'Ver o cambiar el mensaje' : 'Escribir el mensaje que se enviará'"
+                            (click)="abrirMensaje(a)">
+                      <i class="fa fa-comment-dots"></i>
+                    </button>
                     <button type="button" class="btn-icon btn-editar" title="Modificar"
                             [disabled]="accesoModel?.editar === false" (click)="editarAsunto(a)">
                       <i class="fa fa-pen"></i>

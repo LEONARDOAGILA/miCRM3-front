@@ -1,0 +1,147 @@
+<!-- ============================================================
+     EL MENSAJE DE UN ASUNTO
+
+     Va en un <panel>, como la nota del cliente: aquí se escribe un correo, y
+     para eso hace falta el botón de expandir de la barra de título. Ese es
+     también el motivo de que el campo no traiga el suyo: con el del panel ya
+     hay uno, y dos botones de expandir juntos no se distinguen.
+
+     EL EDITOR CAMBIA SEGÚN EL TIPO. WhatsApp no entiende HTML: ahí va un campo
+     de texto a secas, con su burbuja de muestra debajo y el pie de siempre.
+     Para el resto —correo, sobre todo— va el editor con la cinta de Word, y
+     entonces el guardar vive en su pestaña «Archivo», como en las notas; el
+     pie del modal sobra y la muestra se ve imprimiendo, que es además donde
+     de verdad se aprecia cómo queda.
+     ============================================================ -->
+
+<panel [title]="titulo"
+       headerClass="bg-cyan-700"
+       [noButtonCollapse]="true"
+       [noButtonReload]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       (panelRemovedModal)="modal.dismiss()">
+
+  <div class="mensaje-cuerpo">
+
+    <p class="mensaje-ayuda">
+      <i class="fa fa-circle-info fa-fw"></i>
+      Es lo que se le ofrece enviar al cliente cuando se registra una gestión con
+      este asunto. Si se deja vacío, el asunto sigue existiendo pero no aparece
+      entre las respuestas.
+    </p>
+
+
+    <!-- ---------- El mensaje ---------- -->
+    @if (esTextoPlano) {
+      <!-- Aquí no hay cinta donde meterlos, así que van sueltos encima del
+           campo, que es donde se los va a buscar -->
+      <div class="mensaje-huecos">
+        <span class="mensaje-huecos__rotulo">Insertar:</span>
+        <app-huecosPlantilla
+          [desactivado]="soloLectura"
+          (elegido)="insertarHueco($event)">
+        </app-huecosPlantilla>
+      </div>
+
+      <textarea #areaTexto
+                class="form-control mensaje-plano"
+                rows="7"
+                maxlength="4000"
+                [disabled]="soloLectura"
+                [(ngModel)]="contenido"
+                placeholder="Hola {{ '{nombre}' }}, le saluda {{ '{vendedor}' }}…"></textarea>
+      <p class="mensaje-pista">
+        <i class="fab fa-whatsapp fa-fw text-success"></i>
+        WhatsApp no admite formato, así que aquí se escribe en texto corrido.
+      </p>
+
+      <!-- Aquí sí se queda la muestra: no hay cinta donde poner el imprimir, y
+           ver la burbuja es lo único que dice cómo le va a llegar -->
+      <div class="mensaje-previa">
+        <div class="mensaje-previa__rotulo">
+          <i class="fa fa-eye fa-fw me-1"></i>Así le llega al cliente
+        </div>
+        <div class="mensaje-previa__globo">{{ vistaPrevia || 'Escribe el mensaje para verlo aquí.' }}</div>
+        <p class="mensaje-pista mb-0">
+          <i class="fa fa-circle-info fa-fw"></i>
+          Es un ejemplo: el nombre, el vendedor y la empresa se cambian por los de
+          verdad al enviarlo.
+        </p>
+      </div>
+    } @else {
+      <app-campoNgxEditor
+        #campo
+        class="mensaje-campo"
+        [huecos]="grupos"
+        [(ngModel)]="contenido"
+        [soloLectura]="soloLectura"
+        [placeholder]="'Escribe aquí el cuerpo del mensaje…'"
+        [cinta]="true"
+        [archivo]="pestanaArchivo"
+        [hoja]="true"
+        alto="16rem">
+      </app-campoNgxEditor>
+    }
+
+  </div>
+
+  <!-- El pie, sólo en WhatsApp: con la cinta, el guardar está en «Archivo» -->
+  @if (esTextoPlano) {
+    <app-modal-footer afterFooter
+      [isDisabled]="!soloLectura"
+      [cargando]="guardando"
+      [textoCerrar]="soloLectura ? 'Cerrar' : 'Salir'"
+      (onClose)="modal.dismiss()"
+      (onSubmit)="guardar()">
+    </app-modal-footer>
+  }
+</panel>
+
+<!-- ============================================================
+     LA PESTAÑA «ARCHIVO» DE LA CINTA
+
+     Se escribe aquí y no dentro del campo porque lo que va en ella es de esta
+     pantalla: el campo no sabe dónde se guarda lo que se escribe. Las clases
+     son las de la cinta, y por eso este css se trae cinta.css con un @import.
+     ============================================================ -->
+<ng-template #pestanaArchivo>
+  <div class="cinta__grupo">
+    <div class="cinta__grupo__fila">
+      @if (!soloLectura) {
+        <button type="button" class="cinta__btn cinta__btn--grande cinta__btn--principal"
+                title="Guardar el mensaje de este asunto"
+                [disabled]="guardando" (click)="guardar()">
+          @if (guardando) {
+            <i class="fa fa-spinner fa-spin"></i><span>Guardando…</span>
+          } @else {
+            <i class="fa fa-floppy-disk"></i><span>Guardar</span>
+          }
+        </button>
+      }
+
+      <!-- Imprimir hace de muestra: sale el mensaje con el nombre, el vendedor
+           y la empresa ya cambiados, en la hoja y a su tamaño -->
+      <button type="button" class="cinta__btn cinta__btn--grande"
+              title="Ver cómo le llega al cliente, en una hoja (o guardarlo en PDF)"
+              (click)="imprimir()">
+        <i class="fa fa-print"></i><span>Imprimir</span>
+      </button>
+    </div>
+    <div class="cinta__grupo__etiqueta">Documento</div>
+  </div>
+
+  <div class="cinta__grupo">
+    <div class="cinta__grupo__fila">
+      <button type="button" class="cinta__btn cinta__btn--grande"
+              title="Salir sin guardar" (click)="modal.dismiss()">
+        <i class="fa fa-arrow-right-from-bracket"></i><span>Salir</span>
+      </button>
+    </div>
+    <div class="cinta__grupo__etiqueta">Cerrar</div>
+  </div>
+
+  <span class="cinta__ayuda">
+    Al imprimir, el nombre, el vendedor y la empresa salen con datos de ejemplo
+  </span>
+</ng-template>

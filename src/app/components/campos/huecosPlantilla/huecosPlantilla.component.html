@@ -1,0 +1,19 @@
+<!-- ============================================================
+     LOS HUECOS, PARA METERLOS SIN ESCRIBIRLOS
+
+     Un desplegable por grupo. La primera opción es el nombre del grupo y no
+     vale: hace de rótulo, que es lo que evita tener que poner una etiqueta
+     aparte encima de cada uno.
+     ============================================================ -->
+
+@for (g of grupos; track g.nombre) {
+  <select class="cinta__select hpl__select"
+          [title]="'Meter un dato de ' + g.nombre + ' donde está el cursor'"
+          [disabled]="desactivado"
+          (change)="alElegir($event)">
+    <option value="">{{ g.nombre }}</option>
+    @for (h of g.huecos; track h.clave) {
+      <option [value]="h.clave" [title]="h.ayuda">{{ h.clave }}</option>
+    }
+  </select>
+}

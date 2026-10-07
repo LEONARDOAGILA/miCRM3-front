@@ -271,9 +271,16 @@ body {
 
        <span class="numero-plano" data-numero="0991234567"></span>
 
-   A cambio no se puede seleccionar con el ratón, así que donde haga
-   falta copiarlo tiene que haber un botón de copiar (o una celda que se
-   pueda editar, como en la grilla de contactos).
+   A cambio NO SE PUEDE SELECCIONAR con el ratón: lo que pinta el CSS no
+   es texto del documento. Por eso donde se usa tiene que haber un botón de
+   copiar (o una celda que se pueda editar, como en la grilla de contactos).
+
+   Y por eso mismo no se usa en todas partes. En las tarjetas de
+   Identificación y Contactabilidad de la ficha el número va como texto de
+   verdad: ahí se copia un trozo a mano a cada rato —el prefijo, los cuatro
+   últimos para confirmar por teléfono— y no poder seleccionarlo estorbaba
+   más de lo que molesta el logotipo de la extensión. Queda en las grillas y
+   en los menús del clic derecho, que es donde más se nota el destrozo.
 
    Esto no apaga la extensión: es cosa de cada navegador. Se apaga en sus
    opciones, con «hide logo & flag» o metiendo el sitio en su lista negra. */

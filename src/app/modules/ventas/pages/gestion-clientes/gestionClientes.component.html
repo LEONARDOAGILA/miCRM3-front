@@ -518,7 +518,7 @@
                       <div class="gc-campo">
                         <span class="gc-campo__rotulo">{{ rotuloIdentificacion }}:</span>
                         <span class="gc-campo__valor">
-                          <span class="numero-plano" [attr.data-numero]="cliente?.numero_identificacion"></span>
+                          <span class="gc-campo__numero">{{ cliente?.numero_identificacion }}</span>
                           <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.numero_identificacion, 'La identificación')">
                             <i class="fa fa-copy"></i>
                           </button>
@@ -552,10 +552,14 @@
                         <span class="gc-campo__rotulo">Celular:</span>
                         <span class="gc-campo__valor">
                           @if (cliente?.celular) {
-                            <!-- El número es sólo texto: para llamar está el
-                                 botón de al lado, y así no se marca por un
-                                 clic de más al ir a seleccionarlo. -->
-                            <span class="gc-campo__numero numero-plano" [attr.data-numero]="cliente?.celular"></span>
+                            <!-- Texto de verdad y no .numero-plano: en esta
+                                 tarjeta hace falta poder seleccionarlo con el
+                                 ratón para copiarlo a mano, y lo que pinta el
+                                 CSS no se puede seleccionar (ver styles.css).
+                                 Sigue sin ser un enlace: para llamar está el
+                                 botón de al lado, y así no se marca por un clic
+                                 de más al ir a seleccionarlo. -->
+                            <span class="gc-campo__numero">{{ cliente?.celular }}</span>
                             <span class="gc-campo__acciones">
                               <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
                                       (click)="llamarConSoftphone(cliente?.celular, cliente?.nombre_completo)">
@@ -584,7 +588,7 @@
                         <span class="gc-campo__rotulo">Teléfono:</span>
                         <span class="gc-campo__valor">
                           @if (cliente?.telefono) {
-                            <span class="gc-campo__numero numero-plano" [attr.data-numero]="cliente?.telefono"></span>
+                            <span class="gc-campo__numero">{{ cliente?.telefono }}</span>
                             <span class="gc-campo__acciones">
                               <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
                                       (click)="llamarConSoftphone(cliente?.telefono, cliente?.nombre_completo)">
@@ -604,6 +608,11 @@
                           @if (cliente?.email) {
                             <a [href]="'mailto:' + cliente?.email" [title]="cliente?.email">{{ cliente?.email }}</a>
                             <span class="gc-campo__acciones">
+                              <button type="button" class="gc-campo__accion gc-campo__accion--correo"
+                                      title="Escribir un correo con Outlook"
+                                      (click)="escribirCorreo(cliente?.email, cliente?.nombre_completo)">
+                                <i class="fa fa-envelope"></i>
+                              </button>
                               <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.email, 'El correo')">
                                 <i class="fa fa-copy"></i>
                               </button>
@@ -1316,7 +1325,7 @@
                         @if (n.fijada) {
                           <i class="fa fa-thumbtack gc-nota__chincheta" title="Fijada arriba"></i>
                         }
-                        <span class="gc-nota__titulo" [title]="n.titulo">{{ n.titulo }}</span>
+                        <span class="gc-nota__titulo" [title]="n.titulo_vista">{{ n.titulo_vista }}</span>
                         <span class="gc-nota__color" [title]="nombreDeColor(n.color)"></span>
                       </div>
 
@@ -1325,7 +1334,7 @@
                            del servidor es la única que no se puede saltar nadie -->
                       <!-- Pulsar el texto también abre: es lo que intenta cualquiera
                            cuando ve que la nota está cortada -->
-                      <div class="gc-nota__cuerpo" [innerHTML]="n.contenido"
+                      <div class="gc-nota__cuerpo" [innerHTML]="n.contenido_vista"
                            title="Leer la nota entera" (click)="verNota(n)"></div>
 
                       <div class="gc-nota__pie">
@@ -1513,11 +1522,16 @@
           <span class="text-truncate">Escribir a {{ menuWa.aQuien || menuWa.numero }}</span>
         </div>
 
+        <!-- Todos los asuntos activos de WhatsApp. Los que traen mensaje van
+             en verde y con él de rótulo emergente; los demás abren el chat en
+             blanco, pero la gestión se registra con su asunto igual. -->
         @for (p of plantillasWhatsapp; track p.id) {
           <button type="button" class="menu-ctx__item" role="menuitem"
-                  [title]="textoDePlantilla(p)"
+                  [title]="traeMensaje(p) ? textoDePlantilla(p) : 'Sin mensaje: abre el chat en blanco y registra la gestión con este asunto'"
                   (click)="cerrarMenuWhatsapp(); escribirPorWhatsapp(menuWa.numero, p, menuWa.aQuien)">
-            <i class="fa {{ p.icono }} fa-fw text-success"></i> {{ p.nombre }}
+            <i class="fa-fw"
+               [ngClass]="traeMensaje(p) ? 'fab fa-whatsapp text-success' : 'fa fa-tag text-secondary'"></i>
+            <span class="text-truncate">{{ p.nombre }}</span>
           </button>
         }
 
@@ -1531,6 +1545,79 @@
                 (click)="cerrarMenuWhatsapp(); alternarDestinoWhatsapp()">
           <i class="fa fa-fw text-secondary" [ngClass]="destinoWhatsapp === 'app' ? 'fa-desktop' : 'fa-globe'"></i>
           {{ destinoWhatsapp === 'app' ? 'Abriendo en la aplicación' : 'Abriendo en WhatsApp Web' }}
+        </button>
+      </div>
+    }
+
+    <!-- ================= MENÚ DE LA LLAMADA =================
+         De qué va la llamada, ANTES de marcar. Se elige, se marca y la
+         gestión se abre con el asunto puesto; el que trae mensaje lo deja de
+         guion en «Qué se habló». Nace donde está el puntero porque lo abren
+         botones de la ficha, de tres grillas y de dos menús contextuales. -->
+    @if (menuTel.visible) {
+      <div #menuTelEl
+           class="menu-ctx menu-wa"
+           role="menu"
+           [style.left.px]="menuTel.x"
+           [style.top.px]="menuTel.y"
+           (click)="$event.stopPropagation()">
+
+        <div class="menu-ctx__cabecera">
+          <i class="fa fa-phone fa-fw text-success"></i>
+          <span class="text-truncate">Llamar a {{ menuTel.aQuien || menuTel.numero }}</span>
+        </div>
+
+        @for (a of asuntosLlamada; track a.id) {
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  [title]="traeMensaje(a) ? textoDePlantilla(a) : 'Sin guion: marca y abre la gestión con este asunto'"
+                  (click)="cerrarMenuLlamada(); llamarConAsunto(a)">
+            <i class="fa-fw"
+               [ngClass]="traeMensaje(a) ? 'fa fa-comment-dots text-success' : 'fa fa-tag text-secondary'"></i>
+            <span class="text-truncate">{{ a.nombre }}</span>
+          </button>
+        }
+
+        <div class="menu-ctx__sep"></div>
+
+        <button type="button" class="menu-ctx__item" role="menuitem"
+                (click)="cerrarMenuLlamada(); llamarConAsunto(null)">
+          <i class="fa fa-phone fa-fw text-secondary"></i> Llamar sin asunto
+        </button>
+      </div>
+    }
+
+    <!-- ================= MENÚ DEL CORREO =================
+         De qué va el correo. Se elige, se abre la gestión con el asunto y el
+         mensaje, y al pulsar «Guardar y enviar» se guarda y Outlook abre el
+         correo ya escrito, para repasarlo y mandarlo. -->
+    @if (menuCorreo.visible) {
+      <div #menuCorreoEl
+           class="menu-ctx menu-wa"
+           role="menu"
+           [style.left.px]="menuCorreo.x"
+           [style.top.px]="menuCorreo.y"
+           (click)="$event.stopPropagation()">
+
+        <div class="menu-ctx__cabecera">
+          <i class="fa fa-envelope fa-fw text-primary"></i>
+          <span class="text-truncate">Escribir a {{ menuCorreo.aQuien || menuCorreo.para }}</span>
+        </div>
+
+        @for (a of asuntosCorreo; track a.id) {
+          <button type="button" class="menu-ctx__item" role="menuitem"
+                  [title]="traeMensaje(a) ? 'Con mensaje preparado' : 'Sin mensaje: abre el correo en blanco con este asunto'"
+                  (click)="cerrarMenuCorreo(); correoConAsunto(a)">
+            <i class="fa-fw"
+               [ngClass]="traeMensaje(a) ? 'fa fa-envelope-open-text text-primary' : 'fa fa-tag text-secondary'"></i>
+            <span class="text-truncate">{{ a.nombre }}</span>
+          </button>
+        }
+
+        <div class="menu-ctx__sep"></div>
+
+        <button type="button" class="menu-ctx__item" role="menuitem"
+                (click)="cerrarMenuCorreo(); correoConAsunto(null)">
+          <i class="fa fa-envelope fa-fw text-secondary"></i> Escribir sin asunto
         </button>
       </div>
     }

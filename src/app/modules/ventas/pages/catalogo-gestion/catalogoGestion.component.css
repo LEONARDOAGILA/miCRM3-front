@@ -276,3 +276,20 @@
 
   .cat-fila__codigo { display: none; }
 }
+
+/* El boton del mensaje: encendido cuando el asunto tiene uno, que es lo que
+   lo pone en el menu de respuestas */
+.btn-icon.btn-mensaje {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.btn-icon.btn-mensaje.tiene-mensaje {
+  border-color: rgba(37, 211, 102, .45);
+  background-color: rgba(37, 211, 102, .12);
+  color: #1da851;
+}
+
+.btn-icon.btn-mensaje:hover {
+  border-color: rgba(37, 211, 102, .45);
+  color: #1da851;
+}

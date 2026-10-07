@@ -181,30 +181,57 @@
                  que volver a ofrecerlas aquí era dar la vuelta a lo que se
                  acaba de hacer. La nota se queda con todo el ancho. -->
             <div class="col-12">
-              <div class="gestion-ficha">
-                <div class="gestion-ficha__titulo"><i class="fa fa-pen fa-fw"></i>Qué se habló</div>
-                <div class="gestion-ficha__cuerpo">
-                  <app-campoTextoArea
-                    [control]="form.controls['nota']"
-                    label="Qué se habló"
-                    placeholder="Lo que dijo el cliente, acuerdos, próximos pasos…"
-                    [maxLength]="4000"
-                    [alto]="86">
-                  </app-campoTextoArea>
+              <!-- En <panel> y no en una tarjeta propia: así trae el botón de
+                   expandir de la barra de título, que es el que hace falta aquí.
+                   Un correo con formato no se escribe en un campo de 10rem, y el
+                   editor ya no lleva el suyo: con el del panel ya hay uno y dos
+                   botones de expandir juntos no se distinguen. -->
+              <panel
+                title="Qué se habló"
+                headerClass="bg-gray-800"
+                icono="editar"
+                fondoGris="true"
+                panelClass="mb-0 gestion-nota"
+                [noButtonReload]="true"
+                [noButtonCollapse]="true"
+                [noButtonRemove]="true">
 
-                  <!-- Que se vea que hay un mensaje en cola, y no sólo en el
-                       botón del pie: aquí es donde se está mirando -->
-                  @if (hayWhatsappPendiente) {
-                    <p class="gestion-wa-encola">
-                      <i class="fab fa-whatsapp fa-fw text-success"></i>
-                      Se enviará a <b>{{ whatsappPendiente?.numero }}</b> al guardar.
-                      <button type="button" class="gestion-wa-encola__quitar"
-                              title="No enviar el mensaje, sólo guardar la gestión"
-                              (click)="cancelarWhatsappPendiente()">No enviar</button>
-                    </p>
-                  }
-                </div>
-              </div>
+                <!-- El mismo editor de la pestaña Notas, y no un textarea: el
+                     mensaje de un asunto de correo viene con formato, y en un
+                     campo llano se leerían las etiquetas. -->
+                <app-campoNgxEditor
+                  class="gestion-nota__campo"
+                  [formControl]="ctrlNota"
+                  [almacen]="almacenDeImagenes"
+                  [avisar]="avisarDelPegado"
+                  [placeholder]="'Lo que dijo el cliente, acuerdos, próximos pasos…'"
+                  [cinta]="true"
+                  [hoja]="true"
+                  alto="10rem">
+                </app-campoNgxEditor>
+
+                <!-- Que se vea que hay un mensaje en cola, y no sólo en el
+                     botón del pie: aquí es donde se está mirando -->
+                @if (hayWhatsappPendiente) {
+                  <p class="gestion-wa-encola">
+                    <i class="fab fa-whatsapp fa-fw text-success"></i>
+                    Se enviará a <b>{{ whatsappPendiente?.numero }}</b> al guardar.
+                    <button type="button" class="gestion-wa-encola__quitar"
+                            title="No enviar el mensaje, sólo guardar la gestión"
+                            (click)="cancelarWhatsappPendiente()">No enviar</button>
+                  </p>
+                }
+
+                @if (hayCorreoPendiente) {
+                  <p class="gestion-wa-encola">
+                    <i class="fa fa-envelope fa-fw text-primary"></i>
+                    Outlook abrirá el correo a <b>{{ correoPendiente?.para }}</b> al guardar.
+                    <button type="button" class="gestion-wa-encola__quitar"
+                            title="No abrir el correo, sólo guardar la gestión"
+                            (click)="cancelarCorreoPendiente()">No enviar</button>
+                  </p>
+                }
+              </panel>
             </div>
 
             <!-- ---------- Adjuntos ----------
@@ -267,7 +294,13 @@
                     Añadir archivos <span class="gestion-adj__pista">o suéltalos aquí</span>
                   </label>
 
-                  @if (adjuntos.length && hayWhatsappPendiente) {
+                  @if (adjuntos.length && hayCorreoPendiente) {
+                    <p class="gestion-adj__aviso">
+                      <i class="fa fa-circle-info fa-fw"></i>
+                      Al guardar van adjuntos en el correo de Outlook. Hace falta
+                      el ayudante instalado en el equipo.
+                    </p>
+                  } @else if (adjuntos.length && hayWhatsappPendiente) {
                     <p class="gestion-adj__aviso">
                       <i class="fa fa-circle-info fa-fw"></i>
                       Al guardar se copian y se pegan en WhatsApp; si no se pegan
@@ -293,8 +326,8 @@
 <app-modal-footer
   [isDisabled]="!guardando"
   [textoCerrar]="'Salir'"
-  [textoGuardar]="hayWhatsappPendiente ? 'Guardar y enviar' : 'Guardar'"
-  [iconoGuardar]="hayWhatsappPendiente ? 'fa-paper-plane' : 'fa-save'"
+  [textoGuardar]="hayEnvioPendiente ? 'Guardar y enviar' : 'Guardar'"
+  [iconoGuardar]="hayEnvioPendiente ? 'fa-paper-plane' : 'fa-save'"
   (onClose)="modal.dismiss()"
   (onSubmit)="onSubmitForm($event)">
 </app-modal-footer>

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -10,6 +11,7 @@ import { PanelModule } from '../../../../components/panel/panel.module';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import { CatalogoGestionService } from '../../services/catalogoGestion.service';
 import { TipoGestion, AsuntoGestion, iconoDelTipo } from '../../interfaces/catalogoGestion';
+import { SaveMensajeAsuntoComponent } from './saveMensajeAsunto/saveMensajeAsunto.component';
 
 /**
  * Mantenimiento de los tipos de gestión y de sus asuntos.
@@ -67,6 +69,7 @@ export class CatalogoGestionComponent implements OnInit {
     private activeRoute: ActivatedRoute,
     private _toastr: ToastrService,
     private _catalogoService: CatalogoGestionService,
+    private modal: NgbModal,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
   }
@@ -249,6 +252,33 @@ export class CatalogoGestionComponent implements OnInit {
   // ================================================================
   // ASUNTOS
   // ================================================================
+
+  /** ¿Este asunto ofrece mensaje? Es lo que lo pone en el menú de respuestas. */
+  tieneMensaje(a: AsuntoGestion): boolean {
+    return (a?.mensaje ?? '').trim().length > 0;
+  }
+
+  /**
+   * El mensaje del asunto, en su modal.
+   *
+   * Va en modal y no en la fila como el nombre: para un correo esto es un
+   * editor con su barra, y eso no cabe en una línea de lista.
+   */
+  async abrirMensaje(a: AsuntoGestion): Promise<void> {
+    const modalRef = this.modal.open(SaveMensajeAsuntoComponent, {
+      centered: true, size: 'lg', backdrop: 'static', keyboard: true,
+    });
+    modalRef.componentInstance.asunto = a;
+    modalRef.componentInstance.tipo = this.tipoElegido;
+    modalRef.componentInstance.soloLectura = this.accesoModel?.editar === false;
+
+    try {
+      await modalRef.result;
+      await this.elegirTipo(this.tipoElegido);
+    } catch {
+      // Se cerró sin guardar
+    }
+  }
 
   async crearAsunto(): Promise<void> {
     if (!this.puede(this.accesoModel?.crear, 'crear asuntos')) { return; }

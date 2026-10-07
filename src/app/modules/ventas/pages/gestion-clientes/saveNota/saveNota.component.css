@@ -1,5 +1,6 @@
-/* La cinta la comparten el editor y el visor: ver cintaNota.css */
-@import '../cintaNota.css';
+/* La cinta la comparten este editor, el visor y el campo compartido:
+   vive en components/campos/campoNgxEditor/cinta.css */
+@import '../../../../../components/campos/campoNgxEditor/cinta.css';
 
 /* ============================================================
    NOTA DEL CLIENTE (escribir / corregir)
@@ -244,7 +245,7 @@
 
   .nota-titulo { font-size: 1.125rem; }
 
-  /* Lo de la cinta en móvil va en cintaNota.css, con el resto de la cinta */
+  /* Lo de la cinta en móvil va en cinta.css, con el resto de la cinta */
 
   :host ::ng-deep .nota-cuerpo .NgxEditor__Content {
     min-height: 180px;

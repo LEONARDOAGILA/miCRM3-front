@@ -83,3 +83,37 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---------- «Que se hablo», con el editor de la pestaña Notas ----------
+   La nota puede traer formato desde que el mensaje de un asunto de correo se
+   escribe en HTML, y en un campo llano se leerian las etiquetas. */
+.gestion-nota-editor {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  overflow: hidden;
+}
+
+:host ::ng-deep .gestion-nota-editor .NgxEditor {
+  border: 0;
+  min-height: 7rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  font-size: .8125rem;
+}
+
+:host ::ng-deep .gestion-nota-editor .NgxEditor__MenuBar {
+  border: 0;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+:host ::ng-deep .gestion-nota-editor .NgxEditor__Content p:last-child {
+  margin-bottom: 0;
+}
+
+/* En telefono el editor se queda mas bajo: el modal ya va justo de alto */
+@media (max-width: 767.98px) {
+  :host ::ng-deep .gestion-nota-editor .NgxEditor {
+    min-height: 5rem;
+    max-height: 10rem;
+  }
+}

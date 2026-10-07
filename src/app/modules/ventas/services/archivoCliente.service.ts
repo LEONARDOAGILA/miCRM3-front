@@ -43,11 +43,18 @@ export class ArchivoClienteService {
     return this._http.get(this.URL_SERVICIOS + 'allArchivos', { params });
   }
 
-  /** Sólo deja el fichero en disco; devuelve nombre, tipo, tamaño y mime. */
-  subirArchivo(clienteId: number, fichero: File): Observable<HttpEvent<any>> {
+  /**
+   * Sólo deja el fichero en disco; devuelve nombre, tipo, tamaño y mime.
+   *
+   * El origen decide la carpeta: lo adjuntado a una gestión va a
+   * img/clientes/gestiones y lo demás a img/clientes. Se manda al SUBIR y no
+   * al crear el registro porque para entonces el fichero ya está escrito.
+   */
+  subirArchivo(clienteId: number, fichero: File, origen?: 'gestion'): Observable<HttpEvent<any>> {
     const datos = new FormData();
     datos.append('cliente_id', String(clienteId));
     datos.append('archivo', fichero, fichero.name);
+    if (origen) { datos.append('origen', origen); }
     return this._http.post(this.URL_SERVICIOS + 'subirArchivo', datos, {
       reportProgress: true,
       observe: 'events',

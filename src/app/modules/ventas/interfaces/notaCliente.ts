@@ -27,6 +27,17 @@ export interface NotaCliente {
   updated_by?: string;
   created_at?: string;
   updated_at?: string;
+
+  /**
+   * El título y el cuerpo con los huecos ya cambiados, para la tarjeta.
+   *
+   * No vienen del servidor: los calcula la pantalla al cargar la lista. El
+   * crudo se queda en titulo y contenido porque es lo que hay que devolverle
+   * al editor; si se pisara, corregir una nota guardaría el {cliente} ya
+   * resuelto y la nota dejaría de servir para el día que ese dato cambie.
+   */
+  titulo_vista?: string;
+  contenido_vista?: string;
 }
 
 export type ColorNota = 'gris' | 'azul' | 'verde' | 'amarillo' | 'rojo' | 'morado';

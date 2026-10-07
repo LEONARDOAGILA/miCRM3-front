@@ -10,10 +10,12 @@ import Swal from 'sweetalert2';
 
 import { GestionService } from '../../../services/gestion.service';
 import { ArchivoClienteService } from '../../../services/archivoCliente.service';
+import { NotaClienteService } from '../../../services/notaCliente.service';
+import { AlmacenDeImagenes } from '../../../interfaces/pegarEnEditor';
 import {
   ArchivoCliente, extensionDe, formatoTamano, pintaDeTipo, tipoPorExtension,
 } from '../../../interfaces/archivoCliente';
-import { abrirWhatsapp } from '../../../interfaces/plantillasWhatsapp';
+import { abrirWhatsapp, soloTexto } from '../../../interfaces/plantillasWhatsapp';
 import { lanzarProtocolo } from '../../../../../service/lanzarProtocolo';
 import { CatalogoGestionService } from '../../../services/catalogoGestion.service';
 import { TipoGestion, AsuntoGestion, asuntosDe } from '../../../interfaces/catalogoGestion';
@@ -64,13 +66,14 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
    * gestión se abre con el mensaje ya escrito en «Qué se habló» y el tipo
    * puesto en WHATSAPP, que es de lo que va.
    *
-   * `asuntoInicial` es el texto del asunto de la plantilla, no un id: se
-   * busca en el catálogo cuando éste termina de cargar, y si no aparece se
-   * deja el combo vacío para que lo elija quien escribe.
+   * `asuntoInicial` es el id del asunto del catálogo. Antes era su nombre y
+   * había que buscarlo por texto, porque los mensajes vivían en otra tabla que
+   * guardaba el asunto como una cadena; desde que el mensaje es un campo del
+   * propio asunto, la respuesta ES el asunto y aquí llega su id.
    */
   @Input() tipoInicial: string | null = null;
   @Input() notaInicial: string | null = null;
-  @Input() asuntoInicial: string | null = null;
+  @Input() asuntoInicial: number | null = null;
   @Input() contactoInicial: number | null = null;
 
   /**
@@ -83,6 +86,14 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
    * enviar», que es exactamente lo que va a pasar.
    */
   @Input() whatsappPendiente: { numero: string; texto: string } | null = null;
+
+  /**
+   * El correo que sale DESPUÉS de guardar, por lo mismo que el WhatsApp.
+   *
+   * El cuerpo va en HTML porque lo manda Outlook, que sí entiende formato; en
+   * «Qué se habló» quedó la misma cosa en texto llano, que es el historial.
+   */
+  @Input() correoPendiente: { para: string; asunto: string; cuerpoHtml: string } | null = null;
 
   @Output() guardado = new EventEmitter<GestionModel>();
 
@@ -123,9 +134,47 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
 
   private claveAdjunto = 0;
 
-  /** Los ids que acaban de guardarse, para mandarlos al portapapeles. */
-  private idsParaCopiar: number[] = [];
+  /**
+   * El editor de «Qué se habló».
+   *
+   * Es el mismo de la pestaña Notas. Hace falta porque el mensaje de un asunto
+   * de correo viene con formato: en un campo de texto llano se leerían las
+   * etiquetas, y lo que se guarda es justamente lo que se le mandó al cliente.
+   *
+   * Barra corta a propósito: esto es el historial de una conversación, no un
+   * documento. Lo que se escribe aquí son tres líneas y, de vez en cuando, un
+   * correo pegado.
+   */
+  get ctrlNota(): FormControl { return this.form.controls['nota'] as FormControl; }
 
+  /**
+   * Dónde van a parar las imágenes que se peguen en «Qué se habló».
+   *
+   * Van a los archivos del cliente, como las de una nota: al pegar un correo
+   * las imágenes vienen en base64, y dejarlas ahí haría la fila de la gestión
+   * más grande que todas las demás juntas.
+   */
+  public almacenDeImagenes: AlmacenDeImagenes = {
+    subir: async (f: File) => {
+      try {
+        const res: any = await firstValueFrom(this._notaService.subirImagen(this.cliente!.id!, f));
+        return res?.status === 'success' ? this._notaService.urlDeImagen(res.data.url) : null;
+      } catch { return null; }
+    },
+    traerDeFuera: async (u: string) => {
+      try {
+        const res: any = await firstValueFrom(this._notaService.traerImagen(this.cliente!.id!, u));
+        return res?.status === 'success' ? this._notaService.urlDeImagen(res.data.url) : null;
+      } catch {
+        // Es normal que alguna no se deje traer; no merece un toast por cada una
+        return null;
+      }
+    },
+  };
+
+  public avisarDelPegado = (mensaje: string, titulo: string): void => {
+    this._toastr.warning(mensaje, titulo, { timeOut: 9000, closeButton: true });
+  };
   public formatoTamano = formatoTamano;
   public pintaDeTipo = pintaDeTipo;
 
@@ -137,6 +186,7 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     private _gestionService: GestionService,
     private _catalogoService: CatalogoGestionService,
     private _archivoService: ArchivoClienteService,
+    private _notaService: NotaClienteService,
   ) {}
 
   // ================================================================
@@ -261,7 +311,7 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     for (const a of this.adjuntos) {
       try {
         const subida: any = await firstValueFrom(
-          this._archivoService.subirArchivo(this.cliente.id, a.fichero).pipe(
+          this._archivoService.subirArchivo(this.cliente.id, a.fichero, 'gestion').pipe(
             filter((e: HttpEvent<any>) => e.type === HttpEventType.Response),
             map((e: any) => e.body),
           ));
@@ -298,6 +348,52 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     return !!this.whatsappPendiente?.numero;
   }
 
+  /** ¿Y un correo? */
+  get hayCorreoPendiente(): boolean {
+    return !!this.correoPendiente?.para;
+  }
+
+  /** Cualquiera de los dos: es lo que convierte Guardar en «Guardar y enviar». */
+  get hayEnvioPendiente(): boolean {
+    return this.hayWhatsappPendiente || this.hayCorreoPendiente;
+  }
+
+  /** Por dónde sale, para decirlo en el aviso de debajo de la nota. */
+  get destinoDelEnvio(): string {
+    return this.correoPendiente?.para ?? this.whatsappPendiente?.numero ?? '';
+  }
+
+  /** Deja la gestión pero no manda el correo. */
+  cancelarCorreoPendiente(): void {
+    this.correoPendiente = null;
+  }
+
+  /**
+   * Abre Outlook con el correo escrito, ya con la gestión guardada.
+   *
+   * No es un enlace mailto: ése sólo admite texto llano y el formato del
+   * mensaje se perdería, y además no puede llevar adjuntos. Lo abre el
+   * ayudante del puesto, que habla con el Outlook instalado.
+   */
+  private enviarCorreoPendiente(idsAdjuntos: number[] = []): void {
+    const pendiente = this.correoPendiente;
+    if (!pendiente?.para) { return; }
+    this.correoPendiente = null;
+
+    lanzarProtocolo('micrm3://correo'
+      + '?para=' + encodeURIComponent(pendiente.para)
+      + '&asunto=' + encodeURIComponent(pendiente.asunto ?? '')
+      + '&cuerpo=' + encodeURIComponent(pendiente.cuerpoHtml ?? '')
+      + (idsAdjuntos.length ? '&ids=' + idsAdjuntos.join(',') : ''));
+
+    this._toastr.info(
+      'Outlook abre el correo ya escrito'
+        + (idsAdjuntos.length ? ' con sus adjuntos' : '')
+        + '; repásalo y envíalo desde ahí.',
+      'Correo', { timeOut: 7000, closeButton: true },
+    );
+  }
+
   /**
    * Deja la gestión pero no manda el mensaje.
    *
@@ -330,6 +426,10 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     this.whatsappPendiente = null;
 
     if (idsAdjuntos.length) {
+      // La dirección del servidor NO va aquí a propósito: la graba el
+      // instalador dentro del comando del protocolo. Si viajara en el enlace,
+      // cualquier página que alguien abriera podría mandar al ayudante a
+      // descargar de donde fuera.
       lanzarProtocolo('micrm3://enviar'
         + '?ids=' + idsAdjuntos.join(',')
         + '&tel=' + encodeURIComponent(pendiente.numero)
@@ -407,22 +507,21 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Busca en el catálogo el asunto que trae la respuesta de WhatsApp.
+   * Deja elegido el asunto con el que se abrió el formulario.
    *
-   * La plantilla guarda su asunto como texto («Seguimiento por WhatsApp») y
-   * aquí hace falta el id. Si está en el catálogo, el combo queda resuelto y
-   * no hay que elegir nada; si no está, se deja vacío y lo elige quien
-   * escribe, que es mejor que inventarle un asunto a su gestión.
+   * Se comprueba que esté entre los del tipo: si el asunto se desactivó entre
+   * que se cargó el menú y se pulsó, el combo lo rechazaría igualmente y es
+   * mejor dejarlo vacío que enseñar una opción que no está en la lista.
    */
   private preseleccionarAsunto(): void {
-    const texto = (this.asuntoInicial ?? '').trim().toLowerCase();
-    if (!texto) { return; }
+    if (!this.asuntoInicial) { return; }
 
     const ctrl = this.form?.get('asunto_id');
     if (!ctrl || ctrl.value) { return; }
 
-    const encontrado = this.asuntos.find(a => (a.nombre ?? '').trim().toLowerCase() === texto);
-    if (encontrado) { ctrl.setValue(encontrado.id); }
+    if (this.asuntos.some(a => a.id === this.asuntoInicial)) {
+      ctrl.setValue(this.asuntoInicial);
+    }
   }
 
   /** El asunto tiene que ser de los del tipo; si no lo es, se queda vacío. */
@@ -447,13 +546,18 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       .filter(c => c.id)
       .map(c => ({ id: c.id as number, name: c.cargo ? `${c.nombres} (${c.cargo})` : c.nombres }));
 
+    // Con el esquema de las notas: es el que trae las marcas de letra y
+    // tamaño, que ngx-editor no tiene, y los nodos de tabla, que hacen
+    // falta para que una tabla pegada de un correo no se pierda.
     this.initializeForm();
     this.cargarCatalogo();
     this.cargarAdjuntos();
   }
 
-  /** Las miniaturas son URLs de objeto: si no se sueltan, el navegador se las queda. */
+
   ngOnDestroy(): void {
+    // Las miniaturas son URLs de objeto: si no se sueltan, el navegador se las
+    // queda. Y el editor igual: abrir el modal veinte veces deja veinte.
     for (const a of this.adjuntos) {
       if (a.vistaPrevia) { URL.revokeObjectURL(a.vistaPrevia); }
     }
@@ -515,8 +619,8 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       estado:           [estadoInicial, [Validators.required]],
       // El texto se conserva para poder enseñar el de una gestión vieja, pero
       // ya no se teclea: lo que se guarda y lo que valida es el asunto_id.
-      asunto:           [g?.asunto ?? this.asuntoInicial ?? ''],
-      asunto_id:        [g?.asunto_id ?? null, [Validators.required]],
+      asunto:           [g?.asunto ?? ''],
+      asunto_id:        [g?.asunto_id ?? this.asuntoInicial ?? null, [Validators.required]],
       contacto_id:      [g?.contacto_id ?? this.contactoInicial ?? null],
       telefono:         [g?.telefono ?? this.telefonoInicial ?? this.cliente?.celular ?? this.cliente?.telefono ?? '', [Validators.maxLength(20)]],
       prioridad:        [g?.prioridad ?? 'MEDIA', [Validators.required]],
@@ -629,7 +733,9 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       // día se abre una gestión anterior al catálogo y se vuelve a guardar.
       asunto:           (v.asunto ?? '').trim() || null,
       asunto_id:        v.asunto_id ? Number(v.asunto_id) : null,
-      nota:             (v.nota ?? '').trim() || null,
+      // El editor devuelve «<p></p>» cuando no se escribio nada: eso no es
+      // una nota, es el envoltorio vacio. Se mira el texto para decidir.
+      nota:             soloTexto(v.nota) ? (v.nota ?? '').trim() : null,
       // Quien atiende al cliente; si no tiene vendedor va sin dueño
       // El responsable de la gestión es el vendedor del cliente, que desde el
       // cambio de responsables es un USUARIO: así le aparece en su agenda
@@ -669,6 +775,7 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       // cerrando primero algunos navegadores lo toman por una ventana
       // emergente y la bloquean.
       this.enviarWhatsappPendiente(idsAdjuntos);
+      this.enviarCorreoPendiente(idsAdjuntos);
 
       this.modal.close(res.data);
     } catch (error) {

@@ -28,10 +28,11 @@ import {
 } from '../../interfaces/gestionModel';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import {
-  abrirWhatsapp, aplicarPlantilla, numeroInternacional, primerNombre, puedeTenerWhatsapp,
+  abrirWhatsapp, comoHtml, numeroInternacional, puedeTenerWhatsapp, soloTexto,
 } from '../../interfaces/plantillasWhatsapp';
-import { WhatsappPlantillaModel } from '../../interfaces/whatsappPlantillaModel';
-import { WhatsappPlantillaService } from '../../services/whatsappPlantilla.service';
+import {
+  aplicarHuecos, datosDeHuecos,
+} from '../../interfaces/huecosPlantilla';
 
 ///   COMPONENTES    ///
 import { ListClientesComponent } from '../clientes/listClientes/listClientes.component';
@@ -48,7 +49,8 @@ import { VerNotaComponent } from './verNota/verNota.component';
 import { NotaClienteService } from '../../services/notaCliente.service';
 import { NotaCliente, tinteDeNota, nombreDeColor } from '../../interfaces/notaCliente';
 import { CatalogoGestionService } from '../../services/catalogoGestion.service';
-import { TipoGestion } from '../../interfaces/catalogoGestion';
+import { AsuntoGestion, TipoGestion, asuntosDe, traeMensaje } from '../../interfaces/catalogoGestion';
+import { lanzarProtocolo } from '../../../../service/lanzarProtocolo';
 import { ArchivoClienteService } from '../../services/archivoCliente.service';
 import { ArchivoCliente, formatoTamano, pintaDeTipo } from '../../interfaces/archivoCliente';
 
@@ -341,7 +343,40 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * piden una vez al entrar y el servicio los recuerda, porque el menu se
    * abre muchas veces al dia y la lista cambia de tarde en tarde.
    */
-  public plantillasWhatsapp: WhatsappPlantillaModel[] = [];
+  public plantillasWhatsapp: AsuntoGestion[] = [];
+
+  /** Lo mismo para marcar: los asuntos activos de tipo LLAMADA. */
+  public asuntosLlamada: AsuntoGestion[] = [];
+
+  /** Y para escribir: los de tipo CORREO. */
+  public asuntosCorreo: AsuntoGestion[] = [];
+
+  /** Dónde se pinta el menú de la llamada y a qué número marca. */
+  public menuTel: { visible: boolean; x: number; y: number; numero: string | null; aQuien: string | null } =
+    { visible: false, x: 0, y: 0, numero: null, aQuien: null };
+
+  @ViewChild('menuTelEl') menuTelEl?: ElementRef<HTMLElement>;
+
+  /** Dónde se pinta el menú del correo y a quién escribe. */
+  public menuCorreo: { visible: boolean; x: number; y: number; para: string | null; aQuien: string | null } =
+    { visible: false, x: 0, y: 0, para: null, aQuien: null };
+
+  @ViewChild('menuCorreoEl') menuCorreoEl?: ElementRef<HTMLElement>;
+
+  /**
+   * Dónde estaba el puntero en el último clic.
+   *
+   * El menú de la llamada nace ahí. Los diez sitios que marcan —la ficha, tres
+   * grillas, dos menús contextuales— llaman todos con (número, quién) y sin
+   * evento; pasarles además el elemento al que anclarse habría sido tocar los
+   * diez para colocar un recuadro.
+   */
+  private ultimoPuntero = { x: 24, y: 24 };
+
+  @HostListener('document:pointerdown', ['$event'])
+  anotarPuntero(ev: PointerEvent): void {
+    if (ev.clientX || ev.clientY) { this.ultimoPuntero = { x: ev.clientX, y: ev.clientY }; }
+  }
 
   /**
    * La conversación de WhatsApp del cliente.
@@ -478,7 +513,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     private _archivoService: ArchivoClienteService,
     private _notaService: NotaClienteService,
     private _catalogoService: CatalogoGestionService,
-    private _plantillaWaService: WhatsappPlantillaService,
     public _appAgGridService: AppAgGridService,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -502,7 +536,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.cargarAgenda();
     this.cargarClientes(1);
     this.cargarTiposDelCatalogo();
-    this.cargarPlantillasWhatsapp();
 
     // Se puede llegar con el cliente en la url (?cliente=9), que es como
     // entra el recordatorio cuando se pulsa «Abrir el cliente»
@@ -1170,7 +1203,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   @HostListener('document:click')
   @HostListener('document:keydown.escape')
   @HostListener('window:scroll')
-  onCerrarMenuGlobal(): void { this.cerrarMenu(); this.cerrarMenuWhatsapp(); }
+  onCerrarMenuGlobal(): void { this.cerrarMenu(); this.cerrarMenuWhatsapp(); this.cerrarMenuLlamada(); this.cerrarMenuCorreo(); }
 
   /**
    * Al cambiar el tamaño de la ventana se cierra el menú y se vuelve a
@@ -1181,6 +1214,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   onRedimensionar(): void {
     this.cerrarMenu();
     this.cerrarMenuWhatsapp();
+    this.cerrarMenuLlamada();
+    this.cerrarMenuCorreo();
     if (this.ajusteAltoTimeout) { clearTimeout(this.ajusteAltoTimeout); }
     this.ajusteAltoTimeout = setTimeout(() => this.ajustarAltos(), 150);
   }
@@ -1581,14 +1616,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         cellRenderer: this.celdaNumero,
       },
       { headerName: 'Responsable', field: 'responsable_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
-      { headerName: 'Nota', field: 'nota', minWidth: 180, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
+      { headerName: 'Nota', field: 'nota', minWidth: 180, cellStyle: { textAlign: 'left' },
+        // Sin formato: la nota puede traer HTML desde que se escribe con
+        // editor, y en una celda saldrían las etiquetas escritas.
+        valueFormatter: (p: any) => soloTexto(p.value), tooltipValueGetter: (p: any) => soloTexto(p.value) },
       {
-        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 142, maxWidth: 142,
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 178, maxWidth: 178,
         suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        cellRenderer: () => {
+        cellRenderer: (p: any) => {
           if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
           // Marcar no escribe nada: basta con poder ver al cliente. El
           // formulario que se abre tras marcar sí pide crear, y eso lo mira
@@ -1598,7 +1636,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           const puedeCerrar = this.accesoModel?.crear !== false;
           const puedeEditar = this.accesoModel?.editar !== false;
           const puedeBorrar = this.accesoModel?.eliminar !== false;
-          return `<div class="gestion-acciones">${this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar', puedeVer)}${this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
+          return `<div class="gestion-acciones">${this.botonAdjuntos(p.data?.num_adjuntos)}${this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar', puedeVer)}${this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
         },
       },
     ];
@@ -1879,6 +1917,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
       case 'llamar':   this.llamarConSoftphone(e.data?.telefono || e.data?.cliente_telefono, this.cliente?.nombre_completo); break;
+      case 'adjuntos': this.verAdjuntosDeGestion(e.data); break;
     }
   }
 
@@ -2179,10 +2218,11 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       },
       { headerName: 'Responsable', field: 'responsable_nombre', minWidth: 150, cellStyle: { textAlign: 'left' } },
       { headerName: 'Contacto', field: 'contacto_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
-      { headerName: 'Nota', field: 'nota', minWidth: 200, cellStyle: { textAlign: 'left' }, tooltipField: 'nota' },
+      { headerName: 'Nota', field: 'nota', minWidth: 200, cellStyle: { textAlign: 'left' },
+        valueFormatter: (p: any) => soloTexto(p.value), tooltipValueGetter: (p: any) => soloTexto(p.value) },
       { headerName: 'Registrado por', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' }, sortable: false },
       {
-        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 110, maxWidth: 110,
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 142, maxWidth: 142,
         suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
@@ -2198,7 +2238,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           const cerrar = p.data?.estado === 'PENDIENTE'
             ? this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)
             : '';
-          return `<div class="gestion-acciones">${cerrar}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
+          return `<div class="gestion-acciones">${this.botonAdjuntos(p.data?.num_adjuntos)}${cerrar}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
         },
       },
     ];
@@ -2214,12 +2254,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   navegarConTeclado = this._appAgGridService.navegacionConFlechas();
 
   onCellClicked(e: CellClickedEvent): void {
-    if (e.column.getColId() !== 'acciones') { return; }
+    // Ya no vale preguntar sólo por la columna de acciones: el clip vive en
+    // la suya. Se mira el data-accion, como en los pendientes.
     const accion = ((e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement)?.dataset['accion'];
     switch (accion) {
       case 'cerrar':   this.cerrar(e.data); break;
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
+      case 'adjuntos': this.verAdjuntosDeGestion(e.data); break;
     }
   }
 
@@ -2448,10 +2490,33 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           icono: t.icono || 'fa-comment-dots',
         }));
       }
+
+      // Y de paso el menú de WhatsApp: TODOS los asuntos activos de ese tipo,
+      // traigan mensaje o no. El catálogo ya devuelve sólo los activos.
+      //
+      // Los que no traen mensaje también valen: al elegirlos se abre el chat
+      // en blanco y la gestión queda registrada con ese asunto, que es de lo
+      // que salen los informes. El mensaje, cuando lo hay, es un adelanto;
+      // no es el motivo de que el asunto esté en la lista.
+      //
+      // Alfabético, y no por el `orden` del catálogo: aquí no se repasa una
+      // lista, se busca uno concreto entre veintitantos, y para eso lo que
+      // sirve es saber por dónde empieza. localeCompare con 'es' para que la
+      // Á vaya con la A y las mayúsculas no manden.
+      this.plantillasWhatsapp = this.asuntosParaElMenu(lista, 'WHATSAPP');
+      this.asuntosLlamada     = this.asuntosParaElMenu(lista, 'LLAMADA');
+      this.asuntosCorreo      = this.asuntosParaElMenu(lista, 'CORREO');
     } catch (error) {
       // Se queda la constante: un filtro de tipos vacío sería peor
       console.error('Error al cargar el catálogo de tipos de gestión:', error);
     }
+  }
+
+  /** Los asuntos activos de un tipo, en el orden en que se buscan. */
+  private asuntosParaElMenu(catalogo: TipoGestion[], codigo: string): AsuntoGestion[] {
+    return asuntosDe(catalogo.find(t => t.codigo === codigo))
+      .slice()
+      .sort((a, b) => (a.nombre ?? '').localeCompare(b.nombre ?? '', 'es', { sensitivity: 'base' }));
   }
   nombreResultado = (r: string) => nombreDe(RESULTADOS_GESTION, r);
 
@@ -2735,6 +2800,21 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * va al servidor y no filtra en memoria porque busca también dentro del
    * texto de la nota, que aquí sólo llega recortado a 220 caracteres.
    */
+  /**
+   * Cambia los huecos de cada nota por los datos de este cliente.
+   *
+   * Una vez al cargar la lista y no en la plantilla: con un método en el
+   * [innerHTML] se recalcularía en cada ciclo de detección de cambios, por
+   * cada nota, y aquí hay clientes con cincuenta.
+   */
+  private resolverHuecosDeLasNotas(): void {
+    const datos = datosDeHuecos(this.cliente);
+    for (const n of this.notas) {
+      n.titulo_vista = aplicarHuecos(n.titulo ?? '', datos);
+      n.contenido_vista = aplicarHuecos(n.contenido ?? '', datos);
+    }
+  }
+
   async cargarNotas(forzar = false): Promise<void> {
     const id = this.cliente?.id;
     if (!id) { this.notas = []; return; }
@@ -2744,6 +2824,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this.cargandoNotas = true;
       const res: any = await firstValueFrom(this._notaService.allNotas(id, this.buscaNotas));
       this.notas = res?.status === 'success' ? (res.data ?? []) : [];
+      this.resolverHuecosDeLasNotas();
       this.notasDe = id;
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
@@ -2769,6 +2850,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const ref = this.modal.open(VerNotaComponent, { size: 'lg', centered: true, scrollable: false });
     ref.componentInstance.nota = n;
     ref.componentInstance.clienteNombre = this.cliente?.nombre_completo ?? '';
+    ref.componentInstance.cliente = this.cliente ?? null;
   }
 
   nuevaNota(): void {
@@ -2788,6 +2870,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const ref = this.modal.open(SaveNotaComponent, { size: 'lg', centered: true, backdrop: 'static' });
     ref.componentInstance.clienteId = this.cliente!.id;
     ref.componentInstance.clienteNombre = this.cliente?.nombre_completo ?? '';
+    ref.componentInstance.cliente = this.cliente ?? null;
     ref.componentInstance.nota = n;
     this.escucharModal(ref, ref.componentInstance.guardado, () => this.cargarNotas(true));
   }
@@ -2901,6 +2984,54 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this._archivoService.urlDe(x.id, descargar);
   }
 
+  /**
+   * El clip de la fila, sólo si esa gestión lleva algo.
+   *
+   * Sale con botonAccion, como los demás: es un botón más de la columna y
+   * tiene que verse igual. Cuántos hay va en el título y no dibujado al lado:
+   * un número pegado al icono rompía la fila de botones, que es lo único que
+   * se lee de un vistazo cuando hay diez gestiones en pantalla.
+   */
+  private botonAdjuntos(cuantos: any): string {
+    const n = Number(cuantos ?? 0);
+    if (!n) { return ''; }
+    const titulo = n === 1 ? 'Ver el archivo adjunto' : `Ver los ${n} archivos adjuntos`;
+    return this.botonAccion('adjuntos', 'btn-adjuntos', 'fa fa-paperclip', titulo, true);
+  }
+  /**
+   * Abre los adjuntos de una gestión en el visor del cliente.
+   *
+   * El mismo visor de la pestaña de Archivos, no uno parecido: se amplía,
+   * se gira y se pasa de uno a otro con las flechas igual que allí. Lo que
+   * cambia es de dónde sale la lista.
+   */
+  async verAdjuntosDeGestion(g: GestionModel): Promise<void> {
+    if (!g?.id) { return; }
+
+    let archivos: ArchivoCliente[] = [];
+    try {
+      const res: any = await firstValueFrom(this._archivoService.archivosDeGestion(g.id, false));
+      archivos = res?.status === 'success' ? (res.data ?? []) : [];
+    } catch (error) {
+      // El AuthInterceptor ya saca el toast del error HTTP
+      console.error('Error al traer los adjuntos de la gestión:', error);
+      return;
+    }
+
+    if (!archivos.length) {
+      this._toastr.info('Esta gestión ya no tiene archivos adjuntos', 'Adjuntos');
+      return;
+    }
+
+    const ref = this.modal.open(VisorArchivoComponent, {
+      size: 'xl', centered: true, scrollable: false, windowClass: 'visor-ventana',
+    });
+    ref.componentInstance.archivos = archivos;
+    ref.componentInstance.indice = 0;
+    ref.componentInstance.urlDe = (x: ArchivoCliente, descargar = false) =>
+      this._archivoService.urlDe(x.id, descargar);
+  }
+
   descargarArchivo(a: ArchivoCliente): void {
     window.open(this._archivoService.urlDe(a.id, true), '_blank', 'noopener');
   }
@@ -3006,16 +3137,175 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // Zoiper en el navegador lo decoran con su icono y la bandera del país.
 
   /**
-   * Marca con el softphone del puesto y deja lista la gestión.
+   * Antes de marcar, de qué va la llamada.
    *
-   * Mientras el teléfono suena, Zoiper se aparta solo (lo hace el ayudante del
-   * protocolo) y aquí se abre el formulario de gestión, para que el vendedor
-   * vaya escribiendo lo que habla en vez de reconstruirlo al colgar.
+   * Se abre el mismo menú que en WhatsApp, con los asuntos de tipo LLAMADA:
+   * se elige uno, SE MARCA, y la gestión se abre con el asunto puesto y —si
+   * ese asunto trae mensaje— con él de guion en «Qué se habló». Lo que se
+   * gana es que el asunto queda elegido cuando se sabe, al descolgar, y no
+   * diez minutos después intentando acordarse.
    *
-   * Sólo se abre si hay un cliente en pantalla: la gestión cuelga de él. Al
-   * marcar desde la lista de clientes sin haberlo abierto, se marca y ya.
+   * Se marca directamente, sin menú, en los dos casos en que el menú no
+   * pintaría nada: sin cliente en pantalla no hay gestión que abrir —se marca
+   * desde la lista de clientes y ya—, y sin asuntos de LLAMADA en el catálogo
+   * el menú saldría vacío.
+   *
+   * La firma no cambia: los diez sitios que marcan siguen llamando igual.
    */
   llamarConSoftphone(numero?: string | null, quien?: string | null): void {
+    if (!numero) {
+      this._toastr.warning('No tiene teléfono registrado', 'Sin número');
+      return;
+    }
+
+    if (!this.cliente || !this.asuntosLlamada.length || this.accesoModel?.crear === false) {
+      this.marcarYAbrirGestion(numero, quien);
+      return;
+    }
+
+    // Un tic de espera, y no es un adorno: el clic que abre este menú sigue
+    // subiendo hasta document, donde onCerrarMenuGlobal cierra los menús. Si
+    // se abriera aquí mismo, se cerraría solo en el mismo clic. El de WhatsApp
+    // no lo necesita porque corta la propagación, y eso aquí no se puede: los
+    // diez sitios que marcan llaman sin evento.
+    setTimeout(() => {
+      // El menú nace donde está el puntero: lo abren botones de la ficha, de
+      // las grillas y de los menús contextuales, y pasarle el elemento a cada
+      // uno sería tocar diez sitios para colocar un recuadro.
+      this.menuTel = {
+        visible: true,
+        x: Math.min(this.ultimoPuntero.x, Math.max(8, window.innerWidth - 260)),
+        y: this.ultimoPuntero.y + 8,
+        numero,
+        aQuien: quien ?? null,
+      };
+
+      setTimeout(() => {
+        const el = this.menuTelEl?.nativeElement;
+        if (!el) { return; }
+        const m = el.getBoundingClientRect();
+        if (m.right > window.innerWidth)   { this.menuTel.x = Math.max(8, window.innerWidth - m.width - 8); }
+        if (m.bottom > window.innerHeight) { this.menuTel.y = Math.max(8, this.ultimoPuntero.y - m.height - 8); }
+      });
+    });
+  }
+
+  cerrarMenuLlamada(): void {
+    if (this.menuTel.visible) { this.menuTel.visible = false; }
+  }
+
+  // ---------- Correo ----------
+  //
+  // Lo mismo que la llamada y que WhatsApp: de qué va, antes de escribir. La
+  // diferencia es quién manda el correo: Outlook, el que está instalado en el
+  // puesto, al que se le habla por el mismo ayudante del protocolo micrm3:
+  // (ver herramientas/copiar-archivos.ps1). Y va DESPUÉS de guardar, como el
+  // WhatsApp: primero queda escrita la gestión, después sale el correo.
+
+  escribirCorreo(para?: string | null, aQuien?: string | null): void {
+    if (!para || !para.includes('@')) {
+      this._toastr.warning('No tiene un correo al que escribir', 'Correo');
+      return;
+    }
+
+    if (!this.cliente || !this.asuntosCorreo.length || this.accesoModel?.crear === false) {
+      this.abrirCorreo(para, '', '');
+      return;
+    }
+
+    // Un tic de espera, por lo mismo que el menú de la llamada: el clic que lo
+    // abre sigue subiendo hasta document, donde se cierran los menús.
+    setTimeout(() => {
+      this.menuCorreo = {
+        visible: true,
+        x: Math.min(this.ultimoPuntero.x, Math.max(8, window.innerWidth - 260)),
+        y: this.ultimoPuntero.y + 8,
+        para,
+        aQuien: aQuien ?? null,
+      };
+
+      setTimeout(() => {
+        const el = this.menuCorreoEl?.nativeElement;
+        if (!el) { return; }
+        const m = el.getBoundingClientRect();
+        if (m.right > window.innerWidth)   { this.menuCorreo.x = Math.max(8, window.innerWidth - m.width - 8); }
+        if (m.bottom > window.innerHeight) { this.menuCorreo.y = Math.max(8, this.ultimoPuntero.y - m.height - 8); }
+      });
+    });
+  }
+
+  cerrarMenuCorreo(): void {
+    if (this.menuCorreo.visible) { this.menuCorreo.visible = false; }
+  }
+
+  /**
+   * Abre la gestión del correo, con el mensaje listo para salir al guardar.
+   *
+   * El cuerpo viaja en HTML y la nota en texto llano, y no es lo mismo: el
+   * correo lleva el formato que se escribió en el catálogo, y «Qué se habló»
+   * es el historial, donde unas etiquetas <p> sólo estorbarían.
+   *
+   * @param asunto null escribe sin asunto: el correo sale en blanco y la
+   *        gestión también, pero queda registrada.
+   */
+  correoConAsunto(asunto: AsuntoGestion | null): void {
+    const para = this.menuCorreo.para;
+    if (!para) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    const cuerpoHtml = asunto ? this.textoDePlantilla(asunto) : '';
+
+    const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+    modalRef.componentInstance.modo = 'registrar';
+    modalRef.componentInstance.cliente = this.cliente;
+    modalRef.componentInstance.contactos = this.contactos;
+    modalRef.componentInstance.gestion = null;
+    modalRef.componentInstance.tipoInicial = 'CORREO';
+    if (asunto) { modalRef.componentInstance.asuntoInicial = asunto.id; }
+    // El HTML tal cual: el editor lo enseña con su formato, que es justo de
+    // lo que se trata. Antes iba en texto llano porque el campo era llano.
+    modalRef.componentInstance.notaInicial = cuerpoHtml;
+    modalRef.componentInstance.correoPendiente = {
+      para,
+      asunto: asunto?.nombre ?? '',
+      cuerpoHtml,
+    };
+    this.escucharModal(modalRef, modalRef.componentInstance.guardado, () => this.refrescar());
+  }
+
+  /**
+   * Outlook, con el correo ya escrito.
+   *
+   * Lo abre el ayudante del puesto y no un enlace mailto: porque mailto sólo
+   * admite texto llano —el formato del mensaje se perdería— y porque así el
+   * correo puede llevar los adjuntos de la gestión. Si el puesto no tiene el
+   * ayudante instalado, Windows no reconoce el protocolo y no pasa nada: la
+   * gestión queda guardada igual.
+   */
+  abrirCorreo(para: string, asunto: string, cuerpoHtml: string, ids: number[] = []): void {
+    lanzarProtocolo('micrm3://correo'
+      + '?para=' + encodeURIComponent(para)
+      + '&asunto=' + encodeURIComponent(asunto)
+      + '&cuerpo=' + encodeURIComponent(cuerpoHtml)
+      + (ids.length ? '&ids=' + ids.join(',') : ''));
+  }
+
+  /**
+   * Marca y abre la gestión, con el asunto elegido si lo hubo.
+   *
+   * @param asunto null es «Llamar sin asunto»: marca y abre el formulario en
+   *        blanco, que es como funcionaba antes de que hubiera menú.
+   */
+  llamarConAsunto(asunto: AsuntoGestion | null): void {
+    const numero = this.menuTel.numero;
+    const quien = this.menuTel.aQuien;
+    if (!numero) { return; }
+
+    this.marcarYAbrirGestion(numero, quien, asunto);
+  }
+
+  /** Lo que hacía `llamarConSoftphone` antes del menú, más el asunto. */
+  private marcarYAbrirGestion(numero: string, quien?: string | null, asunto: AsuntoGestion | null = null): void {
     const marcado = this._softphone.marcar(numero);
     if (!marcado) {
       this._toastr.warning('No tiene teléfono registrado', 'Sin número');
@@ -3023,7 +3313,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
     this._toastr.info('Marcando ' + marcado + '…', quien || 'Zoiper', { timeOut: 2500 });
 
-    if (this.cliente) { this.abrirGestionDeLlamada(marcado); }
+    if (this.cliente) { this.abrirGestionDeLlamada(marcado, asunto); }
   }
 
   /**
@@ -3034,7 +3324,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * navegador termina de entregarle el enlace al sistema antes de ponerse a
    * montar el diálogo.
    */
-  private abrirGestionDeLlamada(numero: string): void {
+  private abrirGestionDeLlamada(numero: string, asunto: AsuntoGestion | null = null): void {
     // Marcar sí se le deja a todo el que vea al cliente; lo que no se abre, si
     // no puede crear, es el formulario. Sin aviso: la llamada ya está saliendo
     // y un cartel de «sin permiso» justo ahí se lee como que falló el marcado.
@@ -3052,6 +3342,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       // El tipo ya sale LLAMADA por defecto; lo que el formulario no puede
       // saber es a qué número se llamó, que puede ser el de un contacto.
       modalRef.componentInstance.telefonoInicial = numero;
+
+      if (asunto) {
+        modalRef.componentInstance.tipoInicial = 'LLAMADA';
+        modalRef.componentInstance.asuntoInicial = asunto.id;
+        // El mensaje del asunto, de guion: para una llamada no se envía nada,
+        // se lee. Por eso va en la nota y no en ningún otro sitio.
+        modalRef.componentInstance.notaInicial = comoHtml(this.textoDePlantilla(asunto));
+      }
+
       this.escucharModal(modalRef, modalRef.componentInstance.guardado, () => this.refrescar());
     }, 400);
   }
@@ -3118,32 +3417,12 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (this.menuWa.visible) { this.menuWa.visible = false; }
   }
 
-  /**
-   * Las plantillas que se ofrecen en el menú de WhatsApp.
-   *
-   * Si falla, el menú se queda sin plantillas pero con «Abrir el chat sin
-   * mensaje»: se puede seguir escribiendo al cliente a mano, que es lo que
-   * importa. No se interrumpe con un error rojo por esto.
-   */
-  private async cargarPlantillasWhatsapp(): Promise<void> {
-    try {
-      const res: any = await firstValueFrom(this._plantillaWaService.activas());
-      this.plantillasWhatsapp = res?.status === 'success' ? (res.data ?? []) : [];
-    } catch (error) {
-      console.error('Error al cargar las plantillas de WhatsApp:', error);
-      this.plantillasWhatsapp = [];
-    }
-  }
+  /** ¿Ese asunto trae mensaje escrito? Lo usa el menú para distinguirlos. */
+  public traeMensaje = traeMensaje;
 
-  /** El texto de una plantilla, ya con el nombre del cliente y el del vendedor. */
-  textoDePlantilla(plantilla: WhatsappPlantillaModel): string {
-    const esEmpresa = this.cliente?.tipo_cliente === 'EMPRESA';
-    return aplicarPlantilla(plantilla.texto, {
-      cliente:  this.cliente?.nombre_completo,
-      nombre:   primerNombre(this.cliente?.nombre_completo, esEmpresa),
-      vendedor: this.nombreDelUsuario,
-      empresa:  this.nombreDeLaEmpresa,
-    });
+  /** El texto de una respuesta, ya con el nombre del cliente y el del vendedor. */
+  textoDePlantilla(plantilla: AsuntoGestion): string {
+    return aplicarHuecos(plantilla.mensaje ?? '', datosDeHuecos(this.cliente));
   }
 
   /**
@@ -3170,28 +3449,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     return porNombre?.id ?? null;
   }
 
-  /** Quien está usando el CRM, para firmar el mensaje. */
-  private get nombreDelUsuario(): string {
-    try {
-      const u = JSON.parse(localStorage.getItem('user') ?? '{}');
-      return u?.name || u?.login_user || '';
-    } catch { return ''; }
-  }
-
-  /**
-   * Cómo se llama la empresa en los mensajes.
-   *
-   * Hoy el sistema no guarda ese dato en ningún lado (en la cabecera está
-   * escrito a mano), así que se lee de una clave del navegador:
-   *
-   *   localStorage.setItem('miCRM3.empresa', 'Almespaña');
-   *
-   * Si no está, las plantillas se escriben sin nombrarla.
-   */
-  private get nombreDeLaEmpresa(): string {
-    try { return localStorage.getItem('miCRM3.empresa') ?? ''; } catch { return ''; }
-  }
-
   /**
    * Elegir una respuesta abre la gestión; el chat se abre al guardarla.
    *
@@ -3205,22 +3462,27 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * ya puesto en «Qué se habló», y el botón pasa a ser «Guardar y enviar».
    * Primero queda escrito, después se manda.
    *
-   * @param plantilla null abre el chat en blanco ahora mismo: no hay mensaje
-   *        del que dejar constancia, puede que sólo se vaya a leer la
-   *        conversación.
+   * El asunto puede no traer mensaje: entonces el chat se abre en blanco,
+   * pero la gestión se registra igual con ese asunto. Lo que pone la gestión
+   * en marcha es haber elegido de qué va la conversación, no que hubiera un
+   * texto preparado.
+   *
+   * @param plantilla null es «Abrir el chat sin mensaje»: ahí no se eligió
+   *        asunto, así que no hay nada que registrar; puede que sólo se vaya
+   *        a leer la conversación.
    */
-  escribirPorWhatsapp(numero?: string | null, plantilla: WhatsappPlantillaModel | null = null, aQuien?: string | null): void {
+  escribirPorWhatsapp(numero?: string | null, plantilla: AsuntoGestion | null = null, aQuien?: string | null): void {
     if (!numeroInternacional(numero)) {
       this._toastr.warning('No tiene un número al que escribir', 'WhatsApp');
       return;
     }
 
-    const texto = plantilla ? this.textoDePlantilla(plantilla) : null;
+    const texto = plantilla ? this.textoDePlantilla(plantilla) : '';
 
-    // Sin plantilla no hay gestión que abrir; y sin permiso para crearlas,
+    // Sin asunto no hay gestión que abrir; y sin permiso para crearlas,
     // tampoco: se escribe al cliente igual, que es lo que no se le puede
     // quitar a nadie, aunque esa vez no quede registrada.
-    if (!plantilla || !texto || !this.cliente?.id || this.accesoModel?.crear === false) {
+    if (!plantilla || !this.cliente?.id || this.accesoModel?.crear === false) {
       abrirWhatsapp(numero, texto);
       return;
     }
@@ -3233,8 +3495,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.gestion = null;
     modalRef.componentInstance.telefonoInicial = numero;
     modalRef.componentInstance.tipoInicial = 'WHATSAPP';
-    modalRef.componentInstance.notaInicial = texto;
-    modalRef.componentInstance.asuntoInicial = plantilla.asunto;
+    modalRef.componentInstance.notaInicial = comoHtml(texto);
+    // El asunto va por id y no por su nombre: la respuesta ES un asunto del
+    // catálogo, así que no hay nada que buscar ni nada que pueda no encontrarse.
+    modalRef.componentInstance.asuntoInicial = plantilla.id;
     // Con quién se habló: antes se pegaba al asunto porque no había dónde
     // ponerlo; ahora va en su campo, que es de donde salen los informes.
     modalRef.componentInstance.contactoInicial = this.contactoLlamado(aQuien, numero);

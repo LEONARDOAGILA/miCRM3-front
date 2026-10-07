@@ -61,13 +61,14 @@
               </app-campoNumeroEntero>
             </div>
             <div class="col-12">
-              <app-campoTextoArea
-                [control]="form.controls['nota']"
-                label="Qué se habló"
-                placeholder="Lo que dijo el cliente, acuerdos, próximos pasos…"
-                [maxLength]="4000"
-                [alto]="78">
-              </app-campoTextoArea>
+              <!-- El mismo editor que al registrar: es el mismo campo, y una
+                   gestión programada pudo nacer con el correo que se mandó. -->
+              <label class="form-label fs-13px mb-1">Qué se habló</label>
+              <app-campoNgxEditor
+                [formControl]="ctrlNota"
+                [placeholder]="'Lo que dijo el cliente, acuerdos, próximos pasos…'"
+                alto="7rem">
+              </app-campoNgxEditor>
             </div>
           </div>
         </div>

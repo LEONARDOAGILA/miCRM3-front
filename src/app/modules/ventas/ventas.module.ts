@@ -8,6 +8,7 @@ import { LoadingBarModule } from '@ngx-loading-bar/core';
 import { AgGridModule } from 'ag-grid-angular';
 import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
 
+
 import { DirectiveModule } from "../../core/directives/directive.module";
 import { PanelModule } from '../../components/panel/panel.module';
 
@@ -26,6 +27,7 @@ import { CampoNumeroEnteroComponent } from '../../components/campos/campoNumeroE
 import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.component';
 import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/campoBusqueda.component';
 import { CampoBusquedaPaginacionComponent } from "../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component";
+import { CampoNgxEditorComponent } from '../../components/campos/campoNgxEditor/campoNgxEditor.component';
 import { ComboComponent } from '../../components/campos/combo/combo.component';
 
 import { HomeComponent } from './pages/home/home.component';
@@ -93,6 +95,7 @@ import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCli
     CheckboxComponent,
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
+    CampoNgxEditorComponent,   // «Qué se habló»: el editor con formato
     ModalArrastrableDirective,
     ComboComponent,
     ActionButtonsModule,

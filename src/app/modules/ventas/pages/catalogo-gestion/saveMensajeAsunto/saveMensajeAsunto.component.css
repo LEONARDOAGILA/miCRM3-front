@@ -1,0 +1,103 @@
+/* ============================================================
+   EL MENSAJE DE UN ASUNTO
+
+   La barra, los desplegables de letra y tamaño y la hoja ya no están aquí:
+   se fueron a components/campos/campoNgxEditor, que es el campo que usan
+   esta pantalla, el registro de gestión y el cierre.
+
+   Los tintes van en rgba y no en color-mix(): esto corre en un iPhone 7
+   (ver .browserslistrc).
+   ============================================================ */
+@import '../../../../../components/campos/campoNgxEditor/cinta.css';
+
+.mensaje-cuerpo {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.mensaje-ayuda {
+  margin-bottom: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+/* ---------- Los huecos ---------- */
+.mensaje-huecos {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .25rem;
+
+  margin-bottom: .375rem;
+}
+
+.mensaje-huecos__rotulo {
+  margin-right: .25rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+.mensaje-huecos__btn {
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: .6875rem;
+}
+
+/* ---------- El campo ---------- */
+.mensaje-plano {
+  font-size: .8125rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.mensaje-pista {
+  margin: .375rem 0 0;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+}
+
+/* ---------- Cómo le llega ---------- */
+.mensaje-previa {
+  margin-top: 1rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.mensaje-previa__rotulo {
+  margin-bottom: .375rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+/* La burbuja de WhatsApp, para que se vea como lo va a ver el cliente */
+.mensaje-previa__globo {
+  padding: .5rem .625rem;
+  border-radius: .5rem .5rem .5rem 0;
+
+  background-color: rgba(37, 211, 102, .12);
+  color: var(--bs-body-color, #212529);
+  font-size: .8125rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* ---------- Expandido ----------
+   El tema convierte .panel en position:fixed inset:0, así que al expandir hay
+   altura de sobra. El que desplaza entonces es .panel-body: si el cuerpo
+   siguiera con su propio scroll saldrían dos barras, una dentro de la otra. */
+:host ::ng-deep .panel.panel-expand > .panel-body {
+  /* el tema lo deja en scroll y saca una barra horizontal fija aunque no haga
+     falta (scss/default/ui/_panel.scss) */
+  overflow-x: auto;
+}
+
+:host ::ng-deep .panel.panel-expand .mensaje-cuerpo {
+  max-height: none;
+  overflow: visible;
+}
+
+/* La hoja, a media pantalla: es lo que hace falta para ver un correo entero
+   sin ir pasando la rueda cada dos líneas. */
+:host ::ng-deep .panel.panel-expand .mensaje-campo .NgxEditor {
+  min-height: 55vh;
+}

@@ -336,3 +336,184 @@ a.gestion-adj__nombre:hover {
     height: 26px;
   }
 }
+
+/* ---------- «Que se hablo», con el editor de la pestaña Notas ----------
+   La nota puede traer formato desde que el mensaje de un asunto de correo se
+   escribe en HTML, y en un campo llano se leerian las etiquetas. */
+.gestion-nota-editor {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  overflow: hidden;
+}
+
+:host ::ng-deep .gestion-nota-editor .NgxEditor {
+  border: 0;
+  min-height: 7rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  font-size: .8125rem;
+}
+
+:host ::ng-deep .gestion-nota-editor .NgxEditor__MenuBar {
+  border: 0;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+:host ::ng-deep .gestion-nota-editor .NgxEditor__Content p:last-child {
+  margin-bottom: 0;
+}
+
+/* En telefono el editor se queda mas bajo: el modal ya va justo de alto */
+@media (max-width: 767.98px) {
+  :host ::ng-deep .gestion-nota-editor .NgxEditor {
+    min-height: 5rem;
+    max-height: 10rem;
+  }
+}
+
+/* Las barras del editor: una por grupo, seguidas y con un hilo entre ellas */
+.gestion-nota-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+:host ::ng-deep .gestion-nota-barra .NgxEditor__MenuBar {
+  border: 0;
+  padding: .125rem .25rem;
+  background: transparent;
+}
+
+:host ::ng-deep .gestion-nota-barra > *:not(:last-child) .NgxEditor__MenuBar {
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.gestion-nota-subiendo {
+  margin: 0;
+  padding: .25rem .5rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+}
+
+/* Las imagenes pegadas, a lo ancho del campo y nunca mas */
+:host ::ng-deep .gestion-nota-editor .NgxEditor__Content img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Los desplegables de letra y tamaño, dentro de la barra */
+.gestion-nota-selects {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+
+  padding: .125rem .375rem;
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.gestion-nota-letra {
+  width: 8.5rem;
+}
+
+.gestion-nota-tamano {
+  width: 4.25rem;
+}
+
+.gestion-nota-letra,
+.gestion-nota-tamano {
+  height: 26px;
+  padding: 0 1.25rem 0 .375rem;
+  font-size: .6875rem;
+}
+
+/* En telefono los desplegables se encogen: la barra ya va a dos filas */
+@media (max-width: 767.98px) {
+  .gestion-nota-letra {
+    width: 6rem;
+  }
+
+  .gestion-nota-tamano {
+    width: 3.75rem;
+  }
+}
+
+/* ---------- «Qué se habló» ----------
+   El panel trae su propio marco y su cabecera, así que el cuerpo va sin el
+   relleno de siempre: el editor ya tiene el suyo y, con los dos, la hoja
+   queda flotando en mitad de la tarjeta. */
+:host ::ng-deep .gestion-nota > .panel-body {
+  padding: 0;
+}
+
+/* Los avisos de «se enviará al guardar» sí respiran */
+:host ::ng-deep .gestion-nota > .panel-body .gestion-wa-encola {
+  margin: .5rem .625rem;
+}
+
+/* ---------- Expandido ----------
+   El tema convierte .panel en position:fixed inset:0 con display:flex, así
+   que ahí sí hay altura definida: se encadena flex hasta la hoja para que el
+   papel llegue al borde de abajo. Sin la cadena, el editor se queda en su
+   alto y debajo aparece una franja vacía. */
+:host ::ng-deep .panel.panel-expand > .panel-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* el tema lo deja en scroll y saca una barra horizontal fija aunque no
+     haga falta (scss/default/ui/_panel.scss) */
+  overflow-x: auto;
+}
+
+:host ::ng-deep .panel.panel-expand .gestion-nota__campo,
+:host ::ng-deep .panel.panel-expand .gestion-nota__campo .cne {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* La cadena sigue dentro del campo: el papel es un hijo del fondo, y un
+   min-height:100% ahi no mide nada porque el padre no tiene altura fija.
+   Con flex si: cada uno crece hasta llenar al de arriba. */
+:host ::ng-deep .panel.panel-expand .gestion-nota__campo .cne__fondo {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 2rem 1rem;
+}
+
+:host ::ng-deep .panel.panel-expand .gestion-nota__campo .cne__hoja {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  /* El width hace falta: el margin:0 auto que centra el papel hace que, de
+     hijo de un flex en columna, se encoja hasta el ancho del texto. Con el
+     100% ocupa la linea y el max-width de 820px lo vuelve a dejar en hoja. */
+  width: 100%;
+}
+
+/* El <ngx-editor> de en medio tambien: .NgxEditor es un div de dentro suyo,
+   asi que el hijo de la hoja es el elemento, no la clase. Sin esta regla la
+   cadena se corta justo aqui y el editor se queda en 36px. */
+:host ::ng-deep .panel.panel-expand .gestion-nota__campo .cne__hoja > ngx-editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .panel.panel-expand .gestion-nota__campo .NgxEditor {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .panel.panel-expand .gestion-nota__campo .NgxEditor__Content {
+  flex: 1 1 auto;
+}

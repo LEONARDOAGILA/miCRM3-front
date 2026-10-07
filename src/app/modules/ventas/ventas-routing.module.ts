@@ -9,7 +9,6 @@ import { HomeComponent } from './pages/home/home.component';
 import { AllClientesComponent } from './pages/clientes/allClientes/allClientes.component';
 import { GestionClientesComponent } from './pages/gestion-clientes/gestionClientes.component';
 import { CatalogoGestionComponent } from './pages/catalogo-gestion/catalogoGestion.component';
-import { AllPlantillasWhatsappComponent } from './pages/whatsapp-plantillas/allPlantillasWhatsapp/allPlantillasWhatsapp.component';
 
 const routes: Routes = [
 {
@@ -20,7 +19,6 @@ const routes: Routes = [
         { path: 'allClientes', component: AllClientesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'gestionClientes', component: GestionClientesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'catalogoGestion', component: CatalogoGestionComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
-        { path: 'plantillasWhatsapp', component: AllPlantillasWhatsappComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         { path: 'home-ventas', component: HomeComponent, data: { title: 'Ventas' }, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
         { path: '**', component: ErrorPage },

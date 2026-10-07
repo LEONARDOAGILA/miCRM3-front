@@ -418,8 +418,11 @@
    que se pasa por encima */
 /* ---------- El número ----------
    Texto, no enlace: para llamar está el botón de al lado. Se dejó de pintar
-   en azul a propósito, que invitaba a pulsarlo y marcaba sin querer. Se puede
-   seleccionar con el ratón para copiarlo a mano. */
+   en azul a propósito, que invitaba a pulsarlo y marcaba sin querer.
+
+   El user-select de aquí sólo sirve desde que el número es texto de verdad y
+   no .numero-plano: lo que pinta el CSS no se puede seleccionar por mucho
+   user-select que se le ponga (ver styles.css). */
 .gc-campo__numero {
   flex: 0 1 auto;
   min-width: 0;
@@ -1331,6 +1334,9 @@
 :host ::ng-deep .gestion-acciones .btn-editar { --tinte: #00acac; --tinte-borde: rgba(0, 172, 172, .38);  --tinte-fondo: rgba(0, 172, 172, .10); }
 :host ::ng-deep .gestion-acciones .btn-correo { --tinte: #6f42c1; --tinte-borde: rgba(111, 66, 193, .35); --tinte-fondo: rgba(111, 66, 193, .09); }
 :host ::ng-deep .gestion-acciones .btn-abrir  { --tinte: #198754; --tinte-borde: rgba(25, 135, 84, .35);  --tinte-fondo: rgba(25, 135, 84, .08); }
+/* El clip, en ámbar: es el único que no hace nada con la gestión, sólo
+   enseña lo que se mandó, y conviene que no se confunda con los que sí */
+:host ::ng-deep .gestion-acciones .btn-adjuntos { --tinte: #fd7e14; --tinte-borde: rgba(253, 126, 20, .38); --tinte-fondo: rgba(253, 126, 20, .10); }
 :host ::ng-deep .gestion-acciones .btn-quitar { --tinte: #dc3545; --tinte-borde: rgba(220, 53, 69, .35);  --tinte-fondo: rgba(220, 53, 69, .08); }
 
 /* Apagado por el perfil: se queda en gris.
@@ -2863,3 +2869,14 @@
 }
 
 :host ::ng-deep .gc-nota__cuerpo :is(td, th) > p { margin: 0; }
+
+/* El boton de escribir un correo, junto al del copiar */
+.gc-campo__accion--correo {
+  color: #2f6fed;
+}
+
+.gc-campo__accion--correo:hover {
+  border-color: rgba(47, 111, 237, .45);
+  background-color: rgba(47, 111, 237, .12);
+  color: #2f6fed;
+}

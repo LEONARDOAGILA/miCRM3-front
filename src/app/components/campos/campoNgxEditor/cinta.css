@@ -1,5 +1,5 @@
 /* ============================================================
-   LA CINTA DE LAS NOTAS
+   LA CINTA
 
    La barra de acciones al estilo de la cinta de Word: pestañas
    arriba y, debajo, los controles repartidos en grupos con su
@@ -7,8 +7,9 @@
    tira, encontrar «justificado» es cuestión de ir probando;
    agrupados y con etiqueta, se busca por el nombre del grupo.
 
-   Vive en su propio fichero porque la usan el editor (saveNota) y
-   el visor (verNota), y las dos tienen que verse igual. Se trae
+   Vive en su propio fichero porque la usan el campo compartido
+   (campoNgxEditor, con [cinta]), el editor de notas (saveNota) y
+   el visor (verNota), y las tres tienen que verse igual. Se trae
    con @import desde el css de cada componente —y no desde el
    styles.css global— para que siga siendo css de componente: así
    se queda encapsulada, :host-context funciona y no viaja a las
@@ -235,7 +236,9 @@
 /* Anchos fijos: si se dejan al contenido, el desplegable cambia de tamaño al
    elegir («Arial» mide la mitad que «Times New Roman») y la cinta entera baila */
 .cinta__select--familia { width: 130px; }
-.cinta__select--tamano  { width: 62px; }
+/* 70 y no 62: con 62 el rotulo «Tam.» sale cortado en «Tar», porque la
+   flecha del desplegable se come el hueco de la derecha. */
+.cinta__select--tamano  { width: 70px; }
 
 /* ---------- La etiqueta de color y el «fijar» ---------- */
 .cinta__color {

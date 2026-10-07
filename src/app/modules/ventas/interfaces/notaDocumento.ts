@@ -20,6 +20,14 @@ export interface DatosDocumentoNota {
   autor?: string | null;
   fecha?: string | null;
   cliente?: string | null;
+  /**
+   * Lo que va arriba a la izquierda del membrete.
+   *
+   * Sin esto, la etiqueta de color de la nota. Lo usa quien imprime algo que
+   * no es una nota —el mensaje de un asunto, por ejemplo— y ahí «Sin
+   * etiqueta» no significaría nada.
+   */
+  rotulo?: string | null;
 }
 
 /** Que un título con «<» no rompa el documento que se escribe. */
@@ -79,7 +87,7 @@ export function documentoNota(d: DatosDocumentoNota): string {
   th { background: #f0f0f0; font-weight: 700; text-align: left; }
   td > p, th > p { margin: 0; }
 </style></head><body>
-  <div class="cab"><span>${escaparHtml(nombreDeColor(d.color))}</span><span>${pieDe(d)}</span></div>
+  <div class="cab"><span>${escaparHtml(d.rotulo ?? nombreDeColor(d.color))}</span><span>${pieDe(d)}</span></div>
   <h1 class="doc-titulo">${escaparHtml(d.titulo)}</h1>
   ${d.contenido ?? ''}
 </body></html>`;

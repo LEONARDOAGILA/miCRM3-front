@@ -84,8 +84,21 @@
       <video class="visor__video" [src]="url" controls autoplay playsinline></video>
 
     } @else if (esPdf) {
-      <!-- Lo pinta el visor de PDF del navegador, que ya trae zoom y páginas -->
-      <iframe class="visor__pdf" [src]="urlSegura" title="Documento"></iframe>
+      <!-- Lo pinta el visor de PDF del navegador, que ya trae zoom y páginas.
+
+           Debajo va una salida, y no sobra: si el navegador tiene puesto
+           «Descargar los archivos PDF en lugar de abrirlos automáticamente»,
+           el iframe se queda en negro y sin esto no hay manera de llegar al
+           documento sin cerrar el visor. -->
+      <div class="visor__pdf__caja">
+        <iframe class="visor__pdf" [src]="urlSegura" title="Documento"></iframe>
+        <p class="visor__pdf__salida">
+          ¿No se ve el documento?
+          <button type="button" class="visor__pdf__enlace" (click)="abrirAparte()">Ábrelo en otra pestaña</button>
+          o
+          <button type="button" class="visor__pdf__enlace" (click)="descargar()">descárgalo</button>.
+        </p>
+      </div>
 
     } @else if (esAudio) {
       <!-- Un audio no se ve: se enseña de qué es y se pone a sonar. El icono

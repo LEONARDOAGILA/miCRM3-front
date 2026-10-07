@@ -20,7 +20,7 @@
        (panelRemovedModal)="modal.dismiss()">
 
   <!-- ========================= LA CINTA =========================
-       La misma que la del editor (ver cintaNota.css), pero sin
+       La misma que la del editor (ver campoNgxEditor/cinta.css), pero sin
        pestañas: aquí sólo se lee, y una fila de pestañas para dos
        botones es un piso de más que hay que bajar para llegar a lo
        único que se puede hacer.
@@ -89,7 +89,7 @@
 
       <!-- El contenido entero, sin el recorte de la tarjeta. El HTML lo sanea
            Angular al pintarlo, y el servidor ya lo limpió al guardarlo. -->
-      <div class="nota-ver__cuerpo" [innerHTML]="nota?.contenido"></div>
+      <div class="nota-ver__cuerpo" [innerHTML]="contenido"></div>
     </div>
   </div>
 </panel>
