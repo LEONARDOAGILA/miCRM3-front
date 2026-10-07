@@ -46,6 +46,7 @@ import { SubirArchivosComponent } from './subirArchivos/subirArchivos.component'
 import { VisorArchivoComponent } from './visorArchivo/visorArchivo.component';
 import { SaveNotaComponent } from './saveNota/saveNota.component';
 import { VerNotaComponent } from './verNota/verNota.component';
+import { ImportarConversacionComponent } from './importarConversacion/importarConversacion.component';
 import { NotaClienteService } from '../../services/notaCliente.service';
 import { NotaCliente, tinteDeNota, nombreDeColor } from '../../interfaces/notaCliente';
 import { CatalogoGestionService } from '../../services/catalogoGestion.service';
@@ -3415,6 +3416,34 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   cerrarMenuWhatsapp(): void {
     if (this.menuWa.visible) { this.menuWa.visible = false; }
+  }
+
+  /**
+   * Traer al historial una conversación ya mantenida por WhatsApp.
+   *
+   * Se importa el .txt que deja «Exportar chat», no se lee la ventana de
+   * WhatsApp: Windows no expone el texto de los mensajes —vive dentro del
+   * WebView2 y su árbol de accesibilidad sólo se construye si lo pide un
+   * lector de pantalla al arrancar— y lo otro sería entrar en su almacén
+   * cifrado, que se rompe en cada actualización.
+   *
+   * Queda como una gestión de tipo WhatsApp, así que entra en el historial y
+   * cuenta en las estadísticas igual que si se hubiera registrado a mano.
+   */
+  importarConversacion(): void {
+    if (!this.permiso(this.accesoModel?.crear, 'importar conversaciones')) { return; }
+    if (!this.cliente?.id) { return; }
+
+    const ref = this.modal.open(ImportarConversacionComponent, {
+      size: 'lg', centered: true, backdrop: 'static',
+    });
+    ref.componentInstance.cliente = this.cliente;
+    ref.componentInstance.numero  = this.cliente?.celular || this.cliente?.telefono || '';
+    ref.componentInstance.asuntos = this.plantillasWhatsapp;
+
+    // Al terminar se recarga todo: la gestión nueva sale en el historial y en
+    // los contadores de arriba, que si no seguirían diciendo lo de antes.
+    this.escucharModal(ref, ref.componentInstance.guardado, () => this.refrescar());
   }
 
   /** ¿Ese asunto trae mensaje escrito? Lo usa el menú para distinguirlos. */

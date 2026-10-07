@@ -1,0 +1,143 @@
+/* ============================================================
+   IMPORTAR UNA CONVERSACIÓN
+
+   Los tintes van en rgba y no en color-mix(): esto corre en un iPhone 7
+   (ver .browserslistrc).
+   ============================================================ */
+
+.imp-cuerpo {
+  max-height: 72vh;
+  overflow-y: auto;
+}
+
+/* ---------- Los pasos ---------- */
+.imp-pasos {
+  margin: 0 0 .75rem;
+  padding-left: 1.1rem;
+
+  color: var(--bs-body-color, #212529);
+  font-size: .75rem;
+  line-height: 1.7;
+}
+
+/* ---------- Donde se suelta el fichero ---------- */
+.imp-soltar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+
+  width: 100%;
+  padding: 1.1rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+  cursor: pointer;
+  transition: border-color .12s ease, background-color .12s ease;
+}
+
+/* En el verde de WhatsApp: es de donde viene el fichero */
+.imp-soltar:hover {
+  border-color: #25d366;
+  background-color: rgba(37, 211, 102, .06);
+}
+
+.imp-soltar__texto {
+  text-align: center;
+  word-break: break-all;
+}
+
+.imp-error {
+  margin: .5rem 0 0;
+  color: var(--bs-danger, #dc3545);
+  font-size: .75rem;
+}
+
+/* ---------- Lo que trae ---------- */
+.imp-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem .75rem;
+
+  margin-top: .75rem;
+  padding: .4rem .6rem;
+  border-radius: .375rem;
+
+  background-color: rgba(37, 211, 102, .10);
+  font-size: .75rem;
+}
+
+.imp-resumen__dato {
+  color: var(--bs-body-color, #212529);
+}
+
+/* El recorte, en ámbar: no es un error, pero hay que leerlo */
+.imp-aviso {
+  margin: .5rem 0 0;
+  padding: .4rem .6rem;
+  border-radius: .375rem;
+
+  background-color: rgba(253, 126, 20, .10);
+  color: var(--bs-body-color, #212529);
+  font-size: .75rem;
+}
+
+.imp-asunto {
+  margin-top: .75rem;
+}
+
+/* ---------- Cómo va a quedar ---------- */
+.imp-previa {
+  margin-top: 1rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.imp-previa__rotulo {
+  margin-bottom: .375rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.imp-previa__chat {
+  max-height: 14rem;
+  overflow-y: auto;
+
+  padding: .5rem .625rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.imp-linea {
+  font-size: .75rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.imp-linea.is-aviso {
+  color: var(--bs-secondary-color, #6c757d);
+  font-style: italic;
+}
+
+.imp-linea--mas {
+  margin-top: .25rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.imp-linea__cuando {
+  margin-right: .3rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-variant-numeric: tabular-nums;
+}
+
+.imp-linea__quien {
+  margin-right: .25rem;
+  font-weight: 600;
+}

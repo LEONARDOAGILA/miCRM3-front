@@ -53,7 +53,7 @@ export class CerrarGestionComponent implements OnInit {
     this.form = this.fb.group({
       resultado:        ['CONTACTADO', [Validators.required]],
       duracion_minutos: [this.gestion?.duracion_minutos ?? null, [Validators.min(0), Validators.max(1440)]],
-      nota:             [this.gestion?.nota ?? '', [Validators.maxLength(4000)]],
+      nota:             [this.gestion?.nota ?? '', [Validators.maxLength(100000)]],
 
       // El seguimiento
       programar:        [false],

@@ -172,68 +172,6 @@
                 </div>
               </div>
             }
-
-            <!-- ---------- Qué se habló ----------
-                 Aquí había al lado una tarjeta de «Teléfonos» con llamar,
-                 WhatsApp y copiar. Sobra desde que a este formulario se llega
-                 DESDE esas acciones: se marca o se elige la respuesta en la
-                 ficha y el formulario se abre ya con el número puesto, así
-                 que volver a ofrecerlas aquí era dar la vuelta a lo que se
-                 acaba de hacer. La nota se queda con todo el ancho. -->
-            <div class="col-12">
-              <!-- En <panel> y no en una tarjeta propia: así trae el botón de
-                   expandir de la barra de título, que es el que hace falta aquí.
-                   Un correo con formato no se escribe en un campo de 10rem, y el
-                   editor ya no lleva el suyo: con el del panel ya hay uno y dos
-                   botones de expandir juntos no se distinguen. -->
-              <panel
-                title="Qué se habló"
-                headerClass="bg-gray-800"
-                icono="editar"
-                fondoGris="true"
-                panelClass="mb-0 gestion-nota"
-                [noButtonReload]="true"
-                [noButtonCollapse]="true"
-                [noButtonRemove]="true">
-
-                <!-- El mismo editor de la pestaña Notas, y no un textarea: el
-                     mensaje de un asunto de correo viene con formato, y en un
-                     campo llano se leerían las etiquetas. -->
-                <app-campoNgxEditor
-                  class="gestion-nota__campo"
-                  [formControl]="ctrlNota"
-                  [almacen]="almacenDeImagenes"
-                  [avisar]="avisarDelPegado"
-                  [placeholder]="'Lo que dijo el cliente, acuerdos, próximos pasos…'"
-                  [cinta]="true"
-                  [hoja]="true"
-                  alto="10rem">
-                </app-campoNgxEditor>
-
-                <!-- Que se vea que hay un mensaje en cola, y no sólo en el
-                     botón del pie: aquí es donde se está mirando -->
-                @if (hayWhatsappPendiente) {
-                  <p class="gestion-wa-encola">
-                    <i class="fab fa-whatsapp fa-fw text-success"></i>
-                    Se enviará a <b>{{ whatsappPendiente?.numero }}</b> al guardar.
-                    <button type="button" class="gestion-wa-encola__quitar"
-                            title="No enviar el mensaje, sólo guardar la gestión"
-                            (click)="cancelarWhatsappPendiente()">No enviar</button>
-                  </p>
-                }
-
-                @if (hayCorreoPendiente) {
-                  <p class="gestion-wa-encola">
-                    <i class="fa fa-envelope fa-fw text-primary"></i>
-                    Outlook abrirá el correo a <b>{{ correoPendiente?.para }}</b> al guardar.
-                    <button type="button" class="gestion-wa-encola__quitar"
-                            title="No abrir el correo, sólo guardar la gestión"
-                            (click)="cancelarCorreoPendiente()">No enviar</button>
-                  </p>
-                }
-              </panel>
-            </div>
-
             <!-- ---------- Adjuntos ----------
                  Lo que se le mandó al cliente en esta conversación. Se suben
                  al guardar, no al elegirlos: hasta entonces no hay gestión de
@@ -312,6 +250,69 @@
                 </div>
               </div>
             </div>
+            
+            <!-- ---------- Qué se habló ----------
+                 Aquí había al lado una tarjeta de «Teléfonos» con llamar,
+                 WhatsApp y copiar. Sobra desde que a este formulario se llega
+                 DESDE esas acciones: se marca o se elige la respuesta en la
+                 ficha y el formulario se abre ya con el número puesto, así
+                 que volver a ofrecerlas aquí era dar la vuelta a lo que se
+                 acaba de hacer. La nota se queda con todo el ancho. -->
+            <div class="col-12">
+              <!-- En <panel> y no en una tarjeta propia: así trae el botón de
+                   expandir de la barra de título, que es el que hace falta aquí.
+                   Un correo con formato no se escribe en un campo de 10rem, y el
+                   editor ya no lleva el suyo: con el del panel ya hay uno y dos
+                   botones de expandir juntos no se distinguen. -->
+              <panel
+                title="Qué se habló"
+                headerClass="bg-gray-800"
+                icono="editar"
+                fondoGris="true"
+                panelClass="mb-0 gestion-nota"
+                [noButtonReload]="true"
+                [noButtonCollapse]="true"
+                [noButtonRemove]="true">
+
+                <!-- El mismo editor de la pestaña Notas, y no un textarea: el
+                     mensaje de un asunto de correo viene con formato, y en un
+                     campo llano se leerían las etiquetas. -->
+                <app-campoNgxEditor
+                  class="gestion-nota__campo"
+                  [formControl]="ctrlNota"
+                  [almacen]="almacenDeImagenes"
+                  [avisar]="avisarDelPegado"
+                  [placeholder]="'Lo que dijo el cliente, acuerdos, próximos pasos…'"
+                  [cinta]="true"
+                  [hoja]="true"
+                  alto="10rem">
+                </app-campoNgxEditor>
+
+                <!-- Que se vea que hay un mensaje en cola, y no sólo en el
+                     botón del pie: aquí es donde se está mirando -->
+                @if (hayWhatsappPendiente) {
+                  <p class="gestion-wa-encola">
+                    <i class="fab fa-whatsapp fa-fw text-success"></i>
+                    Se enviará a <b>{{ whatsappPendiente?.numero }}</b> al guardar.
+                    <button type="button" class="gestion-wa-encola__quitar"
+                            title="No enviar el mensaje, sólo guardar la gestión"
+                            (click)="cancelarWhatsappPendiente()">No enviar</button>
+                  </p>
+                }
+
+                @if (hayCorreoPendiente) {
+                  <p class="gestion-wa-encola">
+                    <i class="fa fa-envelope fa-fw text-primary"></i>
+                    Outlook abrirá el correo a <b>{{ correoPendiente?.para }}</b> al guardar.
+                    <button type="button" class="gestion-wa-encola__quitar"
+                            title="No abrir el correo, sólo guardar la gestión"
+                            (click)="cancelarCorreoPendiente()">No enviar</button>
+                  </p>
+                }
+              </panel>
+            </div>
+
+
 
           </div>
         </div>

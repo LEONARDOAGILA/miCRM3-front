@@ -518,7 +518,10 @@
                       <div class="gc-campo">
                         <span class="gc-campo__rotulo">{{ rotuloIdentificacion }}:</span>
                         <span class="gc-campo__valor">
-                          <span class="gc-campo__numero">{{ cliente?.numero_identificacion }}</span>
+                          <input class="gc-campo__numero" readonly
+                                 [value]="cliente?.numero_identificacion || ''"
+                                 [size]="(cliente?.numero_identificacion || '').length || 1"
+                                 (focus)="$any($event.target).select()">
                           <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.numero_identificacion, 'La identificación')">
                             <i class="fa fa-copy"></i>
                           </button>
@@ -552,14 +555,25 @@
                         <span class="gc-campo__rotulo">Celular:</span>
                         <span class="gc-campo__valor">
                           @if (cliente?.celular) {
-                            <!-- Texto de verdad y no .numero-plano: en esta
-                                 tarjeta hace falta poder seleccionarlo con el
-                                 ratón para copiarlo a mano, y lo que pinta el
-                                 CSS no se puede seleccionar (ver styles.css).
-                                 Sigue sin ser un enlace: para llamar está el
-                                 botón de al lado, y así no se marca por un clic
-                                 de más al ir a seleccionarlo. -->
-                            <span class="gc-campo__numero">{{ cliente?.celular }}</span>
+                            <!-- EN UN <input> Y NO EN UN <span>, y no es capricho.
+                                 Aquí hace falta poder seleccionar el número con el
+                                 ratón, así que no vale .numero-plano (lo que pinta
+                                 el CSS no se selecciona, ver styles.css). Pero en
+                                 cuanto el número es texto del documento, Click2Dial
+                                 —la extensión de Zoiper— lo encuentra y le pega
+                                 encima su enlace, la bandera del país y su logotipo.
+                                 Dentro de un campo no puede: esas extensiones
+                                 recorren nodos de texto e inyectan HTML, y el valor
+                                 de un input no es un nodo de texto.
+
+                                 Es de sólo lectura y sin marco: se ve y se comporta
+                                 como texto. Al entrar se selecciona entero, que es
+                                 lo que se viene a hacer. Para llamar está el botón
+                                 de al lado. -->
+                            <input class="gc-campo__numero" readonly
+                                 [value]="cliente?.celular || ''"
+                                 [size]="(cliente?.celular || '').length || 1"
+                                 (focus)="$any($event.target).select()">
                             <span class="gc-campo__acciones">
                               <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
                                       (click)="llamarConSoftphone(cliente?.celular, cliente?.nombre_completo)">
@@ -588,7 +602,10 @@
                         <span class="gc-campo__rotulo">Teléfono:</span>
                         <span class="gc-campo__valor">
                           @if (cliente?.telefono) {
-                            <span class="gc-campo__numero">{{ cliente?.telefono }}</span>
+                            <input class="gc-campo__numero" readonly
+                                 [value]="cliente?.telefono || ''"
+                                 [size]="(cliente?.telefono || '').length || 1"
+                                 (focus)="$any($event.target).select()">
                             <span class="gc-campo__acciones">
                               <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
                                       (click)="llamarConSoftphone(cliente?.telefono, cliente?.nombre_completo)">
@@ -606,7 +623,19 @@
                         <span class="gc-campo__rotulo">Correo:</span>
                         <span class="gc-campo__valor">
                           @if (cliente?.email) {
-                            <a [href]="'mailto:' + cliente?.email" [title]="cliente?.email">{{ cliente?.email }}</a>
+                            <!-- Como los teléfonos: texto que se puede seleccionar, no
+                                 un enlace. Un mailto abre el cliente de correo que tenga
+                                 puesto el navegador, que no siempre es el Outlook desde el
+                                 que de verdad se escribe, y además arrastrar sobre un
+                                 enlace para seleccionarlo lo arrastra en vez de marcarlo.
+                                 Para escribir está el botón de al lado, que sí pasa por
+                                 Outlook. En un <input> por lo mismo que los números: lo
+                                 que hay dentro no lo tocan las extensiones. -->
+                            <input class="gc-campo__texto" readonly
+                                   [value]="cliente?.email || ''"
+                                   [size]="(cliente?.email || '').length || 1"
+                                   [title]="cliente?.email"
+                                   (focus)="$any($event.target).select()">
                             <span class="gc-campo__acciones">
                               <button type="button" class="gc-campo__accion gc-campo__accion--correo"
                                       title="Escribir un correo con Outlook"
@@ -624,7 +653,11 @@
                         <div class="gc-campo">
                           <span class="gc-campo__rotulo">Alterno:</span>
                           <span class="gc-campo__valor">
-                            <a [href]="'mailto:' + cliente?.email_alterno" [title]="cliente?.email_alterno">{{ cliente?.email_alterno }}</a>
+                            <input class="gc-campo__texto" readonly
+                                   [value]="cliente?.email_alterno || ''"
+                                   [size]="(cliente?.email_alterno || '').length || 1"
+                                   [title]="cliente?.email_alterno"
+                                   (focus)="$any($event.target).select()">
                           </span>
                         </div>
                       }
@@ -1216,6 +1249,16 @@
                 <button type="button" class="btn btn-xs btn-white ms-auto" title="Recargar la conversación"
                         (click)="cargarConversacion()">
                   <i class="fa fa-arrows-rotate" [class.fa-spin]="cargandoConversacion"></i>
+                </button>
+                <!-- Lo hablado antes de que el CRM escuchara esta cuenta: se
+                     trae del .txt de «Exportar chat» y queda como gestión -->
+                <button type="button" class="btn btn-xs btn-white"
+                        title="Traer al historial una conversación ya mantenida, desde el .txt que exporta WhatsApp"
+                        (click)="importarConversacion()">
+                  <i class="fa fa-file-import me-1"></i>Importar
+                  @if (cliente?.celular || cliente?.telefono) {
+                    <span class="wa-barra__numero">{{ cliente?.celular || cliente?.telefono }}</span>
+                  }
                 </button>
                 @if (tieneWhatsapp(cliente?.celular)) {
                   <button type="button" class="btn btn-xs btn-success"

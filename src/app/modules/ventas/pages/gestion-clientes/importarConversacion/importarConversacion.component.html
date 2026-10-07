@@ -1,0 +1,130 @@
+<!-- ============================================================
+     IMPORTAR UNA CONVERSACIÓN DE WHATSAPP
+
+     Tres pasos y uno de ellos es en WhatsApp, así que van numerados: el que lo
+     hace por primera vez no tiene por qué adivinar que el .txt sale de la
+     propia aplicación.
+     ============================================================ -->
+
+<panel [title]="titulo"
+       headerClass="bg-cyan-700"
+       icono="upload"
+       fondoGris="true"
+       panelClass="mb-0"
+       [noButtonReload]="true"
+       [noButtonCollapse]="true"
+       [noButtonRemove]="true"
+       ButtonRemoveModal="true"
+       (panelRemovedModal)="modal.dismiss()">
+
+  <div class="imp-cuerpo">
+
+    <!-- ---------- Cómo se hace ---------- -->
+    <ol class="imp-pasos">
+      <li>
+        Abre el chat con <b>{{ numero || 'el cliente' }}</b>
+        <button type="button" class="btn btn-xs btn-success ms-1" (click)="abrirChat()">
+          <i class="fab fa-whatsapp me-1"></i>Abrir el chat
+        </button>
+      </li>
+      <li>
+        En WhatsApp: pulsa el nombre del contacto arriba, baja del todo y elige
+        <b>Exportar chat</b> y luego <b>Sin archivos adjuntos</b>. Guarda el <b>.txt</b>.
+      </li>
+      <li>Tráelo aquí:</li>
+    </ol>
+
+    <!-- ---------- El fichero ---------- -->
+    <label class="imp-soltar"
+           (dragover)="$event.preventDefault()"
+           (drop)="alSoltar($event)">
+      <input type="file" accept=".txt,text/plain" hidden (change)="alElegirFichero($event)">
+      <i class="fa fa-file-lines fa-2x"></i>
+      <span class="imp-soltar__texto">
+        @if (nombreFichero) { {{ nombreFichero }} } @else { Elige el .txt o suéltalo aquí }
+      </span>
+    </label>
+
+    @if (error) {
+      <p class="imp-error"><i class="fa fa-triangle-exclamation fa-fw me-1"></i>{{ error }}</p>
+    }
+
+    <!-- ---------- Lo que trae ---------- -->
+    @if (leida) {
+      <div class="imp-resumen">
+        <span class="imp-resumen__dato"><b>{{ mensajesQueCaben.length }}</b> mensajes</span>
+        @if (leida.desde) {
+          <span class="imp-resumen__dato">del {{ leida.desde }} al {{ leida.hasta }}</span>
+        }
+        @if (leida.autores.length) {
+          <span class="imp-resumen__dato">{{ leida.autores.join(' · ') }}</span>
+        }
+        @if (leida.multimedia) {
+          <span class="imp-resumen__dato" title="WhatsApp no exporta las fotos ni los audios: quedan nombrados">
+            <i class="fa fa-image fa-fw"></i>{{ leida.multimedia }} sin archivo
+          </span>
+        }
+      </div>
+
+      @if (recortados) {
+        <p class="imp-aviso">
+          <i class="fa fa-scissors fa-fw me-1"></i>
+          La conversación es más larga de lo que cabe en una gestión. Se guardan
+          los <b>{{ mensajesQueCaben.length }}</b> mensajes más recientes y quedan
+          fuera los <b>{{ recortados }}</b> primeros.
+        </p>
+      }
+
+      <!-- ---------- De qué fue ---------- -->
+      <div class="imp-asunto">
+        <label class="form-label fs-12px mb-1">Asunto de la gestión</label>
+        <select class="form-select form-select-sm" [(ngModel)]="asuntoId">
+          <option [ngValue]="null">Elige de qué fue la conversación…</option>
+          @for (a of asuntos; track a.id) {
+            <option [ngValue]="a.id">{{ a.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      @if (leida.avisos) {
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" id="ck-avisos" [(ngModel)]="conAvisos">
+          <label class="form-check-label fs-12px" for="ck-avisos">
+            Incluir los {{ leida.avisos }} avisos de WhatsApp (cifrado, cambios de número…)
+          </label>
+        </div>
+      }
+
+      <!-- ---------- Cómo va a quedar ---------- -->
+      <div class="imp-previa">
+        <div class="imp-previa__rotulo">
+          <i class="fa fa-eye fa-fw me-1"></i>Así queda en «Qué se habló»
+        </div>
+        <div class="imp-previa__chat">
+          @for (m of muestra; track $index) {
+            <div class="imp-linea" [class.is-aviso]="m.sistema">
+              <span class="imp-linea__cuando">{{ m.fecha ? m.fecha.slice(5, 16) : '' }}</span>
+              @if (m.autor) { <span class="imp-linea__quien">{{ m.autor }}:</span> }
+              <span class="imp-linea__texto">{{ m.texto }}</span>
+            </div>
+          }
+          @if (mensajesQueCaben.length > muestra.length) {
+            <div class="imp-linea imp-linea--mas">
+              … y {{ mensajesQueCaben.length - muestra.length }} mensajes más
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  </div>
+
+  <app-modal-footer afterFooter
+    [isDisabled]="puedeGuardar"
+    [cargando]="guardando"
+    [textoGuardar]="'Crear la gestión'"
+    [iconoGuardar]="'fa-file-import'"
+    (onClose)="modal.dismiss()"
+    (onSubmit)="guardar()">
+  </app-modal-footer>
+</panel>

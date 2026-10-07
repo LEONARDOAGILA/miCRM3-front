@@ -379,9 +379,9 @@
   word-break: break-word;
 }
 
-/* Los enlaces de valor (correo, web) se leen como texto, no como enlace.
-   El :not() deja fuera los botones de acción, que sí llevan su propio color:
-   sin él, este `inherit` se lo pisaba y el del mapa salía gris. */
+/* Los enlaces de valor (hoy sólo la web: el correo ya no es enlace) se leen
+   como texto. El :not() deja fuera los botones de acción, que sí llevan su
+   propio color: sin él, este `inherit` se lo pisaba y el del mapa salía gris. */
 .gc-campo__valor > a:not(.gc-campo__accion),
 .gc-campo__valor > span {
   color: inherit;
@@ -426,9 +426,49 @@
 .gc-campo__numero {
   flex: 0 1 auto;
   min-width: 0;
+  /* Es un <input readonly> y tiene que parecer texto: sin marco, sin fondo,
+     sin relleno y con la letra de su alrededor. Lo de dentro se selecciona y
+     se copia, que es para lo que está, pero no lo ve Click2Dial. */
+  max-width: 100%;
+  padding: 0;
+  border: 0;
 
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-weight: 500;
   user-select: text;
+  cursor: text;
+}
+
+/* Sin el halo del navegador: aquí no se escribe nada */
+.gc-campo__numero:focus {
+  outline: none;
+}
+
+/* El correo, en un <input readonly> por lo mismo que los números: dentro de
+   un campo no entran las extensiones que rastrean la página, y se sigue
+   pudiendo seleccionar. A diferencia del número no lleva `size`: un correo no
+   cabe, así que ocupa lo que le dejen y se recorta con puntos suspensivos. */
+.gc-campo__texto {
+  flex: 0 1 auto;
+  min-width: 0;
+  /* Mide lo que mide el correo (el size del html) y nunca más que su hueco:
+     con un 100% los botones de al lado se iban al borde de la tarjeta. */
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-overflow: ellipsis;
+  user-select: text;
+  cursor: text;
+}
+
+.gc-campo__texto:focus {
+  outline: none;
 }
 
 /* ---------- Las acciones del campo ----------
@@ -2879,4 +2919,12 @@
   border-color: rgba(47, 111, 237, .45);
   background-color: rgba(47, 111, 237, .12);
   color: #2f6fed;
+}
+
+/* El número dentro del botón de importar: se lee que es ESE chat el que se
+   va a traer, no uno cualquiera. En gris para que no compita con el rótulo. */
+.wa-barra__numero {
+  margin-left: .25rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-variant-numeric: tabular-nums;
 }

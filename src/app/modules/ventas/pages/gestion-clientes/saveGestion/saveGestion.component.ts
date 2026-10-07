@@ -628,7 +628,7 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       fecha_realizada:  [this.paraInput(g?.fecha_realizada) || (estadoInicial === 'REALIZADA' ? this.ahora() : '')],
       duracion_minutos: [g?.duracion_minutos ?? null, [Validators.min(0), Validators.max(1440)]],
       resultado:        [g?.resultado ?? (estadoInicial === 'REALIZADA' ? 'CONTACTADO' : null)],
-      nota:             [g?.nota ?? this.notaInicial ?? '', [Validators.maxLength(4000)]],
+      nota:             [g?.nota ?? this.notaInicial ?? '', [Validators.maxLength(100000)]],
     });
 
     // Una gestión nueva que se registra es, casi siempre, la que se acaba de
