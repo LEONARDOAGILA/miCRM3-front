@@ -2182,6 +2182,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   initializeGrid(): void {
     this.columnDefs = [
+      { headerName: 'Registrado por', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' }, sortable: false },
+
       {
         headerName: 'Estado', field: 'estado', minWidth: 110, maxWidth: 120,
         cellStyle: { textAlign: 'center' },
@@ -2221,7 +2223,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       { headerName: 'Contacto', field: 'contacto_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
       { headerName: 'Nota', field: 'nota', minWidth: 200, cellStyle: { textAlign: 'left' },
         valueFormatter: (p: any) => soloTexto(p.value), tooltipValueGetter: (p: any) => soloTexto(p.value) },
-      { headerName: 'Registrado por', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' }, sortable: false },
       {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 142, maxWidth: 142,
         suppressMovable: true,
