@@ -287,8 +287,13 @@
   <!-- ---------- Donde se escribe ---------- -->
   <div class="cne__fondo" [class.is-hoja]="hoja" [style.--cne-alto]="alto">
     <div class="cne__hoja">
+      <!-- El [disabled] no sobra: con soloLectura el css apaga el campo, pero
+           ProseMirror sigue con contenteditable y por teclado se podria
+           escribir. Esto llama al setDisabledState de ngx-editor, que es lo
+           que de verdad lo vuelve de lectura. -->
       <ngx-editor [editor]="editor"
                   [ngModel]="valor"
+                  [disabled]="soloLectura"
                   [ngModelOptions]="{ standalone: true }"
                   (ngModelChange)="alEscribir($event)"
                   [placeholder]="placeholder"

@@ -90,6 +90,22 @@
   margin-top: .75rem;
 }
 
+/* Se lee como un dato, no como un campo: el candado dice que no se toca y el
+   fondo apagado evita que alguien lo intente. */
+.imp-asunto__fijo {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+
+  padding: .3rem .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+
+  background-color: rgba(0, 0, 0, .03);
+  color: var(--bs-body-color, #212529);
+  font-size: .8125rem;
+}
+
 /* ---------- Cómo va a quedar ---------- */
 .imp-previa {
   margin-top: 1rem;

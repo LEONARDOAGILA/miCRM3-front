@@ -12,7 +12,8 @@ import { ClienteModel } from '../../../interfaces/clienteModel';
 import { AsuntoGestion } from '../../../interfaces/catalogoGestion';
 import { abrirWhatsapp } from '../../../interfaces/plantillasWhatsapp';
 import {
-  ConversacionLeida, MensajeImportado, comoHtmlConversacion, leerExportacion,
+  ASUNTO_IMPORTACION, ConversacionLeida, MensajeImportado, comoHtmlConversacion,
+  esAsuntoDeImportacion, leerExportacion,
 } from '../../../interfaces/conversacionWhatsapp';
 
 /**
@@ -54,7 +55,6 @@ export class ImportarConversacionComponent {
 
   public leida: ConversacionLeida | null = null;
   public nombreFichero = '';
-  public asuntoId: number | null = null;
   public conAvisos = false;
   public guardando = false;
   public error = '';
@@ -118,8 +118,6 @@ export class ImportarConversacionComponent {
         return;
       }
       this.leida = leida;
-      // Si sólo hay un asunto de WhatsApp no tiene sentido preguntarlo
-      if (!this.asuntoId && this.asuntos.length === 1) { this.asuntoId = this.asuntos[0].id; }
     };
     lector.onerror = () => { this.error = 'No se pudo leer el fichero'; };
     lector.readAsText(f, 'utf-8');
@@ -162,12 +160,27 @@ export class ImportarConversacionComponent {
     return this.mensajesQueCaben.slice(0, 12);
   }
 
-  get puedeGuardar(): boolean {
-    return !!this.leida && !!this.asuntoId && !!this.mensajesQueCaben.length && !this.guardando;
+  /**
+   * El asunto, que no se elige: siempre el de las importaciones.
+   *
+   * Se busca por nombre porque los asuntos del catálogo no tienen código. Si no
+   * aparece —porque no se corrió la migración, o porque alguien lo renombró—
+   * vale más decirlo aquí que dejar guardar y comerse un 422 del servidor.
+   */
+  get asuntoDeImportacion(): AsuntoGestion | null {
+    return this.asuntos.find(a => esAsuntoDeImportacion(a.nombre)) ?? null;
   }
 
   get nombreDelAsunto(): string {
-    return this.asuntos.find(a => a.id === Number(this.asuntoId))?.nombre ?? '';
+    return this.asuntoDeImportacion?.nombre ?? ASUNTO_IMPORTACION;
+  }
+
+  get faltaElAsunto(): boolean {
+    return !this.asuntoDeImportacion;
+  }
+
+  get puedeGuardar(): boolean {
+    return !!this.leida && !this.faltaElAsunto && !!this.mensajesQueCaben.length && !this.guardando;
   }
 
   /** La del último mensaje, salvo que caiga en el futuro: entonces, ahora. */
@@ -196,9 +209,14 @@ export class ImportarConversacionComponent {
         // Ya ocurrió: la fecha es la del último mensaje, no la de ahora. Si se
         // pusiera la de ahora, el historial diría que se habló hoy con alguien
         // con quien se habló hace tres semanas.
-        modo_registro: 'YA_HECHA',
-        asunto_id:     Number(this.asuntoId),
-        asunto:        this.nombreDelAsunto || null,
+        //
+        // IMPORTADA y no YA_HECHA: es lo que permite distinguirla después. La
+        // pestaña de WhatsApp las enseña aparte y NO deja editarlas, porque lo
+        // que hay dentro es lo que dijo el cliente, copiado tal cual; si se
+        // pudiera cambiar, el historial dejaría de ser prueba de nada.
+        modo_registro: 'IMPORTADA',
+        asunto_id:     this.asuntoDeImportacion!.id,
+        asunto:        this.nombreDelAsunto,
         nota:          this.htmlFinal,
         usuario_id:    this.cliente.vendedor_id ?? null,
         telefono:      (this.numero ?? '').trim() || null,

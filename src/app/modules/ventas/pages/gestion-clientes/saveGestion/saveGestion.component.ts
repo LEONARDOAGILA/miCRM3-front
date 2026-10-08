@@ -26,7 +26,7 @@ import {
 } from '../../../interfaces/gestionModel';
 
 /** Para qué se abre el modal. */
-export type ModoGestion = 'registrar' | 'programar' | 'editar';
+export type ModoGestion = 'registrar' | 'programar' | 'editar' | 'ver';
 
 /**
  * Registrar una gestión ya hecha, programar la siguiente o corregir una
@@ -537,8 +537,20 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Sólo mirar: el mismo formulario, con todo bloqueado.
+   *
+   * Es como se hace en el resto de los CRUD (saveCliente tiene su «esView»):
+   * una pantalla distinta para leer lo mismo acaba enseñando otros campos u
+   * otro orden, y entonces hay que mantener las dos.
+   */
+  get esVista(): boolean {
+    return this.modo === 'ver';
+  }
+
   ngOnInit(): void {
-    this.titulo = this.modo === 'programar' ? 'Programar gestión'
+    this.titulo = this.modo === 'ver'       ? 'Ver gestión'
+                : this.modo === 'programar' ? 'Programar gestión'
                 : this.modo === 'editar'    ? 'Modificar gestión'
                 : 'Registrar gestión';
 
@@ -552,6 +564,15 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     this.initializeForm();
     this.cargarCatalogo();
     this.cargarAdjuntos();
+
+    // Bloquear TODO el formulario de una vez y no campo a campo: así no hay
+    // forma de que al añadir un campo nuevo alguien se olvide de bloquearlo.
+    // El editor también se entera: campoNgxEditor es un ControlValueAccessor y
+    // su setDisabledState lo pone en sólo lectura.
+    if (this.esVista) {
+      this.form.disable({ emitEvent: false });
+      this.ctrlNota.disable({ emitEvent: false });
+    }
   }
 
 
@@ -584,6 +605,11 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
 
   /** Las tres opciones del interruptor de arriba. */
   elegirMomento(cual: 'ahora' | 'hecha' | 'programada'): void {
+    // No basta con el css: estos son <button>, no campos, así que el
+    // form.disable() no los alcanza, y setValue() funciona igual sobre un
+    // control deshabilitado.
+    if (this.esVista) { return; }
+
     this.ahoraMismo = cual === 'ahora';
     this.ctrlEstado.setValue(cual === 'programada' ? 'PENDIENTE' : 'REALIZADA');
   }
@@ -611,7 +637,7 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
   private initializeForm(): void {
     const g = this.gestion;
     const estadoInicial = this.modo === 'programar' ? 'PENDIENTE'
-                        : this.modo === 'editar'    ? (g?.estado ?? 'REALIZADA')
+                        : (this.modo === 'editar' || this.modo === 'ver') ? (g?.estado ?? 'REALIZADA')
                         : 'REALIZADA';
 
     this.form = this.fb.group({
@@ -695,6 +721,10 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
 
   public async onSubmitForm($ev?: any): Promise<void> {
     $ev?.preventDefault?.();
+    // Aquí no se llega desde la pantalla —en modo ver no hay botón de guardar—,
+    // pero el pie es compartido y un Enter en un campo dispara el submit.
+    if (this.esVista) { return; }
+
     this._toastr.clear();
     this.form.markAllAsTouched();
 

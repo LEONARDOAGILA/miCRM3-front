@@ -33,7 +33,8 @@
                renglones para decir algo que ya dicen los dos botones. Lo que
                cambia según el estado se queda como pista corta al lado. -->
           <div class="gestion-estado" [class.is-programada]="esProgramada">
-            <div class="gestion-estado__botones btn-group btn-group-sm" role="group">
+            <div class="gestion-estado__botones btn-group btn-group-sm" role="group"
+                 [class.is-bloqueado]="esVista">
               <!-- Dos rótulos para lo mismo: en 375px «En este momento» parte
                    el botón en dos renglones y descuadra los tres -->
               <button type="button" class="btn" [class.btn-primary]="esAhora" [class.btn-white]="!esAhora"
@@ -196,7 +197,8 @@
                          [title]="'Abrir ' + a.nombre">{{ a.nombre }}</a>
                       <span class="gestion-adj__peso">{{ formatoTamano(a.tamano) }}</span>
                       <button type="button" class="gestion-adj__quitar"
-                              title="Quitar el adjunto" (click)="borrarAdjuntoGuardado(a)">
+                              title="Quitar el adjunto" [disabled]="esVista"
+                              (click)="borrarAdjuntoGuardado(a)">
                         <i class="fa fa-trash"></i>
                       </button>
                     </div>
@@ -215,22 +217,26 @@
                             [title]="a.fichero.name">{{ a.fichero.name }}</span>
                       <span class="gestion-adj__peso">{{ formatoTamano(a.tamano) }}</span>
                       <button type="button" class="gestion-adj__quitar"
-                              title="Quitar de la lista" (click)="quitarAdjunto(a.clave)">
+                              title="Quitar de la lista" [disabled]="esVista"
+                              (click)="quitarAdjunto(a.clave)">
                         <i class="fa fa-times"></i>
                       </button>
                     </div>
                   }
 
-                  <!-- Elegir: botón y zona para soltar -->
-                  <label class="gestion-adj__soltar"
-                         [class.is-encima]="arrastrando"
-                         (dragover)="alArrastrarAdjuntos($event, true)"
-                         (dragleave)="alArrastrarAdjuntos($event, false)"
-                         (drop)="alSoltarAdjuntos($event)">
-                    <input type="file" multiple hidden (change)="elegirAdjuntos($event)">
-                    <i class="fa fa-paperclip me-1"></i>
-                    Añadir archivos <span class="gestion-adj__pista">o suéltalos aquí</span>
-                  </label>
+                  <!-- Elegir: botón y zona para soltar. En modo ver no sale:
+                       ahí no se añade nada, sólo se mira lo que ya hay. -->
+                  @if (!esVista) {
+                    <label class="gestion-adj__soltar"
+                           [class.is-encima]="arrastrando"
+                           (dragover)="alArrastrarAdjuntos($event, true)"
+                           (dragleave)="alArrastrarAdjuntos($event, false)"
+                           (drop)="alSoltarAdjuntos($event)">
+                      <input type="file" multiple hidden (change)="elegirAdjuntos($event)">
+                      <i class="fa fa-paperclip me-1"></i>
+                      Añadir archivos <span class="gestion-adj__pista">o suéltalos aquí</span>
+                    </label>
+                  }
 
                   @if (adjuntos.length && hayCorreoPendiente) {
                     <p class="gestion-adj__aviso">
@@ -325,8 +331,8 @@
      gestión y, con eso hecho, se abre el chat. El botón lo dice para que no
      haya que adivinar en qué orden pasan las cosas. -->
 <app-modal-footer
-  [isDisabled]="!guardando"
-  [textoCerrar]="'Salir'"
+  [isDisabled]="!guardando && !esVista"
+  [textoCerrar]="esVista ? 'Cerrar' : 'Salir'"
   [textoGuardar]="hayEnvioPendiente ? 'Guardar y enviar' : 'Guardar'"
   [iconoGuardar]="hayEnvioPendiente ? 'fa-paper-plane' : 'fa-save'"
   (onClose)="modal.dismiss()"

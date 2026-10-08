@@ -1260,6 +1260,21 @@
                     <span class="wa-barra__numero">{{ cliente?.celular || cliente?.telefono }}</span>
                   }
                 </button>
+                <!-- Las capturas: lo mismo pero en imágenes, para cuando se
+                     quiere ver el chat tal como se veía -->
+                <button type="button" class="btn btn-xs btn-white"
+                        title="Fotografiar el chat hacia atrás hasta el principio; cada pantalla queda como adjunto"
+                        (click)="capturarConversacion()">
+                  <i class="fa fa-camera me-1"></i>Capturar toda la conversación
+                </button>
+
+                <!-- Una sola foto, la del final del chat: para dejar constancia
+                     de lo último que se habló sin esperar a que recorra un año -->
+                <button type="button" class="btn btn-xs btn-white"
+                        title="Una sola foto, la de lo que se ve ahora en el chat"
+                        (click)="capturarUltimaPantalla()">
+                  <i class="fa fa-crop-simple me-1"></i>Capturar última pantalla
+                </button>
                 @if (tieneWhatsapp(cliente?.celular)) {
                   <button type="button" class="btn btn-xs btn-success"
                           title="Escribir por WhatsApp"
@@ -1268,6 +1283,69 @@
                   </button>
                 }
               </div>
+
+              <!-- ---------- Lo que se trajo de un fichero ----------
+                   Aparte del chat de abajo, que lo escucha miCRM3-wa: esto es
+                   historia anterior, traída a mano con «Importar». En tarjetas
+                   como las notas, porque se leen de un vistazo, y SÓLO DE
+                   LECTURA: lo que hay dentro es lo que dijo el cliente, copiado
+                   tal cual de WhatsApp. Si se pudiera editar dejaría de servir
+                   como prueba de lo que se habló, que es para lo que se trae. -->
+              @if (importadas.length) {
+                <div class="wa-importadas">
+                  <div class="wa-importadas__rotulo">
+                    <i class="fa fa-file-import fa-fw me-1"></i>
+                    Conversaciones importadas
+                    <span class="wa-importadas__cuenta">{{ importadas.length }}</span>
+                    <span class="wa-importadas__pista">sólo lectura</span>
+                  </div>
+
+                  <div class="wa-importadas__rejilla">
+                    @for (g of importadas; track g.id) {
+                      <div class="gc-nota wa-importada">
+                        <div class="gc-nota__cabecera">
+                          <i class="fab fa-whatsapp wa-importada__icono"></i>
+                          <span class="gc-nota__titulo" [title]="tituloDeImportada(g)">{{ tituloDeImportada(g) }}</span>
+                        </div>
+
+                        <!-- El HTML lo sanea Angular al pintarlo, y el servidor ya lo
+                             limpió al guardarlo -->
+                        <div class="gc-nota__cuerpo" [innerHTML]="g.nota"
+                             title="Leer la conversación entera" (click)="verImportada(g)"></div>
+
+                        <div class="gc-nota__pie">
+                          <span>importada por {{ g.created_by }} · {{ g.created_at }}</span>
+                        </div>
+
+                        <div class="gestion-acciones gc-nota__acciones">
+                          <!-- Sólo leer: no hay modificar ni borrar. Para deshacer una
+                               importación está su gestión en el historial. -->
+
+                          <!-- El clip, igual que en la grilla del historial: sólo
+                               aparece si esa conversación trae algo, y abre el mismo
+                               visor. En las que vienen de «Capturar» es lo único que
+                               se mira, porque el texto de la nota no es más que una
+                               línea diciendo que las pantallas están aquí. -->
+                          @if (g.num_adjuntos) {
+                            <button type="button" class="btn-icon btn-adjuntos"
+                                    [title]="g.num_adjuntos === 1
+                                             ? 'Ver el archivo adjunto'
+                                             : 'Ver los ' + g.num_adjuntos + ' archivos adjuntos'"
+                                    (click)="verAdjuntosDeGestion(g)">
+                              <i class="fa fa-paperclip"></i>
+                            </button>
+                          }
+
+                          <button type="button" class="btn-icon btn-llamar" title="Leer la conversación entera"
+                                  (click)="verImportada(g)">
+                            <i class="fa fa-eye"></i>
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
 
               @if (conversacion.length) {
                 <div class="wa-chat">
@@ -1568,7 +1646,7 @@
         <!-- Todos los asuntos activos de WhatsApp. Los que traen mensaje van
              en verde y con él de rótulo emergente; los demás abren el chat en
              blanco, pero la gestión se registra con su asunto igual. -->
-        @for (p of plantillasWhatsapp; track p.id) {
+        @for (p of respuestasWhatsapp; track p.id) {
           <button type="button" class="menu-ctx__item" role="menuitem"
                   [title]="traeMensaje(p) ? textoDePlantilla(p) : 'Sin mensaje: abre el chat en blanco y registra la gestión con este asunto'"
                   (click)="cerrarMenuWhatsapp(); escribirPorWhatsapp(menuWa.numero, p, menuWa.aQuien)">

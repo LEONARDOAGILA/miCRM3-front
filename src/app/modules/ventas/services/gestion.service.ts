@@ -159,6 +159,18 @@ export class GestionService {
   }
 
   //   ******   REGISTRAR / PROGRAMAR   ******  //
+  /**
+   * Las conversaciones que se trajeron de un fichero.
+   *
+   * Son gestiones con modo_registro = IMPORTADA. Van por su propia ruta y no
+   * por allGestiones con un filtro: la pestaña de WhatsApp las enseña todas y
+   * sin paginar, y buscarlas dentro del historial paginado obligaría a pedir
+   * páginas hasta dar con ellas.
+   */
+  importadas(clienteId: number): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'importadas/' + clienteId);
+  }
+
   addGestion(data: any): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'addGestion', data);
   }

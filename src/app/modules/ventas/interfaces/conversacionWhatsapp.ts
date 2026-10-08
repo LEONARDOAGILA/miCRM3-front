@@ -23,6 +23,27 @@
  * la diferencia entre leer la conversación y leer una lista de trozos.
  */
 
+/**
+ * El asunto bajo el que entran TODAS las importaciones.
+ *
+ * Siempre el mismo y no se pregunta: siempre es lo mismo —traer al historial lo
+ * que ya se habló—. Preguntarlo sólo conseguía que cada importación acabara
+ * bajo un asunto distinto («Cobranza», «Enviar cotización») y que después no
+ * hubiera forma de contarlas ni de encontrarlas.
+ *
+ * Existe en el catálogo porque una gestión exige un asunto del catálogo; lo
+ * crea la migración 2026-10-07_ventas_asunto_importacion_whatsapp.sql. Se busca
+ * por el nombre porque los asuntos no tienen código, y por eso se compara sin
+ * tildes ni mayúsculas: así sobrevive a que alguien lo reescriba a mano.
+ */
+export const ASUNTO_IMPORTACION = 'Importación de mensajes de WhatsApp';
+
+/** ¿Es el asunto de las importaciones? Sin tildes ni mayúsculas. */
+export function esAsuntoDeImportacion(nombre?: string | null): boolean {
+  const limpiar = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  return limpiar(String(nombre ?? '')) === limpiar(ASUNTO_IMPORTACION);
+}
+
 /** Un mensaje ya leído del fichero. */
 export interface MensajeImportado {
   /** 'AAAA-MM-DD HH:mm'; null si la línea no traía fecha legible */

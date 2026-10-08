@@ -47,6 +47,7 @@ import { VisorArchivoComponent } from './visorArchivo/visorArchivo.component';
 import { SaveNotaComponent } from './saveNota/saveNota.component';
 import { VerNotaComponent } from './verNota/verNota.component';
 import { ImportarConversacionComponent } from './importarConversacion/importarConversacion.component';
+import { esAsuntoDeImportacion } from '../../interfaces/conversacionWhatsapp';
 import { NotaClienteService } from '../../services/notaCliente.service';
 import { NotaCliente, tinteDeNota, nombreDeColor } from '../../interfaces/notaCliente';
 import { CatalogoGestionService } from '../../services/catalogoGestion.service';
@@ -386,6 +387,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * vendedor como un dispositivo más y sólo escucha. Aquí sólo se lee: para
    * escribir están las plantillas, que abren el WhatsApp del vendedor.
    */
+  /**
+   * Lo que se trajo de un fichero, aparte de lo que escucha miCRM3-wa.
+   *
+   * Son gestiones con modo_registro = IMPORTADA; se enseñan en tarjetas, como
+   * las notas, y sólo se leen.
+   */
+  public importadas: GestionModel[] = [];
+  public cargandoImportadas = false;
+
   public conversacion: MensajeWhatsapp[] = [];
   public resumenWhatsapp: ResumenWhatsapp | null = null;
   public cargandoConversacion = false;
@@ -1098,7 +1108,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         case 'contactos':  await this.cargarContactos(); break;
         // La cartera enseña las dos cosas a la vez
         case 'cartera':    await Promise.all([this.cargarAsignaciones(), this.cargarResponsables()]); break;
-        case 'whatsapp':   await this.cargarConversacion(); break;
+        case 'whatsapp':   await Promise.all([this.cargarConversacion(), this.cargarImportadas()]); break;
         case 'notas':      await this.cargarNotas(); break;
         case 'archivos':   await this.cargarArchivos(); break;
       }
@@ -1293,7 +1303,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (this.pestanasCargadas.has('pendientes')) { tareas.push(this.cargarPendientes()); }
     if (this.pestanasCargadas.has('contactos'))  { tareas.push(this.cargarContactos()); }
     if (this.pestanasCargadas.has('cartera'))    { tareas.push(this.cargarAsignaciones(), this.cargarResponsables()); }
-    if (this.pestanasCargadas.has('whatsapp'))   { tareas.push(this.cargarConversacion()); }
+    if (this.pestanasCargadas.has('whatsapp'))   { tareas.push(this.cargarConversacion(), this.cargarImportadas()); }
 
     await Promise.all(tareas);
   }
@@ -1372,6 +1382,54 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   /** El chat, que es lo gordo: sólo al entrar en su pestaña. */
+  /** Las conversaciones traídas de un fichero, para las tarjetas de arriba. */
+  async cargarImportadas(): Promise<void> {
+    const id = this.cliente?.id;
+    if (!id) { this.importadas = []; return; }
+
+    try {
+      this.cargandoImportadas = true;
+      const res: any = await firstValueFrom(this._gestionService.importadas(id));
+      this.importadas = res?.status === 'success' ? (res.data ?? []) : [];
+    } catch (error) {
+      // El AuthInterceptor ya saca el toast del error HTTP
+      console.error('Error al cargar las conversaciones importadas:', error);
+      this.importadas = [];
+    } finally {
+      this.cargandoImportadas = false;
+    }
+  }
+
+  /**
+   * Una conversación importada, entera y sin poder tocarla.
+   *
+   * Se reusa el visor de las notas: ya es de sólo lectura y trae imprimir y
+   * exportar a Word, que es exactamente lo que se quiere hacer con una
+   * conversación. Se le arma una nota de mentira con lo que necesita.
+   */
+  verImportada(g: GestionModel): void {
+    const ref = this.modal.open(VerNotaComponent, { size: 'lg', centered: true, scrollable: false });
+    ref.componentInstance.nota = {
+      id: g.id,
+      titulo: this.tituloDeImportada(g),
+      contenido: g.nota ?? '',
+      color: 'gris',
+      fijada: false,
+      created_by: g.created_by,
+      created_at: g.created_at,
+    } as any;
+    ref.componentInstance.clienteNombre = this.cliente?.nombre_completo ?? '';
+    // Sin cliente: en una conversación no hay huecos que rellenar, y pasarlo
+    // haría que un «{nombre}» que dijo el cliente de verdad se cambiara
+    ref.componentInstance.cliente = null;
+  }
+
+  /** "WhatsApp · 6/10/2026" — lo que se lee en la tarjeta y en el visor. */
+  tituloDeImportada(g: GestionModel): string {
+    const cuando = (g.fecha_realizada || g.created_at || '').slice(0, 10);
+    return (g.asunto || 'Conversación') + (cuando ? ' · ' + cuando : '');
+  }
+
   async cargarConversacion(): Promise<void> {
     if (!this.cliente?.id) { return; }
     try {
@@ -1622,7 +1680,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         // editor, y en una celda saldrían las etiquetas escritas.
         valueFormatter: (p: any) => soloTexto(p.value), tooltipValueGetter: (p: any) => soloTexto(p.value) },
       {
-        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 178, maxWidth: 178,
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 214, maxWidth: 214,
         suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
@@ -1637,7 +1695,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           const puedeCerrar = this.accesoModel?.crear !== false;
           const puedeEditar = this.accesoModel?.editar !== false;
           const puedeBorrar = this.accesoModel?.eliminar !== false;
-          return `<div class="gestion-acciones">${this.botonAdjuntos(p.data?.num_adjuntos)}${this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar', puedeVer)}${this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
+          return `<div class="gestion-acciones">${this.botonAdjuntos(p.data?.num_adjuntos)}${this.botonAccion('ver', 'btn-abrir', 'fa fa-eye', 'Ver la gestión', puedeVer)}${this.botonAccion('llamar', 'btn-llamar', 'fa fa-phone', 'Llamar', puedeVer)}${this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
         },
       },
     ];
@@ -1918,6 +1976,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
       case 'llamar':   this.llamarConSoftphone(e.data?.telefono || e.data?.cliente_telefono, this.cliente?.nombre_completo); break;
+      case 'ver':      this.verGestion(e.data); break;
       case 'adjuntos': this.verAdjuntosDeGestion(e.data); break;
     }
   }
@@ -2224,7 +2283,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       { headerName: 'Nota', field: 'nota', minWidth: 200, cellStyle: { textAlign: 'left' },
         valueFormatter: (p: any) => soloTexto(p.value), tooltipValueGetter: (p: any) => soloTexto(p.value) },
       {
-        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 142, maxWidth: 142,
+        headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 178, maxWidth: 178,
         suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
         sortable: false, filter: false, suppressMenu: true, resizable: false,
@@ -2234,13 +2293,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           // Cerrar una pendiente va con CREAR, no con editar: lo que se hace es
           // dejar anotado un trabajo recién hecho, no corregir lo que ya estaba.
           // Modificar sí es editar, y borrarla del historial es eliminar.
+          const puedeVer     = this.accesoModel?.ver !== false;
           const puedeCerrar  = this.accesoModel?.crear !== false;
           const puedeEditar  = this.accesoModel?.editar !== false;
           const puedeBorrar  = this.accesoModel?.eliminar !== false;
           const cerrar = p.data?.estado === 'PENDIENTE'
             ? this.botonAccion('cerrar', 'btn-cerrar', 'fa fa-check', 'Cerrar la gestión', puedeCerrar)
             : '';
-          return `<div class="gestion-acciones">${this.botonAdjuntos(p.data?.num_adjuntos)}${cerrar}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
+          return `<div class="gestion-acciones">${this.botonAdjuntos(p.data?.num_adjuntos)}${this.botonAccion('ver', 'btn-abrir', 'fa fa-eye', 'Ver la gestión', puedeVer)}${cerrar}${this.botonAccion('editar', 'btn-editar', 'fa fa-pen', 'Modificar', puedeEditar)}${this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar', puedeBorrar)}</div>`;
         },
       },
     ];
@@ -2260,6 +2320,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     // la suya. Se mira el data-accion, como en los pendientes.
     const accion = ((e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement)?.dataset['accion'];
     switch (accion) {
+      case 'ver':      this.verGestion(e.data); break;
       case 'cerrar':   this.cerrar(e.data); break;
       case 'editar':   this.editarGestion(e.data); break;
       case 'eliminar': this.eliminarGestion(e.data); break;
@@ -2330,9 +2391,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   private abrirGestion(modo: ModoGestion, gestion: GestionModel | null = null): void {
     if (!this.cliente) { return; }
-    // Corregir una existente es editar; registrarla o programarla es crear
-    const puede = modo === 'editar' ? this.accesoModel?.editar : this.accesoModel?.crear;
-    if (!this.permiso(puede, modo === 'editar' ? 'modificar gestiones' : 'registrar gestiones')) { return; }
+    // Corregir una existente es editar; registrarla o programarla es crear;
+    // mirarla es ver, que es el permiso más bajo y el que casi todos tienen.
+    const puede = modo === 'ver'    ? this.accesoModel?.ver
+                : modo === 'editar' ? this.accesoModel?.editar
+                : this.accesoModel?.crear;
+    const queHacer = modo === 'ver'    ? 'ver gestiones'
+                   : modo === 'editar' ? 'modificar gestiones'
+                   : 'registrar gestiones';
+    if (!this.permiso(puede, queHacer)) { return; }
+    // Sólo leer no necesita sesión fresca para escribir, pero sí para pedir los
+    // datos: si caducó, que lo diga aquí y no con un 401 a medio abrir.
     if (this._seguridadService.isexpired()) { return; }
 
     const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
@@ -2342,6 +2411,15 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.gestion = gestion;
     this.escucharModal(modalRef, modalRef.componentInstance.guardado, () => this.refrescar());
   }
+
+  /**
+   * Leerla sin poder tocarla.
+   *
+   * Es el mismo formulario con todo bloqueado, como el «view» del resto de los
+   * CRUD: una pantalla aparte para leer lo mismo acaba enseñando otros campos u
+   * otro orden, y entonces hay que mantener las dos.
+   */
+  verGestion(g: GestionModel): void { this.abrirGestion('ver', g); }
 
   registrarGestion(): void { this.abrirGestion('registrar'); }
   programarGestion(): void { this.abrirGestion('programar'); }
@@ -2512,6 +2590,18 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       // Se queda la constante: un filtro de tipos vacío sería peor
       console.error('Error al cargar el catálogo de tipos de gestión:', error);
     }
+  }
+
+  /**
+   * Los de WhatsApp que se pueden MANDAR.
+   *
+   * El del menú verde es para elegir qué escribirle al cliente, y el asunto de
+   * las importaciones no se le manda a nadie: existe sólo para que la gestión
+   * que crea «Importar» tenga uno. El modal de importar sí recibe la lista
+   * entera, que es de donde saca su id.
+   */
+  get respuestasWhatsapp(): AsuntoGestion[] {
+    return this.plantillasWhatsapp.filter(a => !esAsuntoDeImportacion(a.nombre));
   }
 
   /** Los asuntos activos de un tipo, en el orden en que se buscan. */
@@ -3201,7 +3291,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   // Lo mismo que la llamada y que WhatsApp: de qué va, antes de escribir. La
   // diferencia es quién manda el correo: Outlook, el que está instalado en el
   // puesto, al que se le habla por el mismo ayudante del protocolo micrm3:
-  // (ver herramientas/copiar-archivos.ps1). Y va DESPUÉS de guardar, como el
+  // (ver copiar-archivos.ps1, en «.mis configuraciones/base de datos/4. herramientas» del back). Y va DESPUÉS de guardar, como el
   // WhatsApp: primero queda escrita la gestión, después sale el correo.
 
   escribirCorreo(para?: string | null, aQuien?: string | null): void {
@@ -3445,6 +3535,117 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     // Al terminar se recarga todo: la gestión nueva sale en el historial y en
     // los contadores de arriba, que si no seguirían diciendo lo de antes.
     this.escucharModal(ref, ref.componentInstance.guardado, () => this.refrescar());
+  }
+
+  /** Toda la conversación: sube hasta llegar al principio del chat. */
+  capturarConversacion(): Promise<void> { return this.capturar('todo'); }
+
+  /** Sólo lo que se ve ahora, que es el final del chat. */
+  capturarUltimaPantalla(): Promise<void> { return this.capturar('pantalla'); }
+
+  /**
+   * Fotografiar el chat y colgarlo de una gestión.
+   *
+   * Lo hace el ayudante del equipo (capturar-whatsapp.ps1): abre el chat,
+   * fotografía la ventana y, si se le pide todo, sube media pantalla y repite
+   * hasta que dos capturas salen idénticas —que es la señal de que el scroll ya
+   * no mueve nada y se llegó al principio—. Cada pantallazo queda como adjunto.
+   *
+   * LA GESTIÓN SE CREA ANTES. El ayudante necesita un id al que colgar las
+   * imágenes, y no puede crearla él: no sabría qué asunto ni qué vendedor. Si la
+   * captura falla, queda la gestión con cero adjuntos, que se ve y se borra; al
+   * revés —capturar y no tener dónde dejarlo— se perderían las imágenes sin que
+   * nadie se entere.
+   *
+   * ESTO SON IMÁGENES: no se busca dentro de ellas ni se copia un número. Para
+   * tener el texto está «Importar», que trae la conversación entera en un .txt.
+   */
+  private async capturar(cuanto: 'todo' | 'pantalla'): Promise<void> {
+    if (!this.permiso(this.accesoModel?.crear, 'capturar conversaciones')) { return; }
+    if (!this.cliente?.id) { return; }
+
+    const numero = this.cliente?.celular || this.cliente?.telefono || '';
+    if (!numero) {
+      this._toastr.info('Este cliente no tiene un número al que abrirle el chat', 'WhatsApp');
+      return;
+    }
+
+    const asunto = this.plantillasWhatsapp.find(a => esAsuntoDeImportacion(a.nombre));
+    if (!asunto) {
+      this._toastr.error(
+        'Falta el asunto «Importación de mensajes de WhatsApp» en el catálogo de gestiones',
+        'No se puede capturar');
+      return;
+    }
+
+    const todo = cuanto === 'todo';
+    const r = await Swal.fire({
+      title: todo ? '¿Capturar toda la conversación?' : '¿Capturar la última pantalla?',
+      text: todo
+        ? 'Se abrirá tu WhatsApp y se irá fotografiando el chat hacia atrás hasta el '
+          + 'principio. Tarda unos segundos y conviene no tocar la ventana mientras: '
+          + 'cada pantalla queda como adjunto de una gestión nueva.'
+        : 'Se abrirá tu WhatsApp y se guardará una sola foto, la de lo que se ve ahora '
+          + '—el final del chat—, como adjunto de una gestión nueva.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#25d366',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Capturar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    });
+    if (!r.isConfirmed) { return; }
+
+    let gestionId: number | null = null;
+    try {
+      const res: any = await firstValueFrom(this._gestionService.addGestion({
+        cliente_id:    this.cliente.id,
+        tipo:          'WHATSAPP',
+        estado:        'REALIZADA',
+        modo_registro: 'IMPORTADA',
+        asunto_id:     asunto.id,
+        asunto:        asunto.nombre,
+        nota: todo
+          ? '<p><i>Conversación capturada en imágenes. Las pantallas están en los adjuntos.</i></p>'
+          : '<p><i>Última pantalla de la conversación, capturada en imagen. Está en los adjuntos.</i></p>',
+        usuario_id:    this.cliente.vendedor_id ?? null,
+        telefono:      numero,
+        prioridad:     'MEDIA',
+        resultado:     'CONTACTADO',
+      }));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo crear la gestión', 'Error');
+        return;
+      }
+      gestionId = res.data?.id ?? null;
+    } catch (error) {
+      // El AuthInterceptor ya saca el toast del error HTTP
+      console.error('Error al crear la gestión de las capturas:', error);
+      return;
+    }
+    if (!gestionId) { return; }
+
+    // El token va en el enlace porque el ayudante tiene que SUBIR, y subir pide
+    // sesión. El enlace no sale de este equipo —lo atiende un programa local—,
+    // pero queda en la línea de comandos del proceso mientras dura.
+    const token = localStorage.getItem('token') ?? '';
+    lanzarProtocolo('micrm3://capturas'
+      + '?tel=' + encodeURIComponent(numero)
+      + '&gestion=' + gestionId
+      + '&cliente=' + this.cliente.id
+      + '&max=' + (todo ? 25 : 1)
+      + '&token=' + encodeURIComponent(token));
+
+    this._toastr.info(
+      todo
+        ? 'Capturando… las imágenes van apareciendo en los adjuntos de la gestión.'
+        : 'Capturando la pantalla… en unos segundos estará en los adjuntos de la gestión.',
+      'WhatsApp', { timeOut: 9000, closeButton: true });
+
+    // Un respiro y se recarga. Una sola pantalla tarda poco; la conversación
+    // entera, lo que tarde: para entonces suelen estar las primeras.
+    setTimeout(() => this.refrescar(), todo ? 12000 : 6000);
   }
 
   /** ¿Ese asunto trae mensaje escrito? Lo usa el menú para distinguirlos. */

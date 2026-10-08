@@ -2928,3 +2928,55 @@
   color: var(--bs-secondary-color, #6c757d);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Conversaciones importadas (pestaña WhatsApp) ----------
+   Mismas tarjetas que las notas (.gc-nota), que es el molde que ya se lee
+   de un vistazo; aquí sólo cambian la banda lateral y que no hay más acción
+   que leerlas. */
+.wa-importadas {
+  margin-bottom: .75rem;
+  padding-bottom: .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.wa-importadas__rotulo {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+
+  margin-bottom: .5rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.wa-importadas__cuenta {
+  padding: .05rem .4rem;
+  border-radius: .75rem;
+  background-color: rgba(37, 211, 102, .18);
+  color: var(--bs-body-color, #212529);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Que se sepa antes de pulsar que aquí no se escribe */
+.wa-importadas__pista {
+  margin-left: auto;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.wa-importadas__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: .5rem;
+}
+
+/* La banda lateral en el verde de WhatsApp: de ahí vienen */
+.wa-importada {
+  --tinte: #25d366;
+}
+
+/* El cuerpo, recortado: la tarjeta es un adelanto, se lee entera en el visor */
+:host ::ng-deep .wa-importada .gc-nota__cuerpo p {
+  margin-bottom: .15rem;
+}

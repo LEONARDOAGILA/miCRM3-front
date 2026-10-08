@@ -75,15 +75,22 @@
         </p>
       }
 
-      <!-- ---------- De qué fue ---------- -->
+      <!-- ---------- Con qué asunto entra ----------
+           No se elige: todas las importaciones entran con el mismo, que es lo
+           que después permite contarlas y encontrarlas. Se enseña igualmente
+           para que no haya que descubrir en el historial bajo qué quedó. -->
       <div class="imp-asunto">
         <label class="form-label fs-12px mb-1">Asunto de la gestión</label>
-        <select class="form-select form-select-sm" [(ngModel)]="asuntoId">
-          <option [ngValue]="null">Elige de qué fue la conversación…</option>
-          @for (a of asuntos; track a.id) {
-            <option [ngValue]="a.id">{{ a.nombre }}</option>
-          }
-        </select>
+        <div class="imp-asunto__fijo">
+          <i class="fa fa-lock fa-fw"></i>{{ nombreDelAsunto }}
+        </div>
+        @if (faltaElAsunto) {
+          <p class="imp-error">
+            <i class="fa fa-triangle-exclamation fa-fw me-1"></i>
+            Ese asunto no está en el catálogo de gestiones. Hay que crearlo
+            —o volver a ponerle su nombre— antes de poder importar.
+          </p>
+        }
       </div>
 
       @if (leida.avisos) {

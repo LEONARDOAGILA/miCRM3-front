@@ -517,3 +517,12 @@ a.gestion-adj__nombre:hover {
 :host ::ng-deep .panel.panel-expand .gestion-nota__campo .NgxEditor__Content {
   flex: 1 1 auto;
 }
+
+/* ---------- Sólo mirar ----------
+   Los tres botones de «cuándo» no son campos, así que el disable() del
+   formulario no los apaga: aquí se apagan a la vista, y elegirMomento() se
+   niega por su cuenta. */
+.gestion-estado__botones.is-bloqueado {
+  opacity: .55;
+  pointer-events: none;
+}
