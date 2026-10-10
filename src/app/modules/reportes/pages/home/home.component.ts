@@ -41,7 +41,6 @@ fun_home(){
   @Input() subtitle: string = 'Selecciona una opción';
   
   menuItems: MenuItem[] = [
-    { icon: 'fas fa-user', label: 'Reportes Externos', link: '/reportes/allReportesExternos', color: '#FF6B6B', iconColor: '#FFFFFF' },
     { icon: 'fas fa-calendar-alt', label: 'Calendario', link: '/calendar', color: '#4ECDC4', iconColor: '#FFFFFF' },
     { icon: 'fas fa-map-marker-alt', label: 'Ubicación', link: '/location', color: '#45B7D1', iconColor: '#FFFFFF' },
     { icon: 'fas fa-cog', label: 'Ajustes', link: '/settings', color: '#FFBE0B', iconColor: '#000000' },

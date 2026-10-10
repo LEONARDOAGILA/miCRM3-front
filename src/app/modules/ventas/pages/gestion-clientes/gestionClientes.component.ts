@@ -858,6 +858,11 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Cuántas columnas llevan filtro, para el rótulo del botón de limpiar. */
+  get cuantasColumnasFiltradasClientes(): number {
+    return Object.keys(this.filtrosColumnaClientes || {}).length;
+  }
+
   /** La cabecera pidió otra cosa. Siempre a la página 1. */
   onFiltroColumnaClientes(): void {
     this.filtrosColumnaClientes = this.gridApiClientes?.getFilterModel() ?? {};

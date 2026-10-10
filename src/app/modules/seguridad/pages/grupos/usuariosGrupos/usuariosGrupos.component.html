@@ -248,16 +248,16 @@
           </nav>
 
           <div class="ug-buscador">
-            <button type="button" class="btn btn-sm btn-outline-secondary" title="Limpiar filtros" (click)="clearAllFilters()">
-              <i class="fas fa-filter-circle-xmark"></i>
-            </button>
-
+            <!-- El botón de quitar filtros va dentro del campo: los dos van
+                 siempre juntos. Se enciende en rojo cuando hay algo que quitar. -->
             <app-campoBusquedaPaginacion
               [id]="'ug-filter'"
               [placeholder]="'Buscar usuario'"
               [iconClass]="'fa fa-search fa-lg'"
-              [containerClass]="'position-relative w-100'"
-              (buscar)="onFilterTextBoxChanged($event)">
+              [containerClass]="'w-100'"
+              [conLimpiarFiltros]="true"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
           </div>
         </div>

@@ -48,30 +48,21 @@
         <!-- ---------- 2a. BARRA DE HERRAMIENTAS ---------- -->
         <div class="row g-2 m-2 align-items-center lista-barra">
 
-          <!-- Limpiar buscador y filtros de columna.
-               Se enciende en rojo y le sale la × al icono SÓLO cuando hay algo
-               que quitar: con veinte columnas filtrables es fácil dejarse una
-               puesta y no entender por qué faltan filas. -->
-          <div class="col-auto pe-1">
-            <button type="button"
-                    class="btn btn-sm lista-barra__btn"
-                    [class.btn-outline-danger]="hayFiltro"
-                    [class.btn-outline-secondary]="!hayFiltro"
-                    [title]="tituloLimpiar"
-                    [attr.aria-label]="tituloLimpiar"
-                    (click)="clearAllFilters()">
-              <i class="fas" [ngClass]="hayFiltro ? 'fa-filter-circle-xmark' : 'fa-filter'"></i>
-            </button>
-          </div>
-
-          <!-- Buscador: emite al pulsar Enter o el icono; el filtro va al servidor -->
-          <div class="col position-relative pe-1">
+          <!-- Buscador y botón de quitar filtros, en una sola pieza: el botón
+               vive dentro del componente porque los dos van siempre juntos.
+               Se enciende en rojo y le sale la × al icono sólo cuando hay algo
+               que quitar. -->
+          <div class="col pe-1">
             <app-campoBusquedaPaginacion
               [id]="'filter-text-box'"
               [placeholder]="'Buscar'"
               [iconClass]="'fa fa-search fa-lg'"
-              [containerClass]="'position-relative w-100'"
-              (buscar)="onFilterTextBoxChanged($event)">
+              [containerClass]="'w-100'"
+              [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
           </div>
 

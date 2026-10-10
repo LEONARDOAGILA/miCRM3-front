@@ -322,23 +322,21 @@
                    escrito; esto quita además el estado filtrado y suelta el
                    cliente. Se queda apagado mientras no haya nada que quitar,
                    en vez de aparecer y desaparecer, que movería el buscador. -->
-              <button type="button" class="btn btn-sm btn-white gc-lista__limpiar"
-                      [disabled]="!hayFiltroClientes"
-                      title="Quitar el filtro y soltar el cliente elegido"
-                      aria-label="Quitar el filtro y soltar el cliente elegido"
-                      (click)="limpiarFiltrosClientes()">
-                <i class="fa fa-filter-circle-xmark"></i>
-              </button>
-
-
+              <!-- El botón de quitar filtros va dentro del campo: los dos van
+                   siempre juntos. Aquí cuenta además el estado filtrado y el
+                   cliente elegido, por eso se le pasa `hayFiltroClientes`. -->
               <app-campoBusquedaPaginacion
                 [id]="'buscar-cliente-gestion'"
                 [placeholder]="'Buscar por nombre, identificación o teléfono…'"
                 [iconClass]="'fa fa-search'"
-                [containerClass]="'position-relative w-100'"
+                [containerClass]="'w-100'"
                 [valorInicial]="terminoClientes"
+                [conLimpiarFiltros]="true"
+                [hayFiltro]="hayFiltroClientes"
+                [columnasFiltradas]="cuantasColumnasFiltradasClientes"
                 (buscar)="buscarClientes($event)"
-                (limpiado)="alLimpiarBusquedaClientes()">
+                (limpiado)="alLimpiarBusquedaClientes()"
+                (limpiarFiltros)="limpiarFiltrosClientes()">
               </app-campoBusquedaPaginacion>
 
               <!-- El filtro por estado va al servidor junto con la búsqueda: la

@@ -49,23 +49,18 @@
         <div class="row g-2 m-2 align-items-center lista-barra">
 
           <!-- Limpiar buscador y filtros de columna -->
-          <div class="col-auto pe-1">
-            <button type="button"
-                    class="btn btn-sm btn-outline-secondary lista-barra__btn"
-                    title="Limpiar filtros"
-                    (click)="clearAllFilters()">
-              <i class="fas fa-filter-circle-xmark"></i>
-            </button>
-          </div>
-
-          <!-- Buscador: emite al pulsar Enter o el icono; el filtro va al servidor -->
-          <div class="col position-relative pe-1">
+          <!-- Buscador con su botón de quitar filtros dentro: los dos van
+               siempre juntos, así que viven juntos. El botón se enciende en rojo
+               y le sale la × al icono sólo cuando hay algo que quitar. -->
+          <div class="col pe-1">
             <app-campoBusquedaPaginacion
               [id]="'filter-text-box'"
               [placeholder]="'Buscar'"
               [iconClass]="'fa fa-search fa-lg'"
-              [containerClass]="'position-relative w-100'"
-              (buscar)="onFilterTextBoxChanged($event)">
+              [containerClass]="'w-100'"
+              [conLimpiarFiltros]="true"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
           </div>
 

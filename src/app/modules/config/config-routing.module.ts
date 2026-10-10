@@ -8,7 +8,6 @@ import { ErrorPage } from '../../pages/error/error';
 import { HomeComponent } from './pages/home/home.component';
 
 
-import { AllDepartamentosComponent } from './pages/departamentos/allDepartamentos/allDepartamentos.component';
 import { FileManagerComponent } from './pages/administrador-archivos/file-manager/file-manager.component';
 import { ExtraSettingsPage } from './pages/extra-settings-page/extra-settings-page';
 import { ExtraSearchResultsPage } from './pages/extra-search-results/extra-search-results';
@@ -26,7 +25,6 @@ const routes: Routes = [
         { path: '', redirectTo: 'home-config', pathMatch: 'full' },
 
 
-        { path: 'allDepartamentos',component:AllDepartamentosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'filemanager',component:FileManagerComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'boletines', component: AllBoletinesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'notificaciones', component: AllNotificacionesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},

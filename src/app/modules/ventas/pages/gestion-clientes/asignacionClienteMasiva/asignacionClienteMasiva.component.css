@@ -101,10 +101,6 @@
   flex-wrap: wrap;
 }
 
-.asigm-filtros__limpiar {
-  flex: 0 0 auto;
-}
-
 .asigm-filtros__buscador {
   flex: 1 1 14rem;
   min-width: 10rem;

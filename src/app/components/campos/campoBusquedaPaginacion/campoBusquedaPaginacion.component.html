@@ -1,4 +1,22 @@
-<div [class]="containerClass">
+<!-- El botón de quitar filtros y el campo van SIEMPRE juntos, así que viven
+     juntos. La caja de dentro es la que ancla la lupa y la ×, que van
+     position:absolute; la de fuera sólo los pone en fila. -->
+<div class="campo-busqueda-barra">
+
+  @if (conLimpiarFiltros) {
+    <button type="button"
+            class="btn btn-sm campo-busqueda__filtros"
+            [class.btn-outline-danger]="filtroActivo"
+            [class.btn-outline-secondary]="!filtroActivo"
+            [title]="tituloLimpiar"
+            [attr.aria-label]="tituloLimpiar"
+            (click)="alLimpiarFiltros()">
+      <!-- La × sólo aparece cuando hay algo que quitar -->
+      <i class="fas" [ngClass]="filtroActivo ? 'fa-filter-circle-xmark' : 'fa-filter'"></i>
+    </button>
+  }
+
+<div class="campo-busqueda__caja" [ngClass]="containerClass">
 
   <input
     #inputElement
@@ -30,4 +48,5 @@
       <span class="campo-busqueda__limpiar-x" aria-hidden="true">&times;</span>
     </button>
   }
+</div>
 </div>

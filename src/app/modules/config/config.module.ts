@@ -17,10 +17,6 @@ import { HomeComponent } from './pages/home/home.component';
 
 
 
-import { AllDepartamentosComponent } from './pages/departamentos/allDepartamentos/allDepartamentos.component';
-import { SaveDepartamentoComponent } from './pages/departamentos/saveDepartamento/saveDepartamento.component';
-import { DeleteDepartamentoComponent } from './pages/departamentos/deleteDepartamento/deleteDepartamento.component';
-import { ButtonAccionDepartamento } from './pages/departamentos/allDepartamentos/allDepartamentos.component';
 
 
 
@@ -75,10 +71,6 @@ import { SaveNotificacionComponent } from './pages/notificaciones/saveNotificaci
     ExtraSearchResultsPage,
     ExtraProfilePage,
 
-    AllDepartamentosComponent,
-    SaveDepartamentoComponent,
-    DeleteDepartamentoComponent,
-    ButtonAccionDepartamento,
 
     FileManagerComponent,
     SaveFileComponent,

@@ -86,19 +86,20 @@
           <!-- ---------- Filtros ---------- -->
           <div class="asigm-filtros">
 
-            <button type="button" class="btn btn-sm btn-white asigm-filtros__limpiar"
-                    [disabled]="!hayFiltro"
-                    title="Quitar los filtros"
-                    (click)="limpiarFiltros()">
-              <i class="fa fa-filter-circle-xmark"></i>
-            </button>
-
+            <!-- El botón de quitar filtros va dentro del campo: los dos van
+                 siempre juntos. Aquí sabe de los filtros de columna, así que
+                 se enciende también cuando el texto está vacío pero hay una
+                 columna filtrada. -->
             <app-campoBusquedaPaginacion
                 [id]="'buscar-cliente-reparto'"
                 [placeholder]="'Buscar por nombre, identificación o teléfono…'"
                 [containerClass]="'asigm-filtros__buscador'"
                 [valorInicial]="busqueda"
-                (buscar)="buscar($event)">
+                [conLimpiarFiltros]="true"
+                [hayFiltro]="hayFiltro"
+                [columnasFiltradas]="cuantasColumnasFiltradas"
+                (buscar)="buscar($event)"
+                (limpiarFiltros)="limpiarFiltros()">
             </app-campoBusquedaPaginacion>
 
 

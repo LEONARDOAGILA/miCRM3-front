@@ -19,8 +19,35 @@
 
    Se pone aquí para que no haya nada que recordar. A las doce pantallas que
    ya lo pasan no les cambia nada: es el mismo valor. */
-:host > div {
+/* La caja interior, no «el primer div»: desde que el botón de filtros vive
+   aquí dentro, el hijo directo del host es la fila y el ancla es la caja. */
+.campo-busqueda__caja {
   position: relative;
+}
+
+/* ---------- La fila: botón + campo ----------
+   El campo crece y el botón se queda de su tamaño. `min-width: 0` en la caja
+   es lo que deja que el campo se encoja de verdad dentro de un flex. */
+.campo-busqueda-barra {
+  display: flex;
+  align-items: stretch;
+  gap: .375rem;
+  width: 100%;
+}
+
+.campo-busqueda__caja {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Cuadrado y de la altura del campo, como estaba suelto en las pantallas */
+.campo-busqueda__filtros {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  padding: 0;
 }
 
 /* Sitio para la × sólo cuando está: así, con el campo vacío, el texto

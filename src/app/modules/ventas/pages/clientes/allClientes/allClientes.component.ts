@@ -285,24 +285,6 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
   }
 
-  /**
-   * Qué dice el botón de limpiar.
-   *
-   * Con filtros puestos se enciende y cuenta cuántos hay; sin ellos se queda
-   * como estaba. El recuento importa: con una rejilla de veinte columnas es
-   * fácil dejarse uno puesto en una que no se está mirando y no entender por
-   * qué faltan filas.
-   */
-  get tituloLimpiar(): string {
-    if (!this.hayFiltro) { return 'No hay filtros que quitar'; }
-
-    const partes: string[] = [];
-    if (this.searchTerm) { partes.push('la búsqueda'); }
-    if (this.cuantasColumnasFiltradas === 1) { partes.push('1 columna'); }
-    else if (this.cuantasColumnasFiltradas > 1) { partes.push(this.cuantasColumnasFiltradas + ' columnas'); }
-
-    return 'Quitar ' + partes.join(' y ');
-  }
 
   initializeGrid(): void {
     this.columnDefs = this.conFiltros([
@@ -774,7 +756,9 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     this.limpiando = true;
     this.searchTerm = '';
     this.filtrosColumna = {};
-    this.campoBusquedaPaginacion?.reset();
+    // El campo se vacía solo: el botón de filtros vive dentro de él.
+    // Llamar aquí a reset() emitiría además una búsqueda vacía, o sea
+    // otra consulta para lo mismo.
     if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
     this.limpiando = false;
 

@@ -98,40 +98,6 @@
   min-width: 0;
 }
 
-/* El botón de dejarlo todo como al entrar, a la izquierda del buscador.
-
-   El alto NO va en píxeles: con `align-self: stretch` lo toma de la fila, que
-   lo marca el campo de búsqueda por ser el más alto. Así siguen cuadrando
-   aunque mañana cambie el tamaño del campo. Antes quedaba en 14px contra los
-   34 del input, porque al quitarle el relleno para centrar el icono se quedó
-   sin lo único que le daba altura.
-
-   El ancho sí es fijo, para que la caja de búsqueda no se mueva al activarse
-   o apagarse el botón. */
-.gc-lista__limpiar {
-  flex: 0 0 auto;
-  align-self: stretch;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 2.25rem;
-  padding: 0;
-}
-
-/* Apagado no grita: dice que no hay nada que quitar, no que esté roto */
-.gc-lista__limpiar:disabled {
-  opacity: .4;
-}
-
-/* Con filtro puesto se marca con el color de la aplicación, igual que el
-   selector de estado: así se ve que la lista no está completa */
-.gc-lista__limpiar:not(:disabled) {
-  border-color: var(--bs-app-theme, #00acac);
-  color: var(--bs-app-theme, #00acac);
-}
-
 /* Ancho fijo: si se deja al contenido, cambia de tamaño al elegir
    («Todos los estados» mide el doble que «Activo») y el buscador de al lado
    se encoge y se estira cada vez */
