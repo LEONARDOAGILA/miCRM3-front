@@ -43,6 +43,9 @@ import { GestionClientesComponent } from './pages/gestion-clientes/gestionClient
 import { ResumenVentasComponent } from './pages/gestion-clientes/resumenVentas/resumenVentas.component';
 import { SaveGestionComponent } from './pages/gestion-clientes/saveGestion/saveGestion.component';
 import { CerrarGestionComponent } from './pages/gestion-clientes/cerrarGestion/cerrarGestion.component';
+import { DeleteGestionComponent } from './pages/gestion-clientes/deleteGestion/deleteGestion.component';
+import { DeleteNotaClienteComponent } from './pages/gestion-clientes/deleteNotaCliente/deleteNotaCliente.component';
+import { DeleteArchivoClienteComponent } from './pages/gestion-clientes/deleteArchivoCliente/deleteArchivoCliente.component';
 import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCliente/reasignarCliente.component';
 
 // Las pantallas de «Respuestas de WhatsApp» no se declaran aquí: son
@@ -68,6 +71,9 @@ import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCli
     GestionClientesComponent,
     SaveGestionComponent,
     CerrarGestionComponent,
+    DeleteGestionComponent,
+    DeleteNotaClienteComponent,
+    DeleteArchivoClienteComponent,
     ReasignarClienteComponent,
   ],
 

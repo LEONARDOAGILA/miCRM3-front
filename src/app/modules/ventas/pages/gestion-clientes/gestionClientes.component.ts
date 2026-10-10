@@ -16,6 +16,7 @@ import { RecordatorioGestionesService } from '../../services/recordatorioGestion
 import { WhatsappService, MensajeWhatsapp, ResumenWhatsapp } from '../../services/whatsapp.service';
 import { SoftphoneService } from '../../services/softphone.service';
 import { SeguridadService } from '../../../seguridad/services/seguridad.service';
+import { ProfileService } from '../../../seguridad/services/profile.service';
 import { AppAgGridService } from '../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../service/loading.service';
 
@@ -55,6 +56,10 @@ import { AsuntoGestion, TipoGestion, asuntosDe, traeMensaje } from '../../interf
 import { lanzarProtocolo } from '../../../../service/lanzarProtocolo';
 import { ArchivoClienteService } from '../../services/archivoCliente.service';
 import { ArchivoCliente, formatoTamano, pintaDeTipo } from '../../interfaces/archivoCliente';
+import { CampoBusquedaPaginacionComponent } from '../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { DeleteGestionComponent } from './deleteGestion/deleteGestion.component';
+import { DeleteNotaClienteComponent } from './deleteNotaCliente/deleteNotaCliente.component';
+import { DeleteArchivoClienteComponent } from './deleteArchivoCliente/deleteArchivoCliente.component';
 
 type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'archivos' | 'notas';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
@@ -286,39 +291,120 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public filtroTipo: string | null = null;
   public filtroEstado: string | null = null;
   public filtroResultado: string | null = null;
-  public filtroCreadoPor: string | null = null;
+  /**
+   * El filtro de la persona: por RESPONSABLE (gestiones.usuario_id), no por
+   * quién la registró.
+   *
+   * Son cosas distintas desde que se puede crear una gestión para otro, y lo
+   * que se busca en el historial es a quién le toca. La columna «Registrado
+   * por» se queda en la rejilla; lo que no valía era filtrar por ahí.
+   */
+  public filtroResponsable: number | null = null;
 
   /**
-   * Quiénes han registrado gestiones de ESTE cliente.
+   * Lo que se escribió en el buscador del historial.
+   *
+   * Lo resuelve el servidor contra TODOS los campos de la rejilla —id,
+   * responsable, estado, tipo, asunto, nota, resultado, fechas, quién la
+   * registró— porque el historial se pagina allí: buscar en el navegador
+   * miraría sólo las diez filas visibles.
+   */
+  public busquedaHistorial = '';
+
+  /** Para poder vaciar el campo desde «Quitar filtros». */
+  @ViewChild('buscadorHistorial') buscadorHistorial?: CampoBusquedaPaginacionComponent;
+
+  // ---------- Los mismos filtros, en Pendientes ----------
+  // Aparte de los del historial y no compartidos: son dos pestañas que se ven
+  // por separado, y al volver a una esperas encontrarla como la dejaste.
+  //
+  // No hay filtro de ESTADO: la pestaña ya es un estado (manda
+  // `estado: 'PENDIENTE'` en la petición), así que un menú para elegirlo sólo
+  // podría contradecirla o vaciarla.
+  public filtroTipoPendientes: string | null = null;
+  public filtroResponsablePendientes: number | null = null;
+  public busquedaPendientes = '';
+
+  /** De quién es lo pendiente de este cliente; lo manda el servidor. */
+  public responsablesPendientes: { id: number; etiqueta: string }[] = [];
+
+  @ViewChild('buscadorPendientes') buscadorPendientes?: CampoBusquedaPaginacionComponent;
+
+  /** Cómo se lee el responsable elegido, en el botón. */
+  public get etiquetaResponsablePendientes(): string {
+    if (!this.filtroResponsablePendientes) { return ''; }
+    return this.responsablesPendientes.find(u => u.id === this.filtroResponsablePendientes)?.etiqueta
+        ?? String(this.filtroResponsablePendientes);
+  }
+
+  cambiarFiltroPendientes(campo: 'tipo' | 'responsable', valor: string | number | null): void {
+    if (campo === 'tipo') {
+      this.filtroTipoPendientes = valor as string | null;
+    } else {
+      this.filtroResponsablePendientes = valor === null ? null : Number(valor);
+    }
+    this.cargarPendientes();
+  }
+
+  buscarEnPendientes(termino: string): void {
+    this.busquedaPendientes = (termino ?? '').trim();
+    this.cargarPendientes();
+  }
+
+  get hayFiltrosPendientes(): boolean {
+    return !!(this.filtroTipoPendientes || this.filtroResponsablePendientes || this.busquedaPendientes);
+  }
+
+  limpiarFiltrosPendientes(): void {
+    this.filtroTipoPendientes = null;
+    this.filtroResponsablePendientes = null;
+
+    // Igual que en el historial: el reset() del campo ya emite una búsqueda
+    // vacía y eso recarga, así que no se pide la lista dos veces
+    const habiaBusqueda = !!this.busquedaPendientes;
+    this.busquedaPendientes = '';
+
+    if (habiaBusqueda && this.buscadorPendientes) {
+      this.buscadorPendientes.reset();
+      return;
+    }
+
+    this.cargarPendientes();
+  }
+
+  /**
+   * De quién son las gestiones de ESTE cliente.
    *
    * Lo manda el servidor junto con la lista y no sale de la tabla de
    * usuarios: lo que hace falta ofrecer son los que de verdad aparecen en
-   * este historial, no los trescientos del sistema.
+   * este historial, no los trescientos del sistema. Y viene recortado por la
+   * visibilidad de quien mira, para que el menú no delate a gente cuyas
+   * gestiones no se pueden ver.
    *
-   * Cada uno viene con las dos cosas: `login` es lo que se manda al filtrar
-   * —la consulta compara con created_by— y `etiqueta` es cómo se lee,
-   * LOGIN  -  APELLIDOS NOMBRES.
+   * Cada uno trae las dos cosas: `id` es lo que se manda al filtrar y
+   * `etiqueta` cómo se lee, LOGIN  -  APELLIDOS NOMBRES.
    */
-  public registradores: { login: string; etiqueta: string }[] = [];
+  public responsablesHistorial: { id: number; etiqueta: string }[] = [];
+
+  /**
+   * Cómo se lee el filtro elegido en el botón.
+   *
+   * `filtroResponsable` guarda el id —es lo que entiende la consulta—, así
+   * que para el rótulo hay que buscar su etiqueta. Si el que está filtrado ya
+   * no aparece en la lista, se enseña el id: mejor eso que un botón en blanco
+   * con un filtro puesto.
+   */
+  public get etiquetaResponsable(): string {
+    if (!this.filtroResponsable) { return ''; }
+    return this.responsablesHistorial.find(u => u.id === this.filtroResponsable)?.etiqueta
+        ?? String(this.filtroResponsable);
+  }
 
   /**
    * Los tipos salen del catálogo (ventas.gestiones_tipos), el mismo del que
    * los toma el formulario de gestión. La constante se queda de respaldo por
    * si la petición falla: un filtro vacío sería peor que uno desactualizado.
    */
-  /**
-   * Cómo se lee el filtro elegido en el botón.
-   *
-   * `filtroCreadoPor` guarda el login —es lo que entiende la consulta—, así
-   * que para el rótulo hay que buscar su etiqueta. Si el que está filtrado ya
-   * no aparece en la lista, se enseña el login: mejor eso que un botón en
-   * blanco con un filtro puesto.
-   */
-  public get etiquetaCreadoPor(): string {
-    if (!this.filtroCreadoPor) { return ''; }
-    return this.registradores.find(u => u.login === this.filtroCreadoPor)?.etiqueta
-        ?? this.filtroCreadoPor;
-  }
 
   public tipos: { id: string; name: string; icono: string }[] = TIPOS_GESTION;
   public estados = ESTADOS_GESTION;
@@ -542,6 +628,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     private _archivoService: ArchivoClienteService,
     private _notaService: NotaClienteService,
     private _catalogoService: CatalogoGestionService,
+    private _profileService: ProfileService,
     public _appAgGridService: AppAgGridService,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -565,6 +652,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.cargarAgenda();
     this.cargarClientes(1);
     this.cargarTiposDelCatalogo();
+    this.cargarMiVisibilidad();
 
     // Se puede llegar con el cliente en la url (?cliente=9), que es como
     // entra el recordatorio cuando se pulsa «Abrir el cliente»
@@ -584,6 +672,30 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.unsubscribe$.next();
     this.unsubscribe$.complete();
     this.modal.dismissAll();
+  }
+
+  /**
+   * Qué le deja ver su perfil dentro de un cliente.
+   *
+   * De los cinco alcances que contesta el servidor aquí sólo se usa uno, el de
+   * la pestaña de Asignación. Se piden los cinco porque vienen juntos y no
+   * cuesta nada; cuando haga falta esconder algo más, el dato ya está.
+   *
+   * Para este dato los alcances «de quién» no pintan nada: la pestaña se ve o
+   * no se ve. Por eso se compara contra NINGUNO y no contra TODO.
+   *
+   * Si falla, se queda en false y la pestaña no sale. El servidor la protege
+   * igual con un 403, así que lo único que se pierde es el camino bonito.
+   */
+  private async cargarMiVisibilidad(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this._profileService.miVisibilidad());
+      if (res?.status === 'success') {
+        this.puedeVerAsignacion = (res.data?.ASIGNACION ?? 'NINGUNO') !== 'NINGUNO';
+      }
+    } catch (error) {
+      console.error('No se pudo leer qué ve este perfil dentro del cliente:', error);
+    }
   }
 
   fun_home(): void { this.route.navigate(['/ventas']); }
@@ -852,13 +964,34 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * login no lo manda: devuelve id, nombre, login, correo, avatar y perfil, ni
    * type_user ni grupo_id —comprobado contra el API—.
    *
+   * YA NO DECIDE SI SE VE LA PESTAÑA de Asignación —eso es puedeVerAsignacion,
+   * que lo dice el perfil—, sino si se ofrece el botón de Reasignar que hay
+   * dentro: repartir el cliente sigue siendo cosa de un administrador, y así
+   * lo contesta el servidor con un 403. Mirar el historial y cambiarlo son dos
+   * cosas distintas.
+   *
    * Empieza en false y sólo lo levanta una respuesta buena: si la agenda falla,
-   * la pestaña de Asignación no sale, que es por donde hay que fallar.
+   * el botón no se ofrece, que es por donde hay que fallar.
    *
    * Es para decidir qué se ENSEÑA. Quién puede reasignar de verdad lo decide
-   * el servidor: esconder una pestaña no cierra una ruta.
+   * el servidor: esconder un botón no cierra una ruta.
    */
   public esAdministrador = false;
+
+  /**
+   * Si este perfil ve la pestaña de Asignación.
+   *
+   * Antes la pestaña era de administradores y punto, escrito aquí en el código.
+   * Ahora es el quinto dato del cuadro «Qué ve dentro de un cliente» del
+   * perfil, junto a las gestiones, las notas, los archivos y el WhatsApp: lo
+   * decide quien configura los perfiles, sin tocar nada de esto.
+   *
+   * Se pide aparte y no de refilón en la agenda, que es de donde venía
+   * es_admin: la pestaña no tiene por qué desaparecer porque falle la agenda.
+   *
+   * Empieza en false: si la pregunta no se puede contestar, no se ofrece.
+   */
+  public puedeVerAsignacion = false;
 
   /** Si hay algo que quitar: texto buscado, estado filtrado o cliente elegido. */
   get hayFiltroClientes(): boolean {
@@ -1102,10 +1235,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   async abrirPestana(p: Pestana): Promise<void> {
-    // La asignación es de administradores. Se comprueba aquí y no sólo al
+    // La asignación la permite el perfil. Se comprueba aquí y no sólo al
     // pintar la pestaña: así tampoco se llega por un estado anterior ni desde
     // otro sitio que llame a este método.
-    if (p === 'cartera' && !this.esAdministrador) { p = 'historial'; }
+    if (p === 'cartera' && !this.puedeVerAsignacion) { p = 'historial'; }
     this.pestana = p;
     this.replantear();
     await this.cargarPestana(p);
@@ -1508,9 +1641,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (!this.cliente?.id) { return; }
     try {
       const res: any = await firstValueFrom(
-        this._gestionService.allGestiones(this.cliente.id, 1, 50, '', { estado: 'PENDIENTE' })
+        this._gestionService.allGestiones(this.cliente.id, 1, 50, this.busquedaPendientes, {
+          estado: 'PENDIENTE',
+          tipo: this.filtroTipoPendientes,
+          responsable_id: this.filtroResponsablePendientes,
+        })
       );
       this.pendientes = res.body?.data?.data ?? [];
+      // El desplegable «Responsable» de esta pestaña, igual que en el
+      // historial: lo manda el servidor con los datos y se calcula sin los
+      // demás filtros, para que al elegir a alguien no desaparezcan los otros
+      this.responsablesPendientes = res.body?.data?.filtros?.responsables ?? this.responsablesPendientes;
     } catch (error) {
       console.error('Error al cargar lo pendiente:', error);
       this.pendientes = [];
@@ -1665,6 +1806,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   /** Lo que queda por hacer con este cliente. */
   initializeGridPendientes(): void {
     this.columnDefsPendientes = [
+      // El id de la gestión, primero: es el número por el que se la nombra
+      // cuando hay que buscarla en la auditoría o decírselo a alguien
+      { headerName: 'Id', field: 'id', cellStyle: { textAlign: 'center' }, minWidth: 70, maxWidth: 70 },
       {
         headerName: 'Cuándo', field: 'fecha_programada', minWidth: 140, maxWidth: 170,
         cellStyle: { textAlign: 'left' },
@@ -2239,7 +2383,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   cerrarDesdeAgenda(g: GestionModel): void {
     if (!this.permiso(this.accesoModel?.crear, 'cerrar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
-    const modalRef = this.modal.open(CerrarGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+    const modalRef = this.modal.open(CerrarGestionComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.gestion = g;
     this.escucharModal(modalRef, modalRef.componentInstance.cerrada, () => {
       this.cargarAgenda();
@@ -2259,6 +2403,11 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   initializeGrid(): void {
     this.columnDefs = [
+      // El id de la gestión, primero. Sin ordenar: el historial se pagina en
+      // el servidor, así que ordenar por id sólo movería las filas de esta
+      // página y daría la impresión de haber ordenado las 53
+      { headerName: 'Id', field: 'id', cellStyle: { textAlign: 'center' }, minWidth: 70, maxWidth: 70, sortable: false },
+
       { headerName: 'Responsable', field: 'responsable_nombre', minWidth: 150, cellStyle: { textAlign: 'left' } },
 
       {
@@ -2351,16 +2500,17 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (!this.cliente?.id) { return; }
     try {
       const res: any = await firstValueFrom(
-        this._gestionService.allGestiones(this.cliente.id, page, this.registrosPorPagina, '', {
+        this._gestionService.allGestiones(this.cliente.id, page, this.registrosPorPagina,
+          this.busquedaHistorial, {
           tipo: this.filtroTipo, estado: this.filtroEstado,
-          resultado: this.filtroResultado, creado_por: this.filtroCreadoPor,
+          resultado: this.filtroResultado, responsable_id: this.filtroResponsable,
         })
       );
       this.gestiones = res.body?.data?.data ?? [];
-      // La lista del desplegable «Registrado por» viene con los datos y se
+      // La lista del desplegable «Responsable» viene con los datos y se
       // calcula sin los demás filtros, para que al elegir a alguien no
       // desaparezcan los otros del menú
-      this.registradores = res.body?.data?.filtros?.registradores ?? this.registradores;
+      this.responsablesHistorial = res.body?.data?.filtros?.responsables ?? this.responsablesHistorial;
       const meta = res.body?.data?.meta;
       if (meta) {
         this.totalRegistros = meta.total;
@@ -2374,12 +2524,13 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
   }
 
-  cambiarFiltro(campo: 'tipo' | 'estado' | 'resultado' | 'creadoPor', valor: string | null): void {
+  cambiarFiltro(campo: 'tipo' | 'estado' | 'resultado' | 'responsable', valor: string | number | null): void {
     switch (campo) {
-      case 'tipo':      this.filtroTipo = valor; break;
-      case 'estado':    this.filtroEstado = valor; break;
-      case 'resultado': this.filtroResultado = valor; break;
-      case 'creadoPor': this.filtroCreadoPor = valor; break;
+      // Los tres primeros son códigos (texto); el responsable es un id
+      case 'tipo':      this.filtroTipo = valor as string | null; break;
+      case 'estado':    this.filtroEstado = valor as string | null; break;
+      case 'resultado': this.filtroResultado = valor as string | null; break;
+      case 'responsable': this.filtroResponsable = valor === null ? null : Number(valor); break;
     }
     // Siempre a la página 1: con el filtro puesto puede que la que se estaba
     // viendo ya no exista
@@ -2450,7 +2601,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (!this.permiso(this.accesoModel?.crear, 'cerrar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
-    const modalRef = this.modal.open(CerrarGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+    const modalRef = this.modal.open(CerrarGestionComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.gestion = g;
     this.escucharModal(modalRef, modalRef.componentInstance.cerrada, () => this.refrescar());
   }
@@ -2460,33 +2611,16 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (!this.permiso(this.accesoModel?.eliminar, 'eliminar gestiones')) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
-    const r = await Swal.fire({
-      title: '¿Eliminar esta gestión?',
-      text: `«${g.asunto}». Se borra del historial del cliente; el movimiento queda en la auditoría.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      reverseButtons: true,
+    // El modal de la casa (como deleteCliente) y no un aviso de una línea:
+    // una gestión se reconoce por su asunto, su fecha y de quién es, y hay
+    // que poder leer que el borrado es definitivo y que se lleva los adjuntos.
+    // El borrado lo hace el propio modal; aquí sólo se refresca al volver.
+    const modalRef = this.modal.open(DeleteGestionComponent, {
+      centered: true, size: 'md', backdrop: 'static', keyboard: true,
     });
-    if (!r.isConfirmed) { return; }
+    modalRef.componentInstance.registro_selected = g;
 
-    try {
-      this._loadingService.setLoading(true);
-      const res: any = await firstValueFrom(this._gestionService.deleteGestion(g.id));
-      if (res?.status !== 'success') {
-        this._toastr.error(res?.message || 'No se pudo eliminar la gestión', 'Error');
-        return;
-      }
-      this._toastr.success(res.message, 'Eliminada', { closeButton: true });
-      await this.refrescar();
-    } catch (error) {
-      console.error('Error al eliminar la gestión:', error);
-    } finally {
-      this._loadingService.setLoading(false);
-    }
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => this.refrescar());
   }
 
   /** Pasa el cliente a otro vendedor, con su agenda si se deja marcado. */
@@ -2557,17 +2691,44 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** ¿Hay algún filtro puesto? Decide si se ve el botón de quitarlos. */
-  get hayFiltrosHistorial(): boolean {
-    return !!(this.filtroTipo || this.filtroEstado || this.filtroResultado || this.filtroCreadoPor);
+  /**
+   * Lo que se escribió en el buscador.
+   *
+   * El campo compartido no consulta por cada letra: emite al pulsar Enter, al
+   * salir del campo o al vaciarlo con la ×. Siempre a la página 1, que con el
+   * término puesto puede que la que se estaba viendo ya no exista.
+   */
+  buscarEnHistorial(termino: string): void {
+    this.busquedaHistorial = (termino ?? '').trim();
+    this.cargarGestiones(1);
   }
 
-  /** Quita los cuatro filtros de golpe y recarga. */
+  /** ¿Hay algún filtro puesto? Decide si se ve el botón de quitarlos. */
+  get hayFiltrosHistorial(): boolean {
+    return !!(this.filtroTipo || this.filtroEstado || this.filtroResultado
+              || this.filtroResponsable || this.busquedaHistorial);
+  }
+
+  /** Quita los filtros y la búsqueda de golpe, y recarga. */
   limpiarFiltrosHistorial(): void {
     this.filtroTipo = null;
     this.filtroEstado = null;
     this.filtroResultado = null;
-    this.filtroCreadoPor = null;
+    this.filtroResponsable = null;
+
+    // El campo no se vacía solo: lo que se guarda aquí es el término, y el
+    // texto escrito vive en el input
+    const habiaBusqueda = !!this.busquedaHistorial;
+    this.busquedaHistorial = '';
+
+    // Su reset() emite buscar(''), y eso ya recarga la lista. Si además se
+    // llamara aquí se pediría dos veces, y este servidor atiende de a una
+    // petición: se encadena en vez de duplicar.
+    if (habiaBusqueda && this.buscadorHistorial) {
+      this.buscadorHistorial.reset();
+      return;
+    }
+
     this.cargarGestiones(1);
   }
 
@@ -3014,29 +3175,12 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   async eliminarNota(n: NotaCliente): Promise<void> {
     if (!this.permiso(this.accesoModel?.eliminar, 'eliminar notas')) { return; }
 
-    const r = await Swal.fire({
-      title: '¿Eliminar esta nota?',
-      text: `«${n.titulo}». Lo que dice no se puede volver a escribir de memoria; el contenido queda en la auditoría.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
+    const modalRef = this.modal.open(DeleteNotaClienteComponent, {
+      centered: true, size: 'md', backdrop: 'static', keyboard: true,
     });
-    if (!r.isConfirmed) { return; }
+    modalRef.componentInstance.registro_selected = n;
 
-    try {
-      const res: any = await firstValueFrom(this._notaService.deleteNota(n.id));
-      if (res?.status !== 'success') {
-        this._toastr.error(res?.message || 'No se pudo eliminar la nota', 'Error');
-        return;
-      }
-      this._toastr.success(res.message, 'Notas', { closeButton: true });
-      await this.cargarNotas(true);
-    } catch (error) {
-      console.error('Error al eliminar la nota:', error);
-    }
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => this.cargarNotas(true));
   }
 
   // ================================================================
@@ -3212,30 +3356,14 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   async eliminarArchivo(a: ArchivoCliente): Promise<void> {
     if (!this.permiso(this.accesoModel?.eliminar, 'eliminar archivos')) { return; }
 
-    const r = await Swal.fire({
-      title: '¿Eliminar este archivo?',
-      text: `«${a.nombre}» se borra del cliente y del servidor. El movimiento queda en la auditoría.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
+    const modalRef = this.modal.open(DeleteArchivoClienteComponent, {
+      centered: true, size: 'md', backdrop: 'static', keyboard: true,
     });
-    if (!r.isConfirmed) { return; }
+    modalRef.componentInstance.registro_selected = a;
 
-    try {
-      const res: any = await firstValueFrom(this._archivoService.deleteArchivo(a.id));
-      if (res?.status !== 'success') {
-        this._toastr.error(res?.message || 'No se pudo eliminar', 'Error');
-        return;
-      }
-      this._toastr.success(res.message, 'Archivos', { closeButton: true });
-      await this.cargarArchivos(true);
-    } catch (error) {
-      console.error('Error al eliminar el archivo:', error);
-    }
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => this.cargarArchivos(true));
   }
+
 
   // ================================================================
   // MARCAR CON EL SOFTPHONE (ZOIPER)

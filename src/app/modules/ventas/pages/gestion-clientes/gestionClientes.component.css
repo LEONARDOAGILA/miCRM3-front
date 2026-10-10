@@ -2980,3 +2980,33 @@
 :host ::ng-deep .wa-importada .gc-nota__cuerpo p {
   margin-bottom: .15rem;
 }
+
+/* El buscador del historial, en la barra de filtros: estrecho y con el alto
+   de los chips de al lado (btn-xs), para que la barra no crezca. */
+.gestion-filtros__buscador {
+  flex: 0 1 15rem;
+  min-width: 9rem;
+}
+
+:host ::ng-deep .gestion-filtros__buscador .campo-busqueda__input {
+  height: 26px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 11px;
+}
+
+/* La lupa del campo compartido es un boton de alto completo: aqui se encoge
+   con el input, o sobresale de la barra. */
+:host ::ng-deep .gestion-filtros__buscador .btn {
+  padding: 0 .4rem;
+  height: 26px;
+  line-height: 26px;
+  font-size: 11px;
+}
+
+@media (max-width: 575.98px) {
+  /* En telefono la barra ya se apila: el buscador a lo ancho */
+  .gestion-filtros__buscador {
+    flex: 1 1 100%;
+  }
+}

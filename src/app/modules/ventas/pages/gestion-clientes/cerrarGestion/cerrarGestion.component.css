@@ -117,3 +117,58 @@
     max-height: 10rem;
   }
 }
+
+/* ============================================================
+   LO MISMO QUE EN «REGISTRAR GESTION»
+
+   El boton de la lupa, el aviso del responsable y el alto de la
+   hoja en dos columnas. Se copia y no se comparte porque son
+   dos modales distintos: compartirlo pedia un fichero global
+   para tres reglas.
+   ============================================================ */
+
+/* ---------- Boton de la lupa ---------- */
+/* 45px, el alto de los campos, para que no baile en la fila */
+.btn-lookup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 45px;
+  height: 45px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-body-color, #495057);
+}
+
+.btn-lookup:hover {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* ---------- Aviso del responsable ---------- */
+/* Informacion, no error: pequeno y en gris. min-height para que al cambiar
+   de responsable el formulario no salte de alto. */
+.aviso-responsable {
+  display: block;
+  min-height: 1.1rem;
+  margin-top: -.35rem;
+  font-size: 11px;
+  line-height: 1.1rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- La hoja de escribir, en dos columnas ---------- */
+@media (min-width: 992px) {
+  /* La columna de la izquierda trae dos paneles; con la nota en 10rem queda
+     corta y sobra medio panel de aire. 24rem las deja parejas.
+
+     --cne-alto la pone campoNgxEditor EN LINEA (desde su [alto]), y un estilo
+     en linea gana a la hoja de estilos: de ahi el !important. */
+  :host ::ng-deep .cerrar-nota__campo .cne__fondo {
+    --cne-alto: 24rem !important;
+  }
+}

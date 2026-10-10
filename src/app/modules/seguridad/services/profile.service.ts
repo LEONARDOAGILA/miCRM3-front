@@ -72,12 +72,24 @@ listProfiles(page: number = 1, perPage: number = 5, search: string = ''): Observ
   /**
    * Qué ve este perfil dentro de un cliente.
    *
-   * Devuelve siempre los cuatro datos —{ GESTION, NOTA, ARCHIVO, WHATSAPP }—
-   * con TODO donde nadie ha decidido nada, así que la pantalla nunca recibe
-   * un hueco que tenga que rellenar a mano.
+   * Devuelve siempre los cinco datos —{ GESTION, NOTA, ARCHIVO, WHATSAPP,
+   * ASIGNACION }— con TODO donde nadie ha decidido nada, así que la pantalla
+   * nunca recibe un hueco que tenga que rellenar a mano.
    */
   visibilidadPerfil(id: any): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'visibilidadPerfil/' + id);
+  }
+
+  /**
+   * Los mismos cinco, pero del que está mirando.
+   *
+   * Es lo que mira una pantalla para saber qué pintar: por ejemplo si la de
+   * clientes enseña la pestaña de Asignación. No hace falta saber de qué
+   * perfil se trata ni tener permiso sobre los perfiles —son los límites de
+   * quien pregunta—.
+   */
+  miVisibilidad(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'miVisibilidad');
   }
 
   /** Lo que no se mande se queda como estaba. */

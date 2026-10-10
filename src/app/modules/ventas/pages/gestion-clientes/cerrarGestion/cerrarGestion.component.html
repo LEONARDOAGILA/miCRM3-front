@@ -4,6 +4,11 @@
      Se marca realizada con su resultado y, en el mismo sitio, se
      deja agendado el seguimiento. Los resultados que piden
      continuar («Volver a llamar», «No contesta»…) lo marcan solos.
+
+     Mismo reparto que «Registrar gestión»: a la izquierda los
+     datos, a la derecha lo que se habló. Por debajo de lg se
+     apilan, con la nota al final, que es el orden en que se
+     escribe.
      ============================================================ -->
 
 @if (isLoading$ | async) {
@@ -29,128 +34,211 @@
       }
     </div>
 
-    <panel
-      headerClass="bg-gray-800"
-      title="Cómo terminó"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-3"
-      icono="check"
-      fondoGris="true">
+    <div class="row g-3">
 
-      <ng-container outsideBody>
-        <div class="form-card__body">
-          <div class="row g-2">
-            <div class="col-8 col-md-9">
-              <div class="campo-combo">
-                <app-combo
-                  formControlName="resultado"
-                  [items]="resultados"
-                  [label]="'Resultado'"
-                  bindLabel="name"
-                  bindValue="id">
-                </app-combo>
-              </div>
-            </div>
-            <div class="col-4 col-md-3">
-              <app-campoNumeroEntero
-                [control]="form.controls['duracion_minutos']"
-                label="Duración (min)"
-                placeholder="0"
-                [maxLength]="4">
-              </app-campoNumeroEntero>
-            </div>
-            <div class="col-12">
-              <!-- El mismo editor que al registrar: es el mismo campo, y una
-                   gestión programada pudo nacer con el correo que se mandó. -->
-              <label class="form-label fs-13px mb-1">Qué se habló</label>
-              <app-campoNgxEditor
-                [formControl]="ctrlNota"
-                [placeholder]="'Lo que dijo el cliente, acuerdos, próximos pasos…'"
-                alto="7rem">
-              </app-campoNgxEditor>
-            </div>
-          </div>
-        </div>
-      </ng-container>
-    </panel>
+      <!-- ========== IZQUIERDA: cómo terminó y el seguimiento ========== -->
+      <div class="col-12 col-lg-5">
 
-    <!-- ---------- El seguimiento ---------- -->
-    <panel
-      headerClass="bg-gray-800"
-      title="Siguiente gestión"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-0"
-      icono="calendar"
-      fondoGris="true">
+        <panel
+          headerClass="bg-gray-800"
+          title="Cómo terminó"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-3"
+          icono="check"
+          fondoGris="true">
 
-      <ng-container outsideBody>
-        <div class="form-card__body">
-
-          <!-- El interruptor, en una línea con su pista al lado -->
-          <div class="cerrar-seguimiento" [class.is-on]="quiereSeguimiento">
-            <app-checkbox class="cerrar-seguimiento__switch"
-              [control]="ctrlProgramar"
-              [label]="'Programar el seguimiento'"
-              [id]="'ck-programar-seguimiento'">
-            </app-checkbox>
-            <span class="cerrar-seguimiento__hint">
-              {{ quiereSeguimiento
-                 ? 'Queda en la agenda enganchado a esta gestión'
-                 : 'El cliente se queda sin próxima acción' }}
-            </span>
-          </div>
-
-          @if (quiereSeguimiento) {
-            <div class="row g-2">
-              <div class="col-12 col-md-3">
-                <app-campoTexto
-                  [control]="form.controls['sig_fecha']"
-                  label="Fecha y hora"
-                  type="datetime-local"
-                  [limpiable]="false">
-                </app-campoTexto>
-              </div>
-              <div class="col-6 col-md-3">
-                <div class="campo-combo">
-                  <app-combo
-                    formControlName="sig_tipo"
-                    [items]="tipos"
-                    [label]="'Tipo'"
-                    bindLabel="name"
-                    bindValue="id">
-                  </app-combo>
+          <ng-container outsideBody>
+            <div class="form-card__body">
+              <div class="row g-2">
+                <div class="col-7">
+                  <div class="campo-combo">
+                    <app-combo
+                      formControlName="resultado"
+                      [items]="resultados"
+                      [label]="'Resultado'"
+                      bindLabel="name"
+                      bindValue="id">
+                    </app-combo>
+                  </div>
+                </div>
+                <div class="col-5">
+                  <app-campoNumeroEntero
+                    [control]="form.controls['duracion_minutos']"
+                    label="Duración (min)"
+                    placeholder="0"
+                    [maxLength]="4">
+                  </app-campoNumeroEntero>
                 </div>
               </div>
-              <div class="col-6 col-md-2">
-                <div class="campo-combo">
-                  <app-combo
-                    formControlName="sig_prioridad"
-                    [items]="prioridades"
-                    [label]="'Prioridad'"
-                    bindLabel="name"
-                    bindValue="id">
-                  </app-combo>
-                </div>
-              </div>
-              <!-- Los cuatro en una fila (3+3+2+4): antes el asunto se iba
-                   solo a la siguiente y dejaba media fila vacía. -->
-              <div class="col-12 col-md-4">
-                <app-campoTexto
-                  [control]="form.controls['sig_asunto']"
-                  label="Asunto"
-                  placeholder="Qué hay que hacer la próxima vez"
-                  [maxLength]="200"
-                  [trimEspacios]="true">
-                </app-campoTexto>
-              </div>
             </div>
-          }
+          </ng-container>
+        </panel>
 
-        </div>
-      </ng-container>
-    </panel>
+        <!-- ---------- El seguimiento ---------- -->
+        <panel
+          headerClass="bg-gray-800"
+          title="Siguiente gestión"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-0"
+          icono="calendar"
+          fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <!-- El interruptor, en una línea con su pista al lado -->
+              <div class="cerrar-seguimiento" [class.is-on]="quiereSeguimiento">
+                <app-checkbox class="cerrar-seguimiento__switch"
+                  [control]="ctrlProgramar"
+                  [label]="'Programar el seguimiento'"
+                  [id]="'ck-programar-seguimiento'">
+                </app-checkbox>
+                <span class="cerrar-seguimiento__hint">
+                  {{ quiereSeguimiento
+                     ? 'Queda en la agenda enganchado a esta gestión'
+                     : 'El cliente se queda sin próxima acción' }}
+                </span>
+              </div>
+
+              @if (quiereSeguimiento) {
+                <div class="row g-2">
+
+                  <!-- Tipo y prioridad, los dos cortos, comparten línea
+                       también en el teléfono -->
+                  <div class="col-6">
+                    <div class="campo-combo">
+                      <app-combo
+                        formControlName="sig_tipo"
+                        [items]="tipos"
+                        [label]="'Tipo'"
+                        bindLabel="nombre"
+                        bindValue="codigo">
+                      </app-combo>
+                    </div>
+                  </div>
+
+                  <div class="col-6">
+                    <div class="campo-combo">
+                      <app-combo
+                        formControlName="sig_prioridad"
+                        [items]="prioridades"
+                        [label]="'Prioridad'"
+                        bindLabel="name"
+                        bindValue="id">
+                      </app-combo>
+                    </div>
+                  </div>
+
+                  <div class="col-12">
+                    <app-campoTexto
+                      [control]="form.controls['sig_fecha']"
+                      label="Fecha y hora"
+                      type="datetime-local"
+                      [limpiable]="false">
+                    </app-campoTexto>
+                  </div>
+
+                  <!-- El asunto, del catálogo del tipo y no teclaado: es lo
+                       que permite agrupar después sin que «Cobranza» y
+                       «cobranzas» cuenten como dos cosas. -->
+                  <div class="col-12">
+                    <div class="campo-combo">
+                      <app-combo
+                        formControlName="sig_asunto_id"
+                        [items]="asuntos"
+                        [label]="'Asunto'"
+                        bindLabel="nombre"
+                        bindValue="id">
+                      </app-combo>
+                    </div>
+                    @if (sinAsuntos) {
+                      <small class="text-danger d-block mt-1">
+                        <i class="fa fa-triangle-exclamation me-1"></i>Este tipo todavía no tiene asuntos.
+                        Hay que darlos de alta en Ventas → Catálogo de gestión.
+                      </small>
+                    }
+                  </div>
+
+                  <!-- Y a quién le toca: el mismo buscador que en la ficha de
+                       la gestión. Arranca en el responsable de la que se
+                       cierra, que es lo que se heredaba antes a la fuerza. -->
+                  <div class="col-12">
+                    <div class="campo campo-lookup">
+                      <div class="row g-2 flex-nowrap">
+                        <div class="col-4 col-md-3">
+                          <app-campoNumeroEntero
+                            [control]="form.controls['sig_usuario_id']"
+                            label="ID Responsable"
+                            placeholder="ID"
+                            [maxLength]="10"
+                            (blur)="cargarResponsablePorId()">
+                          </app-campoNumeroEntero>
+                        </div>
+                        <div class="col">
+                          <app-campoTexto
+                            [control]="responsableNombreControl"
+                            label="Responsable"
+                            placeholder="Sin elegir">
+                          </app-campoTexto>
+                        </div>
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-lookup"
+                                  title="Buscar responsable"
+                                  (click)="abrirSelectorResponsable()">
+                            <i class="fa fa-search"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    @if (avisoResponsable) {
+                      <small class="aviso-responsable">
+                        <i class="fa fa-circle-info me-1"></i>{{ avisoResponsable }}
+                      </small>
+                    }
+                  </div>
+
+                </div>
+              }
+
+            </div>
+          </ng-container>
+        </panel>
+
+      </div>
+
+      <!-- ========== DERECHA: lo que se habló ========== -->
+      <div class="col-12 col-lg-7 cerrar-nota__col">
+        <!-- En <panel> y con la cinta, igual que al registrar: es el mismo
+             campo y la misma nota, y una gestión programada pudo nacer con el
+             correo que se mandó. La cinta se oculta en el teléfono, donde se
+             comería media pantalla. -->
+        <panel
+          title="Qué se habló"
+          headerClass="bg-gray-800"
+          icono="editar"
+          fondoGris="true"
+          panelClass="mb-0 cerrar-nota"
+          [noButtonReload]="true"
+          [noButtonCollapse]="true"
+          [noButtonRemove]="true">
+
+          <app-campoNgxEditor
+            class="cerrar-nota__campo"
+            [formControl]="ctrlNota"
+            [almacen]="almacenDeImagenes"
+            [avisar]="avisarDelPegado"
+            [placeholder]="'Lo que dijo el cliente, acuerdos, próximos pasos…'"
+            [cinta]="true"
+            [hoja]="true"
+            alto="10rem"
+            [cintaEnMovil]="false">
+          </app-campoNgxEditor>
+        </panel>
+      </div>
+
+    </div>
 
   </form>
 </div>

@@ -118,3 +118,30 @@
   background-color: var(--bs-component-secondary-bg, #2d2d2d) !important;
   border-top-color: rgba(255, 255, 255, 0.1) !important;
 }
+
+/* ===========================================================================
+   MINIMIZAR UN PANEL QUE NO USA EL CUERPO PROPIO
+   ===========================================================================
+   Minimizar tapaba el .panel-body con d-none, y ese div sólo existe cuando el
+   panel NO lleva noBody. Los paneles que proyectan su contenido en [noBody] o
+   [outsideBody] —unas 24 pantallas— se quedaban sin nada que esconder: el
+   botón respondía, cambiaba de − a +, y el panel seguía entero.
+
+   Se tapa aquí, por CSS, y NO envolviendo el contenido en un div: hay hojas de
+   estilo que lo buscan como hijo directo del panel —por ejemplo
+   `.panel.panel-expand > .perfil-grid` en save2Profile, que es lo que hace
+   crecer la grilla al expandir—, y un nivel más de DOM rompería el modo
+   Expandir justo en el panel que se quería arreglar.
+
+   ::ng-deep es imprescindible porque el contenido proyectado pertenece al
+   componente de fuera y no lleva el atributo de encapsulado de este; va detrás
+   de :host para no salirse de los paneles.
+
+   La cabecera se queda (es lo único que debe verse) y el pie también, que es
+   como ya se comportaban los paneles con cuerpo propio.
+
+   !important por lo mismo que lo lleva el d-none de Bootstrap: lo proyectado
+   trae sus propios display (flex, grid) y hay que ganarles. */
+:host ::ng-deep .panel.is-colapsado > *:not(.panel-heading):not(.panel-footer) {
+  display: none !important;
+}

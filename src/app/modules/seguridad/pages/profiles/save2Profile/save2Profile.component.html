@@ -101,11 +101,13 @@
     <!-- Los permisos de arriba contestan «¿puede entrar a esta pantalla?».
          Esto contesta la otra pregunta, la que faltaba: dentro de un cliente al
          que sí puede entrar, ¿de quién ve las gestiones, las notas, los
-         archivos y las conversaciones? -->
+         archivos y las conversaciones, y ve la pestaña de Asignación? -->
     <panel
         headerClass="bg-gray-800"
         title="Qué ve dentro de un cliente"
-        noButton="true"
+        noButtonExpand="true" 
+        noButtonReload="true" 
+        noButtonRemove="true" 
         noBody="true"
         panelClass="mb-3"
         icono="cerrar"
@@ -123,7 +125,9 @@
             <form [formGroup]="form" novalidate>
                 <div class="row gx-3" formGroupName="visibilidad">
                     @for (d of datosVisibles; track d.clave) {
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <!-- col-xl sin número: cinco iguales en la fila. Con
+                             col-xl-3 la quinta se caía sola a la línea de abajo -->
+                        <div class="col-12 col-md-6 col-xl">
                             <div class="visib">
                                 <div class="visib__cab">
                                     <span class="visib__icono"><i [ngClass]="d.icono"></i></span>
@@ -133,13 +137,13 @@
                                 <select class="form-select form-select-sm visib__select"
                                         [formControlName]="d.clave"
                                         [title]="d.nombre">
-                                    @for (a of alcances; track a.valor) {
+                                    @for (a of opcionesDe(d.clave); track a.valor) {
                                         <option [value]="a.valor">{{ a.etiqueta }}</option>
                                     }
                                 </select>
 
                                 <span class="visib__ayuda">
-                                    {{ ayudaDel(form.get('visibilidad.' + d.clave)?.value) }}
+                                    {{ ayudaDel(form.get('visibilidad.' + d.clave)?.value, d.clave) }}
                                 </span>
                             </div>
                         </div>
@@ -155,7 +159,6 @@
         *ngIf="profile"
         headerClass="bg-gray-800"
         title="Permisos por menú"
-        noButtonCollapse="true" 
         noButtonReload="true" 
         noButtonRemove="true" 
         noBody="true"

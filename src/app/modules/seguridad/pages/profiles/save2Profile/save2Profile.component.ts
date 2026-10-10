@@ -274,16 +274,21 @@ export class Save2ProfileComponent implements OnInit  {
           NOTA:     [{ value: 'TODO', disabled: this.isdisabled }],
           ARCHIVO:  [{ value: 'TODO', disabled: this.isdisabled }],
           WHATSAPP: [{ value: 'TODO', disabled: this.isdisabled }],
+          // La pestaña de Asignación no se reparte «por dueño»: se ve o no se
+          // ve. Arranca en TODO como las demás, que es lo que vale un perfil
+          // del que nadie ha decidido nada.
+          ASIGNACION: [{ value: 'TODO', disabled: this.isdisabled }],
         }),
       });
     }
 
-    /** Los cuatro datos que se pueden tapar, en el orden en que se enseñan. */
+    /** Los cinco datos que se pueden tapar, en el orden en que se enseñan. */
     public readonly datosVisibles = [
-      { clave: 'GESTION',  nombre: 'Gestiones', icono: 'fa-solid fa-headset' },
-      { clave: 'NOTA',     nombre: 'Notas',     icono: 'fa-solid fa-note-sticky' },
-      { clave: 'ARCHIVO',  nombre: 'Archivos',  icono: 'fa-solid fa-paperclip' },
-      { clave: 'WHATSAPP', nombre: 'WhatsApp',  icono: 'fa-brands fa-whatsapp' },
+      { clave: 'GESTION',    nombre: 'Gestiones',  icono: 'fa-solid fa-headset' },
+      { clave: 'NOTA',       nombre: 'Notas',      icono: 'fa-solid fa-note-sticky' },
+      { clave: 'ARCHIVO',    nombre: 'Archivos',   icono: 'fa-solid fa-paperclip' },
+      { clave: 'WHATSAPP',   nombre: 'WhatsApp',   icono: 'fa-brands fa-whatsapp' },
+      { clave: 'ASIGNACION', nombre: 'Asignación', icono: 'fa-solid fa-people-arrows' },
     ];
 
     /** De lo más abierto a lo más cerrado, que es como se lee mejor. */
@@ -294,9 +299,34 @@ export class Save2ProfileComponent implements OnInit  {
       { valor: 'PROPIO',    etiqueta: 'Sólo lo suyo' },
     ];
 
+    /**
+     * La Asignación se pregunta distinto.
+     *
+     * Los cuatro alcances de arriba contestan «¿de quién?», y para el historial
+     * de responsables eso no significa nada: la pestaña entera se ve o no se
+     * ve. Son los dos valores que entiende la base —TODO y NINGUNO— dichos
+     * como se leen aquí.
+     */
+    public readonly alcancesAsignacion = [
+      { valor: 'TODO',    etiqueta: 'Ve la pestaña' },
+      { valor: 'NINGUNO', etiqueta: 'No la ve' },
+    ];
+
+    /** Qué desplegable le toca a cada dato. */
+    public opcionesDe(clave: string) {
+      return clave === 'ASIGNACION' ? this.alcancesAsignacion : this.alcances;
+    }
+
     /** La letra pequeña del alcance elegido, debajo del desplegable. */
-    public ayudaDel(alcance: string): string {
+    public ayudaDel(alcance: string, clave?: string): string {
+      if (clave === 'ASIGNACION') {
+        return alcance === 'NINGUNO'
+          ? 'La pestaña Asignación no aparece dentro del cliente'
+          : 'Ve por qué manos ha pasado el cliente';
+      }
+
       switch (alcance) {
+        case 'NINGUNO':   return 'No ve ninguno, ni los suyos';
         case 'A_CARGO':   return 'Lo suyo y lo de los grupos por debajo del suyo';
         case 'MI_PERFIL': return 'Lo de quienes tienen este mismo perfil';
         case 'PROPIO':    return 'Sólo lo que haya registrado esa persona';
@@ -305,9 +335,9 @@ export class Save2ProfileComponent implements OnInit  {
     }
 
     /**
-     * Lee los cuatro alcances del perfil.
+     * Lee los cinco alcances del perfil.
      *
-     * Si falla no se cae la pantalla: se quedan los cuatro en TODO, que es
+     * Si falla no se cae la pantalla: se quedan los cinco en TODO, que es
      * exactamente lo que vale un perfil sin filas, y el administrador verá lo
      * mismo que vería si nunca se hubiera configurado.
      */
@@ -323,7 +353,7 @@ export class Save2ProfileComponent implements OnInit  {
     }
 
     /**
-     * Guarda los cuatro alcances, en su propia llamada.
+     * Guarda los cinco alcances, en su propia llamada.
      *
      * Va aparte del perfil a propósito: fn_perfiles_modificar es la función que
      * sostiene los permisos de todo el CRM y no se le añade un parámetro para

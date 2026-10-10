@@ -1,0 +1,128 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarArchivoTitulo"
+     aria-describedby="eliminarArchivoDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarArchivoTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <!-- Advertencia -->
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Eliminar este archivo del cliente?</h6>
+        <!-- Éste es el borrado más definitivo de la pantalla: el fichero se
+             va del disco con @unlink, que no usa papelera. -->
+        <p class="eliminar-aviso__texto" id="eliminarArchivoDescripcion">
+          El fichero se borra <b>del servidor</b>, no sólo de la lista. La auditoría guarda el
+          registro, pero <b>no el contenido</b>: si no hay otra copia, se pierde.
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-file fa-fw me-1" aria-hidden="true"></i>Nombre
+        </span>
+        <span class="eliminar-datos__valor">
+          {{ registro_selected?.nombre || '—' }}@if (registro_selected?.extension) {<span>.{{ registro_selected?.extension }}</span>}
+        </span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-weight-hanging fa-fw me-1" aria-hidden="true"></i>Tamaño
+        </span>
+        <span class="eliminar-datos__valor">{{ formatoTamano(registro_selected?.tamano) }}</span>
+      </div>
+
+      <!-- De dónde salió: es lo que dice si algo más lo está usando -->
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-folder-open fa-fw me-1" aria-hidden="true"></i>Origen
+        </span>
+        <span class="eliminar-datos__valor">{{ deDonde }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-user-pen fa-fw me-1" aria-hidden="true"></i>Subido por
+        </span>
+        <span class="eliminar-datos__valor">
+          {{ registro_selected?.registrado_por_nombre || registro_selected?.created_by || '—' }}
+        </span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-calendar fa-fw me-1" aria-hidden="true"></i>Subido
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.created_at || '—' }}</span>
+      </div>
+
+    </div>
+
+    <!-- Si está enganchado a una nota o a una gestión, se queda algo roto -->
+    @if (estaEnUso) {
+      <p class="eliminar-nota eliminar-nota--peligro">
+        <i class="fa fa-triangle-exclamation fa-fw me-1" aria-hidden="true"></i>
+        {{ registro_selected?.origen === 'nota'
+           ? 'Está pegado en una nota: al borrarlo, esa nota se queda con una imagen rota.'
+           : 'Es el adjunto de una gestión: al borrarlo, el clip de esa gestión deja de abrir nada.' }}
+      </p>
+    }
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si sólo estorba en la lista, <b>desactívelo</b> desde el lápiz en lugar de borrarlo: deja
+      de salir y el fichero se conserva.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="deleteArchivo()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+    </button>
+  </div>
+
+</div>

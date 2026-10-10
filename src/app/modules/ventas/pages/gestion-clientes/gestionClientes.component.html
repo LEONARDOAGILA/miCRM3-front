@@ -865,11 +865,11 @@
                 @if (cliente?.num_contactos) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ cliente.num_contactos }}</span> }
               </button>
             </li>
-            <!-- Quién atiende al cliente lo reparte un administrador, no quien
-                 lo trabaja: al resto ni se le ofrece la pestaña. Esto es sólo
-                 lo que se ve; quien puede reasignar de verdad lo decide el
-                 servidor. -->
-            @if (esAdministrador) {
+            <!-- Que se vea esta pestaña lo dice el perfil, en el cuadro «Qué ve
+                 dentro de un cliente»: es su quinto dato, al lado de las
+                 gestiones, las notas, los archivos y el WhatsApp. Esto es sólo
+                 lo que se ve; la ruta lo comprueba por su cuenta. -->
+            @if (puedeVerAsignacion) {
               <li class="nav-item flex-shrink-0" role="presentation">
                 <button type="button" class="nav-link" role="tab"
                         [class.active]="pestana === 'cartera'"
@@ -1010,33 +1010,34 @@
                   </ul>
                 </div>
 
-                <!-- Quién la registró. La lista la manda el servidor con los
-                     datos: sólo los que de verdad aparecen en este historial,
-                     no los trescientos usuarios del sistema. -->
+                <!-- De quién es la gestión: por RESPONSABLE, a quién le toca,
+                     y no por quién la tecleó. La lista la manda el servidor
+                     con los datos: sólo los que de verdad aparecen en este
+                     historial, no los trescientos usuarios del sistema. -->
                 <div class="dropdown">
                   <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
-                          [class.is-activo]="filtroCreadoPor"
-                          [disabled]="!registradores.length"
+                          [class.is-activo]="filtroResponsable"
+                          [disabled]="!responsablesHistorial.length"
                           data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
-                          title="Filtrar por quién registró la gestión">
-                    <i class="fa fa-fw" [ngClass]="filtroCreadoPor ? 'fa-user-check' : 'fa-user-pen'"></i>
-                    <span>{{ etiquetaCreadoPor || 'Registrado por' }}</span>
+                          title="Filtrar por el responsable de la gestión">
+                    <i class="fa fa-fw" [ngClass]="filtroResponsable ? 'fa-user-check' : 'fa-user-tag'"></i>
+                    <span>{{ etiquetaResponsable || 'Responsable' }}</span>
                     <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
                   </button>
                   <ul class="dropdown-menu gestion-filtro__menu">
                     <li>
-                      <button type="button" class="dropdown-item" [class.active]="!filtroCreadoPor"
-                              (click)="cambiarFiltro('creadoPor', null)">
+                      <button type="button" class="dropdown-item" [class.active]="!filtroResponsable"
+                              (click)="cambiarFiltro('responsable', null)">
                         <i class="fa fa-list fa-fw me-1"></i>Cualquiera
                       </button>
                     </li>
                     <li><hr class="dropdown-divider"></li>
-                    @for (u of registradores; track u.login) {
+                    @for (u of responsablesHistorial; track u.id) {
                       <li>
-                        <!-- Se filtra por el login, que es lo que compara la
+                        <!-- Se filtra por el id, que es lo que compara la
                              consulta, y se lee la etiqueta -->
-                        <button type="button" class="dropdown-item" [class.active]="filtroCreadoPor === u.login"
-                                (click)="cambiarFiltro('creadoPor', u.login)">
+                        <button type="button" class="dropdown-item" [class.active]="filtroResponsable === u.id"
+                                (click)="cambiarFiltro('responsable', u.id)">
                           <i class="fa fa-user fa-fw me-1"></i>{{ u.etiqueta }}
                         </button>
                       </li>
@@ -1044,10 +1045,29 @@
                   </ul>
                 </div>
 
+                <!-- Buscar en cualquier campo de la rejilla: el id, el
+                     responsable, el estado, el tipo, el asunto, la nota, el
+                     resultado, las fechas, quién la registró…
+
+                     Busca el SERVIDOR, no el navegador: el historial se pagina
+                     en el servidor, así que buscar aquí sólo miraría las diez
+                     filas que están a la vista. Y por eso el campo no consulta
+                     por cada letra: se busca al pulsar Enter o al salir. -->
+                <div class="gestion-filtros__buscador">
+                  <app-campoBusquedaPaginacion
+                    #buscadorHistorial
+                    [id]="'buscar-historial'"
+                    [placeholder]="'Buscar en el historial…'"
+                    [iconClass]="'fa fa-search'"
+                    [containerClass]="'position-relative w-100'"
+                    (buscar)="buscarEnHistorial($event)">
+                  </app-campoBusquedaPaginacion>
+                </div>
+
                 <!-- Sólo aparece cuando hay algo que quitar -->
                 @if (hayFiltrosHistorial) {
                   <button type="button" class="btn btn-xs btn-white gestion-filtro__limpiar"
-                          title="Quitar los filtros" (click)="limpiarFiltrosHistorial()">
+                          title="Quitar los filtros y la búsqueda" (click)="limpiarFiltrosHistorial()">
                     <i class="fa fa-xmark me-1"></i>Quitar filtros
                   </button>
                 }
@@ -1101,6 +1121,91 @@
                  Grilla, como el historial: lo vencido en rojo y los tres
                  botones de siempre en ACCIONES. -->
             @if (pestana === 'pendientes') {
+              <!-- Los mismos filtros que el historial, menos el de estado:
+                   esta pestaña YA es un estado (pide estado=PENDIENTE), así
+                   que un menú para elegirlo sólo podría contradecirla. -->
+              <div class="gestion-filtros">
+
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroTipoPendientes"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por tipo de gestión">
+                    <i class="fa fa-fw" [ngClass]="filtroTipoPendientes ? iconoTipo(filtroTipoPendientes) : 'fa-tag'"></i>
+                    <span>{{ filtroTipoPendientes ? nombreTipo(filtroTipoPendientes) : 'Todos los tipos' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroTipoPendientes"
+                              (click)="cambiarFiltroPendientes('tipo', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Todos los tipos
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (t of tipos; track t.id) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroTipoPendientes === t.id"
+                                (click)="cambiarFiltroPendientes('tipo', t.id)">
+                          <i class="fa {{ t.icono }} fa-fw me-1"></i>{{ t.name }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs btn-white dropdown-toggle gestion-filtro"
+                          [class.is-activo]="filtroResponsablePendientes"
+                          [disabled]="!responsablesPendientes.length"
+                          data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                          title="Filtrar por el responsable de la gestión">
+                    <i class="fa fa-fw" [ngClass]="filtroResponsablePendientes ? 'fa-user-check' : 'fa-user-tag'"></i>
+                    <span>{{ etiquetaResponsablePendientes || 'Responsable' }}</span>
+                    <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
+                  </button>
+                  <ul class="dropdown-menu gestion-filtro__menu">
+                    <li>
+                      <button type="button" class="dropdown-item" [class.active]="!filtroResponsablePendientes"
+                              (click)="cambiarFiltroPendientes('responsable', null)">
+                        <i class="fa fa-list fa-fw me-1"></i>Cualquiera
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    @for (u of responsablesPendientes; track u.id) {
+                      <li>
+                        <button type="button" class="dropdown-item" [class.active]="filtroResponsablePendientes === u.id"
+                                (click)="cambiarFiltroPendientes('responsable', u.id)">
+                          <i class="fa fa-user fa-fw me-1"></i>{{ u.etiqueta }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                <div class="gestion-filtros__buscador">
+                  <app-campoBusquedaPaginacion
+                    #buscadorPendientes
+                    [id]="'buscar-pendientes'"
+                    [placeholder]="'Buscar en lo pendiente…'"
+                    [iconClass]="'fa fa-search'"
+                    [containerClass]="'position-relative w-100'"
+                    (buscar)="buscarEnPendientes($event)">
+                  </app-campoBusquedaPaginacion>
+                </div>
+
+                @if (hayFiltrosPendientes) {
+                  <button type="button" class="btn btn-xs btn-white gestion-filtro__limpiar"
+                          title="Quitar los filtros y la búsqueda" (click)="limpiarFiltrosPendientes()">
+                    <i class="fa fa-xmark me-1"></i>Quitar filtros
+                  </button>
+                }
+
+                <span class="gestion-filtros__cuenta">
+                  {{ pendientes.length }} pendiente{{ pendientes.length === 1 ? '' : 's' }}
+                </span>
+              </div>
+
               <ag-grid-angular
                 class="ag-theme-alpine ag-grid-transparente gestion-grilla"
                 [rowData]="pendientes"
@@ -1186,7 +1291,7 @@
                  A un cliente lo atiende más de una persona: quien le vende,
                  quien le cobra y quien le llama. Cada papel se reasigna por su
                  cuenta; debajo, por dónde ha pasado cada uno. -->
-            @if (pestana === 'cartera' && esAdministrador) {
+            @if (pestana === 'cartera' && puedeVerAsignacion) {
               <div class="gestion-roles">
                 @for (r of rolesResponsable; track r.id) {
                   <div class="gestion-rol" [class.is-vacio]="!responsableDe(r.id)?.usuario_id">
@@ -1202,12 +1307,19 @@
                         <span class="gestion-rol__desde">desde {{ responsableDe(r.id)?.desde }}</span>
                       }
                       <span class="gestion-rol__ayuda">{{ r.ayuda }}</span>
-                      <button type="button" class="btn btn-xs btn-white"
-                              [disabled]="accesoModel?.editar === false"
-                              [title]="'Cambiar quién atiende como ' + r.name.toLowerCase()"
-                              (click)="reasignar(r.id)">
-                        <i class="fa fa-user-check me-1"></i>Reasignar
-                      </button>
+                      <!-- Ver por qué manos ha pasado el cliente no es poder
+                           cambiarlas: repartirlo sigue siendo de un
+                           administrador y el servidor contesta 403. Si no lo
+                           es, no se le ofrece el botón en vez de dejarle
+                           chocar con el error. -->
+                      @if (esAdministrador) {
+                        <button type="button" class="btn btn-xs btn-white"
+                                [disabled]="accesoModel?.editar === false"
+                                [title]="'Cambiar quién atiende como ' + r.name.toLowerCase()"
+                                (click)="reasignar(r.id)">
+                          <i class="fa fa-user-check me-1"></i>Reasignar
+                        </button>
+                      }
                     </div>
                   </div>
                 }
