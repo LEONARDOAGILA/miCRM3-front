@@ -562,3 +562,33 @@ a.gestion-adj__nombre:hover {
   border-color: var(--bs-app-theme, #00acac);
   color: var(--bs-app-theme, #00acac);
 }
+
+/* ============================================================
+   DOS COLUMNAS (a partir de lg)
+
+   Izquierda los datos, derecha lo que se hablo. Por debajo de lg
+   se apilan y la nota queda al final, que es el orden en que se
+   escribe. Todo lo de aqui va dentro de la media query: en
+   telefono y tableta nada cambia.
+   ============================================================ */
+@media (min-width: 992px) {
+
+  /* La hoja de escribir, mas alta.
+
+     La columna de los datos trae seis filas de campos y los adjuntos; con el
+     editor en 10rem la nota quedaba como una tarjeta corta arriba a la
+     derecha, con medio panel de aire debajo. 24rem las deja parejas.
+
+     Se sube el alto y no se estira el panel con flex: la cadena flex de este
+     editor es fragil —se rompe en el elemento <ngx-editor>, que es el que
+     parece un div y no lo es— y aqui no hace falta, porque el alto del
+     panel sale del alto de la hoja.
+
+     --cne-alto la pone campoNgxEditor EN LINEA (desde su [alto]), y un
+     estilo en linea gana a la hoja de estilos: de ahi el !important, que es
+     la unica forma de subirla sin meter en el componente un listener de
+     resize para recalcularla. */
+  :host ::ng-deep .gestion-nota__campo .cne__fondo {
+    --cne-alto: 24rem !important;
+  }
+}

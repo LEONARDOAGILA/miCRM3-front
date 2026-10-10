@@ -840,7 +840,10 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
    * nombre viene largo —«VCUENCA1  -  Cuenca Uno Vendedor (yo)»—.
    */
   get colResponsable(): string {
-    return this.contactosCombo.length ? 'col-12 col-md-8' : 'col-12';
+    // Ya no comparte línea con la persona de contacto: en la columna estrecha
+    // (~340px) el buscador —id, nombre y lupa— se queda sin sitio para el
+    // nombre, que es lo que hay que leer
+    return 'col-12';
   }
 
   /**
@@ -858,31 +861,43 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     return `Entrará en la agenda de ${quien}, no en la suya.`;
   }
 
-  // ---------- Los anchos de las tres filas ----------
-  // Fila 1: tipo + prioridad + fecha          Fila 2: responsable + contacto
-  // Fila 3: asunto + duración + resultado
+  // ---------- Los anchos de los campos ----------
+  // Todos viven en la columna IZQUIERDA, que es la estrecha (5 de 12). Y los
+  // doce de esta rejilla son los de esa columna, no los del modal: un
+  // `col-md-4` aquí es un tercio de ~340px, no de la pantalla.
   //
-  // Calculados y no a mano porque hay dos cosas que aparecen y desaparecen —la
-  // fecha (no en «En este momento») y el resultado (sólo si ya se hizo)—, y a
-  // mano cada combinación dejaba un hueco distinto al final de la fila.
+  // De ahí que casi todo vaya a 6 y 12: dos campos cortos por línea —tipo con
+  // prioridad, duración con resultado— y a lo ancho lo que no entra de otra
+  // forma, que son la fecha y hora, el buscador del responsable, la persona
+  // de contacto y el asunto.
   //
-  // EN EL TELÉFONO los pares de campos cortos comparten línea (col-6): tipo
-  // con prioridad y duración con resultado. Los anchos —la fecha, el asunto,
-  // el responsable— se quedan a 12, que es donde peor entran.
+  // Son getters y no clases escritas en la plantilla porque hay dos campos
+  // que aparecen y desaparecen —la fecha (no en «En este momento») y el
+  // resultado (sólo si ya se hizo)—, y a mano cada combinación dejaba un
+  // hueco distinto al final de la fila.
 
-  get colTipo(): string      { return this.esAhora ? 'col-6' : 'col-6 col-md-4'; }
-  get colPrioridad(): string { return this.esAhora ? 'col-6' : 'col-6 col-md-4'; }
+  get colTipo(): string      { return 'col-6'; }
+  get colPrioridad(): string { return 'col-6'; }
+
+  /**
+   * Los tres de la última fila —asunto, duración y resultado— sólo caben
+   * juntos cuando el modal llega a su ancho entero (xl: 1140px, columna de
+   * unos 440px). Por debajo, la columna se queda en ~340px y un desplegable
+   * de 110px no deja leer «¿Cómo terminó?»: ahí el asunto se pone a lo ancho
+   * y los otros dos comparten la línea de abajo.
+   */
+  get colAsunto(): string {
+    return this.esProgramada ? 'col-12 col-xl-9' : 'col-12 col-xl-6';
+  }
 
   /** Estrecha: son cuatro dígitos como mucho. */
-  get colDuracion(): string  { return 'col-6 col-md-2'; }
-
-  get colResultado(): string { return 'col-6 col-md-3'; }
-
-  /** Lo que sobra en su fila: 12 menos la duración y el resultado. */
-  get colAsunto(): string {
-    const resto = 12 - 2 - (this.esProgramada ? 0 : 3);
-    return 'col-12 col-md-' + resto;
+  get colDuracion(): string {
+    // Sin resultado al lado se queda sola en su línea: a lo ancho, para no
+    // dejar media fila vacía
+    return this.esProgramada ? 'col-12 col-xl-3' : 'col-6 col-xl-3';
   }
+
+  get colResultado(): string { return 'col-6 col-xl-3'; }
 
   get ctrlEstado(): FormControl { return this.form.controls['estado'] as FormControl; }
 

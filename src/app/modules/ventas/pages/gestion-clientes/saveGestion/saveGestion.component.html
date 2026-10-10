@@ -59,7 +59,19 @@
             </span>
           </div>
 
-          <div class="row g-2">
+          <!-- DOS COLUMNAS a partir de lg: a la izquierda los datos, a la
+               derecha lo que se habló. Por debajo de lg se apilan, con los
+               datos arriba: en un teléfono la nota detrás de todo es lo
+               esperable, porque es lo último que se escribe.
+
+               El selector de arriba (ahora / ya la hice / programarla) se
+               queda fuera de las columnas y a todo lo ancho: no es un campo,
+               es lo que decide qué campos se enseñan. -->
+          <div class="row g-3">
+
+            <!-- ========== IZQUIERDA: los datos ========== -->
+            <div class="col-12 col-lg-5">
+              <div class="row g-2">
 
             <div [ngClass]="colTipo">
               <div class="campo-combo">
@@ -92,11 +104,11 @@
             </div>
 
             <!-- La fecha, salvo con «En este momento»: ahí la pone el guardado
-                 y enseñarla sólo confundiría. A cuatro columnas, que con tres
-                 el campo datetime recortaba la hora; en el teléfono, a lo
-                 ancho, que es donde peor entra. -->
+                 y enseñarla sólo confundiría. A todo lo ancho de la columna:
+                 es el campo que peor entra —en menos de 200px el datetime
+                 recorta la hora— y aquí la columna ya es la estrecha. -->
             @if (!esAhora) {
-              <div class="col-12 col-md-4">
+              <div class="col-12">
                 @if (esProgramada) {
                   <app-campoTexto
                     [control]="form.controls['fecha_programada']"
@@ -160,11 +172,10 @@
               }
             </div>
 
-            <!-- La persona de contacto sube a la fila del responsable: las dos
-                 dicen «con quién», y así la fila del asunto queda para el
-                 asunto, la duración y el resultado. -->
+            <!-- La persona de contacto, a lo ancho: en la columna estrecha no
+                 cabe al lado del responsable. -->
             @if (contactosCombo.length) {
-              <div class="col-12 col-md-4">
+              <div class="col-12">
                 <div class="campo-combo">
                   <app-combo
                     formControlName="contacto_id"
@@ -310,14 +321,17 @@
               </div>
             </div>
             
-            <!-- ---------- Qué se habló ----------
+              </div>
+            </div>
+
+            <!-- ========== DERECHA: lo que se habló ==========
                  Aquí había al lado una tarjeta de «Teléfonos» con llamar,
                  WhatsApp y copiar. Sobra desde que a este formulario se llega
                  DESDE esas acciones: se marca o se elige la respuesta en la
                  ficha y el formulario se abre ya con el número puesto, así
                  que volver a ofrecerlas aquí era dar la vuelta a lo que se
-                 acaba de hacer. La nota se queda con todo el ancho. -->
-            <div class="col-12">
+                 acaba de hacer. -->
+            <div class="col-12 col-lg-7 gestion-nota__col">
               <!-- En <panel> y no en una tarjeta propia: así trae el botón de
                    expandir de la barra de título, que es el que hace falta aquí.
                    Un correo con formato no se escribe en un campo de 10rem, y el

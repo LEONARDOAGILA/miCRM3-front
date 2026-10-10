@@ -2423,7 +2423,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     // datos: si caducó, que lo diga aquí y no con un 401 a medio abrir.
     if (this._seguridadService.isexpired()) { return; }
 
-    const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+    const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.modo = modo;
     modalRef.componentInstance.cliente = this.cliente;
     modalRef.componentInstance.contactos = this.contactos;
@@ -3368,7 +3368,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
     const cuerpoHtml = asunto ? this.textoDePlantilla(asunto) : '';
 
-    const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+    const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.modo = 'registrar';
     modalRef.componentInstance.cliente = this.cliente;
     modalRef.componentInstance.contactos = this.contactos;
@@ -3447,7 +3447,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       if (!this.cliente) { return; }
 
-      const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+      const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
       modalRef.componentInstance.modo = 'registrar';
       modalRef.componentInstance.cliente = this.cliente;
       modalRef.componentInstance.contactos = this.contactos;
@@ -3740,7 +3740,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     }
     if (this._seguridadService.isexpired()) { return; }
 
-    const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'lg', backdrop: 'static', keyboard: true });
+    const modalRef = this.modal.open(SaveGestionComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
     modalRef.componentInstance.modo = 'registrar';
     modalRef.componentInstance.cliente = this.cliente;
     modalRef.componentInstance.contactos = this.contactos;
