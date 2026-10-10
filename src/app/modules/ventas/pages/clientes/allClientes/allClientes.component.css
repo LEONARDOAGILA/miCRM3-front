@@ -52,6 +52,23 @@
   --ag-line-height: 30px;
 }
 
+/* ---------- Clientes desactivados ----------
+   Apagados y tachados, para saber de un vistazo cuáles ya no están en juego
+   sin tener que mirar la casilla del final de la fila.
+
+   `::ng-deep` porque las filas las dibuja ag-Grid fuera de la encapsulación
+   del componente: una regla normal nunca las alcanzaría.
+
+   SE DEJAN FUERA DOS COLUMNAS. «Activo» es la casilla que dice precisamente
+   que está desactivado —atenuarla sería tapar el dato— y «ACCIONES» son
+   botones que se siguen pudiendo pulsar: tachar un botón y dejarlo a medio
+   ver se lee como que no funciona. */
+:host ::ng-deep .lista-grilla .ag-row.fila-inactiva .ag-cell:not([col-id='activo']):not([col-id='actions']) {
+  color: var(--bs-secondary-color, #6c757d);
+  text-decoration: line-through;
+  opacity: .75;
+}
+
 /* ---------- Paginación ---------- */
 .pagination-controls {
   gap: .5rem;

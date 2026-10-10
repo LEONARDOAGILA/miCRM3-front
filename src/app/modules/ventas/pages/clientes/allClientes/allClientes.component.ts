@@ -1,7 +1,7 @@
 import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
@@ -186,83 +186,30 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   public filtrosColumna: any = {};
 
   /**
-   * Una operación de filtro que la rejilla NO aplica: siempre pasa.
+   * Los clientes desactivados se ven, pero se ven apagados y tachados.
    *
-   * `predicate` es la pieza clave. Como se pagina en el servidor, ag-Grid sólo
-   * tiene las filas de la página: si filtrara ella, escribir «Manta» daría dos
-   * de mil y parecería rota. Con el predicado devolviendo siempre true la
-   * rejilla se queda con lo que hace bien —la cabecera, los operadores, el
-   * modelo— y no esconde ninguna fila; filtrar lo hace el servidor.
+   * No se esconden: siguen en el listado y se pueden buscar y abrir. Lo que
+   * se busca es que no haya que mirar la casilla «Activo» del final de la
+   * fila para saber que ese cliente ya no está en juego.
    *
-   * No vale `textMatcher`: gobierna sólo las comparaciones de texto, y «En
-   * blanco» se resuelve antes de llegar a él y sí escondería filas.
+   * `=== false` y no `!activo`: así una fila a la que todavía no le ha
+   * llegado el dato —`undefined` mientras carga— no se pinta tachada y luego
+   * se destacha.
    */
-  private opcion(clave: string, nombre: string, entradas: 0 | 1 | 2 = 1): any {
-    return { displayKey: clave, displayName: nombre, numberOfInputs: entradas, predicate: () => true };
-  }
-
-  /** Filtro de texto que no filtra aquí. Los nombres, en castellano: una
-   *  operación propia no pasa por el localeText de la rejilla. */
-  private get noFiltrarAqui(): any {
-    return {
-      suppressAndOrCondition: true,
-      debounceMs: 400,                 // sin esto hay que pulsar Enter y nadie lo pulsa
-      filterOptions: [
-        this.opcion('contains',    'Contiene'),
-        this.opcion('notContains', 'No contiene'),
-        this.opcion('equals',      'Es igual a'),
-        this.opcion('notEqual',    'No es igual a'),
-        this.opcion('startsWith',  'Empieza por'),
-        this.opcion('endsWith',    'Termina en'),
-        this.opcion('blank',       'En blanco', 0),
-        this.opcion('notBlank',    'No en blanco', 0),
-      ],
-    };
-  }
-
-  /** Lo mismo para las columnas de números. */
-  private get noFiltrarAquiNumero(): any {
-    return {
-      suppressAndOrCondition: true,
-      debounceMs: 400,
-      filterOptions: [
-        this.opcion('equals',             'Es igual a'),
-        this.opcion('notEqual',           'No es igual a'),
-        this.opcion('greaterThan',        'Mayor que'),
-        this.opcion('greaterThanOrEqual', 'Mayor o igual que'),
-        this.opcion('lessThan',           'Menor que'),
-        this.opcion('lessThanOrEqual',    'Menor o igual que'),
-        this.opcion('inRange',            'Entre', 2),
-        this.opcion('blank',              'En blanco', 0),
-        this.opcion('notBlank',           'No en blanco', 0),
-      ],
-    };
-  }
+  public rowClassRules = {
+    'fila-inactiva': (p: RowClassParams) => p.data?.activo === false,
+  };
 
   /**
-   * Les cuelga el filtro a las columnas que lo admiten.
+   * Las columnas con su filtro de cabecera.
    *
-   * Se hace al final y de una pasada en vez de repetir `filter` y
-   * `filterParams` en veinte definiciones: así la lista de qué se puede
-   * filtrar está en UN sitio y no desperdigada.
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique, porque sólo
+   * tiene las filas de la página— vive en AppAgGridService: lo mismo hacían
+   * tres pantallas con el código copiado. Aquí queda sólo el QUÉ.
    */
   private conFiltros(columnas: any[]): any[] {
-    return columnas.map(c => {
-      const tipo = this.COLUMNAS_FILTRABLES[c.field];
-      if (!tipo) { return { ...c, filter: false }; }
-      return {
-        ...c,
-        filter: tipo === 'numero' ? 'agNumberColumnFilter' : 'agTextColumnFilter',
-        filterParams: tipo === 'numero' ? this.noFiltrarAquiNumero : this.noFiltrarAqui,
-        // AQUÍ, en la columna. `floatingFilter` NO es opción de rejilla: no
-        // está en GridOptions ni entre las entradas de ag-grid-angular, y
-        // ponerlo en la etiqueta hace que Angular corte el build con NG8002.
-        // Las columnas sin filtro dejan su hueco en blanco en esa fila.
-        floatingFilter: true,
-      };
-    });
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
   }
-
   /**
    * La cabecera pidió otra cosa.
    *

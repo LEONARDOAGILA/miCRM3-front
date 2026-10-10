@@ -14,6 +14,14 @@ export interface FiltrosGestion {
   responsable_id?: number | null;
   desde?: string | null;
   hasta?: string | null;
+  /**
+   * El modelo de filtros de columna de ag-Grid, tal cual lo da la rejilla.
+   *
+   * Va aparte de los demás porque no lo elige el usuario en un desplegable:
+   * lo arma la cabecera de la rejilla. Se aplica en el SERVIDOR, que para eso
+   * las dos pestañas piden sus filas allí.
+   */
+  columnas?: any;
 }
 
 /** Filtros de la agenda («Lo que toca hacer»). */
@@ -51,6 +59,14 @@ export interface FiltrosAgenda {
   search?: string;
   page?: number;
   perPage?: number;
+  /**
+   * El modelo de filtros de columna de ag-Grid, tal cual lo da la rejilla.
+   *
+   * Va aparte de los demás porque no lo elige el usuario en un desplegable:
+   * lo arma la cabecera. Se aplica en el SERVIDOR, que para eso la agenda
+   * pagina allí.
+   */
+  columnas?: any;
 }
 
 /** Contadores que devuelve la agenda. */
@@ -114,6 +130,9 @@ export class GestionService {
     if (filtros.estado) { params = params.set('estado', filtros.estado); }
     if (filtros.resultado)  { params = params.set('resultado', filtros.resultado); }
     if (filtros.responsable_id) { params = params.set('responsable_id', String(filtros.responsable_id)); }
+    if (filtros.columnas && Object.keys(filtros.columnas).length) {
+      params = params.set('filtros', JSON.stringify(filtros.columnas));
+    }
     if (filtros.desde)  { params = params.set('desde', filtros.desde); }
     if (filtros.hasta)  { params = params.set('hasta', filtros.hasta); }
     return this._http.get<any>(this.URL_SERVICIOS + 'allGestiones', { params, observe: 'response' });
@@ -161,6 +180,9 @@ export class GestionService {
     if (filtros.desde) { params = params.set('desde', filtros.desde); }
     if (filtros.hasta) { params = params.set('hasta', filtros.hasta); }
     if (filtros.search) { params = params.set('search', filtros.search); }
+    if (filtros.columnas && Object.keys(filtros.columnas).length) {
+      params = params.set('filtros', JSON.stringify(filtros.columnas));
+    }
 
     return this._http.get(this.URL_SERVICIOS + 'agendaPaginada', { params });
   }

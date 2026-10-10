@@ -15,24 +15,20 @@
 }
 
 /* ---------- El aviso de arriba ---------- */
+/* La caja la dibuja app-aviso; aquí sólo queda separarla de lo que viene
+   debajo. Si se repitieran el borde y el fondo saldría una caja dentro de
+   otra. */
 .cat-aviso {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .5rem;
-
   margin-bottom: .75rem;
-  padding: .5rem .75rem;
-  border: 1px solid rgba(var(--bs-app-theme-rgb, 0, 172, 172), .3);
-  border-radius: .375rem;
-
-  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
-  font-size: .75rem;
-  line-height: 1.4;
 }
 
+/* El interruptor va dentro del aviso, detrás del texto. No se puede empujar
+   a la derecha con `margin-left: auto` como antes: ahí dentro ya no es un
+   hijo de un flex, sino texto corrido dentro del párrafo del aviso. Se
+   separa con un margen y se mantiene en una línea. */
 .cat-aviso__check {
-  margin-left: auto;
+  display: inline-block;
+  margin-left: .75rem;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -190,8 +186,15 @@
   text-transform: uppercase;
 }
 
-.cat-campo--icono {
-  flex: 0 0 110px;
+/* El campo de icono ya no es un <input>: es app-campoIcono, con la vista
+   previa a un lado y el botón de la rejilla al otro. Por eso NO lleva
+   `.cat-campo` —que son estilos de input, con su alto y su padding— y sí
+   necesita algo más de ancho que los 110px de cuando se tecleaba. */
+.cat-icono {
+  flex: 0 0 190px;
+  min-width: 0;
+  height: 24px;
+  font-size: .75rem;
 }
 
 .cat-nuevo {
@@ -272,7 +275,7 @@
   /* El código y el icono se van: en un teléfono no caben cuatro campos en
      una fila y lo que se viene a hacer aquí es dar de alta asuntos */
   .cat-campo--codigo { flex: 0 0 76px; }
-  .cat-campo--icono  { display: none; }
+  .cat-icono         { display: none; }
 
   .cat-fila__codigo { display: none; }
 }

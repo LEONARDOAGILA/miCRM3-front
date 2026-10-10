@@ -23,15 +23,17 @@
 
     <!-- Para qué sirve esto, en una línea: quien entra por primera vez no
          tiene por qué saber qué cambia al tocar esta lista -->
-    <div class="cat-aviso">
-      <i class="fa fa-circle-info fa-fw me-1"></i>
+    <!-- El aviso compartido: el icono, la barra de color y el fondo los pone
+         él, y con el color elegido en «Ajustes de la aplicación». Lo único
+         que queda aquí es el texto y el interruptor. -->
+    <app-aviso class="cat-aviso">
       Al registrar una gestión el asunto <b>se elige de aquí</b>, no se escribe.
       Es lo que permite después agrupar por asunto sin que «Cobranza» y «cobranzas»
       cuenten como dos cosas distintas.
       <label class="cat-aviso__check">
         <input type="checkbox" [(ngModel)]="verInactivos"> Ver los desactivados
       </label>
-    </div>
+    </app-aviso>
 
     <div class="row g-3">
 
@@ -61,9 +63,8 @@
                          [(ngModel)]="borrador.codigo" placeholder="CÓDIGO" maxlength="20">
                   <input class="form-control form-control-sm cat-campo"
                          [(ngModel)]="borrador.nombre" placeholder="Nombre" maxlength="60">
-                  <input class="form-control form-control-sm cat-campo cat-campo--icono"
-                         [(ngModel)]="borrador.icono" placeholder="fa-phone" maxlength="40"
-                         title="Clase de Font Awesome, por ejemplo fa-phone o fab fa-whatsapp">
+                  <!-- Se elige de una rejilla; también se puede teclear -->
+                  <app-campoIcono class="cat-icono" [(ngModel)]="borrador.icono"></app-campoIcono>
                   <span class="cat-acciones">
                     <button type="button" class="btn-icon btn-guardar" title="Guardar"
                             [disabled]="guardando" (click)="guardarTipoEditado(t)">
@@ -118,10 +119,9 @@
                    [(ngModel)]="nuevoTipo.nombre" placeholder="Nombre del tipo" maxlength="60"
                    [disabled]="accesoModel?.crear === false"
                    (keyup.enter)="crearTipo()">
-            <input class="form-control form-control-sm cat-campo cat-campo--icono"
-                   [(ngModel)]="nuevoTipo.icono" placeholder="fa-phone" maxlength="40"
-                   [disabled]="accesoModel?.crear === false"
-                   title="Clase de Font Awesome, por ejemplo fa-phone o fab fa-whatsapp">
+            <app-campoIcono class="cat-icono"
+                            [(ngModel)]="nuevoTipo.icono"
+                            [disabled]="accesoModel?.crear === false"></app-campoIcono>
             <button type="button" class="btn btn-xs btn-primary"
                     [disabled]="accesoModel?.crear === false || guardando" (click)="crearTipo()">
               <i class="fa fa-plus me-1"></i>Agregar

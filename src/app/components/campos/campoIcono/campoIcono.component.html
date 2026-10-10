@@ -1,0 +1,46 @@
+<!-- El icono elegido, lo escrito y el botón que abre la rejilla, en una pieza:
+     se ve qué hay puesto sin tener que imaginárselo desde el nombre. -->
+<div class="campo-icono" [class.is-apagado]="deshabilitado">
+
+  <!-- La vista previa hace también de botón: pulsar el icono es lo primero
+       que se intenta, así que abre el selector igual que el de la derecha. -->
+  <button type="button"
+          class="campo-icono__vista"
+          [disabled]="deshabilitado"
+          [title]="valor ? 'Cambiar el icono (' + valor + ')' : 'Elegir un icono'"
+          [attr.aria-label]="valor ? 'Cambiar el icono' : 'Elegir un icono'"
+          (click)="abrirSelector()">
+    <i [ngClass]="vistaPrevia" [class.campo-icono__vista--vacia]="!valor" aria-hidden="true"></i>
+  </button>
+
+  <input type="text"
+         class="form-control form-control-sm campo-icono__texto"
+         [class.is-invalid]="!seEntiende"
+         [value]="valor"
+         [placeholder]="placeholder"
+         [attr.maxlength]="maxlength"
+         [disabled]="deshabilitado"
+         title="Clase de Font Awesome. Se puede escribir a mano o elegir con el botón de la derecha."
+         (input)="alEscribir($event)">
+
+  <!-- Sólo cuando hay algo que quitar, como la × del resto de los campos -->
+  @if (valor && !deshabilitado) {
+    <button type="button"
+            class="campo-icono__limpiar"
+            tabindex="-1"
+            title="Quitar el icono"
+            aria-label="Quitar el icono"
+            (click)="limpiar()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  }
+
+  <button type="button"
+          class="btn btn-sm campo-icono__abrir"
+          [disabled]="deshabilitado"
+          title="Elegir de la lista de iconos"
+          aria-label="Elegir de la lista de iconos"
+          (click)="abrirSelector()">
+    <i class="fa fa-table-cells" aria-hidden="true"></i>
+  </button>
+</div>

@@ -1,0 +1,180 @@
+/* ============================================================
+   SELECTOR DE ICONOS
+
+   Los colores salen de las variables de Bootstrap que ya usa la plantilla,
+   así el modal acompaña al tema elegido en «Ajustes de la aplicación» y al
+   modo oscuro sin reglas aparte.
+   ============================================================ */
+
+/* Alto fijo: el modal no puede crecer con lo que se busque, o al escribir
+   «a» saltaría a ocupar la pantalla entera y volvería a encogerse. */
+.sel-cuerpo {
+  max-height: min(62vh, 30rem);
+  overflow-y: auto;
+}
+
+/* ---------- Buscador y estilos ---------- */
+.sel-barra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  margin-bottom: .75rem;
+}
+
+.sel-barra__buscador {
+  flex: 1 1 16rem;
+  min-width: 12rem;
+}
+
+.sel-estilos {
+  flex: 0 0 auto;
+}
+
+.sel-estilos .btn {
+  font-size: .75rem;
+  padding: .25rem .6rem;
+}
+
+/* La cuenta, más apagada que el nombre del estilo */
+.sel-estilos__cuenta {
+  opacity: .65;
+  font-size: .6875rem;
+}
+
+/* ---------- Grupos ---------- */
+.sel-grupo + .sel-grupo {
+  margin-top: 1rem;
+}
+
+.sel-grupo__titulo {
+  display: flex;
+  align-items: center;
+
+  margin-bottom: .4rem;
+  padding-bottom: .25rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.sel-grupo__pista {
+  margin-left: .35rem;
+  font-weight: 400;
+  opacity: .8;
+}
+
+.sel-vacio {
+  margin: .5rem 0 0;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- La rejilla ----------
+   `auto-fill` y no un número de columnas: el modal se abre a tamaño grande en
+   un escritorio y estrecho en un portátil, y así caben los que quepan. */
+.sel-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: .35rem;
+}
+
+.sel-icono {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+
+  padding: .5rem .25rem;
+
+  border: 1px solid transparent;
+  border-radius: .375rem;
+
+  background: none;
+  color: inherit;
+  cursor: pointer;
+
+  transition: background-color .12s ease, border-color .12s ease;
+}
+
+.sel-icono:hover {
+  border-color: var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+}
+
+/* El marcado, con el color del tema de la aplicación */
+.sel-icono.is-elegido {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.sel-icono__dibujo {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.sel-icono.is-elegido .sel-icono__dibujo {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* El nombre entero no cabe («file-invoice-dollar»): se corta con puntos y
+   el nombre completo queda en el title del botón. */
+.sel-icono__nombre {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: .625rem;
+  line-height: 1.2;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Pie ---------- */
+.sel-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.sel-elegido {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.sel-elegido__dibujo {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* La clase tal cual se guarda, en monoespaciada: es texto para copiar */
+.sel-elegido__clase {
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sel-elegido__nada {
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.sel-pie__botones {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  margin-left: auto;
+}

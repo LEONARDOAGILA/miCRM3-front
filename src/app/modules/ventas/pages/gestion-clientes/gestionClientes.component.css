@@ -1145,10 +1145,6 @@
   color: #fff;
 }
 
-.gestion-filtro__limpiar {
-  color: var(--bs-secondary-color, #6c757d);
-}
-
 /* Cuántas hay con los filtros puestos, al final de la línea */
 .gestion-filtros__cuenta {
   margin-left: auto;

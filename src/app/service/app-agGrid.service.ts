@@ -161,5 +161,106 @@ export class AppAgGridService {
     return this.sideBar;
   }
 
+  // ================================================================
+  // FILTROS DE CABECERA EN LAS REJILLAS QUE PAGINAN EN EL SERVIDOR
+  // ================================================================
+  //
+  // POR QUÉ ESTO ESTÁ AQUÍ. Una rejilla que pide sus filas al servidor sólo
+  // tiene las de la página: si ag-Grid filtrara por su cuenta, escribir
+  // «Manta» daría dos de mil y parecería rota. Lo que se hace es dejar que la
+  // cabecera recoja lo que el usuario pidió —el operador, el valor, el
+  // modelo— y que el filtrado lo haga el servidor sobre el total.
+  //
+  // Estaba copiado en tres pantallas; cada una nueva era una cuarta copia.
+
+  /**
+   * Una operación de filtro que la rejilla NO aplica: siempre pasa.
+   *
+   * `predicate` es la pieza clave. No vale `textMatcher`: gobierna sólo las
+   * comparaciones de texto, y «En blanco» se resuelve antes de llegar a él y
+   * sí escondería filas.
+   */
+  private opcionQueNoFiltra(clave: string, nombre: string, entradas: 0 | 1 | 2 = 1): any {
+    return { displayKey: clave, displayName: nombre, numberOfInputs: entradas, predicate: () => true };
+  }
+
+  /** Filtro de texto que no filtra aquí. Los nombres, en castellano: una
+   *  operación propia no pasa por el localeText de la rejilla. */
+  /**
+   * Los parámetros del filtro de texto, sueltos.
+   *
+   * Lo normal es `filtrosDeServidor`, que los cuelga de una pasada. Esto es
+   * para las pantallas que escriben `filter` y `filterParams` columna a
+   * columna.
+   */
+  get filtroTextoDeServidor(): any {
+    return {
+      suppressAndOrCondition: true,
+      debounceMs: 400,                 // sin esto hay que pulsar Enter y nadie lo pulsa
+      filterOptions: [
+        this.opcionQueNoFiltra('contains',    'Contiene'),
+        this.opcionQueNoFiltra('notContains', 'No contiene'),
+        this.opcionQueNoFiltra('equals',      'Es igual a'),
+        this.opcionQueNoFiltra('notEqual',    'No es igual a'),
+        this.opcionQueNoFiltra('startsWith',  'Empieza por'),
+        this.opcionQueNoFiltra('endsWith',    'Termina en'),
+        this.opcionQueNoFiltra('blank',       'En blanco', 0),
+        this.opcionQueNoFiltra('notBlank',    'No en blanco', 0),
+      ],
+    };
+  }
+
+  /** Lo mismo para las columnas de números. */
+  get filtroNumeroDeServidor(): any {
+    return {
+      suppressAndOrCondition: true,
+      debounceMs: 400,
+      filterOptions: [
+        this.opcionQueNoFiltra('equals',             'Es igual a'),
+        this.opcionQueNoFiltra('notEqual',           'No es igual a'),
+        this.opcionQueNoFiltra('greaterThan',        'Mayor que'),
+        this.opcionQueNoFiltra('greaterThanOrEqual', 'Mayor o igual que'),
+        this.opcionQueNoFiltra('lessThan',           'Menor que'),
+        this.opcionQueNoFiltra('lessThanOrEqual',    'Menor o igual que'),
+        this.opcionQueNoFiltra('inRange',            'Entre', 2),
+        this.opcionQueNoFiltra('blank',              'En blanco', 0),
+        this.opcionQueNoFiltra('notBlank',           'No en blanco', 0),
+      ],
+    };
+  }
+
+  /**
+   * Les cuelga el filtro a las columnas que lo admiten.
+   *
+   * Se hace de una pasada en vez de repetir `filter` y `filterParams` en
+   * veinte definiciones: así la lista de qué se puede filtrar está en UN sitio
+   * y no desperdigada. Lo que no esté en el mapa se queda sin filtro.
+   *
+   * La columna se busca por `field` y, si no tiene, por `colId`: las que se
+   * calculan con valueGetter no tienen campo, y el modelo que manda ag-Grid
+   * viene con el colId.
+   *
+   * @param columnas Las definiciones, tal cual.
+   * @param mapa     { campo: 'texto' | 'numero' }, la misma lista blanca que
+   *                 tenga el controlador: ofrecer aquí un filtro de más sería
+   *                 prometer algo que el servidor no hace.
+   */
+  filtrosDeServidor(columnas: any[], mapa: { [campo: string]: 'texto' | 'numero' }): any[] {
+    return columnas.map(c => {
+      const tipo = mapa[c.field ?? c.colId];
+      if (!tipo) { return { ...c, filter: false }; }
+      return {
+        ...c,
+        filter: tipo === 'numero' ? 'agNumberColumnFilter' : 'agTextColumnFilter',
+        filterParams: tipo === 'numero' ? this.filtroNumeroDeServidor : this.filtroTextoDeServidor,
+        // AQUÍ, en la columna. `floatingFilter` NO es opción de rejilla: no
+        // está en GridOptions ni entre las entradas de ag-grid-angular, y
+        // ponerlo en la etiqueta hace que Angular corte el build con NG8002.
+        // Las columnas sin filtro dejan su hueco en blanco en esa fila.
+        floatingFilter: true,
+      };
+    });
+  }
+
 
 }

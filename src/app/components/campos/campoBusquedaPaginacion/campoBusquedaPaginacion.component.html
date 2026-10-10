@@ -21,7 +21,7 @@
   <input
     #inputElement
     type="text"
-    class="form-control ps-35px rounded-3 fs-12px campo-busqueda__input"
+    class="form-control rounded-3 fs-12px campo-busqueda__input"
     [class.campo-busqueda__input--con-x]="limpiable && valor"
     [id]="id"
     [placeholder]="placeholder"
@@ -32,8 +32,14 @@
     (keydown.escape)="limpiar()"
   />
 
-  <!-- type="button": sin él, dentro de un formulario la lupa lo enviaba -->
-  <button type="button" class="btn position-absolute start-0 top-0 shadow-none" (click)="onButtonClick()">
+  <!-- type="button": sin él, dentro de un formulario la lupa lo enviaba.
+       Lleva borde y fondo propios: antes era un icono suelto encima del campo
+       y no se veía que se pudiera pulsar. -->
+  <button type="button"
+          class="btn position-absolute start-0 top-0 shadow-none campo-busqueda__lupa"
+          title="Buscar"
+          aria-label="Buscar"
+          (click)="onButtonClick()">
     <i [class]="iconClass"></i>
   </button>
 

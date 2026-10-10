@@ -142,13 +142,22 @@
                      (ngModelChange)="onRangoFechas($event)" />
             </div>
 
+            <!-- El botón de quitar filtros va DENTRO del campo, como en el
+                 resto de la aplicación. Cuenta la búsqueda, las columnas
+                 filtradas y el periodo, por eso se le pasa `hayFiltrosAgenda`
+                 y no se deja adivinar. -->
             <div class="agenda-filtros__buscador">
               <app-campoBusquedaPaginacion
                 [id]="'buscar-agenda'"
                 [placeholder]="'Buscar por asunto, cliente o teléfono…'"
                 [iconClass]="'fa fa-search'"
-                [containerClass]="'position-relative w-100'"
-                (buscar)="buscarEnAgenda($event)">
+                [containerClass]="'w-100'"
+                [valorInicial]="buscaAgenda"
+                [conLimpiarFiltros]="true"
+                [hayFiltro]="hayFiltrosAgenda"
+                [columnasFiltradas]="cuantasColumnasFiltradasAgenda"
+                (buscar)="buscarEnAgenda($event)"
+                (limpiarFiltros)="limpiarFiltrosAgenda()">
               </app-campoBusquedaPaginacion>
             </div>
 
@@ -241,6 +250,7 @@
           [navigateToNextCell]="navegarConTecladoAgenda"
           (cellKeyDown)="onCellKeyDownAgenda($event)"
           (gridReady)="onGridReadyAgenda($event)"
+          (filterChanged)="onFiltroColumnaAgenda()"
           (cellClicked)="onCellClickedAgenda($event)">
         </ag-grid-angular>
 
@@ -731,6 +741,46 @@
                 </div>
 
                 
+                <!-- Contadores
+                Cada uno lleva en el title qué cuenta exactamente, que
+                por el nombre no se adivina: las vencidas van también
+                dentro de las pendientes, y el total incluye las
+                canceladas, así que realizadas + pendientes no tiene
+                por qué dar el total. Lo cuenta ventas.fn_gestiones_resumen. -->
+                  @if (resumen) {
+                    <div class="gestion-resumen">
+                      <div class="gestion-chip"
+                           title="Todas las gestiones registradas con este cliente, en cualquier estado (las canceladas también).">
+                        <span class="gestion-chip__valor">{{ resumen.total }}</span>
+                        <span class="gestion-chip__texto">gestiones</span>
+                      </div>
+                      <div class="gestion-chip gestion-chip--ok"
+                           title="Las que ya se cerraron con su resultado. Son las que cuentan para los minutos.">
+                        <span class="gestion-chip__valor">{{ resumen.realizadas }}</span>
+                        <span class="gestion-chip__texto">realizadas</span>
+                      </div>
+                      <div class="gestion-chip gestion-chip--aviso"
+                           title="Programadas y todavía sin cerrar, tengan la fecha por delante o ya pasada. Las vencidas están contadas aquí dentro.">
+                        <span class="gestion-chip__valor">{{ resumen.pendientes }}</span>
+                        <span class="gestion-chip__texto">pendientes</span>
+                      </div>
+                      @if (resumen.vencidas) {
+                        <div class="gestion-chip gestion-chip--peligro"
+                             title="De las pendientes, las que ya se pasaron de fecha y hora: tocaba hacerlas y siguen abiertas.">
+                          <span class="gestion-chip__valor">{{ resumen.vencidas }}</span>
+                          <span class="gestion-chip__texto">vencidas</span>
+                        </div>
+                      }
+                      <div class="gestion-chip"
+                           title="Minutos sumados de las gestiones realizadas en las que se anotó cuánto duró. Las que se cerraron sin duración no suman.">
+                        <span class="gestion-chip__valor">{{ resumen.minutos }}</span>
+                        <span class="gestion-chip__texto">minutos</span>
+                      </div>
+                    </div>
+                  }
+
+
+                  
 
               }
 
@@ -793,45 +843,6 @@
               <!-- <button type="button" class="btn-close" aria-label="Ocultar el aviso" (click)="hitosVisible = false"></button>
             </div>
           } -->
-
-                            <!-- Contadores
-
-                       Cada uno lleva en el title qué cuenta exactamente, que
-                       por el nombre no se adivina: las vencidas van también
-                       dentro de las pendientes, y el total incluye las
-                       canceladas, así que realizadas + pendientes no tiene
-                       por qué dar el total. Lo cuenta ventas.fn_gestiones_resumen. -->
-                  @if (resumen) {
-                    <div class="gestion-resumen">
-                      <div class="gestion-chip"
-                           title="Todas las gestiones registradas con este cliente, en cualquier estado (las canceladas también).">
-                        <span class="gestion-chip__valor">{{ resumen.total }}</span>
-                        <span class="gestion-chip__texto">gestiones</span>
-                      </div>
-                      <div class="gestion-chip gestion-chip--ok"
-                           title="Las que ya se cerraron con su resultado. Son las que cuentan para los minutos.">
-                        <span class="gestion-chip__valor">{{ resumen.realizadas }}</span>
-                        <span class="gestion-chip__texto">realizadas</span>
-                      </div>
-                      <div class="gestion-chip gestion-chip--aviso"
-                           title="Programadas y todavía sin cerrar, tengan la fecha por delante o ya pasada. Las vencidas están contadas aquí dentro.">
-                        <span class="gestion-chip__valor">{{ resumen.pendientes }}</span>
-                        <span class="gestion-chip__texto">pendientes</span>
-                      </div>
-                      @if (resumen.vencidas) {
-                        <div class="gestion-chip gestion-chip--peligro"
-                             title="De las pendientes, las que ya se pasaron de fecha y hora: tocaba hacerlas y siguen abiertas.">
-                          <span class="gestion-chip__valor">{{ resumen.vencidas }}</span>
-                          <span class="gestion-chip__texto">vencidas</span>
-                        </div>
-                      }
-                      <div class="gestion-chip"
-                           title="Minutos sumados de las gestiones realizadas en las que se anotó cuánto duró. Las que se cerraron sin duración no suman.">
-                        <span class="gestion-chip__valor">{{ resumen.minutos }}</span>
-                        <span class="gestion-chip__texto">minutos</span>
-                      </div>
-                    </div>
-                  }
 
 
           <!-- Pestañas -->
@@ -1053,24 +1064,23 @@
                      en el servidor, así que buscar aquí sólo miraría las diez
                      filas que están a la vista. Y por eso el campo no consulta
                      por cada letra: se busca al pulsar Enter o al salir. -->
+                <!-- El botón de quitar filtros va DENTRO del campo, como en el
+                     resto de la aplicación. Cuenta también los desplegables de
+                     arriba —tipo, estado, resultado, responsable—, por eso se
+                     le pasa `hayFiltrosHistorial` y no se deja adivinar. -->
                 <div class="gestion-filtros__buscador">
                   <app-campoBusquedaPaginacion
-                    #buscadorHistorial
                     [id]="'buscar-historial'"
                     [placeholder]="'Buscar en el historial…'"
                     [iconClass]="'fa fa-search'"
-                    [containerClass]="'position-relative w-100'"
-                    (buscar)="buscarEnHistorial($event)">
+                    [containerClass]="'w-100'"
+                    [conLimpiarFiltros]="true"
+                    [hayFiltro]="hayFiltrosHistorial"
+                    [columnasFiltradas]="cuantasColumnasFiltradasHistorial"
+                    (buscar)="buscarEnHistorial($event)"
+                    (limpiarFiltros)="limpiarFiltrosHistorial()">
                   </app-campoBusquedaPaginacion>
                 </div>
-
-                <!-- Sólo aparece cuando hay algo que quitar -->
-                @if (hayFiltrosHistorial) {
-                  <button type="button" class="btn btn-xs btn-white gestion-filtro__limpiar"
-                          title="Quitar los filtros y la búsqueda" (click)="limpiarFiltrosHistorial()">
-                    <i class="fa fa-xmark me-1"></i>Quitar filtros
-                  </button>
-                }
 
                 <span class="gestion-filtros__cuenta">{{ totalRegistros }} gestion{{ totalRegistros === 1 ? '' : 'es' }}</span>
               </div>
@@ -1090,6 +1100,7 @@
                 [overlayNoRowsTemplate]="'<span>Este cliente todavía no tiene gestiones. Usa <b>Registrar gestión</b>.</span>'"
                 [navigateToNextCell]="navegarConTeclado"
                 (gridReady)="onGridReady($event)"
+                (filterChanged)="onFiltroColumnaHistorial()"
                 (cellClicked)="onCellClicked($event)">
               </ag-grid-angular>
 
@@ -1183,23 +1194,21 @@
                   </ul>
                 </div>
 
+                <!-- Igual que en el historial: el botón dentro del campo, y
+                     enterado de los desplegables de arriba. -->
                 <div class="gestion-filtros__buscador">
                   <app-campoBusquedaPaginacion
-                    #buscadorPendientes
                     [id]="'buscar-pendientes'"
                     [placeholder]="'Buscar en lo pendiente…'"
                     [iconClass]="'fa fa-search'"
-                    [containerClass]="'position-relative w-100'"
-                    (buscar)="buscarEnPendientes($event)">
+                    [containerClass]="'w-100'"
+                    [conLimpiarFiltros]="true"
+                    [hayFiltro]="hayFiltrosPendientes"
+                    [columnasFiltradas]="cuantasColumnasFiltradasPendientes"
+                    (buscar)="buscarEnPendientes($event)"
+                    (limpiarFiltros)="limpiarFiltrosPendientes()">
                   </app-campoBusquedaPaginacion>
                 </div>
-
-                @if (hayFiltrosPendientes) {
-                  <button type="button" class="btn btn-xs btn-white gestion-filtro__limpiar"
-                          title="Quitar los filtros y la búsqueda" (click)="limpiarFiltrosPendientes()">
-                    <i class="fa fa-xmark me-1"></i>Quitar filtros
-                  </button>
-                }
 
                 <span class="gestion-filtros__cuenta">
                   {{ pendientes.length }} pendiente{{ pendientes.length === 1 ? '' : 's' }}
@@ -1221,6 +1230,7 @@
                 [overlayNoRowsTemplate]="'<span>No hay nada agendado con este cliente. Usa <b>Programar</b> para dejar la próxima llamada.</span>'"
                 [navigateToNextCell]="navegarConTeclado"
                 (gridReady)="onGridReadyPendientes($event)"
+                (filterChanged)="onFiltroColumnaPendientes()"
                 (cellClicked)="onCellClickedPendientes($event)">
               </ag-grid-angular>
             }

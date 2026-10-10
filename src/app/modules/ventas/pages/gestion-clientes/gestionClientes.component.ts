@@ -56,7 +56,6 @@ import { AsuntoGestion, TipoGestion, asuntosDe, traeMensaje } from '../../interf
 import { lanzarProtocolo } from '../../../../service/lanzarProtocolo';
 import { ArchivoClienteService } from '../../services/archivoCliente.service';
 import { ArchivoCliente, formatoTamano, pintaDeTipo } from '../../interfaces/archivoCliente';
-import { CampoBusquedaPaginacionComponent } from '../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { DeleteGestionComponent } from './deleteGestion/deleteGestion.component';
 import { DeleteNotaClienteComponent } from './deleteNotaCliente/deleteNotaCliente.component';
 import { DeleteArchivoClienteComponent } from './deleteArchivoCliente/deleteArchivoCliente.component';
@@ -311,9 +310,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    */
   public busquedaHistorial = '';
 
-  /** Para poder vaciar el campo desde «Quitar filtros». */
-  @ViewChild('buscadorHistorial') buscadorHistorial?: CampoBusquedaPaginacionComponent;
-
   // ---------- Los mismos filtros, en Pendientes ----------
   // Aparte de los del historial y no compartidos: son dos pestañas que se ven
   // por separado, y al volver a una esperas encontrarla como la dejaste.
@@ -327,8 +323,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   /** De quién es lo pendiente de este cliente; lo manda el servidor. */
   public responsablesPendientes: { id: number; etiqueta: string }[] = [];
-
-  @ViewChild('buscadorPendientes') buscadorPendientes?: CampoBusquedaPaginacionComponent;
 
   /** Cómo se lee el responsable elegido, en el botón. */
   public get etiquetaResponsablePendientes(): string {
@@ -352,21 +346,23 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   }
 
   get hayFiltrosPendientes(): boolean {
-    return !!(this.filtroTipoPendientes || this.filtroResponsablePendientes || this.busquedaPendientes);
+    return !!(this.filtroTipoPendientes || this.filtroResponsablePendientes || this.busquedaPendientes)
+           || this.cuantasColumnasFiltradasPendientes > 0;
   }
 
   limpiarFiltrosPendientes(): void {
     this.filtroTipoPendientes = null;
     this.filtroResponsablePendientes = null;
 
-    // Igual que en el historial: el reset() del campo ya emite una búsqueda
-    // vacía y eso recarga, así que no se pide la lista dos veces
-    const habiaBusqueda = !!this.busquedaPendientes;
+    // Igual que en el historial: el campo se vacía solo, su botón no emite
+    // búsqueda, y la lista se pide UNA vez desde aquí.
     this.busquedaPendientes = '';
 
-    if (habiaBusqueda && this.buscadorPendientes) {
-      this.buscadorPendientes.reset();
-      return;
+    if (this.cuantasColumnasFiltradasPendientes > 0) {
+      this.limpiandoPendientes = true;
+      this.filtrosColumnaPendientes = {};
+      this.gridApiPendientes?.setFilterModel(null);
+      this.limpiandoPendientes = false;
     }
 
     this.cargarPendientes();
@@ -532,6 +528,73 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public porPaginaAgenda = 15;
   public ultimaPaginaAgenda = 1;
   public buscaAgenda = '';
+
+  /**
+   * Por qué columnas deja filtrar «Lo que toca hacer», y de qué tipo.
+   *
+   * Es otra rejilla y otra consulta que las de la ficha del cliente: aquí
+   * salen las pendientes de TODOS los clientes, así que tiene columna de
+   * cliente y no tiene ni estado ni resultado (son todas PENDIENTE).
+   *
+   * Tiene que cuadrar con COLUMNAS_FILTRABLES_AGENDA de GestionController.
+   */
+  private readonly COLUMNAS_FILTRABLES_AGENDA: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero',
+    tipo: 'texto', fecha_programada: 'texto', cliente_nombre: 'texto',
+    asunto: 'texto', prioridad: 'texto', telefono: 'texto',
+    responsable_nombre: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera de la agenda, tal cual lo da ag-Grid. */
+  public filtrosColumnaAgenda: any = {};
+
+  /** Mientras se vacía la cabecera, para no pedir la agenda dos veces. */
+  private limpiandoAgenda = false;
+
+  private conFiltrosAgenda(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES_AGENDA);
+  }
+
+  get cuantasColumnasFiltradasAgenda(): number {
+    return Object.keys(this.filtrosColumnaAgenda || {}).length;
+  }
+
+  /**
+   * ¿Hay algo que quitar? Cuenta lo escrito, las columnas filtradas y el
+   * periodo: «Todo» es el estado sin filtrar, cualquier otro recorta la lista.
+   *
+   * No cuenta «de quién» (mías / de mi equipo): eso no es un filtro, es de
+   * quién es la agenda que se está mirando, y su desplegable ya lo dice.
+   */
+  get hayFiltrosAgenda(): boolean {
+    return !!this.buscaAgenda || this.rango !== 'todo' || this.cuantasColumnasFiltradasAgenda > 0;
+  }
+
+  /** La cabecera de la agenda pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumnaAgenda(): void {
+    if (this.limpiandoAgenda) { return; }
+    this.filtrosColumnaAgenda = this.gridApiAgenda?.getFilterModel() ?? {};
+    this.cargarAgenda(1);
+  }
+
+  /** Quita la búsqueda, los filtros de columna y el periodo, de una vez. */
+  limpiarFiltrosAgenda(): void {
+    // El campo se vacía solo: su botón no emite búsqueda, justamente para que
+    // la agenda se pida UNA vez desde aquí.
+    this.buscaAgenda = '';
+
+    // Vaciar la cabecera dispara filterChanged, que recargaría por su cuenta
+    if (this.cuantasColumnasFiltradasAgenda > 0) {
+      this.limpiandoAgenda = true;
+      this.filtrosColumnaAgenda = {};
+      this.gridApiAgenda?.setFilterModel(null);
+      this.limpiandoAgenda = false;
+    }
+
+    // Y el periodo a «Todo», que además deja el calendario en blanco.
+    // elegirRango ya pide la agenda, así que no se pide aquí otra vez.
+    this.elegirRango('todo');
+  }
 
   /**
    * Cada carga lleva número. Con el servidor tardando medio segundo, pulsar
@@ -811,53 +874,84 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   public filtrosColumnaClientes: any = {};
 
   /**
-   * Una operación de filtro que la rejilla NO aplica: siempre pasa.
+   * Las columnas de clientes con su filtro de cabecera.
    *
-   * Esta lista pagina en el servidor, así que ag-Grid sólo tiene las filas de
-   * la página: si filtrara ella, escribir un nombre buscaría dentro de doce y
-   * parecería rota. Con el predicado devolviendo siempre true la rejilla se
-   * queda con la cabecera, los operadores y el modelo, y filtrar lo hace el
-   * servidor con ese mismo modelo.
-   *
-   * No vale `textMatcher`: gobierna sólo las comparaciones de texto, y «En
-   * blanco» se resuelve antes de llegar a él y sí escondería filas.
+   * El CÓMO —que la rejilla recoja el filtro pero NO lo aplique, porque sólo
+   * tiene las filas de la página— vive en AppAgGridService: lo mismo hacían
+   * tres pantallas con el mismo código copiado. Aquí queda sólo el QUÉ.
    */
-  private opcionFiltro(clave: string, nombre: string, entradas: 0 | 1 | 2 = 1): any {
-    return { displayKey: clave, displayName: nombre, numberOfInputs: entradas, predicate: () => true };
+  private conFiltrosClientes(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES_CLIENTES);
   }
 
-  private get noFiltrarAqui(): any {
-    return {
-      suppressAndOrCondition: true,
-      debounceMs: 400,                 // sin esto hay que pulsar Enter y nadie lo pulsa
-      filterOptions: [
-        this.opcionFiltro('contains',    'Contiene'),
-        this.opcionFiltro('notContains', 'No contiene'),
-        this.opcionFiltro('equals',      'Es igual a'),
-        this.opcionFiltro('notEqual',    'No es igual a'),
-        this.opcionFiltro('startsWith',  'Empieza por'),
-        this.opcionFiltro('endsWith',    'Termina en'),
-        this.opcionFiltro('blank',       'En blanco', 0),
-        this.opcionFiltro('notBlank',    'No en blanco', 0),
-      ],
-    };
+  // ================================================================
+  // LOS FILTROS DE CABECERA DE HISTORIAL Y PENDIENTES
+  // ================================================================
+  //
+  // Las dos rejillas piden sus filas al servidor —el historial pagina y lo
+  // pendiente trae como mucho cincuenta—, así que sus filtros propios sólo
+  // miraban lo que había a la vista: escribir «Llamada» daba dos de cincuenta
+  // y tres. Ahora la cabecera recoge lo que se pidió y filtra el servidor.
+
+  /**
+   * Por qué columnas dejan filtrar las dos rejillas, y de qué tipo.
+   *
+   * Es la unión de las dos: lo que sólo está en una —prioridad y teléfono en
+   * Pendientes, estado y resultado en Historial— no le estorba a la otra,
+   * porque el filtro sólo se le cuelga a las columnas que existen en cada una.
+   *
+   * Tiene que cuadrar con COLUMNAS_FILTRABLES_GESTIONES de GestionController,
+   * que es quien lo aplica: ofrecer aquí una columna de más sería prometer un
+   * filtro que no hace nada.
+   */
+  private readonly COLUMNAS_FILTRABLES_GESTIONES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero', duracion_minutos: 'numero',
+    responsable_nombre: 'texto', estado: 'texto', tipo: 'texto',
+    // «Cuándo» no es un campo: se calcula con valueGetter y lleva colId
+    cuando: 'texto', fecha_programada: 'texto',
+    asunto: 'texto', resultado: 'texto', prioridad: 'texto', telefono: 'texto',
+    contacto_nombre: 'texto', nota: 'texto', registrado_por_nombre: 'texto',
+  };
+
+  /** Lo que haya pedido cada cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumnaHistorial: any = {};
+  public filtrosColumnaPendientes: any = {};
+
+  /** Mientras se vacía la cabecera, para no pedir la lista dos veces. */
+  private limpiandoHistorial = false;
+  private limpiandoPendientes = false;
+
+  /** El mismo QUÉ para las dos rejillas de gestiones. */
+  private conFiltrosGestiones(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES_GESTIONES);
+  }
+
+  get cuantasColumnasFiltradasHistorial(): number {
+    return Object.keys(this.filtrosColumnaHistorial || {}).length;
+  }
+
+  get cuantasColumnasFiltradasPendientes(): number {
+    return Object.keys(this.filtrosColumnaPendientes || {}).length;
   }
 
   /**
-   * Les cuelga el filtro a las columnas que lo admiten.
+   * La cabecera del historial pidió otra cosa.
    *
-   * `floatingFilter` va en la COLUMNA, no en la rejilla: no está en
-   * GridOptions ni entre las entradas de ag-grid-angular, y ponerlo en la
-   * etiqueta corta el build con NG8002.
+   * Siempre a la página 1: con el filtro nuevo, la página cuatro puede no
+   * existir.
    */
-  private conFiltrosClientes(columnas: any[]): any[] {
-    return columnas.map(c => {
-      const tipo = this.COLUMNAS_FILTRABLES_CLIENTES[c.field];
-      if (!tipo) { return { ...c, filter: false }; }
-      return { ...c, filter: 'agTextColumnFilter', filterParams: this.noFiltrarAqui, floatingFilter: true };
-    });
+  onFiltroColumnaHistorial(): void {
+    if (this.limpiandoHistorial) { return; }
+    this.filtrosColumnaHistorial = this.gridApi?.getFilterModel() ?? {};
+    this.cargarGestiones(1);
   }
 
+  /** Lo mismo en lo pendiente, que no pagina pero también filtra fuera. */
+  onFiltroColumnaPendientes(): void {
+    if (this.limpiandoPendientes) { return; }
+    this.filtrosColumnaPendientes = this.gridApiPendientes?.getFilterModel() ?? {};
+    this.cargarPendientes();
+  }
   /** Cuántas columnas llevan filtro, para el rótulo del botón de limpiar. */
   get cuantasColumnasFiltradasClientes(): number {
     return Object.keys(this.filtrosColumnaClientes || {}).length;
@@ -1730,6 +1824,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           estado: 'PENDIENTE',
           tipo: this.filtroTipoPendientes,
           responsable_id: this.filtroResponsablePendientes,
+          columnas: this.filtrosColumnaPendientes,
         })
       );
       this.pendientes = res.body?.data?.data ?? [];
@@ -1760,6 +1855,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         desde: this.rango === 'vencidas' ? null : (this.desdeFiltro || null),
         hasta: this.rango === 'vencidas' ? null : (this.hastaFiltro || null),
         search: this.buscaAgenda,
+        columnas: this.filtrosColumnaAgenda,
         page,
         perPage: this.porPaginaAgenda,
       }));
@@ -1800,6 +1896,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    */
   initializeGridAgenda(): void {
     this.columnDefsAgenda = [
+      // El id de la gestión, primero: es el número por el que se la nombra
+      // cuando hay que buscarla en la auditoría o decírselo a alguien
+      { headerName: 'Id', field: 'id', cellStyle: { textAlign: 'center' }, minWidth: 70, maxWidth: 70 },
       {
         headerName: 'Tipo',
         field: 'tipo',
@@ -1886,6 +1985,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         },
       },
     ];
+
+    // Y el filtro de cabecera a las que lo admiten. Se hace aquí, de una
+    // pasada, en vez de repetir `filter` y `filterParams` columna a columna.
+    this.columnDefsAgenda = this.conFiltrosAgenda(this.columnDefsAgenda);
   }
 
   /** Lo que queda por hacer con este cliente. */
@@ -1946,6 +2049,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         },
       },
     ];
+
+    this.columnDefsPendientes = this.conFiltrosGestiones(this.columnDefsPendientes);
   }
 
   /** Las personas de contacto del cliente. */
@@ -2514,7 +2619,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         cellRenderer: (p: any) => `<i class="fa ${iconoDeTipo(p.value)} fa-fw me-1 text-muted"></i>${nombreDe(this.tipos, p.value)}`,
       },
       {
-        headerName: 'Cuándo', minWidth: 140, maxWidth: 160,
+        // colId porque no hay `field`: se calcula con valueGetter, y es ese
+        // nombre el que manda la rejilla en el modelo de filtros
+        headerName: 'Cuándo', colId: 'cuando', minWidth: 140, maxWidth: 160,
         cellStyle: { textAlign: 'center' },
         valueGetter: (p: any) => p.data?.fecha_realizada || p.data?.fecha_programada || '',
       },
@@ -2557,6 +2664,10 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         },
       },
     ];
+
+    // Y el filtro de cabecera a las que lo admiten. Se hace aquí, de una
+    // pasada, en vez de repetir `filter` y `filterParams` columna a columna.
+    this.columnDefs = this.conFiltrosGestiones(this.columnDefs);
   }
 
   onGridReady(params: GridReadyEvent): void {
@@ -2589,6 +2700,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
           this.busquedaHistorial, {
           tipo: this.filtroTipo, estado: this.filtroEstado,
           resultado: this.filtroResultado, responsable_id: this.filtroResponsable,
+          columnas: this.filtrosColumnaHistorial,
         })
       );
       this.gestiones = res.body?.data?.data ?? [];
@@ -2791,7 +2903,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   /** ¿Hay algún filtro puesto? Decide si se ve el botón de quitarlos. */
   get hayFiltrosHistorial(): boolean {
     return !!(this.filtroTipo || this.filtroEstado || this.filtroResultado
-              || this.filtroResponsable || this.busquedaHistorial);
+              || this.filtroResponsable || this.busquedaHistorial)
+           || this.cuantasColumnasFiltradasHistorial > 0;
   }
 
   /** Quita los filtros y la búsqueda de golpe, y recarga. */
@@ -2801,17 +2914,18 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.filtroResultado = null;
     this.filtroResponsable = null;
 
-    // El campo no se vacía solo: lo que se guarda aquí es el término, y el
-    // texto escrito vive en el input
-    const habiaBusqueda = !!this.busquedaHistorial;
+    // El campo se vacía solo: su botón de limpiar vive dentro de él y no
+    // emite búsqueda, justamente para que recargue aquí UNA vez. Antes había
+    // que encadenar su reset() para no pedir la lista dos veces.
     this.busquedaHistorial = '';
 
-    // Su reset() emite buscar(''), y eso ya recarga la lista. Si además se
-    // llamara aquí se pediría dos veces, y este servidor atiende de a una
-    // petición: se encadena en vez de duplicar.
-    if (habiaBusqueda && this.buscadorHistorial) {
-      this.buscadorHistorial.reset();
-      return;
+    // Vaciar la cabecera dispara filterChanged, que recargaría por su cuenta:
+    // se avisa con la bandera para que la lista se pida UNA vez, abajo.
+    if (this.cuantasColumnasFiltradasHistorial > 0) {
+      this.limpiandoHistorial = true;
+      this.filtrosColumnaHistorial = {};
+      this.gridApi?.setFilterModel(null);
+      this.limpiandoHistorial = false;
     }
 
     this.cargarGestiones(1);

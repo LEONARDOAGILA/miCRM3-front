@@ -11,6 +11,8 @@ import { PanelModule } from '../../../../components/panel/panel.module';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import { CatalogoGestionService } from '../../services/catalogoGestion.service';
 import { TipoGestion, AsuntoGestion, iconoDelTipo } from '../../interfaces/catalogoGestion';
+import { CampoIconoComponent } from '../../../../components/campos/campoIcono/campoIcono.component';
+import { AvisoComponent } from '../../../../components/campos/aviso/aviso.component';
 import { SaveMensajeAsuntoComponent } from './saveMensajeAsunto/saveMensajeAsunto.component';
 
 /**
@@ -32,7 +34,7 @@ import { SaveMensajeAsuntoComponent } from './saveMensajeAsunto/saveMensajeAsunt
 @Component({
   selector: 'app-catalogoGestion',
   standalone: true,
-  imports: [CommonModule, FormsModule, PanelModule],
+  imports: [CommonModule, FormsModule, PanelModule, CampoIconoComponent, AvisoComponent],
   templateUrl: './catalogoGestion.component.html',
   styleUrls: ['./catalogoGestion.component.css'],
 })

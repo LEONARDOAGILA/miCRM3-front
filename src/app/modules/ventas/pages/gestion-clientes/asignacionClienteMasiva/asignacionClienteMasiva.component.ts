@@ -387,75 +387,15 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Una operación de filtro que la rejilla NO aplica: siempre pasa.
+   * Los parámetros del filtro de cabecera, que la rejilla recoge pero NO
+   * aplica: con la paginación en el servidor sólo tiene las filas de la
+   * página, así que filtrar aquí buscaría dentro de quince.
    *
-   * `predicate` es la pieza que sostiene toda esta pantalla. Como se pagina
-   * en el servidor, ag-Grid sólo tiene las veinte filas de la página: si
-   * filtrara ella, escribir «Manta» daría tres de 1001 y parecería rota. Con
-   * el predicado devolviendo siempre true la rejilla se queda con lo que hace
-   * bien —la cabecera, los operadores, el modelo— y no esconde ninguna fila;
-   * filtrar de verdad lo hace el servidor con ese mismo modelo.
-   *
-   * NO VALE `textMatcher`, que era lo primero que parecía servir: gobierna
-   * sólo las comparaciones de texto, y «En blanco» —el filtro con el que se
-   * empieza a repartir, «no lo atiende nadie»— se resuelve antes de llegar a
-   * él y sí escondía filas. Comprobado en el navegador.
-   *
-   * El displayKey repite el nombre de la operación de ag-Grid a propósito:
-   * así el modelo que sale es el mismo que entiende el servidor y no hay que
-   * traducir nada por el camino.
+   * El cómo vive en AppAgGridService, compartido con las demás pantallas que
+   * paginan en el servidor.
    */
-  private opcion(clave: string, nombre: string, entradas: 0 | 1 | 2 = 1): any {
-    return { displayKey: clave, displayName: nombre, numberOfInputs: entradas, predicate: () => true };
-  }
-
-  /**
-   * Filtro de texto que no filtra aquí.
-   *
-   * Los nombres van en castellano porque una operación propia no pasa por el
-   * localeText de la rejilla: si no se ponen, salen en inglés.
-   *
-   * suppressAndOrCondition: una sola condición por columna. ag-Grid sabe
-   * juntar dos con Y/O, pero eso multiplica los casos que la base tiene que
-   * entender a cambio de algo que aquí no se usa.
-   */
-  private get noFiltrarAqui(): any {
-    return {
-      suppressAndOrCondition: true,
-      // Sin esto hay que pulsar Enter y nadie lo pulsa
-      debounceMs: 400,
-      filterOptions: [
-        this.opcion('contains',    'Contiene'),
-        this.opcion('notContains', 'No contiene'),
-        this.opcion('equals',      'Es igual a'),
-        this.opcion('notEqual',    'No es igual a'),
-        this.opcion('startsWith',  'Empieza por'),
-        this.opcion('endsWith',    'Termina en'),
-        this.opcion('blank',       'En blanco', 0),
-        this.opcion('notBlank',    'No en blanco', 0),
-      ],
-    };
-  }
-
-  /** Lo mismo para las columnas de números. */
-  private get noFiltrarAquiNumero(): any {
-    return {
-      suppressAndOrCondition: true,
-      debounceMs: 400,
-      filterOptions: [
-        this.opcion('equals',             'Es igual a'),
-        this.opcion('notEqual',           'No es igual a'),
-        this.opcion('greaterThan',        'Mayor que'),
-        this.opcion('greaterThanOrEqual', 'Mayor o igual que'),
-        this.opcion('lessThan',           'Menor que'),
-        this.opcion('lessThanOrEqual',    'Menor o igual que'),
-        this.opcion('inRange',            'Entre', 2),
-        this.opcion('blank',              'En blanco', 0),
-        this.opcion('notBlank',           'No en blanco', 0),
-      ],
-    };
-  }
-
+  private get noFiltrarAqui(): any       { return this._appAgGridService.filtroTextoDeServidor; }
+  private get noFiltrarAquiNumero(): any { return this._appAgGridService.filtroNumeroDeServidor; }
   /**
    * La fila de filtros bajo la cabecera, en las columnas que la admiten.
    *
