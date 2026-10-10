@@ -20,12 +20,6 @@
       <div class="overlay1" aria-hidden="true"></div>
     }
 
-    <!-- Qué es esto, en una línea -->
-    <div class="asigm-aviso">
-      <i class="fa fa-circle-info fa-fw me-1"></i>
-      La pestaña <strong>Asignación</strong> del cliente reparte de uno en uno. Esto es para
-      muchos: filtre, marque y asigne de una vez. Queda en el historial de cada cliente, igual.
-    </div>
 
     <!-- =================================================================
          PASO 1 — ELEGIR
@@ -39,10 +33,13 @@
         <span class="asigm-papel__rotulo">
           <i class="fa fa-user-tag fa-fw me-1"></i>Reparto como
         </span>
+        <!-- Sólo los papeles que este perfil puede repartir. Lo decide el
+             servidor y lo manda con la lista; esto es para no ofrecer un
+             botón que terminaría en un 403. -->
         <div class="btn-group btn-group-sm" role="group" aria-label="Papel que se reparte">
           @for (r of roles; track r.id) {
             <button type="button" class="btn"
-                    [ngClass]="rol === r.id ? 'btn-primary' : 'btn-white'"
+                    [ngClass]="rol === r.id ? 'btn-theme' : 'btn-white'"
                     [title]="r.ayuda"
                     (click)="cambiarRol(r.id)">
               <i class="fa fa-fw" [ngClass]="r.icono"></i>
@@ -50,12 +47,41 @@
             </button>
           }
         </div>
+
+        @if (papelesPermitidos.length && papelesPermitidos.length < todosLosRoles.length) {
+          <span class="asigm-papel__nota">
+            <i class="fa fa-circle-info fa-fw me-1"></i>
+            Su perfil reparte {{ papelesPermitidos.length }} de los {{ todosLosRoles.length }} papeles.
+          </span>
+        }
       </div>
 
       <div class="asigm-cuerpo">
 
         <!-- ================= IZQUIERDA: QUÉ CLIENTES ================= -->
         <section class="asigm-lista">
+
+          <!-- Los filtros viven ahora en la cabecera de la rejilla, uno por
+               columna, y los aplica el SERVIDOR sobre los mil clientes. Antes
+               había aquí una fila de desplegables que hacía lo mismo: dos
+               sitios para filtrar lo mismo es un sitio de más, y además podían
+               contradecirse. -->
+          <!-- Qué es esto, en una línea -->
+
+          
+          <div class="asigm-pista">
+            <app-aviso icono="fa-filter" [cerrable]="true">
+              <strong>Filtre en la cabecera de cada columna.</strong>
+              Se busca sobre todos los clientes, no sólo sobre esta página, y sin
+              distinguir tildes ni mayúsculas.
+            </app-aviso>
+            @if (cuantasColumnasFiltradas) {
+              <span class="badge bg-theme bg-opacity-25 text-body">
+                {{ cuantasColumnasFiltradas }} columna(s) con filtro
+              </span>
+            }
+          </div>
+
 
           <!-- ---------- Filtros ---------- -->
           <div class="asigm-filtros">
@@ -78,25 +104,6 @@
 
           </div>
 
-          <!-- Los filtros viven ahora en la cabecera de la rejilla, uno por
-               columna, y los aplica el SERVIDOR sobre los mil clientes. Antes
-               había aquí una fila de desplegables que hacía lo mismo: dos
-               sitios para filtrar lo mismo es un sitio de más, y además podían
-               contradecirse. -->
-          <div class="asigm-pista">
-            <i class="fa fa-filter fa-fw"></i>
-            <span>
-              Filtre <b>en la cabecera de cada columna</b>. Se busca sobre los
-              clientes, no sólo sobre esta página, y sin distinguir tildes ni
-              mayúsculas. Para los que no atiende nadie, use <b>«En blanco»</b>
-              en la columna del papel.
-            </span>
-            @if (cuantasColumnasFiltradas) {
-              <span class="badge bg-primary bg-opacity-25 text-body">
-                {{ cuantasColumnasFiltradas }} columna(s) con filtro
-              </span>
-            }
-          </div>
 
           <!-- ---------- La rejilla ----------
                El (click) del contenedor es para la casilla de la cabecera: la
@@ -113,7 +120,6 @@
                 [headerHeight]="_appAgGridService.headerHeight"
                 [localeText]="_appAgGridService.localeText"
                 [animateRows]="true"
-                [floatingFilter]="true"
                 (gridReady)="onGridReady($event)"
                 (filterChanged)="onFiltroColumna()"
                 (cellClicked)="onCellClicked($event)">
@@ -128,7 +134,7 @@
                 Marcados los <b>{{ clientes.length }}</b> de esta página.
                 El filtro tiene <b>{{ total }}</b>.
               </span>
-              <button type="button" class="btn btn-xs btn-primary" (click)="marcarTodoElFiltro()">
+              <button type="button" class="btn btn-xs btn-theme" (click)="marcarTodoElFiltro()">
                 <i class="fa fa-check-double fa-fw me-1"></i>Marcar los {{ total }}
               </button>
             </div>
@@ -276,66 +282,10 @@
          Esto cambia cientos de filas de golpe: antes de hacerlo, la pantalla
          lo dice en voz alta.
          ================================================================= -->
-    @if (paso === 'confirmar') {
-      <div class="asigm-confirmar">
-
-        <div class="eliminar-aviso">
-          <div class="eliminar-aviso__icono">
-            <i class="fa fa-people-arrows" aria-hidden="true"></i>
-          </div>
-          <div>
-            <h6 class="eliminar-aviso__titulo">
-              @if (quitaResponsable) {
-                ¿Quitar el {{ rolNombre.toLowerCase() }} a {{ marcados.size }} cliente(s)?
-              } @else {
-                ¿Repartir {{ marcados.size }} cliente(s) como {{ rolNombre.toLowerCase() }}?
-              }
-            </h6>
-            <p class="eliminar-aviso__texto">
-              Se hace cliente por cliente y queda en el historial de cada uno. Los que
-              ya tengan a esa persona se saltan, y si alguno falla <b>no se detiene el
-              resto</b>: al terminar se dice cuántos cambiaron y cuáles no.
-            </p>
-          </div>
-        </div>
-
-        <div class="list-group list-group-flush eliminar-datos">
-          <div class="list-group-item d-flex justify-content-between align-items-center">
-            <span class="eliminar-datos__etiqueta"><i class="fa fa-user-tag fa-fw me-1"></i>Papel</span>
-            <span class="eliminar-datos__valor">{{ rolNombre }}</span>
-          </div>
-          <div class="list-group-item d-flex justify-content-between align-items-center">
-            <span class="eliminar-datos__etiqueta"><i class="fa fa-users fa-fw me-1"></i>Clientes</span>
-            <span class="eliminar-datos__valor">{{ marcados.size }}</span>
-          </div>
-          @for (r of reparteAsi; track r.etiqueta) {
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="eliminar-datos__etiqueta"><i class="fa fa-user fa-fw me-1"></i>{{ r.etiqueta }}</span>
-              <span class="eliminar-datos__valor">{{ r.cuantos }} cliente(s)</span>
-            </div>
-          }
-          @if (laAgendaCuenta) {
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="eliminar-datos__etiqueta"><i class="fa fa-calendar-day fa-fw me-1"></i>Gestiones pendientes</span>
-              <span class="eliminar-datos__valor">{{ moverAgenda ? 'se van con el cliente' : 'se quedan donde están' }}</span>
-            </div>
-          }
-        </div>
-
-        @if (quitaResponsable) {
-          <p class="eliminar-nota eliminar-nota--peligro">
-            <i class="fa fa-triangle-exclamation fa-fw me-1"></i>
-            No se eligió a nadie: estos clientes se quedan <b>sin {{ rolNombre.toLowerCase() }}</b>.
-            @if (laAgendaCuenta && moverAgenda) {
-              Sus gestiones pendientes se quedan además <b>sin responsable</b> y no saldrán en la agenda de nadie.
-            }
-          </p>
-        }
-      </div>
-    }
-
     <!-- =================================================================
-         PASO 3 — RESULTADO
+         QUÉ PASÓ
+         Confirmar es un modal aparte (confirmarReparto); aquí sólo queda
+         elegir y ver el resultado.
          ================================================================= -->
     @if (paso === 'resultado' && resultado) {
       <div class="asigm-resultado">
@@ -360,6 +310,16 @@
             </div>
           }
         </div>
+
+        <!-- Lo que hace falta saber para encadenar papeles -->
+        @if (marcados.size) {
+          <p class="asigm-ayuda">
+            <i class="fa fa-circle-info fa-fw me-1"></i>
+            Los <b>{{ marcados.size }}</b> clientes siguen marcados. Vuelva a la lista,
+            cambie <b>Reparto como</b> y repártalos en otro papel sin tener que buscarlos
+            de nuevo.
+          </p>
+        }
 
         @if (resultado.reparto?.length) {
           <div class="list-group list-group-flush eliminar-datos">
@@ -404,35 +364,26 @@
             <i class="fa fa-circle-info fa-fw me-1"></i>{{ impedimento }}
           </span>
         }
-        <button type="button" class="btn btn-primary"
-                [disabled]="!!impedimento"
+        <button type="button" class="btn btn-theme"
+                [disabled]="!!impedimento || guardando"
                 (click)="irAConfirmar()">
-          <i class="fa fa-people-arrows fa-fw me-1"></i>Repartir {{ marcados.size }}
-        </button>
-      }
-
-      @if (paso === 'confirmar') {
-        <button type="button" class="btn btn-outline-secondary"
-                [disabled]="guardando"
-                (click)="volverAElegir()">
-          <i class="fa fa-arrow-left fa-fw me-1"></i>Volver
-        </button>
-        <button type="button" class="btn"
-                [ngClass]="quitaResponsable ? 'btn-danger' : 'btn-primary'"
-                [disabled]="guardando"
-                (click)="repartir()">
           @if (guardando) {
             <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
             Repartiendo…
           } @else {
-            <i class="fa fa-check fa-fw me-1"></i>Sí, {{ quitaResponsable ? 'quitarlos' : 'repartir' }}
+            <i class="fa fa-people-arrows fa-fw me-1"></i>Repartir {{ marcados.size }}
           }
         </button>
       }
 
       @if (paso === 'resultado') {
-        <button type="button" class="btn btn-primary" (click)="otraTanda()">
-          <i class="fa fa-rotate-left fa-fw me-1"></i>Repartir otra tanda
+        <button type="button" class="btn btn-theme" (click)="otraTanda()">
+          <i class="fa fa-rotate-left fa-fw me-1"></i>
+          @if (marcados.size) {
+            Volver con los {{ marcados.size }} marcados
+          } @else {
+            Volver a la lista
+          }
         </button>
       }
     </div>

@@ -37,10 +37,19 @@ export class ClienteService {
    * mil clientes, filtrar en el navegador sólo miraría las quince filas de la
    * página que se está viendo. Vacío = todos.
    */
-  allClientes(page: number = 1, perPage: number = 10, search: string = '', estado: string = '', soloMios = false): Observable<any> {
+  allClientes(page: number = 1, perPage: number = 10, search: string = '', estado: string = '', soloMios = false, filtros: any = null): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
+
+    // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+    // SERVIDOR: la pantalla pagina allí, así que la rejilla sólo tiene las
+    // quince filas de la página y filtrando por su cuenta buscaría dentro de
+    // quince. Va como cadena y no aplanado porque el modelo cambia de forma
+    // según la operación (filter, filterTo, condition1…).
+    if (filtros && Object.keys(filtros).length) {
+      params = params.set('filtros', JSON.stringify(filtros));
+    }
     if (search) {
       params = params.set('search', search);
     }

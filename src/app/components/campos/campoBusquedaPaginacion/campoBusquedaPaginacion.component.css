@@ -10,6 +10,19 @@
    plantilla: el campo acompaña al panel de temas y al modo oscuro.
    ============================================================ */
 
+/* ---------- El ancla de la lupa y de la × ----------
+   Las dos van position:absolute, así que necesitan que el contenedor sea
+   position:relative. Hasta ahora eso dependía de que cada pantalla se
+   acordara de pasar 'position-relative' dentro de containerClass: la que
+   lo olvidaba perdía la lupa, que se iba a buscar el primer ancestro
+   posicionado y aparecía en otra parte de la página.
+
+   Se pone aquí para que no haya nada que recordar. A las doce pantallas que
+   ya lo pasan no les cambia nada: es el mismo valor. */
+:host > div {
+  position: relative;
+}
+
 /* Sitio para la × sólo cuando está: así, con el campo vacío, el texto
    ocupa todo el ancho como antes */
 .campo-busqueda__input--con-x {

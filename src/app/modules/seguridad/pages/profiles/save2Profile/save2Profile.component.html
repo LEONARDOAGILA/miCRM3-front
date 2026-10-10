@@ -149,6 +149,49 @@
                         </div>
                     }
                 </div>
+
+                <!-- ---------- Qué puede repartir ----------
+                     Esto no es «ver», es «mover»: decide si este perfil puede
+                     cambiar a quién atiende a un cliente, de uno en uno o los
+                     novecientos de golpe. Va aparte y como casillas porque no
+                     se elige de quién, se marcan los papeles que puede tocar.
+
+                     Sin ninguno marcado, la pantalla de reparto le contesta
+                     que no tiene nada que hacer ahí. -->
+                <div class="visib-repartir" formGroupName="visibilidad">
+                    <div class="visib-repartir__cab">
+                        <span class="visib-repartir__titulo">
+                            <i class="fa-solid fa-people-arrows me-1"></i>Puede repartir clientes
+                        </span>
+                        <span class="visib-repartir__cuenta">
+                            @if (cuantosPapeles) {
+                                {{ cuantosPapeles }} de {{ papelesRepartibles.length }}
+                            } @else {
+                                ninguno
+                            }
+                        </span>
+                    </div>
+
+                    <div class="visib-repartir__papeles">
+                        @for (p of papelesRepartibles; track p.clave) {
+                            <button type="button"
+                                    class="visib-papel"
+                                    [class.is-marcado]="reparte(p.clave)"
+                                    [disabled]="isdisabled"
+                                    [attr.aria-pressed]="reparte(p.clave)"
+                                    [title]="'Este perfil puede repartir clientes como ' + p.nombre.toLowerCase()"
+                                    (click)="alternarPapel(p.clave)">
+                                <i class="fa fa-fw" [ngClass]="reparte(p.clave) ? 'fa-square-check' : 'fa-square'"></i>
+                                <i [ngClass]="p.icono"></i>
+                                {{ p.nombre }}
+                            </button>
+                        }
+                    </div>
+
+                    <span class="visib__ayuda">
+                        Repartir cambia quién atiende al cliente. Lo de arriba sólo decide qué se ve.
+                    </span>
+                </div>
             </form>
         </div>
         </ng-container>

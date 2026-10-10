@@ -278,6 +278,15 @@ export class Save2ProfileComponent implements OnInit  {
           // ve. Arranca en TODO como las demás, que es lo que vale un perfil
           // del que nadie ha decidido nada.
           ASIGNACION: [{ value: 'TODO', disabled: this.isdisabled }],
+
+          // Qué papeles puede REPARTIR este perfil desde la pantalla de
+          // reparto en bloque. Uno por papel, aunque en pantalla sean casillas
+          // de un mismo control: así cada uno se guarda y se pregunta por
+          // separado, sin partir cadenas.
+          REPARTIR_VENDEDOR:  [{ value: 'NINGUNO', disabled: this.isdisabled }],
+          REPARTIR_COBRADOR:  [{ value: 'NINGUNO', disabled: this.isdisabled }],
+          REPARTIR_ASISTENTE: [{ value: 'NINGUNO', disabled: this.isdisabled }],
+          REPARTIR_POSTVENTA: [{ value: 'NINGUNO', disabled: this.isdisabled }],
         }),
       });
     }
@@ -317,6 +326,46 @@ export class Save2ProfileComponent implements OnInit  {
       return clave === 'ASIGNACION' ? this.alcancesAsignacion : this.alcances;
     }
 
+    /**
+     * Los papeles que este perfil puede REPARTIR.
+     *
+     * Repartir no es ver: decide quién puede cambiar a quién atiende a un
+     * cliente, de uno en uno o en bloque. Por eso va aparte de los cinco
+     * desplegables de arriba, como casillas: no se elige «de quién», se
+     * marcan los papeles que puede tocar.
+     *
+     * Arranca sin ninguno marcado. Un perfil nuevo no reparte nada hasta que
+     * alguien lo decida, que es por donde hay que fallar.
+     */
+    public readonly papelesRepartibles = [
+      { clave: 'REPARTIR_VENDEDOR',  nombre: 'Vendedor',  icono: 'fa-solid fa-user-tie' },
+      { clave: 'REPARTIR_COBRADOR',  nombre: 'Cobrador',  icono: 'fa-solid fa-hand-holding-dollar' },
+      { clave: 'REPARTIR_ASISTENTE', nombre: 'Asistente', icono: 'fa-solid fa-headset' },
+      { clave: 'REPARTIR_POSTVENTA', nombre: 'Postventa', icono: 'fa-solid fa-screwdriver-wrench' },
+    ];
+
+    /** La casilla está marcada cuando el alcance no es NINGUNO. */
+    public reparte(clave: string): boolean {
+      return this.form.get('visibilidad.' + clave)?.value !== 'NINGUNO';
+    }
+
+    /**
+     * Marcar o desmarcar un papel.
+     *
+     * Por dentro siguen siendo TODO y NINGUNO, los mismos dos valores que
+     * entiende la base para cualquier otro dato: la casilla es sólo la forma
+     * de enseñarlo.
+     */
+    public alternarPapel(clave: string): void {
+      if (this.isdisabled) { return; }
+      this.form.get('visibilidad.' + clave)?.setValue(this.reparte(clave) ? 'NINGUNO' : 'TODO');
+    }
+
+    /** Cuántos lleva marcados, para decirlo en el rótulo. */
+    public get cuantosPapeles(): number {
+      return this.papelesRepartibles.filter(p => this.reparte(p.clave)).length;
+    }
+
     /** La letra pequeña del alcance elegido, debajo del desplegable. */
     public ayudaDel(alcance: string, clave?: string): string {
       if (clave === 'ASIGNACION') {
@@ -335,7 +384,7 @@ export class Save2ProfileComponent implements OnInit  {
     }
 
     /**
-     * Lee los cinco alcances del perfil.
+     * Lee el cuadro entero de visibilidad del perfil.
      *
      * Si falla no se cae la pantalla: se quedan los cinco en TODO, que es
      * exactamente lo que vale un perfil sin filas, y el administrador verá lo
@@ -353,7 +402,7 @@ export class Save2ProfileComponent implements OnInit  {
     }
 
     /**
-     * Guarda los cinco alcances, en su propia llamada.
+     * Guarda el cuadro entero, en su propia llamada.
      *
      * Va aparte del perfil a propósito: fn_perfiles_modificar es la función que
      * sostiene los permisos de todo el CRM y no se le añade un parámetro para

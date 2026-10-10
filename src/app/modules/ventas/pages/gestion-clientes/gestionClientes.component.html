@@ -330,19 +330,6 @@
                 <i class="fa fa-filter-circle-xmark"></i>
               </button>
 
-              <!-- Repartir muchos de una vez. Va aquí, en la lista, y no en la
-                   pestaña Asignación: aquélla es del cliente que esté elegido y
-                   para repartir novecientos no hay que entrar antes en uno.
-                   Sólo a quien puede repartir de verdad: el servidor contesta
-                   403 al resto. -->
-              @if (esAdministrador) {
-                <button type="button" class="btn btn-sm btn-white gc-lista__repartir"
-                        title="Repartir clientes entre varios responsables"
-                        aria-label="Repartir clientes entre varios responsables"
-                        (click)="repartirEnBloque()">
-                  <i class="fa fa-people-arrows"></i>
-                </button>
-              }
 
               <app-campoBusquedaPaginacion
                 [id]="'buscar-cliente-gestion'"
@@ -388,6 +375,7 @@
               [navigateToNextCell]="navegarConTecladoClientes"
               (cellKeyDown)="onCellKeyDownClientes($event)"
               (gridReady)="onGridReadyClientes($event)"
+              (filterChanged)="onFiltroColumnaClientes()"
               (cellClicked)="onCellClickedClientes($event)">
             </ag-grid-angular>
 

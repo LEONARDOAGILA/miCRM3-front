@@ -20,10 +20,12 @@ import { ROLES_RESPONSABLE, RolResponsable } from '../../../interfaces/gestionMo
 //   ******   COMPONENTES   ******  //
 import { PanelModule } from '../../../../../components/panel/panel.module';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.component';
 // El mismo selector que usa la reasignación de uno en uno: usuarios con su
 // grupo. Se asigna a un USUARIO, no a un empleado, porque el responsable tiene
 // que poder entrar al sistema para que el cliente le aparezca en su agenda.
 import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/listUsuariosGrupos/listUsuariosGrupos.component';
+import { ConfirmarRepartoComponent } from './confirmarReparto/confirmarReparto.component';
 import { nombreDeUsuario } from '../../../../seguridad/services/user.service';
 
 /** Un destino del reparto: a quién van los clientes. */
@@ -33,8 +35,14 @@ interface Destino {
 }
 
 
-/** En qué paso del asistente está la pantalla. */
-type Paso = 'elegir' | 'confirmar' | 'resultado';
+/**
+ * En qué paso está la pantalla.
+ *
+ * Confirmar ya no es un paso de aquí: es un modal. Se quitó de la pantalla
+ * porque para preguntar «¿seguro?» se llevaba por delante la rejilla, y al
+ * volver había que reorientarse.
+ */
+type Paso = 'elegir' | 'resultado';
 
 /**
  * Repartir clientes en bloque.
@@ -72,6 +80,7 @@ type Paso = 'elegir' | 'confirmar' | 'resultado';
     AgGridModule,
     PanelModule,
     CampoBusquedaPaginacionComponent,
+    AvisoComponent,
   ],
   templateUrl: './asignacionClienteMasiva.component.html',
   styleUrls: ['./asignacionClienteMasiva.component.css'],
@@ -92,7 +101,23 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
   public accesoModel: AccesoModel;
 
   // ****** CATÁLOGOS ****** //
-  public readonly roles = ROLES_RESPONSABLE;
+  /** Los cuatro papeles que existen. */
+  public readonly todosLosRoles = ROLES_RESPONSABLE;
+
+  /**
+   * Los que ESTE usuario puede repartir, según el cuadro de su perfil.
+   *
+   * Lo manda el servidor con la lista (meta.papeles) porque es él quien lo
+   * decide: aquí sólo se usa para no ofrecer un botón que acabaría en un 403.
+   * Empieza vacío —nada que repartir— y lo llena la primera consulta: si algo
+   * falla, no se ofrece nada, que es por donde hay que fallar.
+   */
+  public papelesPermitidos: string[] = [];
+
+  /** Los papeles que se pintan arriba: sólo los que puede repartir. */
+  public get roles() {
+    return this.todosLosRoles.filter(r => this.papelesPermitidos.includes(r.id));
+  }
 
   // ****** FILTROS ****** //
   /** Con qué papel se reparte. Llega por ?rol= desde el atajo de gestión. */
@@ -149,9 +174,15 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Se puede llegar con el papel puesto (?rol=COBRADOR), que es como entra
-    // el atajo de la gestión de clientes
+    // el atajo de la gestión de clientes.
+    //
+    // Se compara contra TODOS los papeles, no contra los permitidos: aquí
+    // todavía no se sabe cuáles son —los trae la primera consulta—, así que
+    // mirar la lista permitida descartaría siempre lo que venga en la url. Si
+    // resulta que no puede repartir ése, `cargar()` lo cambia al primero que
+    // sí pueda.
     const rolEnLaUrl = (this.activeRoute.snapshot.queryParamMap.get('rol') ?? '').toUpperCase();
-    if (this.roles.some(r => r.id === rolEnLaUrl)) {
+    if (this.todosLosRoles.some(r => r.id === rolEnLaUrl)) {
       this.rol = rolEnLaUrl as RolResponsable;
     }
 
@@ -173,7 +204,7 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
 
   /** «Vendedor», «Cobrador»… el nombre del papel que se está repartiendo. */
   get rolNombre(): string {
-    return this.roles.find(r => r.id === this.rol)?.name ?? 'Responsable';
+    return this.todosLosRoles.find(r => r.id === this.rol)?.name ?? 'Responsable';
   }
 
   /** La agenda sólo viaja con el vendedor: las gestiones son suyas. */
@@ -239,6 +270,14 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
         this.ultimaPagina  = meta.last_page ?? 1;
         this.idsFiltrados  = meta.ids ?? [];
         this.idsTruncados  = meta.ids_truncados === true;
+        this.papelesPermitidos = meta.papeles ?? [];
+
+        // Si el papel elegido no es de los suyos —porque llegó por la url o
+        // porque le cambiaron el perfil mientras miraba—, se pasa al primero
+        // que sí pueda repartir en vez de dejarle dar a un botón que falla
+        if (this.papelesPermitidos.length && !this.papelesPermitidos.includes(this.rol)) {
+          this.rol = this.papelesPermitidos[0] as RolResponsable;
+        }
       } else {
         this.clientes = [];
         this.total = 0;
@@ -417,8 +456,20 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
     };
   }
 
+  /**
+   * La fila de filtros bajo la cabecera, en las columnas que la admiten.
+   *
+   * `floatingFilter` es propiedad DE COLUMNA, no de rejilla: no está en
+   * GridOptions ni entre las entradas de ag-grid-angular, y ponerla en la
+   * etiqueta hace que Angular corte el build con NG8002. Las columnas sin
+   * filtro dejan su hueco en blanco en esa fila.
+   */
+  private conFiltroFlotante(columnas: any[]): any[] {
+    return columnas.map(c => (c.filter ? { ...c, floatingFilter: true } : c));
+  }
+
   private armarColumnas(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltroFlotante([
       {
         headerName: '', field: 'marcado', width: 44, minWidth: 44, maxWidth: 44,
         sortable: false, filter: false, resizable: false, pinned: 'left',
@@ -504,7 +555,7 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
         cellRenderer: (p: any) =>
           `<span class="badge fs-10px ${p.value === 'ACTIVO' ? 'bg-success' : 'bg-secondary'}">${this.escapar(p.value)}</span>`,
       },
-    ];
+    ]);
   }
 
   /**
@@ -656,21 +707,45 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
   /** Por qué no se puede repartir todavía, o cadena vacía si sí se puede. */
   get impedimento(): string {
     if (!this.puedeRepartir) { return 'Su perfil puede mirar esta pantalla, pero no repartir.'; }
+    if (!this.papelesPermitidos.length) { return 'Su perfil no puede repartir ningún papel.'; }
+    if (!this.papelesPermitidos.includes(this.rol)) {
+      return 'Su perfil no puede repartir clientes como ' + this.rolNombre.toLowerCase() + '.';
+    }
     if (!this.marcados.size) { return 'Marque al menos un cliente.'; }
     if (this.marcados.size > 2000) { return 'Son ' + this.marcados.size + ' clientes y el máximo por tanda es 2000. Acote el filtro.'; }
     return '';
   }
 
+  /**
+   * Preguntar antes de mover cientos de filas.
+   *
+   * El modal sólo contesta sí o no; el trabajo lo hace esta pantalla, que es
+   * la que tiene lo marcado y el aviso de carga. `result` se resuelve al
+   * confirmar y se rechaza al cancelar o cerrar: de ahí el catch vacío, que
+   * es lo normal en ng-bootstrap y no un error que haya que enseñar.
+   */
   irAConfirmar(): void {
     this._toastr.clear();
     if (this.impedimento) {
       this._toastr.warning(this.impedimento, 'No se puede repartir todavía', { timeOut: 8000, closeButton: true });
       return;
     }
-    this.paso = 'confirmar';
-  }
 
-  volverAElegir(): void { this.paso = 'elegir'; }
+    const modalRef = this.modalService.open(ConfirmarRepartoComponent, {
+      centered: true, size: 'lg', backdrop: 'static', keyboard: true,
+    });
+    modalRef.componentInstance.clientes        = this.marcados.size;
+    modalRef.componentInstance.rolNombre       = this.rolNombre;
+    modalRef.componentInstance.reparto         = this.reparteAsi;
+    modalRef.componentInstance.quitaResponsable = this.quitaResponsable;
+    modalRef.componentInstance.laAgendaCuenta  = this.laAgendaCuenta;
+    modalRef.componentInstance.moverAgenda     = this.moverAgenda;
+
+    modalRef.result.then(
+      (confirmado: boolean) => { if (confirmado) { this.repartir(); } },
+      () => { /* cancelado: no hay nada que hacer */ },
+    );
+  }
 
   async repartir(): Promise<void> {
     if (this.impedimento || this.guardando) { return; }
@@ -695,9 +770,11 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
       this.resultado = res.data;
       this.paso = 'resultado';
 
-      // Lo repartido ya no está donde estaba: la lista y lo marcado se quedan
-      // viejos en cuanto termina
-      this.marcados.clear();
+      // LO MARCADO SE QUEDA. Repartir los mismos clientes en varios papeles
+      // —el vendedor, luego el cobrador, luego el asistente— es el caso
+      // normal, y borrar la selección obligaba a volver a filtrar y marcar
+      // 31 clientes por cada papel. Las marcas son ids, así que sobreviven a
+      // la recarga aunque la fila deje de salir con el filtro puesto.
       this.cargar(1);
 
       if ((res.data?.fallidos ?? 0) > 0) {
@@ -714,11 +791,19 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Volver a repartir: queda el filtro, se va el destino. */
+  /**
+   * Volver a la lista con los mismos clientes marcados.
+   *
+   * Se van los destinos y el motivo —son de la tanda que acaba de terminar—,
+   * pero no las marcas: lo habitual es repartir el mismo grupo en otro papel.
+   */
   otraTanda(): void {
     this.resultado = null;
     this.destinos = [];
     this.motivo = '';
     this.paso = 'elegir';
+    // La rejilla se repintó mientras se veía el resultado; que las casillas
+    // digan la verdad al volver
+    this.refrescarMarcas();
   }
 }

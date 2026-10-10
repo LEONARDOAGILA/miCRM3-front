@@ -48,13 +48,19 @@
         <!-- ---------- 2a. BARRA DE HERRAMIENTAS ---------- -->
         <div class="row g-2 m-2 align-items-center lista-barra">
 
-          <!-- Limpiar buscador y filtros de columna -->
+          <!-- Limpiar buscador y filtros de columna.
+               Se enciende en rojo y le sale la × al icono SÓLO cuando hay algo
+               que quitar: con veinte columnas filtrables es fácil dejarse una
+               puesta y no entender por qué faltan filas. -->
           <div class="col-auto pe-1">
             <button type="button"
-                    class="btn btn-sm btn-outline-secondary lista-barra__btn"
-                    title="Limpiar filtros"
+                    class="btn btn-sm lista-barra__btn"
+                    [class.btn-outline-danger]="hayFiltro"
+                    [class.btn-outline-secondary]="!hayFiltro"
+                    [title]="tituloLimpiar"
+                    [attr.aria-label]="tituloLimpiar"
                     (click)="clearAllFilters()">
-              <i class="fas fa-filter-circle-xmark"></i>
+              <i class="fas" [ngClass]="hayFiltro ? 'fa-filter-circle-xmark' : 'fa-filter'"></i>
             </button>
           </div>
 
@@ -132,6 +138,7 @@
           [animateRows]="true"
           [navigateToNextCell]="navegarConTeclado"
           (gridReady)="onGridReady($event)"
+          (filterChanged)="onFiltroColumna()"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>
 

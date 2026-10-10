@@ -721,7 +721,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       const res: any = await firstValueFrom(
         // true: aquí cada uno trabaja su cartera. Para repartir los que no tienen
         // dueño está Ventas > Clientes, que sí los lista todos.
-        this._clienteService.allClientes(page, this.porPaginaClientes, this.terminoClientes, this.estadoClientes, true)
+        this._clienteService.allClientes(page, this.porPaginaClientes, this.terminoClientes,
+                                         this.estadoClientes, true, this.filtrosColumnaClientes)
       );
 
       if (mia !== this.peticionClientes) { return; }
@@ -794,8 +795,77 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * correo, activo, cupo) está en la ficha de la derecha, y el listado
    * completo con todas sus columnas sigue a un clic derecho de distancia.
    */
+  /**
+   * Por qué columnas deja filtrar esta rejilla, y de qué tipo.
+   *
+   * Tiene que cuadrar con la lista blanca de ClienteController, que es quien
+   * aplica el filtro: ofrecer aquí una columna de más sería prometer algo que
+   * el servidor no hace.
+   */
+  private readonly COLUMNAS_FILTRABLES_CLIENTES: { [campo: string]: 'texto' | 'numero' } = {
+    nombre_completo: 'texto',
+    numero_identificacion: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumnaClientes: any = {};
+
+  /**
+   * Una operación de filtro que la rejilla NO aplica: siempre pasa.
+   *
+   * Esta lista pagina en el servidor, así que ag-Grid sólo tiene las filas de
+   * la página: si filtrara ella, escribir un nombre buscaría dentro de doce y
+   * parecería rota. Con el predicado devolviendo siempre true la rejilla se
+   * queda con la cabecera, los operadores y el modelo, y filtrar lo hace el
+   * servidor con ese mismo modelo.
+   *
+   * No vale `textMatcher`: gobierna sólo las comparaciones de texto, y «En
+   * blanco» se resuelve antes de llegar a él y sí escondería filas.
+   */
+  private opcionFiltro(clave: string, nombre: string, entradas: 0 | 1 | 2 = 1): any {
+    return { displayKey: clave, displayName: nombre, numberOfInputs: entradas, predicate: () => true };
+  }
+
+  private get noFiltrarAqui(): any {
+    return {
+      suppressAndOrCondition: true,
+      debounceMs: 400,                 // sin esto hay que pulsar Enter y nadie lo pulsa
+      filterOptions: [
+        this.opcionFiltro('contains',    'Contiene'),
+        this.opcionFiltro('notContains', 'No contiene'),
+        this.opcionFiltro('equals',      'Es igual a'),
+        this.opcionFiltro('notEqual',    'No es igual a'),
+        this.opcionFiltro('startsWith',  'Empieza por'),
+        this.opcionFiltro('endsWith',    'Termina en'),
+        this.opcionFiltro('blank',       'En blanco', 0),
+        this.opcionFiltro('notBlank',    'No en blanco', 0),
+      ],
+    };
+  }
+
+  /**
+   * Les cuelga el filtro a las columnas que lo admiten.
+   *
+   * `floatingFilter` va en la COLUMNA, no en la rejilla: no está en
+   * GridOptions ni entre las entradas de ag-grid-angular, y ponerlo en la
+   * etiqueta corta el build con NG8002.
+   */
+  private conFiltrosClientes(columnas: any[]): any[] {
+    return columnas.map(c => {
+      const tipo = this.COLUMNAS_FILTRABLES_CLIENTES[c.field];
+      if (!tipo) { return { ...c, filter: false }; }
+      return { ...c, filter: 'agTextColumnFilter', filterParams: this.noFiltrarAqui, floatingFilter: true };
+    });
+  }
+
+  /** La cabecera pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumnaClientes(): void {
+    this.filtrosColumnaClientes = this.gridApiClientes?.getFilterModel() ?? {};
+    this.cargarClientes(1);
+  }
+
   initializeGridClientes(): void {
-    this.columnDefsClientes = [
+    this.columnDefsClientes = this.conFiltrosClientes([
       {
         headerName: 'Cliente',
         field: 'nombre_completo',
@@ -844,7 +914,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       //     ? `<span class="gestion-acciones"><button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button></span>`
       //     : '',
       // },
-    ];
+    ]);
   }
 
   onGridReadyClientes(params: GridReadyEvent): void {
@@ -995,7 +1065,8 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   /** Si hay algo que quitar: texto buscado, estado filtrado o cliente elegido. */
   get hayFiltroClientes(): boolean {
-    return !!this.terminoClientes || !!this.estadoClientes || !!this.cliente;
+    return !!this.terminoClientes || !!this.estadoClientes || !!this.cliente
+        || Object.keys(this.filtrosColumnaClientes || {}).length > 0;
   }
 
   /**
@@ -1012,10 +1083,19 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   limpiarFiltrosClientes(): void {
     if (!this.hayFiltroClientes) { return; }
 
+    // Vaciar la cabecera dispara filterChanged, que ya recarga; llamar además
+    // a cargarClientes sería pedir la lista dos veces. Pero si no había
+    // ninguna columna filtrada, ag-Grid no tiene nada que cambiar y no avisa,
+    // así que ahí hay que recargar a mano.
+    const habiaColumnas = Object.keys(this.filtrosColumnaClientes || {}).length > 0;
+
     this.terminoClientes = '';
     this.estadoClientes = '';
+    this.filtrosColumnaClientes = {};
     if (this.cliente) { this.limpiarCliente(false); }
-    this.cargarClientes(1);
+
+    if (habiaColumnas && this.gridApiClientes) { this.gridApiClientes.setFilterModel(null); }
+    else { this.cargarClientes(1); }
   }
 
   // ================================================================
@@ -2646,22 +2726,6 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       this.cargarResponsables();
       this.refrescar();
     });
-  }
-
-  /**
-   * Atajo a la pantalla de repartir en bloque.
-   *
-   * Es una pantalla con su propio programa, no un modal: se llega por el menú
-   * de Ventas y también desde aquí, que es donde se trabaja. Se va con el
-   * papel que se esté mirando en la pestaña Asignación, o con el vendedor si
-   * no hay ninguno, que es el que se reparte casi siempre.
-   *
-   * No cuelga de la pestaña Asignación a propósito: aquélla es del cliente que
-   * esté elegido, y para repartir novecientos no hay que entrar antes en uno.
-   */
-  repartirEnBloque(): void {
-    if (this._seguridadService.isexpired()) { return; }
-    this.route.navigate(['/ventas/asignacionClienteMasiva'], { queryParams: { rol: 'VENDEDOR' } });
   }
 
   /** El responsable de un papel, o undefined si todavía no se ha cargado. */

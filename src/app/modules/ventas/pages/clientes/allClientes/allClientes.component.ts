@@ -18,7 +18,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 
 ///   MODELOS    ///
-import { ClienteModel } from '../../../interfaces/clienteModel';
+import { ClienteModel, TIPOS_IDENTIFICACION } from '../../../interfaces/clienteModel';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 
 ///   COMPONENTES    ///
@@ -161,8 +161,151 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   // AG-GRID
   // ================================================================
 
+  /**
+   * Por qué columnas se puede filtrar, y de qué tipo.
+   *
+   * Tiene que cuadrar con la lista blanca de ClienteController: lo que no esté
+   * allí se tira, así que ofrecer aquí un filtro de más sería prometer algo
+   * que el servidor no hace.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero', limite_credito: 'numero', dias_credito: 'numero', descuento: 'numero',
+    tipo_cliente: 'texto', tipo_identificacion: 'texto',
+    numero_identificacion: 'texto', nombre_completo: 'texto',
+    nombre_comercial: 'texto', email: 'texto', celular: 'texto', telefono: 'texto',
+    direccion: 'texto', provincia: 'texto', canton: 'texto', parroquia: 'texto',
+    forma_pago: 'texto', estado: 'texto', vendedor_nombre: 'texto',
+    created_by: 'texto', updated_by: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes.
+    // `activo` se queda fuera a propósito: es una casilla, y escribir en un
+    // filtro para marcar o desmarcar no se entiende; para eso está Estado.
+    created_at: 'texto', updated_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /**
+   * Una operación de filtro que la rejilla NO aplica: siempre pasa.
+   *
+   * `predicate` es la pieza clave. Como se pagina en el servidor, ag-Grid sólo
+   * tiene las filas de la página: si filtrara ella, escribir «Manta» daría dos
+   * de mil y parecería rota. Con el predicado devolviendo siempre true la
+   * rejilla se queda con lo que hace bien —la cabecera, los operadores, el
+   * modelo— y no esconde ninguna fila; filtrar lo hace el servidor.
+   *
+   * No vale `textMatcher`: gobierna sólo las comparaciones de texto, y «En
+   * blanco» se resuelve antes de llegar a él y sí escondería filas.
+   */
+  private opcion(clave: string, nombre: string, entradas: 0 | 1 | 2 = 1): any {
+    return { displayKey: clave, displayName: nombre, numberOfInputs: entradas, predicate: () => true };
+  }
+
+  /** Filtro de texto que no filtra aquí. Los nombres, en castellano: una
+   *  operación propia no pasa por el localeText de la rejilla. */
+  private get noFiltrarAqui(): any {
+    return {
+      suppressAndOrCondition: true,
+      debounceMs: 400,                 // sin esto hay que pulsar Enter y nadie lo pulsa
+      filterOptions: [
+        this.opcion('contains',    'Contiene'),
+        this.opcion('notContains', 'No contiene'),
+        this.opcion('equals',      'Es igual a'),
+        this.opcion('notEqual',    'No es igual a'),
+        this.opcion('startsWith',  'Empieza por'),
+        this.opcion('endsWith',    'Termina en'),
+        this.opcion('blank',       'En blanco', 0),
+        this.opcion('notBlank',    'No en blanco', 0),
+      ],
+    };
+  }
+
+  /** Lo mismo para las columnas de números. */
+  private get noFiltrarAquiNumero(): any {
+    return {
+      suppressAndOrCondition: true,
+      debounceMs: 400,
+      filterOptions: [
+        this.opcion('equals',             'Es igual a'),
+        this.opcion('notEqual',           'No es igual a'),
+        this.opcion('greaterThan',        'Mayor que'),
+        this.opcion('greaterThanOrEqual', 'Mayor o igual que'),
+        this.opcion('lessThan',           'Menor que'),
+        this.opcion('lessThanOrEqual',    'Menor o igual que'),
+        this.opcion('inRange',            'Entre', 2),
+        this.opcion('blank',              'En blanco', 0),
+        this.opcion('notBlank',           'No en blanco', 0),
+      ],
+    };
+  }
+
+  /**
+   * Les cuelga el filtro a las columnas que lo admiten.
+   *
+   * Se hace al final y de una pasada en vez de repetir `filter` y
+   * `filterParams` en veinte definiciones: así la lista de qué se puede
+   * filtrar está en UN sitio y no desperdigada.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return columnas.map(c => {
+      const tipo = this.COLUMNAS_FILTRABLES[c.field];
+      if (!tipo) { return { ...c, filter: false }; }
+      return {
+        ...c,
+        filter: tipo === 'numero' ? 'agNumberColumnFilter' : 'agTextColumnFilter',
+        filterParams: tipo === 'numero' ? this.noFiltrarAquiNumero : this.noFiltrarAqui,
+        // AQUÍ, en la columna. `floatingFilter` NO es opción de rejilla: no
+        // está en GridOptions ni entre las entradas de ag-grid-angular, y
+        // ponerlo en la etiqueta hace que Angular corte el build con NG8002.
+        // Las columnas sin filtro dejan su hueco en blanco en esa fila.
+        floatingFilter: true,
+      };
+    });
+  }
+
+  /**
+   * La cabecera pidió otra cosa.
+   *
+   * Siempre a la página 1: con el filtro nuevo, la página siete puede no
+   * existir.
+   */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.allClientes(1);
+  }
+
+  /** Cuántas columnas llevan filtro, para decirlo en la pantalla. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o cualquier filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
+
+  /**
+   * Qué dice el botón de limpiar.
+   *
+   * Con filtros puestos se enciende y cuenta cuántos hay; sin ellos se queda
+   * como estaba. El recuento importa: con una rejilla de veinte columnas es
+   * fácil dejarse uno puesto en una que no se está mirando y no entender por
+   * qué faltan filas.
+   */
+  get tituloLimpiar(): string {
+    if (!this.hayFiltro) { return 'No hay filtros que quitar'; }
+
+    const partes: string[] = [];
+    if (this.searchTerm) { partes.push('la búsqueda'); }
+    if (this.cuantasColumnasFiltradas === 1) { partes.push('1 columna'); }
+    else if (this.cuantasColumnasFiltradas > 1) { partes.push(this.cuantasColumnasFiltradas + ' columnas'); }
+
+    return 'Quitar ' + partes.join(' y ');
+  }
+
   initializeGrid(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       {
         headerName: 'Id',
         field: 'id',
@@ -170,32 +313,38 @@ export class AllClientesComponent implements OnInit, OnDestroy {
         minWidth: 70,
         maxWidth: 70,
       },
+      // {
+      //   headerName: 'Foto',
+      //   field: 'foto',
+      //   minWidth: 60,
+      //   maxWidth: 60,
+      //   sortable: false,
+      //   cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+      //   cellRenderer: (params: any) => {
+      //     // Sin foto, el icono cambia según sea persona o empresa
+      //     if (!params.value) {
+      //       const icono = params.data?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user';
+      //       return `<span class="lista-foto lista-foto--vacia"><i class="fa ${icono}"></i></span>`;
+      //     }
+      //     const url = this._clienteService.getClienteImage(params.data.id, true);
+      //     return `<img src="${url}" alt="" class="lista-foto" onerror="this.onerror=null; this.src='/assets/img/user/default.png'" />`;
+      //   }
+      // },
       {
-        headerName: 'Foto',
-        field: 'foto',
-        minWidth: 60,
-        maxWidth: 60,
-        sortable: false,
-        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        cellRenderer: (params: any) => {
-          // Sin foto, el icono cambia según sea persona o empresa
-          if (!params.value) {
-            const icono = params.data?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user';
-            return `<span class="lista-foto lista-foto--vacia"><i class="fa ${icono}"></i></span>`;
-          }
-          const url = this._clienteService.getClienteImage(params.data.id, true);
-          return `<img src="${url}" alt="" class="lista-foto" onerror="this.onerror=null; this.src='/assets/img/user/default.png'" />`;
-        }
-      },
-      {
+        // Con qué documento está identificado, que es lo que se busca al
+        // mirar esta columna. Antes decía PERSONA o EMPRESA, que es otra
+        // cosa —el tipo de cliente— y ya se adivina por el icono del nombre.
         headerName: 'Tipo',
-        field: 'tipo_cliente',
+        field: 'tipo_identificacion',
         cellStyle: { textAlign: 'center' },
-        minWidth: 90,
-        maxWidth: 100,
-        cellRenderer: (params: any) => params.value === 'EMPRESA'
-          ? '<span class="badge bg-indigo fs-10px">EMPRESA</span>'
-          : '<span class="badge bg-secondary bg-opacity-25 text-body fs-10px">PERSONA</span>',
+        minWidth: 100,
+        maxWidth: 120,
+        cellRenderer: (params: any) => {
+          const tono = params.value === 'RUC' ? 'bg-indigo'
+                     : params.value === 'PAS' ? 'bg-teal'
+                     : 'bg-secondary bg-opacity-25 text-body';
+          return `<span class="badge ${tono} fs-10px">${this.nombreIdentificacion(params.value)}</span>`;
+        },
       },
       {
         headerName: 'Identificación',
@@ -369,7 +518,17 @@ export class AllClientesComponent implements OnInit, OnDestroy {
           `
         }
       }
-    ];
+    ]);
+  }
+
+  /**
+   * «CC» → «Cédula». Del catálogo de siempre, no de una lista escrita aquí.
+   *
+   * Lo que no esté en el catálogo se enseña tal cual en vez de dejar el hueco
+   * en blanco: si un día entra un código nuevo, al menos se ve cuál es.
+   */
+  nombreIdentificacion(codigo: string | null | undefined): string {
+    return TIPOS_IDENTIFICACION.find(t => t.id === codigo)?.name ?? (codigo || '—');
   }
 
   /** 1500 → "$ 1.500,00"; vacío si no hay importe. */
@@ -514,7 +673,8 @@ export class AllClientesComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
 
       const res = await firstValueFrom(
-        this._clienteService.allClientes(page, this.registrosPorPagina, this.searchTerm)
+        this._clienteService.allClientes(page, this.registrosPorPagina, this.searchTerm,
+                                         '', false, this.filtrosColumna)
       ) as any;
 
       if (res.body?.status !== 'success') {
@@ -550,7 +710,8 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
-        this._clienteService.allClientes(1, this.totalRegistros, this.searchTerm)
+        this._clienteService.allClientes(1, this.totalRegistros, this.searchTerm,
+                                         '', false, this.filtrosColumna)
       ) as any;
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
@@ -588,24 +749,46 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   // ================================================================
 
   async onFilterTextBoxChanged(term?: string) {
+    if (this.limpiando) { return; }
     if (term !== undefined) this.searchTerm = term;
     this.paginaActual = 1;
     await this.allClientes(1);
   }
 
+  /**
+   * Deja la pantalla como al entrar.
+   *
+   * UNA sola petición. Antes salían hasta cuatro: el reset del buscador emite
+   * una búsqueda vacía que ya recarga, setFilterModel dispara filterChanged
+   * que también recarga, luego se llamaba a onFilterChanged() a mano y encima
+   * a allClientes(). Cuatro viajes para vaciar dos campos.
+   *
+   * Se apaga el aviso de recarga mientras se limpia y se vuelve a encender al
+   * final, que es lo que deja una sola consulta en pie.
+   */
   clearAllFilters() {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    this.limpiando = true;
+    this.searchTerm = '';
+    this.filtrosColumna = {};
     this.campoBusquedaPaginacion?.reset();
-    if (this.gridApi) {
-      this.gridApi.setFilterModel(null);
-      this.searchTerm = '';
-      this.gridApi.onFilterChanged();
-      this.allClientes(this.paginaActual).then(() => {
-        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
-          this.goToPage(this.ultimaPagina);
-        }
-      });
-    }
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+    this.limpiando = false;
+
+    // Siempre a la página 1: sin filtros, la página siete puede no existir
+    this.allClientes(1);
   }
+
+  /**
+   * Mientras se limpia, los avisos de la rejilla y del buscador no recargan.
+   *
+   * No es un adorno: los dos disparan su propia recarga y, con el filtro ya
+   * vaciado a mano, serían consultas que devuelven lo mismo.
+   */
+  private limpiando = false;
 
   // ================================================================
   // PAGINACIÓN

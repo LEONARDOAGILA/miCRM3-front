@@ -1,6 +1,14 @@
 /* ============================================================
    REPARTIR CLIENTES EN BLOQUE
 
+   EL COLOR SALE DEL TEMA ELEGIDO en «Ajustes de la aplicación»,
+   no del azul de Bootstrap. La plantilla publica el tema activo
+   en --bs-app-theme / --bs-app-theme-rgb y los cambia al vuelo:
+   la clase theme-<color> va en el <body> y las variables se
+   heredan hasta aquí. OJO: --bs-primary NO cambia con el tema
+   —se queda azul siempre—, así que usarla era lo que hacía que
+   esta pantalla se viera azul con un tema verde.
+
    Los colores salen de variables Bootstrap para que el modal
    siga el tema claro/oscuro que app.component.ts pone con
    data-bs-theme en <html>.
@@ -37,17 +45,6 @@
   margin-top: -19px;
 }
 
-/* Qué es esto, en una línea */
-.asigm-aviso {
-  padding: .45rem .7rem;
-  border-inline-start: 3px solid var(--bs-primary, #0d6efd);
-  border-radius: .25rem;
-  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .07);
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
 /* ---------- Qué papel se reparte ----------
    Arriba del todo y no entre los filtros: manda sobre lo demás,
    porque «quién lo tiene hoy» y a quién se asigna dependen de él. */
@@ -60,6 +57,12 @@
   border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
   border-radius: .375rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* Por qué faltan papeles: sin esto parece que la pantalla está a medias */
+.asigm-papel__nota {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
 .asigm-papel__rotulo {
@@ -175,9 +178,9 @@
   flex-wrap: wrap;
   gap: .5rem;
   padding: .4rem .625rem;
-  border: 1px solid rgba(var(--bs-primary-rgb, 13, 110, 253), .3);
+  border: 1px solid rgba(var(--bs-app-theme-rgb, 13, 110, 253), .3);
   border-radius: .375rem;
-  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
+  background-color: rgba(var(--bs-app-theme-rgb, 13, 110, 253), .08);
   font-size: 11px;
 }
 
@@ -233,7 +236,7 @@
   gap: .4rem;
   padding: .5rem .625rem;
   border-radius: .375rem;
-  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .1);
+  background-color: rgba(var(--bs-app-theme-rgb, 13, 110, 253), .1);
 }
 
 .asigm-marcados.is-vacio {
@@ -244,7 +247,7 @@
   font-size: 20px;
   font-weight: 700;
   line-height: 1;
-  color: var(--bs-primary-text-emphasis, #0a58ca);
+  color: var(--bs-app-theme, #0d6efd);
 }
 
 .asigm-marcados.is-vacio .asigm-marcados__numero {
@@ -281,8 +284,8 @@
 
 .asigm-chip {
   max-width: 100%;
-  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12);
-  color: var(--bs-primary-text-emphasis, #0a58ca);
+  background-color: rgba(var(--bs-app-theme-rgb, 13, 110, 253), .12);
+  color: var(--bs-app-theme, #0d6efd);
   overflow: hidden;
 }
 
@@ -355,53 +358,12 @@
 }
 
 /* ============================================================
-   PASO DE CONFIRMAR
-   Mismo molde que los modales de eliminar (deleteCliente), pero
-   en tono primario: repartir no es borrar. El rojo se reserva
-   para cuando se les quita el responsable y quedan sueltos.
+   LA TABLITA DEL RESULTADO
+   Se queda el molde de los modales de eliminar (deleteCliente)
+   para la lista de «quién se llevó cuántos». El aviso y las
+   notas se fueron al modal confirmarReparto, que es donde se
+   toma la decisión.
    ============================================================ */
-.asigm-confirmar {
-  display: flex;
-  flex-direction: column;
-}
-
-.eliminar-aviso {
-  display: flex;
-  align-items: flex-start;
-  gap: .875rem;
-  padding: .875rem 1rem;
-  border: 1px solid rgba(var(--bs-primary-rgb, 13, 110, 253), .35);
-  border-radius: .375rem;
-  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
-}
-
-.eliminar-aviso__icono {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .15);
-  color: var(--bs-primary, #0d6efd);
-  font-size: 1.125rem;
-}
-
-.eliminar-aviso__titulo {
-  margin: 0 0 .15rem;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--bs-primary-text-emphasis, #0a58ca);
-}
-
-.eliminar-aviso__texto {
-  margin: 0;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
 .eliminar-datos {
   margin-top: 1rem;
   border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
@@ -430,21 +392,6 @@
   font-weight: 600;
   text-align: right;
   word-break: break-word;
-}
-
-.eliminar-nota {
-  margin: .75rem 0 0;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.eliminar-nota--peligro {
-  padding: .5rem .625rem;
-  border-radius: .375rem;
-  border: 1px solid rgba(var(--bs-danger-rgb, 220, 53, 69), .35);
-  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
-  color: var(--bs-danger-text-emphasis, var(--bs-danger, #dc3545));
 }
 
 /* ============================================================
@@ -521,6 +468,67 @@
   font-size: 11px;
   text-align: right;
   color: var(--bs-danger-text-emphasis, var(--bs-danger, #dc3545));
+}
+
+/* ============================================================
+   CON EL PANEL EXPANDIDO
+
+   Al expandir, el tema pone el panel a pantalla completa en
+   columna y le da `flex: 1` al cuerpo. Pero ahí se acababa: la
+   altura no bajaba más, porque todo lo de dentro era de altura
+   automática y la rejilla tenía una altura fija
+   (clamp(16rem, 42vh, 30rem)). Resultado: panel enorme, rejilla
+   del mismo tamaño y un hueco en blanco debajo.
+
+   Lo que sigue encadena esa altura hasta la rejilla. Hay que
+   tocar TODOS los eslabones: en cuanto uno se queda en `auto`,
+   los de abajo no tienen contra qué crecer.
+
+   `min-height: 0` en cada uno no es un adorno: un elemento flex
+   no baja de su contenido salvo que se le diga, y sin esto la
+   rejilla empuja el panel en vez de encogerse dentro de él.
+
+   Va con `:host ::ng-deep` porque `.panel` es del componente
+   panel, no de esta pantalla: una regla normal se quedaría
+   esperando un atributo de encapsulado que ese elemento no
+   lleva. El `:host` de delante la mantiene dentro de aquí.
+   ============================================================ */
+:host ::ng-deep .panel.panel-expand > .panel-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:host ::ng-deep .panel.panel-expand .asigm,
+:host ::ng-deep .panel.panel-expand .asigm-cuerpo {
+  flex: 1;
+  min-height: 0;
+}
+
+/* En rejilla CSS la fila también tiene que poder encoger */
+:host ::ng-deep .panel.panel-expand .asigm-cuerpo {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+:host ::ng-deep .panel.panel-expand .asigm-lista {
+  min-height: 0;
+}
+
+:host ::ng-deep .panel.panel-expand .asigm-grilla__caja {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Y por fin: la rejilla deja de medir lo que medía y ocupa lo que haya */
+:host ::ng-deep .panel.panel-expand .asigm-grilla {
+  height: 100%;
+}
+
+/* La columna de la derecha es más corta que la rejilla; si por el motivo que
+   sea se pasa de alto, que se desplace ella en vez de estirar la fila */
+:host ::ng-deep .panel.panel-expand .asigm-destino {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* ---------- Barra de acciones ----------

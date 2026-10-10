@@ -46,6 +46,23 @@ export class HomeComponent implements OnInit, OnDestroy {
       descripcion: 'Creación, edición, eliminación, cambio de contraseñas'
     },
     {
+      // Ojo: la url del menú es 'usuariosGrupos', no 'allGrupos'. El filtro de
+      // abajo compara la url letra a letra, así que una distinta no da error:
+      // la tarjeta simplemente no sale.
+      url: 'seguridad/usuariosGrupos',
+      label: 'GRUPOS',
+      icon: 'fa-user-group',
+      color: 'bg-indigo',
+      descripcion: 'Qué puede hacer cada grupo y quién es administrador; de aquí sale el alcance sobre los datos'
+    },
+    {
+      url: 'seguridad/allTiposUsuario',
+      label: 'TIPOS DE USUARIO',
+      icon: 'fa-id-card',
+      color: 'bg-purple',
+      descripcion: 'La clase de cada usuario —del sistema, de la web, temporal— y su vigencia para entrar'
+    },
+    {
       url: 'seguridad/allHorarios',
       label: 'HORARIOS',
       icon: 'fa-chart-line',

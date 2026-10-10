@@ -300,3 +300,25 @@
   background-color: var(--bs-component-bg, #1e293b);
   border-color: var(--bs-border-color, #334155);
 }
+
+
+/* ---------- La tasa de contacto ----------
+   Un número grande y una frase debajo: es la cifra que se mira primero en
+   esa tarjeta, y en una lista de líneas iguales se perdería. */
+.rv-tasa {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+  margin-bottom: .5rem;
+}
+
+.rv-tasa__valor {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rv-tasa__texto {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}

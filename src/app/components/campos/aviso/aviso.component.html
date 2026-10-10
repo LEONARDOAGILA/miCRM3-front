@@ -1,0 +1,24 @@
+@if (visible) {
+  <div class="aviso" [ngClass]="'aviso--' + tono" role="note">
+    @if (iconoFinal) {
+      <i class="fa fa-fw aviso__icono" [ngClass]="iconoFinal" aria-hidden="true"></i>
+    }
+
+    <span class="aviso__texto">
+      @if (titulo) { <strong class="aviso__titulo">{{ titulo }}</strong> }
+      <ng-content></ng-content>
+    </span>
+
+    <!-- La misma × que vacía los campos de búsqueda, para que cerrar se haga
+         igual en toda la aplicación -->
+    @if (cerrable) {
+      <button type="button"
+              class="aviso__cerrar"
+              aria-label="Cerrar el aviso"
+              title="Cerrar"
+              (click)="cerrar()">
+        <span class="aviso__cerrar-x" aria-hidden="true">&times;</span>
+      </button>
+    }
+  </div>
+}

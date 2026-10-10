@@ -379,3 +379,79 @@
 @media (max-width: 767.98px) {
   .visib-aviso { display: none; }
 }
+
+
+/* ============================================================
+   QUÉ PUEDE REPARTIR ESTE PERFIL
+
+   Casillas y no desplegables: aquí no se elige «de quién» —que
+   es lo que contestan los cinco de arriba— sino qué papeles
+   puede tocar. Se marcan varios, así que es un control de
+   multiopción, no una lista de una sola respuesta.
+
+   El color sale del tema elegido en «Ajustes de la aplicación»
+   (--bs-app-theme); --bs-primary no cambia con el tema.
+   ============================================================ */
+.visib-repartir {
+  margin-top: .75rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+}
+
+.visib-repartir__cab {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  margin-bottom: .4rem;
+}
+
+.visib-repartir__titulo {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.visib-repartir__cuenta {
+  margin-inline-start: auto;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.visib-repartir__papeles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+}
+
+/* Botón y no <input type=checkbox>: se necesita el icono del papel al lado
+   del texto, y una casilla suelta no deja colgarle nada. El aria-pressed es
+   lo que dice que esto se marca y se desmarca. */
+.visib-papel {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+
+  padding: .25rem .6rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-radius: 1rem;
+  background-color: var(--bs-component-bg, var(--bs-body-bg, #fff));
+
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  cursor: pointer;
+}
+
+.visib-papel:hover:not(:disabled) {
+  border-color: rgba(var(--bs-app-theme-rgb, 13, 110, 253), .5);
+}
+
+.visib-papel.is-marcado {
+  border-color: rgba(var(--bs-app-theme-rgb, 13, 110, 253), .5);
+  background-color: rgba(var(--bs-app-theme-rgb, 13, 110, 253), .12);
+  color: var(--bs-app-theme, #0d6efd);
+  font-weight: 600;
+}
+
+.visib-papel:disabled {
+  opacity: .55;
+  cursor: default;
+}

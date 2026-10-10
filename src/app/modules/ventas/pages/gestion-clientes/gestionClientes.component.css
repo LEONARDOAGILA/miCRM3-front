@@ -125,21 +125,6 @@
   opacity: .4;
 }
 
-/* El de repartir en bloque, al lado: misma caja cuadrada para que la fila del
-   buscador no se desnivele. Sólo sale para quien puede repartir, así que el
-   ancho de la barra cambia con el usuario y no con el estado de la pantalla. */
-.gc-lista__repartir {
-  flex: 0 0 auto;
-  align-self: stretch;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 2.25rem;
-  padding: 0;
-}
-
 /* Con filtro puesto se marca con el color de la aplicación, igual que el
    selector de estado: así se ve que la lista no está completa */
 .gc-lista__limpiar:not(:disabled) {
