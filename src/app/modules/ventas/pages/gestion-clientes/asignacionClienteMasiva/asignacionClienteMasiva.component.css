@@ -1,0 +1,556 @@
+/* ============================================================
+   REPARTIR CLIENTES EN BLOQUE
+
+   Los colores salen de variables Bootstrap para que el modal
+   siga el tema claro/oscuro que app.component.ts pone con
+   data-bs-theme en <html>.
+
+   .ag-grid-transparente es global (scss/angular.scss). Las
+   clases .chip y .eliminar-* no lo son: viven en el CSS con
+   alcance de cada componente que las usa, así que aquí van
+   copiadas, que es el patrón de la casa.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+/* ---------- Miga de pan ----------
+   A la derecha y subida: el tema deja un hueco entre la cabecera de la
+   aplicación y lo primero de la página que aquí sobra, porque el panel ya
+   trae el suyo. Igual que en el resto de pantallas. */
+.asigm-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+.asigm-breadcrumb a {
+  cursor: pointer;
+}
+
+.asigm {
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+  margin-top: -19px;
+}
+
+/* Qué es esto, en una línea */
+.asigm-aviso {
+  padding: .45rem .7rem;
+  border-inline-start: 3px solid var(--bs-primary, #0d6efd);
+  border-radius: .25rem;
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .07);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Qué papel se reparte ----------
+   Arriba del todo y no entre los filtros: manda sobre lo demás,
+   porque «quién lo tiene hoy» y a quién se asigna dependen de él. */
+.asigm-papel {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: .5rem .625rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.asigm-papel__rotulo {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Las dos columnas ----------
+   La lista manda y el destino acompaña. Debajo de lg se apilan:
+   en un teléfono dos columnas dejarían la rejilla en un palmo. */
+.asigm-cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .75rem;
+}
+
+@media (min-width: 992px) {
+  .asigm-cuerpo {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+}
+
+.asigm-lista {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  min-width: 0;
+}
+
+/* ---------- Filtros ---------- */
+.asigm-filtros {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  flex-wrap: wrap;
+}
+
+.asigm-filtros__limpiar {
+  flex: 0 0 auto;
+}
+
+.asigm-filtros__buscador {
+  flex: 1 1 14rem;
+  min-width: 10rem;
+}
+
+/* ---------- Dónde se filtra ahora ----------
+   Una línea y no una fila de desplegables: los filtros están en la cabecera
+   de cada columna. Esto sólo lo dice, porque un filtro que no se ve es un
+   filtro que no se usa. */
+.asigm-pista {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.asigm-pista .badge {
+  margin-inline-start: auto;
+  font-size: 10px;
+}
+
+/* ---------- La rejilla ----------
+   Alto en vh y no fijo: la lista es lo que tiene que crecer cuando
+   hay pantalla. */
+.asigm-grilla__caja {
+  min-width: 0;
+}
+
+.asigm-grilla {
+  width: 100%;
+  height: clamp(16rem, 42vh, 30rem);
+}
+
+/* La casilla de marcar: cursor de botón y un poco más grande que
+   el icono suelto, que si no hay que acertarle a 12 píxeles */
+.asigm-celda-marca {
+  cursor: pointer;
+}
+
+.asigm-marca {
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ---------- La casilla de la cabecera ----------
+   ag-Grid pinta la cabecera por su cuenta, así que esto tiene que
+   llegar hasta dentro: va con :host delante para no salirse de esta
+   pantalla. La columna no tiene rótulo, así que la casilla se centra
+   en la celda ella sola. */
+:host ::ng-deep .asigm-cabecera-marca {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+:host ::ng-deep .asigm-check-todos {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* ---------- Ofrecer el filtro entero ----------
+   Sale sólo al marcar la página entera habiendo más detrás. Es el
+   aviso que evita el error caro: marcar veinte creyendo que son 991. */
+.asigm-ofrecer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: .4rem .625rem;
+  border: 1px solid rgba(var(--bs-primary-rgb, 13, 110, 253), .3);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
+  font-size: 11px;
+}
+
+.asigm-ofrecer .btn {
+  margin-inline-start: auto;
+}
+
+/* ---------- Pie de la lista ---------- */
+.asigm-pie {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.asigm-pie__paginas .btn {
+  font-size: 11px;
+}
+
+.asigm-pie__total {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.asigm-pie__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin-inline-start: auto;
+}
+
+/* ---------- Columna del destino ---------- */
+.asigm-destino {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .75rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, var(--bs-body-bg, #fff));
+}
+
+.asigm-destino__titulo {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Lo marcado, siempre a la vista: es el número que importa */
+.asigm-marcados {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+  padding: .5rem .625rem;
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .1);
+}
+
+.asigm-marcados.is-vacio {
+  background-color: var(--bs-tertiary-bg, #f1f3f5);
+}
+
+.asigm-marcados__numero {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bs-primary-text-emphasis, #0a58ca);
+}
+
+.asigm-marcados.is-vacio .asigm-marcados__numero {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.asigm-marcados__texto {
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Chips ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .15rem .5rem;
+  border-radius: 1rem;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.chip-muted {
+  background-color: rgba(108, 117, 125, .15);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.asigm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.asigm-chip {
+  max-width: 100%;
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12);
+  color: var(--bs-primary-text-emphasis, #0a58ca);
+  overflow: hidden;
+}
+
+.asigm-chip__quitar {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  opacity: .65;
+  cursor: pointer;
+}
+
+.asigm-chip__quitar:hover {
+  opacity: 1;
+}
+
+/* ---------- Cómo quedaría ---------- */
+.asigm-previo {
+  border: 1px dashed var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-radius: .375rem;
+  padding: .4rem .55rem;
+}
+
+.asigm-previo__titulo {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--bs-secondary-color, #6c757d);
+  margin-bottom: .2rem;
+}
+
+.asigm-previo__fila {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  font-size: 11px;
+}
+
+.asigm-previo__quien {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asigm-previo__cuantos {
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+/* ---------- Letra pequeña ---------- */
+.asigm-ayuda {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.asigm-ayuda--aviso {
+  color: var(--bs-warning-text-emphasis, #8a5a00);
+}
+
+.form-check-label {
+  font-size: 12px;
+}
+
+.form-label {
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ============================================================
+   PASO DE CONFIRMAR
+   Mismo molde que los modales de eliminar (deleteCliente), pero
+   en tono primario: repartir no es borrar. El rojo se reserva
+   para cuando se les quita el responsable y quedan sueltos.
+   ============================================================ */
+.asigm-confirmar {
+  display: flex;
+  flex-direction: column;
+}
+
+.eliminar-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: .875rem;
+  padding: .875rem 1rem;
+  border: 1px solid rgba(var(--bs-primary-rgb, 13, 110, 253), .35);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .08);
+}
+
+.eliminar-aviso__icono {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .15);
+  color: var(--bs-primary, #0d6efd);
+  font-size: 1.125rem;
+}
+
+.eliminar-aviso__titulo {
+  margin: 0 0 .15rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bs-primary-text-emphasis, #0a58ca);
+}
+
+.eliminar-aviso__texto {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.eliminar-datos {
+  margin-top: 1rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-radius: .375rem;
+  overflow: hidden;
+}
+
+.eliminar-datos .list-group-item {
+  padding: .5rem .75rem;
+  background-color: var(--bs-component-bg, var(--bs-body-bg, #fff));
+  border-color: var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+}
+
+/* list-group-flush deja borde arriba y abajo: chocan con el del contenedor */
+.eliminar-datos .list-group-item:first-child { border-top: 0; }
+.eliminar-datos .list-group-item:last-child  { border-bottom: 0; }
+
+.eliminar-datos__etiqueta {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.eliminar-datos__valor {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+.eliminar-nota {
+  margin: .75rem 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.eliminar-nota--peligro {
+  padding: .5rem .625rem;
+  border-radius: .375rem;
+  border: 1px solid rgba(var(--bs-danger-rgb, 220, 53, 69), .35);
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
+  color: var(--bs-danger-text-emphasis, var(--bs-danger, #dc3545));
+}
+
+/* ============================================================
+   PASO DE RESULTADO
+   ============================================================ */
+.asigm-resultado {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.asigm-numeros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.asigm-numero {
+  flex: 1 1 7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: .625rem .5rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.asigm-numero--bien {
+  border-color: rgba(var(--bs-success-rgb, 25, 135, 84), .35);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .08);
+}
+
+.asigm-numero--mal {
+  border-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .35);
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
+}
+
+.asigm-numero__valor {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.asigm-numero__texto {
+  font-size: 10.5px;
+  color: var(--bs-secondary-color, #6c757d);
+  text-align: center;
+}
+
+.asigm-fallos__titulo {
+  margin: .5rem 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bs-danger-text-emphasis, var(--bs-danger, #dc3545));
+}
+
+/* Se corta y se desplaza: cincuenta fallos no pueden empujar el
+   pie del modal fuera de la pantalla */
+.asigm-fallos {
+  max-height: 11rem;
+  overflow-y: auto;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-radius: .375rem;
+}
+
+.asigm-fallos .list-group-item {
+  padding: .35rem .75rem;
+  background-color: var(--bs-component-bg, var(--bs-body-bg, #fff));
+  border-color: var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+}
+
+.asigm-fallos__motivo {
+  font-size: 11px;
+  text-align: right;
+  color: var(--bs-danger-text-emphasis, var(--bs-danger, #dc3545));
+}
+
+/* ---------- Barra de acciones ----------
+   Pegada al fondo del panel: con la rejilla larga, el botón de repartir no
+   puede quedarse fuera de la pantalla. position: sticky y no fixed, para que
+   se quede dentro del panel también cuando está expandido. */
+.asigm-acciones {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  margin-top: .25rem;
+  padding: .5rem 0;
+  border-top: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  background-color: var(--bs-component-bg, var(--bs-body-bg, #fff));
+}
+
+.asigm-acciones .btn {
+  min-width: 120px;
+  font-size: 12px;
+}
+
+.asigm-acciones__aviso {
+  margin-inline-end: auto;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}

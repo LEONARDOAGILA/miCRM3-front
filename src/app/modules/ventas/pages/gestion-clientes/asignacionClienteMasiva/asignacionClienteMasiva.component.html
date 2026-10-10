@@ -1,0 +1,440 @@
+<!-- ================= MIGA DE PAN ================= -->
+<ol class="breadcrumb asigm-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home()">Ventas</a></li>
+  <li class="breadcrumb-item active">Repartir clientes</li>
+</ol>
+
+<!-- ================= PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       (panelReloaded)="cargar(pagina)"
+       (panelExpanded)="ajustarTamanoGrid()"
+       [closeRoute]="'/ventas'"
+       icono="usuarios">
+
+  <div class="content-container1 asigm">
+
+    <!-- Repartir 991 clientes tarda, y mientras tanto no se puede tocar nada -->
+    @if (guardando) {
+      <div class="loader1" role="status" aria-label="Repartiendo"></div>
+      <div class="overlay1" aria-hidden="true"></div>
+    }
+
+    <!-- Qué es esto, en una línea -->
+    <div class="asigm-aviso">
+      <i class="fa fa-circle-info fa-fw me-1"></i>
+      La pestaña <strong>Asignación</strong> del cliente reparte de uno en uno. Esto es para
+      muchos: filtre, marque y asigne de una vez. Queda en el historial de cada cliente, igual.
+    </div>
+
+    <!-- =================================================================
+         PASO 1 — ELEGIR
+         ================================================================= -->
+    @if (paso === 'elegir') {
+
+      <!-- ---------- Qué papel se reparte ----------
+           Va arriba del todo y no entre los filtros porque manda sobre todo lo
+           demás: quién «lo tiene hoy» y a quién se asigna dependen del papel. -->
+      <div class="asigm-papel">
+        <span class="asigm-papel__rotulo">
+          <i class="fa fa-user-tag fa-fw me-1"></i>Reparto como
+        </span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Papel que se reparte">
+          @for (r of roles; track r.id) {
+            <button type="button" class="btn"
+                    [ngClass]="rol === r.id ? 'btn-primary' : 'btn-white'"
+                    [title]="r.ayuda"
+                    (click)="cambiarRol(r.id)">
+              <i class="fa fa-fw" [ngClass]="r.icono"></i>
+              <span class="asigm-papel__texto">{{ r.name }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="asigm-cuerpo">
+
+        <!-- ================= IZQUIERDA: QUÉ CLIENTES ================= -->
+        <section class="asigm-lista">
+
+          <!-- ---------- Filtros ---------- -->
+          <div class="asigm-filtros">
+
+            <button type="button" class="btn btn-sm btn-white asigm-filtros__limpiar"
+                    [disabled]="!hayFiltro"
+                    title="Quitar los filtros"
+                    (click)="limpiarFiltros()">
+              <i class="fa fa-filter-circle-xmark"></i>
+            </button>
+
+            <app-campoBusquedaPaginacion
+                [id]="'buscar-cliente-reparto'"
+                [placeholder]="'Buscar por nombre, identificación o teléfono…'"
+                [containerClass]="'asigm-filtros__buscador'"
+                [valorInicial]="busqueda"
+                (buscar)="buscar($event)">
+            </app-campoBusquedaPaginacion>
+
+
+          </div>
+
+          <!-- Los filtros viven ahora en la cabecera de la rejilla, uno por
+               columna, y los aplica el SERVIDOR sobre los mil clientes. Antes
+               había aquí una fila de desplegables que hacía lo mismo: dos
+               sitios para filtrar lo mismo es un sitio de más, y además podían
+               contradecirse. -->
+          <div class="asigm-pista">
+            <i class="fa fa-filter fa-fw"></i>
+            <span>
+              Filtre <b>en la cabecera de cada columna</b>. Se busca sobre los
+              clientes, no sólo sobre esta página, y sin distinguir tildes ni
+              mayúsculas. Para los que no atiende nadie, use <b>«En blanco»</b>
+              en la columna del papel.
+            </span>
+            @if (cuantasColumnasFiltradas) {
+              <span class="badge bg-primary bg-opacity-25 text-body">
+                {{ cuantasColumnasFiltradas }} columna(s) con filtro
+              </span>
+            }
+          </div>
+
+          <!-- ---------- La rejilla ----------
+               El (click) del contenedor es para la casilla de la cabecera: la
+               pinta ag-Grid como HTML suelto, no es un control de Angular, y
+               no hay dónde colgarle un (change). Mismo apaño que en la rejilla
+               de permisos de save2Profile. -->
+          <div class="asigm-grilla__caja" (click)="onHeaderClicked($event)">
+            <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente asigm-grilla"
+                [rowData]="clientes"
+                [columnDefs]="columnDefs"
+                [defaultColDef]="_appAgGridService.defaultColDef"
+                [rowHeight]="_appAgGridService.rowHeight"
+                [headerHeight]="_appAgGridService.headerHeight"
+                [localeText]="_appAgGridService.localeText"
+                [animateRows]="true"
+                [floatingFilter]="true"
+                (gridReady)="onGridReady($event)"
+                (filterChanged)="onFiltroColumna()"
+                (cellClicked)="onCellClicked($event)">
+            </ag-grid-angular>
+          </div>
+
+          <!-- Marcar los veinte de la página y creer que se marcaron los 991
+               es el error caro de esta pantalla. Se ofrece justo cuando pasa. -->
+          @if (ofrecerTodoElFiltro) {
+            <div class="asigm-ofrecer">
+              <span>
+                Marcados los <b>{{ clientes.length }}</b> de esta página.
+                El filtro tiene <b>{{ total }}</b>.
+              </span>
+              <button type="button" class="btn btn-xs btn-primary" (click)="marcarTodoElFiltro()">
+                <i class="fa fa-check-double fa-fw me-1"></i>Marcar los {{ total }}
+              </button>
+            </div>
+          }
+
+          <!-- ---------- Paginación y marcado ---------- -->
+          <div class="asigm-pie">
+
+            <div class="btn-group btn-group-sm asigm-pie__paginas">
+              <button type="button" class="btn btn-white" title="Primera página"
+                      [disabled]="pagina === 1" (click)="primera()">
+                <i class="fa fa-angles-left"></i>
+              </button>
+              <button type="button" class="btn btn-white" title="Anterior"
+                      [disabled]="pagina === 1" (click)="anterior()">
+                <i class="fa fa-angle-left"></i>
+              </button>
+              <span class="btn btn-white disabled">{{ pagina }} / {{ ultimaPagina }}</span>
+              <button type="button" class="btn btn-white" title="Siguiente"
+                      [disabled]="pagina === ultimaPagina" (click)="siguiente()">
+                <i class="fa fa-angle-right"></i>
+              </button>
+              <button type="button" class="btn btn-white" title="Última página"
+                      [disabled]="pagina === ultimaPagina" (click)="ultima()">
+                <i class="fa fa-angles-right"></i>
+              </button>
+            </div>
+
+            <span class="asigm-pie__total">{{ total }} cliente(s)</span>
+
+            <!-- «Esta página» ya no está: lo hace la casilla de la cabecera,
+                 que es donde se busca. Se quedan los dos que esa casilla no
+                 puede hacer. -->
+            <div class="asigm-pie__acciones">
+              <button type="button" class="btn btn-xs btn-white"
+                      [disabled]="!total"
+                      [title]="'Marcar los ' + total + ' que cumplen el filtro, estén o no en esta página'"
+                      (click)="marcarTodoElFiltro()">
+                <i class="fa fa-check-double fa-fw"></i>Los {{ total }}
+              </button>
+              <button type="button" class="btn btn-xs btn-white"
+                      [disabled]="!marcados.size"
+                      (click)="quitarMarcas()">
+                <i class="fa fa-xmark fa-fw"></i>Quitar marcas
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= DERECHA: A QUIÉN VA ================= -->
+        <aside class="asigm-destino">
+
+          <h6 class="asigm-destino__titulo">
+            <i class="fa fa-people-arrows fa-fw me-1"></i>A quién va
+          </h6>
+
+          <!-- Lo marcado, siempre a la vista: es el número que importa -->
+          <div class="asigm-marcados" [class.is-vacio]="!marcados.size">
+            <span class="asigm-marcados__numero">{{ marcados.size }}</span>
+            <span class="asigm-marcados__texto">cliente(s) marcados</span>
+          </div>
+
+          <!-- ---------- Los destinos ---------- -->
+          @if (destinos.length) {
+            <div class="asigm-chips">
+              @for (d of destinos; track d.id) {
+                <span class="chip asigm-chip">
+                  <i class="fa fa-user fa-fw"></i>{{ d.etiqueta }}
+                  <button type="button" class="asigm-chip__quitar"
+                          [title]="'Quitar a ' + d.etiqueta"
+                          (click)="quitarDestino(d.id)">
+                    <i class="fa fa-xmark"></i>
+                  </button>
+                </span>
+              }
+            </div>
+          }
+
+          <button type="button" class="btn btn-sm btn-white w-100"
+                  [disabled]="!puedeRepartir"
+                  (click)="anadirDestino()">
+            <i class="fa fa-user-plus fa-fw me-1"></i>Añadir persona
+          </button>
+
+          @if (destinos.length > 1) {
+            <p class="asigm-ayuda">
+              <i class="fa fa-shuffle fa-fw me-1"></i>
+              Se reparten <b>por turnos</b> entre las {{ destinos.length }}, no se amontonan en la primera.
+            </p>
+          } @else if (!destinos.length) {
+            <p class="asigm-ayuda asigm-ayuda--aviso">
+              <i class="fa fa-triangle-exclamation fa-fw me-1"></i>
+              Sin nadie en la lista, a los clientes marcados se les <b>quita</b> el
+              {{ rolNombre.toLowerCase() }} y quedan sueltos.
+            </p>
+          }
+
+          <!-- ---------- Cómo quedaría ---------- -->
+          @if (destinos.length && marcados.size) {
+            <div class="asigm-previo">
+              <div class="asigm-previo__titulo">Quedaría así</div>
+              @for (r of reparteAsi; track r.etiqueta) {
+                <div class="asigm-previo__fila">
+                  <span class="asigm-previo__quien">{{ r.etiqueta }}</span>
+                  <span class="asigm-previo__cuantos">{{ r.cuantos }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <hr class="my-2">
+
+          <!-- ---------- Opciones ---------- -->
+          @if (laAgendaCuenta) {
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="asigm-agenda"
+                     [(ngModel)]="moverAgenda">
+              <label class="form-check-label" for="asigm-agenda">
+                Llevarse las gestiones pendientes
+              </label>
+            </div>
+            <p class="asigm-ayuda">
+              Sin esto, quien reciba el cliente lo hereda sin agenda y el anterior
+              sigue viendo llamadas de alguien que ya no atiende.
+            </p>
+          } @else {
+            <p class="asigm-ayuda">
+              <i class="fa fa-circle-info fa-fw me-1"></i>
+              La agenda sólo viaja con el <b>vendedor</b>: las gestiones son suyas,
+              no de quien cobra ni de quien coordina.
+            </p>
+          }
+
+          <label class="form-label mt-2 mb-1" for="asigm-motivo">Motivo <span class="text-muted">(opcional)</span></label>
+          <textarea class="form-control form-control-sm" id="asigm-motivo" rows="2"
+                    maxlength="1000"
+                    placeholder="Por qué se reparten; queda en el historial de cada cliente"
+                    [(ngModel)]="motivo"></textarea>
+        </aside>
+      </div>
+    }
+
+    <!-- =================================================================
+         PASO 2 — CONFIRMAR
+         Esto cambia cientos de filas de golpe: antes de hacerlo, la pantalla
+         lo dice en voz alta.
+         ================================================================= -->
+    @if (paso === 'confirmar') {
+      <div class="asigm-confirmar">
+
+        <div class="eliminar-aviso">
+          <div class="eliminar-aviso__icono">
+            <i class="fa fa-people-arrows" aria-hidden="true"></i>
+          </div>
+          <div>
+            <h6 class="eliminar-aviso__titulo">
+              @if (quitaResponsable) {
+                ¿Quitar el {{ rolNombre.toLowerCase() }} a {{ marcados.size }} cliente(s)?
+              } @else {
+                ¿Repartir {{ marcados.size }} cliente(s) como {{ rolNombre.toLowerCase() }}?
+              }
+            </h6>
+            <p class="eliminar-aviso__texto">
+              Se hace cliente por cliente y queda en el historial de cada uno. Los que
+              ya tengan a esa persona se saltan, y si alguno falla <b>no se detiene el
+              resto</b>: al terminar se dice cuántos cambiaron y cuáles no.
+            </p>
+          </div>
+        </div>
+
+        <div class="list-group list-group-flush eliminar-datos">
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <span class="eliminar-datos__etiqueta"><i class="fa fa-user-tag fa-fw me-1"></i>Papel</span>
+            <span class="eliminar-datos__valor">{{ rolNombre }}</span>
+          </div>
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <span class="eliminar-datos__etiqueta"><i class="fa fa-users fa-fw me-1"></i>Clientes</span>
+            <span class="eliminar-datos__valor">{{ marcados.size }}</span>
+          </div>
+          @for (r of reparteAsi; track r.etiqueta) {
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="eliminar-datos__etiqueta"><i class="fa fa-user fa-fw me-1"></i>{{ r.etiqueta }}</span>
+              <span class="eliminar-datos__valor">{{ r.cuantos }} cliente(s)</span>
+            </div>
+          }
+          @if (laAgendaCuenta) {
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="eliminar-datos__etiqueta"><i class="fa fa-calendar-day fa-fw me-1"></i>Gestiones pendientes</span>
+              <span class="eliminar-datos__valor">{{ moverAgenda ? 'se van con el cliente' : 'se quedan donde están' }}</span>
+            </div>
+          }
+        </div>
+
+        @if (quitaResponsable) {
+          <p class="eliminar-nota eliminar-nota--peligro">
+            <i class="fa fa-triangle-exclamation fa-fw me-1"></i>
+            No se eligió a nadie: estos clientes se quedan <b>sin {{ rolNombre.toLowerCase() }}</b>.
+            @if (laAgendaCuenta && moverAgenda) {
+              Sus gestiones pendientes se quedan además <b>sin responsable</b> y no saldrán en la agenda de nadie.
+            }
+          </p>
+        }
+      </div>
+    }
+
+    <!-- =================================================================
+         PASO 3 — RESULTADO
+         ================================================================= -->
+    @if (paso === 'resultado' && resultado) {
+      <div class="asigm-resultado">
+
+        <div class="asigm-numeros">
+          <div class="asigm-numero asigm-numero--bien">
+            <span class="asigm-numero__valor">{{ resultado.asignados }}</span>
+            <span class="asigm-numero__texto">cambiados</span>
+          </div>
+          <div class="asigm-numero">
+            <span class="asigm-numero__valor">{{ resultado.omitidos }}</span>
+            <span class="asigm-numero__texto">ya lo tenían</span>
+          </div>
+          <div class="asigm-numero" [class.asigm-numero--mal]="resultado.fallidos">
+            <span class="asigm-numero__valor">{{ resultado.fallidos }}</span>
+            <span class="asigm-numero__texto">con error</span>
+          </div>
+          @if (resultado.gestiones_movidas) {
+            <div class="asigm-numero">
+              <span class="asigm-numero__valor">{{ resultado.gestiones_movidas }}</span>
+              <span class="asigm-numero__texto">gestiones movidas</span>
+            </div>
+          }
+        </div>
+
+        @if (resultado.reparto?.length) {
+          <div class="list-group list-group-flush eliminar-datos">
+            @for (r of resultado.reparto; track r.usuario_id) {
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span class="eliminar-datos__etiqueta"><i class="fa fa-user fa-fw me-1"></i>{{ r.usuario }}</span>
+                <span class="eliminar-datos__valor">{{ r.clientes }} cliente(s)</span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (resultado.fallos?.length) {
+          <h6 class="asigm-fallos__titulo">
+            <i class="fa fa-triangle-exclamation fa-fw me-1"></i>Los que no se pudieron cambiar
+          </h6>
+          <div class="list-group list-group-flush asigm-fallos">
+            @for (f of resultado.fallos; track f.cliente_id) {
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span class="eliminar-datos__etiqueta">Cliente {{ f.cliente_id }}</span>
+                <span class="asigm-fallos__motivo">{{ f.motivo }}</span>
+              </div>
+            }
+          </div>
+          @if (resultado.fallidos > resultado.fallos.length) {
+            <p class="asigm-ayuda">
+              Y {{ resultado.fallidos - resultado.fallos.length }} más que no caben aquí.
+            </p>
+          }
+        }
+      </div>
+    }
+
+    <!-- ================= BARRA DE ACCIONES =================
+         Pegada abajo: con la rejilla larga, el botón de repartir no puede
+         quedarse fuera de la pantalla. -->
+    <div class="asigm-acciones">
+
+      @if (paso === 'elegir') {
+        @if (impedimento) {
+          <span class="asigm-acciones__aviso">
+            <i class="fa fa-circle-info fa-fw me-1"></i>{{ impedimento }}
+          </span>
+        }
+        <button type="button" class="btn btn-primary"
+                [disabled]="!!impedimento"
+                (click)="irAConfirmar()">
+          <i class="fa fa-people-arrows fa-fw me-1"></i>Repartir {{ marcados.size }}
+        </button>
+      }
+
+      @if (paso === 'confirmar') {
+        <button type="button" class="btn btn-outline-secondary"
+                [disabled]="guardando"
+                (click)="volverAElegir()">
+          <i class="fa fa-arrow-left fa-fw me-1"></i>Volver
+        </button>
+        <button type="button" class="btn"
+                [ngClass]="quitaResponsable ? 'btn-danger' : 'btn-primary'"
+                [disabled]="guardando"
+                (click)="repartir()">
+          @if (guardando) {
+            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            Repartiendo…
+          } @else {
+            <i class="fa fa-check fa-fw me-1"></i>Sí, {{ quitaResponsable ? 'quitarlos' : 'repartir' }}
+          }
+        </button>
+      }
+
+      @if (paso === 'resultado') {
+        <button type="button" class="btn btn-primary" (click)="otraTanda()">
+          <i class="fa fa-rotate-left fa-fw me-1"></i>Repartir otra tanda
+        </button>
+      }
+    </div>
+  </div>
+</panel>

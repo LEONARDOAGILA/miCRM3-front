@@ -2648,6 +2648,22 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Atajo a la pantalla de repartir en bloque.
+   *
+   * Es una pantalla con su propio programa, no un modal: se llega por el menú
+   * de Ventas y también desde aquí, que es donde se trabaja. Se va con el
+   * papel que se esté mirando en la pestaña Asignación, o con el vendedor si
+   * no hay ninguno, que es el que se reparte casi siempre.
+   *
+   * No cuelga de la pestaña Asignación a propósito: aquélla es del cliente que
+   * esté elegido, y para repartir novecientos no hay que entrar antes en uno.
+   */
+  repartirEnBloque(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    this.route.navigate(['/ventas/asignacionClienteMasiva'], { queryParams: { rol: 'VENDEDOR' } });
+  }
+
   /** El responsable de un papel, o undefined si todavía no se ha cargado. */
   responsableDe(rol: RolResponsable): ResponsableCliente | undefined {
     return this.responsables.find(r => r.rol === rol);

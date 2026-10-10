@@ -17,6 +17,23 @@ export interface FiltrosGestion {
 }
 
 /** Filtros de la agenda («Lo que toca hacer»). */
+/** Lo que filtra la pantalla de reparto en bloque. */
+export interface FiltrosAsignacion {
+  page?: number;
+  perPage?: number;
+  /** El buscador de arriba: mira además en correo, teléfono y dirección */
+  search?: string;
+  /**
+   * El modelo de filtros de columna de ag-Grid, tal cual lo da la rejilla.
+   *
+   *     { canton: { filterType: 'text', type: 'contains', filter: 'manta' } }
+   *
+   * Se manda al servidor y se aplica allí, sobre los mil, no sobre las veinte
+   * filas que la rejilla tiene en la mano.
+   */
+  filtros?: any;
+}
+
 export interface FiltrosAgenda {
   /** Sólo lo que programó el usuario que está usando el CRM */
   mias?: boolean;
@@ -214,5 +231,46 @@ export class GestionService {
 
   asignaciones(clienteId: number): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'asignaciones/' + clienteId);
+  }
+
+  //   ******   REPARTO EN BLOQUE   ******  //
+
+  /**
+   * Los clientes a repartir, con quién los tiene hoy en ese papel.
+   *
+   * `meta.ids` trae TODOS los que cumplen el filtro, no sólo los de la página:
+   * es lo que permite «marcar los 991» sin recorrer cincuenta páginas.
+   */
+  clientesParaAsignar(filtros: FiltrosAsignacion = {}): Observable<any> {
+    let params = new HttpParams()
+      .set('page', String(filtros.page ?? 1))
+      .set('per_page', String(filtros.perPage ?? 20));
+
+    if (filtros.search) { params = params.set('search', filtros.search); }
+
+    // En JSON y no como parámetros anidados: el modelo de ag-Grid cambia de
+    // forma según la operación (filter, filterTo, condition1…) y aplanarlo
+    // sería inventarse un formato que luego hay que deshacer en PHP
+    if (filtros.filtros && Object.keys(filtros.filtros).length) {
+      params = params.set('filtros', JSON.stringify(filtros.filtros));
+    }
+
+    return this._http.get(this.URL_SERVICIOS + 'clientesParaAsignar', { params });
+  }
+
+  /**
+   * Reparte varios clientes de una vez.
+   *
+   * `destinos` vacío quita el responsable; con uno van todos a esa persona;
+   * con varios se reparten por turnos.
+   */
+  reasignarMasivo(data: {
+    ids: number[];
+    destinos: number[];
+    rol?: RolResponsable;
+    motivo?: string | null;
+    mover_agenda?: boolean;
+  }): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'reasignarMasivo', data);
   }
 }
