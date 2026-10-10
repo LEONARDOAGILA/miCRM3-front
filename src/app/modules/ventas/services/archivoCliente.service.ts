@@ -82,7 +82,20 @@ export class ArchivoClienteService {
    * mandan cabeceras. Es el mismo trato que ya tienen la foto y el mapa del
    * cliente (getImagenCliente, getFotoUbicacion).
    */
+  /**
+   * La url para ver o descargar un fichero.
+   *
+   * CON EL TOKEN EN LA URL, y no en una cabecera: quien pide es un <img src>,
+   * un <video src> o un <iframe>, y ésos no mandan cabeceras. Antes la ruta era
+   * pública —con el id a mano cualquiera se llevaba el fichero de cualquier
+   * cliente, sin sesión— y ahora comprueba quién pide y si ese cliente es suyo.
+   *
+   * El coste es que el token queda en el historial del navegador. La
+   * alternativa son enlaces firmados con caducidad que acuñe el servidor; es la
+   * mejora siguiente, no la primera.
+   */
   urlDe(id: number, descargar = false): string {
-    return this.URL_SERVICIOS + 'ver/' + id + (descargar ? '?descargar=1' : '');
+    const t = encodeURIComponent(localStorage.getItem('token') ?? '');
+    return this.URL_SERVICIOS + 'ver/' + id + '?t=' + t + (descargar ? '&descargar=1' : '');
   }
 }

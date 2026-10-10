@@ -167,6 +167,18 @@ export class GestionService {
    * sin paginar, y buscarlas dentro del historial paginado obligaría a pedir
    * páginas hasta dar con ellas.
    */
+  /**
+   * A qué usuarios puede quien pregunta dejar una gestión a cargo: su equipo,
+   * los responsables de ese cliente y él mismo (todos, si es administrador).
+   *
+   * El cliente importa: sin él la lista es sólo la jerarquía, y con él entra
+   * el cobrador o el asistente del cliente aunque no estén por debajo.
+   */
+  asignables(clienteId: number | null): Observable<any> {
+    const query = clienteId ? '?cliente_id=' + clienteId : '';
+    return this._http.get(this.URL_SERVICIOS + 'asignables' + query);
+  }
+
   importadas(clienteId: number): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'importadas/' + clienteId);
   }

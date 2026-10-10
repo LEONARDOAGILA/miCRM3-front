@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { PanelModule } from '../../../../../components/panel/panel.module';
-import { NotaCliente, nombreDeColor, tinteDeNota } from '../../../interfaces/notaCliente';
+import { NotaCliente, conTokenLasImagenes, nombreDeColor, tinteDeNota } from '../../../interfaces/notaCliente';
 import { DatosDocumentoNota, descargarNotaWord, imprimirNota } from '../../../interfaces/notaDocumento';
 import { ClienteModel } from '../../../interfaces/clienteModel';
 import {
@@ -71,7 +71,9 @@ export class VerNotaComponent {
   }
 
   private resolver(texto?: string | null): string {
-    return aplicarHuecos(texto ?? '', datosDeHuecos(this.cliente));
+    // El token al final: sin él las imágenes del servidor dan 401 desde que
+    // ver/{id} dejó de ser pública
+    return conTokenLasImagenes(aplicarHuecos(texto ?? '', datosDeHuecos(this.cliente)));
   }
 
   /** Lo que necesita el documento, venga de aquí o del editor. */

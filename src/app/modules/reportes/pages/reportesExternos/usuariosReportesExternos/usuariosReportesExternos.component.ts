@@ -9,6 +9,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { UserService } from "../../../../seguridad/services/user.service";
 import { ReporteExternoService } from "../../../services/reporteExterno.service";
+import { etiquetaTipoUsuario } from "../../../../seguridad/interfaces/tipoUsuarioModel";
 
 
 @Component({
@@ -167,14 +168,8 @@ export class UsuariosReportesExternosComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'center' },
         minWidth: 150,
         maxWidth: 1500,
-        cellRenderer: (params: any) => {
-          switch (params.value) {
-            case 1: return 'Super Usuario';
-            case 2: return 'Administrador';
-            case 3: return 'Usuario Sistema';
-            default: return 'Usuario Web';
-          }
-        }
+        // Del catálogo (seguridad.tipos_usuarios): lo manda el back resuelto
+        cellRenderer: (params: any) => etiquetaTipoUsuario(params.data?.type_user_tipo, params.value)
       },
       {
         headerName: 'Ultimo Inicio de Sesion',
@@ -293,14 +288,8 @@ export class UsuariosReportesExternosComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'center' },
         minWidth: 150,
         maxWidth: 1500,
-        cellRenderer: (params: any) => {
-          switch (params.value) {
-            case 1: return 'Super Usuario';
-            case 2: return 'Administrador';
-            case 3: return 'Usuario Sistema';
-            default: return 'Usuario Web';
-          }
-        }
+        // Del catálogo (seguridad.tipos_usuarios): lo manda el back resuelto
+        cellRenderer: (params: any) => etiquetaTipoUsuario(params.data?.type_user_tipo, params.value)
       },
       {
         headerName: 'Ultimo Inicio de Sesion',

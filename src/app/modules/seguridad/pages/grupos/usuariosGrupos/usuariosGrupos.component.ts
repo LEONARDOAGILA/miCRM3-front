@@ -32,6 +32,7 @@ import { ListGruposComponent } from '../listGrupos/listGrupos.component';
 import { PapeleraUsuariosComponent } from '../papeleraUsuarios/papeleraUsuarios.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
 
 /** Ids de los dos nodos virtuales del árbol (no son grupos de la tabla). */
 const NODO_TODOS = -1;
@@ -560,14 +561,8 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
       },
       {
         headerName: 'Tipo', field: 'type_user', minWidth: 120, maxWidth: 140, cellStyle: { textAlign: 'center' },
-        cellRenderer: (p: any) => {
-          switch (p.value) {
-            case 1: return 'Super Usuario';
-            case 2: return 'Administrador';
-            case 3: return 'Usuario Sistema';
-            default: return 'Usuario Web';
-          }
-        },
+        // Del catálogo (seguridad.tipos_usuarios), no de una lista repetida aquí
+        cellRenderer: (p: any) => etiquetaTipoUsuario(p.data?.type_user_tipo, p.value),
       },
       { headerName: 'Perfil',  field: 'perfil_nombre',   minWidth: 110, maxWidth: 160, cellStyle: { textAlign: 'left' } },
       { headerName: 'Horario', field: 'chorario_nombre', minWidth: 110, maxWidth: 160, cellStyle: { textAlign: 'left' } },

@@ -75,9 +75,26 @@
               </div>
             </div>
 
+            <!-- La prioridad va pegada al tipo: los dos son desplegables
+                 cortos y así en el teléfono comparten línea (col-6) en vez de
+                 ocupar una cada uno. Por eso la fecha, que es ancha, pasó
+                 detrás: con ella en medio, en el teléfono separaba los dos. -->
+            <div [ngClass]="colPrioridad">
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="prioridad"
+                  [items]="prioridades"
+                  [label]="'Prioridad'"
+                  bindLabel="name"
+                  bindValue="id">
+                </app-combo>
+              </div>
+            </div>
+
             <!-- La fecha, salvo con «En este momento»: ahí la pone el guardado
                  y enseñarla sólo confundiría. A cuatro columnas, que con tres
-                 el campo datetime recortaba la hora. -->
+                 el campo datetime recortaba la hora; en el teléfono, a lo
+                 ancho, que es donde peor entra. -->
             @if (!esAhora) {
               <div class="col-12 col-md-4">
                 @if (esProgramada) {
@@ -98,30 +115,71 @@
               </div>
             }
 
-            <div [ngClass]="colPrioridad">
-              <div class="campo-combo">
-                <app-combo
-                  formControlName="prioridad"
-                  [items]="prioridades"
-                  [label]="'Prioridad'"
-                  bindLabel="name"
-                  bindValue="id">
-                </app-combo>
+            <!-- RESPONSABLE: a quién le toca hacerla, no quién la registra.
+                 Es lo que decide en qué agenda aparece, así que va junto a la
+                 fecha y la prioridad y no escondido al final. La lista la
+                 decide el servidor: el equipo de quien asigna, los
+                 responsables del cliente y él mismo. -->
+            <div [ngClass]="colResponsable">
+              <!-- El mismo buscador que «Reasignar cliente»: id + nombre y la
+                   lupa que abre la lista de usuarios con su árbol de grupos.
+                   Escribir el id y salir del campo también lo resuelve. -->
+              <div class="campo campo-lookup">
+                <div class="row g-2 flex-nowrap">
+                  <div class="col-4 col-md-3">
+                    <app-campoNumeroEntero
+                      [control]="form.controls['usuario_id']"
+                      label="ID Responsable"
+                      placeholder="ID"
+                      [maxLength]="10"
+                      (blur)="cargarResponsablePorId()">
+                    </app-campoNumeroEntero>
+                  </div>
+                  <div class="col">
+                    <app-campoTexto
+                      [control]="responsableNombreControl"
+                      label="Responsable"
+                      placeholder="Sin elegir">
+                    </app-campoTexto>
+                  </div>
+                  @if (!esVista) {
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-lookup"
+                              title="Buscar responsable"
+                              (click)="abrirSelectorResponsable()">
+                        <i class="fa fa-search"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
               </div>
+              @if (avisoResponsable) {
+                <small class="aviso-responsable">
+                  <i class="fa fa-circle-info me-1"></i>{{ avisoResponsable }}
+                </small>
+              }
             </div>
 
-            <div [ngClass]="colDuracion">
-              <app-campoNumeroEntero
-                [control]="form.controls['duracion_minutos']"
-                label="Duración (min)"
-                placeholder="0"
-                [maxLength]="4">
-              </app-campoNumeroEntero>
-            </div>
+            <!-- La persona de contacto sube a la fila del responsable: las dos
+                 dicen «con quién», y así la fila del asunto queda para el
+                 asunto, la duración y el resultado. -->
+            @if (contactosCombo.length) {
+              <div class="col-12 col-md-4">
+                <div class="campo-combo">
+                  <app-combo
+                    formControlName="contacto_id"
+                    [items]="contactosCombo"
+                    [label]="'Persona de contacto (opcional)'"
+                    bindLabel="name"
+                    bindValue="id">
+                  </app-combo>
+                </div>
+              </div>
+            }
 
-            <!-- El asunto baja aquí, donde estaba el teléfono: es lo que se lee
-                 en la agenda y en el historial, así que merece la línea ancha.
-                 Ocupa lo que dejen libre el resultado y la persona de contacto.
+            <!-- El asunto es lo que se lee en la agenda y en el historial, así
+                 que se queda con lo ancho de su fila: lo que dejen libre la
+                 duración y el resultado, que van a su lado.
 
                  Se elige de la lista del tipo, no se escribe: es lo que permite
                  después agrupar por asunto sin que «Cobranza» y «cobranzas»
@@ -145,28 +203,23 @@
               }
             </div>
 
+            <div [ngClass]="colDuracion">
+              <app-campoNumeroEntero
+                [control]="form.controls['duracion_minutos']"
+                label="Duración (min)"
+                placeholder="0"
+                [maxLength]="4">
+              </app-campoNumeroEntero>
+            </div>
+
             <!-- Sólo cuando ya se hizo -->
             @if (!esProgramada) {
-              <div class="col-12 col-md-3">
+              <div [ngClass]="colResultado">
                 <div class="campo-combo">
                   <app-combo
                     formControlName="resultado"
                     [items]="resultados"
                     [label]="'¿Cómo terminó?'"
-                    bindLabel="name"
-                    bindValue="id">
-                  </app-combo>
-                </div>
-              </div>
-            }
-
-            @if (contactosCombo.length) {
-              <div class="col-12 col-md-4">
-                <div class="campo-combo">
-                  <app-combo
-                    formControlName="contacto_id"
-                    [items]="contactosCombo"
-                    [label]="'Persona de contacto (opcional)'"
                     bindLabel="name"
                     bindValue="id">
                   </app-combo>
@@ -291,7 +344,8 @@
                   [placeholder]="'Lo que dijo el cliente, acuerdos, próximos pasos…'"
                   [cinta]="true"
                   [hoja]="true"
-                  alto="10rem">
+                  alto="10rem"
+                  [cintaEnMovil]="false">
                 </app-campoNgxEditor>
 
                 <!-- Que se vea que hay un mensaje en cola, y no sólo en el

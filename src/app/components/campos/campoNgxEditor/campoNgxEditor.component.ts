@@ -92,6 +92,21 @@ export class CampoNgxEditorComponent implements OnInit, AfterViewInit, OnDestroy
   @Input() cinta = false;
 
   /**
+   * Si la cinta se enseña también en el teléfono.
+   *
+   * Con `[cintaEnMovil]="false"` desaparece por debajo de 576px —las pestañas
+   * y sus grupos— y queda sólo la hoja para escribir. Es para los formularios
+   * donde el editor es un campo más entre otros: ahí la cinta se come media
+   * pantalla del teléfono para dar formato que, en ese sitio y en ese
+   * aparato, nadie va a dar. En escritorio no cambia nada.
+   *
+   * OJO al ponerlo: hay que escribirlo ENLAZADO, `[cintaEnMovil]="false"`.
+   * Como atributo suelto (`cintaEnMovil="false"`) llega la cadena «false»,
+   * que es verdadera, y no hace nada.
+   */
+  @Input() cintaEnMovil = true;
+
+  /**
    * Lo que va en la pestaña «Archivo» de la cinta.
    *
    * Lo pone quien usa el campo, no el campo: guardar, imprimir o exportar

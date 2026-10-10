@@ -1,4 +1,5 @@
-import { PerfilModel } from "../../seguridad/interfaces/perfilModel"; 
+import { PerfilModel } from "../../seguridad/interfaces/perfilModel";
+import { TipoUsuarioDeUsuario } from "./tipoUsuarioModel";
 
 
 export interface UserModel {
@@ -10,7 +11,10 @@ export interface UserModel {
   login_user: string;
   password: string;
   avatar: string;
+  /** Clase de usuario (seguridad.tipos_usuarios). No da permisos */
   type_user: number;
+  /** El tipo ya resuelto, para enseñarlo sin repetir la lista en cada pantalla */
+  type_user_tipo?: TipoUsuarioDeUsuario | null;
   isactive: boolean;
   isreset: boolean;
   islogin:  boolean;

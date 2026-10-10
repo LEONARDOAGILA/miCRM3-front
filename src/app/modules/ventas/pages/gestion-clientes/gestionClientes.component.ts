@@ -49,7 +49,7 @@ import { VerNotaComponent } from './verNota/verNota.component';
 import { ImportarConversacionComponent } from './importarConversacion/importarConversacion.component';
 import { esAsuntoDeImportacion } from '../../interfaces/conversacionWhatsapp';
 import { NotaClienteService } from '../../services/notaCliente.service';
-import { NotaCliente, tinteDeNota, nombreDeColor } from '../../interfaces/notaCliente';
+import { NotaCliente, conTokenLasImagenes, tinteDeNota, nombreDeColor } from '../../interfaces/notaCliente';
 import { CatalogoGestionService } from '../../services/catalogoGestion.service';
 import { AsuntoGestion, TipoGestion, asuntosDe, traeMensaje } from '../../interfaces/catalogoGestion';
 import { lanzarProtocolo } from '../../../../service/lanzarProtocolo';
@@ -294,14 +294,32 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
    * Lo manda el servidor junto con la lista y no sale de la tabla de
    * usuarios: lo que hace falta ofrecer son los que de verdad aparecen en
    * este historial, no los trescientos del sistema.
+   *
+   * Cada uno viene con las dos cosas: `login` es lo que se manda al filtrar
+   * —la consulta compara con created_by— y `etiqueta` es cómo se lee,
+   * LOGIN  -  APELLIDOS NOMBRES.
    */
-  public registradores: string[] = [];
+  public registradores: { login: string; etiqueta: string }[] = [];
 
   /**
    * Los tipos salen del catálogo (ventas.gestiones_tipos), el mismo del que
    * los toma el formulario de gestión. La constante se queda de respaldo por
    * si la petición falla: un filtro vacío sería peor que uno desactualizado.
    */
+  /**
+   * Cómo se lee el filtro elegido en el botón.
+   *
+   * `filtroCreadoPor` guarda el login —es lo que entiende la consulta—, así
+   * que para el rótulo hay que buscar su etiqueta. Si el que está filtrado ya
+   * no aparece en la lista, se enseña el login: mejor eso que un botón en
+   * blanco con un filtro puesto.
+   */
+  public get etiquetaCreadoPor(): string {
+    if (!this.filtroCreadoPor) { return ''; }
+    return this.registradores.find(u => u.login === this.filtroCreadoPor)?.etiqueta
+        ?? this.filtroCreadoPor;
+  }
+
   public tipos: { id: string; name: string; icono: string }[] = TIPOS_GESTION;
   public estados = ESTADOS_GESTION;
   public resultados = RESULTADOS_GESTION;
@@ -1946,7 +1964,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         valueGetter: (p: any) => p.data?.nuevo || 'Nadie',
       },
       { headerName: 'Motivo', field: 'motivo', minWidth: 200, cellStyle: { textAlign: 'left' }, tooltipField: 'motivo' },
-      { headerName: 'Lo hizo', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Lo hizo', field: 'created_by_nombre', minWidth: 170, maxWidth: 280, cellStyle: { textAlign: 'left' }, tooltipField: 'created_by_nombre' },
     ];
   }
 
@@ -2241,7 +2259,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
 
   initializeGrid(): void {
     this.columnDefs = [
-      { headerName: 'Registrado por', field: 'created_by', minWidth: 130, maxWidth: 170, cellStyle: { textAlign: 'left' }, sortable: false },
+      { headerName: 'Responsable', field: 'responsable_nombre', minWidth: 150, cellStyle: { textAlign: 'left' } },
 
       {
         headerName: 'Estado', field: 'estado', minWidth: 110, maxWidth: 120,
@@ -2278,10 +2296,11 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'Min.', field: 'duracion_minutos', minWidth: 70, maxWidth: 80,
         cellStyle: { textAlign: 'right' }, headerTooltip: 'Duración en minutos',
       },
-      { headerName: 'Responsable', field: 'responsable_nombre', minWidth: 150, cellStyle: { textAlign: 'left' } },
       { headerName: 'Contacto', field: 'contacto_nombre', minWidth: 140, cellStyle: { textAlign: 'left' } },
       { headerName: 'Nota', field: 'nota', minWidth: 200, cellStyle: { textAlign: 'left' },
         valueFormatter: (p: any) => soloTexto(p.value), tooltipValueGetter: (p: any) => soloTexto(p.value) },
+      { headerName: 'Creado por', field: 'registrado_por_nombre', minWidth: 170, maxWidth: 280, cellStyle: { textAlign: 'left' }, sortable: false, tooltipField: 'registrado_por_nombre' },
+
       {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 178, maxWidth: 178,
         suppressMovable: true,
@@ -2903,7 +2922,9 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     const datos = datosDeHuecos(this.cliente);
     for (const n of this.notas) {
       n.titulo_vista = aplicarHuecos(n.titulo ?? '', datos);
-      n.contenido_vista = aplicarHuecos(n.contenido ?? '', datos);
+      // El token va al final, sobre el html ya resuelto: las imágenes del
+      // servidor no se ven sin él desde que ver/{id} pide sesión
+      n.contenido_vista = conTokenLasImagenes(aplicarHuecos(n.contenido ?? '', datos));
     }
   }
 

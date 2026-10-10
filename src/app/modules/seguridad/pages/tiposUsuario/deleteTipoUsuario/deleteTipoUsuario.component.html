@@ -1,0 +1,126 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarTipoTitulo"
+     aria-describedby="eliminarTipoDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarTipoTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <!-- Advertencia -->
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar este tipo de usuario?</h6>
+        <p class="eliminar-aviso__texto" id="eliminarTipoDescripcion">
+          Esta acción no se puede deshacer. El tipo desaparece del catálogo y de
+          los desplegables.
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-code fa-fw me-1" aria-hidden="true"></i>Código
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.codigo || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-tag fa-fw me-1" aria-hidden="true"></i>Nombre
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.nombre || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-calendar fa-fw me-1" aria-hidden="true"></i>Vigencia
+        </span>
+        <span class="eliminar-datos__valor">
+          @if (registro_selected?.fecha_inicio || registro_selected?.fecha_fin) {
+            {{ registro_selected?.fecha_inicio || '—' }} → {{ registro_selected?.fecha_fin || '—' }}
+          } @else {
+            Sin límite
+          }
+        </span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-user-group fa-fw me-1" aria-hidden="true"></i>Usuarios con este tipo
+        </span>
+        <span class="badge fs-10px"
+              [ngClass]="(registro_selected?.en_uso ?? 0) > 0 ? 'bg-danger' : 'bg-teal'">
+          {{ registro_selected?.en_uso ?? 0 }}
+        </span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
+        </span>
+        <span class="badge fs-10px"
+              [ngClass]="registro_selected?.activo ? 'bg-teal' : 'bg-danger'">
+          {{ registro_selected?.activo ? 'ACTIVO' : 'INACTIVO' }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si algún usuario tiene este tipo, la eliminación se rechazará. Para dejarlo
+      fuera de uso sin borrarlo, desactívelo desde <b>Modificar tipo de
+      usuario</b>: deja de ofrecerse en los desplegables y los usuarios que ya
+      lo tienen conservan la etiqueta —aunque, eso sí, no podrán entrar al
+      sistema mientras el tipo esté de baja.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading || (registro_selected?.en_uso ?? 0) > 0"
+            (click)="deleteTipoUsuario()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+    </button>
+  </div>
+
+</div>

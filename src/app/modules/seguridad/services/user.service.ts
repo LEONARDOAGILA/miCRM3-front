@@ -75,9 +75,12 @@ allUsers(page: number = 1, perPage: number = 10, search: string = ''): Observabl
   }
 
   //   ******   LISTADO SIMPLE (SIN PAGINACIÓN)   ******  //
-  listUsers(): Observable<any> { 
-    return this._http.get(this.URL_SERVICIOS + 'listUsers'); 
+  listUsers(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'listUsers');
   }
+
+  // El catálogo de clases de usuario está en TipoUsuarioService, con el resto
+  // de su CRUD (auth/tipoUsuario/listTiposUsuario).
   
   //   ******   CREAR   ******  //
   addUser(data: any): Observable<any> { 
@@ -184,6 +187,18 @@ cambiarPasswordRecuperacion(data: {
  */
 export function nombreDeUsuario(u: any): string {
   if (!u) { return ''; }
-  const nombre = [u.name, u.surname].filter(Boolean).join(' ').trim();
-  return nombre || u.login_user || '';
+
+  // LOGIN  -  APELLIDOS NOMBRES, el mismo formato que devuelve
+  // ventas.fn_nombre_usuario: «LAGILA  -  AGILA ASTUDILLO LEONARDO PATRICIO».
+  // El login va delante porque es lo corto, lo que no se repite y lo que
+  // desempata a dos homónimos.
+  //
+  // El separador lleva dos espacios a cada lado. En el navegador se verán como
+  // uno —el HTML junta los espacios seguidos—, pero así salen separados en el
+  // Excel, el CSV y el PDF, que no los juntan.
+  const nombre = [u.surname, u.name].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  const login = (u.login_user ?? '').trim();
+
+  if (!nombre) { return login; }
+  return login ? `${login}  -  ${nombre}` : nombre;
 }

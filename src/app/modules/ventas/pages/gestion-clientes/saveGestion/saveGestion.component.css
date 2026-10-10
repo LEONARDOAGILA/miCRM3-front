@@ -526,3 +526,39 @@ a.gestion-adj__nombre:hover {
   opacity: .55;
   pointer-events: none;
 }
+
+/* ---------- Responsable ---------- */
+/* El aviso de "entrara en la agenda de otro" va debajo del campo, pequeno y
+   en gris: es informacion, no un error. min-height para que al cambiar de
+   responsable el formulario no salte de alto. */
+.aviso-responsable {
+  display: block;
+  min-height: 1.1rem;
+  margin-top: -.35rem;
+  font-size: 11px;
+  line-height: 1.1rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Boton de la lupa del responsable ---------- */
+/* Mismo boton que el de reasignarCliente y saveEmpleado: 45px, el alto de
+   los campos, para que no baile en la fila. */
+.btn-lookup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 45px;
+  height: 45px;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-body-color, #495057);
+}
+
+.btn-lookup:hover {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}

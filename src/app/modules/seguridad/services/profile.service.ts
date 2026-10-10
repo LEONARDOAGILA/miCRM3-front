@@ -65,8 +65,24 @@ listProfiles(page: number = 1, perPage: number = 5, search: string = ''): Observ
     return this._http.get(this.URL_SERVICIOS  + "findByProgramProfile/" + id + "/" + routAccess.toUpperCase());    
   }
     
-  getAppMenus(perfil_id: any): Observable<any>  { 
-    return this._http.get(this.URL_SERVICIOS  + "getAppMenus/" + perfil_id); 
+  getAppMenus(perfil_id: any): Observable<any>  {
+    return this._http.get(this.URL_SERVICIOS  + "getAppMenus/" + perfil_id);
+  }
+
+  /**
+   * Qué ve este perfil dentro de un cliente.
+   *
+   * Devuelve siempre los cuatro datos —{ GESTION, NOTA, ARCHIVO, WHATSAPP }—
+   * con TODO donde nadie ha decidido nada, así que la pantalla nunca recibe
+   * un hueco que tenga que rellenar a mano.
+   */
+  visibilidadPerfil(id: any): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'visibilidadPerfil/' + id);
+  }
+
+  /** Lo que no se mande se queda como estaba. */
+  editVisibilidadPerfil(id: any, visibilidad: any): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'editVisibilidadPerfil/' + id, { visibilidad });
   }
 
 

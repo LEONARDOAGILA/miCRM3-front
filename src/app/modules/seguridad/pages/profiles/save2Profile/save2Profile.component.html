@@ -97,6 +97,59 @@
         </ng-container>
     </panel>
 
+    <!-- ---------- Qué ve dentro de un cliente ---------- -->
+    <!-- Los permisos de arriba contestan «¿puede entrar a esta pantalla?».
+         Esto contesta la otra pregunta, la que faltaba: dentro de un cliente al
+         que sí puede entrar, ¿de quién ve las gestiones, las notas, los
+         archivos y las conversaciones? -->
+    <panel
+        headerClass="bg-gray-800"
+        title="Qué ve dentro de un cliente"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-3"
+        icono="cerrar"
+        fondoGris="true">
+
+        <div header class="panel-acciones">
+            <span class="chip chip-muted visib-aviso">
+                <i class="fa-solid fa-circle-info"></i>
+                Poder abrir el cliente no es poder verlo todo
+            </span>
+        </div>
+
+        <ng-container outsideBody>
+        <div class="form-card__body">
+            <form [formGroup]="form" novalidate>
+                <div class="row gx-3" formGroupName="visibilidad">
+                    @for (d of datosVisibles; track d.clave) {
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <div class="visib">
+                                <div class="visib__cab">
+                                    <span class="visib__icono"><i [ngClass]="d.icono"></i></span>
+                                    <span class="visib__nombre">{{ d.nombre }}</span>
+                                </div>
+
+                                <select class="form-select form-select-sm visib__select"
+                                        [formControlName]="d.clave"
+                                        [title]="d.nombre">
+                                    @for (a of alcances; track a.valor) {
+                                        <option [value]="a.valor">{{ a.etiqueta }}</option>
+                                    }
+                                </select>
+
+                                <span class="visib__ayuda">
+                                    {{ ayudaDel(form.get('visibilidad.' + d.clave)?.value) }}
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </form>
+        </div>
+        </ng-container>
+    </panel>
+
     <!-- ---------- Permisos ---------- -->
     <panel
         *ngIf="profile"

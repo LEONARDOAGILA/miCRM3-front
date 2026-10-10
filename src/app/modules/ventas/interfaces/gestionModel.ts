@@ -57,6 +57,8 @@ export interface GestionModel {
   created_at?: string;
   updated_at?: string;
   created_by?: string;
+  /** Quién la registró, ya formateado: LOGIN  -  APELLIDOS NOMBRES */
+  registrado_por_nombre?: string | null;
   updated_by?: string;
 }
 

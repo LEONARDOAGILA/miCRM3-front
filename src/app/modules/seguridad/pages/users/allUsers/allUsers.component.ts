@@ -27,6 +27,7 @@ import { ChangePasswordComponent } from '../change-password/change-password.comp
 import { PapeleraUsuariosComponent } from '../../grupos/papeleraUsuarios/papeleraUsuarios.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
 
 /**
  * Listado de usuarios.
@@ -293,14 +294,9 @@ export class AllUsersComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'center' },
         minWidth: 130,
         maxWidth: 130,
-        cellRenderer: (params: any) => {
-          switch (params.value) {
-            case 1: return 'Super Usuario';
-            case 2: return 'Administrador';
-            case 3: return 'Usuario Sistema';
-            default: return 'Usuario Web';
-          }
-        }
+        // El nombre lo manda el back en `type_user_tipo`: la lista vive en
+        // seguridad.tipos_usuarios y no se repite en cada pantalla
+        cellRenderer: (params: any) => etiquetaTipoUsuario(params.data?.type_user_tipo, params.value)
       },
       {
         headerName: 'Perfil',

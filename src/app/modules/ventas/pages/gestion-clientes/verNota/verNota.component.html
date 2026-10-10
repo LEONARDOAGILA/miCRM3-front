@@ -73,7 +73,7 @@
         </div>
 
         <div class="nota-ver__membrete__der">
-          <span><i class="fa fa-user fa-fw"></i>{{ nota?.created_by }} · {{ nota?.created_at }}</span>
+          <span><i class="fa fa-user fa-fw"></i>{{ nota?.registrado_por_nombre || nota?.created_by }} · {{ nota?.created_at }}</span>
           @if (nota?.editada) {
             <span [title]="'Editada por ' + nota?.updated_by">
               <i class="fa fa-pen fa-fw"></i>editada el {{ nota?.updated_at }}

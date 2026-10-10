@@ -1,10 +1,10 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
-import { firstValueFrom } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
+import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
+import { catchError, filter, map, takeUntil } from 'rxjs/operators';
 
 import Swal from 'sweetalert2';
 
@@ -20,6 +20,11 @@ import { lanzarProtocolo } from '../../../../../service/lanzarProtocolo';
 import { CatalogoGestionService } from '../../../services/catalogoGestion.service';
 import { TipoGestion, AsuntoGestion, asuntosDe } from '../../../interfaces/catalogoGestion';
 import { LoadingService } from '../../../../../service/loading.service';
+// El mismo selector de usuarios con su árbol de grupos que abre «Reasignar
+// cliente»: es standalone, así que se abre sin declararlo en el módulo
+import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/listUsuariosGrupos/listUsuariosGrupos.component';
+import { nombreDeUsuario } from '../../../../seguridad/services/user.service';
+import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { ClienteModel, ContactoCliente } from '../../../interfaces/clienteModel';
 import {
   GestionModel, PRIORIDADES_GESTION, RESULTADOS_GESTION,
@@ -178,12 +183,17 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
   public formatoTamano = formatoTamano;
   public pintaDeTipo = pintaDeTipo;
 
+  /** Se cierra al destruir el modal: corta la escucha del selector. */
+  private destruir$ = new Subject<void>();
+
   constructor(
     private fb: FormBuilder,
     public modal: NgbActiveModal,
+    private modalService: NgbModal,
     private _toastr: ToastrService,
     private _loadingService: LoadingService,
     private _gestionService: GestionService,
+    private _seguridadService: SeguridadService,
     private _catalogoService: CatalogoGestionService,
     private _archivoService: ArchivoClienteService,
     private _notaService: NotaClienteService,
@@ -430,8 +440,11 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       // instalador dentro del comando del protocolo. Si viajara en el enlace,
       // cualquier página que alguien abriera podría mandar al ayudante a
       // descargar de donde fuera.
+      // El token también para el ayudante: baja los adjuntos por ver/{id}, que
+      // desde que no es pública le devolvería un 401.
       lanzarProtocolo('micrm3://enviar'
         + '?ids=' + idsAdjuntos.join(',')
+        + '&token=' + encodeURIComponent(localStorage.getItem('token') ?? '')
         + '&tel=' + encodeURIComponent(pendiente.numero)
         + '&via=' + this.destinoWhatsapp
         + '&texto=' + encodeURIComponent(pendiente.texto));
@@ -562,8 +575,12 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     // tamaño, que ngx-editor no tiene, y los nodos de tabla, que hacen
     // falta para que una tabla pegada de un correo no se pierda.
     this.initializeForm();
+    // El responsable arranca en quien está dentro, con lo que hay en la
+    // sesión; la lista del servidor llega después y sólo confirma
+    this.elegirmeDeEntrada();
     this.cargarCatalogo();
     this.cargarAdjuntos();
+    this.cargarAsignables();
 
     // Bloquear TODO el formulario de una vez y no campo a campo: así no hay
     // forma de que al añadir un campo nuevo alguien se olvide de bloquearlo.
@@ -582,6 +599,8 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     for (const a of this.adjuntos) {
       if (a.vistaPrevia) { URL.revokeObjectURL(a.vistaPrevia); }
     }
+    this.destruir$.next();
+    this.destruir$.complete();
   }
 
   /** Programada mientras esté PENDIENTE; el resto, realizada. */
@@ -622,13 +641,246 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
   // Calculados, las filas quedan siempre completas; a mano, cada combinación
   // dejaba un hueco distinto.
 
-  get colTipo(): string      { return this.esAhora ? 'col-12 col-md-4' : 'col-12 col-md-3'; }
-  get colPrioridad(): string { return this.esAhora ? 'col-6 col-md-4'  : 'col-6 col-md-3'; }
-  get colDuracion(): string  { return this.esAhora ? 'col-6 col-md-4'  : 'col-6 col-md-2'; }
+  /**
+   * A quién se le puede dejar la gestión a cargo: su equipo, los responsables
+   * de este cliente y él mismo (todos, si es administrador). Lo decide el
+   * servidor —ventas.fn_gestiones_asignables—, que es el que también lo valida
+   * al guardar.
+   */
+  public asignables: any[] = [];
 
-  /** Lo que sobra en su fila: 12 menos el resultado y la persona de contacto. */
+  /** El nombre del responsable elegido, al lado de su id (como en reasignar). */
+  public responsableNombreControl = new FormControl({ value: '', disabled: true });
+
+  /** Quién soy, para poder arrancar en «yo» sin preguntar. */
+  private yo: number | null = null;
+
+  /**
+   * Pone de entrada al usuario que está dentro, con lo que ya hay en la
+   * sesión, sin esperar a la lista del servidor.
+   *
+   * Es lo que hace que el campo salga relleno desde que se abre el modal: la
+   * lista de asignables es una petición, y mientras llega el campo se vería
+   * «Sin elegir» —y se quedaría así si la petición falla—. Cuando la lista
+   * llega, confirma este valor o lo deja como está.
+   */
+  private elegirmeDeEntrada(): void {
+    const sesion = this._seguridadService.getUserLogin();
+    if (!sesion?.id) { return; }
+
+    this.yo = Number(sesion.id);
+
+    const ctrl = this.form?.controls['usuario_id'];
+    if (!ctrl || ctrl.value) { return; }   // al editar ya trae el suyo
+
+    ctrl.setValue(this.yo, { emitEvent: false });
+    this.responsableNombreControl.setValue(nombreDeUsuario(sesion) + ' (yo)');
+  }
+
+  private async cargarAsignables(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(
+        this._gestionService.asignables(this.cliente?.id ?? null));
+
+      this.asignables = res?.data ?? [];
+      // `?? this.yo`: si la lista no me trajera, no se pierde el que ya salió
+      // de la sesión (ver elegirmeDeEntrada)
+      this.yo = this.asignables.find((u: any) => u.es_yo)?.id ?? this.yo;
+
+      this.elegirResponsablePorOmision();
+      this.ponerNombreDelResponsable();
+    } catch (error: any) {
+      // Sin lista no se bloquea el guardado: el servidor pone a quien la crea
+      console.error('No se pudo leer a quién se le puede asignar', error);
+      this.asignables = [];
+      this.ponerNombreDelResponsable();
+    }
+  }
+
+  /** Ids que el servidor acepta como responsable, para el selector. */
+  public get idsAsignables(): number[] {
+    return this.asignables.map((u: any) => Number(u.id));
+  }
+
+  /**
+   * El rótulo de un usuario de la lista.
+   *
+   * Dice de dónde sale cada uno —«(yo)», «cobrador del cliente»—, porque en
+   * una lista de cincuenta nombres eso es lo único que permite saber a quién
+   * le toca este cliente.
+   */
+  private rotulo(u: any): string {
+    if (!u) { return ''; }
+    // El papel va entre paréntesis y no tras una raya: el nombre ya trae el
+    // guion que separa el login, y dos rayas en la misma línea no se leen
+    if (u.es_yo) { return `${u.nombre} (yo)`; }
+    if (u.rol_cliente) { return `${u.nombre} (${String(u.rol_cliente).toLowerCase()} del cliente)`; }
+    return u.nombre;
+  }
+
+  /**
+   * Escribe en el campo de al lado el nombre de quien está elegido.
+   *
+   * Si el responsable que ya tiene la gestión no está en la lista —se le
+   * asignó cuando sí se podía, o lo puso un administrador— se enseña el nombre
+   * que trae la gestión: el campo no puede quedarse en blanco enseñando un id
+   * a secas.
+   */
+  private ponerNombreDelResponsable(): void {
+    const id = this.form?.controls['usuario_id']?.value;
+    if (!id) { this.responsableNombreControl.setValue(''); return; }
+
+    const u = this.asignables.find((x: any) => Number(x.id) === Number(id));
+    if (u) { this.responsableNombreControl.setValue(this.rotulo(u)); return; }
+
+    // Soy yo pero la lista no llegó: el nombre sale de la sesión
+    if (Number(id) === Number(this.yo)) {
+      this.responsableNombreControl.setValue(
+        nombreDeUsuario(this._seguridadService.getUserLogin()) + ' (yo)');
+      return;
+    }
+
+    this.responsableNombreControl.setValue(this.gestion?.responsable_nombre ?? 'Usuario ' + id);
+  }
+
+  /** Escribir el ID y salir del campo también resuelve el responsable. */
+  public async cargarResponsablePorId(): Promise<void> {
+    const id = Number(this.form.controls['usuario_id']?.value ?? 0);
+    if (!id) { this.responsableNombreControl.setValue(''); return; }
+
+    const u = this.asignables.find((x: any) => Number(x.id) === id);
+    if (u) { this.responsableNombreControl.setValue(this.rotulo(u)); return; }
+
+    // Se mira contra la lista y no contra el API de usuarios: el id puede
+    // existir y no ser de los que se le permiten, y es mejor decirlo ahora que
+    // al guardar
+    this.form.patchValue({ usuario_id: null }, { emitEvent: false });
+    this.responsableNombreControl.setValue('');
+    this._toastr.warning(
+      'Ese usuario no está entre los que puede elegir: su equipo o un responsable del cliente.',
+      'Responsable', { timeOut: 7000, closeButton: true });
+  }
+
+  /**
+   * El selector de siempre: la lista de usuarios con su árbol de grupos, la
+   * misma que abre «Reasignar cliente».
+   *
+   * Los que no se le permiten se ven pero quedan bloqueados
+   * (`usuariosPermitidos`), para que la lista siga siendo la que ya conoce y
+   * no una recortada que parezca que falta gente.
+   */
+  public async abrirSelectorResponsable(): Promise<void> {
+    if (this.esVista) { return; }
+
+    // Si la lista no llegó —se cayó la petición al abrir el modal—, se vuelve
+    // a pedir antes de abrir: con la lista vacía, `usuariosPermitidos` no
+    // restringe nada y el selector dejaría elegir a cualquiera para que el
+    // servidor lo rechazara después. Mejor no llegar ahí.
+    if (!this.asignables.length) { await this.cargarAsignables(); }
+
+    if (!this.asignables.length) {
+      this._toastr.error(
+        'No se pudo leer la lista de usuarios a los que puede asignar. Inténtelo de nuevo.',
+        'Responsable', { closeButton: true });
+      return;
+    }
+
+    const modalRef = this.modalService.open(ListUsuariosGruposComponent, {
+      size: 'xl', centered: true, backdrop: 'static'
+    });
+    modalRef.componentInstance.usuarioSeleccionadoId = this.form.controls['usuario_id']?.value || undefined;
+    modalRef.componentInstance.usuariosPermitidos = this.idsAsignables;
+    modalRef.componentInstance.ayuda =
+      'Haz clic sobre quien se hará cargo de esta gestión. Sólo puedes elegir a alguien de tu equipo o a un responsable del cliente.';
+
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(merge(this.destruir$, from(modalRef.result).pipe(catchError(() => of(null))))))
+      .subscribe((usuario: any) => {
+        this.form.patchValue({ usuario_id: usuario.id });
+        const u = this.asignables.find((x: any) => Number(x.id) === Number(usuario.id));
+        this.responsableNombreControl.setValue(u ? this.rotulo(u) : nombreDeUsuario(usuario));
+      });
+  }
+
+  /**
+   * Al registrar o programar algo nuevo, el responsable arranca en el USUARIO
+   * QUE ESTÁ DENTRO: lo normal es que la gestión la haga quien la registra, y
+   * dejarla a otro es la excepción, que se elige a mano.
+   *
+   * Antes arrancaba en el vendedor del cliente —como se comportaba cuando el
+   * campo no se podía elegir—, y eso hacía que al registrar una llamada que
+   * acabas de hacer tú la gestión apareciera en la agenda de otro.
+   *
+   * Al modificar o ver no se toca: la gestión ya trae el suyo (este método
+   * sale en cuanto el campo tiene valor).
+   *
+   * Nunca se queda vacío: una gestión sin responsable no entra en ninguna
+   * agenda, y era justo lo que pasaba con los clientes sin vendedor.
+   */
+  private elegirResponsablePorOmision(): void {
+    const ctrl = this.form?.controls['usuario_id'];
+    if (!ctrl || ctrl.value) { return; }
+
+    const hay = (id: any) => id && this.asignables.some((u: any) => Number(u.id) === Number(id));
+    // El vendedor del cliente queda como respaldo, por si el servidor no
+    // devolviera al propio usuario en la lista
+    const elegido = hay(this.yo) ? this.yo
+                  : hay(this.cliente?.vendedor_id) ? Number(this.cliente.vendedor_id)
+                  : null;
+
+    if (elegido) { ctrl.setValue(elegido, { emitEvent: false }); }
+  }
+
+  /**
+   * El responsable comparte su fila con la persona de contacto, cuando la hay:
+   * las dos dicen «con quién», y así la fila de abajo queda libre para el
+   * asunto, la duración y el resultado.
+   *
+   * Necesita sitio: es un buscador de tres piezas (id, nombre y lupa) y el
+   * nombre viene largo —«VCUENCA1  -  Cuenca Uno Vendedor (yo)»—.
+   */
+  get colResponsable(): string {
+    return this.contactosCombo.length ? 'col-12 col-md-8' : 'col-12';
+  }
+
+  /**
+   * El aviso de debajo del campo, sólo cuando la gestión NO queda para uno
+   * mismo.
+   *
+   * Importa decirlo: desde que la visibilidad filtra por responsable, dejar
+   * una gestión a cargo de otro puede significar dejar de verla uno mismo.
+   */
+  get avisoResponsable(): string {
+    const elegido = this.form?.controls['usuario_id']?.value;
+    if (!elegido || !this.yo || Number(elegido) === Number(this.yo)) { return ''; }
+
+    const quien = this.responsableNombreControl.value || 'otro usuario';
+    return `Entrará en la agenda de ${quien}, no en la suya.`;
+  }
+
+  // ---------- Los anchos de las tres filas ----------
+  // Fila 1: tipo + prioridad + fecha          Fila 2: responsable + contacto
+  // Fila 3: asunto + duración + resultado
+  //
+  // Calculados y no a mano porque hay dos cosas que aparecen y desaparecen —la
+  // fecha (no en «En este momento») y el resultado (sólo si ya se hizo)—, y a
+  // mano cada combinación dejaba un hueco distinto al final de la fila.
+  //
+  // EN EL TELÉFONO los pares de campos cortos comparten línea (col-6): tipo
+  // con prioridad y duración con resultado. Los anchos —la fecha, el asunto,
+  // el responsable— se quedan a 12, que es donde peor entran.
+
+  get colTipo(): string      { return this.esAhora ? 'col-6' : 'col-6 col-md-4'; }
+  get colPrioridad(): string { return this.esAhora ? 'col-6' : 'col-6 col-md-4'; }
+
+  /** Estrecha: son cuatro dígitos como mucho. */
+  get colDuracion(): string  { return 'col-6 col-md-2'; }
+
+  get colResultado(): string { return 'col-6 col-md-3'; }
+
+  /** Lo que sobra en su fila: 12 menos la duración y el resultado. */
   get colAsunto(): string {
-    const resto = 12 - (this.esProgramada ? 0 : 3) - (this.contactosCombo.length ? 4 : 0);
+    const resto = 12 - 2 - (this.esProgramada ? 0 : 3);
     return 'col-12 col-md-' + resto;
   }
 
@@ -655,6 +907,10 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       duracion_minutos: [g?.duracion_minutos ?? null, [Validators.min(0), Validators.max(1440)]],
       resultado:        [g?.resultado ?? (estadoInicial === 'REALIZADA' ? 'CONTACTADO' : null)],
       nota:             [g?.nota ?? this.notaInicial ?? '', [Validators.maxLength(100000)]],
+      // A quién le TOCA la gestión, que no es lo mismo que quién la registra:
+      // es lo que decide en qué agenda aparece. Al editar se respeta el que
+      // tenga; al crear lo pone cargarAsignables (vendedor del cliente, o yo).
+      usuario_id:       [g?.usuario_id ?? null],
     });
 
     // Una gestión nueva que se registra es, casi siempre, la que se acaba de
@@ -766,10 +1022,12 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       // El editor devuelve «<p></p>» cuando no se escribio nada: eso no es
       // una nota, es el envoltorio vacio. Se mira el texto para decidir.
       nota:             soloTexto(v.nota) ? (v.nota ?? '').trim() : null,
-      // Quien atiende al cliente; si no tiene vendedor va sin dueño
-      // El responsable de la gestión es el vendedor del cliente, que desde el
-      // cambio de responsables es un USUARIO: así le aparece en su agenda
-      usuario_id:       this.cliente.vendedor_id ?? null,
+      // El RESPONSABLE: a quién le toca hacerla, y por tanto en qué agenda
+      // aparece. Antes se ponía siempre el vendedor del cliente y no se podía
+      // elegir —y si el cliente no tenía vendedor, la gestión se quedaba sin
+      // responsable—. Ahora sale del campo; si viniera vacío, el servidor pone
+      // a quien la crea.
+      usuario_id:       v.usuario_id ? Number(v.usuario_id) : null,
       contacto_id:      v.contacto_id || null,
       telefono:         (v.telefono ?? '').trim() || null,
       prioridad:        v.prioridad,

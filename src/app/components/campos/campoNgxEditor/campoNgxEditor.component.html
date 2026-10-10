@@ -16,7 +16,8 @@
 <div class="cne" #caja
      [class.is-expandido]="expandido"
      [class.is-bloqueado]="soloLectura"
-     [class.is-cinta]="cinta">
+     [class.is-cinta]="cinta"
+     [class.is-sin-cinta-movil]="cinta && !cintaEnMovil">
 
   <!-- El selector de fichero, escondido: el botón de la cinta lo dispara. El
        de ngx-editor pide una URL, y lo que hace falta es coger un fichero. -->

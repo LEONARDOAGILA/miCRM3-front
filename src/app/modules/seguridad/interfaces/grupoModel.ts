@@ -17,9 +17,13 @@ export interface GrupoModel {
   /** Horario por defecto de los usuarios del grupo */
   chorario_id?: number | null;
   chorario_nombre?: string | null;
-  /** Los usuarios del grupo administran (equivale a type_user 1/2) */
+  /**
+   * Los usuarios del grupo administran: es la señal con la que se decide todo
+   * —clientes, agenda, tablero, visibilidad de datos y el gestor de archivos—.
+   * No confundir con users.type_user, que es la clase de usuario.
+   */
   es_administrador: boolean;
-  /** SISTEMA (type_user 3) o WEB (type_user 4) */
+  /** Por dónde entran los usuarios del grupo */
   tipo_acceso: 'SISTEMA' | 'WEB';
   activo: boolean;
   /** 0 = raíz */
@@ -42,11 +46,14 @@ export const TIPOS_ACCESO = [
   { id: 'WEB',     name: 'Usuario web' },
 ];
 
-/**
- * type_user que corresponde a los valores del grupo (mientras type_user
- * siga existiendo en users): administrador → 2, sistema → 3, web → 4.
+/*
+ * Aquí había typeUserDeGrupo(), que traducía el grupo a un users.type_user
+ * (administrador → 2, sistema → 3, web → 4). Se quitó en octubre de 2026: las
+ * dos cosas dejaron de significar lo mismo.
+ *
+ * El grupo dice qué PUEDE HACER (es_administrador, la jerarquía) y type_user
+ * pasó a decir QUÉ CLASE DE USUARIO ES —del sistema, de la web, freelance,
+ * temporal—, que vive en seguridad.tipos_usuarios y se elige a mano: un
+ * freelance puede estar en cualquier grupo. Ni el front ni
+ * seguridad.fn_grupos_modificar lo derivan ya del grupo.
  */
-export function typeUserDeGrupo(g: Pick<GrupoModel, 'es_administrador' | 'tipo_acceso'>): number {
-  if (g.es_administrador) { return 2; }
-  return g.tipo_acceso === 'WEB' ? 4 : 3;
-}

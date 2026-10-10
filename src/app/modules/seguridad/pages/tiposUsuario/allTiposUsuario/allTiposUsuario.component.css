@@ -1,0 +1,136 @@
+/* ============================================================
+   LISTADO DE TIPOS DE USUARIO
+
+   La paginación es la de allHorarios/allUsers y el aspecto de la
+   rejilla viene del skin global de ag-Grid (scss/angular.scss).
+   Aquí sólo el aviso de la cabecera y los botones de acción, que
+   se pintan como HTML dentro de la celda y por eso necesitan
+   ::ng-deep (acotado con :host, como pide la casa).
+   ============================================================ */
+
+/* ---------- Aviso de qué es un tipo ---------- */
+.tu-aviso {
+  margin: .5rem .5rem 0;
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-info, #0dcaf0);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* En móvil el aviso se queda, pero más corto de aire: la rejilla manda */
+@media (max-width: 575.98px) {
+  .tu-aviso {
+    font-size: 11px;
+    padding: .4rem .5rem;
+  }
+}
+
+/* ---------- Botones de la columna ACCIONES ---------- */
+/* El cellRenderer devuelve HTML, así que estos estilos tienen que
+   atravesar la encapsulación. Mismo tamaño y tintes que los de
+   gestión de clientes, para que las dos pantallas se vean iguales. */
+:host ::ng-deep .tu-acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+:host ::ng-deep .tu-acciones .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border-radius: .25rem;
+  font-size: .6875rem;
+  line-height: 1;
+  cursor: pointer;
+
+  /* gris por omisión; cada acción pone su tinte debajo */
+  --tinte: #6c757d;
+  border: 1px solid rgba(108, 117, 125, .35);
+  background-color: rgba(108, 117, 125, .08);
+  color: var(--tinte);
+  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
+}
+
+:host ::ng-deep .tu-acciones .btn-ver {
+  --tinte: var(--bs-primary, #0d6efd);
+  border-color: rgba(13, 110, 253, .35);
+  background-color: rgba(13, 110, 253, .08);
+}
+
+:host ::ng-deep .tu-acciones .btn-editar {
+  --tinte: var(--bs-warning-text-emphasis, #997404);
+  border-color: rgba(255, 193, 7, .45);
+  background-color: rgba(255, 193, 7, .12);
+}
+
+:host ::ng-deep .tu-acciones .btn-eliminar {
+  --tinte: var(--bs-danger, #dc3545);
+  border-color: rgba(220, 53, 69, .35);
+  background-color: rgba(220, 53, 69, .08);
+}
+
+:host ::ng-deep .tu-acciones .btn-icon:hover:not([disabled]) {
+  filter: brightness(.92);
+}
+
+/* Un tipo en uso no se puede borrar: el botón se queda, apagado, para que
+   se vea que la acción existe y por qué no está disponible (el title lo
+   explica). Esconderlo haría pensar que falta. */
+:host ::ng-deep .tu-acciones .btn-icon[disabled] {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* ---------- Paginación ---------- */
+.pagination-controls {
+  gap: .5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto":
+   hereda el borde y la altura de los demás y queda alineado con ellos. */
+.pagination-page-badge.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* ---------- Responsive ---------- */
+/* Teléfonos: paginación apilada y centrada */
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .4rem;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-info {
+    text-align: center;
+  }
+}

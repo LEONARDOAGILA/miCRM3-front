@@ -1020,7 +1020,7 @@
                           data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
                           title="Filtrar por quién registró la gestión">
                     <i class="fa fa-fw" [ngClass]="filtroCreadoPor ? 'fa-user-check' : 'fa-user-pen'"></i>
-                    <span>{{ filtroCreadoPor || 'Registrado por' }}</span>
+                    <span>{{ etiquetaCreadoPor || 'Registrado por' }}</span>
                     <i class="fa fa-chevron-down gestion-filtro__flecha"></i>
                   </button>
                   <ul class="dropdown-menu gestion-filtro__menu">
@@ -1031,11 +1031,13 @@
                       </button>
                     </li>
                     <li><hr class="dropdown-divider"></li>
-                    @for (u of registradores; track u) {
+                    @for (u of registradores; track u.login) {
                       <li>
-                        <button type="button" class="dropdown-item" [class.active]="filtroCreadoPor === u"
-                                (click)="cambiarFiltro('creadoPor', u)">
-                          <i class="fa fa-user fa-fw me-1"></i>{{ u }}
+                        <!-- Se filtra por el login, que es lo que compara la
+                             consulta, y se lee la etiqueta -->
+                        <button type="button" class="dropdown-item" [class.active]="filtroCreadoPor === u.login"
+                                (click)="cambiarFiltro('creadoPor', u.login)">
+                          <i class="fa fa-user fa-fw me-1"></i>{{ u.etiqueta }}
                         </button>
                       </li>
                     }
@@ -1314,7 +1316,7 @@
                              title="Leer la conversación entera" (click)="verImportada(g)"></div>
 
                         <div class="gc-nota__pie">
-                          <span>importada por {{ g.created_by }} · {{ g.created_at }}</span>
+                          <span>importada por {{ g.registrado_por_nombre || g.created_by }} · {{ g.created_at }}</span>
                         </div>
 
                         <div class="gestion-acciones gc-nota__acciones">
@@ -1459,7 +1461,7 @@
                            title="Leer la nota entera" (click)="verNota(n)"></div>
 
                       <div class="gc-nota__pie">
-                        <span>{{ n.created_by }} · {{ n.created_at }}</span>
+                        <span>{{ n.registrado_por_nombre || n.created_by }} · {{ n.created_at }}</span>
                         @if (n.editada) {
                           <span class="gc-nota__editada" [title]="'Editada por ' + n.updated_by + ' el ' + n.updated_at">
                             editada
@@ -1562,7 +1564,7 @@
                         <div class="gc-archivo__pie">
                           {{ a.extension | uppercase }} · {{ formatoTamano(a.tamano) }}
                           @if (a.created_at) { <span>· {{ a.created_at }}</span> }
-                          @if (a.created_by) { <span>· {{ a.created_by }}</span> }
+                          @if (a.created_by) { <span>· {{ a.registrado_por_nombre || a.created_by }}</span> }
                         </div>
                       </div>
 

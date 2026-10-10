@@ -299,6 +299,13 @@
 
   .cinta__grupos { padding-bottom: .25rem; }
   .cinta__select--familia { width: 92px; }
+
+  /* Y con [cintaEnMovil]="false", fuera del todo: pestañas y grupos.
+     Para los formularios donde el editor es un campo más y la cinta se
+     comería media pantalla del teléfono. La clase la pone campoNgxEditor en
+     su div raíz; en saveNota y verNota, que traen este fichero y dibujan la
+     cinta en su propia plantilla, no existe y la regla no hace nada. */
+  .is-sin-cinta-movil .cinta { display: none; }
 }
 
 /* ============================================================

@@ -1,0 +1,206 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body tipo-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- ---------- Datos del tipo ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos del tipo"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="usuarios"
+      fondoGris="true">
+
+      <!-- El slot [header] del panel deja meter contenido junto al título -->
+      <div header class="panel-acciones">
+        @if (isdisabled) {
+          <span class="chip chip-muted">
+            <i class="fa-solid fa-eye"></i> Solo lectura
+          </span>
+        }
+        @if (enUso > 0) {
+          <span class="chip chip-info" [title]="enUso + ' usuario(s) tienen este tipo'">
+            <i class="fa-solid fa-user-group"></i> {{ enUso }} usuario(s)
+          </span>
+        }
+      </div>
+
+      <ng-container outsideBody>
+      <div class="form-card__body">
+        <div class="row gx-3 align-items-start">
+
+          <div class="col-12 col-md-4">
+            <app-campoTexto
+              [control]="c('codigo')"
+              label="CÓDIGO"
+              placeholder="FREELANCE"
+              [maxLength]="20"
+              [minLength]="3"
+              [soloLetras]="false"
+              [mayusculas]="true"
+              [noEspacios]="true"
+              [trimEspacios]="true">
+            </app-campoTexto>
+          </div>
+
+          <div class="col-12 col-md-8">
+            <app-campoTexto
+              [control]="c('nombre')"
+              label="Nombre"
+              placeholder="Cómo se llama en las pantallas"
+              [maxLength]="60"
+              [soloLetras]="false"
+              [trimEspacios]="true">
+            </app-campoTexto>
+          </div>
+
+          <div class="col-12">
+            <app-campoTextoArea
+              [control]="c('descripcion')"
+              label="Descripción"
+              placeholder="Para qué sirve este tipo, en una línea"
+              [maxLength]="500"
+              [alto]="70">
+            </app-campoTextoArea>
+          </div>
+
+          <div class="col-12 col-md-5">
+            <app-campoTexto
+              [control]="c('icono')"
+              label="Icono"
+              placeholder="fa-solid fa-user-clock"
+              [maxLength]="40"
+              [trimEspacios]="true">
+            </app-campoTexto>
+          </div>
+
+          <div class="col-6 col-md-4">
+            <label class="form-label tipo-label" for="tu-color">Color</label>
+            <select id="tu-color" class="form-select form-select-sm" formControlName="color">
+              @for (col of colores; track col.valor) {
+                <option [value]="col.valor">{{ col.nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="col-6 col-md-3">
+            <app-campoNumeroEntero
+              [control]="c('orden')"
+              label="Orden"
+              placeholder="100"
+              title="En qué posición sale en los desplegables (menor, más arriba)"
+              [maxLength]="4">
+            </app-campoNumeroEntero>
+          </div>
+
+          <!-- Cómo va a quedar la etiqueta, con lo que hay escrito ahora -->
+          <div class="col-12">
+            <div class="tipo-muestra">
+              <span class="tipo-muestra__rotulo">Así se verá:</span>
+              <span class="badge {{ form.getRawValue().color || 'bg-secondary' }} fs-10px">
+                @if (form.getRawValue().icono) {
+                  <i class="{{ form.getRawValue().icono }} me-1"></i>
+                }
+                {{ form.getRawValue().nombre || 'Nombre del tipo' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="estado-miswitch" [class.is-on]="form.getRawValue().activo">
+              <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>
+              <div class="estado-miswitch__text">
+                <span class="estado-miswitch__label">Estado</span>
+                <span class="estado-miswitch__hint">
+                  {{ form.getRawValue().activo
+                       ? 'Se puede asignar a los usuarios'
+                       : 'Dado de baja: no se asigna, y sus usuarios no entran al sistema' }}
+                </span>
+              </div>
+              <app-checkbox class="estado-miswitch__switch"
+                [control]="c('activo')"
+                [label]="form.getRawValue().activo ? 'Activo' : 'Inactivo'"
+                [id]="'ck-tipo-activo'">
+              </app-checkbox>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Vigencia ---------- -->
+    <!-- Va en su propio panel porque no es un dato más: lo que se ponga aquí
+         decide si los usuarios de este tipo pueden entrar al sistema. -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Vigencia"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="calendar"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        <span class="chip" [class.chip-ok]="vigenteAhora" [class.chip-no]="!vigenteAhora">
+          <i class="fa-solid" [class.fa-circle-check]="vigenteAhora" [class.fa-circle-xmark]="!vigenteAhora"></i>
+          {{ vigenteAhora ? 'Vigente hoy' : 'No vigente hoy' }}
+        </span>
+      </div>
+
+      <ng-container outsideBody>
+      <div class="form-card__body">
+        <div class="row gx-3 align-items-end">
+
+          <div class="col-6 col-md-4">
+            <label class="form-label tipo-label" for="tu-desde">Desde</label>
+            <input id="tu-desde" type="date" class="form-control form-control-sm" formControlName="fecha_inicio">
+          </div>
+
+          <div class="col-6 col-md-4">
+            <label class="form-label tipo-label" for="tu-hasta">Hasta (incluido)</label>
+            <input id="tu-hasta" type="date" class="form-control form-control-sm" formControlName="fecha_fin">
+          </div>
+
+          <div class="col-12 col-md-4 mt-2 mt-md-0">
+            <button type="button" class="btn btn-sm btn-white w-100"
+                    [disabled]="isdisabled || (!form.getRawValue().fecha_inicio && !form.getRawValue().fecha_fin)"
+                    (click)="quitarVigencia()">
+              <i class="fa fa-eraser me-1"></i> Sin límite de fechas
+            </button>
+          </div>
+
+          <div class="col-12">
+            <p class="tipo-vigencia__aviso" [class.tipo-vigencia__aviso--no]="!vigenteAhora">
+              <i class="fa fa-circle-info me-1"></i>{{ avisoVigencia }}
+            </p>
+          </div>
+
+        </div>
+      </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!isdisabled"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>
