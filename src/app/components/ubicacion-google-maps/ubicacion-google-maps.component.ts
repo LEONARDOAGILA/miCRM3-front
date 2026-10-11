@@ -8,6 +8,7 @@ import { ToastrService } from 'ngx-toastr';
 
 import { environment } from '../../../environments/environment';
 import { GoogleMapsLoaderService } from '../../service/google-maps-loader.service';
+import { LugaresGoogleService } from '../../service/lugares-google.service';
 
 /** Lugar elegido en el buscador o pulsado en el mapa. */
 export interface LugarGm {
@@ -215,7 +216,8 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
   streetViewAbierto = false;
   /** Calles con Street View pintadas de azul sobre el mapa */
   coberturaVisible = false;
-  private tokenSesion: any = null;       // AutocompleteSessionToken (abarata las consultas)
+  // El token de sesión de Places —el que abarata las consultas— lo lleva
+  // ahora LugaresGoogleService, compartido con el mapa de zonas.
   private timerBusqueda: any = null;
   private ultimaBusqueda = 0;
   private idWatch: number | null = null;
@@ -224,6 +226,7 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
     private zone: NgZone,
     private _toastr: ToastrService,
     private _loader: GoogleMapsLoaderService,
+    private _lugares: LugaresGoogleService,
     private _location: Location,
   ) {}
 
@@ -281,7 +284,7 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
     });
     this.geocoder = new this.gm.Geocoder();
     this.infoVentana = new this.gm.InfoWindow();
-    this.tokenSesion = new this.places.AutocompleteSessionToken();
+    this._lugares.usar(this.places);
     this.svServicio = new this.gm.StreetViewService();
 
     // Street View: se entra arrastrando el muñeco o con el botón; al salir se vuelve al mapa
@@ -835,28 +838,14 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
     const marca = ++this.ultimaBusqueda;
     this.buscando = true;
     try {
-      const peticion: any = {
-        input: q,
-        sessionToken: this.tokenSesion,
-        includedRegionCodes: ['ec'],       // sólo Ecuador
-        language: 'es',
-        region: 'ec',
-      };
-      // Preferir lo cercano a lo que se ve
-      const b = this.mapa?.getBounds();
-      if (b) { peticion.locationBias = b; }
-
-      const { suggestions } = await this.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(peticion);
+      // La petición a Places la arma LugaresGoogleService: el token de
+      // sesión, el recorte a Ecuador y el sesgo a lo que se está viendo son
+      // los mismos aquí y en el mapa de zonas. Sin tipos: aquí se buscan
+      // direcciones, no sólo ciudades.
+      const lista = await this._lugares.sugerencias(q, this.mapa);
       if (marca !== this.ultimaBusqueda) { return; }   // llegó una más nueva
       this.zone.run(() => {
-        this.sugerencias = (suggestions ?? [])
-          .filter((s: any) => s.placePrediction)
-          .map((s: any) => ({
-            placeId: s.placePrediction.placeId,
-            principal: s.placePrediction.mainText?.text ?? s.placePrediction.text?.text ?? '',
-            secundario: (s.placePrediction.secondaryText?.text ?? '').replace(/,\s*Ecuador\s*$/i, ''),
-            place: s.placePrediction.toPlace(),
-          }));
+        this.sugerencias = lista;
         this.sugerenciaActiva = this.sugerencias.length ? 0 : -1;
       });
     } catch (e) {
@@ -905,7 +894,7 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
       this._toastr.error('No se pudo obtener el lugar', 'Google Maps');
     } finally {
       this.buscando = false;
-      this.tokenSesion = new this.places.AutocompleteSessionToken();   // sesión nueva para la próxima búsqueda
+      this._lugares.nuevaSesion();   // sesión nueva para la próxima búsqueda
     }
   }
 

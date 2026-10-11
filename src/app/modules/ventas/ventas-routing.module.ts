@@ -10,6 +10,7 @@ import { AllClientesComponent } from './pages/clientes/allClientes/allClientes.c
 import { GestionClientesComponent } from './pages/gestion-clientes/gestionClientes.component';
 import { CatalogoGestionComponent } from './pages/catalogo-gestion/catalogoGestion.component';
 import { AsignacionClienteMasivaComponent } from './pages/gestion-clientes/asignacionClienteMasiva/asignacionClienteMasiva.component';
+import { AllZonasComponent } from './pages/zonas/allZonas/allZonas.component';
 
 const routes: Routes = [
 {
@@ -26,6 +27,7 @@ const routes: Routes = [
         // se leen de seguridad.accesos y el programa sale del segundo tramo de
         // la url del menú (ventas/asignacionClienteMasiva -> ASIGNACIONCLIENTEMASIVA)
         { path: 'asignacionClienteMasiva', component: AsignacionClienteMasivaComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        { path: 'allZonas', component: AllZonasComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         { path: 'home-ventas', component: HomeComponent, data: { title: 'Ventas' }, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
         { path: '**', component: ErrorPage },

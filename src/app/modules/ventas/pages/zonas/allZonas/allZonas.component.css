@@ -1,0 +1,475 @@
+/* ============================================================
+   ZONAS DE CLIENTES
+
+   Los colores salen de variables de Bootstrap, así que la pantalla
+   acompaña al tema de «Ajustes de la aplicación» y al modo oscuro
+   sin reglas aparte. Ojo con --bs-primary: ésa no cambia con el
+   tema; la que cambia es --bs-app-theme.
+   ============================================================ */
+
+/* Miga de pan: alineada a la derecha y subida, como en los listados */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+.zon-contenido {
+  margin-top: -10px;
+}
+
+.zon-aviso {
+  margin-bottom: .75rem;
+}
+
+/* ---------- Las cajas ---------- */
+.zon-caja {
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  overflow: hidden;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.zon-caja__barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  padding: .4rem .6rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .025);
+}
+
+/* El título no se encoge: el que cede sitio es el buscador */
+.zon-caja__barra > .zon-caja__titulo {
+  flex: 0 0 auto;
+}
+
+.zon-caja__titulo {
+  display: flex;
+  align-items: center;
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+/* El contador, como el de las pestañas */
+.zon-cuenta {
+  margin-left: .4rem;
+  padding: .05rem .4rem;
+  border-radius: .75rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .15);
+  color: var(--bs-app-theme, #00acac);
+  font-size: .6875rem;
+  font-weight: 700;
+}
+
+/* ---------- El mapa ---------- */
+.zon-herramientas {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.zon-herramientas .btn {
+  font-size: .6875rem;
+  padding: .15rem .5rem;
+}
+
+/* La instrucción de qué hacer mientras se dibuja */
+.zon-dibujando {
+  font-size: .6875rem;
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+.zon-mapa {
+  width: 100%;
+  height: 520px;
+}
+
+/* El div del mapa existe siempre —si se montara al responder la API no
+   estaría ahí cuando hace falta—, así que mientras tanto se esconde. */
+.zon-mapa.is-oculto {
+  display: none;
+}
+
+/* ---------- Buscador ----------
+   En la barra, junto a los botones de dibujo: flotando sobre el mapa tapaba
+   justo la esquina que se estaba mirando.
+
+   Es el que cede sitio cuando la barra se queda estrecha (flex-shrink), y en
+   cuanto no cabe se va a su propia línea, que para eso la barra envuelve. */
+.zon-buscar {
+  flex: 1 1 11rem;
+  min-width: 8rem;
+  max-width: 20rem;
+}
+
+/* Ancla de la lupa, de la × y de la lista de sugerencias */
+.zon-buscar__campo {
+  position: relative;
+}
+
+.zon-buscar__campo .form-control {
+  padding-left: 2rem;
+  padding-right: 1.75rem;
+  font-size: .75rem;
+
+  border-color: var(--bs-border-color, #ced4da);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+}
+
+.zon-buscar__lupa {
+  position: absolute;
+  top: 50%;
+  left: .6rem;
+  transform: translateY(-50%);
+
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.zon-buscar__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .35rem;
+  transform: translateY(-50%);
+
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+
+  border: none;
+  border-radius: .2rem;
+  background: none;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.zon-buscar__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* Lo único que sigue flotando, y sólo mientras se escribe. El z-index tiene
+   que ganarle al mapa, que va detrás en el marcado: un elemento posicionado
+   con z-index le gana a otro con `auto` aunque vaya después. */
+.zon-sugerencias {
+  position: absolute;
+  top: calc(100% + .25rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
+
+  margin: 0;
+  padding: .25rem 0;
+  list-style: none;
+
+  max-height: 15rem;
+  overflow-y: auto;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+
+.zon-sugerencia {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .3rem .55rem;
+  cursor: pointer;
+}
+
+.zon-sugerencia:hover,
+.zon-sugerencia.is-activa {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.zon-sugerencia__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.zon-sugerencia__principal {
+  font-size: .75rem;
+  font-weight: 600;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zon-sugerencia__secundario {
+  font-size: .625rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.zon-mapa__estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  height: 520px;
+  padding: 1rem;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+  text-align: center;
+}
+
+/* ---------- El formulario ---------- */
+.zon-form {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+
+  padding: .6rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .04);
+}
+
+.zon-form .form-control {
+  font-size: .75rem;
+}
+
+/* Provincia y cantón, en la misma línea: van juntos y son cortos */
+.zon-form__territorio {
+  display: flex;
+  gap: .3rem;
+}
+
+.zon-form__territorio .form-control {
+  font-size: .75rem;
+}
+
+.zon-form__colores {
+  display: flex;
+  gap: .3rem;
+}
+
+.zon-color {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+
+  border: 2px solid transparent;
+  border-radius: .25rem;
+  cursor: pointer;
+}
+
+.zon-color.is-elegido {
+  border-color: var(--bs-body-color, #212529);
+  box-shadow: 0 0 0 2px var(--bs-component-bg, #fff) inset;
+}
+
+/* Qué forma hay dibujada: sin esto se guarda a ciegas */
+.zon-form__forma {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .25rem;
+
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El radio escrito a mano, al lado de su rótulo */
+.zon-form__radio {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.zon-form__radio .form-control {
+  width: 6rem;
+  font-size: .75rem;
+}
+
+.zon-form__check {
+  font-size: .75rem;
+  cursor: pointer;
+}
+
+.zon-form__check input {
+  margin-right: .25rem;
+  vertical-align: middle;
+}
+
+.zon-form__botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: .3rem;
+}
+
+/* ---------- La lista ---------- */
+.zon-lista {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.zon-fila {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .3rem .5rem;
+  border-bottom: 1px solid rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+}
+
+.zon-fila:hover {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .05);
+}
+
+.zon-fila.is-elegida {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+/* Desactivada: apagada, como las filas inactivas de los listados */
+.zon-fila.is-inactiva .zon-fila__titulo {
+  text-decoration: line-through;
+  opacity: .7;
+}
+
+.zon-fila__nombre {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+
+  border: none;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* La pastilla del color: es como se reconoce la zona en el mapa */
+.zon-fila__color {
+  flex: 0 0 auto;
+  width: .75rem;
+  height: .75rem;
+  border-radius: .2rem;
+}
+
+.zon-fila__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.zon-fila__titulo {
+  font-size: .75rem;
+  font-weight: 600;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zon-fila__forma {
+  font-size: .625rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.zon-fila__clientes {
+  flex: 0 0 auto;
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.zon-fila__acciones {
+  display: flex;
+  gap: .15rem;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 22px;
+  padding: 0;
+
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  background: none;
+  cursor: pointer;
+  font-size: .6875rem;
+}
+
+.btn-icon:disabled { opacity: .4; cursor: not-allowed; }
+.btn-editar { color: var(--bs-app-theme, #00acac); }
+.btn-editar:hover:not(:disabled) { background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12); }
+.btn-quitar { color: var(--bs-danger, #dc3545); }
+.btn-quitar:hover:not(:disabled) { background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12); }
+
+/* ---------- Vacíos ---------- */
+.zon-vacio {
+  padding: 1rem .75rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  text-align: center;
+}
+
+.zon-vacio__pista {
+  margin-top: .35rem;
+  font-size: .6875rem;
+  opacity: .85;
+}
+
+/* ---------- La tabla de clientes ---------- */
+.zon-tabla {
+  font-size: .75rem;
+}
+
+.zon-tabla th {
+  font-size: .6875rem;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* La dirección puede ser muy larga; el texto entero va en el title */
+.zon-tabla__direccion {
+  max-width: 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Cliente desactivado: igual que en el listado de clientes */
+.zon-tabla tr.is-inactivo td {
+  text-decoration: line-through;
+  opacity: .7;
+}
+
+/* ---------- Pantallas estrechas ---------- */
+@media (max-width: 1199.98px) {
+  .zon-mapa,
+  .zon-mapa__estado {
+    height: 380px;
+  }
+
+  .zon-lista {
+    max-height: 260px;
+  }
+}
