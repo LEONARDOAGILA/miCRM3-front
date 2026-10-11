@@ -60,6 +60,8 @@ import { DeleteGestionComponent } from './deleteGestion/deleteGestion.component'
 import { DeleteNotaClienteComponent } from './deleteNotaCliente/deleteNotaCliente.component';
 import { DeleteArchivoClienteComponent } from './deleteArchivoCliente/deleteArchivoCliente.component';
 
+import { PestanaTab } from '../../../../components/campos/tabPanel/tabPanel.component';
+
 type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'archivos' | 'notas';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
 type Vista = 'agenda' | 'cliente' | 'metricas';
@@ -1411,6 +1413,67 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (this.vista === 'metricas') { this.tablero?.cargar(); return; }
     if (this.vista === 'cliente' && this.cliente) { this.seleccionarCliente(this.cliente); return; }
     this.cargarAgenda();
+  }
+
+  // ================================================================
+  // LAS DOS BARRAS DE PESTAÑAS
+  // ================================================================
+  //
+  // Se declaran, no se escriben una a una: el marcado de cada pestaña —el
+  // <li>, el role, el aria-selected, el icono, la insignia— es siempre el
+  // mismo y lo pone app-tab-panel. Aquí queda sólo QUÉ pestañas hay.
+  //
+  // Son getters y no un array fijo porque los contadores cambian con los
+  // datos: lo vencido de la agenda, lo pendiente del cliente, los mensajes
+  // sin responder. Son listas de tres y de siete, así que rehacerlas en cada
+  // repaso no cuesta nada.
+
+  /** Las tres de arriba: la agenda, el cliente que se está trabajando y las métricas. */
+  get pestanasVistas(): PestanaTab[] {
+    return [
+      {
+        id: 'agenda', texto: 'Lo que toca hacer', icono: 'fa-calendar-day',
+        // Lo vencido manda sobre el total: si hay algo pasado de fecha es lo
+        // que hay que mirar, y por eso además se pinta en rojo.
+        insignia: this.agendaMeta.vencidas || this.agendaMeta.total || null,
+        tonoInsignia: this.agendaMeta.vencidas ? 'peligro' : 'aviso',
+      },
+      {
+        id: 'cliente', texto: 'Gestión', icono: 'fa-headset',
+        detalle: this.hayCliente ? (this.cliente?.nombre_completo ?? '') : '',
+      },
+      { id: 'metricas', texto: 'Métricas', icono: 'fa-chart-pie' },
+    ];
+  }
+
+  /** Las del cliente abierto. */
+  get pestanasCliente(): PestanaTab[] {
+    const sinResponder = this.resumenWhatsapp?.sin_responder ?? 0;
+    return [
+      { id: 'historial',  texto: 'Historial',  icono: 'fa-list-ul' },
+      {
+        id: 'pendientes', texto: 'Pendientes', icono: 'fa-clock',
+        insignia: this.resumen?.pendientes ?? null, tonoInsignia: 'aviso',
+      },
+      {
+        id: 'contactos',  texto: 'Contactos',  icono: 'fa-address-book',
+        insignia: this.cliente?.num_contactos ?? null,
+      },
+      {
+        // Que se vea esta pestaña lo dice el perfil, en el cuadro «Qué ve
+        // dentro de un cliente». Esto es sólo lo que se ve; la ruta y
+        // abrirPestana lo comprueban por su cuenta.
+        id: 'cartera',    texto: 'Asignación', icono: 'fa-users-gear',
+        insignia: this.asignaciones.length, visible: this.puedeVerAsignacion,
+      },
+      {
+        id: 'whatsapp',   texto: 'WhatsApp',   icono: 'fab fa-whatsapp',
+        insignia: sinResponder || this.resumenWhatsapp?.total || null,
+        tonoInsignia: sinResponder ? 'peligro' : 'apagada',
+      },
+      { id: 'notas',    texto: 'Notas',    icono: 'fa-note-sticky', insignia: this.notas.length },
+      { id: 'archivos', texto: 'Archivos', icono: 'fa-paperclip',   insignia: this.archivos.length },
+    ];
   }
 
   async abrirPestana(p: Pestana): Promise<void> {

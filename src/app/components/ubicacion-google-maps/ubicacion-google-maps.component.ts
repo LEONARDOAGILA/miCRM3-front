@@ -105,6 +105,23 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
   /** Dónde abrirlo. Si no se dice nada, arranca donde lo hacía la demo. */
   @Input() lugarInicial: { lat: number; lng: number; nombre?: string } | null = null;
 
+  /**
+   * Texto con el que abrir el buscador.
+   *
+   * Lo usa quien ya tiene escrita la dirección en su formulario: el mapa se
+   * abre con ella puesta en la caja, para no tener que teclearla otra vez.
+   */
+  @Input() busquedaInicial = '';
+
+  /**
+   * Si además se busca sola al abrir.
+   *
+   * Aparte de `busquedaInicial` porque son dos decisiones: poner el texto no
+   * molesta nunca, pero soltar una lista de sugerencias encima de un mapa
+   * que ya está centrado en el punto guardado sí. Lo decide quien abre.
+   */
+  @Input() buscarAlAbrir = false;
+
   /** Oculta el bloque de capturas cuando sólo se quiere elegir un punto. */
   @Input() mostrarCapturas = true;
 
@@ -290,6 +307,24 @@ export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {
 
     this.estadoApi = 'listo';
     this.aplicarParametrosUrl();
+    this.arrancarBusquedaInicial();
+  }
+
+  /**
+   * El texto que venía de fuera, puesto en el buscador.
+   *
+   * Va al final de la puesta en marcha porque buscar necesita el mapa ya
+   * creado: `buscar` usa sus límites para preferir lo cercano a lo que se ve.
+   *
+   * Los menos de tres caracteres no se buscan, igual que al teclear: Places
+   * devuelve cualquier cosa con dos letras.
+   */
+  private arrancarBusquedaInicial(): void {
+    const q = (this.busquedaInicial ?? '').trim();
+    if (!q) { return; }
+
+    this.busqueda = q;
+    if (this.buscarAlAbrir && q.length >= 3) { this.buscar(q); }
   }
 
   // ================================================================

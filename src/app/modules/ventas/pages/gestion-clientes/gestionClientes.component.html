@@ -33,47 +33,15 @@
     }
 
     <!-- ---------- PESTAÑAS PRINCIPALES ---------- -->
-    <ul class="nav nav-tabs gestion-vistas flex-nowrap py-0" role="tablist">
-      <li class="nav-item flex-shrink-0" role="presentation">
-        <button type="button" class="nav-link" role="tab"
-                [class.active]="vista === 'agenda'"
-                [attr.aria-selected]="vista === 'agenda'"
-                (click)="vista = 'agenda'; replantear()">
-          <i class="fa fa-calendar-day"></i>
-          <span class="gestion-vistas__texto">Lo que toca hacer</span>
-          @if (agendaMeta.vencidas) {
-            <span class="badge bg-danger fs-10px">{{ agendaMeta.vencidas }}</span>
-          } @else if (agendaMeta.total) {
-            <span class="badge bg-warning fs-10px">{{ agendaMeta.total }}</span>
-          }
-        </button>
-      </li>
-      <li class="nav-item flex-shrink-0" role="presentation">
-        <button type="button" class="nav-link" role="tab"
-                [class.active]="vista === 'cliente'"
-                [attr.aria-selected]="vista === 'cliente'"
-                (click)="vista = 'cliente'; replantear()">
-          <i class="fa fa-headset"></i>
-          <span class="gestion-vistas__texto">Gestión</span>
-          @if (hayCliente) {
-            <span class="gestion-vistas__cliente">{{ cliente?.nombre_completo }}</span>
-          }
-        </button>
-      </li>
-      <!-- Las métricas, en su propia pestaña. Antes salían en el hueco de
-           «Gestión de clientes» mientras no hubiera ninguno elegido, así que
-           desaparecían en cuanto se empezaba a trabajar y no había forma de
-           volver a ellas sin soltar el cliente. -->
-      <li class="nav-item flex-shrink-0" role="presentation">
-        <button type="button" class="nav-link" role="tab"
-                [class.active]="vista === 'metricas'"
-                [attr.aria-selected]="vista === 'metricas'"
-                (click)="vista = 'metricas'; replantear()">
-          <i class="fa fa-chart-pie"></i>
-          <span class="gestion-vistas__texto">Métricas</span>
-        </button>
-      </li>
-    </ul>
+    <!-- Las tres vistas. El marcado de cada pestaña —el <li>, el role, el
+         aria-selected, el icono, la insignia— lo pone app-tab-panel; aquí
+         sólo se dice cuáles hay, y eso vive en el TypeScript porque los
+         contadores cambian con los datos. -->
+    <app-tab-panel
+      [pestanas]="pestanasVistas"
+      [activa]="vista"
+      (cambiada)="vista = $any($event); replantear()">
+    </app-tab-panel>
 
     <!-- ============ 2a. LO QUE TOCA HACER ============
          Grilla y no tarjetas: con quinientos pendientes la lista por días era
@@ -780,7 +748,7 @@
                   }
 
 
-                  
+
 
               }
 
@@ -846,88 +814,15 @@
 
 
           <!-- Pestañas -->
-          <ul class="nav nav-tabs gestion-tabs flex-nowrap py-0" role="tablist">
-            <li class="nav-item flex-shrink-0" role="presentation">
-              <button type="button" class="nav-link" role="tab"
-                      [class.active]="pestana === 'historial'"
-                      [attr.aria-selected]="pestana === 'historial'"
-                      (click)="abrirPestana('historial')">
-                <i class="fa fa-list-ul"></i>
-                <span class="gestion-tabs__texto">Historial</span>
-              </button>
-            </li>
-            <li class="nav-item flex-shrink-0" role="presentation">
-              <button type="button" class="nav-link" role="tab"
-                      [class.active]="pestana === 'pendientes'"
-                      [attr.aria-selected]="pestana === 'pendientes'"
-                      (click)="abrirPestana('pendientes')">
-                <i class="fa fa-clock"></i>
-                <span class="gestion-tabs__texto">Pendientes</span>
-                @if (resumen?.pendientes) { <span class="badge bg-warning fs-10px">{{ resumen.pendientes }}</span> }
-              </button>
-            </li>
-            <li class="nav-item flex-shrink-0" role="presentation">
-              <button type="button" class="nav-link" role="tab"
-                      [class.active]="pestana === 'contactos'"
-                      [attr.aria-selected]="pestana === 'contactos'"
-                      (click)="abrirPestana('contactos')">
-                <i class="fa fa-address-book"></i>
-                <span class="gestion-tabs__texto">Contactos</span>
-                @if (cliente?.num_contactos) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ cliente.num_contactos }}</span> }
-              </button>
-            </li>
-            <!-- Que se vea esta pestaña lo dice el perfil, en el cuadro «Qué ve
-                 dentro de un cliente»: es su quinto dato, al lado de las
-                 gestiones, las notas, los archivos y el WhatsApp. Esto es sólo
-                 lo que se ve; la ruta lo comprueba por su cuenta. -->
-            @if (puedeVerAsignacion) {
-              <li class="nav-item flex-shrink-0" role="presentation">
-                <button type="button" class="nav-link" role="tab"
-                        [class.active]="pestana === 'cartera'"
-                        [attr.aria-selected]="pestana === 'cartera'"
-                        (click)="abrirPestana('cartera')">
-                  <i class="fa fa-users-gear"></i>
-                  <span class="gestion-tabs__texto">Asignación</span>
-                  @if (asignaciones.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ asignaciones.length }}</span> }
-                </button>
-              </li>
-            }
-            <li class="nav-item">
-              <button type="button" class="nav-link"
-                      [class.active]="pestana === 'whatsapp'"
-                      (click)="abrirPestana('whatsapp')">
-                <i class="fab fa-whatsapp"></i> WhatsApp
-                @if (resumenWhatsapp?.sin_responder) {
-                  <span class="badge bg-danger fs-10px">{{ resumenWhatsapp?.sin_responder }}</span>
-                } @else if (resumenWhatsapp?.total) {
-                  <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ resumenWhatsapp?.total }}</span>
-                }
-              </button>
-            </li>
-            <li class="nav-item flex-shrink-0" role="presentation">
-              <button type="button" class="nav-link" role="tab"
-                      [class.active]="pestana === 'notas'"
-                      [attr.aria-selected]="pestana === 'notas'"
-                      (click)="abrirPestana('notas')">
-                <i class="fa fa-note-sticky"></i>
-                <span class="gestion-tabs__texto">Notas</span>
-                @if (notas.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ notas.length }}</span> }
-              </button>
-            </li>
-            <li class="nav-item flex-shrink-0" role="presentation">
-              <button type="button" class="nav-link" role="tab"
-                      [class.active]="pestana === 'archivos'"
-                      [attr.aria-selected]="pestana === 'archivos'"
-                      (click)="abrirPestana('archivos')">
-                <i class="fa fa-paperclip"></i>
-                <span class="gestion-tabs__texto">Archivos</span>
-                @if (archivos.length) { <span class="badge bg-secondary bg-opacity-25 text-body fs-10px">{{ archivos.length }}</span> }
-              </button>
-            </li>
-          </ul>
-
-          <div class="gestion-panel">
-
+          <!-- Las pestañas del cliente y la caja donde va su contenido, en una
+               sola pieza: `conPanel` dibuja la caja, y es lo que hace que la
+               pestaña activa se lea como abierta sobre ella. -->
+          <app-tab-panel
+            [pestanas]="pestanasCliente"
+            [activa]="pestana"
+            [tamano]="'compacta'"
+            [conPanel]="true"
+            (cambiada)="abrirPestana($any($event))">
             <!-- ===== HISTORIAL ===== -->
             @if (pestana === 'historial') {
               <!-- Filtros en dos menús: las dos filas de botones (once en total)
@@ -1082,7 +977,7 @@
                   </app-campoBusquedaPaginacion>
                 </div>
 
-                <span class="gestion-filtros__cuenta">{{ totalRegistros }} gestion{{ totalRegistros === 1 ? '' : 'es' }}</span>
+                <!-- <span class="gestion-filtros__cuenta">{{ totalRegistros }} gestion{{ totalRegistros === 1 ? '' : 'es' }}</span> -->
               </div>
 
               <ag-grid-angular
@@ -1713,7 +1608,7 @@
                 </div>
               </div>
             }
-          </div>
+          </app-tab-panel>
             } @else {
 
               <!-- ---------- Sin cliente elegido ----------

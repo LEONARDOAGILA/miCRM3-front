@@ -52,6 +52,12 @@ export class SeleccionarUbicacionComponent implements AfterViewInit {
 
   /** Dónde abrir el mapa: la dirección que ya tuviera el registro. */
   @Input() lugarInicial: { lat: number; lng: number; nombre?: string } | null = null;
+
+  /** Lo que ya tenga escrito quien abre el modal, para el buscador del mapa. */
+  @Input() busquedaInicial = '';
+
+  /** Si ese texto se busca solo al abrir. Ver el mismo parámetro en el mapa. */
+  @Input() buscarAlAbrir = false;
   /** Para la cabecera: «Dirección de Juan Pérez». */
   @Input() titulo = 'Elegir la dirección en el mapa';
   /** Abrir ya a pantalla completa. Se puede apagar desde quien lo abre. */
