@@ -1,15 +1,23 @@
-<!-- ================= MIGA DE PAN ================= -->
-<ol class="breadcrumb asigm-breadcrumb">
-  <li class="breadcrumb-item"><a (click)="fun_home()">Ventas</a></li>
-  <li class="breadcrumb-item active">Repartir clientes</li>
-</ol>
+<!-- ================= MIGA DE PAN =================
+     Sólo como pantalla: dentro de un modal no se navega a ningún sitio. -->
+@if (!enModal) {
+  <ol class="breadcrumb asigm-breadcrumb">
+    <li class="breadcrumb-item"><a (click)="fun_home()">Ventas</a></li>
+    <li class="breadcrumb-item active">Repartir clientes</li>
+  </ol>
+}
 
-<!-- ================= PANEL ================= -->
+<!-- ================= PANEL =================
+     La X cierra el modal cuando se abre así, y vuelve a /ventas cuando es
+     una pantalla. Es lo único que cambia entre los dos usos. -->
 <panel [title]="titulo"
        [noButton]="false"
        (panelReloaded)="cargar(pagina)"
        (panelExpanded)="ajustarTamanoGrid()"
        [closeRoute]="'/ventas'"
+       [noButtonRemove]="enModal"
+       [ButtonRemoveModal]="enModal"
+       (panelRemovedModal)="activeModal?.dismiss()"
        icono="usuarios">
 
   <div class="content-container1 asigm">

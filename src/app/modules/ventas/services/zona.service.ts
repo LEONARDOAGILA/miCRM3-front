@@ -51,6 +51,17 @@ export class ZonaService {
     return this._http.get<any>(this.URL_SERVICIOS + 'clientes/' + id, { params });
   }
 
+  /**
+   * Todos los clientes con coordenadas, para pintarlos en el mapa.
+   *
+   * Sólo id, nombre, activo y el punto: son mil, y traerse la ficha de cada
+   * uno sería mover un megabyte para dibujar puntitos.
+   */
+  clientesUbicados(limite = 2000): Observable<any> {
+    const params = new HttpParams().set('limite', String(limite));
+    return this._http.get<any>(this.URL_SERVICIOS + 'clientesUbicados', { params });
+  }
+
   /** Sin id es un alta; con id, una modificación. */
   saveZona(zona: ZonaParaGuardar, id: number | null = null): Observable<any> {
     const url = this.URL_SERVICIOS + 'saveZona' + (id ? '/' + id : '');

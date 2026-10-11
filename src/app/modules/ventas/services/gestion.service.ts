@@ -27,6 +27,8 @@ export interface FiltrosGestion {
 /** Filtros de la agenda («Lo que toca hacer»). */
 /** Lo que filtra la pantalla de reparto en bloque. */
 export interface FiltrosAsignacion {
+  /** Para repartir sólo los clientes que caen dentro de una zona del mapa. */
+  zonaId?: number | null;
   page?: number;
   perPage?: number;
   /** El buscador de arriba: mira además en correo, teléfono y dirección */
@@ -269,6 +271,10 @@ export class GestionService {
       .set('per_page', String(filtros.perPage ?? 20));
 
     if (filtros.search) { params = params.set('search', filtros.search); }
+
+    // Acotado a un área del mapa: el reparto abierto desde la pantalla de
+    // zonas trae sólo los clientes que caen dentro.
+    if (filtros.zonaId) { params = params.set('zona_id', String(filtros.zonaId)); }
 
     // En JSON y no como parámetros anidados: el modelo de ag-Grid cambia de
     // forma según la operación (filter, filterTo, condition1…) y aplanarlo

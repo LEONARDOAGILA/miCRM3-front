@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, Optional, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -6,7 +6,7 @@ import { Observable, Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { AgGridModule, AgGridAngular } from 'ag-grid-angular';
-import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
 //   ******   SERVICIOS   ******  //
@@ -97,6 +97,27 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
   onResize(): void { this.ajustarTamanoGrid(); }
 
   // ****** PLANTILLA ****** //
+  /**
+   * Acotar el reparto a una zona del mapa.
+   *
+   * Lo usa la pantalla de Zonas, que abre esto en un modal con el área ya
+   * dibujada. Sin esto se reparte sobre toda la cartera, que es como entra
+   * desde el menú.
+   */
+  @Input() zonaId: number | null = null;
+
+  /** El nombre de la zona, sólo para el título. */
+  @Input() zonaNombre = '';
+
+  /**
+   * Si se está viendo dentro de un modal.
+   *
+   * Cambia dos cosas y nada más: no se pinta la miga de pan —dentro de una
+   * ventana no se navega a ningún sitio— y la X del panel cierra el modal en
+   * vez de volver a /ventas.
+   */
+  @Input() enModal = false;
+
   public titulo = 'Repartir clientes';
   public accesoModel: AccesoModel;
 
@@ -168,11 +189,17 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
     private _toastr: ToastrService,
     private _gestionService: GestionService,
     public _appAgGridService: AppAgGridService,
+    // @Optional porque este componente también es una PANTALLA: fuera de un
+    // modal NgbActiveModal no existe y pedirlo a secas reventaría al entrar
+    // desde el menú.
+    @Optional() public activeModal: NgbActiveModal | null,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
   }
 
   ngOnInit(): void {
+    if (this.zonaNombre) { this.titulo = `Repartir clientes de «${this.zonaNombre}»`; }
+
     // Se puede llegar con el papel puesto (?rol=COBRADOR), que es como entra
     // el atajo de la gestión de clientes.
     //
@@ -257,6 +284,9 @@ export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {
         perPage: this.porPagina,
         search: this.busqueda,
         filtros: this.filtrosColumna,
+        // Null cuando se entra desde el menú: entonces se reparte sobre toda
+        // la cartera, que es lo de siempre.
+        zonaId: this.zonaId,
       }));
 
       // Llegó tarde: ya se pidió otra cosa y esto pintaría el filtro viejo

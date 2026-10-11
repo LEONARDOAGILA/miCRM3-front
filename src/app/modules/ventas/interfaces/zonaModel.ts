@@ -98,3 +98,17 @@ export interface ClienteDeZona {
   lat: number;
   lng: number;
 }
+
+/**
+ * Un cliente en el mapa: lo justo para pintar un punto.
+ *
+ * Es otra cosa que ClienteDeZona, que trae la ficha resumida para la tabla.
+ * Aquí son mil puntos y lo que importa es que pesen poco.
+ */
+export interface ClienteUbicado {
+  id: number;
+  nombre: string;
+  activo: boolean;
+  lat: number;
+  lng: number;
+}

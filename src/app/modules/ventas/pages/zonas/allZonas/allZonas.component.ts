@@ -1,18 +1,23 @@
 import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { ActivatedRoute, Router } from '@angular/router';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { PanelModule } from '../../../../../components/panel/panel.module';
 import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.component';
+import { AsignacionClienteMasivaComponent } from '../../gestion-clientes/asignacionClienteMasiva/asignacionClienteMasiva.component';
+import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { GoogleMapsLoaderService } from '../../../../../service/google-maps-loader.service';
 import { LugaresGoogleService, SugerenciaLugar } from '../../../../../service/lugares-google.service';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { ZonaService } from '../../../services/zona.service';
-import { ClienteDeZona, PuntoZona, TipoZona, ZonaModel } from '../../../interfaces/zonaModel';
+import { ClienteDeZona, ClienteUbicado, PuntoZona, TipoZona, ZonaModel } from '../../../interfaces/zonaModel';
 
 /** Lo que se está editando en el formulario de la derecha. */
 interface Borrador {
@@ -66,7 +71,7 @@ const RADIO_INICIAL = 1000;
 @Component({
   selector: 'app-allZonas',
   standalone: true,
-  imports: [CommonModule, FormsModule, PanelModule, AvisoComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, PanelModule, AvisoComponent],
   templateUrl: './allZonas.component.html',
   styleUrls: ['./allZonas.component.css'],
 })
@@ -88,8 +93,119 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   public cargandoClientes = false;
   public guardando = false;
 
+  // ---------- Los clientes, como puntos en el mapa ----------
+  /**
+   * TODOS los que tienen coordenadas, no sólo los de la zona elegida: para
+   * dibujar un polígono alrededor de un grupo hay que ver antes dónde están.
+   */
+  public ubicados: ClienteUbicado[] = [];
+  public ubicadosRecortado = false;
+  public verClientes = true;
+
+  /** Los que caen en la zona elegida, para pintarlos distinto. */
+  private idsEnZona = new Set<number>();
+
+  /**
+   * De qué color se pintan los clientes.
+   *
+   * Se elige porque depende del mapa que se tenga debajo: sobre satélite el
+   * azul se pierde y sobre callejero el amarillo no se ve. Se recuerda en el
+   * navegador —es una comodidad de quien mira, no un dato del sistema—, y si
+   * el navegador no deja guardar, se usa el de por defecto y ya está.
+   */
+  /** Mientras se le pregunta a Google en qué provincia cae la zona. */
+  public buscandoTerritorio = false;
+
+  public colorPuntos = '#E53935';
+  public paletaAbierta = false;
+
+  /**
+   * LA paleta. La misma para el color de una zona y para el de los puntos.
+   *
+   * Era una de siete para cada cosa, y mantener dos listas de colores en la
+   * misma pantalla sólo sirve para que acaben distintas. Son diecinueve tonos
+   * elegidos para distinguirse entre sí sobre un mapa: los claros de más se
+   * pierden sobre el callejero y los oscuros de más, sobre el satélite.
+   *
+   * El orden importa: el primero es el que se pone por defecto a una zona
+   * nueva, y es el color de la aplicación.
+   */
+  public readonly colores: { color: string; nombre: string }[] = [
+    { color: '#00ACAC', nombre: 'Turquesa' },
+    { color: '#0E8C8C', nombre: 'Verde azulado' },
+    { color: '#348FE2', nombre: 'Azul' },
+    { color: '#1B5FBF', nombre: 'Azul marino' },
+    { color: '#00A3E0', nombre: 'Celeste' },
+    { color: '#8753DE', nombre: 'Morado' },
+    { color: '#5B3FA8', nombre: 'Índigo' },
+    { color: '#C837AB', nombre: 'Magenta' },
+    { color: '#E91E63', nombre: 'Rosa' },
+    { color: '#E53935', nombre: 'Rojo' },
+    { color: '#FF5B57', nombre: 'Coral' },
+    { color: '#F59C1A', nombre: 'Naranja' },
+    { color: '#C87F0A', nombre: 'Ámbar' },
+    { color: '#32A932', nombre: 'Verde' },
+    { color: '#0E7A4B', nombre: 'Verde oscuro' },
+    { color: '#7CB342', nombre: 'Lima' },
+    { color: '#795548', nombre: 'Marrón' },
+    { color: '#6C757D', nombre: 'Gris' },
+    { color: '#212529', nombre: 'Negro' },
+  ];
+
+  /**
+   * La de los puntos es la misma lista.
+   *
+   * Se deja el nombre para no tener que tocar la plantilla ni el guardado del
+   * color elegido; apunta al mismo sitio, así que añadir un color lo añade en
+   * los dos sitios a la vez.
+   */
+  public readonly coloresPunto = this.colores;
+
+  /** Dónde se recuerda el color elegido. */
+  private static readonly CLAVE_COLOR = 'miCRM3.zonas.colorPuntos';
+
+  // ---------- El divisor entre las dos columnas ----------
+  /**
+   * Qué porcentaje del ancho se lleva el mapa.
+   *
+   * Se arrastra porque según lo que se esté haciendo manda una cosa u otra:
+   * dibujando, el mapa; repasando qué zonas hay, la rejilla. Un reparto fijo
+   * obliga siempre a uno de los dos a trabajar incómodo.
+   */
+  public anchoIzquierda = 58;
+  public arrastrando = false;
+
+  private static readonly ANCHO_POR_DEFECTO = 58;
+  private static readonly ANCHO_MIN = 25;
+  private static readonly ANCHO_MAX = 75;
+  private static readonly CLAVE_ANCHO = 'miCRM3.zonas.anchoIzquierda';
+
+  /** Los oyentes del arrastre viven en el documento: el ratón se sale de la barra. */
+  private alMover = (e: MouseEvent) => this.moviendo(e);
+  private alSoltar = () => this.terminarArrastre();
+
   // ---------- El formulario ----------
   public borrador: Borrador | null = null;
+
+  // ---------- La rejilla de zonas ----------
+  /**
+   * AQUÍ LOS FILTROS SÍ LOS APLICA ag-Grid, y no el servidor.
+   *
+   * Es al revés que en los listados de clientes o gestiones: aquéllos paginan
+   * en el servidor y la rejilla sólo tiene las filas de la página, así que
+   * filtrar en el navegador buscaría dentro de quince. Las zonas llegan TODAS
+   * de una vez —son decenas, no miles—, así que el filtro nativo de la
+   * cabecera es el correcto y además no hay que ir al servidor por cada letra.
+   */
+  public gridApi!: GridApi;
+  public columnDefs: any[] = [];
+
+  /** Las desactivadas, atenuadas y tachadas, como en el resto de listados. */
+  public rowClassRules = {
+    'fila-inactiva': (p: RowClassParams) => p.data?.activo === false,
+  };
+
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas();
 
   /** Qué se está dibujando ahora mismo, si es que se está dibujando algo. */
   public dibujando: TipoZona | null = null;
@@ -114,18 +230,33 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Cada búsqueda lleva número: si llega una vieja después, se descarta. */
   private ultimaBusqueda = 0;
 
-  /** Los colores que se ofrecen; el primero es el de la aplicación. */
-  public readonly colores = ['#00ACAC', '#348FE2', '#F59C1A', '#FF5B57', '#8753DE', '#32A932', '#6C757D'];
-
   // ---------- Google Maps ----------
   private gm: any = null;
   private mapa: any = null;
   private geocoder: any = null;
   /** La figura de cada zona pintada, por id, para poder quitarla o resaltarla. */
   private figuras = new Map<number, any>();
-  /** La figura que se está dibujando ahora, todavía sin guardar. */
+  /**
+   * La figura que se está dibujando o retocando ahora.
+   *
+   * Puede ser una recién dibujada o LA DE UNA ZONA GUARDADA, puesta editable
+   * para arrastrar sus puntos. En los dos casos es de aquí de donde sale lo
+   * que se guarda, así que `formaDeLaFigura()` no tiene que distinguirlas.
+   */
   private figuraNueva: any = null;
-  private marcadores: any[] = [];
+
+  /** Si la figura editable es la de una zona guardada (no una nueva). */
+  private editandoLaDeLaZona = false;
+
+  /**
+   * Los puntos de los clientes, en una capa de datos y no en mil marcadores.
+   *
+   * `google.maps.Data` está hecha para esto: mil puntos entran en 9 ms y se
+   * quitan en 4 (comprobado contra la API real). Mil `Marker` se notan al
+   * arrastrar el mapa.
+   */
+  private capaClientes: any = null;
+  private globo: any = null;        // InfoWindow: quién es el punto pulsado
 
   // Lo que vive sólo mientras se dibuja
   private trazo: any = null;              // la Polyline que va enseñando el camino
@@ -136,8 +267,10 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private _zonas: ZonaService,
     private _loader: GoogleMapsLoaderService,
+    public _appAgGridService: AppAgGridService,
     private _lugares: LugaresGoogleService,
     private _toastr: ToastrService,
+    private _modal: NgbModal,
     private zone: NgZone,
     private route: Router,
     private activeRoute: ActivatedRoute,
@@ -146,7 +279,244 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.leerColorGuardado();
+    this.leerAnchoGuardado();
+    this.armarColumnas();
     this.cargarZonas();
+  }
+
+  // ================================================================
+  // EL DIVISOR
+  // ================================================================
+
+  private leerAnchoGuardado(): void {
+    try {
+      const guardado = Number(localStorage.getItem(AllZonasComponent.CLAVE_ANCHO));
+      if (Number.isFinite(guardado) && guardado >= AllZonasComponent.ANCHO_MIN
+          && guardado <= AllZonasComponent.ANCHO_MAX) {
+        this.anchoIzquierda = guardado;
+      }
+    } catch {
+      // Ventana privada o almacenamiento bloqueado: se queda el reparto normal
+    }
+  }
+
+  private guardarAncho(): void {
+    try { localStorage.setItem(AllZonasComponent.CLAVE_ANCHO, String(Math.round(this.anchoIzquierda))); }
+    catch { /* da igual */ }
+  }
+
+  empezarArrastre(e: MouseEvent): void {
+    e.preventDefault();          // o el navegador intenta seleccionar texto
+    this.arrastrando = true;
+    document.addEventListener('mousemove', this.alMover);
+    document.addEventListener('mouseup', this.alSoltar);
+  }
+
+  /**
+   * Mientras se arrastra.
+   *
+   * Fuera de la zona de Angular: son decenas de eventos por segundo y cada
+   * uno dispararía un repaso entero de la pantalla. Lo único que cambia es
+   * una variable CSS, que se escribe a mano; al soltar se vuelve a entrar.
+   */
+  private moviendo(e: MouseEvent): void {
+    const caja = this.mapaDiv?.nativeElement?.closest('.zon-paneles') as HTMLElement | null;
+    if (!caja) { return; }
+
+    const r = caja.getBoundingClientRect();
+    if (r.width < 1) { return; }
+
+    const pct = ((e.clientX - r.left) / r.width) * 100;
+    this.anchoIzquierda = Math.min(AllZonasComponent.ANCHO_MAX,
+                          Math.max(AllZonasComponent.ANCHO_MIN, pct));
+    caja.style.setProperty('--zon-izq', this.anchoIzquierda + '%');
+  }
+
+  private terminarArrastre(): void {
+    if (!this.arrastrando) { return; }
+    document.removeEventListener('mousemove', this.alMover);
+    document.removeEventListener('mouseup', this.alSoltar);
+
+    this.zone.run(() => {
+      this.arrastrando = false;
+      this.guardarAncho();
+      // La rejilla reparte el ancho de sus columnas al montarse: si no se le
+      // dice, al estrechar la columna se queda con las de antes y aparece
+      // una barra de desplazamiento donde no hacía falta.
+      setTimeout(() => this.gridApi?.sizeColumnsToFit(), 0);
+    });
+  }
+
+  /** Con el teclado: flechas de 2 en 2, Inicio/Fin a los topes. */
+  moverDivisorConTeclado(e: KeyboardEvent): void {
+    const paso = e.shiftKey ? 10 : 2;
+    let nuevo = this.anchoIzquierda;
+
+    if (e.key === 'ArrowLeft')       { nuevo -= paso; }
+    else if (e.key === 'ArrowRight') { nuevo += paso; }
+    else if (e.key === 'Home')       { nuevo = AllZonasComponent.ANCHO_MIN; }
+    else if (e.key === 'End')        { nuevo = AllZonasComponent.ANCHO_MAX; }
+    else { return; }
+
+    e.preventDefault();
+    this.anchoIzquierda = Math.min(AllZonasComponent.ANCHO_MAX,
+                          Math.max(AllZonasComponent.ANCHO_MIN, nuevo));
+    this.guardarAncho();
+    setTimeout(() => this.gridApi?.sizeColumnsToFit(), 0);
+  }
+
+  /**
+   * El panel se maximizó (o volvió a su sitio).
+   *
+   * El mapa se adapta solo —la API de Google observa el tamaño de su caja—,
+   * pero la rejilla reparte el ancho de sus columnas al montarse y se queda
+   * con el de antes. Se le dice después del repintado, que es cuando la caja
+   * ya tiene su tamaño nuevo.
+   */
+  alExpandirPanel(): void {
+    setTimeout(() => this.gridApi?.sizeColumnsToFit(), 0);
+  }
+
+  repartirPorDefecto(): void {
+    this.anchoIzquierda = AllZonasComponent.ANCHO_POR_DEFECTO;
+    this.guardarAncho();
+    setTimeout(() => this.gridApi?.sizeColumnsToFit(), 0);
+  }
+
+  // ================================================================
+  // LOS CLIENTES DE LA ZONA, EN SU VENTANA
+  // ================================================================
+
+  /**
+   * Abre el reparto en bloque, acotado a la zona elegida.
+   *
+   * Es EL MISMO componente de Ventas > Reparto de Clientes, no una copia:
+   * mil setecientas líneas entre plantilla, estilos y lógica que no tiene
+   * sentido duplicar para cambiarles un filtro. Se le pasan dos cosas —la
+   * zona y que viene en modal— y lo demás es idéntico, así que lo que se
+   * arregle allí se arregla aquí.
+   *
+   * Y así de una vez se reparte: se dibuja el área, se ve quién cae dentro y
+   * se les pone vendedor, cobrador, asistente o postventa sin salir del mapa.
+   */
+  abrirClientes(): void {
+    if (!this.elegida) { return; }
+
+    const ref = this._modal.open(AsignacionClienteMasivaComponent, {
+      size: 'xl', centered: true, scrollable: true, backdrop: 'static',
+    });
+    ref.componentInstance.zonaId = this.elegida.id;
+    ref.componentInstance.zonaNombre = this.elegida.nombre;
+    ref.componentInstance.enModal = true;
+
+    // Repartir no cambia quién cae en la zona —eso lo decide la coordenada,
+    // no el responsable—, así que no hay nada que recargar aquí al cerrar.
+    ref.result.catch(() => { /* se cerró sin más */ });
+  }
+
+  // ================================================================
+  // LA REJILLA
+  // ================================================================
+
+  private armarColumnas(): void {
+    this.columnDefs = [
+      {
+        headerName: 'Zona', field: 'nombre', minWidth: 120, flex: 2, floatingFilter: true,
+        tooltipField: 'nombre',
+        // La pastilla del color va con el nombre y no en su propia columna:
+        // es como se reconoce la zona en el mapa, no un dato que se filtre.
+        cellRenderer: (p: any) =>
+          `<span class="zon-celda-zona">`
+          + `<span class="zon-celda-zona__color" style="background-color:${p.data?.color || '#00ACAC'}"></span>`
+          + `<span class="zon-celda-zona__texto">${p.value ?? ''}</span></span>`,
+      },
+      { headerName: 'Provincia', field: 'provincia', minWidth: 92, flex: 1, tooltipField: 'provincia', floatingFilter: true },
+      { headerName: 'Cantón',    field: 'canton',    minWidth: 92, flex: 1, tooltipField: 'canton', floatingFilter: true },
+      {
+        headerName: 'Forma', field: 'tipo', minWidth: 75, maxWidth: 110, floatingFilter: true,
+        // Se filtra por «Círculo» o «Polígono», que es lo que se ve; el
+        // detalle (cuántos puntos, cuántos km) va en el tooltip.
+        valueGetter: (p: any) => p.data?.tipo === 'CIRCULO' ? 'Círculo' : 'Polígono',
+        tooltipValueGetter: (p: any) => p.data ? this.formaLegible(p.data) : '',
+      },
+      {
+        headerName: 'Clientes', field: 'clientes', minWidth: 68, maxWidth: 90,
+        filter: 'agNumberColumnFilter', floatingFilter: true,
+        cellStyle: { textAlign: 'center' },
+      },
+      {
+        headerName: 'Acciones', field: 'acciones', pinned: 'right',
+        minWidth: 62, maxWidth: 62,
+        sortable: false, filter: false, suppressMenu: true, resizable: false, suppressMovable: true,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: () => {
+          const puedeEditar = this.accesoModel?.editar !== false;
+          const puedeBorrar = this.accesoModel?.eliminar !== false;
+          return `<span class="zon-acciones">`
+               + this.botonAccion('editar',   'btn-editar', 'fa fa-pen',   'Modificar', puedeEditar)
+               + this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar',  puedeBorrar)
+               + `</span>`;
+        },
+      },
+    ];
+  }
+
+  /** El mismo botón de acción que usan las demás rejillas del módulo. */
+  private botonAccion(accion: string, clase: string, icono: string, titulo: string, permitido: boolean): string {
+    const t = permitido ? titulo : `${titulo} - Desactivado`;
+    return `<button type="button" class="btn-icon ${clase}" data-accion="${accion}" title="${t}"${permitido ? '' : ' disabled'}>`
+         + `<i class="${icono}"></i></button>`;
+  }
+
+  onGridReady(params: GridReadyEvent): void {
+    this.gridApi = params.api;
+    this.gridApi.setRowData(this.zonas);
+  }
+
+  /**
+   * Un clic en la fila elige la zona; en un botón, hace lo suyo.
+   *
+   * Se mira el `data-accion` del botón pulsado y no la columna: así los
+   * botones pueden moverse de sitio sin tocar esto.
+   */
+  onCellClicked(e: CellClickedEvent): void {
+    const z = e.data as ZonaModel;
+    if (!z) { return; }
+
+    const boton = (e.event?.target as HTMLElement)?.closest('[data-accion]');
+    const accion = boton?.getAttribute('data-accion');
+
+    if (accion === 'editar')   { this.editar(z);   return; }
+    if (accion === 'eliminar') { this.eliminar(z); return; }
+
+    this.elegir(z);
+  }
+
+  /** El color que se dejó elegido la última vez, si el navegador lo guardó. */
+  private leerColorGuardado(): void {
+    try {
+      const guardado = localStorage.getItem(AllZonasComponent.CLAVE_COLOR);
+      // Sólo si sigue estando en la paleta: si mañana se cambia la lista, lo
+      // guardado no puede dejar los puntos de un color que ya no se ofrece.
+      if (guardado && this.coloresPunto.some(c => c.color === guardado)) {
+        this.colorPuntos = guardado;
+      }
+    } catch {
+      // Ventana privada o almacenamiento bloqueado: se queda el de por defecto
+    }
+  }
+
+  /** Cambia el color de los puntos y lo recuerda. */
+  elegirColorPuntos(color: string): void {
+    this.colorPuntos = color;
+    this.paletaAbierta = false;
+    try { localStorage.setItem(AllZonasComponent.CLAVE_COLOR, color); } catch { /* da igual */ }
+    this.repintarPuntos();
+  }
+
+  alternarPaleta(): void {
+    this.paletaAbierta = !this.paletaAbierta;
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -172,11 +542,17 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Los del arrastre viven en el documento: si la pantalla se va sin
+    // soltarlos, se quedan ahí llamando a un componente que ya no existe.
+    document.removeEventListener('mousemove', this.alMover);
+    document.removeEventListener('mouseup', this.alSoltar);
+
     clearTimeout(this.timerBusqueda);
     this.soltarOyentes();
     this.limpiarTrazo();
     this.limpiarFiguras();
-    this.quitarMarcadores();
+    this.vaciarCapa();
+    this.globo?.close();
     this.mapa = null;
   }
 
@@ -199,9 +575,24 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.geocoder = new this.gm.Geocoder();
+    this.globo = new this.gm.InfoWindow();
+
+    this.capaClientes = new this.gm.Data({ map: this.mapa });
+    this.capaClientes.setStyle((f: any) => this.estiloPunto(f));
+
+    // Pulsar un punto dice de quién es. No se abre al pasar por encima: con
+    // los puntos pegados unos a otros, el globo iría saltando sin parar.
+    this.capaClientes.addListener('click', (ev: any) => this.zone.run(() => {
+      this.globo.setContent(
+        `<div style="font-size:12px"><b>${ev.feature.getProperty('nombre')}</b>`
+        + `<br><span style="color:#6c757d">Cliente ${ev.feature.getProperty('id')}</span></div>`);
+      this.globo.setPosition(ev.latLng);
+      this.globo.open(this.mapa);
+    }));
 
     this.estadoApi = 'listo';
     this.pintarZonas();
+    this.cargarUbicados();
   }
 
   /** Cómo se pinta una zona. `editable` sólo para la que se está dibujando. */
@@ -387,6 +778,17 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   dibujar(tipo: TipoZona): void {
     if (!this.mapa || this.accesoModel?.crear === false) { return; }
 
+    // Si se estaba retocando una zona guardada, su figura SE QUITA del mapa:
+    // dibujar encima de la vieja es justo lo que hacía esto incómodo. Sigue
+    // en la base; si se cancela, se vuelve a pintar tal cual estaba.
+    if (this.editandoLaDeLaZona && this.figuraNueva) {
+      const id = this.borrador?.id ?? null;
+      this.figuraNueva.setMap(null);
+      if (id !== null) { this.figuras.delete(id); }
+      this.editandoLaDeLaZona = false;
+      this.figuraNueva = null;
+    }
+
     this.cancelarDibujo();
     this.dibujando = tipo;
 
@@ -423,8 +825,14 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.dibujando = null;
     this.soltarOyentes();
     this.limpiarTrazo();
-    this.figuraNueva?.setMap(null);
-    this.figuraNueva = null;
+
+    // La de una zona guardada NO se borra aquí: de eso se encarga
+    // `soltarEdicion`, que la repinta desde los datos. Si se borrara, cancelar
+    // el formulario haría desaparecer una zona que sigue existiendo.
+    if (!this.editandoLaDeLaZona) {
+      this.figuraNueva?.setMap(null);
+      this.figuraNueva = null;
+    }
   }
 
   private alPulsarElMapa(lat: number, lng: number): void {
@@ -436,7 +844,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   private ponerEsquina(lat: number, lng: number): void {
     this.puntos.push({ lat, lng });
 
-    const color = this.borrador?.color || this.colores[0];
+    const color = this.borrador?.color || this.colores[0].color;
     const camino = this.puntos.map(p => ({ lat: p.lat, lng: p.lng }));
 
     if (!this.trazo) {
@@ -474,7 +882,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const color = this.borrador?.color || this.colores[0];
+    const color = this.borrador?.color || this.colores[0].color;
     const camino = this.puntos.map(p => ({ lat: p.lat, lng: p.lng }));
 
     this.soltarOyentes();
@@ -494,7 +902,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /** El centro del círculo; nace con un kilómetro y se ajusta después. */
   private ponerCirculo(lat: number, lng: number): void {
-    const color = this.borrador?.color || this.colores[0];
+    const color = this.borrador?.color || this.colores[0].color;
 
     this.soltarOyentes();
     this.dibujando = null;
@@ -533,6 +941,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private async territorioDe(lat: number, lng: number): Promise<void> {
     if (!this.geocoder || !this.borrador) { return; }
+    this.buscandoTerritorio = true;
     try {
       const { results } = await this.geocoder.geocode({ location: { lat, lng }, language: 'es' });
       const comp: any[] = results?.[0]?.address_components ?? [];
@@ -555,6 +964,10 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch (e) {
       // Que no se sepa la provincia no impide guardar la zona
       console.warn('No se pudo averiguar el territorio de la zona:', e);
+      this.zone.run(() => this._toastr.warning(
+        'No se pudo averiguar la provincia. Prueba con el botón de recalcular.', 'Zonas', { timeOut: 4000 }));
+    } finally {
+      this.zone.run(() => { this.buscandoTerritorio = false; });
     }
   }
 
@@ -598,7 +1011,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       pais: this.borrador?.pais ?? 'Ecuador',
       provincia: this.borrador?.provincia ?? '',
       canton: this.borrador?.canton ?? '',
-      color: this.borrador?.color ?? this.colores[0],
+      color: this.borrador?.color ?? this.colores[0].color,
       tipo,
       vertices: null, centro_lat: null, centro_lng: null,
       radio_metros: this.borrador?.radio_metros ?? null,
@@ -607,15 +1020,26 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Rellena provincia y cantón si están vacíos.
+   * Pregunta al mapa en qué provincia y cantón cae la zona.
    *
-   * Sólo si están vacíos: al redibujar una zona que ya los tenía corregidos a
-   * mano, lo que diga Google no debe pisarlos.
+   * Normalmente SÓLO SI ESTÁN VACÍOS: al abrir una zona que ya los tiene, no
+   * hay por qué gastar una consulta ni arriesgarse a cambiar lo que ya estaba
+   * bien.
+   *
+   * Con `forzar` se vuelve a preguntar aunque estén puestos. Es lo que hace
+   * el botón de recalcular: los campos no se pueden escribir, así que si
+   * Google no contestó la primera vez tiene que haber una segunda.
    */
-  private rellenarTerritorio(): void {
-    if (!this.borrador || (this.borrador.provincia && this.borrador.canton)) { return; }
+  rellenarTerritorio(forzar = false): void {
+    if (!this.borrador) { return; }
+    if (!forzar && this.borrador.provincia && this.borrador.canton) { return; }
+
     const c = this.centroDeLaFigura();
-    if (c) { this.territorioDe(c.lat, c.lng); }
+    if (!c) {
+      if (forzar) { this._toastr.info('Dibuja primero el área en el mapa', 'Zonas', { timeOut: 3000 }); }
+      return;
+    }
+    this.territorioDe(c.lat, c.lng);
   }
 
   /** El radio escrito a mano se lleva al círculo del mapa. */
@@ -662,8 +1086,9 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       const id = elegirId ?? this.elegida?.id ?? null;
       this.elegida = id ? (this.zonas.find(z => z.id === id) ?? null) : null;
 
+      this.gridApi?.setRowData(this.zonas);
       this.pintarZonas();
-      if (this.elegida) { this.cargarClientes(this.elegida); } else { this.clientes = []; }
+      if (this.elegida) { this.cargarClientes(this.elegida); } else { this.clientes = []; this.repintarPuntos(); }
     } catch (e) {
       console.error('Error al cargar las zonas:', e);
       this.zonas = [];
@@ -677,32 +1102,94 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.cargandoClientes = true;
       const res: any = await firstValueFrom(this._zonas.clientesDeZona(z.id));
       this.clientes = res?.status === 'success' ? (res.data?.data ?? []) : [];
-      this.pintarClientes();
+      this.repintarPuntos();
     } catch (e) {
       console.error('Error al cargar los clientes de la zona:', e);
       this.clientes = [];
+      this.repintarPuntos();
     } finally {
       this.cargandoClientes = false;
     }
   }
 
-  private quitarMarcadores(): void {
-    this.marcadores.forEach(m => m.setMap(null));
-    this.marcadores = [];
+  /** Trae todos los clientes con coordenadas y los pinta. */
+  async cargarUbicados(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this._zonas.clientesUbicados());
+      if (res?.status !== 'success') { return; }
+      this.ubicados = res.data?.data ?? [];
+      this.ubicadosRecortado = !!res.data?.meta?.recortado;
+      this.pintarUbicados();
+    } catch (e) {
+      console.error('Error al cargar los clientes ubicados:', e);
+    }
   }
 
-  /** Un marcador por cliente de la zona elegida. */
-  private pintarClientes(): void {
-    this.quitarMarcadores();
-    if (!this.mapa) { return; }
+  private vaciarCapa(): void {
+    if (!this.capaClientes) { return; }
+    const fuera: any[] = [];
+    this.capaClientes.forEach((f: any) => fuera.push(f));
+    fuera.forEach(f => this.capaClientes.remove(f));
+  }
 
-    for (const c of this.clientes) {
-      this.marcadores.push(new this.gm.Marker({
-        position: { lat: Number(c.lat), lng: Number(c.lng) },
-        map: this.mapa,
-        title: c.nombre_completo,
-      }));
-    }
+  /** Vuelca los puntos en la capa, en GeoJSON. */
+  private pintarUbicados(): void {
+    if (!this.capaClientes) { return; }
+    this.vaciarCapa();
+    if (!this.verClientes || !this.ubicados.length) { return; }
+
+    this.capaClientes.addGeoJson({
+      type: 'FeatureCollection',
+      features: this.ubicados.map(c => ({
+        type: 'Feature',
+        properties: { id: c.id, nombre: c.nombre, activo: c.activo },
+        // GeoJSON va [lng, lat], al revés que Google. Es el error clásico:
+        // si se invierte, Ecuador se va a la India.
+        geometry: { type: 'Point', coordinates: [Number(c.lng), Number(c.lat)] },
+      })),
+    });
+  }
+
+  /**
+   * Cómo se pinta cada punto.
+   *
+   * Los de la zona elegida, más gordos y del color de la zona; los demás,
+   * discretos. Un cliente desactivado sale en gris: sigue estando ahí, pero
+   * no es con quien se cuenta al repartir.
+   */
+  private estiloPunto(f: any): any {
+    const enZona = this.idsEnZona.has(Number(f.getProperty('id')));
+    const activo = f.getProperty('activo') !== false;
+    // El gris de los desactivados NO se elige: es un dato, no un gusto. Lo
+    // que se elige es el color de los que sí cuentan.
+    const color = enZona ? (this.elegida?.color || '#00ACAC')
+                         : (activo ? this.colorPuntos : '#ADB5BD');
+
+    return {
+      icon: {
+        path: this.gm.SymbolPath.CIRCLE,
+        scale: enZona ? 6 : 3.5,
+        fillColor: color,
+        fillOpacity: enZona ? 1 : 0.75,
+        strokeColor: '#fff',
+        strokeWeight: enZona ? 1.5 : 1,
+      },
+      // Los de la zona, por encima de los demás
+      zIndex: enZona ? 2 : 1,
+    };
+  }
+
+  /** Vuelve a mirar el estilo de cada punto (cambió la zona elegida). */
+  private repintarPuntos(): void {
+    this.idsEnZona = new Set(this.clientes.map(c => Number(c.id)));
+    this.capaClientes?.setStyle((f: any) => this.estiloPunto(f));
+  }
+
+  /** El interruptor de «ver los clientes». */
+  alternarClientes(): void {
+    this.verClientes = !this.verClientes;
+    this.pintarUbicados();
+    this.repintarPuntos();
   }
 
   // ================================================================
@@ -710,6 +1197,9 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   // ================================================================
 
   elegir(z: ZonaModel): void {
+    // Veníamos de retocar otra: se deja como estaba antes de cambiar
+    if (this.editandoLaDeLaZona) { this.soltarEdicion(); }
+
     this.elegida = z;
     this.borrador = null;
     this.cancelarDibujo();
@@ -723,12 +1213,12 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.accesoModel?.crear === false) { return; }
     this.elegida = null;
     this.clientes = [];
-    this.quitarMarcadores();
+    this.repintarPuntos();
     this.resaltar();
     this.cancelarDibujo();
     this.borrador = {
       id: null, nombre: '', descripcion: '', pais: 'Ecuador', provincia: '', canton: '',
-      color: this.colores[0],
+      color: this.colores[0].color,
       tipo: 'POLIGONO', vertices: null, centro_lat: null, centro_lng: null,
       radio_metros: null, activo: true,
     };
@@ -737,10 +1227,13 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   /**
    * Modifica la elegida.
    *
-   * Lo que se cambia sin redibujar es el nombre, el color y si está activa.
-   * Para cambiar la FORMA hay que volver a dibujarla: retocar un polígono
-   * guardado vértice a vértice se puede, pero mezclarlo con el alta complica
-   * el formulario para algo que se hace una vez.
+   * LA FORMA SE RETOCA EN EL SITIO: la figura de la zona se pone editable y
+   * se arrastran sus puntos (y los del medio de cada lado, que Google añade
+   * para partirlo). Antes había que redibujarla entera, y encima la vieja
+   * seguía pintada estorbando.
+   *
+   * Si lo que se quiere es empezar de cero, está «Redibujar», que la quita
+   * del mapa antes de nada.
    */
   editar(z: ZonaModel): void {
     if (this.accesoModel?.editar === false) { return; }
@@ -752,21 +1245,68 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       pais: z.pais ?? 'Ecuador',
       provincia: z.provincia ?? '',
       canton: z.canton ?? '',
-      color: z.color || this.colores[0],
+      color: z.color || this.colores[0].color,
       tipo: z.tipo,
       vertices: z.vertices,
       centro_lat: z.centro_lat, centro_lng: z.centro_lng, radio_metros: z.radio_metros,
       activo: z.activo,
     };
 
+    this.ponerEditableLaZona(z);
+
     // Las zonas dibujadas antes de que existieran estos campos no los traen;
     // se preguntan al abrirlas para modificar, y sólo si faltan.
     this.rellenarTerritorio();
   }
 
+  /**
+   * Pone la figura de la zona en modo retoque.
+   *
+   * Las DEMÁS zonas dejan de responder al clic mientras tanto: pulsar una por
+   * error cambiaría de zona y se perdería lo que se llevara retocado.
+   *
+   * El círculo va además `draggable` para poder mover el centro, que es la
+   * única forma; el polígono no, o arrastrar por dentro lo movería entero
+   * cuando lo que se quería era desplazar el mapa.
+   */
+  private ponerEditableLaZona(z: ZonaModel): void {
+    const figura = this.figuras.get(z.id);
+    if (!figura) { return; }
+
+    this.figuraNueva = figura;
+    this.editandoLaDeLaZona = true;
+
+    const esCirculo = !!figura.getRadius;
+    figura.setOptions({ editable: true, draggable: esCirculo, zIndex: 3 });
+
+    // El radio se refleja en el formulario para poder afinarlo escribiéndolo
+    if (esCirculo) {
+      figura.addListener('radius_changed', () => this.zone.run(() => {
+        if (this.borrador) { this.borrador.radio_metros = Math.round(figura.getRadius()); }
+      }));
+    }
+
+    this.figuras.forEach((f, id) => { if (id !== z.id) { f.setOptions({ clickable: false }); } });
+  }
+
+  /**
+   * Deja de retocar: las figuras vuelven a ser lo que dice el servidor.
+   *
+   * Se repintan todas en vez de deshacer a mano lo arrastrado: los puntos
+   * movidos no se guardan en ninguna parte hasta que se pulsa Guardar, así
+   * que volver a pintarlas desde los datos es exacto y es una línea.
+   */
+  private soltarEdicion(): void {
+    this.editandoLaDeLaZona = false;
+    this.figuraNueva = null;
+    this.pintarZonas();
+  }
+
   cancelar(): void {
     this.borrador = null;
     this.cancelarDibujo();
+    // Lo arrastrado y no guardado se deshace volviendo a pintar desde los datos
+    this.soltarEdicion();
   }
 
   /** Si hay forma que guardar: la recién dibujada o la que ya tenía. */
@@ -826,6 +1366,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       this._toastr.success(res.message, 'Zonas', { timeOut: 2500 });
       const id = res.data?.id ?? null;
       this.borrador = null;
+      this.editandoLaDeLaZona = false;
       this.cancelarDibujo();
       await this.cargarZonas(id);
       if (this.elegida) { this.encuadrar(this.elegida); }
@@ -860,7 +1401,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
       this._toastr.success(res.message, 'Zonas', { timeOut: 2500 });
-      if (this.elegida?.id === z.id) { this.elegida = null; this.clientes = []; this.quitarMarcadores(); }
+      if (this.elegida?.id === z.id) { this.elegida = null; this.clientes = []; this.repintarPuntos(); }
       await this.cargarZonas();
     } catch (e) {
       console.error('Error al eliminar la zona:', e);
