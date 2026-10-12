@@ -11,7 +11,6 @@ import { ToastrService } from 'ngx-toastr';
 ///   SERVICIOS    ///
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { ClienteService } from '../../../services/cliente.service';
-import { SoftphoneService } from '../../../services/softphone.service';
 import { AppPrintPdfService } from '../../../../../service/app-printPdf.service';
 import { AppExportExcelService } from '../../../../../service/app-exportExcel.service';
 import { AppExportCsvService } from '../../../../../service/app-exportCsv.service';
@@ -64,7 +63,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   // ---------- Paginación en servidor ----------
   public paginaActual: number = 1;
   public totalRegistros: number = 0;
-  public registrosPorPagina: number = 10;
+  public registrosPorPagina: number = 20;
   public ultimaPagina: number = 1;
 
   // ---------- ag-Grid ----------
@@ -179,7 +178,6 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     private _toastr: ToastrService,
     private _seguridadService: SeguridadService,
     private _clienteService: ClienteService,
-    private _softphone: SoftphoneService,
   ) {
     this.titulo = "Clientes";
     this.accesoModel = this.activeRoute.snapshot.data.access;
@@ -379,28 +377,18 @@ export class AllClientesComponent implements OnInit, OnDestroy {
         maxWidth: 260,
       },
       {
-        headerName: 'Correo',
-        field: 'email',
-        cellStyle: { textAlign: 'left' },
-        minWidth: 200,
-        maxWidth: 280,
-      },
-      {
         headerName: 'Celular',
         field: 'celular',
         cellStyle: { textAlign: 'left' },
         minWidth: 110,
         maxWidth: 140,
-        // El número marca con el softphone al pulsarlo. Se pinta como botón
-        // con data-accion, igual que el resto de acciones de la aplicación, y
-        // lo atiende onCellClicked.
-        cellRenderer: (params: any) => {
-          const n = this._softphone.numeroMarcable(params.value);
-          if (!n) { return ''; }
-          return `<button type="button" class="lista-llamar" data-accion="llamar" title="Marcar ${n} con el softphone">
-                    <i class="fa fa-phone"></i><span>${params.value}</span>
-                  </button>`;
-        },
+      },
+      {
+        headerName: 'Correo',
+        field: 'email',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 200,
+        maxWidth: 280,
       },
       {
         headerName: 'Ciudad',
@@ -641,8 +629,6 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     this.selectedRow = e.data;
 
     const origen = e.event?.target as HTMLElement | null;
-    if (origen?.closest('[data-accion="llamar"]')) { this.llamar(e.data); }
-
     if (origen?.closest('[data-accion="activo"]')) {
       // LA CASILLA NO DECIDE: la marca que acaba de poner el navegador es
       // sólo un acuse de recibo. Quien dice si el cliente queda activo es el
@@ -656,6 +642,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
       this.cambiarActivo(e.data, e.node);
     }
   }
+
 
   /** La casilla de la columna «Activo». */
   private casillaActivo(params: any): string {
@@ -702,21 +689,6 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Marca el celular del cliente con el softphone del puesto.
-   *
-   * Si Zoiper ya está abierto marca pero puede no asomarse: eso se enciende en
-   * sus propias opciones («command line call auto popup»), el navegador no
-   * puede traer al frente la ventana de otro programa.
-   */
-  llamar(cliente: ClienteModel | null): void {
-    const marcado = this._softphone.marcar(cliente?.celular);
-    if (!marcado) {
-      this._toastr.warning('Este cliente no tiene celular registrado', 'Sin número');
-      return;
-    }
-    this._toastr.info('Marcando ' + marcado + '…', cliente?.nombre_completo || 'Softphone', { timeOut: 2500 });
-  }
 
   // ================================================================
   // DATOS

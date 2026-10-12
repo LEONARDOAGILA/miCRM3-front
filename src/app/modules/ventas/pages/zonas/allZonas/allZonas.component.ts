@@ -1,7 +1,7 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AgGridModule } from 'ag-grid-angular';
+import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -10,6 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { PanelModule } from '../../../../../components/panel/panel.module';
+import { ActionButtonsModule } from '../../../../../components/botones/action-buttons/action-buttons.module';
 import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.component';
 import { AsignacionClienteMasivaComponent } from '../../gestion-clientes/asignacionClienteMasiva/asignacionClienteMasiva.component';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
@@ -176,6 +177,12 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   public arrastrando = false;
 
   private static readonly ANCHO_POR_DEFECTO = 58;
+  /** Lo que se deja respirar debajo del panel, en píxeles. */
+  private static readonly MARGEN_ABAJO = 12;
+
+  /** Lo ultimo que se calculo, para no reescribir la variable en cada resize. */
+  private altoCajas = 0;
+
   private static readonly ANCHO_MIN = 25;
   private static readonly ANCHO_MAX = 75;
   private static readonly CLAVE_ANCHO = 'miCRM3.zonas.anchoIzquierda';
@@ -265,6 +272,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   private oyenteDobleClic: any = null;
 
   constructor(
+    private host: ElementRef<HTMLElement>,
     private _zonas: ZonaService,
     private _loader: GoogleMapsLoaderService,
     public _appAgGridService: AppAgGridService,
@@ -373,9 +381,57 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
    * pero la rejilla reparte el ancho de sus columnas al montarse y se queda
    * con el de antes. Se le dice después del repintado, que es cuando la caja
    * ya tiene su tamaño nuevo.
+   *
+   * Y al VOLVER de maximizado hay que medir otra vez: mientras estaba
+   * maximizado mandaba el flex y la medida de antes se quedó vieja.
    */
   alExpandirPanel(): void {
-    setTimeout(() => this.gridApi?.sizeColumnsToFit(), 0);
+    setTimeout(() => {
+      this.gridApi?.sizeColumnsToFit();
+      this.ajustarAlto();
+    }, 0);
+  }
+
+  /** Al cambiar la ventana, el hueco de debajo del panel cambia con ella. */
+  @HostListener('window:resize')
+  alCambiarVentana(): void { this.ajustarAlto(); }
+
+  /**
+   * El alto de las cajas, MEDIDO.
+   *
+   * No se calcula restando una cifra a `100vh`: lo que hay encima del panel
+   * —miga de pan en una línea o en dos, el aviso de recorte, la cabecera, los
+   * márgenes del tema— cambia, y cualquier número que se ponga aquí se queda
+   * corto o se pasa en alguna pantalla. Lo que sí se puede medir es dónde
+   * EMPIEZA la caja y qué pone el panel por debajo de ella.
+   *
+   * SE SUMA EL SCROLL para quedarse con la posición en el documento: medida
+   * con la página bajada, `top` ya no es lo que hay encima, y las cajas
+   * crecerían de más. Así el resultado no depende de por dónde vaya la
+   * página, y no hace falta llamar a esto dos veces para que converja.
+   *
+   * MAXIMIZADO NO SE TOCA: ahí manda la cadena de flex del CSS, que ya estira
+   * hasta el fondo. Y la medida va en una variable del host, no en un estilo
+   * del elemento: un estilo en línea ganaría a esa cadena y rompería lo otro.
+   */
+  private ajustarAlto(): void {
+    const raiz  = this.host.nativeElement;
+    const panel = raiz.querySelector('.panel') as HTMLElement | null;
+    const caja  = raiz.querySelector('.zon-caja') as HTMLElement | null;
+    if (!panel || !caja) { return; }
+    if (panel.classList.contains('panel-expand')) { return; }
+
+    const rCaja  = caja.getBoundingClientRect();
+    const rPanel = panel.getBoundingClientRect();
+
+    const arriba = rCaja.top + window.scrollY;          // dónde empieza la caja
+    const debajo = rPanel.bottom - rCaja.bottom;        // lo que el panel pone bajo ella
+    const alto   = Math.round(window.innerHeight - arriba - debajo
+                              - AllZonasComponent.MARGEN_ABAJO);
+
+    if (alto === this.altoCajas) { return; }
+    this.altoCajas = alto;
+    raiz.style.setProperty('--zon-alto', `${alto}px`);
   }
 
   repartirPorDefecto(): void {
@@ -446,49 +502,132 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
         cellStyle: { textAlign: 'center' },
       },
       {
-        headerName: 'Acciones', field: 'acciones', pinned: 'right',
-        minWidth: 62, maxWidth: 62,
-        sortable: false, filter: false, suppressMenu: true, resizable: false, suppressMovable: true,
+        // La misma columna que el resto de rejillas: botones de
+        // <app-action-buttons> y cabecera que la pliega.
+        //
+        // Antes los botones se escribían a mano con `class="btn-icon"`, y esa
+        // clase vive DENTRO de action-buttons.component.scss: es CSS con
+        // alcance de ese componente, así que aquí no llegaba y los botones
+        // salían pelados. Usando el componente de verdad vienen con su
+        // estilo, sus colores por acción y su `disabled` según el perfil.
+        headerName: 'ACCIONES',
+        field: 'actions',
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        cellRenderer: () => {
-          const puedeEditar = this.accesoModel?.editar !== false;
-          const puedeBorrar = this.accesoModel?.eliminar !== false;
-          return `<span class="zon-acciones">`
-               + this.botonAccion('editar',   'btn-editar', 'fa fa-pen',   'Modificar', puedeEditar)
-               + this.botonAccion('eliminar', 'btn-quitar', 'fa fa-trash', 'Eliminar',  puedeBorrar)
-               + `</span>`;
-        },
+        cellRenderer: ButtonAccionZona,
+        // La pantalla va POR PARAMETRO y no por inyeccion, que es como lo
+        // resuelve allClientes. Alli el renderer se declara en un NgModule;
+        // esta pantalla es standalone y seria la primera en pedirle a
+        // ag-Grid que le inyecte el componente de acogida. Eso depende de
+        // con que inyector cree la celda, y una suposicion que falla no se
+        // ve hasta que alguien abre la pantalla. Pasarla a mano no depende
+        // de nada de eso.
+        cellRendererParams: { pantalla: this },
+        pinned: 'right',
+        minWidth: AllZonasComponent.ANCHO_ACCIONES_ABIERTA,
+        maxWidth: AllZonasComponent.ANCHO_ACCIONES_ABIERTA,
+        suppressMenu: true,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        suppressMovable: true,
+        headerComponentParams: {
+          template: `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
+              <span>ACCIONES</span>
+              <i class="fas fa-arrow-right"></i>
+            </div>
+          `
+        }
       },
     ];
   }
 
-  /** El mismo botón de acción que usan las demás rejillas del módulo. */
-  private botonAccion(accion: string, clase: string, icono: string, titulo: string, permitido: boolean): string {
-    const t = permitido ? titulo : `${titulo} - Desactivado`;
-    return `<button type="button" class="btn-icon ${clase}" data-accion="${accion}" title="${t}"${permitido ? '' : ' disabled'}>`
-         + `<i class="${icono}"></i></button>`;
+  // ================================================================
+  // PLEGAR LA COLUMNA ACCIONES
+  // ================================================================
+  //
+  // Igual que en el listado de clientes: pulsando su cabecera la columna se
+  // encoge a un botón, para dejarle el ancho a los datos en pantallas
+  // estrechas. El oyente va en el DOM y no en la plantilla porque la cabecera
+  // la dibuja ag-Grid.
+
+  private static readonly ANCHO_ACCIONES_ABIERTA = 80;
+  private static readonly ANCHO_ACCIONES_PLEGADA = 50;
+
+  /** true mientras la columna está plegada; lo mira el renderer de la celda. */
+  public accionesPlegadas = false;
+
+  /** Pliega o despliega la columna ACCIONES. */
+  toggleActionsColumn(): void {
+    if (!this.gridApi) { return; }
+    const columnDefs = this.gridApi.getColumnDefs() as any[];
+    const actionsCol = columnDefs.find(c => c.field === 'actions');
+    if (!actionsCol) { return; }
+
+    const estabaPlegada = actionsCol.minWidth === AllZonasComponent.ANCHO_ACCIONES_PLEGADA;
+    this.accionesPlegadas = !estabaPlegada;
+
+    const ancho = estabaPlegada ? AllZonasComponent.ANCHO_ACCIONES_ABIERTA
+                                : AllZonasComponent.ANCHO_ACCIONES_PLEGADA;
+    actionsCol.minWidth = ancho;
+    actionsCol.maxWidth = ancho;
+    actionsCol.headerComponentParams = {
+      template: estabaPlegada
+        ? `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
+            <span>ACCIONES</span>
+            <i class="fas fa-arrow-right"></i>
+          </div>`
+        : `<div style="display: flex; align-items: center; justify-content: center;" title="Mostrar los botones de acción">
+            <i class="fas fa-bars"></i>
+          </div>`
+    };
+
+    this.gridApi.setColumnDefs(columnDefs);
+    // La cabecera se vuelve a dibujar, así que el oyente de antes se va con
+    // ella y hay que ponerlo en la nueva.
+    setTimeout(() => this.montarListenerCabecera(), 100);
+  }
+
+  /** Referencias estables, para poder quitar lo que se puso. */
+  private cabeceraAcciones: Element | null = null;
+  private readonly alPulsarCabecera: EventListener = () => this.toggleActionsColumn();
+  private readonly alTocarCabecera: EventListener = (e) => { this.toggleActionsColumn(); e.preventDefault(); };
+
+  private montarListenerCabecera(): void {
+    this.quitarListenerCabecera();
+    this.cabeceraAcciones = this.host.nativeElement.querySelector('.ag-header-cell[col-id="actions"]');
+    if (!this.cabeceraAcciones) { return; }
+    this.cabeceraAcciones.addEventListener('click', this.alPulsarCabecera);
+    this.cabeceraAcciones.addEventListener('touchend', this.alTocarCabecera);
+  }
+
+  private quitarListenerCabecera(): void {
+    if (!this.cabeceraAcciones) { return; }
+    this.cabeceraAcciones.removeEventListener('click', this.alPulsarCabecera);
+    this.cabeceraAcciones.removeEventListener('touchend', this.alTocarCabecera);
+    this.cabeceraAcciones = null;
   }
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
     this.gridApi.setRowData(this.zonas);
+    // Medio segundo: la cabecera no está en el DOM en el mismo momento en que
+    // la rejilla avisa de que está lista.
+    setTimeout(() => this.montarListenerCabecera(), 500);
   }
 
   /**
-   * Un clic en la fila elige la zona; en un botón, hace lo suyo.
+   * Un clic en la fila elige la zona.
    *
-   * Se mira el `data-accion` del botón pulsado y no la columna: así los
-   * botones pueden moverse de sitio sin tocar esto.
+   * Los botones de ACCIONES no pasan por aquí: los dibuja
+   * <app-action-buttons> y avisa por sus propias salidas. Lo único que hace
+   * falta es no elegir la zona cuando se pulsó en esa columna —`eliminar`
+   * abre una confirmación, y mover el mapa por debajo del aviso despista—.
    */
   onCellClicked(e: CellClickedEvent): void {
     const z = e.data as ZonaModel;
     if (!z) { return; }
-
-    const boton = (e.event?.target as HTMLElement)?.closest('[data-accion]');
-    const accion = boton?.getAttribute('data-accion');
-
-    if (accion === 'editar')   { this.editar(z);   return; }
-    if (accion === 'eliminar') { this.eliminar(z); return; }
+    if (e.column?.getColId() === 'actions') { return; }
 
     this.elegir(z);
   }
@@ -520,6 +659,10 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async ngAfterViewInit(): Promise<void> {
+    // Lo primero, y fuera del camino del mapa: el alto no depende de que
+    // Google conteste, y si no hay clave la pantalla se queda corta igual.
+    setTimeout(() => this.ajustarAlto(), 0);
+
     if (!this._loader.hayClave) { this.estadoApi = 'sin-clave'; return; }
     try {
       this.gm = await this._loader.cargar();
@@ -542,6 +685,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.quitarListenerCabecera();
     // Los del arrastre viven en el documento: si la pantalla se va sin
     // soltarlos, se quedan ahí llamando a un componente que ya no existe.
     document.removeEventListener('mousemove', this.alMover);
@@ -1120,6 +1264,10 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.ubicados = res.data?.data ?? [];
       this.ubicadosRecortado = !!res.data?.meta?.recortado;
       this.pintarUbicados();
+
+      // Ese aviso es una franja más encima de las cajas: hay que volver a
+      // medir o se sale por abajo justo lo que ocupa.
+      if (this.ubicadosRecortado) { setTimeout(() => this.ajustarAlto(), 0); }
     } catch (e) {
       console.error('Error al cargar los clientes ubicados:', e);
     }
@@ -1431,4 +1579,63 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   clave(_: number, z: ZonaModel): number { return z.id; }
+}
+
+
+// ================================================================
+// RENDERER DE LA COLUMNA ACCIONES
+// ================================================================
+// Simple delegador, como ButtonAccionCliente: toda la lógica vive en
+// AllZonasComponent. Standalone porque la pantalla también lo es.
+@Component({
+  selector: 'app-button-accion-zona',
+  standalone: true,
+  imports: [ActionButtonsModule],
+  template: `
+    @if (parent?.accionesPlegadas) {
+      <button type="button"
+              class="btn btn-sm btn-outline-primary acciones-desplegar"
+              title="Mostrar los botones de acción"
+              aria-label="Mostrar los botones de acción"
+              (click)="parent?.toggleActionsColumn()">
+        <i class="fas fa-bars"></i>
+      </button>
+    } @else {
+      <app-action-buttons
+        [accesoModel]="parent?.accesoModel"
+        [buttonEdit]="true"
+        [buttonDelete]="true"
+        (edit)="parent?.editar(params.data)"
+        (delete)="parent?.eliminar(params.data)">
+      </app-action-buttons>
+    }
+  `,
+  styles: [`
+    .acciones-desplegar {
+      width: 28px;
+      height: 24px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: .25rem;
+    }
+  `],
+})
+export class ButtonAccionZona implements ICellRendererAngularComp {
+  public params: any;
+
+  /** La pantalla, que llega en los parámetros de la celda. */
+  public parent?: AllZonasComponent;
+
+  agInit(params: any): void {
+    this.params = params;
+    this.parent = params?.pantalla;
+  }
+
+  refresh(params: any): boolean {
+    this.params = params;
+    this.parent = params?.pantalla;
+    return true;
+  }
 }

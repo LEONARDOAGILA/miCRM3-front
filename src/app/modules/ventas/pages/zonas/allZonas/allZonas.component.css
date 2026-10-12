@@ -90,13 +90,22 @@
    página para ver la rejilla entera. Ahora las dos cajas miden lo que queda
    de ventana, con un mínimo para que en pantallas muy bajas no se aplasten.
 
-   Los 300px que se restan son la miga de pan, la cabecera del panel, el
-   aviso y los márgenes. */
+   EL ALTO LO MIDE EL COMPONENTE, no se calcula aquí. El `calc(100vh - 300px)`
+   es sólo el valor de arranque, para el primer pintado: esos 300px eran una
+   estimación de la miga de pan, la cabecera del panel, el aviso y los
+   márgenes, y se quedaban cortos —debajo del panel sobraba una franja de
+   pantalla sin usar—. Lo que de verdad hay encima depende de si la miga de
+   pan cabe en una línea o en dos, de si el aviso está desplegado y del tema,
+   así que la única cifra fiable es la que sale de medir el panel ya pintado:
+   AllZonasComponent.ajustarAlto pone `--zon-alto` con lo que sobra debajo.
+
+   Sin tope por arriba: el tope de 60rem que había dejaba franja muerta en un
+   monitor alto, que es justo lo que se quería quitar. El mínimo se queda. */
 .zon-caja {
   display: flex;
   flex-direction: column;
 
-  height: clamp(22rem, calc(100vh - 300px), 60rem);
+  height: max(22rem, var(--zon-alto, calc(100vh - 300px)));
 
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .375rem;
@@ -531,18 +540,12 @@
   white-space: nowrap;
 }
 
-:host ::ng-deep .zon-acciones {
-  display: flex;
-  gap: .15rem;
-}
+/* La zona desactivada sale apagada y tachada: eso ya lo pone la regla de
+   `.fila-inactiva` de styles.css, que es la misma para las nueve rejillas con
+   casilla y deja fuera la columna de acciones. Aquí no hace falta repetirla.
 
-/* Zona desactivada: apagada y tachada, igual que en el listado de clientes.
-   Se deja fuera la columna de acciones, que son botones que siguen sirviendo. */
-:host ::ng-deep .zon-grilla .ag-row.fila-inactiva .ag-cell:not([col-id='acciones']) {
-  color: var(--bs-secondary-color, #6c757d);
-  text-decoration: line-through;
-  opacity: .75;
-}
+   Y `.zon-acciones` se fue con los botones escritos a mano: ahora los pinta
+   <app-action-buttons>, que trae los suyos. */
 .btn-icon {
   display: inline-flex;
   align-items: center;
