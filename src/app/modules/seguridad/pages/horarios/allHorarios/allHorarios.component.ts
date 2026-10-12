@@ -1,9 +1,10 @@
 import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { GridApi, GridReadyEvent, CellClickedEvent } from 'ag-grid-community';
+import { Subject, firstValueFrom } from 'rxjs';
+import { GridApi, GridReadyEvent, CellClickedEvent, RowNode } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridAngular } from 'ag-grid-angular';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 
 //   ******   SERVICIOS   ******  //
 import { AppPrintPdfService } from '../../../../../service/app-printPdf.service';
@@ -69,6 +70,172 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
 
   @ViewChild(CampoBusquedaPaginacionComponent) campoBusquedaPaginacion!: CampoBusquedaPaginacionComponent;
 
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulso. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  // ================================================================
+  // LAS ACCIONES DE UNA FILA
+  // ================================================================
+  //
+  // Viven aqui y no en el renderizador de la columna ACCIONES porque las usan
+  // DOS sitios: esos botones y el menu del boton derecho. Tenerlas duplicadas
+  // era garantizar que acabaran distintas.
+
+  clonHorario(fila: any) {
+    const modalRef = this.modal.open(SaveHorarioComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: false
+    });
+    modalRef.componentInstance.registro_selected = fila;
+    modalRef.componentInstance.accion = 'clon';
+
+    (async () => {
+      try {
+        const nuevoHorario = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
+
+        // Verificar que el nuevo horario tiene datos válidos
+        if (nuevoHorario && nuevoHorario.id) {
+          // Agregar al principio del array y actualizar grid
+          this.chorarioModel.unshift(nuevoHorario);
+          this.gridApi.setRowData(this.chorarioModel);
+        } else {
+          console.error('Respuesta inválida en clonación:', nuevoHorario);
+        }
+      } catch (error) {
+        console.error('Error o cancelación en clonación:', error);
+      }
+    })();
+  }
+
+  editHorario(fila: any) {
+    const modalRef = this.modal.open(SaveHorarioComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: false
+    });
+    modalRef.componentInstance.registro_selected = fila;
+    modalRef.componentInstance.accion = 'edit';
+
+    (async () => {
+      try {
+        const response = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
+        const index = this.chorarioModel.findIndex(
+          registro => registro.id === response.id
+        );
+        if (index !== -1) {
+          this.chorarioModel[index] = response;
+          const rowNode = this.gridApi.getRowNode(index.toString());
+          rowNode?.setData(response);
+        }
+      } catch (error) {
+        console.error('Error o cancelación en edición:', error);
+      }
+    })();
+  }
+
+  viewHorario(fila: any) {
+    const modalRef = this.modal.open(SaveHorarioComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: true
+    });
+    modalRef.componentInstance.registro_selected = fila;
+    modalRef.componentInstance.accion = 'view';
+  }
+
+  deleteHorario(fila: any) {
+    const modalRef = this.modal.open(DeleteHorarioComponent, {
+      centered: true,
+      size: 'md',
+      backdrop: 'static',
+      keyboard: true
+    });
+    modalRef.componentInstance.registro_selected = fila;
+
+    (async () => {
+      try {
+        await firstValueFrom(modalRef.componentInstance.registrosE);
+        const horarioAEliminar = fila;
+        const index = this.chorarioModel.findIndex(
+          registro => registro.id === horarioAEliminar.id
+        );
+        if (index !== -1) {
+          this.chorarioModel.splice(index, 1);
+          this.gridApi.applyTransaction({ remove: [horarioAEliminar] });
+        }
+      } catch (error) {
+        console.error('Error o cancelación en eliminación:', error);
+      }
+    })();
+  }
+
+  // ================================================================
+  // EL MENU DEL BOTON DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, pero sin tener que llegar al
+  // final de la fila ni desplegar la columna cuando esta plegada.
+
+  /**
+   * Clic derecho sobre la rejilla.
+   *
+   * LO PRIMERO ES ELEGIR LA FILA: el menu actua sobre la fila pulsada, y si
+   * no se marcara se veria resaltada una y el menu trabajaria sobre otra.
+   */
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menu del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara();
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Que se ofrece, segun lo que permita el perfil de quien mira. */
+  private opcionesPara(): OpcionContextual[] {
+    return [
+      { id: 'ver',      texto: 'Ver el horario', icono: 'fa-eye',
+        visible: this.accesoModel?.ver !== false },
+      { id: 'editar',   texto: 'Modificar',      icono: 'fa-pen',
+        visible: this.accesoModel?.editar === true },
+      { id: 'clonar',   texto: 'Clonar',         icono: 'fa-clone',
+        visible: this.accesoModel?.crear === true,
+        ayuda: 'Crear un horario nuevo copiando los datos de este' },
+      { id: 'eliminar', texto: 'Eliminar',       icono: 'fa-trash',
+        peligro: true, separadorAntes: true,
+        visible: this.accesoModel?.eliminar === true },
+      { id: 'auditoria', texto: 'Ver auditoria', icono: 'fa-user-secret',
+        separadorAntes: true,
+        visible: this.accesoModel?.auditar === true,
+        ayuda: 'Quien toco este horario y cuando' },
+    ];
+  }
+
+  /** Se eligio una opcion del menu contextual. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'ver':       this.viewHorario(fila); break;
+      case 'editar':    this.editHorario(fila); break;
+      case 'clonar':    this.clonHorario(fila); break;
+      case 'eliminar':  this.deleteHorario(fila); break;
+      case 'auditoria': this.auditoria(); break;
+    }
+  }
+
+
   constructor(
     private modal: NgbModal,
     private activeRoute: ActivatedRoute,
@@ -95,6 +262,8 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
     if (this.resizeTimeoutId) { 
       clearTimeout(this.resizeTimeoutId); 
     }
+    this.unsubscribe$.next();
+    this.unsubscribe$.complete();
   }
 
   // ****** HOME DE MODULO ****** //
@@ -203,25 +372,21 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
         maxWidth: 70,
       },
       {
+        // Segunda columna y PULSABLE: dar de baja esto era abrir la ficha
+        // entera, bajar la casilla y guardar. Ahora se pulsa aqui.
+        headerName: 'Activo',
+        field: 'activo',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 80,
+        maxWidth: 80,
+        cellRenderer: (params: any) => this.casillaActivo(params),
+      },
+      {
         headerName: 'Nombre',
         field: 'nombre',
         cellStyle: { textAlign: 'left' },
         minWidth: 150,
         maxWidth: 1500,
-      },
-      {
-        headerName: 'Activo',
-        field: 'activo',
-        cellStyle: { textAlign: 'center' },
-        minWidth: 95,
-        maxWidth: 95,
-        cellRenderer: (params: any) =>
-          `
-          <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-            <input disabled class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} />
-            <label class="form-check-label"></label>
-          </div>
-          `,
       },
       {
         headerName: 'Creado',
@@ -379,8 +544,80 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
   /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
   navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
 
+  // ================================================================
+  // LA CASILLA DE «ACTIVO»
+  // ================================================================
+  //
+  // El dibujo y el flujo —el giro mientras guarda, repintar con lo que
+  // contesta el servidor, volver atrás si falla— viven en
+  // AppAgGridService: son los mismos en las nueve rejillas que tienen esta
+  // casilla. Aquí sólo van los datos de esta pantalla.
+
+  /**
+   * Los desactivados se ven, pero se ven apagados y tachados.
+   *
+   * No se esconden: siguen en la lista y se pueden buscar y abrir. Lo que se
+   * busca es no tener que leer la casilla fila por fila para saber cuál ya no
+   * está en juego. La regla y su CSS son los mismos en las nueve rejillas con
+   * casilla, así que viven en AppAgGridService y en styles.css.
+   */
+  public rowClassRules = this._appAgGridService.reglasFilaInactiva('activo');
+
+  /** Los que se están guardando ahora mismo: su casilla sale como un giro. */
+  private readonly activoEnVuelo = new Set<number>();
+
+  /**
+   * Para cortar la peticion si la pantalla se cierra antes de que conteste.
+   *
+   * Sin esto, la respuesta llegaria y repintaria una rejilla ya destruida.
+   */
+  private readonly unsubscribe$ = new Subject<void>();
+
+  /** La casilla de la columna «Activo». */
+  private casillaActivo(params: any): string {
+    return this._appAgGridService.casillaActivo(params, {
+      puede: this.accesoModel?.editar === true,
+      enVuelo: this.activoEnVuelo,
+      que: 'horario',
+    });
+  }
+
+  /**
+   * Activar o desactivar desde la casilla, sin abrir el formulario.
+   *
+   * Lo escribe una función del servidor que toca SÓLO esa columna. Guardar
+   * la ficha entera para bajar una casilla la revalidaba toda, y un
+   * registro que hoy no cumpliría alguna regla —cargado antes de que
+   * existiera— no se podría desactivar hasta arreglarle todo lo demás.
+   */
+  cambiarActivo(fila: ChorarioModel | null, nodo?: RowNode | null): void {
+    if (!fila) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    this._appAgGridService.alternarActivo({
+      gridApi: this.gridApi,
+      filas: this.chorarioModel,
+      fila, nodo,
+      campo: 'activo',
+      enVuelo: this.activoEnVuelo,
+      puede: this.accesoModel?.editar === true,
+      que: 'horario',
+      llamar: (id, activo) => this._horarioService.activarHorario(id, activo),
+      nombre: (f: any) => f.nombre,
+      hasta: this.unsubscribe$,
+    });
+  }
+
   onCellClicked(e: CellClickedEvent): void {
     this.selectedRow = e.data;
+
+    // La casilla de «Activo» se marca con `data-accion`, igual que el botón
+    // de llamar de las rejillas de clientes: se atiende aquí y no con un
+    // componente por celda.
+    const origen = e.event?.target as HTMLElement | null;
+    if (origen?.closest('[data-accion="activo"]')) {
+      this.cambiarActivo(e.data, e.node);
+    }
   }
 
   // ****** ACCIONES ****** //
@@ -557,102 +794,11 @@ export class ButtonAccionHorario {
     this.params = params;
   }
 
-clonHorario() {
-  const modalRef = this.modalService.open(SaveHorarioComponent, {
-    centered: true,
-    size: 'lg',
-    backdrop: 'static',
-    keyboard: false
-  });
-  modalRef.componentInstance.registro_selected = this.params.data;
-  modalRef.componentInstance.accion = 'clon';
-
-  (async () => {
-    try {
-      const nuevoHorario = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
-      
-      // Verificar que el nuevo horario tiene datos válidos
-      if (nuevoHorario && nuevoHorario.id) {
-        // Agregar al principio del array y actualizar grid
-        this.AllHorariosComponent.chorarioModel.unshift(nuevoHorario);
-        this.AllHorariosComponent.gridApi.setRowData(this.AllHorariosComponent.chorarioModel);
-      } else {
-        console.error('Respuesta inválida en clonación:', nuevoHorario);
-      }
-    } catch (error) {
-      console.error('Error o cancelación en clonación:', error);
-    }
-  })();
-}
-
-
-
-
-
-  editHorario() {
-    const modalRef = this.modalService.open(SaveHorarioComponent, {
-      centered: true,
-      size: 'lg',
-      backdrop: 'static',
-      keyboard: false
-    });
-    modalRef.componentInstance.registro_selected = this.params.data;
-    modalRef.componentInstance.accion = 'edit';
-
-    (async () => {
-      try {
-        const response = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
-        const index = this.AllHorariosComponent.chorarioModel.findIndex(
-          registro => registro.id === response.id
-        );
-        if (index !== -1) {
-          this.AllHorariosComponent.chorarioModel[index] = response;
-          const rowNode = this.AllHorariosComponent.gridApi.getRowNode(index.toString());
-          rowNode?.setData(response);
-        }
-      } catch (error) {
-        console.error('Error o cancelación en edición:', error);
-      }
-    })();
-  }
-
-  viewHorario() {
-    const modalRef = this.modalService.open(SaveHorarioComponent, {
-      centered: true,
-      size: 'lg',
-      backdrop: 'static',
-      keyboard: true
-    });
-    modalRef.componentInstance.registro_selected = this.params.data;
-    modalRef.componentInstance.accion = 'view';
-  }
-
-deleteHorario() {
-  const modalRef = this.modalService.open(DeleteHorarioComponent, {
-    centered: true,
-    size: 'md',
-    backdrop: 'static',
-    keyboard: true
-  });
-  modalRef.componentInstance.registro_selected = this.params.data;
-
-  (async () => {
-    try {
-      await firstValueFrom(modalRef.componentInstance.registrosE);
-      const horarioAEliminar = this.params.data;
-      const index = this.AllHorariosComponent.chorarioModel.findIndex(
-        registro => registro.id === horarioAEliminar.id
-      );
-      if (index !== -1) {
-        this.AllHorariosComponent.chorarioModel.splice(index, 1);
-        this.AllHorariosComponent.gridApi.applyTransaction({ remove: [horarioAEliminar] });
-      }
-    } catch (error) {
-      console.error('Error o cancelación en eliminación:', error);
-    }
-  })();
-}
-
-
+  // Las cuatro acciones viven en AllHorariosComponent: las comparten estos
+  // botones y el menu del boton derecho. Aqui solo se les pasa la fila.
+  clonHorario()   { this.AllHorariosComponent.clonHorario(this.params.data); }
+  editHorario()   { this.AllHorariosComponent.editHorario(this.params.data); }
+  viewHorario()   { this.AllHorariosComponent.viewHorario(this.params.data); }
+  deleteHorario() { this.AllHorariosComponent.deleteHorario(this.params.data); }
 
 }

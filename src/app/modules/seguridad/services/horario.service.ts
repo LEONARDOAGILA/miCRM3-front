@@ -31,6 +31,15 @@ addHorario(data: any): Observable<any> {
 }
 
 
+//   ******   ACTIVAR / DESACTIVAR (solo esa columna)   ******  //
+// No pasa por editHorario: el servidor tiene una funcion que escribe solo
+// `activo`. Sin `activo` alterna, pero la pantalla manda el valor que
+// quiere para que dos personas pulsando a la vez no se peleen.
+activarHorario(id: any, activo?: boolean): Observable<any> {
+  return this._http.post(this.URL_SERVICIOS + 'activarHorario/' + id,
+                         activo === undefined ? {} : { activo });
+}
+
 editHorario(id: number, data: any): Observable<any> {
   const formData = new FormData();
   formData.append('json', JSON.stringify(data));

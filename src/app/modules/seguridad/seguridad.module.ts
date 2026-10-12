@@ -24,6 +24,7 @@ import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.com
 import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/campoBusqueda.component';
 import { CampoBusquedaPaginacionComponent } from "../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component";
 import { ComboComponent } from '../../components/campos/combo/combo.component';
+import { MenuContextualComponent } from '../../components/menuContextual/menuContextual.component';
 
 
 import { HomeComponent } from './pages/home/home.component';
@@ -136,6 +137,7 @@ import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/
     CheckboxComponent,
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
+    MenuContextualComponent,
     ModalArrastrableDirective,
     ComboComponent,
     ActionButtonsModule,

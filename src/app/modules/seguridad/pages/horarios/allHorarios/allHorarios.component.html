@@ -69,6 +69,9 @@
         </div>             
         
         <!-- INICIO DE AG-GRID (con altura fija y margin-top) -->
+        <!-- El clic derecho se escucha en el contenedor: el evento
+             `cellContextMenu` de ag-Grid no llega (comprobado). -->
+        <div (contextmenu)="onContextMenuGrilla($event)">
         <ag-grid-angular 
           style="height: 360.4px; --ag-line-height: 30px; margin-top: -10px;"
           [rowData]="chorarioModel" 
@@ -83,9 +86,11 @@
           [animateRows]="true" 
           class="ag-theme-alpine ag-grid-transparente p-2 ag-grid-responsive"
           [navigateToNextCell]="navegarConTeclado"
+          [rowClassRules]="rowClassRules"
           (gridReady)="onGridReady($event)" 
           (cellClicked)="onCellClicked($event)"                 
         ></ag-grid-angular>
+        </div>
 
         <!-- INICIO CONTROLES DE PAGINACIÓN PERSONALIZADOS (mismo orden que perfiles) -->
         <!-- Paginación: mismo bloque que allUsers (btn-group del tema) -->
@@ -126,3 +131,11 @@
 
 </panel>
 <!-- FIN PANEL -->
+
+<!-- ================= MENU DEL BOTON DERECHO =================
+     Las mismas acciones que la columna ACCIONES, sin tener que llegar al
+     final de la fila ni desplegar la columna cuando esta plegada. -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

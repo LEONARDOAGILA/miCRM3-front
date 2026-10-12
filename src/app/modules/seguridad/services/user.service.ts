@@ -93,7 +93,16 @@ allUsers(page: number = 1, perPage: number = 10, search: string = ''): Observabl
 
   
 
-  //   ******   EDITAR   ******  //
+  //   ******   ACTIVAR / DESACTIVAR (solo esa columna)   ******  //
+  // No pasa por editUser: el servidor tiene una funcion que escribe solo
+  // `isactive`. Sin `activo` alterna, pero la pantalla manda el valor que
+  // quiere para que dos personas pulsando a la vez no se peleen.
+  activarUser(id: any, activo?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'activarUser/' + id,
+                           activo === undefined ? {} : { activo });
+  }
+
+//   ******   EDITAR   ******  //
   editUser(id: any, data: any): Observable<any> { 
     //console.log("user data:", data);
     return this._http.post(this.URL_SERVICIOS + "editUser/" + id, data); 

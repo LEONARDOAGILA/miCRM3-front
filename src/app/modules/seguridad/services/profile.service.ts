@@ -49,6 +49,15 @@ listProfiles(page: number = 1, perPage: number = 5, search: string = ''): Observ
     return this._http.post(this.URL_SERVICIOS   + "addProfile", data);   
   }
   
+  //   ******   ACTIVAR / DESACTIVAR (solo esa columna)   ******  //
+  // No pasa por editProfile: el servidor tiene una funcion que escribe solo
+  // `activo`. Sin `activo` alterna, pero la pantalla manda el valor que
+  // quiere para que dos personas pulsando a la vez no se peleen.
+  activarProfile(id: any, activo?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'activarProfile/' + id,
+                           activo === undefined ? {} : { activo });
+  }
+
   editProfile(id: any, data: any) {    
     return this._http.post(this.URL_SERVICIOS   + "editProfile/" + id, data);   
   }

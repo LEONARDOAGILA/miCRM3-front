@@ -1,7 +1,7 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { CellClickedEvent, GridApi, GridReadyEvent, ColumnApi } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, ColumnApi, RowNode } from 'ag-grid-community';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom } from 'rxjs';
@@ -131,6 +131,18 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
 
       { headerName: 'ID', field: 'id', minWidth: 70, maxWidth: 80, cellStyle: { textAlign: 'center' } },
       {
+        // Segunda columna y PULSABLE: dar de baja esto era abrir la ficha
+        // entera, bajar la casilla y guardar. Ahora se pulsa aqui.
+        // Columna NUEVA. «Estado» se queda: lo calcula la base a partir de
+        // `activo` y las fechas, y al pulsar aqui viene recalculado.
+        headerName: 'Activo',
+        field: 'activo',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 80,
+        maxWidth: 80,
+        cellRenderer: (params: any) => this.casillaActivo(params),
+      },
+      {
         headerName: 'Título', field: 'titulo', minWidth: 200, cellStyle: { textAlign: 'left' },
         cellRenderer: (p: any) => {
           const obligatorio = p.data?.obligatorio
@@ -236,7 +248,73 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
     this.gridApi.sizeColumnsToFit();
   }
 
-  onCellClicked(e: CellClickedEvent): void { this.selectedRow = e.data; }
+  // ================================================================
+  // LA CASILLA DE «ACTIVO»
+  // ================================================================
+  //
+  // El dibujo y el flujo —el giro mientras guarda, repintar con lo que
+  // contesta el servidor, volver atrás si falla— viven en
+  // AppAgGridService: son los mismos en las nueve rejillas que tienen esta
+  // casilla. Aquí sólo van los datos de esta pantalla.
+
+  /**
+   * Los desactivados se ven, pero se ven apagados y tachados.
+   *
+   * No se esconden: siguen en la lista y se pueden buscar y abrir. Lo que se
+   * busca es no tener que leer la casilla fila por fila para saber cuál ya no
+   * está en juego. La regla y su CSS son los mismos en las nueve rejillas con
+   * casilla, así que viven en AppAgGridService y en styles.css.
+   */
+  public rowClassRules = this._appAgGridService.reglasFilaInactiva('activo');
+
+  /** Los que se están guardando ahora mismo: su casilla sale como un giro. */
+  private readonly activoEnVuelo = new Set<number>();
+
+  /** La casilla de la columna «Activo». */
+  private casillaActivo(params: any): string {
+    return this._appAgGridService.casillaActivo(params, {
+      puede: this.accesoModel?.editar === true,
+      enVuelo: this.activoEnVuelo,
+      que: 'boletín',
+    });
+  }
+
+  /**
+   * Activar o desactivar desde la casilla, sin abrir el formulario.
+   *
+   * Lo escribe una función del servidor que toca SÓLO esa columna. Guardar
+   * la ficha entera para bajar una casilla la revalidaba toda, y un
+   * registro que hoy no cumpliría alguna regla —cargado antes de que
+   * existiera— no se podría desactivar hasta arreglarle todo lo demás.
+   */
+  cambiarActivo(fila: BoletinModel | null, nodo?: RowNode | null): void {
+    if (!fila) { return; }
+
+    this._appAgGridService.alternarActivo({
+      gridApi: this.gridApi,
+      filas: this.boletines,
+      fila, nodo,
+      campo: 'activo',
+      enVuelo: this.activoEnVuelo,
+      puede: this.accesoModel?.editar === true,
+      que: 'boletín',
+      llamar: (id, activo) => this._boletinService.activarBoletin(id, activo),
+      nombre: (f: any) => f.titulo,
+        hasta: this.unsubscribe$,
+    });
+  }
+
+  onCellClicked(e: CellClickedEvent): void {
+    this.selectedRow = e.data;
+
+    // La casilla de «Activo» se marca con `data-accion`, igual que el botón
+    // de llamar de las rejillas de clientes: se atiende aquí y no con un
+    // componente por celda.
+    const origen = e.event?.target as HTMLElement | null;
+    if (origen?.closest('[data-accion="activo"]')) {
+      this.cambiarActivo(e.data, e.node);
+    }
+  }
 
   navegarConTeclado = this._appAgGridService.navegacionConFlechas((fila: BoletinModel) => this.selectedRow = fila);
 

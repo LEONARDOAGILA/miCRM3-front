@@ -1,0 +1,34 @@
+<!-- Fuera del flujo y en coordenadas de ventana (position: fixed): el menú
+     se abre donde está el cursor, no donde esté el componente. -->
+@if (visible) {
+  <div #caja
+       class="menuctx"
+       role="menu"
+       [style.left.px]="x"
+       [style.top.px]="y">
+
+    @for (o of visibles; track clave($index, o); let i = $index) {
+      @if (o.separadorAntes && i > 0) {
+        <div class="menuctx__separador" role="separator"></div>
+      }
+
+      <button type="button"
+              class="menuctx__opcion"
+              role="menuitem"
+              [class.is-activa]="i === activa"
+              [class.is-peligro]="o.peligro"
+              [disabled]="o.deshabilitada"
+              [title]="o.ayuda || o.texto"
+              (mouseenter)="activa = i"
+              (click)="elegir(o)">
+
+        <i class="menuctx__icono fa-fw" [ngClass]="claseIcono(o)" aria-hidden="true"></i>
+        <span class="menuctx__texto">{{ o.texto }}</span>
+
+        @if (o.atajo) {
+          <span class="menuctx__atajo">{{ o.atajo }}</span>
+        }
+      </button>
+    }
+  </div>
+}

@@ -1,6 +1,7 @@
 import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { CellClickedEvent, GridApi,  GridReadyEvent } from 'ag-grid-community';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
+import { Subject, firstValueFrom } from 'rxjs';
+import { CellClickedEvent, GridApi,  GridReadyEvent, RowNode } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridAngular } from 'ag-grid-angular';
@@ -74,6 +75,18 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
   public searchTerm: string = '';
 
 
+  // ================================================================
+  // MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, pero sin llegar al final de
+  // la fila ni desplegar la columna cuando está plegada.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
   constructor(
     private modal: NgbModal,
     private route: Router,
@@ -105,6 +118,8 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
       if (this.resizeTimeoutId) { 
         clearTimeout(this.resizeTimeoutId); 
       }
+      this.unsubscribe$.next();
+      this.unsubscribe$.complete();
     }
 
 
@@ -127,6 +142,16 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
           maxWidth: 70,          
         },
         {
+          // Segunda columna y PULSABLE: dar de baja esto era abrir la ficha
+          // entera, bajar la casilla y guardar. Ahora se pulsa aqui.
+          headerName: 'Activo',
+          field: 'activo',
+          cellStyle: { textAlign: 'center' },
+          minWidth: 80,
+          maxWidth: 80,
+          cellRenderer: (params: any) => this.casillaActivo(params),
+        },
+        {
           headerName: 'Nombre',
           field: 'nombre',
           cellStyle: { textAlign: 'left' },
@@ -140,20 +165,6 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
           minWidth: 100,
           maxWidth: 100,
           
-        },
-        {
-          headerName: 'Activo',
-          field: 'activo',
-          cellStyle: { textAlign: 'center' },
-          minWidth: 95,
-          maxWidth: 95,
-          cellRenderer: (params: any) =>
-            `
-            <div class="form-check  mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-              <input disabled class="form-check-input" type="checkbox"   ${params.value === true ? 'checked' : ''}    />
-              <label class="form-check-label"></label>
-            </div>        
-            `,      
         },
         {
           headerName: 'Creado',
@@ -334,11 +345,80 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
     /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
     navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
 
+    // ================================================================
+    // LA CASILLA DE «ACTIVO»
+    // ================================================================
+    //
+    // El dibujo y el flujo —el giro mientras guarda, repintar con lo que
+    // contesta el servidor, volver atrás si falla— viven en
+    // AppAgGridService: son los mismos en las nueve rejillas que tienen esta
+    // casilla. Aquí sólo van los datos de esta pantalla.
+
+    /**
+     * Los desactivados se ven, pero se ven apagados y tachados.
+     *
+     * No se esconden: siguen en la lista y se pueden buscar y abrir. Lo que se
+     * busca es no tener que leer la casilla fila por fila para saber cuál ya no
+     * está en juego. La regla y su CSS son los mismos en las nueve rejillas con
+     * casilla, así que viven en AppAgGridService y en styles.css.
+     */
+    public rowClassRules = this._appAgGridService.reglasFilaInactiva('activo');
+
+    /** Los que se están guardando ahora mismo: su casilla sale como un giro. */
+    private readonly activoEnVuelo = new Set<number>();
+
+    /**
+     * Para cortar la peticion si la pantalla se cierra antes de que conteste.
+     *
+     * Sin esto, la respuesta llegaria y repintaria una rejilla ya destruida.
+     */
+    private readonly unsubscribe$ = new Subject<void>();
+
+    /** La casilla de la columna «Activo». */
+    private casillaActivo(params: any): string {
+      return this._appAgGridService.casillaActivo(params, {
+        puede: this.accesoModel?.editar === true,
+        enVuelo: this.activoEnVuelo,
+        que: 'perfil',
+      });
+    }
+
+    /**
+     * Activar o desactivar desde la casilla, sin abrir el formulario.
+     *
+     * Lo escribe una función del servidor que toca SÓLO esa columna. Guardar
+     * la ficha entera para bajar una casilla la revalidaba toda, y un
+     * registro que hoy no cumpliría alguna regla —cargado antes de que
+     * existiera— no se podría desactivar hasta arreglarle todo lo demás.
+     */
+    cambiarActivo(fila: PerfilModel | null, nodo?: RowNode | null): void {
+      if (!fila) { return; }
+      if (this._seguridadService.isexpired()) { return; }
+
+      this._appAgGridService.alternarActivo({
+        gridApi: this.gridApi,
+        filas: this.perfilModel,
+        fila, nodo,
+        campo: 'activo',
+        enVuelo: this.activoEnVuelo,
+        puede: this.accesoModel?.editar === true,
+        que: 'perfil',
+        llamar: (id, activo) => this._profile.activarProfile(id, activo),
+        nombre: (f: any) => f.nombre,
+        hasta: this.unsubscribe$,
+      });
+    }
+
     onCellClicked(e: CellClickedEvent): void {
       this.selectedRow = e.data;
-      //console.log('cliked', e.data)
-      //this.id = e.data.id;
-      //this.nombre = e.data.nombre;
+
+      // La casilla de «Activo» se marca con `data-accion`, igual que el botón
+      // de llamar de las rejillas de clientes: se atiende aquí y no con un
+      // componente por celda.
+      const origen = e.event?.target as HTMLElement | null;
+      if (origen?.closest('[data-accion="activo"]')) {
+        this.cambiarActivo(e.data, e.node);
+      }
     }
 
 
@@ -577,6 +657,229 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 
 
   // AUDITORIA
+  // ================================================================
+  // LAS ACCIONES DE UNA FILA
+  // ================================================================
+  //
+  // Viven aquí y no en el renderizador de la columna ACCIONES porque las usan
+  // DOS sitios: esos botones y el menú del botón derecho. Tenerlas duplicadas
+  // era garantizar que acabaran distintas.
+
+  clonProfile(fila: any) {
+    // Abre el modal del formulario de clonación de perfiles (Save2ProfileComponent)
+    const modalRef = this.modal.open(Save2ProfileComponent, {
+      centered: true,      // Centra el modal en la pantalla
+      size: 'xl',          // Tamaño extra grande (para el grid de accesos)
+      backdrop: 'static',  // No permite cerrar haciendo clic fuera del modal
+      keyboard: false      // No permite cerrar con la tecla Escape
+    });
+
+    // Pasa al modal los datos del perfil que se va a clonar
+    modalRef.componentInstance.registro_selected = fila;
+    // Indica al modal que la acción es 'clon' (para que sepa que debe crear un nuevo perfil a partir del existente)
+    modalRef.componentInstance.accion = 'clon';
+
+    // Usamos una función asíncrona autoinvocada (IIFE) para usar async/await
+    // Usamos firstValueFrom para convertir el observable en promesa y evitar suscripciones manuales
+    // Con esto, no se necesita desuscribirse en ngOnDestroy.
+    // Esto simplifica el manejo de la respuesta del modal.
+    (async () => {
+      try {
+        // Espera la respuesta del modal: se emite cuando el usuario guarda exitosamente
+        // firstValueFrom convierte el observable en una promesa; tipamos la respuesta como PerfilModel
+        const nuevoPerfil = await firstValueFrom<PerfilModel>(
+          modalRef.componentInstance.registrosE
+        );
+
+        // Agrega el nuevo perfil al principio del arreglo local 'perfilModel' (porque la lista suele ordenarse por id DESC)
+        // Si el orden fuera ascendente, usaríamos push() en lugar de unshift()
+        this.perfilModel.unshift(nuevoPerfil);
+
+        // Refresca el grid con el nuevo arreglo completo (setRowData es simple y garantiza consistencia)
+        // También se podría usar applyTransaction para añadir solo la fila, pero setRowData es más claro y menos propenso a errores
+        this.gridApi.setRowData(this.perfilModel);
+      } catch (error) {
+        // Captura cualquier error o la cancelación del usuario (cierra sin guardar)
+        console.error('Error o cancelación en clonación:', error);
+      }
+    })();
+  }
+
+
+
+  editProfile(fila: any) {
+    // Abre el modal del formulario de edición de perfiles (Save2ProfileComponent)
+    const modalRef = this.modal.open(Save2ProfileComponent, {
+      centered: true,      // Centra el modal en la pantalla
+      size: 'xl',          // Tamaño extra grande (para el grid de accesos)
+      backdrop: 'static',  // No permite cerrar haciendo clic fuera del modal
+      keyboard: false      // No permite cerrar con la tecla Escape
+    });
+
+    // Pasa al modal los datos del perfil que se va a editar
+    modalRef.componentInstance.registro_selected = fila;
+    // Indica al modal que la acción es 'edit' (para que sepa que debe actualizar, no crear)
+    modalRef.componentInstance.accion = 'edit';
+
+
+    // Usamos una función asíncrona autoinvocada (IIFE) para usar async/await
+    // Usamos firstValueFrom para convertir el observable en promesa y evitar suscripciones manuales
+    // Con esto, no se necesita desuscribirse en ngOnDestroy.
+    // Esto simplifica el manejo de la respuesta del modal.
+    (async () => {
+      try {
+        // Espera la respuesta del modal: se emite cuando el usuario guarda exitosamente
+        // firstValueFrom convierte el observable en una promesa; tipamos la respuesta como PerfilModel
+        const response = await firstValueFrom<PerfilModel>(
+          modalRef.componentInstance.registrosE
+        );
+        // Busca la posición (índice) del perfil editado dentro del arreglo 'perfilModel' del padre
+        const index = this.perfilModel.findIndex(
+          registro => registro.id === response.id
+        );
+        // Si lo encuentra (índice válido)
+        if (index !== -1) {
+          // Actualiza el arreglo local con los datos nuevos (respuesta del backend)
+          this.perfilModel[index] = response;
+          // Obtiene la referencia a la fila correspondiente en el grid (ag-Grid)
+          const rowNode = this.gridApi.getRowNode(index.toString());
+          // Actualiza los datos de esa fila con la respuesta (refresca el grid)
+          rowNode?.setData(response);
+        }
+      } catch (error) {
+        // Captura cualquier error o la cancelación del usuario (cierra sin guardar)
+        console.error('Error o cancelación en edición:', error);
+      }
+    })();
+  }
+
+
+
+  viewProfile(fila: any) {
+    // Abre el modal del formulario de perfiles en modo vista (solo lectura)
+    const modalRef = this.modal.open(Save2ProfileComponent, {
+      centered: true,      // Centra el modal en la pantalla
+      size: 'xl',          // Tamaño extra grande (para el grid de accesos)
+      backdrop: 'static',  // No permite cerrar haciendo clic fuera del modal
+      keyboard: false      // No permite cerrar con la tecla Escape
+    });
+
+    // Pasa al modal los datos del perfil que se va a visualizar
+    modalRef.componentInstance.registro_selected = fila;
+    // Indica al modal que la acción es 'view' (modo solo lectura, sin botones de guardar)
+    modalRef.componentInstance.accion = 'view';
+  }
+
+
+
+  deleteProfile(fila: any) {
+    // Abre el modal de confirmación de eliminación
+    const modalRef = this.modal.open(DeleteProfileComponent, {
+      centered: true,      // Centrado en pantalla
+      size: 'md',          // Tamaño mediano
+      backdrop: 'static',  // No cierra al hacer clic fuera
+      keyboard: true       // Permite cerrar con tecla Escape
+    });
+
+    // Pasa al modal los datos del perfil a eliminar
+    modalRef.componentInstance.registro_selected = fila;
+
+    
+    // Usamos una función asíncrona autoinvocada (IIFE) para usar async/await
+    // Usamos firstValueFrom para convertir el observable en promesa y evitar suscripciones manuales
+    // Con esto, no se necesita desuscribirse en ngOnDestroy.
+    // Esto simplifica el manejo de la respuesta del modal.
+    (async () => {
+      try {
+        // Espera la confirmación del modal (emite cuando el usuario confirma la eliminación)
+        await firstValueFrom(modalRef.componentInstance.registrosE);
+
+        // Datos del perfil que se está eliminando
+        const perfilAEliminar = fila;
+        const perfilId = perfilAEliminar.id;
+
+        // Busca el índice del perfil en el arreglo local (perfilModel)
+        const index = this.perfilModel.findIndex(
+          registro => registro.id === perfilId
+        );
+
+        if (index !== -1) {
+          // Elimina el perfil del arreglo local
+          this.perfilModel.splice(index, 1);
+          // Elimina la fila del grid usando applyTransaction
+          this.gridApi.applyTransaction({ remove: [perfilAEliminar] });
+        }
+      } catch (error) {
+        // Si el usuario cancela la eliminación o hay error, solo se registra
+        console.error('Error o cancelación en eliminación:', error);
+      }
+    })();
+  }
+
+
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+
+  /**
+   * Clic derecho sobre la rejilla.
+   *
+   * Mismo planteamiento que en Menús: se escucha el `contextmenu` del
+   * contenedor y la fila se resuelve con la API pública. El evento
+   * `cellContextMenu` de ag-Grid no llega —comprobado contra la librería—,
+   * así que no se usa.
+   *
+   * LO PRIMERO ES ELEGIR LA FILA: el menú actúa sobre «la fila», y si no se
+   * marcara se vería resaltada una y el menú trabajaría sobre otra.
+   */
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+
+  /** Qué se ofrece para esta fila, según el perfil de quien mira. */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    return [
+      { id: 'ver',    texto: 'Ver el perfil',   icono: 'fa-eye',
+        visible: this.accesoModel?.ver !== false },
+      { id: 'editar', texto: 'Modificar',       icono: 'fa-pen',
+        visible: this.accesoModel?.editar === true },
+      { id: 'clonar', texto: 'Clonar',          icono: 'fa-clone',
+        visible: this.accesoModel?.crear === true,
+        ayuda: 'Crear un perfil nuevo copiando los accesos de éste' },
+      { id: 'eliminar', texto: 'Eliminar',      icono: 'fa-trash',
+        peligro: true, separadorAntes: true,
+        visible: this.accesoModel?.eliminar === true },
+      { id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        separadorAntes: true,
+        visible: this.accesoModel?.auditar === true,
+        ayuda: 'Quién tocó este perfil y cuándo' },
+    ];
+  }
+
+  /** Se eligió una opción del menú contextual. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'ver':       this.viewProfile(fila); break;
+      case 'editar':    this.editProfile(fila); break;
+      case 'clonar':    this.clonProfile(fila); break;
+      case 'eliminar':  this.deleteProfile(fila); break;
+      case 'auditoria': this.auditoria(); break;
+    }
+  }
+
   auditoria() {
     if (!this.selectedRow) return;
     
@@ -659,7 +962,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 
 export class ButtonAccionProfile {
 
-  private params: any;
+  public params: any;
 
   constructor(
       private modalService: NgbModal, 
@@ -672,156 +975,11 @@ export class ButtonAccionProfile {
   }
 
 
-  clonProfile() {
-    // Abre el modal del formulario de clonación de perfiles (Save2ProfileComponent)
-    const modalRef = this.modalService.open(Save2ProfileComponent, {
-      centered: true,      // Centra el modal en la pantalla
-      size: 'xl',          // Tamaño extra grande (para el grid de accesos)
-      backdrop: 'static',  // No permite cerrar haciendo clic fuera del modal
-      keyboard: false      // No permite cerrar con la tecla Escape
-    });
-
-    // Pasa al modal los datos del perfil que se va a clonar
-    modalRef.componentInstance.registro_selected = this.params.data;
-    // Indica al modal que la acción es 'clon' (para que sepa que debe crear un nuevo perfil a partir del existente)
-    modalRef.componentInstance.accion = 'clon';
-
-    // Usamos una función asíncrona autoinvocada (IIFE) para usar async/await
-    // Usamos firstValueFrom para convertir el observable en promesa y evitar suscripciones manuales
-    // Con esto, no se necesita desuscribirse en ngOnDestroy.
-    // Esto simplifica el manejo de la respuesta del modal.
-    (async () => {
-      try {
-        // Espera la respuesta del modal: se emite cuando el usuario guarda exitosamente
-        // firstValueFrom convierte el observable en una promesa; tipamos la respuesta como PerfilModel
-        const nuevoPerfil = await firstValueFrom<PerfilModel>(
-          modalRef.componentInstance.registrosE
-        );
-
-        // Agrega el nuevo perfil al principio del arreglo local 'perfilModel' (porque la lista suele ordenarse por id DESC)
-        // Si el orden fuera ascendente, usaríamos push() en lugar de unshift()
-        this.AllProfilesComponent.perfilModel.unshift(nuevoPerfil);
-
-        // Refresca el grid con el nuevo arreglo completo (setRowData es simple y garantiza consistencia)
-        // También se podría usar applyTransaction para añadir solo la fila, pero setRowData es más claro y menos propenso a errores
-        this.AllProfilesComponent.gridApi.setRowData(this.AllProfilesComponent.perfilModel);
-      } catch (error) {
-        // Captura cualquier error o la cancelación del usuario (cierra sin guardar)
-        console.error('Error o cancelación en clonación:', error);
-      }
-    })();
-  }
-
-
-
-  editProfile() {
-    // Abre el modal del formulario de edición de perfiles (Save2ProfileComponent)
-    const modalRef = this.modalService.open(Save2ProfileComponent, {
-      centered: true,      // Centra el modal en la pantalla
-      size: 'xl',          // Tamaño extra grande (para el grid de accesos)
-      backdrop: 'static',  // No permite cerrar haciendo clic fuera del modal
-      keyboard: false      // No permite cerrar con la tecla Escape
-    });
-
-    // Pasa al modal los datos del perfil que se va a editar
-    modalRef.componentInstance.registro_selected = this.params.data;
-    // Indica al modal que la acción es 'edit' (para que sepa que debe actualizar, no crear)
-    modalRef.componentInstance.accion = 'edit';
-
-
-    // Usamos una función asíncrona autoinvocada (IIFE) para usar async/await
-    // Usamos firstValueFrom para convertir el observable en promesa y evitar suscripciones manuales
-    // Con esto, no se necesita desuscribirse en ngOnDestroy.
-    // Esto simplifica el manejo de la respuesta del modal.
-    (async () => {
-      try {
-        // Espera la respuesta del modal: se emite cuando el usuario guarda exitosamente
-        // firstValueFrom convierte el observable en una promesa; tipamos la respuesta como PerfilModel
-        const response = await firstValueFrom<PerfilModel>(
-          modalRef.componentInstance.registrosE
-        );
-        // Busca la posición (índice) del perfil editado dentro del arreglo 'perfilModel' del padre
-        const index = this.AllProfilesComponent.perfilModel.findIndex(
-          registro => registro.id === response.id
-        );
-        // Si lo encuentra (índice válido)
-        if (index !== -1) {
-          // Actualiza el arreglo local con los datos nuevos (respuesta del backend)
-          this.AllProfilesComponent.perfilModel[index] = response;
-          // Obtiene la referencia a la fila correspondiente en el grid (ag-Grid)
-          const rowNode = this.AllProfilesComponent.gridApi.getRowNode(index.toString());
-          // Actualiza los datos de esa fila con la respuesta (refresca el grid)
-          rowNode?.setData(response);
-        }
-      } catch (error) {
-        // Captura cualquier error o la cancelación del usuario (cierra sin guardar)
-        console.error('Error o cancelación en edición:', error);
-      }
-    })();
-  }
-
-
-
-  viewProfile() {
-    // Abre el modal del formulario de perfiles en modo vista (solo lectura)
-    const modalRef = this.modalService.open(Save2ProfileComponent, {
-      centered: true,      // Centra el modal en la pantalla
-      size: 'xl',          // Tamaño extra grande (para el grid de accesos)
-      backdrop: 'static',  // No permite cerrar haciendo clic fuera del modal
-      keyboard: false      // No permite cerrar con la tecla Escape
-    });
-
-    // Pasa al modal los datos del perfil que se va a visualizar
-    modalRef.componentInstance.registro_selected = this.params.data;
-    // Indica al modal que la acción es 'view' (modo solo lectura, sin botones de guardar)
-    modalRef.componentInstance.accion = 'view';
-  }
-
-
-
-  deleteProfile() {
-    // Abre el modal de confirmación de eliminación
-    const modalRef = this.modalService.open(DeleteProfileComponent, {
-      centered: true,      // Centrado en pantalla
-      size: 'md',          // Tamaño mediano
-      backdrop: 'static',  // No cierra al hacer clic fuera
-      keyboard: true       // Permite cerrar con tecla Escape
-    });
-
-    // Pasa al modal los datos del perfil a eliminar
-    modalRef.componentInstance.registro_selected = this.params.data;
-
-    
-    // Usamos una función asíncrona autoinvocada (IIFE) para usar async/await
-    // Usamos firstValueFrom para convertir el observable en promesa y evitar suscripciones manuales
-    // Con esto, no se necesita desuscribirse en ngOnDestroy.
-    // Esto simplifica el manejo de la respuesta del modal.
-    (async () => {
-      try {
-        // Espera la confirmación del modal (emite cuando el usuario confirma la eliminación)
-        await firstValueFrom(modalRef.componentInstance.registrosE);
-
-        // Datos del perfil que se está eliminando
-        const perfilAEliminar = this.params.data;
-        const perfilId = perfilAEliminar.id;
-
-        // Busca el índice del perfil en el arreglo local (perfilModel)
-        const index = this.AllProfilesComponent.perfilModel.findIndex(
-          registro => registro.id === perfilId
-        );
-
-        if (index !== -1) {
-          // Elimina el perfil del arreglo local
-          this.AllProfilesComponent.perfilModel.splice(index, 1);
-          // Elimina la fila del grid usando applyTransaction
-          this.AllProfilesComponent.gridApi.applyTransaction({ remove: [perfilAEliminar] });
-        }
-      } catch (error) {
-        // Si el usuario cancela la eliminación o hay error, solo se registra
-        console.error('Error o cancelación en eliminación:', error);
-      }
-    })();
-  }
-
+  // Las cuatro acciones viven en AllProfilesComponent: las comparten estos
+  // botones y el menú del botón derecho. Aquí sólo se les pasa la fila.
+  clonProfile()   { this.AllProfilesComponent.clonProfile(this.params.data); }
+  editProfile()   { this.AllProfilesComponent.editProfile(this.params.data); }
+  viewProfile()   { this.AllProfilesComponent.viewProfile(this.params.data); }
+  deleteProfile() { this.AllProfilesComponent.deleteProfile(this.params.data); }
 
 }

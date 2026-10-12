@@ -51,7 +51,16 @@ export class DepartamentoService {
     return this._http.post(this.URL_SERVICIOS + 'addDepartamento', data);
   }
 
-  //   ******   EDITAR   ******  //
+    //   ******   ACTIVAR / DESACTIVAR (solo esa columna)   ******  //
+  // No pasa por editDepartamento: el servidor tiene una funcion que escribe solo
+  // `activo`. Sin `activo` alterna, pero la pantalla manda el valor que
+  // quiere para que dos personas pulsando a la vez no se peleen.
+  activarDepartamento(id: any, activo?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'activarDepartamento/' + id,
+                           activo === undefined ? {} : { activo });
+  }
+
+//   ******   EDITAR   ******  //
   editDepartamento(id: any, data: any): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'editDepartamento/' + id, data);
   }

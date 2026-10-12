@@ -1,0 +1,99 @@
+/* ============================================================
+   MENÚ DEL BOTÓN DERECHO
+
+   Los colores salen de variables de Bootstrap, así que acompaña al tema
+   elegido en «Ajustes de la aplicación» y al modo oscuro sin reglas aparte.
+   ============================================================ */
+
+/* El host no ocupa sitio: lo que se ve es la caja, que va `fixed`. Sin esto
+   un contenedor con `display: flex` le reservaría un hueco vacío. */
+:host {
+  display: contents;
+}
+
+.menuctx {
+  position: fixed;
+  z-index: 1080;            /* por encima de los modales del tema (1054) */
+
+  min-width: 11rem;
+  max-width: 18rem;
+  padding: .25rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
+}
+
+.menuctx__opcion {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+
+  padding: .3rem .5rem;
+
+  border: none;
+  border-radius: .25rem;
+  background: none;
+  color: var(--bs-body-color, #212529);
+  font-size: .75rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* El resaltado va por `is-activa` y no por :hover, para que el ratón y las
+   flechas del teclado marquen lo mismo y no haya dos opciones iluminadas. */
+.menuctx__opcion.is-activa:not(:disabled) {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.menuctx__opcion:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.menuctx__icono {
+  flex: 0 0 auto;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.menuctx__opcion.is-activa:not(:disabled) .menuctx__icono {
+  color: var(--bs-app-theme, #00acac);
+}
+
+.menuctx__texto {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El atajo, apagado y a la derecha: es un recordatorio, no una acción */
+.menuctx__atajo {
+  flex: 0 0 auto;
+  font-size: .625rem;
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .8;
+}
+
+/* ---------- Lo que no tiene vuelta atrás ---------- */
+.menuctx__opcion.is-peligro,
+.menuctx__opcion.is-peligro .menuctx__icono {
+  color: var(--bs-danger, #dc3545);
+}
+
+.menuctx__opcion.is-peligro.is-activa:not(:disabled) {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);
+}
+
+.menuctx__opcion.is-peligro.is-activa:not(:disabled) .menuctx__icono {
+  color: var(--bs-danger, #dc3545);
+}
+
+.menuctx__separador {
+  height: 1px;
+  margin: .25rem .35rem;
+  background-color: var(--bs-border-color, #dee2e6);
+}

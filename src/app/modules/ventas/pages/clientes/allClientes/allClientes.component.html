@@ -114,6 +114,9 @@
              que llegue hasta el final de la ventana.
              [pagination]="false" porque la paginación la hace el servidor y
              los controles son los de abajo, no los de ag-Grid. -->
+        <!-- El clic derecho se escucha en el contenedor: el evento
+             `cellContextMenu` de ag-Grid no llega (comprobado). -->
+        <div (contextmenu)="onContextMenuGrilla($event)">
         <ag-grid-angular
           class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
           [rowData]="clienteModel"
@@ -133,6 +136,7 @@
           (filterChanged)="onFiltroColumna()"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>
+        </div>
 
         <!-- ---------- 2c. PAGINACIÓN ----------
              Botones agrupados (btn-group del tema) con el indicador de página
@@ -173,3 +177,11 @@
   </div>
 
 </panel>
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO =================
+     Las mismas acciones que la columna ACCIONES, sin tener que llegar al
+     final de la fila ni desplegar la columna cuando está plegada. -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

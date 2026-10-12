@@ -307,3 +307,57 @@ body {
   background-color: #111;
   overflow: hidden;
 }
+
+/* ================================================================
+   LA CASILLA DE «ACTIVO» EN LAS REJILLAS
+   ================================================================
+   La pinta AppAgGridService.casillaActivo como HTML, así que está FUERA de
+   la encapsulación de cualquier componente: una regla con `:host` no la
+   alcanzaría, y copiarla en los nueve componentes que la usan era copiar lo
+   mismo nueve veces.
+
+   Ocupa la celda entera para que el sitio donde hay que pulsar sea grande:
+   una casilla de 16 píxeles en una fila de 30 es un blanco incómodo.
+
+   El cursor de mano sólo lo lleva `celda-activo__check`, que es la clase que
+   se pone cuando el perfil permite modificar: sin permiso la casilla sale
+   `disabled`, y anunciar que se puede pulsar algo que no se puede sería
+   mentir. */
+.celda-activo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.celda-activo__check {
+  cursor: pointer;
+  margin: 0;
+}
+
+/* ================================================================
+   LAS FILAS DESACTIVADAS, APAGADAS Y TACHADAS
+   ================================================================
+   La clase la pone AppAgGridService.reglasFilaInactiva. Está aquí y no en
+   cada componente porque las filas las dibuja ag-Grid FUERA de la
+   encapsulación: cada pantalla que la quería tenía que repetir la misma regla
+   con `:host ::ng-deep`, y ya iban cinco copias con cinco selectores
+   ligeramente distintos.
+
+   SE DEJAN FUERA DOS CLASES DE COLUMNA:
+
+     · la casilla —`activo`, o `isactive` en las pantallas de usuarios— es la
+       que dice precisamente que está desactivado, y atenuarla sería tapar el
+       dato justo donde hay que leerlo;
+     · y las de acciones —`actions`, `acciones`— son botones que se siguen
+       pudiendo pulsar: tachar un botón y dejarlo a medio ver se lee como que
+       no funciona.
+
+   Las reglas que algunos componentes tienen por su cuenta se quedan donde
+   están: dicen lo mismo con otro alcance, y pintar dos veces lo mismo no
+   cambia nada. */
+.ag-row.fila-inactiva .ag-cell:not([col-id='activo']):not([col-id='isactive']):not([col-id='actions']):not([col-id='acciones']) {
+  color: var(--bs-secondary-color, #6c757d);
+  text-decoration: line-through;
+  opacity: .75;
+}

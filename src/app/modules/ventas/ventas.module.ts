@@ -28,6 +28,7 @@ import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.com
 import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/campoBusqueda.component';
 import { CampoBusquedaPaginacionComponent } from "../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component";
 import { TabPanelComponent } from "../../components/campos/tabPanel/tabPanel.component";
+import { MenuContextualComponent } from "../../components/menuContextual/menuContextual.component";
 import { CampoNgxEditorComponent } from '../../components/campos/campoNgxEditor/campoNgxEditor.component';
 import { ComboComponent } from '../../components/campos/combo/combo.component';
 
@@ -103,6 +104,7 @@ import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCli
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
     TabPanelComponent,
+    MenuContextualComponent,
     CampoNgxEditorComponent,   // «Qué se habló»: el editor con formato
     ModalArrastrableDirective,
     ComboComponent,

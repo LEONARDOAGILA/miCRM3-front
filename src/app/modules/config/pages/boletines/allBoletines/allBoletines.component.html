@@ -116,6 +116,7 @@
           [animateRows]="true"
           [overlayNoRowsTemplate]="'<span>No hay boletines</span>'"
           [navigateToNextCell]="navegarConTeclado"
+          [rowClassRules]="rowClassRules"
           (gridReady)="onGridReady($event)"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>

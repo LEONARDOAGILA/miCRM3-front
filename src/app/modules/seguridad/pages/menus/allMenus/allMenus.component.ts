@@ -23,6 +23,7 @@ import { AppExportCsvService } from '../../../../../service/app-exportCsv.servic
 import { PerfilModel } from '../../../interfaces/perfilModel';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { ToastrService } from 'ngx-toastr';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 
 
 @Component({
@@ -47,6 +48,19 @@ export class AllMenusComponent implements OnInit, OnDestroy{
    * desplegarla: sin eso el usuario no sabe que puede pulsar la cabecera.
    */
   public accionesPlegadas = false;
+
+  // ================================================================
+  // MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que los botones de la columna ACCIONES, pero sin
+  // tener que llegar hasta el final de la fila ni desplegar la columna
+  // cuando está plegada.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
 
 
   private unsubscribe$ = new Subject<void>();
@@ -686,6 +700,205 @@ export class AllMenusComponent implements OnInit, OnDestroy{
     }
 
   // AUDITORIA
+  // ================================================================
+  // LAS ACCIONES DE UNA FILA
+  // ================================================================
+  //
+  // Viven aquí y no en el renderizador de la columna ACCIONES porque las usan
+  // DOS sitios: esos botones y el menú del botón derecho. Tenerlas duplicadas
+  // era garantizar que acabaran distintas.
+
+  /** Cuelga un menú nuevo DENTRO de la fila. */
+  nuevoSubmenu(fila: any): void {
+    if (!fila || this._seguridadService.isexpired()) { return; }
+
+    const modalRef = this.modal.open(SaveMenuComponent,
+      { centered: true, size: 'lg', backdrop: 'static', keyboard: false });
+
+    modalRef.componentInstance.registro_selected = fila;
+    modalRef.componentInstance.accion = 'add';
+    modalRef.componentInstance.maxOrder2 = this.getMaxOrder2ByParent(fila.id) + 1;
+    modalRef.componentInstance.tieneHijos = this.menuModel.some(m => m.padre_id === fila.id);
+
+    modalRef.result
+      .then(() => this.allMenus())
+      .catch((error) => {
+        if (error !== 'Close click' && error !== 'Escape key press') {
+          console.error('Error al cerrar el modal:', error);
+        }
+      });
+  }
+
+  /** Modifica la fila. */
+  editarMenu(fila: any): void {
+    if (!fila || this._seguridadService.isexpired()) { return; }
+
+    const modalRef = this.modal.open(SaveMenuComponent,
+      { centered: true, size: 'lg', backdrop: 'static', keyboard: false });
+
+    modalRef.componentInstance.registro_selected = fila;
+    modalRef.componentInstance.accion = 'edit';
+    modalRef.componentInstance.tieneHijos = this.menuModel.some(m => m.padre_id === fila.id);
+
+    modalRef.result
+      .then(() => this.allMenus())
+      .catch((error) => {
+        if (error !== 'Close click' && error !== 'Escape key press') {
+          console.error('Error al cerrar el modal:', error);
+        }
+      });
+  }
+
+  /** Borra la fila, previa confirmación del propio modal. */
+  eliminarMenu(fila: any): void {
+    if (!fila || this._seguridadService.isexpired()) { return; }
+
+    const modalRef = this.modal.open(DeleteMenuComponent,
+      { centered: true, size: 'md', backdrop: 'static', keyboard: true });
+
+    modalRef.componentInstance.registro_selected = fila;
+    modalRef.componentInstance.registrosE
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe({
+        next: () => {
+          // Se quita del modelo y de la rejilla sin recargar la lista entera
+          this.menuModel = this.menuModel.filter((m: any) => m.id !== fila.id);
+          this.gridApi?.applyTransaction({ remove: [fila] });
+          if (this.selectedRow?.id === fila.id) { this.selectedRow = null; }
+        },
+        error: (error: any) => console.error(error.message),
+      });
+  }
+
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+
+  /**
+   * Clic derecho sobre la rejilla.
+   *
+   * NO SE USA EL EVENTO `cellContextMenu` DE ag-Grid. Se probó contra la
+   * librería de verdad y no llegaba: el clic alcanza el contenedor de filas
+   * pero la rejilla lo descarta antes de emitirlo. En vez de pelearme con
+   * sus entresijos, aquí se escucha el `contextmenu` del contenedor y la
+   * fila se resuelve con la API pública, que sí está documentada y no cambia
+   * entre versiones.
+   *
+   * LO PRIMERO ES ELEGIR LA FILA: el menú actúa sobre «la fila», y si no se
+   * marcara se vería resaltada una y el menú trabajaría sobre otra. Es el
+   * error clásico de los menús contextuales sobre tablas.
+   */
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+
+  /**
+   * Qué se ofrece para esta fila.
+   *
+   * Se arma cada vez porque depende de la fila y del perfil: un menú de
+   * cuarto nivel no admite submenús, y quien no puede editar no debe ver
+   * «Modificar» como si pudiera.
+   */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    const puedeCrear  = this.accesoModel?.crear    === true;
+    const puedeEditar = this.accesoModel?.editar   === true;
+    const puedeBorrar = this.accesoModel?.eliminar === true;
+    const puedeAuditar = this.accesoModel?.auditar === true;
+
+    // El cuarto nivel (level 3) es el último: colgarle algo dentro pasaría
+    // de los cuatro niveles que entiende el menú de la aplicación.
+    const esUltimoNivel = fila?.level === 3;
+
+    return [
+      {
+        id: 'submenu', texto: 'Nuevo submenú aquí', icono: 'fa-folder-plus',
+        visible: puedeCrear,
+        deshabilitada: esUltimoNivel,
+        ayuda: esUltimoNivel ? 'Este es el último nivel: no admite submenús' : 'Crear un menú dentro de éste',
+      },
+      {
+        id: 'raiz', texto: 'Nuevo menú principal', icono: 'fa-plus',
+        visible: puedeCrear,
+        ayuda: 'Crear un menú de primer nivel',
+      },
+      {
+        id: 'editar', texto: 'Modificar', icono: 'fa-pen',
+        separadorAntes: true, visible: puedeEditar,
+      },
+      {
+        id: 'eliminar', texto: 'Eliminar', icono: 'fa-trash',
+        peligro: true, visible: puedeBorrar,
+      },
+      {
+        id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        separadorAntes: true, visible: puedeAuditar,
+        ayuda: 'Quién tocó este menú y cuándo',
+      },
+      {
+        id: 'copiarUrl', texto: 'Copiar la url', icono: 'fa-link',
+        separadorAntes: true,
+        deshabilitada: !fila?.url || fila.url === '.',
+        ayuda: fila?.url && fila.url !== '.' ? fila.url : 'Este menú no tiene url (es una carpeta)',
+      },
+    ];
+  }
+
+  /** Se eligió una opción del menú contextual. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'submenu':   this.nuevoSubmenu(fila); break;
+      case 'raiz':      this.addMenu(); break;
+      case 'editar':    this.editarMenu(fila); break;
+      case 'eliminar':  this.eliminarMenu(fila); break;
+      case 'auditoria': this.auditoria(); break;
+      case 'copiarUrl': this.copiarUrl(fila); break;
+    }
+  }
+
+  /**
+   * La url al portapapeles.
+   *
+   * Con el respaldo de toda la vida: `navigator.clipboard` sólo existe en
+   * páginas seguras, y esto se usa por http en la red local.
+   */
+  private copiarUrl(fila: any): void {
+    const url = (fila?.url ?? '').trim();
+    if (!url || url === '.') { return; }
+
+    const avisar = () => this._toastr.success(url, 'Url copiada', { timeOut: 2000 });
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(avisar, () => this.copiarALaAntigua(url, avisar));
+    } else {
+      this.copiarALaAntigua(url, avisar);
+    }
+  }
+
+  private copiarALaAntigua(texto: string, alCopiar: () => void): void {
+    const caja = document.createElement('textarea');
+    caja.value = texto;
+    caja.style.position = 'fixed';
+    caja.style.opacity = '0';
+    document.body.appendChild(caja);
+    caja.select();
+    try { document.execCommand('copy'); alCopiar(); }
+    catch { this._toastr.warning('No se pudo copiar', 'Url'); }
+    finally { document.body.removeChild(caja); }
+  }
+
   auditoria() {
     if (!this.selectedRow) return;
     
@@ -795,54 +1008,11 @@ export class ButtonAccionMenu {
     this.params = params;
   }
 
-  addMenu() {
-      const modalRef = this.modalService.open(SaveMenuComponent, { centered: true, size: 'lg',  backdrop: 'static',  keyboard: false });
-      modalRef.componentInstance.registro_selected = this.params.data;
-      modalRef.componentInstance.accion = 'add';
-      const maxOrder2 = this.AllMenusComponent.getMaxOrder2ByParent(this.params.data.id);
-      modalRef.componentInstance.maxOrder2 = maxOrder2 + 1 ;
-      let tieneHijos = this.AllMenusComponent.menuModel.some(item => item.padre_id === this.params.data.id);
-      modalRef.componentInstance.tieneHijos = tieneHijos;
-
-      modalRef.result.then((result) => {
-          this.AllMenusComponent.allMenus();
-      }).catch((error) => {
-        if (error !== 'Close click' && error !== 'Escape key press') {
-          console.error('Error al cerrar el modal:', error);
-        }
-      });
-  }
-        
-  editMenu() {
-      const modalRef = this.modalService.open(SaveMenuComponent, { centered: true, size: 'lg',  backdrop: 'static',  keyboard: false });
-      modalRef.componentInstance.registro_selected = this.params.data;
-      modalRef.componentInstance.accion = 'edit';
-      let tieneHijos = this.AllMenusComponent.menuModel.some(item => item.padre_id === this.params.data.id);
-      modalRef.componentInstance.tieneHijos = tieneHijos;
-
-      modalRef.result.then((result) => {  this.AllMenusComponent.allMenus();
-      }).catch((error) => {
-        if (error !== 'Close click' && error !== 'Escape key press') {
-          console.error('Error al cerrar el modal:', error);
-        }
-      });
-
-  }
-
-  deleteMenu() {
-      const modalRef = this.modalService.open(DeleteMenuComponent, { centered: true, size: 'md',  backdrop: 'static',  keyboard: true });      
-      modalRef.componentInstance.registro_selected = this.params.data;
-      modalRef.componentInstance.registrosE.pipe(takeUntil(this.unsubscribe$)).subscribe({
-          next: (response: any) => {
-            const selectedData = this.AllMenusComponent.gridApi.getSelectedRows();
-            const resdel = this.AllMenusComponent.gridApi.applyTransaction({ remove: selectedData })!;
-          },
-          error: (error: any) => {
-            console.error(error.message);
-          }
-      });
-  }
-
+  // Las tres acciones viven en AllMenusComponent: las comparten estos botones
+  // y el menú del botón derecho. Aquí sólo se les pasa la fila.
+  addMenu()    { this.AllMenusComponent.nuevoSubmenu(this.params.data); }
+  editMenu()   { this.AllMenusComponent.editarMenu(this.params.data); }
+  deleteMenu() { this.AllMenusComponent.eliminarMenu(this.params.data); }
 
 
 

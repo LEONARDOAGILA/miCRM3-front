@@ -85,6 +85,16 @@ export class ClienteService {
     return this._http.post(this.URL_SERVICIOS + 'editCliente/' + id, data);
   }
 
+  //   ******   ACTIVAR / DESACTIVAR (sólo esa columna)   ******  //
+  // No pasa por editCliente: el servidor tiene una función que escribe sólo
+  // `activo` (ventas.fn_clientes_activar). Sin `activo` alterna, pero la
+  // pantalla manda el valor que quiere para que dos personas pulsando a la
+  // vez no se peleen.
+  activarCliente(id: any, activo?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'activarCliente/' + id,
+                           activo === undefined ? {} : { activo });
+  }
+
   //   ******   ELIMINAR   ******  //
   deleteCliente(id: any): Observable<any> {
     return this._http.delete(this.URL_SERVICIOS + 'deleteCliente/' + id);

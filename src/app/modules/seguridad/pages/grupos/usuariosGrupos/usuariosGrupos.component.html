@@ -280,6 +280,7 @@
             [animateRows]="true"
             [overlayNoRowsTemplate]="'<span>No hay usuarios en «' + nombreSeleccion + '». Cree uno con <b>Nuevo usuario</b> o arrastre usuarios desde otro grupo.</span>'"
             [navigateToNextCell]="navegarConTeclado"
+            [rowClassRules]="rowClassRules"
             (gridReady)="onGridReady($event)"
             (cellClicked)="onCellClicked($event)">
           </ag-grid-angular>

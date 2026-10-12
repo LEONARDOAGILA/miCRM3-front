@@ -1,7 +1,8 @@
 import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams, RowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
@@ -100,6 +101,71 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   @ViewChild(CampoBusquedaPaginacionComponent) campoBusquedaPaginacion!: CampoBusquedaPaginacionComponent;
   public searchTerm: string = '';
 
+  // ================================================================
+  // MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, pero sin tener que llegar
+  // al final de la fila ni desplegar la columna cuando está plegada.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  /**
+   * Clic derecho sobre la rejilla.
+   *
+   * La fila la resuelve el servicio común desde el DOM: el evento
+   * `cellContextMenu` de ag-Grid no llega (comprobado contra la librería).
+   */
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara();
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se ofrece, según lo que permita el perfil. */
+  private opcionesPara(): OpcionContextual[] {
+    return [
+      { id: 'ver',      texto: 'Ver',       icono: 'fa-eye',
+        visible: this.accesoModel?.ver !== false },
+      { id: 'editar',   texto: 'Modificar', icono: 'fa-pen',
+        visible: this.accesoModel?.editar === true },
+      { id: 'clonar',   texto: 'Clonar',    icono: 'fa-clone',
+        visible: this.accesoModel?.crear === true,
+        ayuda: 'Crear un cliente nuevo copiando los datos de éste' },
+      { id: 'eliminar', texto: 'Eliminar',  icono: 'fa-trash',
+        peligro: true, separadorAntes: true,
+        visible: this.accesoModel?.eliminar === true },
+      { id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        separadorAntes: true,
+        visible: this.accesoModel?.auditar === true,
+        ayuda: 'Quién tocó este registro y cuándo' },
+    ];
+  }
+
+  /** Se eligió una opción del menú contextual. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'ver':       this.viewCliente(fila); break;
+      case 'editar':    this.editCliente(fila); break;
+      case 'clonar':    this.clonCliente(fila); break;
+      case 'eliminar':  this.deleteCliente(fila); break;
+      case 'auditoria': this.auditoria(); break;
+    }
+  }
+
   constructor(
     private host: ElementRef<HTMLElement>,
     private modal: NgbModal,
@@ -186,19 +252,25 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   public filtrosColumna: any = {};
 
   /**
+   * Los clientes cuya casilla «Activo» se está guardando ahora mismo.
+   *
+   * Mientras uno esté aquí su casilla se pinta como un giro y no acepta otro
+   * clic: dos pulsaciones seguidas mandarían dos peticiones, y la segunda
+   * desharía la primera sin que se vea por qué.
+   */
+  private readonly activoEnVuelo = new Set<number>();
+
+  /**
    * Los clientes desactivados se ven, pero se ven apagados y tachados.
    *
-   * No se esconden: siguen en el listado y se pueden buscar y abrir. Lo que
-   * se busca es que no haya que mirar la casilla «Activo» del final de la
-   * fila para saber que ese cliente ya no está en juego.
+   * No se esconden: siguen en el listado y se pueden buscar y abrir. Lo que se
+   * busca es que no haya que leer la casilla «Activo» fila por fila para saber
+   * que un cliente ya no está en juego.
    *
-   * `=== false` y no `!activo`: así una fila a la que todavía no le ha
-   * llegado el dato —`undefined` mientras carga— no se pinta tachada y luego
-   * se destacha.
+   * La regla y su CSS son los mismos en las nueve rejillas con casilla, así
+   * que viven en AppAgGridService y en styles.css.
    */
-  public rowClassRules = {
-    'fila-inactiva': (p: RowClassParams) => p.data?.activo === false,
-  };
+  public rowClassRules = this._appAgGridService.reglasFilaInactiva('activo');
 
   /**
    * Las columnas con su filtro de cabecera.
@@ -241,6 +313,16 @@ export class AllClientesComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'center' },
         minWidth: 70,
         maxWidth: 70,
+      },
+      {
+        // Segunda columna y PULSABLE: dar de baja a un cliente era abrir la
+        // ficha entera, bajar la casilla y guardar. Ahora se pulsa aquí.
+        headerName: 'Activo',
+        field: 'activo',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 80,
+        maxWidth: 80,
+        cellRenderer: (params: any) => this.casillaActivo(params),
       },
       // {
       //   headerName: 'Foto',
@@ -382,20 +464,6 @@ export class AllClientesComponent implements OnInit, OnDestroy {
           const clases: { [k: string]: string } = { ACTIVO: 'bg-teal', INACTIVO: 'bg-secondary', SUSPENDIDO: 'bg-warning', MOROSO: 'bg-danger' };
           return params.value ? `<span class="badge ${clases[params.value] ?? 'bg-secondary'} fs-10px">${params.value}</span>` : '';
         },
-      },
-      {
-        headerName: 'Activo',
-        field: 'activo',
-        cellStyle: { textAlign: 'center' },
-        minWidth: 80,
-        maxWidth: 80,
-        cellRenderer: (params: any) =>
-          `
-          <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-            <input disabled class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} />
-            <label class="form-check-label"></label>
-          </div>
-          `,
       },
       {
         headerName: 'Creado',
@@ -574,6 +642,64 @@ export class AllClientesComponent implements OnInit, OnDestroy {
 
     const origen = e.event?.target as HTMLElement | null;
     if (origen?.closest('[data-accion="llamar"]')) { this.llamar(e.data); }
+
+    if (origen?.closest('[data-accion="activo"]')) {
+      // LA CASILLA NO DECIDE: la marca que acaba de poner el navegador es
+      // sólo un acuse de recibo. Quien dice si el cliente queda activo es el
+      // servidor, y la celda se vuelve a dibujar con lo que contesta: si la
+      // llamada falla, la marca vuelve donde estaba.
+      //
+      // No se intenta pararla con preventDefault: ag-Grid 28 avisa de este
+      // clic en el turno siguiente —comprobado contra la librería: el aviso
+      // no ha llegado tras un microtask y sí tras un setTimeout(0)—, y para
+      // entonces el navegador ya terminó con el evento.
+      this.cambiarActivo(e.data, e.node);
+    }
+  }
+
+  /** La casilla de la columna «Activo». */
+  private casillaActivo(params: any): string {
+    return this._appAgGridService.casillaActivo(params, {
+      puede: this.accesoModel?.editar === true,
+      enVuelo: this.activoEnVuelo,
+      que: 'cliente',
+    });
+  }
+
+  /**
+   * Activar o desactivar al cliente desde la casilla, sin abrir el formulario.
+   *
+   * Lo escribe ventas.fn_clientes_activar, que toca SÓLO esa columna: guardar
+   * la ficha entera para bajar una casilla revalidaba identificación, correos,
+   * cupo y descuento, y a un cliente cargado antes de que existieran esas
+   * reglas no había manera de desactivarlo sin arreglarle primero lo demás.
+   *
+   * El flujo —el giro mientras guarda, repintar con lo que contesta el
+   * servidor, volver atrás si falla— vive en AppAgGridService: es el mismo en
+   * las nueve rejillas que tienen esta casilla.
+   *
+   * `estado` no se toca. Es otra cosa —ACTIVO / SUSPENDIDO / MOROSO cuenta la
+   * relación comercial, `activo` dice si el registro está en juego— y en el
+   * formulario también se guardan por separado.
+   */
+  cambiarActivo(cliente: ClienteModel | null, nodo?: RowNode | null): void {
+    if (!cliente) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    this._appAgGridService.alternarActivo({
+      gridApi: this.gridApi,
+      filas: this.clienteModel,
+      fila: cliente, nodo,
+      campo: 'activo',
+      enVuelo: this.activoEnVuelo,
+      puede: this.accesoModel?.editar === true,
+      que: 'cliente',
+      llamar: (id, activo) => this._clienteService.activarCliente(id, activo),
+      nombre: (f: any) => f.nombre_completo,
+      hasta: this.unsubscribe$,
+      // El tachado de los inactivos es una rowClassRules, y ésas se evalúan al
+      // asentar la fila: de eso se encarga el setData de alternarActivo.
+    });
   }
 
   /**
