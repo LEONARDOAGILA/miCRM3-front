@@ -8,6 +8,7 @@ import { LoadingBarModule } from '@ngx-loading-bar/core';
 import { AgGridModule } from 'ag-grid-angular';
 import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
 
+
 import { DirectiveModule } from "../../core/directives/directive.module";
 import { PanelModule } from '../../components/panel/panel.module';
 
@@ -26,6 +27,9 @@ import { CampoNumeroEnteroComponent } from '../../components/campos/campoNumeroE
 import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.component';
 import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/campoBusqueda.component';
 import { CampoBusquedaPaginacionComponent } from "../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component";
+import { TabPanelComponent } from "../../components/campos/tabPanel/tabPanel.component";
+import { MenuContextualComponent } from "../../components/menuContextual/menuContextual.component";
+import { CampoNgxEditorComponent } from '../../components/campos/campoNgxEditor/campoNgxEditor.component';
 import { ComboComponent } from '../../components/campos/combo/combo.component';
 
 import { HomeComponent } from './pages/home/home.component';
@@ -41,6 +45,9 @@ import { GestionClientesComponent } from './pages/gestion-clientes/gestionClient
 import { ResumenVentasComponent } from './pages/gestion-clientes/resumenVentas/resumenVentas.component';
 import { SaveGestionComponent } from './pages/gestion-clientes/saveGestion/saveGestion.component';
 import { CerrarGestionComponent } from './pages/gestion-clientes/cerrarGestion/cerrarGestion.component';
+import { DeleteGestionComponent } from './pages/gestion-clientes/deleteGestion/deleteGestion.component';
+import { DeleteNotaClienteComponent } from './pages/gestion-clientes/deleteNotaCliente/deleteNotaCliente.component';
+import { DeleteArchivoClienteComponent } from './pages/gestion-clientes/deleteArchivoCliente/deleteArchivoCliente.component';
 import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCliente/reasignarCliente.component';
 
 // Las pantallas de «Respuestas de WhatsApp» no se declaran aquí: son
@@ -66,6 +73,9 @@ import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCli
     GestionClientesComponent,
     SaveGestionComponent,
     CerrarGestionComponent,
+    DeleteGestionComponent,
+    DeleteNotaClienteComponent,
+    DeleteArchivoClienteComponent,
     ReasignarClienteComponent,
   ],
 
@@ -93,6 +103,9 @@ import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCli
     CheckboxComponent,
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
+    TabPanelComponent,
+    MenuContextualComponent,
+    CampoNgxEditorComponent,   // «Qué se habló»: el editor con formato
     ModalArrastrableDirective,
     ComboComponent,
     ActionButtonsModule,

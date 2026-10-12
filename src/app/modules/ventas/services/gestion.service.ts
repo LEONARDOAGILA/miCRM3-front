@@ -10,13 +10,40 @@ export interface FiltrosGestion {
   estado?: string | null;
   /** Cómo terminó: CONTACTADO, NO_CONTESTA… */
   resultado?: string | null;
-  /** El login de quien la registró (gestiones.created_by) */
-  creado_por?: string | null;
+  /** El id del RESPONSABLE (gestiones.usuario_id): a quién le toca, no quién la registró */
+  responsable_id?: number | null;
   desde?: string | null;
   hasta?: string | null;
+  /**
+   * El modelo de filtros de columna de ag-Grid, tal cual lo da la rejilla.
+   *
+   * Va aparte de los demás porque no lo elige el usuario en un desplegable:
+   * lo arma la cabecera de la rejilla. Se aplica en el SERVIDOR, que para eso
+   * las dos pestañas piden sus filas allí.
+   */
+  columnas?: any;
 }
 
 /** Filtros de la agenda («Lo que toca hacer»). */
+/** Lo que filtra la pantalla de reparto en bloque. */
+export interface FiltrosAsignacion {
+  /** Para repartir sólo los clientes que caen dentro de una zona del mapa. */
+  zonaId?: number | null;
+  page?: number;
+  perPage?: number;
+  /** El buscador de arriba: mira además en correo, teléfono y dirección */
+  search?: string;
+  /**
+   * El modelo de filtros de columna de ag-Grid, tal cual lo da la rejilla.
+   *
+   *     { canton: { filterType: 'text', type: 'contains', filter: 'manta' } }
+   *
+   * Se manda al servidor y se aplica allí, sobre los mil, no sobre las veinte
+   * filas que la rejilla tiene en la mano.
+   */
+  filtros?: any;
+}
+
 export interface FiltrosAgenda {
   /** Sólo lo que programó el usuario que está usando el CRM */
   mias?: boolean;
@@ -34,6 +61,14 @@ export interface FiltrosAgenda {
   search?: string;
   page?: number;
   perPage?: number;
+  /**
+   * El modelo de filtros de columna de ag-Grid, tal cual lo da la rejilla.
+   *
+   * Va aparte de los demás porque no lo elige el usuario en un desplegable:
+   * lo arma la cabecera. Se aplica en el SERVIDOR, que para eso la agenda
+   * pagina allí.
+   */
+  columnas?: any;
 }
 
 /** Contadores que devuelve la agenda. */
@@ -96,7 +131,10 @@ export class GestionService {
     if (filtros.tipo)   { params = params.set('tipo', filtros.tipo); }
     if (filtros.estado) { params = params.set('estado', filtros.estado); }
     if (filtros.resultado)  { params = params.set('resultado', filtros.resultado); }
-    if (filtros.creado_por) { params = params.set('creado_por', filtros.creado_por); }
+    if (filtros.responsable_id) { params = params.set('responsable_id', String(filtros.responsable_id)); }
+    if (filtros.columnas && Object.keys(filtros.columnas).length) {
+      params = params.set('filtros', JSON.stringify(filtros.columnas));
+    }
     if (filtros.desde)  { params = params.set('desde', filtros.desde); }
     if (filtros.hasta)  { params = params.set('hasta', filtros.hasta); }
     return this._http.get<any>(this.URL_SERVICIOS + 'allGestiones', { params, observe: 'response' });
@@ -144,6 +182,9 @@ export class GestionService {
     if (filtros.desde) { params = params.set('desde', filtros.desde); }
     if (filtros.hasta) { params = params.set('hasta', filtros.hasta); }
     if (filtros.search) { params = params.set('search', filtros.search); }
+    if (filtros.columnas && Object.keys(filtros.columnas).length) {
+      params = params.set('filtros', JSON.stringify(filtros.columnas));
+    }
 
     return this._http.get(this.URL_SERVICIOS + 'agendaPaginada', { params });
   }
@@ -159,6 +200,30 @@ export class GestionService {
   }
 
   //   ******   REGISTRAR / PROGRAMAR   ******  //
+  /**
+   * Las conversaciones que se trajeron de un fichero.
+   *
+   * Son gestiones con modo_registro = IMPORTADA. Van por su propia ruta y no
+   * por allGestiones con un filtro: la pestaña de WhatsApp las enseña todas y
+   * sin paginar, y buscarlas dentro del historial paginado obligaría a pedir
+   * páginas hasta dar con ellas.
+   */
+  /**
+   * A qué usuarios puede quien pregunta dejar una gestión a cargo: su equipo,
+   * los responsables de ese cliente y él mismo (todos, si es administrador).
+   *
+   * El cliente importa: sin él la lista es sólo la jerarquía, y con él entra
+   * el cobrador o el asistente del cliente aunque no estén por debajo.
+   */
+  asignables(clienteId: number | null): Observable<any> {
+    const query = clienteId ? '?cliente_id=' + clienteId : '';
+    return this._http.get(this.URL_SERVICIOS + 'asignables' + query);
+  }
+
+  importadas(clienteId: number): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'importadas/' + clienteId);
+  }
+
   addGestion(data: any): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'addGestion', data);
   }
@@ -190,5 +255,50 @@ export class GestionService {
 
   asignaciones(clienteId: number): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'asignaciones/' + clienteId);
+  }
+
+  //   ******   REPARTO EN BLOQUE   ******  //
+
+  /**
+   * Los clientes a repartir, con quién los tiene hoy en ese papel.
+   *
+   * `meta.ids` trae TODOS los que cumplen el filtro, no sólo los de la página:
+   * es lo que permite «marcar los 991» sin recorrer cincuenta páginas.
+   */
+  clientesParaAsignar(filtros: FiltrosAsignacion = {}): Observable<any> {
+    let params = new HttpParams()
+      .set('page', String(filtros.page ?? 1))
+      .set('per_page', String(filtros.perPage ?? 20));
+
+    if (filtros.search) { params = params.set('search', filtros.search); }
+
+    // Acotado a un área del mapa: el reparto abierto desde la pantalla de
+    // zonas trae sólo los clientes que caen dentro.
+    if (filtros.zonaId) { params = params.set('zona_id', String(filtros.zonaId)); }
+
+    // En JSON y no como parámetros anidados: el modelo de ag-Grid cambia de
+    // forma según la operación (filter, filterTo, condition1…) y aplanarlo
+    // sería inventarse un formato que luego hay que deshacer en PHP
+    if (filtros.filtros && Object.keys(filtros.filtros).length) {
+      params = params.set('filtros', JSON.stringify(filtros.filtros));
+    }
+
+    return this._http.get(this.URL_SERVICIOS + 'clientesParaAsignar', { params });
+  }
+
+  /**
+   * Reparte varios clientes de una vez.
+   *
+   * `destinos` vacío quita el responsable; con uno van todos a esa persona;
+   * con varios se reparten por turnos.
+   */
+  reasignarMasivo(data: {
+    ids: number[];
+    destinos: number[];
+    rol?: RolResponsable;
+    motivo?: string | null;
+    mover_agenda?: boolean;
+  }): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'reasignarMasivo', data);
   }
 }

@@ -24,9 +24,22 @@ export interface NotaCliente {
   /** Si alguien la tocó después de escribirla (más de un minuto después) */
   editada?: boolean;
   created_by?: string;
+  /** Quién lo registró, ya formateado: LOGIN  -  APELLIDOS NOMBRES */
+  registrado_por_nombre?: string | null;
   updated_by?: string;
   created_at?: string;
   updated_at?: string;
+
+  /**
+   * El título y el cuerpo con los huecos ya cambiados, para la tarjeta.
+   *
+   * No vienen del servidor: los calcula la pantalla al cargar la lista. El
+   * crudo se queda en titulo y contenido porque es lo que hay que devolverle
+   * al editor; si se pisara, corregir una nota guardaría el {cliente} ya
+   * resuelto y la nota dejaría de servir para el día que ese dato cambie.
+   */
+  titulo_vista?: string;
+  contenido_vista?: string;
 }
 
 export type ColorNota = 'gris' | 'azul' | 'verde' | 'amarillo' | 'rojo' | 'morado';
@@ -53,4 +66,21 @@ export function tinteDeNota(color?: string | null): string {
 
 export function nombreDeColor(color?: string | null): string {
   return COLORES_NOTA.find(c => c.id === color)?.nombre ?? 'Sin etiqueta';
+}
+
+/**
+ * Las imágenes de una nota, con el token puesto.
+ *
+ * El HTML guardado trae <img src=".../archivoCliente/ver/57"> y esa ruta ya no
+ * es pública: sin token el navegador recibe un 401 y la nota sale con los
+ * recuadros rotos. El token NO se guarda en la nota —caducaría—: se le pone al
+ * pintarla, que es cuando se sabe quién está mirando.
+ */
+export function conTokenLasImagenes(html?: string | null): string {
+  const t = (() => { try { return localStorage.getItem('token') ?? ''; } catch { return ''; } })();
+  if (!html || !t) { return html ?? ''; }
+
+  // Sólo las que ya apuntan al servidor y aún no llevan token
+  return html.replace(/(archivoCliente\/ver\/\d+)(?![^"']*[?&]t=)/g,
+                      '$1?t=' + encodeURIComponent(t));
 }

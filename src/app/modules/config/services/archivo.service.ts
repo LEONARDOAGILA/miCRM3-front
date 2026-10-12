@@ -137,6 +137,13 @@ export class ArchivoService {
   /** Árbol con lo que el usuario puede ver, con `permiso` en cada nodo. */
   misArchivos(): Observable<any> { return this._http.get(this.URL_SERVICIOS + 'misArchivos'); }
   miPermisoArchivo(id: number): Observable<any> { return this._http.get(this.URL_SERVICIOS + 'miPermisoArchivo/' + id); }
+  /**
+   * `{ es_administrador }` para quien pregunta: lo dice su GRUPO, que es la
+   * misma señal con la que el back decide. Lo pregunta «Mis archivos» para
+   * enseñar u ocultar lo de administrador; el permiso de verdad lo comprueba
+   * el back en cada operación.
+   */
+  soyAdminDeArchivos(): Observable<any> { return this._http.get(this.URL_SERVICIOS + 'soyAdminDeArchivos'); }
   /** Autoriza `ejecutar`, registra el acceso y devuelve el registro con sus banderas. */
   abrirArchivo(id: number): Observable<any> { return this._http.post(this.URL_SERVICIOS + 'abrirArchivo/' + id, {}); }
 

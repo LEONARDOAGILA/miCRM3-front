@@ -222,6 +222,16 @@
               <div class="cinta__grupo__etiqueta">Enlaces y líneas</div>
             </div>
 
+            <!-- Se guarda el hueco, no el dato: se cambia al leer la nota, al
+                 imprimirla y al exportarla (ver huecosPlantilla.ts) -->
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <app-huecosPlantilla [grupos]="grupos" (elegido)="insertarHueco($event)">
+                </app-huecosPlantilla>
+              </div>
+              <div class="cinta__grupo__etiqueta">Datos del cliente</div>
+            </div>
+
             <span class="cinta__ayuda">También puedes pegar texto e imágenes, o arrastrarlas a la hoja</span>
           }
 

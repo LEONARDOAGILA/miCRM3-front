@@ -48,6 +48,60 @@ export interface EstadisticasVentas {
     minutos_mes: number;
     /** Clientes distintos con al menos una gestión este mes */
     clientes_tocados: number;
+    /** Pendientes de los próximos 7 días, sin contar lo ya vencido */
+    proximos_7: number;
+    /** Minutos de media por gestión realizada en el periodo */
+    duracion_media: number;
+  };
+
+  /**
+   * A quién no se está llamando.
+   *
+   * Sólo sobre clientes ACTIVOS: que un inactivo lleve meses sin contacto no
+   * es un descuido, es lo normal.
+   */
+  cobertura: {
+    activos: number;
+    /** Cuántos días sin contacto cuentan como «dormido» (lo fija el servidor) */
+    dias_dormido: number;
+    /** Nunca se le hizo una gestión */
+    sin_gestion: number;
+    /** Sin contacto en los últimos `dias_dormido` días, o nunca */
+    dormidos: number;
+    /** Sin ninguna gestión pendiente: se caen del radar */
+    sin_proxima: number;
+    con_proxima: number;
+  };
+
+  /**
+   * Si sirve de algo llamar, en el periodo.
+   *
+   * «No contesta» y «buzón» se separan de «no interesado»: la primera es un
+   * problema de horario, la segunda de producto.
+   */
+  efectividad: {
+    dias: number;
+    realizadas: number;
+    con_resultado: number;
+    /** Se habló con alguien, diga lo que diga */
+    contacto: number;
+    /** No se le pudo hablar: no contesta, buzón, número errado */
+    sin_contacto: number;
+    interesados: number;
+    ventas: number;
+    cotizaciones: number;
+    reclamos: number;
+    /** Porcentaje de contacto sobre las que tienen resultado anotado */
+    tasa_contacto: number;
+  };
+
+  /** Qué falta por repartir, papel a papel */
+  papeles: {
+    activos: number;
+    sin_vendedor: number;
+    sin_cobrador: number;
+    sin_asistente: number;
+    sin_postventa: number;
   };
 
   /** Lo del usuario que está mirando (se ata por created_by) */
@@ -65,6 +119,19 @@ export interface EstadisticasVentas {
 
   por_tipo: { tipo: string; cuantas: number }[];
   resultados: { resultado: string; cuantas: number }[];
+  /** Cartera por vendedor: cuántos clientes tiene cada uno */
   vendedores: { vendedor: string; clientes: number; pendientes: number }[];
+
+  /**
+   * Trabajo por persona, que no es lo mismo que cartera: lo que hizo en el
+   * periodo y lo que le queda.
+   */
+  usuarios: {
+    usuario: string;
+    realizadas: number;
+    pendientes: number;
+    vencidas: number;
+    minutos: number;
+  }[];
   ciudades: { ciudad: string; clientes: number }[];
 }

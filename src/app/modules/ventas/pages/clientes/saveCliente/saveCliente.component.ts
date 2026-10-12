@@ -762,6 +762,20 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.titulo = nombre ? `Dirección de ${nombre}` : 'Elegir la dirección en el mapa';
     modalRef.componentInstance.lugarInicial = this.coordenadasDeLoGuardado();
 
+    // Lo escrito en «Dirección» viaja al buscador del mapa: si se tecleó para
+    // esto, no hay que volver a escribirlo.
+    const escrita = String(this.form.get('direccion')?.value ?? '').trim();
+    const delMapa = String(this.ubicacion?.ubicacion ?? this.ubicacionGuardada?.ubicacion ?? '').trim();
+
+    modalRef.componentInstance.busquedaInicial = escrita;
+
+    // Y se busca sola sólo si lo escrito NO es lo que ya puso el mapa. Con un
+    // punto guardado y su misma dirección, abrir soltando una lista de
+    // sugerencias encima sería contestar a una pregunta que nadie hizo; el
+    // texto se queda en la caja y basta con pulsar Intro.
+    modalRef.componentInstance.buscarAlAbrir =
+      !!escrita && escrita.toLocaleLowerCase() !== delMapa.toLocaleLowerCase();
+
     modalRef.result.then((elegida: UbicacionElegida) => {
       if (!elegida) { return; }
       this.ubicacion = elegida;

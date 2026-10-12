@@ -47,6 +47,15 @@ export class BoletinService {
     return this._http.post(this.URL_SERVICIOS + 'addBoletin', data);
   }
 
+  //   ******   ACTIVAR / DESACTIVAR (solo esa columna)   ******  //
+  // No pasa por editBoletin: el servidor tiene una funcion que escribe solo
+  // `activo`. Sin `activo` alterna, pero la pantalla manda el valor que
+  // quiere para que dos personas pulsando a la vez no se peleen.
+  activarBoletin(id: any, activo?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'activarBoletin/' + id,
+                           activo === undefined ? {} : { activo });
+  }
+
   editBoletin(id: number | string, data: BoletinGuardar): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'editBoletin/' + id, data);
   }

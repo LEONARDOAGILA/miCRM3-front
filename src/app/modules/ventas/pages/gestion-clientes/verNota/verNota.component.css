@@ -1,5 +1,6 @@
-/* La cinta la comparten el editor y el visor: ver cintaNota.css */
-@import '../cintaNota.css';
+/* La cinta la comparten este editor, el visor y el campo compartido:
+   vive en components/campos/campoNgxEditor/cinta.css */
+@import '../../../../../components/campos/campoNgxEditor/cinta.css';
 
 /* ============================================================
    LEER UNA NOTA

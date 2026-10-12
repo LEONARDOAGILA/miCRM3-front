@@ -1,0 +1,135 @@
+/* ============================================================
+   CAMPO DE ICONO
+
+   Tres piezas pegadas, como un input-group: la vista previa a la izquierda,
+   lo escrito en medio y el botón que abre la rejilla a la derecha. Los
+   colores salen de las variables de Bootstrap, así acompaña al tema y al
+   modo oscuro sin reglas aparte.
+   ============================================================ */
+
+/* En bloque y encogible: quien lo usa le pone el ancho (y a veces el alto)
+   desde su propia fila, y un host en linea no los respetaria. */
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.campo-icono {
+  height: 100%;
+  position: relative;       /* ancla de la × */
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---------- La vista previa ---------- */
+.campo-icono__vista {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.25rem;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #ced4da);
+  border-right: 0;
+  border-radius: .375rem 0 0 .375rem;
+
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+  color: var(--bs-app-theme, #00acac);
+  cursor: pointer;
+
+  transition: background-color .12s ease;
+}
+
+.campo-icono__vista:hover { background-color: var(--bs-tertiary-bg, #e9ecef); }
+
+/* Sin icono puesto se enseña el de por defecto, pero apagado: se ve qué
+   saldría sin que parezca que ya hay uno elegido. */
+.campo-icono__vista--vacia {
+  color: var(--bs-secondary-color, #adb5bd);
+  opacity: .55;
+}
+
+/* ---------- Lo escrito ---------- */
+.campo-icono__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  font-size: inherit;
+
+  border-radius: 0;
+  /* Sitio para la × */
+  padding-right: 1.75rem;
+}
+
+/* El foco, con el color de la aplicación, como en los demás campos */
+.campo-icono__texto:focus {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+  z-index: 2;               /* que el anillo no quede debajo de los botones */
+}
+
+/* ---------- La × ---------- */
+.campo-icono__limpiar {
+  position: absolute;
+  top: 50%;
+  right: 2.5rem;            /* a la izquierda del botón de abrir */
+  transform: translateY(-50%);
+  z-index: 3;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+
+  border: none;
+  border-radius: .25rem;
+  background: none;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.campo-icono__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+}
+
+/* ---------- El botón de abrir ---------- */
+.campo-icono__abrir {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.25rem;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #ced4da);
+  border-radius: 0 .375rem .375rem 0;
+
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-icono__abrir:hover {
+  background-color: var(--bs-tertiary-bg, #e9ecef);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* ---------- Apagado ---------- */
+.campo-icono.is-apagado {
+  opacity: .65;
+}
+
+.campo-icono.is-apagado .campo-icono__vista,
+.campo-icono.is-apagado .campo-icono__abrir {
+  cursor: not-allowed;
+}

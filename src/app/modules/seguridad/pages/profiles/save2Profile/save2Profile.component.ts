@@ -230,20 +230,25 @@ export class Save2ProfileComponent implements OnInit  {
         this.title = "Modificar Perfil";
         this.initializeForm();
         await this.findByIdProfileAccess(this.registro_selected.id);
+        await this.cargarVisibilidad(this.registro_selected.id);
         break;
-  
+
       case 'clon':
         this.title = "Clonar Perfil";
         this.textoClon = '_CLON';
         this.initializeForm();
         await this.findByIdProfileAccess(this.registro_selected.id);
+        // El clon se lleva también lo que ve dentro del cliente: si copia los
+        // permisos y no esto, saldría un perfil igual pero destapado
+        await this.cargarVisibilidad(this.registro_selected.id);
         break;
-  
+
       case 'view':
         this.title = "Ver Perfil";
         this.isdisabled = true;
         this.initializeForm();
         await this.findByIdProfileAccess(this.registro_selected.id);
+        await this.cargarVisibilidad(this.registro_selected.id);
         break;
     }
         
@@ -258,8 +263,169 @@ export class Save2ProfileComponent implements OnInit  {
         id: [ this.registro_selected.id?.id || 0 ],
         nombre: [{ value: '', disabled: this.isdisabled }, Validators.compose([Validators.required, Validators.maxLength(100)])],
         inactividad: [{ value: 0, disabled: this.isdisabled }, [Validators.required, Validators.maxLength(3)]],
-        activo: [{ value: true, disabled: this.isdisabled }]
+        activo: [{ value: true, disabled: this.isdisabled }],
+
+        // Qué ve este perfil DENTRO de un cliente. Arranca en TODO, que es lo
+        // que vale un perfil del que nadie ha decidido nada: así un perfil
+        // nuevo se comporta como los de siempre y nadie se queda sin ver nada
+        // por descuido.
+        visibilidad: this.fb.group({
+          GESTION:  [{ value: 'TODO', disabled: this.isdisabled }],
+          NOTA:     [{ value: 'TODO', disabled: this.isdisabled }],
+          ARCHIVO:  [{ value: 'TODO', disabled: this.isdisabled }],
+          WHATSAPP: [{ value: 'TODO', disabled: this.isdisabled }],
+          // La pestaña de Asignación no se reparte «por dueño»: se ve o no se
+          // ve. Arranca en TODO como las demás, que es lo que vale un perfil
+          // del que nadie ha decidido nada.
+          ASIGNACION: [{ value: 'TODO', disabled: this.isdisabled }],
+
+          // Qué papeles puede REPARTIR este perfil desde la pantalla de
+          // reparto en bloque. Uno por papel, aunque en pantalla sean casillas
+          // de un mismo control: así cada uno se guarda y se pregunta por
+          // separado, sin partir cadenas.
+          REPARTIR_VENDEDOR:  [{ value: 'NINGUNO', disabled: this.isdisabled }],
+          REPARTIR_COBRADOR:  [{ value: 'NINGUNO', disabled: this.isdisabled }],
+          REPARTIR_ASISTENTE: [{ value: 'NINGUNO', disabled: this.isdisabled }],
+          REPARTIR_POSTVENTA: [{ value: 'NINGUNO', disabled: this.isdisabled }],
+        }),
       });
+    }
+
+    /** Los cinco datos que se pueden tapar, en el orden en que se enseñan. */
+    public readonly datosVisibles = [
+      { clave: 'GESTION',    nombre: 'Gestiones',  icono: 'fa-solid fa-headset' },
+      { clave: 'NOTA',       nombre: 'Notas',      icono: 'fa-solid fa-note-sticky' },
+      { clave: 'ARCHIVO',    nombre: 'Archivos',   icono: 'fa-solid fa-paperclip' },
+      { clave: 'WHATSAPP',   nombre: 'WhatsApp',   icono: 'fa-brands fa-whatsapp' },
+      { clave: 'ASIGNACION', nombre: 'Asignación', icono: 'fa-solid fa-people-arrows' },
+    ];
+
+    /** De lo más abierto a lo más cerrado, que es como se lee mejor. */
+    public readonly alcances = [
+      { valor: 'TODO',      etiqueta: 'Todo lo del cliente' },
+      { valor: 'A_CARGO',   etiqueta: 'Lo suyo y lo de su equipo' },
+      { valor: 'MI_PERFIL', etiqueta: 'Lo de su mismo perfil' },
+      { valor: 'PROPIO',    etiqueta: 'Sólo lo suyo' },
+    ];
+
+    /**
+     * La Asignación se pregunta distinto.
+     *
+     * Los cuatro alcances de arriba contestan «¿de quién?», y para el historial
+     * de responsables eso no significa nada: la pestaña entera se ve o no se
+     * ve. Son los dos valores que entiende la base —TODO y NINGUNO— dichos
+     * como se leen aquí.
+     */
+    public readonly alcancesAsignacion = [
+      { valor: 'TODO',    etiqueta: 'Ve la pestaña' },
+      { valor: 'NINGUNO', etiqueta: 'No la ve' },
+    ];
+
+    /** Qué desplegable le toca a cada dato. */
+    public opcionesDe(clave: string) {
+      return clave === 'ASIGNACION' ? this.alcancesAsignacion : this.alcances;
+    }
+
+    /**
+     * Los papeles que este perfil puede REPARTIR.
+     *
+     * Repartir no es ver: decide quién puede cambiar a quién atiende a un
+     * cliente, de uno en uno o en bloque. Por eso va aparte de los cinco
+     * desplegables de arriba, como casillas: no se elige «de quién», se
+     * marcan los papeles que puede tocar.
+     *
+     * Arranca sin ninguno marcado. Un perfil nuevo no reparte nada hasta que
+     * alguien lo decida, que es por donde hay que fallar.
+     */
+    public readonly papelesRepartibles = [
+      { clave: 'REPARTIR_VENDEDOR',  nombre: 'Vendedor',  icono: 'fa-solid fa-user-tie' },
+      { clave: 'REPARTIR_COBRADOR',  nombre: 'Cobrador',  icono: 'fa-solid fa-hand-holding-dollar' },
+      { clave: 'REPARTIR_ASISTENTE', nombre: 'Asistente', icono: 'fa-solid fa-headset' },
+      { clave: 'REPARTIR_POSTVENTA', nombre: 'Postventa', icono: 'fa-solid fa-screwdriver-wrench' },
+    ];
+
+    /** La casilla está marcada cuando el alcance no es NINGUNO. */
+    public reparte(clave: string): boolean {
+      return this.form.get('visibilidad.' + clave)?.value !== 'NINGUNO';
+    }
+
+    /**
+     * Marcar o desmarcar un papel.
+     *
+     * Por dentro siguen siendo TODO y NINGUNO, los mismos dos valores que
+     * entiende la base para cualquier otro dato: la casilla es sólo la forma
+     * de enseñarlo.
+     */
+    public alternarPapel(clave: string): void {
+      if (this.isdisabled) { return; }
+      this.form.get('visibilidad.' + clave)?.setValue(this.reparte(clave) ? 'NINGUNO' : 'TODO');
+    }
+
+    /** Cuántos lleva marcados, para decirlo en el rótulo. */
+    public get cuantosPapeles(): number {
+      return this.papelesRepartibles.filter(p => this.reparte(p.clave)).length;
+    }
+
+    /** La letra pequeña del alcance elegido, debajo del desplegable. */
+    public ayudaDel(alcance: string, clave?: string): string {
+      if (clave === 'ASIGNACION') {
+        return alcance === 'NINGUNO'
+          ? 'La pestaña Asignación no aparece dentro del cliente'
+          : 'Ve por qué manos ha pasado el cliente';
+      }
+
+      switch (alcance) {
+        case 'NINGUNO':   return 'No ve ninguno, ni los suyos';
+        case 'A_CARGO':   return 'Lo suyo y lo de los grupos por debajo del suyo';
+        case 'MI_PERFIL': return 'Lo de quienes tienen este mismo perfil';
+        case 'PROPIO':    return 'Sólo lo que haya registrado esa persona';
+        default:          return 'Sin restricción, como hasta ahora';
+      }
+    }
+
+    /**
+     * Lee el cuadro entero de visibilidad del perfil.
+     *
+     * Si falla no se cae la pantalla: se quedan los cinco en TODO, que es
+     * exactamente lo que vale un perfil sin filas, y el administrador verá lo
+     * mismo que vería si nunca se hubiera configurado.
+     */
+    private async cargarVisibilidad(id: number) {
+      try {
+        const res: any = await firstValueFrom(this._profileService.visibilidadPerfil(id));
+        if (res?.status === 'success' && res.data) {
+          this.form.get('visibilidad')?.patchValue(res.data, { emitEvent: false });
+        }
+      } catch (error: any) {
+        console.error('No se pudo leer la visibilidad del perfil', error);
+      }
+    }
+
+    /**
+     * Guarda el cuadro entero, en su propia llamada.
+     *
+     * Va aparte del perfil a propósito: fn_perfiles_modificar es la función que
+     * sostiene los permisos de todo el CRM y no se le añade un parámetro para
+     * esto. El precio es que si falla la segunda llamada el perfil ya está
+     * guardado, así que se avisa en vez de callar: volver a dar Guardar lo
+     * arregla, porque guardar la visibilidad es idempotente.
+     *
+     * getRawValue y no value: en «Ver» los controles están deshabilitados y
+     * value los dejaría fuera.
+     */
+    private async guardarVisibilidad(perfilId: any) {
+      const grupo = this.form.get('visibilidad');
+      if (!perfilId || !grupo) { return; }
+
+      try {
+        await firstValueFrom(this._profileService.editVisibilidadPerfil(perfilId, grupo.getRawValue()));
+      } catch (error: any) {
+        this._toastr.warning(
+          'El perfil se guardó, pero no se pudo guardar qué ve dentro de un cliente. Vuelva a dar Guardar.',
+          'Visibilidad',
+          { closeButton: true, timeOut: 20000 }
+        );
+      }
     }
     
     initializeGrid(): void {  
@@ -610,6 +776,13 @@ export class Save2ProfileComponent implements OnInit  {
                 }
                 if (this.accion === 'clon'){  this.response = await firstValueFrom(this._profileService.clonProfile(formData));  }
             }
+
+            // En «edit» el id ya se sabe; en «add» y «clon» es el que acaba de
+            // devolver el servidor
+            await this.guardarVisibilidad(
+              this.accion === 'edit' ? this.registro_selected.id : this.response?.data?.id
+            );
+
             this.registrosE.emit(this.response.data);
             this._toastr.success(this.response.status, this.response.message,{ closeButton: true });
             this._loadingService.setLoading(false);
@@ -654,7 +827,10 @@ export class Save2ProfileComponent implements OnInit  {
         if (this.form.valid) {
             this.updateFormAccessFromGrid();
             let data = this.form.value;
-            this.saveRecord(data);        
+            // La visibilidad va en su propia llamada (ver guardarVisibilidad):
+            // fuera del payload del perfil, que así queda igual que antes
+            delete data.visibilidad;
+            this.saveRecord(data);
         }else{
             this._toastr.error(`Revise los campos del formulario.`, `No se puede Guardar`, {timeOut: 20000,closeButton: true,});
         }

@@ -47,7 +47,16 @@ export class CargoService {
     return this._http.post(this.URL_SERVICIOS + 'addCargo', data);
   }
 
-  //   ******   EDITAR   ******  //
+    //   ******   ACTIVAR / DESACTIVAR (solo esa columna)   ******  //
+  // No pasa por editCargo: el servidor tiene una funcion que escribe solo
+  // `activo`. Sin `activo` alterna, pero la pantalla manda el valor que
+  // quiere para que dos personas pulsando a la vez no se peleen.
+  activarCargo(id: any, activo?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'activarCargo/' + id,
+                           activo === undefined ? {} : { activo });
+  }
+
+//   ******   EDITAR   ******  //
   editCargo(id: any, data: any): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'editCargo/' + id, data);
   }

@@ -1,0 +1,114 @@
+/* ============================================================
+   LA CAJITA DE AVISO
+
+   Una barra de color a la izquierda y el fondo teñido del mismo
+   color. Nada de bordes completos: la caja tiene que leerse como
+   una nota al margen, no como otro panel.
+
+   Los colores salen de variables, así que la caja acompaña al
+   tema claro/oscuro sola. El tono «tema» usa --bs-app-theme, que
+   es lo que cambia en «Ajustes de la aplicación»; --bs-primary no
+   cambia con el tema y por eso no se usa aquí.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.aviso {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+
+  padding: .45rem .7rem;
+  border-inline-start: 3px solid var(--aviso-color, #0d6efd);
+  border-radius: .25rem;
+  background-color: rgba(var(--aviso-rgb, 13, 110, 253), .12);
+
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.aviso__icono {
+  flex: 0 0 auto;
+  color: var(--aviso-color, #0d6efd);
+}
+
+.aviso__texto {
+  min-width: 0;
+}
+
+/* ---------- La × ----------
+   Mismo dibujo que la que vacía los campos de búsqueda: cerrar se hace igual
+   en toda la aplicación. Se empuja a la derecha con el margen automático, así
+   que da igual lo largo que sea el texto. */
+.aviso__cerrar {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-inline-start: auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.25rem;
+  height: 1.25rem;
+
+  padding: 0;
+  border: none;
+  border-radius: .25rem;
+
+  background: none;
+  color: var(--bs-secondary-color, #6c757d);
+  cursor: pointer;
+
+  transition: color .15s ease, background-color .15s ease;
+}
+
+.aviso__cerrar-x {
+  display: inline-block;
+  font-size: 15px;
+  line-height: 1;
+  pointer-events: none;          /* que el clic lo reciba siempre el botón */
+}
+
+.aviso__cerrar:hover,
+.aviso__cerrar:focus-visible {
+  color: var(--aviso-color, #0d6efd);
+  background-color: rgba(var(--aviso-rgb, 13, 110, 253), .18);
+}
+
+/* El encabezado corto va del color de la caja: es lo que se lee primero */
+.aviso__titulo {
+  color: var(--aviso-color, #0d6efd);
+  margin-inline-end: .2rem;
+}
+
+/* ---------- Los tonos ----------
+   Cada uno sólo define las dos variables; el resto del dibujo es
+   el mismo para todos. */
+.aviso--tema {
+  --aviso-color: var(--bs-app-theme, #0d6efd);
+  --aviso-rgb: var(--bs-app-theme-rgb, 13, 110, 253);
+}
+
+.aviso--info {
+  --aviso-color: var(--bs-info, #0dcaf0);
+  --aviso-rgb: var(--bs-info-rgb, 13, 202, 240);
+}
+
+.aviso--exito {
+  --aviso-color: var(--bs-success, #198754);
+  --aviso-rgb: var(--bs-success-rgb, 25, 135, 84);
+}
+
+.aviso--alerta {
+  --aviso-color: var(--bs-warning, #ffc107);
+  --aviso-rgb: var(--bs-warning-rgb, 255, 193, 7);
+}
+
+.aviso--peligro {
+  --aviso-color: var(--bs-danger, #dc3545);
+  --aviso-rgb: var(--bs-danger-rgb, 220, 53, 69);
+}

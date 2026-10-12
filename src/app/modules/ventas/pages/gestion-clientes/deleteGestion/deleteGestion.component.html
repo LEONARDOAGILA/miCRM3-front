@@ -1,0 +1,151 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarGestionTitulo"
+     aria-describedby="eliminarGestionDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarGestionTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <!-- Advertencia -->
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Eliminar esta gestión del historial?</h6>
+        <!-- Aquí el borrado NO es lógico, al contrario que en el cliente: la
+             fila se va de la tabla. Lo que queda es el registro de auditoría,
+             que sirve para saber qué decía, no para devolverla desde una
+             pantalla. -->
+        <p class="eliminar-aviso__texto" id="eliminarGestionDescripcion">
+          Desaparece del historial del cliente y de las agendas. <b>No hay papelera para las
+          gestiones</b>: lo que se borra aquí sólo queda en la auditoría, y recuperarlo no es
+          algo que se haga desde una pantalla.
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-tag fa-fw me-1" aria-hidden="true"></i>Asunto
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.asunto || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-headset fa-fw me-1" aria-hidden="true"></i>Tipo
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.tipo || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-calendar fa-fw me-1" aria-hidden="true"></i>Cuándo
+        </span>
+        <span class="eliminar-datos__valor">{{ cuando }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-user-tag fa-fw me-1" aria-hidden="true"></i>Responsable
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.responsable_nombre || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-user-pen fa-fw me-1" aria-hidden="true"></i>Registrada por
+        </span>
+        <span class="eliminar-datos__valor">
+          {{ registro_selected?.registrado_por_nombre || registro_selected?.created_by || '—' }}
+        </span>
+      </div>
+
+      <!-- Los adjuntos se van con ella, y del servidor: es el dato que más
+           pesa en la decisión, así que se enseña aunque sea cero. -->
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-paperclip fa-fw me-1" aria-hidden="true"></i>Adjuntos
+        </span>
+        <span class="badge fs-10px" [ngClass]="adjuntos > 0 ? 'bg-danger' : 'bg-teal'">
+          {{ adjuntos }}
+        </span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
+        </span>
+        <span class="badge fs-10px"
+              [ngClass]="registro_selected?.estado === 'REALIZADA' ? 'bg-teal'
+                       : (registro_selected?.vencida ? 'bg-danger' : 'bg-warning')">
+          {{ registro_selected?.estado === 'PENDIENTE' && registro_selected?.vencida
+             ? 'VENCIDA' : (registro_selected?.estado || '—') }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Lo que se pierde con ella -->
+    @if (adjuntos > 0) {
+      <p class="eliminar-nota eliminar-nota--peligro">
+        <i class="fa fa-triangle-exclamation fa-fw me-1" aria-hidden="true"></i>
+        Se borrarán también sus <b>{{ adjuntos }} adjunto(s)</b>, y los ficheros se quitan del
+        servidor: ésos no están en la auditoría.
+      </p>
+    }
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si la gestión no llegó a hacerse, <b>ciérrela</b> con el resultado que corresponda
+      («No contesta», «Número errado»…) en lugar de borrarla: así el historial del cliente
+      sigue contando lo que pasó.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="deleteGestion()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+    </button>
+  </div>
+
+</div>

@@ -111,8 +111,15 @@ export class FileManagerComponent implements OnInit, OnDestroy {
    *         efectivo del nodo (`permiso`), que también valida el back.
    */
   modoUsuario = false;
-  /** Tipo del usuario logueado: 1 super, 2 admin (ven todo, incluso en modo usuario). */
-  private tipoUsuario = 0;
+  /**
+   * Si su GRUPO administra el gestor (ven todo, incluso en modo usuario).
+   *
+   * Lo dice el back (`soyAdminDeArchivos`), que es quien sabe: antes se leía
+   * users.type_user de la sesión, pero el login no manda ese campo, así que
+   * valía 0 siempre y en «Mis archivos» nadie era administrador nunca.
+   * Y de todos modos quien decide ahora es el grupo, no type_user.
+   */
+  private adminDeGrupo = false;
 
   // ---------- Árbol ----------
   /** Árbol que se pinta (puede estar filtrado por la búsqueda). */
@@ -289,12 +296,27 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     // sólo se muestra con el acceso «papelera»
     this.accesoModel = this._route.snapshot.data?.['access'] ?? null;
     if (this.modoUsuario) { this.title = 'Mis archivos'; }
-    this.tipoUsuario = Number(this._seguridadService.getUserLogin()?.type_user ?? 0);
   }
 
   // ================================================================
   // PERMISOS (modo usuario)
   // ================================================================
+
+  /**
+   * Pregunta al back si su grupo administra.
+   *
+   * Si falla no se enseña nada de administrador, que es el lado prudente: el
+   * back comprueba cada operación de todos modos, así que lo único en juego
+   * aquí es qué botones se ven.
+   */
+  private async cargarSiAdministra(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this._archivoService.soyAdminDeArchivos());
+      this.adminDeGrupo = res?.data?.es_administrador === true;
+    } catch {
+      this.adminDeGrupo = false;
+    }
+  }
 
   /** Permiso efectivo sobre un nodo; en modo admin, todo. */
   p(el: FileTreeNode | null | undefined): PermisoEfectivo {
@@ -302,9 +324,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     return el?.permiso ?? { ...PERMISO_TOTAL, ver: false, ejecutar: false, descargar: false, crear: false, editar: false, eliminar: false, administrar: false, restaurar: false, origen: 'NINGUNO' };
   }
 
-  /** Crear en la raíz: sólo administradores (en modo usuario, tipo 1 y 2). */
+  /** Crear en la raíz: sólo administradores (en modo usuario, si su grupo lo es). */
   get puedeNuevaRaiz(): boolean {
-    return !this.modoUsuario || this.tipoUsuario === 1 || this.tipoUsuario === 2;
+    return !this.modoUsuario || this.adminDeGrupo;
   }
 
   /** Almacenamiento y auditoría: cosas de administrador. */
@@ -340,6 +362,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.initializeGrid();
+    // Sólo en «Mis archivos»: en la pantalla de administrador el acceso ya lo
+    // protege el menú y puedeNuevaRaiz no necesita preguntar nada
+    if (this.modoUsuario) { this.cargarSiAdministra(); }
     this.loaddata();
     // capture:true — el scroll de la grilla y del árbol no burbujea a window
     this.ngZone.runOutsideAngular(() => document.addEventListener('scroll', this.cerrarMenuPorScroll, true));

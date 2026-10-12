@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
 import { GestionService } from '../../../services/gestion.service';
+import { soloTexto } from '../../../interfaces/plantillasWhatsapp';
 import { SoftphoneService } from '../../../services/softphone.service';
 import { GestionModel, RESULTADOS_GESTION, iconoDeTipo, nombreDe, TIPOS_GESTION } from '../../../interfaces/gestionModel';
 
@@ -68,6 +69,16 @@ export class RecordatorioGestionComponent implements OnInit {
   get tipoNombre(): string { return nombreDe(TIPOS_GESTION, this.gestion?.tipo); }
 
   get telefono(): string { return (this.gestion?.telefono ?? '').trim(); }
+
+  /**
+   * La nota sin formato.
+   *
+   * Desde que «Qué se habló» se escribe con editor, la nota puede traer HTML
+   * —un correo pegado, sobre todo—. Aquí es una cita de una línea en un aviso
+   * flotante: las etiquetas se leerían como basura, y meter HTML de otro sitio
+   * en el DOM por ahorrarse eso no compensa.
+   */
+  get notaLlana(): string { return soloTexto(this.gestion?.nota); }
 
   /**
    * Marca con el softphone del puesto.

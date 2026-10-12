@@ -13,6 +13,16 @@ export interface AsuntoGestion {
   /** El nombre del tipo; sólo viene al listarlos para el mantenimiento */
   tipo_nombre?: string;
   nombre: string;
+  /**
+   * Lo que se le manda al cliente con este asunto.
+   *
+   * Texto suelto para WhatsApp, HTML para un correo. Vacío = el asunto no
+   * ofrece mensaje y no sale en el menú de respuestas.
+   *
+   * Los huecos entre llaves los rellena quien lo envía (ver
+   * plantillasWhatsapp.ts): {cliente} {nombre} {vendedor} {empresa}
+   */
+  mensaje?: string | null;
   orden?: number;
   activo?: boolean;
   /** Cuántas gestiones lo usan. Decide si se puede borrar o sólo desactivar */
@@ -44,6 +54,11 @@ export interface TipoGestion {
 /** Los asuntos de un tipo, venga como lista o como contador. */
 export function asuntosDe(tipo: TipoGestion | null | undefined): AsuntoGestion[] {
   return Array.isArray(tipo?.asuntos) ? tipo!.asuntos as AsuntoGestion[] : [];
+}
+
+/** ¿Ese asunto trae un mensaje escrito, o sólo sirve para clasificar? */
+export function traeMensaje(asunto: AsuntoGestion | null | undefined): boolean {
+  return (asunto?.mensaje ?? '').trim().length > 0;
 }
 
 /** El icono de un tipo, con uno de reserva para los que se den de alta sin él. */

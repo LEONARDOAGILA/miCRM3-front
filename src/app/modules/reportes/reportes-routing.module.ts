@@ -7,8 +7,6 @@ import { ErrorPage } from '../../pages/error/error';
 
 import { HomeComponent } from './pages/home/home.component';
 
-import { AllReportesExternosComponent } from './pages/reportesExternos/allReportesExternos/allReportesExternos.component';
-import { ListUsuariosReportesExternosComponent } from './pages/reportesExternos/listUsuariosReportesExternos/listUsuariosReportesExternos.component';
 
 
 
@@ -19,8 +17,6 @@ const routes: Routes = [
   children: [
         { path: '', redirectTo: 'home', pathMatch: 'full' },
 
-        { path: 'allReportesExternos',component:AllReportesExternosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
-        { path: 'listUsuariosReportesExternos',component:ListUsuariosReportesExternosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         { path: 'home', component: HomeComponent, data: { title: 'Home page'} },
         { path: '**', component: ErrorPage},

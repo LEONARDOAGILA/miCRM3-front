@@ -97,12 +97,111 @@
         </ng-container>
     </panel>
 
+    <!-- ---------- Qué ve dentro de un cliente ---------- -->
+    <!-- Los permisos de arriba contestan «¿puede entrar a esta pantalla?».
+         Esto contesta la otra pregunta, la que faltaba: dentro de un cliente al
+         que sí puede entrar, ¿de quién ve las gestiones, las notas, los
+         archivos y las conversaciones, y ve la pestaña de Asignación? -->
+    <panel
+        headerClass="bg-gray-800"
+        title="Qué ve dentro de un cliente"
+        noButtonExpand="true" 
+        noButtonReload="true" 
+        noButtonRemove="true" 
+        noBody="true"
+        panelClass="mb-3"
+        icono="cerrar"
+        fondoGris="true">
+
+        <div header class="panel-acciones">
+            <span class="chip chip-muted visib-aviso">
+                <i class="fa-solid fa-circle-info"></i>
+                Poder abrir el cliente no es poder verlo todo
+            </span>
+        </div>
+
+        <ng-container outsideBody>
+        <div class="form-card__body">
+            <form [formGroup]="form" novalidate>
+                <div class="row gx-3" formGroupName="visibilidad">
+                    @for (d of datosVisibles; track d.clave) {
+                        <!-- col-xl sin número: cinco iguales en la fila. Con
+                             col-xl-3 la quinta se caía sola a la línea de abajo -->
+                        <div class="col-12 col-md-6 col-xl">
+                            <div class="visib">
+                                <div class="visib__cab">
+                                    <span class="visib__icono"><i [ngClass]="d.icono"></i></span>
+                                    <span class="visib__nombre">{{ d.nombre }}</span>
+                                </div>
+
+                                <select class="form-select form-select-sm visib__select"
+                                        [formControlName]="d.clave"
+                                        [title]="d.nombre">
+                                    @for (a of opcionesDe(d.clave); track a.valor) {
+                                        <option [value]="a.valor">{{ a.etiqueta }}</option>
+                                    }
+                                </select>
+
+                                <span class="visib__ayuda">
+                                    {{ ayudaDel(form.get('visibilidad.' + d.clave)?.value, d.clave) }}
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- ---------- Qué puede repartir ----------
+                     Esto no es «ver», es «mover»: decide si este perfil puede
+                     cambiar a quién atiende a un cliente, de uno en uno o los
+                     novecientos de golpe. Va aparte y como casillas porque no
+                     se elige de quién, se marcan los papeles que puede tocar.
+
+                     Sin ninguno marcado, la pantalla de reparto le contesta
+                     que no tiene nada que hacer ahí. -->
+                <div class="visib-repartir" formGroupName="visibilidad">
+                    <div class="visib-repartir__cab">
+                        <span class="visib-repartir__titulo">
+                            <i class="fa-solid fa-people-arrows me-1"></i>Puede repartir clientes
+                        </span>
+                        <span class="visib-repartir__cuenta">
+                            @if (cuantosPapeles) {
+                                {{ cuantosPapeles }} de {{ papelesRepartibles.length }}
+                            } @else {
+                                ninguno
+                            }
+                        </span>
+                    </div>
+
+                    <div class="visib-repartir__papeles">
+                        @for (p of papelesRepartibles; track p.clave) {
+                            <button type="button"
+                                    class="visib-papel"
+                                    [class.is-marcado]="reparte(p.clave)"
+                                    [disabled]="isdisabled"
+                                    [attr.aria-pressed]="reparte(p.clave)"
+                                    [title]="'Este perfil puede repartir clientes como ' + p.nombre.toLowerCase()"
+                                    (click)="alternarPapel(p.clave)">
+                                <i class="fa fa-fw" [ngClass]="reparte(p.clave) ? 'fa-square-check' : 'fa-square'"></i>
+                                <i [ngClass]="p.icono"></i>
+                                {{ p.nombre }}
+                            </button>
+                        }
+                    </div>
+
+                    <span class="visib__ayuda">
+                        Repartir cambia quién atiende al cliente. Lo de arriba sólo decide qué se ve.
+                    </span>
+                </div>
+            </form>
+        </div>
+        </ng-container>
+    </panel>
+
     <!-- ---------- Permisos ---------- -->
     <panel
         *ngIf="profile"
         headerClass="bg-gray-800"
         title="Permisos por menú"
-        noButtonCollapse="true" 
         noButtonReload="true" 
         noButtonRemove="true" 
         noBody="true"

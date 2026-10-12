@@ -1,0 +1,44 @@
+<!-- La barra. `nav nav-tabs` se quedan porque el tema las usa de base; lo
+     propio de la plantilla lo pone .tabp. -->
+<ul class="nav nav-tabs tabp flex-nowrap py-0"
+    [class.tabp--compacta]="tamano === 'compacta'"
+    [class.tabp--con-margen]="!conPanel && margenInferior"
+    role="tablist">
+
+  @for (p of visibles; track clave($index, p)) {
+    <li class="nav-item flex-shrink-0" role="presentation">
+      <button type="button"
+              class="nav-link"
+              role="tab"
+              [class.active]="activa === p.id"
+              [attr.aria-selected]="activa === p.id"
+              [disabled]="p.deshabilitada"
+              [title]="p.ayuda || p.texto"
+              (click)="elegir(p)">
+
+        @if (p.icono) {
+          <i [ngClass]="claseIcono(p)" aria-hidden="true"></i>
+        }
+
+        <span class="tabp__texto">{{ p.texto }}</span>
+
+        <!-- El texto secundario: con qué cliente se está trabajando, por
+             ejemplo. Se va solo en pantallas estrechas. -->
+        @if (p.detalle) {
+          <span class="tabp__detalle">{{ p.detalle }}</span>
+        }
+
+        @if (hayInsignia(p)) {
+          <span class="badge fs-10px" [ngClass]="claseInsignia(p)">{{ p.insignia }}</span>
+        }
+      </button>
+    </li>
+  }
+</ul>
+
+<!-- El contenido. Va siempre dentro del mismo <div> —uno solo, porque dos
+     <ng-content> sin `select` dejarían el segundo vacío— y es la clase la que
+     cambia según haya panel o no. -->
+<div [class.tabp__panel]="conPanel">
+  <ng-content></ng-content>
+</div>

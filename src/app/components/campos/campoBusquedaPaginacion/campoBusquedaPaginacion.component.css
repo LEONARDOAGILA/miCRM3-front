@@ -10,6 +10,96 @@
    plantilla: el campo acompaña al panel de temas y al modo oscuro.
    ============================================================ */
 
+/* ---------- El ancla de la lupa y de la × ----------
+   Las dos van position:absolute, así que necesitan que el contenedor sea
+   position:relative. Hasta ahora eso dependía de que cada pantalla se
+   acordara de pasar 'position-relative' dentro de containerClass: la que
+   lo olvidaba perdía la lupa, que se iba a buscar el primer ancestro
+   posicionado y aparecía en otra parte de la página.
+
+   Se pone aquí para que no haya nada que recordar. A las doce pantallas que
+   ya lo pasan no les cambia nada: es el mismo valor. */
+/* La caja interior, no «el primer div»: desde que el botón de filtros vive
+   aquí dentro, el hijo directo del host es la fila y el ancla es la caja. */
+.campo-busqueda__caja {
+  position: relative;
+}
+
+/* ---------- La fila: botón + campo ----------
+   El campo crece y el botón se queda de su tamaño. `min-width: 0` en la caja
+   es lo que deja que el campo se encoja de verdad dentro de un flex. */
+.campo-busqueda-barra {
+  display: flex;
+  align-items: stretch;
+  gap: .375rem;
+  width: 100%;
+}
+
+.campo-busqueda__caja {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Cuadrado y de la altura del campo, como estaba suelto en las pantallas */
+.campo-busqueda__filtros {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  padding: 0;
+}
+
+/* ---------- La lupa ----------
+   Era un icono suelto puesto encima del campo: no se veía que fuera un botón,
+   y es el que lanza la búsqueda. Ahora se dibuja como el prefijo de un
+   input-group —borde, fondo y las esquinas de la izquierda redondeadas—
+   pegado al borde del campo, que es donde ya estaba.
+
+   El ancho y el hueco que le deja el campo van JUNTOS: si se cambia uno hay
+   que cambiar el otro, o el texto se escribe por debajo del botón. El campo
+   traía `ps-35px` de la plantilla y la lupa medía 41px, así que se comía seis
+   píxeles de lo escrito.
+
+   `height: 100%` y no una altura fija: hay pantallas que encogen el campo a
+   26px (la ficha del cliente), y así la lupa las acompaña sin saber de ellas. */
+.campo-busqueda__lupa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: var(--campo-busqueda-lupa, 2.25rem);
+  height: 100%;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #ced4da);
+  /* Las mismas esquinas que el campo (rounded-3), sólo las de la izquierda */
+  border-radius: .375rem 0 0 .375rem;
+
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+  color: var(--bs-secondary-color, #6c757d);
+  z-index: 3;
+}
+
+.campo-busqueda__lupa:hover,
+.campo-busqueda__lupa:focus-visible {
+  background-color: var(--bs-tertiary-bg, #e9ecef);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.campo-busqueda__lupa:active {
+  background-color: var(--bs-tertiary-bg, #dee2e6);
+}
+
+/* El hueco para la lupa, del mismo tamaño que ella más un respiro.
+   Antes lo ponía `ps-35px` desde la plantilla, que es una utilidad del tema
+   con `!important`: no se podía ajustar desde aquí, y la lupa (41px) se comía
+   seis píxeles de lo escrito. Ahora los dos números salen de la misma
+   variable y no pueden descuadrarse. */
+.campo-busqueda__input {
+  padding-inline-start: calc(var(--campo-busqueda-lupa, 2.25rem) + .5rem);
+}
+
 /* Sitio para la × sólo cuando está: así, con el campo vacío, el texto
    ocupa todo el ancho como antes */
 .campo-busqueda__input--con-x {

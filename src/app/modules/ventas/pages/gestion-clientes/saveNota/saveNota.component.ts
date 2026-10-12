@@ -3,6 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
+import {
+  AlmacenDeImagenes, avisoDeAjenas, pegarHtmlConImagenes,
+} from '../../../interfaces/pegarEnEditor';
+import { aplicarMarca, valorDeMarca } from '../../../interfaces/marcasEditor';
 import { Editor, NgxEditorModule, Toolbar } from 'ngx-editor';
 import { keymap } from 'prosemirror-keymap';
 import {
@@ -10,11 +14,16 @@ import {
   deleteTable, goToNextCell, mergeCells, splitCell, tableEditing, toggleHeaderRow,
 } from 'prosemirror-tables';
 import { ESQUEMA_NOTAS } from '../../../interfaces/esquemaNotas';
+import {
+  GRUPOS_HUECOS, aplicarHuecos, datosDeHuecos,
+} from '../../../interfaces/huecosPlantilla';
 import { firstValueFrom } from 'rxjs';
 
 import { PanelModule } from '../../../../../components/panel/panel.module';
+import { HuecosPlantillaComponent } from '../../../../../components/campos/huecosPlantilla/huecosPlantilla.component';
 import { NotaClienteService } from '../../../services/notaCliente.service';
 import { COLORES_NOTA, ColorNota, NotaCliente, tinteDeNota } from '../../../interfaces/notaCliente';
+import { ClienteModel } from '../../../interfaces/clienteModel';
 import { DatosDocumentoNota, descargarNotaWord, imprimirNota, wordAHtml } from '../../../interfaces/notaDocumento';
 
 /** Las pestañas de la cinta. «tabla» es contextual: sólo dentro de una. */
@@ -48,7 +57,7 @@ export type PestanaCinta = 'archivo' | 'inicio' | 'insertar' | 'tabla';
 @Component({
   selector: 'app-saveNota',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgxEditorModule, PanelModule],
+  imports: [CommonModule, FormsModule, NgxEditorModule, PanelModule, HuecosPlantillaComponent],
   templateUrl: './saveNota.component.html',
   styleUrls: ['./saveNota.component.css'],
 })
@@ -56,6 +65,14 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @Input() clienteId!: number;
   @Input() clienteNombre = '';
+  /**
+   * La ficha entera, para rellenar los huecos.
+   *
+   * Con el nombre solo no se puede resolver {telefono} ni {direccion}, y una
+   * nota que los lleve escritos saldría con los huecos en blanco al
+   * imprimirla.
+   */
+  @Input() cliente: ClienteModel | null = null;
   /** Si viene, se está corrigiendo; si no, es una nota nueva. */
   @Input() nota: NotaCliente | null = null;
 
@@ -261,7 +278,7 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
    * la opción, que es lo que el <select> necesita para marcarla.
    */
   get tipografiaActual(): string {
-    const guardada = this.valorDeMarca('tipografia', 'familia');
+    const guardada = valorDeMarca(this.editor, 'tipografia', 'familia');
     if (!guardada) { return ''; }
 
     const igual = this.normalizarFamilia(guardada);
@@ -275,7 +292,7 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /** El tamaño de donde está el cursor. */
   get tamanoActual(): string {
-    return this.valorDeMarca('tamano', 'tamano');
+    return valorDeMarca(this.editor, 'tamano', 'tamano');
   }
 
   /** Dos familias son la misma aunque cambien las comillas o los espacios. */
@@ -327,72 +344,34 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cambiarTipografia(valor: string): void {
-    this.aplicarMarca('tipografia', valor ? { familia: valor } : null);
+    aplicarMarca(this.editor, 'tipografia', valor ? { familia: valor } : null);
   }
 
   cambiarTamano(valor: string): void {
-    this.aplicarMarca('tamano', valor ? { tamano: valor } : null);
+    aplicarMarca(this.editor, 'tamano', valor ? { tamano: valor } : null);
   }
 
+  // ================================================================
+  // LOS HUECOS
+  // ================================================================
+
+  public readonly grupos = GRUPOS_HUECOS;
+
   /**
-   * Lee el valor de una marca donde está el cursor.
+   * Mete un hueco donde esté el cursor.
    *
-   * Con texto seleccionado se usa marksAcross, que devuelve sólo las marcas que
-   * valen para TODO el trozo: si se eligen dos palabras de distinta letra, el
-   * desplegable se queda en blanco en vez de mentir con la de la primera.
-   *
-   * Sin selección manda storedMarks —lo que se acaba de elegir y aún no se ha
-   * escrito— y, si no hay, las marcas de lo que está justo detrás del cursor.
+   * En la nota se guarda el hueco tal cual, no el dato: así una nota de
+   * seguimiento sirve para el cliente de hoy y para el de dentro de un mes,
+   * y si el cliente cambia de teléfono la nota no se queda con el viejo. Se
+   * cambia al leerla, al imprimirla y al exportarla.
    */
-  private valorDeMarca(nombre: string, atributo: string): string {
-    const vista = this.editor?.view;
-    if (!vista) { return ''; }
-
-    const tipo = vista.state.schema.marks[nombre];
-    if (!tipo) { return ''; }
-
-    const { empty, $from, $to } = vista.state.selection;
-    const marcas = empty
-      ? (vista.state.storedMarks ?? $from.marks())
-      : ($from.marksAcross($to) ?? []);
-
-    return marcas.find(m => m.type === tipo)?.attrs[atributo] ?? '';
+  insertarHueco(clave: string): void {
+    this.editor?.commands.insertText(clave).focus().exec();
   }
 
-  /**
-   * Pone o quita una marca con atributos.
-   *
-   * No sirve el toggleMark de ProseMirror: mira sólo el tipo de marca y no sus
-   * atributos, así que pasar de 12 a 14 puntos lo entendería como «ya tiene
-   * tamaño, quítalo» y dejaría el texto sin tamaño en vez de cambiarlo. Hay que
-   * quitar la de antes y poner la nueva, en esa orden y en la misma
-   * transacción, para que un solo Ctrl+Z lo deshaga entero.
-   *
-   * Con attrs en null sólo se quita, que es lo que hace la opción en blanco del
-   * desplegable: «la letra de la nota».
-   */
-  private aplicarMarca(nombre: string, attrs: Record<string, unknown> | null): void {
-    const vista = this.editor?.view;
-    if (!vista) { return; }
-
-    const tipo = vista.state.schema.marks[nombre];
-    if (!tipo) { return; }
-
-    const { from, to, empty, $from } = vista.state.selection;
-    const tr = vista.state.tr;
-
-    if (empty) {
-      // Sin nada seleccionado se cambia lo que se vaya a escribir a partir de
-      // aquí, igual que al pulsar la negrita antes de escribir la palabra
-      const previas = (vista.state.storedMarks ?? $from.marks()).filter(m => m.type !== tipo);
-      tr.setStoredMarks(attrs ? previas.concat(tipo.create(attrs)) : previas);
-    } else {
-      tr.removeMark(from, to, tipo);
-      if (attrs) { tr.addMark(from, to, tipo.create(attrs)); }
-    }
-
-    vista.dispatch(tr);
-    vista.focus();
+  /** La nota con los huecos ya cambiados, que es como se lee y se imprime. */
+  private get contenidoResuelto(): string {
+    return aplicarHuecos(this.contenido ?? '', datosDeHuecos(this.cliente));
   }
 
   // ================================================================
@@ -558,42 +537,9 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     try {
       this.subiendoImagen = true;
-
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      const imagenes = Array.from(doc.querySelectorAll('img'));
-      let ajenas = 0;
-
-      for (const img of imagenes) {
-        const src = img.getAttribute('src') ?? '';
-
-        if (src.startsWith('data:image/')) {
-          const f = await this.ficheroDesdeDataUri(src);
-          const url = f ? await this.subirYDevolverUrl(f) : null;
-          if (url) { img.setAttribute('src', url); } else { img.remove(); }
-          continue;
-        }
-
-        // Las nuestras ya están donde tienen que estar
-        if (src.includes('archivoCliente/ver/')) { continue; }
-
-        // De fuera: las trae el servidor, porque el navegador no puede
-        // (se lo impide el CORS del sitio de origen)
-        if (/^https?:\/\//i.test(src)) {
-          const url = await this.traerDeFuera(src);
-          if (url) { img.setAttribute('src', url); } else { img.remove(); ajenas++; }
-          continue;
-        }
-
-        img.remove();
-        ajenas++;
-      }
-
-      this.editor.commands.insertHTML(doc.body.innerHTML).focus().exec();
-
+      const { ajenas } = await pegarHtmlConImagenes(this.editor, this.almacenDeImagenes, html);
       if (ajenas) {
-        this._toastr.warning(
-          `Se pegó el contenido, pero ${ajenas} imagen(es) no se pudieron traer: puede que ese sitio no las deje descargar. Guárdalas y úsalas con «Imagen».`,
-          'Imágenes que faltan', { timeOut: 9000, closeButton: true });
+        this._toastr.warning(avisoDeAjenas(ajenas), 'Imágenes que faltan', { timeOut: 9000, closeButton: true });
       }
     } catch (error) {
       console.error('Error al pegar el contenido con imágenes:', error);
@@ -603,6 +549,13 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /** Lo que el ayudante de pegado necesita del servicio de notas. */
+  private get almacenDeImagenes(): AlmacenDeImagenes {
+    return {
+      subir: (f: File) => this.subirYDevolverUrl(f),
+      traerDeFuera: (u: string) => this.traerDeFuera(u),
+    };
+  }
   /**
    * Se la pide al servidor, que sí puede ir a buscarla.
    *
@@ -617,17 +570,6 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
       return this._notaService.urlDeImagen(res.data.url);
     } catch {
       // Es normal que alguna no se deje traer; no merece un toast por cada una
-      return null;
-    }
-  }
-
-  /** Una imagen en base64 convertida en fichero, para poder subirla. */
-  private async ficheroDesdeDataUri(uri: string): Promise<File | null> {
-    try {
-      const blob = await (await fetch(uri)).blob();
-      const ext = (blob.type.split('/')[1] || 'png').replace('+xml', '').split(';')[0];
-      return new File([blob], `pegada-${Date.now()}.${ext}`, { type: blob.type });
-    } catch {
       return null;
     }
   }
@@ -703,8 +645,9 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private get datosDocumento(): DatosDocumentoNota {
     return {
-      titulo: this.titulo,
-      contenido: this.contenido,
+      // Con los huecos cambiados: en el papel no pinta nada un «{cliente}»
+      titulo: aplicarHuecos(this.titulo ?? '', datosDeHuecos(this.cliente)),
+      contenido: this.contenidoResuelto,
       color: this.color,
       autor: this.nota?.created_by,
       fecha: this.nota?.created_at,

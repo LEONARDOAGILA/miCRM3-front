@@ -1,0 +1,697 @@
+/* ============================================================
+   ZONAS DE CLIENTES
+
+   Los colores salen de variables de Bootstrap, así que la pantalla
+   acompaña al tema de «Ajustes de la aplicación» y al modo oscuro
+   sin reglas aparte. Ojo con --bs-primary: ésa no cambia con el
+   tema; la que cambia es --bs-app-theme.
+   ============================================================ */
+
+/* Miga de pan: alineada a la derecha y subida, como en los listados */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+.zon-contenido {
+  margin-top: -10px;
+}
+
+.zon-aviso {
+  margin-bottom: .75rem;
+}
+
+/* ============================================================
+   LAS DOS COLUMNAS, CON DIVISOR
+
+   No es un `row` de Bootstrap: lo que se arrastra es el ancho, y un
+   `col-xl-7` no se puede arrastrar. El reparto vive en --zon-izq, que
+   escribe el componente.
+   ============================================================ */
+.zon-paneles {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.zon-panel {
+  min-width: 0;            /* o el contenido impide que la columna encoja */
+  display: flex;
+}
+
+.zon-panel--izq { flex: 0 0 var(--zon-izq, 58%); }
+.zon-panel--der { flex: 1 1 auto; }
+
+.zon-panel > .zon-caja {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---------- El divisor ---------- */
+.zon-divisor {
+  flex: 0 0 .75rem;
+  align-self: stretch;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: col-resize;
+  /* Que arrastrar no seleccione el texto de alrededor */
+  user-select: none;
+}
+
+/* El asa: una línea discreta que se enciende al pasar por encima */
+.zon-divisor__asa {
+  width: 3px;
+  height: 2.5rem;
+  border-radius: 2px;
+  background-color: var(--bs-border-color, #dee2e6);
+  transition: background-color .12s ease, height .12s ease;
+}
+
+.zon-divisor:hover .zon-divisor__asa,
+.zon-divisor:focus-visible .zon-divisor__asa {
+  background-color: var(--bs-app-theme, #00acac);
+  height: 4rem;
+}
+
+.zon-divisor:focus-visible {
+  outline: 2px solid var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+  border-radius: .25rem;
+}
+
+/* ---------- Las cajas ----------
+   ALTO DE PANTALLA. Antes el mapa medía 520px fijos y la rejilla 420: en un
+   monitor grande sobraba hueco debajo y en un portátil había que bajar la
+   página para ver la rejilla entera. Ahora las dos cajas miden lo que queda
+   de ventana, con un mínimo para que en pantallas muy bajas no se aplasten.
+
+   EL ALTO LO MIDE EL COMPONENTE, no se calcula aquí. El `calc(100vh - 300px)`
+   es sólo el valor de arranque, para el primer pintado: esos 300px eran una
+   estimación de la miga de pan, la cabecera del panel, el aviso y los
+   márgenes, y se quedaban cortos —debajo del panel sobraba una franja de
+   pantalla sin usar—. Lo que de verdad hay encima depende de si la miga de
+   pan cabe en una línea o en dos, de si el aviso está desplegado y del tema,
+   así que la única cifra fiable es la que sale de medir el panel ya pintado:
+   AllZonasComponent.ajustarAlto pone `--zon-alto` con lo que sobra debajo.
+
+   Sin tope por arriba: el tope de 60rem que había dejaba franja muerta en un
+   monitor alto, que es justo lo que se quería quitar. El mínimo se queda. */
+.zon-caja {
+  display: flex;
+  flex-direction: column;
+
+  height: max(22rem, var(--zon-alto, calc(100vh - 300px)));
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  overflow: hidden;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.zon-caja__barra {
+  flex: 0 0 auto;          /* la barra manda su alto; lo que cede es el contenido */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  padding: .4rem .6rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .025);
+}
+
+/* El título no se encoge: el que cede sitio es el buscador */
+.zon-caja__barra > .zon-caja__titulo {
+  flex: 0 0 auto;
+}
+
+.zon-caja__titulo {
+  display: flex;
+  align-items: center;
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+/* El contador, como el de las pestañas */
+.zon-cuenta {
+  margin-left: .4rem;
+  padding: .05rem .4rem;
+  border-radius: .75rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .15);
+  color: var(--bs-app-theme, #00acac);
+  font-size: .6875rem;
+  font-weight: 700;
+}
+
+/* Los dos botones de la cabecera de Zonas */
+.zon-caja__botones {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.zon-caja__botones .btn {
+  font-size: .6875rem;
+  padding: .15rem .5rem;
+  white-space: nowrap;
+}
+
+/* Cuántos clientes tiene la zona elegida, dentro del botón */
+.zon-caja__cuenta {
+  margin-left: .3rem;
+  padding: .02rem .3rem;
+  border-radius: .6rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 700;
+}
+
+/* ---------- El mapa ---------- */
+.zon-herramientas {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+/* ---------- Paleta del color de los puntos ---------- */
+.zon-paleta {
+  position: relative;      /* ancla de la lista */
+  display: inline-flex;
+}
+
+.zon-paleta__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+/* La pastilla con el color de ahora, dentro del botón */
+.zon-paleta__muestra {
+  width: .85rem;
+  height: .85rem;
+  border-radius: .2rem;
+  border: 1px solid rgba(0, 0, 0, .2);
+}
+
+/* Se despliega hacia abajo, sobre el mapa. Mismo z-index que las
+   sugerencias del buscador: tiene que ganarle al mapa, que va detrás en el
+   marcado. */
+.zon-paleta__lista {
+  position: absolute;
+  top: calc(100% + .25rem);
+  right: 0;
+  z-index: 20;
+
+  /* Diecinueve en una fila se saldrían del mapa: en rejilla de siete */
+  display: grid;
+  grid-template-columns: repeat(7, 1.4rem);
+  gap: .25rem;
+
+  padding: .35rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+
+/* La cuenta de clientes en el botón del ojo */
+.zon-herramientas__cuenta {
+  margin-left: .25rem;
+  font-size: .625rem;
+  opacity: .85;
+}
+
+.zon-herramientas .btn {
+  font-size: .6875rem;
+  padding: .15rem .5rem;
+}
+
+/* La instrucción de qué hacer mientras se dibuja */
+.zon-dibujando {
+  font-size: .6875rem;
+  color: var(--bs-app-theme, #00acac);
+  font-weight: 600;
+}
+
+/* El mapa se queda con todo lo que deje la barra */
+.zon-mapa {
+  flex: 1 1 auto;
+  min-height: 0;           /* sin esto un hijo flex no baja de su contenido */
+  width: 100%;
+}
+
+/* El div del mapa existe siempre —si se montara al responder la API no
+   estaría ahí cuando hace falta—, así que mientras tanto se esconde. */
+.zon-mapa.is-oculto {
+  display: none;
+}
+
+/* ---------- Buscador ----------
+   En la barra, junto a los botones de dibujo: flotando sobre el mapa tapaba
+   justo la esquina que se estaba mirando.
+
+   Es el que cede sitio cuando la barra se queda estrecha (flex-shrink), y en
+   cuanto no cabe se va a su propia línea, que para eso la barra envuelve. */
+.zon-buscar {
+  flex: 1 1 11rem;
+  min-width: 8rem;
+  max-width: 20rem;
+}
+
+/* Ancla de la lupa, de la × y de la lista de sugerencias */
+.zon-buscar__campo {
+  position: relative;
+}
+
+.zon-buscar__campo .form-control {
+  padding-left: 2rem;
+  padding-right: 1.75rem;
+  font-size: .75rem;
+
+  border-color: var(--bs-border-color, #ced4da);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+}
+
+.zon-buscar__lupa {
+  position: absolute;
+  top: 50%;
+  left: .6rem;
+  transform: translateY(-50%);
+
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.zon-buscar__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .35rem;
+  transform: translateY(-50%);
+
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+
+  border: none;
+  border-radius: .2rem;
+  background: none;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.zon-buscar__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* Lo único que sigue flotando, y sólo mientras se escribe. El z-index tiene
+   que ganarle al mapa, que va detrás en el marcado: un elemento posicionado
+   con z-index le gana a otro con `auto` aunque vaya después. */
+.zon-sugerencias {
+  position: absolute;
+  top: calc(100% + .25rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
+
+  margin: 0;
+  padding: .25rem 0;
+  list-style: none;
+
+  max-height: 15rem;
+  overflow-y: auto;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+
+.zon-sugerencia {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .3rem .55rem;
+  cursor: pointer;
+}
+
+.zon-sugerencia:hover,
+.zon-sugerencia.is-activa {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.zon-sugerencia__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.zon-sugerencia__principal {
+  font-size: .75rem;
+  font-weight: 600;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zon-sugerencia__secundario {
+  font-size: .625rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.zon-mapa__estado {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+  text-align: center;
+}
+
+/* ---------- El formulario ---------- */
+.zon-form {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+
+  padding: .6rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .04);
+}
+
+.zon-form .form-control {
+  font-size: .75rem;
+}
+
+/* Provincia, cantón y país en la misma línea: van juntos y son cortos */
+.zon-form__territorio {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.zon-form__territorio .form-control {
+  font-size: .75rem;
+}
+
+/* El rótulo de «esto no se escribe», con el botón de recalcular al lado */
+.zon-form__rotulo {
+  flex: 1 1 auto;
+  font-size: .625rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Los campos que pone el mapa ----------
+   Se ven pero no se escriben. El fondo apagado y el cursor por defecto son
+   la pista de que ahí no se teclea; `readonly` y no `disabled` porque lo que
+   dicen SÍ interesa leerlo y copiarlo, y un campo deshabilitado se ve tan
+   apagado que parece que no tiene valor. */
+.zon-form__leido {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .04);
+  cursor: default;
+}
+
+.zon-form__leido:focus {
+  box-shadow: none;
+  border-color: var(--bs-border-color, #ced4da);
+}
+
+/* El país es el que menos cambia: se le da menos sitio, pero SIN que se
+   encoja: con `0 1 6rem` se quedaba en 60px y «Ecuador» salía «Ecua». */
+.zon-form__leido--pais {
+  flex: 0 0 5.5rem;
+}
+
+/* En rejilla y no en fila: con diecinueve colores una sola línea no cabe en
+   la columna, y envolviéndolos quedaban filas desiguales. `auto-fill` los
+   reparte solos según el ancho que haya. */
+.zon-form__colores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(1.4rem, 1fr));
+  gap: .25rem;
+}
+
+.zon-color {
+  width: 1.4rem;
+  height: 1.4rem;
+  min-width: 1.4rem;
+  padding: 0;
+
+  border: 2px solid transparent;
+  border-radius: .25rem;
+  cursor: pointer;
+}
+
+.zon-color.is-elegido {
+  border-color: var(--bs-body-color, #212529);
+  box-shadow: 0 0 0 2px var(--bs-component-bg, #fff) inset;
+}
+
+/* Qué forma hay dibujada: sin esto se guarda a ciegas */
+.zon-form__forma {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .25rem;
+
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El radio escrito a mano, al lado de su rótulo */
+.zon-form__radio {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.zon-form__radio .form-control {
+  width: 6rem;
+  font-size: .75rem;
+}
+
+.zon-form__check {
+  font-size: .75rem;
+  cursor: pointer;
+}
+
+.zon-form__check input {
+  margin-right: .25rem;
+  vertical-align: middle;
+}
+
+.zon-form__botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: .3rem;
+}
+
+/* ---------- La rejilla de zonas ---------- */
+/* Y la rejilla con lo que dejen la barra y el formulario: así, al abrir el
+   formulario, lo que encoge es la lista y la caja no crece. */
+.zon-grilla {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  --ag-line-height: 30px;
+}
+
+/* La pastilla del color, junto al nombre: es como se reconoce la zona en el
+   mapa. ::ng-deep porque la celda la dibuja ag-Grid fuera de la
+   encapsulación del componente. */
+:host ::ng-deep .zon-celda-zona {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  min-width: 0;
+}
+
+:host ::ng-deep .zon-celda-zona__color {
+  flex: 0 0 auto;
+  width: .7rem;
+  height: .7rem;
+  border-radius: .2rem;
+}
+
+:host ::ng-deep .zon-celda-zona__texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La zona desactivada sale apagada y tachada: eso ya lo pone la regla de
+   `.fila-inactiva` de styles.css, que es la misma para las nueve rejillas con
+   casilla y deja fuera la columna de acciones. Aquí no hace falta repetirla.
+
+   Y `.zon-acciones` se fue con los botones escritos a mano: ahora los pinta
+   <app-action-buttons>, que trae los suyos. */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 22px;
+  padding: 0;
+
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  background: none;
+  cursor: pointer;
+  font-size: .6875rem;
+}
+
+.btn-icon:disabled { opacity: .4; cursor: not-allowed; }
+.btn-editar { color: var(--bs-app-theme, #00acac); }
+.btn-editar:hover:not(:disabled) { background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12); }
+.btn-quitar { color: var(--bs-danger, #dc3545); }
+.btn-quitar:hover:not(:disabled) { background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12); }
+
+/* ---------- Vacíos ---------- */
+.zon-vacio {
+  padding: 1rem .75rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  text-align: center;
+}
+
+.zon-vacio__pista {
+  margin-top: .35rem;
+  font-size: .6875rem;
+  opacity: .85;
+}
+
+/* ---------- La tabla de clientes ---------- */
+.zon-tabla {
+  font-size: .75rem;
+}
+
+.zon-tabla th {
+  font-size: .6875rem;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* La dirección puede ser muy larga; el texto entero va en el title */
+.zon-tabla__direccion {
+  max-width: 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Cliente desactivado: igual que en el listado de clientes */
+.zon-tabla tr.is-inactivo td {
+  text-decoration: line-through;
+  opacity: .7;
+}
+
+/* ---------- Pantallas estrechas ----------
+   Las columnas se apilan y el divisor se va: arrastrar con el dedo una barra
+   de doce píxeles no es manejable, y apiladas no habría nada que repartir. */
+@media (max-width: 1199.98px) {
+  .zon-paneles {
+    flex-direction: column;
+    gap: .75rem;
+  }
+
+  .zon-panel--izq,
+  .zon-panel--der {
+    flex: 1 1 auto;
+  }
+
+  .zon-divisor {
+    display: none;
+  }
+
+  /* Apiladas no caben dos cajas de alto de pantalla */
+  .zon-caja {
+    height: clamp(18rem, 60vh, 32rem);
+  }
+}
+
+/* ============================================================
+   PANEL MAXIMIZADO
+
+   Al pulsar el botón de expandir, el panel pasa a ocupar la ventana entera
+   pero su contenido no se entera: las cajas seguían midiendo
+   `100vh - 300px`, que es lo que miden cuando el panel está en su sitio, y
+   quedaba una franja muerta abajo.
+
+   Para que algo se estire hasta el fondo hace falta la CADENA COMPLETA de
+   contenedores flexibles, desde el cuerpo del panel hasta la caja. Si falta
+   un eslabón, el de dentro no tiene contra qué medirse y se queda como
+   estaba.
+
+   `min-height: 0` en cada uno no es un adorno: un hijo flex NO baja por
+   defecto del tamaño de su contenido, así que sin esto el mapa y la rejilla
+   empujarían hacia abajo en vez de encogerse.
+
+   Va con `:host ::ng-deep` porque `.panel` y `.panel-body` son del
+   componente panel, no de esta pantalla: una regla normal se quedaría
+   esperando un atributo de encapsulado que esos elementos no llevan. El
+   `:host` de delante la mantiene dentro de aquí.
+   ============================================================ */
+:host ::ng-deep .panel.panel-expand > .panel-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:host ::ng-deep .panel.panel-expand .zon-contenido {
+  flex: 1;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* La fila de las dos columnas se queda con todo lo que dejen los avisos */
+:host ::ng-deep .panel.panel-expand .zon-paneles {
+  flex: 1;
+  min-height: 0;
+}
+
+:host ::ng-deep .panel.panel-expand .zon-panel {
+  min-height: 0;
+}
+
+/* Y aquí está la clave: sin alto propio, la caja se estira hasta donde
+   llegue su columna, que ya llega hasta el fondo del panel. */
+:host ::ng-deep .panel.panel-expand .zon-caja {
+  height: auto;
+  min-height: 0;
+}
+
+/* Apilado (pantalla estrecha) no hay dos columnas que estirar, pero el
+   panel maximizado sigue dando alto: que se lo repartan. */
+@media (max-width: 1199.98px) {
+  :host ::ng-deep .panel.panel-expand .zon-panel {
+    flex: 1 1 0;
+  }
+
+  :host ::ng-deep .panel.panel-expand .zon-caja {
+    height: auto;
+  }
+}

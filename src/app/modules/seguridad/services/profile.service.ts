@@ -49,6 +49,15 @@ listProfiles(page: number = 1, perPage: number = 5, search: string = ''): Observ
     return this._http.post(this.URL_SERVICIOS   + "addProfile", data);   
   }
   
+  //   ******   ACTIVAR / DESACTIVAR (solo esa columna)   ******  //
+  // No pasa por editProfile: el servidor tiene una funcion que escribe solo
+  // `activo`. Sin `activo` alterna, pero la pantalla manda el valor que
+  // quiere para que dos personas pulsando a la vez no se peleen.
+  activarProfile(id: any, activo?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'activarProfile/' + id,
+                           activo === undefined ? {} : { activo });
+  }
+
   editProfile(id: any, data: any) {    
     return this._http.post(this.URL_SERVICIOS   + "editProfile/" + id, data);   
   }
@@ -65,8 +74,36 @@ listProfiles(page: number = 1, perPage: number = 5, search: string = ''): Observ
     return this._http.get(this.URL_SERVICIOS  + "findByProgramProfile/" + id + "/" + routAccess.toUpperCase());    
   }
     
-  getAppMenus(perfil_id: any): Observable<any>  { 
-    return this._http.get(this.URL_SERVICIOS  + "getAppMenus/" + perfil_id); 
+  getAppMenus(perfil_id: any): Observable<any>  {
+    return this._http.get(this.URL_SERVICIOS  + "getAppMenus/" + perfil_id);
+  }
+
+  /**
+   * Qué ve este perfil dentro de un cliente.
+   *
+   * Devuelve siempre los cinco datos —{ GESTION, NOTA, ARCHIVO, WHATSAPP,
+   * ASIGNACION }— con TODO donde nadie ha decidido nada, así que la pantalla
+   * nunca recibe un hueco que tenga que rellenar a mano.
+   */
+  visibilidadPerfil(id: any): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'visibilidadPerfil/' + id);
+  }
+
+  /**
+   * Los mismos cinco, pero del que está mirando.
+   *
+   * Es lo que mira una pantalla para saber qué pintar: por ejemplo si la de
+   * clientes enseña la pestaña de Asignación. No hace falta saber de qué
+   * perfil se trata ni tener permiso sobre los perfiles —son los límites de
+   * quien pregunta—.
+   */
+  miVisibilidad(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'miVisibilidad');
+  }
+
+  /** Lo que no se mande se queda como estaba. */
+  editVisibilidadPerfil(id: any, visibilidad: any): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'editVisibilidadPerfil/' + id, { visibilidad });
   }
 
 

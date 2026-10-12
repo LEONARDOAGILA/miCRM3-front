@@ -1,0 +1,22 @@
+/* ============================================================
+   LOS HUECOS
+
+   La cinta es de components/campos/campoNgxEditor/cinta.css: este componente
+   se pinta dentro de ella y tiene que verse igual. Se trae con @import y no
+   desde el styles.css global para que siga siendo css de componente.
+   ============================================================ */
+@import '../campoNgxEditor/cinta.css';
+
+/* Más anchos que los de letra y tamaño: aquí lo que se lee es «Vendedor del
+   cliente», no un número de dos cifras. */
+.hpl__select {
+  width: auto;
+  min-width: 6.5rem;
+  max-width: 11rem;
+}
+
+/* El rótulo del grupo, en gris: así se ve que es el nombre de la lista y no
+   un hueco que se pueda meter. */
+.hpl__select option[value=''] {
+  color: var(--bs-secondary-color, #6c757d);
+}

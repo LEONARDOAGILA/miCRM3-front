@@ -1,0 +1,389 @@
+<!-- ============================================================
+     ZONAS DE CLIENTES
+
+     Se dibuja un área en el mapa y el servidor dice qué clientes
+     caen dentro. A qué zona pertenece un cliente NO se guarda: se
+     calcula, así que dos zonas pueden solaparse sin contradecirse.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Ventas</a></li>
+  <li class="breadcrumb-item active">Zonas de clientes</li>
+</ol>
+
+<panel title="Zonas de clientes"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       (panelReloaded)="cargarZonas()"
+       (panelExpanded)="alExpandirPanel()"
+       [closeRoute]="'/ventas'"
+       icono="draw-polygon">
+
+  <div class="content-container1 zon-contenido">
+
+    <!-- <app-aviso class="zon-aviso">
+      Los puntos del mapa son tus clientes: dibuja un área alrededor de los que
+      quieras y se te dirá <b>cuáles caen dentro</b>. A la zona no se le asignan
+      clientes, se calcula cada vez, así que mover un punto cambia la respuesta
+      sin tocar ninguna ficha.
+    </app-aviso> -->
+
+    @if (ubicadosRecortado) {
+      <app-aviso class="zon-aviso" tono="alerta">
+        En el mapa se ven los primeros <b>{{ ubicados.length }}</b> clientes, no
+        todos: con más puntos el mapa se vuelve lento. Las zonas sí se calculan
+        sobre <b>todos</b>.
+      </app-aviso>
+    }
+
+    <!-- Las dos columnas con un divisor en medio. No es un `row` de
+         Bootstrap: lo que se arrastra es el ancho, y un `col-xl-7` no se
+         puede arrastrar. En pantallas estrechas se apilan y el divisor
+         desaparece, que arrastrar con el dedo una barra de 6px no es manejable. -->
+    <div class="zon-paneles" [style.--zon-izq.%]="anchoIzquierda">
+
+      <!-- ================= EL MAPA ================= -->
+      <div class="zon-panel zon-panel--izq">
+        <div class="zon-caja">
+
+          <div class="zon-caja__barra">
+            <span class="zon-caja__titulo">
+              <i class="fa fa-map fa-fw me-1"></i>Mapa
+            </span>
+
+            @if (estadoApi === 'listo') {
+
+              <!-- Ir a un sitio: sólo mueve el mapa, no dibuja nada. Va aquí
+                   y no flotando sobre el mapa, donde tapaba justo la esquina
+                   que se está mirando. La lista de sugerencias sí flota, pero
+                   sólo mientras se escribe. -->
+              <div class="zon-buscar">
+                <div class="zon-buscar__campo">
+                  <i class="fa zon-buscar__lupa" [ngClass]="buscando ? 'fa-spinner fa-spin' : 'fa-search'"></i>
+                  <input type="text" class="form-control form-control-sm"
+                         placeholder="Ir a una ciudad o cantón…"
+                         autocomplete="off"
+                         [(ngModel)]="busqueda"
+                         (input)="onBusquedaCambia()"
+                         (keydown)="onBusquedaTecla($event)">
+                  @if (busqueda) {
+                    <button type="button" class="zon-buscar__limpiar"
+                            title="Quitar la búsqueda" (click)="limpiarBusqueda()">&times;</button>
+                  }
+
+                  @if (sugerencias.length) {
+                    <ul class="zon-sugerencias" role="listbox">
+                      @for (s of sugerencias; track s.placeId; let i = $index) {
+                        <li class="zon-sugerencia" role="option"
+                            [class.is-activa]="i === sugerenciaActiva"
+                            (click)="irAlLugar(s)">
+                          <i class="fa fa-location-dot fa-fw"></i>
+                          <span class="zon-sugerencia__texto">
+                            <span class="zon-sugerencia__principal">{{ s.principal }}</span>
+                            @if (s.secundario) {
+                              <span class="zon-sugerencia__secundario">{{ s.secundario }}</span>
+                            }
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </div>
+
+              <span class="zon-herramientas">
+                @if (dibujando === 'POLIGONO') {
+                  <span class="zon-dibujando">
+                    <i class="fa fa-hand-pointer me-1"></i>
+                    Pulsa cada esquina ({{ puntos.length }})
+                  </span>
+                  <button type="button" class="btn btn-xs btn-white"
+                          [disabled]="!puntos.length" title="Quitar la última esquina"
+                          (click)="deshacerPunto()">
+                    <i class="fa fa-rotate-left"></i>
+                  </button>
+                  <button type="button" class="btn btn-xs btn-primary"
+                          [disabled]="puntos.length < 3"
+                          title="Cerrar el área (o doble clic en el mapa)"
+                          (click)="terminarPoligono()">
+                    <i class="fa fa-check me-1"></i>Terminar
+                  </button>
+                  <button type="button" class="btn btn-xs btn-white" (click)="cancelarDibujo()">
+                    <i class="fa fa-xmark"></i>
+                  </button>
+
+                } @else if (dibujando === 'CIRCULO') {
+                  <span class="zon-dibujando">
+                    <i class="fa fa-hand-pointer me-1"></i>Pulsa el centro en el mapa
+                  </span>
+                  <button type="button" class="btn btn-xs btn-white" (click)="cancelarDibujo()">
+                    <i class="fa fa-xmark me-1"></i>Cancelar
+                  </button>
+
+                } @else {
+                  <!-- Los clientes, para saber dónde dibujar -->
+                  <button type="button" class="btn btn-xs"
+                          [ngClass]="verClientes ? 'btn-primary' : 'btn-white'"
+                          [title]="verClientes ? 'Ocultar los clientes' : 'Ver dónde están los clientes'"
+                          (click)="alternarClientes()">
+                    <i class="fa fa-fw" [ngClass]="verClientes ? 'fa-eye' : 'fa-eye-slash'"></i>
+                    <span class="zon-herramientas__cuenta">{{ ubicados.length }}</span>
+                  </button>
+
+                  <!-- De qué color se ven. Depende del mapa que haya debajo:
+                       sobre satélite el azul se pierde. -->
+                  @if (verClientes) {
+                    <span class="zon-paleta">
+                      <button type="button" class="btn btn-xs btn-white zon-paleta__boton"
+                              title="Color de los puntos"
+                              (click)="alternarPaleta()">
+                        <span class="zon-paleta__muestra" [style.background-color]="colorPuntos"></span>
+                        <i class="fa fa-caret-down"></i>
+                      </button>
+
+                      @if (paletaAbierta) {
+                        <div class="zon-paleta__lista">
+                          @for (c of coloresPunto; track c.color) {
+                            <button type="button" class="zon-color"
+                                    [class.is-elegido]="colorPuntos === c.color"
+                                    [style.background-color]="c.color"
+                                    [title]="c.nombre"
+                                    (click)="elegirColorPuntos(c.color)"></button>
+                          }
+                        </div>
+                      }
+                    </span>
+                  }
+
+                  <button type="button" class="btn btn-xs btn-white"
+                          [disabled]="accesoModel?.crear === false"
+                          title="Dibujar un área punto a punto"
+                          (click)="dibujar('POLIGONO')">
+                    <i class="fa fa-draw-polygon me-1"></i>Área
+                  </button>
+                  <button type="button" class="btn btn-xs btn-white"
+                          [disabled]="accesoModel?.crear === false"
+                          title="Dibujar un radio alrededor de un punto"
+                          (click)="dibujar('CIRCULO')">
+                    <i class="fa fa-circle-dot me-1"></i>Radio
+                  </button>
+                }
+              </span>
+            }
+          </div>
+
+          <!-- El mapa vive siempre: si se montara sólo cuando la API responde,
+               el div no existiría al llegar y habría que esperar otro ciclo. -->
+          <div class="zon-mapa" #mapa [class.is-oculto]="estadoApi !== 'listo'"></div>
+
+          @if (estadoApi !== 'listo') {
+            <div class="zon-mapa__estado">
+              @switch (estadoApi) {
+                @case ('cargando') { <i class="fa fa-circle-notch fa-spin fa-2x mb-2"></i><div>Cargando el mapa…</div> }
+                @case ('sin-clave') {
+                  <i class="fa fa-key fa-2x mb-2"></i>
+                  <div>No hay clave de Google Maps configurada.</div>
+                  <small>Se pone en <code>GOOGLE_MAPS_API_KEY</code> del environment.</small>
+                }
+                @default {
+                  <i class="fa fa-triangle-exclamation fa-2x mb-2 text-danger"></i>
+                  <div>No se pudo cargar el mapa.</div>
+                  <small>{{ errorApi }}</small>
+                }
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- El divisor. `role=separator` y las flechas del teclado: arrastrar
+           con el ratón no puede ser la única forma de moverlo. -->
+      <div class="zon-divisor"
+           role="separator"
+           tabindex="0"
+           aria-orientation="vertical"
+           [attr.aria-valuenow]="anchoIzquierda"
+           aria-valuemin="25"
+           aria-valuemax="75"
+           title="Arrastra para repartir el ancho (doble clic: por defecto)"
+           (mousedown)="empezarArrastre($event)"
+           (dblclick)="repartirPorDefecto()"
+           (keydown)="moverDivisorConTeclado($event)">
+        <span class="zon-divisor__asa"></span>
+      </div>
+
+      <!-- ================= ZONAS ================= -->
+      <div class="zon-panel zon-panel--der">
+        <div class="zon-caja">
+
+          <div class="zon-caja__barra">
+            <span class="zon-caja__titulo">
+              <i class="fa fa-layer-group fa-fw me-1"></i>Zonas
+              <span class="zon-cuenta">{{ zonas.length }}</span>
+            </span>
+            <span class="zon-caja__botones">
+              <!-- La lista de clientes se abre aparte: sólo interesa cuando
+                   ya hay una zona elegida, y en la pantalla se comía el alto
+                   que necesitan el mapa y la rejilla. -->
+              <button type="button" class="btn btn-xs btn-white"
+                      [disabled]="!elegida"
+                      [title]="elegida ? 'Ver los clientes de «' + elegida.nombre + '»' : 'Elige una zona primero'"
+                      (click)="abrirClientes()">
+                <i class="fa fa-user-group me-1"></i>Clientes en la zona
+                @if (elegida) { <span class="zon-caja__cuenta">{{ elegida.clientes }}</span> }
+              </button>
+
+              <button type="button" class="btn btn-xs btn-primary"
+                      [disabled]="accesoModel?.crear === false || !!borrador"
+                      (click)="nueva()">
+                <i class="fa fa-plus me-1"></i>Nueva
+              </button>
+            </span>
+          </div>
+
+          <!-- ---------- El formulario ---------- -->
+          @if (borrador) {
+            <div class="zon-form">
+              <div class="zon-form__fila">
+                <input type="text" class="form-control form-control-sm"
+                       placeholder="Nombre de la zona" maxlength="120"
+                       [(ngModel)]="borrador.nombre">
+              </div>
+
+              <div class="zon-form__fila">
+                <input type="text" class="form-control form-control-sm"
+                       placeholder="Para qué es (opcional)" maxlength="2000"
+                       [(ngModel)]="borrador.descripcion">
+              </div>
+
+              <!-- Dónde cae. NO SE ESCRIBE: lo pone el mapa mirando el centro
+                   del área al terminar de dibujarla. Se enseña para poder
+                   comprobarlo, y si Google no contestó está el botón de
+                   recalcular; escribirlo a mano sería invitar a que una zona
+                   diga «Manabi» y sus clientes «Manabí», que es justo lo que
+                   impediría compararlos. -->
+              <div class="zon-form__territorio">
+                <span class="zon-form__rotulo">
+                  <i class="fa fa-location-dot fa-fw"></i>Lo pone el mapa
+                </span>
+                <button type="button" class="btn btn-xs btn-white"
+                        [disabled]="buscandoTerritorio || !hayForma"
+                        title="Volver a preguntarle al mapa dónde cae esta zona"
+                        (click)="rellenarTerritorio(true)">
+                  <i class="fa fa-fw" [ngClass]="buscandoTerritorio ? 'fa-circle-notch fa-spin' : 'fa-rotate'"></i>
+                </button>
+              </div>
+
+              <div class="zon-form__territorio">
+                <input type="text" class="form-control form-control-sm zon-form__leido"
+                       readonly tabindex="-1" placeholder="Provincia"
+                       [value]="borrador.provincia"
+                       [title]="borrador.provincia || 'La pone el mapa al terminar de dibujar'">
+                <input type="text" class="form-control form-control-sm zon-form__leido"
+                       readonly tabindex="-1" placeholder="Cantón"
+                       [value]="borrador.canton"
+                       [title]="borrador.canton || 'Lo pone el mapa al terminar de dibujar'">
+                <input type="text" class="form-control form-control-sm zon-form__leido zon-form__leido--pais"
+                       readonly tabindex="-1" placeholder="País"
+                       [value]="borrador.pais"
+                       [title]="borrador.pais || 'Lo pone el mapa al terminar de dibujar'">
+              </div>
+
+              <div class="zon-form__fila zon-form__colores">
+                @for (c of colores; track c.color) {
+                  <button type="button" class="zon-color"
+                          [class.is-elegido]="borrador.color === c.color"
+                          [style.background-color]="c.color"
+                          [title]="c.nombre"
+                          [attr.aria-label]="c.nombre"
+                          (click)="borrador.color = c.color"></button>
+                }
+              </div>
+
+              <!-- Qué forma tiene ahora mismo, para no guardar a ciegas -->
+              <div class="zon-form__forma">
+                @if (hayForma) {
+                  <i class="fa fa-check-circle text-success me-1"></i>
+                  @if (borrador.id) {
+                    {{ borrador.tipo === 'CIRCULO'
+                        ? 'Arrastra el borde para el radio, o el centro para moverlo'
+                        : 'Arrastra los puntos para corregir el área' }}
+                  } @else {
+                    {{ borrador.tipo === 'CIRCULO' ? 'Círculo puesto' : 'Área dibujada' }}
+                  }
+                  <button type="button" class="btn btn-xs btn-white ms-1"
+                          title="Quitar esta forma y dibujarla otra vez desde cero"
+                          (click)="dibujar(borrador.tipo)">
+                    <i class="fa fa-rotate-left me-1"></i>Empezar de nuevo
+                  </button>
+                } @else {
+                  <i class="fa fa-circle-info me-1"></i>
+                  Dibuja el área con los botones del mapa
+                }
+              </div>
+
+              <!-- El radio, a mano: arrastrar el tirador va bien para
+                   aproximar, pero «2 km exactos» se escribe. -->
+              @if (borrador.tipo === 'CIRCULO' && hayForma) {
+                <div class="zon-form__radio">
+                  <label for="zon-radio">Radio</label>
+                  <input id="zon-radio" type="number" class="form-control form-control-sm"
+                         min="1" max="500000" step="50"
+                         [(ngModel)]="borrador.radio_metros"
+                         (ngModelChange)="alCambiarElRadio()">
+                  <span>metros</span>
+                </div>
+              }
+
+              <div class="zon-form__fila">
+                <label class="zon-form__check">
+                  <input type="checkbox" [(ngModel)]="borrador.activo"> Activa
+                </label>
+              </div>
+
+              <div class="zon-form__botones">
+                <button type="button" class="btn btn-xs btn-white" (click)="cancelar()">Cancelar</button>
+                <button type="button" class="btn btn-xs btn-primary"
+                        [disabled]="guardando || !hayForma"
+                        (click)="guardar()">
+                  @if (guardando) { <i class="fa fa-circle-notch fa-spin me-1"></i>Guardando… }
+                  @else { <i class="fa fa-check me-1"></i>Guardar }
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ---------- La rejilla ----------
+               Antes era una lista de tarjetas. Como rejilla se puede filtrar
+               por provincia y por cantón desde la cabecera, que es para lo
+               que se guardaron esos campos.
+
+               LOS FILTROS LOS APLICA ag-Grid, no el servidor: aquí llegan
+               TODAS las zonas de una vez (son decenas), así que el filtro
+               nativo es el correcto. En los listados de clientes o gestiones
+               no vale, porque allí la rejilla sólo tiene la página que se
+               está viendo. -->
+          <ag-grid-angular
+            class="ag-theme-alpine ag-grid-transparente zon-grilla"
+            [rowData]="zonas"
+            [columnDefs]="columnDefs"
+            [defaultColDef]="_appAgGridService.defaultColDef"
+            [localeText]="_appAgGridService.localeText"
+            [rowClassRules]="rowClassRules"
+            [rowHeight]="30"
+            [headerHeight]="30"
+            [rowSelection]="'single'"
+            [pagination]="false"
+            [enableCellTextSelection]="true"
+            [tooltipShowDelay]="400"
+            [overlayNoRowsTemplate]="'<span>Todavía no hay zonas. Dibuja la primera en el mapa.</span>'"
+            [navigateToNextCell]="navegarConTeclado"
+            (gridReady)="onGridReady($event)"
+            (cellClicked)="onCellClicked($event)">
+          </ag-grid-angular>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</panel>

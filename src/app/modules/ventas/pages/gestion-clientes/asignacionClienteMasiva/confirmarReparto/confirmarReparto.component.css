@@ -1,0 +1,126 @@
+/* ============================================================
+   CONFIRMAR EL REPARTO
+
+   Mismo molde que los modales de eliminar (deleteCliente), pero
+   en el color del tema: repartir no es borrar. El rojo se
+   reserva para cuando se les quita el responsable y los clientes
+   quedan sueltos.
+
+   El color sale de --bs-app-theme, que es lo que cambia al elegir
+   tema en «Ajustes de la aplicación»; --bs-primary no cambia.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+/* ---------- Qué se va a hacer ---------- */
+.reparto-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: .875rem;
+  padding: .875rem 1rem;
+  border: 1px solid rgba(var(--bs-app-theme-rgb, 13, 110, 253), .35);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 13, 110, 253), .1);
+}
+
+.reparto-aviso__icono {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: rgba(var(--bs-app-theme-rgb, 13, 110, 253), .18);
+  color: var(--bs-app-theme, #0d6efd);
+  font-size: 1.125rem;
+}
+
+.reparto-aviso__titulo {
+  margin: 0 0 .15rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bs-app-theme, #0d6efd);
+}
+
+.reparto-aviso__texto {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Quitarles el responsable sí es destructivo: deja clientes sueltos */
+.reparto-aviso--peligro {
+  border-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .35);
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
+}
+
+.reparto-aviso--peligro .reparto-aviso__icono {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .15);
+  color: var(--bs-danger, #dc3545);
+}
+
+.reparto-aviso--peligro .reparto-aviso__titulo {
+  color: var(--bs-danger-text-emphasis, var(--bs-danger, #dc3545));
+}
+
+/* ---------- El detalle ---------- */
+.reparto-datos {
+  margin-top: 1rem;
+  border: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+  border-radius: .375rem;
+  overflow: hidden;
+}
+
+.reparto-datos .list-group-item {
+  padding: .5rem .75rem;
+  background-color: var(--bs-component-bg, var(--bs-body-bg, #fff));
+  border-color: var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+}
+
+/* list-group-flush deja borde arriba y abajo: chocan con el del contenedor */
+.reparto-datos .list-group-item:first-child { border-top: 0; }
+.reparto-datos .list-group-item:last-child  { border-bottom: 0; }
+
+.reparto-datos__etiqueta {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.reparto-datos__valor {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* ---------- Notas al pie ---------- */
+.reparto-nota {
+  margin: .75rem 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.reparto-nota--peligro {
+  padding: .5rem .625rem;
+  border-radius: .375rem;
+  border: 1px solid rgba(var(--bs-danger-rgb, 220, 53, 69), .35);
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
+  color: var(--bs-danger-text-emphasis, var(--bs-danger, #dc3545));
+}
+
+/* ---------- Pie ---------- */
+.reparto-footer {
+  gap: .5rem;
+  border-top: 1px solid var(--bs-component-border-color, var(--bs-border-color, #dee2e6));
+}
+
+.reparto-footer .btn {
+  min-width: 130px;
+  font-size: 12px;
+}

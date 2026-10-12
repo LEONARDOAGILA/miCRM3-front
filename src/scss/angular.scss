@@ -425,6 +425,43 @@
   background-color: transparent;
 }
 
+// ---------- Lo que flota por encima de la rejilla ----------
+// El fondo de la rejilla es translúcido a propósito: las filas dejan ver el
+// panel que hay debajo. El problema es que ag-Grid pinta con ESA MISMA
+// variable —--ag-background-color— los menús de columna y las listas
+// desplegables de los filtros, que no flotan sobre el panel sino sobre las
+// propias filas. Resultado: se leían los datos a través de las opciones del
+// filtro (.ag-select-list en ag-grid.css:2073, .ag-menu en :5067).
+//
+// Se les da una superficie opaca propia. Va aquí y no en una pantalla porque
+// el fallo es de la rejilla, no de ninguna en concreto: lo llevan las 42
+// plantillas que la usan.
+.ag-theme-alpine {
+  // --bs-component-bg y NO --bs-body-bg: en esta plantilla el fondo de la
+  // página es gris (#dee2e6) y el blanco es el de las tarjetas. Es la misma
+  // variable con la que el tema pinta popovers y desplegables, así que el
+  // panel del filtro queda del color que ya tiene todo lo que flota.
+  --ag-superficie-flotante: var(--bs-component-bg, #fff);
+
+  .ag-menu,
+  .ag-filter,
+  .ag-select-list,
+  .ag-popup-editor {
+    background-color: var(--ag-superficie-flotante);
+  }
+
+  // Opaco sobre filas opacas se confunde con la rejilla: la sombra es lo que
+  // dice que esto está por encima y no es una fila más.
+  .ag-menu,
+  .ag-popup-editor {
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .18);
+  }
+
+  .ag-select-list {
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .18);
+  }
+}
+
 // .zebra-grid: rayado más marcado para las pantallas que lo piden.
 // Antes la fila seleccionada se pintaba de gris oscuro (#666565) y el texto
 // dejaba de leerse; ahora usa el mismo acento que el resto.
@@ -455,10 +492,16 @@
     box-shadow: -6px 0 10px -6px rgba(0, 0, 0, .45);
   }
 
-  // Menús y popups de filtro de ag-Grid se montan fuera de la grilla
-  .ag-popup .ag-menu,
-  .ag-popup .ag-filter {
-    background-color: #1e293b;
+  // Lo que flota por encima: el fondo sale de la variable de arriba, así que
+  // aquí sólo hay que cambiarla. Antes esto repetía el background-color y
+  // además sólo alcanzaba a .ag-menu y .ag-filter: la lista de operaciones
+  // del filtro se quedaba translúcida también en oscuro.
+  --ag-superficie-flotante: #1e293b;
+
+  .ag-menu,
+  .ag-filter,
+  .ag-select-list,
+  .ag-popup-editor {
     border-color: #334155;
     color: #e2e8f0;
   }

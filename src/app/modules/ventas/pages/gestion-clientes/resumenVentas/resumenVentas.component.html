@@ -82,6 +82,37 @@
         </a>
       </div>
     </div>
+
+    <!-- Lo que no se estaba contando: a cuántos clientes activos no se
+         llama hace un mes. Es la cifra que cuesta dinero. -->
+    <div class="widget widget-stats"
+         [class.bg-red]="porcentajeDormidos >= 50"
+         [class.bg-orange]="porcentajeDormidos < 50 && porcentajeDormidos >= 20"
+         [class.bg-green]="porcentajeDormidos < 20">
+      <div class="stats-icon"><i class="fa fa-bed"></i></div>
+      <div class="stats-info">
+        <h4>SIN CONTACTO</h4>
+        <p>{{ datos.cobertura.dormidos | number }}</p>
+      </div>
+      <div class="stats-link">
+        <a href="javascript:;">
+          {{ porcentajeDormidos }}% de los activos · +{{ datos.cobertura.dias_dormido }} días
+        </a>
+      </div>
+    </div>
+
+    <div class="widget widget-stats bg-purple">
+      <div class="stats-icon"><i class="fa fa-bullseye"></i></div>
+      <div class="stats-info">
+        <h4>TASA DE CONTACTO</h4>
+        <p>{{ datos.efectividad.tasa_contacto }}%</p>
+      </div>
+      <div class="stats-link">
+        <a href="javascript:;">
+          {{ datos.efectividad.contacto | number }} de {{ datos.efectividad.con_resultado | number }} en {{ datos.efectividad.dias }} días
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- ---------- Mi día ----------
@@ -248,6 +279,128 @@
             <span class="rv-linea__cuenta">{{ datos.clientes.en_papelera | number }}</span>
           </div>
         }
+      </div>
+    </div>
+
+    <!-- ---------- A quién no se está llamando ----------
+         Las cifras de arriba cuentan lo que SE HIZO; ésta cuenta lo que no.
+         Un cliente sin próximo paso no vuelve a salir en ninguna agenda: no
+         es que se atienda tarde, es que no se atiende. -->
+    <div class="rv-tarjeta">
+      <div class="rv-tarjeta__titulo">
+        <i class="fa fa-user-clock fa-fw"></i>Cobertura de la cartera
+      </div>
+      <div class="rv-tarjeta__cuerpo">
+        <div class="rv-dia__barra" [attr.aria-label]="'Con próximo paso: ' + porcentajeConProxima + '%'">
+          <div class="rv-dia__avance" [style.width.%]="porcentajeConProxima"></div>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre">Con próximo paso</span>
+          <span class="rv-linea__cuenta">{{ datos.cobertura.con_proxima | number }} <small class="text-muted">de {{ datos.cobertura.activos | number }}</small></span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre text-warning">Sin próximo paso</span>
+          <span class="rv-linea__cuenta">{{ datos.cobertura.sin_proxima | number }}</span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre text-danger">Nunca gestionados</span>
+          <span class="rv-linea__cuenta">{{ datos.cobertura.sin_gestion | number }}</span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre">Dormidos (+{{ datos.cobertura.dias_dormido }} días)</span>
+          <span class="rv-linea__cuenta">{{ datos.cobertura.dormidos | number }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- Cómo salió lo que se hizo ---------- -->
+    <div class="rv-tarjeta">
+      <div class="rv-tarjeta__titulo">
+        <i class="fa fa-bullseye fa-fw"></i>Efectividad de {{ datos.efectividad.dias }} días
+      </div>
+      <div class="rv-tarjeta__cuerpo">
+        <div class="rv-tasa">
+          <span class="rv-tasa__valor" [ngClass]="tonoTasa">{{ datos.efectividad.tasa_contacto }}%</span>
+          <span class="rv-tasa__texto">se habló con alguien</span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre">Realizadas</span>
+          <span class="rv-linea__cuenta">{{ datos.efectividad.realizadas | number }}</span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre text-muted">No se les pudo hablar</span>
+          <span class="rv-linea__cuenta">{{ datos.efectividad.sin_contacto | number }}</span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre text-success">Interesados</span>
+          <span class="rv-linea__cuenta">{{ datos.efectividad.interesados | number }}</span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre">Cotizaciones / ventas</span>
+          <span class="rv-linea__cuenta">{{ datos.efectividad.cotizaciones | number }} / {{ datos.efectividad.ventas | number }}</span>
+        </div>
+        @if (datos.efectividad.reclamos) {
+          <div class="rv-linea rv-linea--suelta">
+            <span class="rv-linea__nombre text-danger">Reclamos</span>
+            <span class="rv-linea__cuenta">{{ datos.efectividad.reclamos | number }}</span>
+          </div>
+        }
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre">Duración media</span>
+          <span class="rv-linea__cuenta">{{ enHoras(datos.gestiones.duracion_media) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- Quién está trabajando ----------
+         «Por vendedor», arriba, mide CARTERA: cuántos clientes tiene cada
+         uno. Esto mide TRABAJO, que no es lo mismo y se confunde fácil. -->
+    <div class="rv-tarjeta">
+      <div class="rv-tarjeta__titulo">
+        <i class="fa fa-person-running fa-fw"></i>Trabajo de los últimos {{ datos.dias }} días
+      </div>
+      <div class="rv-tarjeta__cuerpo">
+        @for (u of datos.usuarios; track u.usuario) {
+          <div class="rv-barra">
+            <div class="rv-barra__fila">
+              <span class="rv-barra__nombre">{{ u.usuario }}</span>
+              <span class="rv-barra__cuenta">
+                {{ u.realizadas | number }}
+                <small class="text-muted">· {{ u.pendientes }} pend.</small>
+                @if (u.vencidas) { <small class="text-danger">· {{ u.vencidas }} venc.</small> }
+              </span>
+            </div>
+            <div class="rv-barra__riel"><div class="rv-barra__valor" [style.width]="anchoBarraUsuario(u.realizadas)"></div></div>
+          </div>
+        } @empty {
+          <p class="rv-vacio">Nadie ha registrado gestiones en el periodo.</p>
+        }
+      </div>
+    </div>
+
+    <!-- ---------- Qué falta por repartir ---------- -->
+    <div class="rv-tarjeta">
+      <div class="rv-tarjeta__titulo">
+        <i class="fa fa-people-arrows fa-fw"></i>Clientes sin responsable
+      </div>
+      <div class="rv-tarjeta__cuerpo">
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre">Sin vendedor</span>
+          <span class="rv-linea__cuenta">{{ datos.papeles.sin_vendedor | number }}</span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre">Sin cobrador</span>
+          <span class="rv-linea__cuenta">{{ datos.papeles.sin_cobrador | number }}</span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre">Sin asistente</span>
+          <span class="rv-linea__cuenta">{{ datos.papeles.sin_asistente | number }}</span>
+        </div>
+        <div class="rv-linea rv-linea--suelta">
+          <span class="rv-linea__nombre">Sin postventa</span>
+          <span class="rv-linea__cuenta">{{ datos.papeles.sin_postventa | number }}</span>
+        </div>
+        <p class="rv-vacio">De {{ datos.papeles.activos | number }} clientes. Se reparten en Ventas &gt; Reparto de clientes.</p>
       </div>
     </div>
   </div>

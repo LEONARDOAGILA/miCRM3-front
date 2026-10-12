@@ -1,30 +1,37 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
-import { firstValueFrom } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
+import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
+import { catchError, filter, map, takeUntil } from 'rxjs/operators';
 
 import Swal from 'sweetalert2';
 
 import { GestionService } from '../../../services/gestion.service';
 import { ArchivoClienteService } from '../../../services/archivoCliente.service';
+import { NotaClienteService } from '../../../services/notaCliente.service';
+import { AlmacenDeImagenes } from '../../../interfaces/pegarEnEditor';
 import {
   ArchivoCliente, extensionDe, formatoTamano, pintaDeTipo, tipoPorExtension,
 } from '../../../interfaces/archivoCliente';
-import { abrirWhatsapp } from '../../../interfaces/plantillasWhatsapp';
+import { abrirWhatsapp, soloTexto } from '../../../interfaces/plantillasWhatsapp';
 import { lanzarProtocolo } from '../../../../../service/lanzarProtocolo';
 import { CatalogoGestionService } from '../../../services/catalogoGestion.service';
 import { TipoGestion, AsuntoGestion, asuntosDe } from '../../../interfaces/catalogoGestion';
 import { LoadingService } from '../../../../../service/loading.service';
+// El mismo selector de usuarios con su árbol de grupos que abre «Reasignar
+// cliente»: es standalone, así que se abre sin declararlo en el módulo
+import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/listUsuariosGrupos/listUsuariosGrupos.component';
+import { nombreDeUsuario } from '../../../../seguridad/services/user.service';
+import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { ClienteModel, ContactoCliente } from '../../../interfaces/clienteModel';
 import {
   GestionModel, PRIORIDADES_GESTION, RESULTADOS_GESTION,
 } from '../../../interfaces/gestionModel';
 
 /** Para qué se abre el modal. */
-export type ModoGestion = 'registrar' | 'programar' | 'editar';
+export type ModoGestion = 'registrar' | 'programar' | 'editar' | 'ver';
 
 /**
  * Registrar una gestión ya hecha, programar la siguiente o corregir una
@@ -64,13 +71,14 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
    * gestión se abre con el mensaje ya escrito en «Qué se habló» y el tipo
    * puesto en WHATSAPP, que es de lo que va.
    *
-   * `asuntoInicial` es el texto del asunto de la plantilla, no un id: se
-   * busca en el catálogo cuando éste termina de cargar, y si no aparece se
-   * deja el combo vacío para que lo elija quien escribe.
+   * `asuntoInicial` es el id del asunto del catálogo. Antes era su nombre y
+   * había que buscarlo por texto, porque los mensajes vivían en otra tabla que
+   * guardaba el asunto como una cadena; desde que el mensaje es un campo del
+   * propio asunto, la respuesta ES el asunto y aquí llega su id.
    */
   @Input() tipoInicial: string | null = null;
   @Input() notaInicial: string | null = null;
-  @Input() asuntoInicial: string | null = null;
+  @Input() asuntoInicial: number | null = null;
   @Input() contactoInicial: number | null = null;
 
   /**
@@ -83,6 +91,14 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
    * enviar», que es exactamente lo que va a pasar.
    */
   @Input() whatsappPendiente: { numero: string; texto: string } | null = null;
+
+  /**
+   * El correo que sale DESPUÉS de guardar, por lo mismo que el WhatsApp.
+   *
+   * El cuerpo va en HTML porque lo manda Outlook, que sí entiende formato; en
+   * «Qué se habló» quedó la misma cosa en texto llano, que es el historial.
+   */
+  @Input() correoPendiente: { para: string; asunto: string; cuerpoHtml: string } | null = null;
 
   @Output() guardado = new EventEmitter<GestionModel>();
 
@@ -123,20 +139,64 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
 
   private claveAdjunto = 0;
 
-  /** Los ids que acaban de guardarse, para mandarlos al portapapeles. */
-  private idsParaCopiar: number[] = [];
+  /**
+   * El editor de «Qué se habló».
+   *
+   * Es el mismo de la pestaña Notas. Hace falta porque el mensaje de un asunto
+   * de correo viene con formato: en un campo de texto llano se leerían las
+   * etiquetas, y lo que se guarda es justamente lo que se le mandó al cliente.
+   *
+   * Barra corta a propósito: esto es el historial de una conversación, no un
+   * documento. Lo que se escribe aquí son tres líneas y, de vez en cuando, un
+   * correo pegado.
+   */
+  get ctrlNota(): FormControl { return this.form.controls['nota'] as FormControl; }
 
+  /**
+   * Dónde van a parar las imágenes que se peguen en «Qué se habló».
+   *
+   * Van a los archivos del cliente, como las de una nota: al pegar un correo
+   * las imágenes vienen en base64, y dejarlas ahí haría la fila de la gestión
+   * más grande que todas las demás juntas.
+   */
+  public almacenDeImagenes: AlmacenDeImagenes = {
+    subir: async (f: File) => {
+      try {
+        const res: any = await firstValueFrom(this._notaService.subirImagen(this.cliente!.id!, f));
+        return res?.status === 'success' ? this._notaService.urlDeImagen(res.data.url) : null;
+      } catch { return null; }
+    },
+    traerDeFuera: async (u: string) => {
+      try {
+        const res: any = await firstValueFrom(this._notaService.traerImagen(this.cliente!.id!, u));
+        return res?.status === 'success' ? this._notaService.urlDeImagen(res.data.url) : null;
+      } catch {
+        // Es normal que alguna no se deje traer; no merece un toast por cada una
+        return null;
+      }
+    },
+  };
+
+  public avisarDelPegado = (mensaje: string, titulo: string): void => {
+    this._toastr.warning(mensaje, titulo, { timeOut: 9000, closeButton: true });
+  };
   public formatoTamano = formatoTamano;
   public pintaDeTipo = pintaDeTipo;
+
+  /** Se cierra al destruir el modal: corta la escucha del selector. */
+  private destruir$ = new Subject<void>();
 
   constructor(
     private fb: FormBuilder,
     public modal: NgbActiveModal,
+    private modalService: NgbModal,
     private _toastr: ToastrService,
     private _loadingService: LoadingService,
     private _gestionService: GestionService,
+    private _seguridadService: SeguridadService,
     private _catalogoService: CatalogoGestionService,
     private _archivoService: ArchivoClienteService,
+    private _notaService: NotaClienteService,
   ) {}
 
   // ================================================================
@@ -261,7 +321,7 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     for (const a of this.adjuntos) {
       try {
         const subida: any = await firstValueFrom(
-          this._archivoService.subirArchivo(this.cliente.id, a.fichero).pipe(
+          this._archivoService.subirArchivo(this.cliente.id, a.fichero, 'gestion').pipe(
             filter((e: HttpEvent<any>) => e.type === HttpEventType.Response),
             map((e: any) => e.body),
           ));
@@ -298,6 +358,52 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     return !!this.whatsappPendiente?.numero;
   }
 
+  /** ¿Y un correo? */
+  get hayCorreoPendiente(): boolean {
+    return !!this.correoPendiente?.para;
+  }
+
+  /** Cualquiera de los dos: es lo que convierte Guardar en «Guardar y enviar». */
+  get hayEnvioPendiente(): boolean {
+    return this.hayWhatsappPendiente || this.hayCorreoPendiente;
+  }
+
+  /** Por dónde sale, para decirlo en el aviso de debajo de la nota. */
+  get destinoDelEnvio(): string {
+    return this.correoPendiente?.para ?? this.whatsappPendiente?.numero ?? '';
+  }
+
+  /** Deja la gestión pero no manda el correo. */
+  cancelarCorreoPendiente(): void {
+    this.correoPendiente = null;
+  }
+
+  /**
+   * Abre Outlook con el correo escrito, ya con la gestión guardada.
+   *
+   * No es un enlace mailto: ése sólo admite texto llano y el formato del
+   * mensaje se perdería, y además no puede llevar adjuntos. Lo abre el
+   * ayudante del puesto, que habla con el Outlook instalado.
+   */
+  private enviarCorreoPendiente(idsAdjuntos: number[] = []): void {
+    const pendiente = this.correoPendiente;
+    if (!pendiente?.para) { return; }
+    this.correoPendiente = null;
+
+    lanzarProtocolo('micrm3://correo'
+      + '?para=' + encodeURIComponent(pendiente.para)
+      + '&asunto=' + encodeURIComponent(pendiente.asunto ?? '')
+      + '&cuerpo=' + encodeURIComponent(pendiente.cuerpoHtml ?? '')
+      + (idsAdjuntos.length ? '&ids=' + idsAdjuntos.join(',') : ''));
+
+    this._toastr.info(
+      'Outlook abre el correo ya escrito'
+        + (idsAdjuntos.length ? ' con sus adjuntos' : '')
+        + '; repásalo y envíalo desde ahí.',
+      'Correo', { timeOut: 7000, closeButton: true },
+    );
+  }
+
   /**
    * Deja la gestión pero no manda el mensaje.
    *
@@ -330,8 +436,15 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     this.whatsappPendiente = null;
 
     if (idsAdjuntos.length) {
+      // La dirección del servidor NO va aquí a propósito: la graba el
+      // instalador dentro del comando del protocolo. Si viajara en el enlace,
+      // cualquier página que alguien abriera podría mandar al ayudante a
+      // descargar de donde fuera.
+      // El token también para el ayudante: baja los adjuntos por ver/{id}, que
+      // desde que no es pública le devolvería un 401.
       lanzarProtocolo('micrm3://enviar'
         + '?ids=' + idsAdjuntos.join(',')
+        + '&token=' + encodeURIComponent(localStorage.getItem('token') ?? '')
         + '&tel=' + encodeURIComponent(pendiente.numero)
         + '&via=' + this.destinoWhatsapp
         + '&texto=' + encodeURIComponent(pendiente.texto));
@@ -407,22 +520,21 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Busca en el catálogo el asunto que trae la respuesta de WhatsApp.
+   * Deja elegido el asunto con el que se abrió el formulario.
    *
-   * La plantilla guarda su asunto como texto («Seguimiento por WhatsApp») y
-   * aquí hace falta el id. Si está en el catálogo, el combo queda resuelto y
-   * no hay que elegir nada; si no está, se deja vacío y lo elige quien
-   * escribe, que es mejor que inventarle un asunto a su gestión.
+   * Se comprueba que esté entre los del tipo: si el asunto se desactivó entre
+   * que se cargó el menú y se pulsó, el combo lo rechazaría igualmente y es
+   * mejor dejarlo vacío que enseñar una opción que no está en la lista.
    */
   private preseleccionarAsunto(): void {
-    const texto = (this.asuntoInicial ?? '').trim().toLowerCase();
-    if (!texto) { return; }
+    if (!this.asuntoInicial) { return; }
 
     const ctrl = this.form?.get('asunto_id');
     if (!ctrl || ctrl.value) { return; }
 
-    const encontrado = this.asuntos.find(a => (a.nombre ?? '').trim().toLowerCase() === texto);
-    if (encontrado) { ctrl.setValue(encontrado.id); }
+    if (this.asuntos.some(a => a.id === this.asuntoInicial)) {
+      ctrl.setValue(this.asuntoInicial);
+    }
   }
 
   /** El asunto tiene que ser de los del tipo; si no lo es, se queda vacío. */
@@ -438,8 +550,20 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Sólo mirar: el mismo formulario, con todo bloqueado.
+   *
+   * Es como se hace en el resto de los CRUD (saveCliente tiene su «esView»):
+   * una pantalla distinta para leer lo mismo acaba enseñando otros campos u
+   * otro orden, y entonces hay que mantener las dos.
+   */
+  get esVista(): boolean {
+    return this.modo === 'ver';
+  }
+
   ngOnInit(): void {
-    this.titulo = this.modo === 'programar' ? 'Programar gestión'
+    this.titulo = this.modo === 'ver'       ? 'Ver gestión'
+                : this.modo === 'programar' ? 'Programar gestión'
                 : this.modo === 'editar'    ? 'Modificar gestión'
                 : 'Registrar gestión';
 
@@ -447,16 +571,36 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       .filter(c => c.id)
       .map(c => ({ id: c.id as number, name: c.cargo ? `${c.nombres} (${c.cargo})` : c.nombres }));
 
+    // Con el esquema de las notas: es el que trae las marcas de letra y
+    // tamaño, que ngx-editor no tiene, y los nodos de tabla, que hacen
+    // falta para que una tabla pegada de un correo no se pierda.
     this.initializeForm();
+    // El responsable arranca en quien está dentro, con lo que hay en la
+    // sesión; la lista del servidor llega después y sólo confirma
+    this.elegirmeDeEntrada();
     this.cargarCatalogo();
     this.cargarAdjuntos();
+    this.cargarAsignables();
+
+    // Bloquear TODO el formulario de una vez y no campo a campo: así no hay
+    // forma de que al añadir un campo nuevo alguien se olvide de bloquearlo.
+    // El editor también se entera: campoNgxEditor es un ControlValueAccessor y
+    // su setDisabledState lo pone en sólo lectura.
+    if (this.esVista) {
+      this.form.disable({ emitEvent: false });
+      this.ctrlNota.disable({ emitEvent: false });
+    }
   }
 
-  /** Las miniaturas son URLs de objeto: si no se sueltan, el navegador se las queda. */
+
   ngOnDestroy(): void {
+    // Las miniaturas son URLs de objeto: si no se sueltan, el navegador se las
+    // queda. Y el editor igual: abrir el modal veinte veces deja veinte.
     for (const a of this.adjuntos) {
       if (a.vistaPrevia) { URL.revokeObjectURL(a.vistaPrevia); }
     }
+    this.destruir$.next();
+    this.destruir$.complete();
   }
 
   /** Programada mientras esté PENDIENTE; el resto, realizada. */
@@ -480,6 +624,11 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
 
   /** Las tres opciones del interruptor de arriba. */
   elegirMomento(cual: 'ahora' | 'hecha' | 'programada'): void {
+    // No basta con el css: estos son <button>, no campos, así que el
+    // form.disable() no los alcanza, y setValue() funciona igual sobre un
+    // control deshabilitado.
+    if (this.esVista) { return; }
+
     this.ahoraMismo = cual === 'ahora';
     this.ctrlEstado.setValue(cual === 'programada' ? 'PENDIENTE' : 'REALIZADA');
   }
@@ -492,22 +641,270 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
   // Calculados, las filas quedan siempre completas; a mano, cada combinación
   // dejaba un hueco distinto.
 
-  get colTipo(): string      { return this.esAhora ? 'col-12 col-md-4' : 'col-12 col-md-3'; }
-  get colPrioridad(): string { return this.esAhora ? 'col-6 col-md-4'  : 'col-6 col-md-3'; }
-  get colDuracion(): string  { return this.esAhora ? 'col-6 col-md-4'  : 'col-6 col-md-2'; }
+  /**
+   * A quién se le puede dejar la gestión a cargo: su equipo, los responsables
+   * de este cliente y él mismo (todos, si es administrador). Lo decide el
+   * servidor —ventas.fn_gestiones_asignables—, que es el que también lo valida
+   * al guardar.
+   */
+  public asignables: any[] = [];
 
-  /** Lo que sobra en su fila: 12 menos el resultado y la persona de contacto. */
-  get colAsunto(): string {
-    const resto = 12 - (this.esProgramada ? 0 : 3) - (this.contactosCombo.length ? 4 : 0);
-    return 'col-12 col-md-' + resto;
+  /** El nombre del responsable elegido, al lado de su id (como en reasignar). */
+  public responsableNombreControl = new FormControl({ value: '', disabled: true });
+
+  /** Quién soy, para poder arrancar en «yo» sin preguntar. */
+  private yo: number | null = null;
+
+  /**
+   * Pone de entrada al usuario que está dentro, con lo que ya hay en la
+   * sesión, sin esperar a la lista del servidor.
+   *
+   * Es lo que hace que el campo salga relleno desde que se abre el modal: la
+   * lista de asignables es una petición, y mientras llega el campo se vería
+   * «Sin elegir» —y se quedaría así si la petición falla—. Cuando la lista
+   * llega, confirma este valor o lo deja como está.
+   */
+  private elegirmeDeEntrada(): void {
+    const sesion = this._seguridadService.getUserLogin();
+    if (!sesion?.id) { return; }
+
+    this.yo = Number(sesion.id);
+
+    const ctrl = this.form?.controls['usuario_id'];
+    if (!ctrl || ctrl.value) { return; }   // al editar ya trae el suyo
+
+    ctrl.setValue(this.yo, { emitEvent: false });
+    this.responsableNombreControl.setValue(nombreDeUsuario(sesion) + ' (yo)');
   }
+
+  private async cargarAsignables(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(
+        this._gestionService.asignables(this.cliente?.id ?? null));
+
+      this.asignables = res?.data ?? [];
+      // `?? this.yo`: si la lista no me trajera, no se pierde el que ya salió
+      // de la sesión (ver elegirmeDeEntrada)
+      this.yo = this.asignables.find((u: any) => u.es_yo)?.id ?? this.yo;
+
+      this.elegirResponsablePorOmision();
+      this.ponerNombreDelResponsable();
+    } catch (error: any) {
+      // Sin lista no se bloquea el guardado: el servidor pone a quien la crea
+      console.error('No se pudo leer a quién se le puede asignar', error);
+      this.asignables = [];
+      this.ponerNombreDelResponsable();
+    }
+  }
+
+  /** Ids que el servidor acepta como responsable, para el selector. */
+  public get idsAsignables(): number[] {
+    return this.asignables.map((u: any) => Number(u.id));
+  }
+
+  /**
+   * El rótulo de un usuario de la lista.
+   *
+   * Dice de dónde sale cada uno —«(yo)», «cobrador del cliente»—, porque en
+   * una lista de cincuenta nombres eso es lo único que permite saber a quién
+   * le toca este cliente.
+   */
+  private rotulo(u: any): string {
+    if (!u) { return ''; }
+    // El papel va entre paréntesis y no tras una raya: el nombre ya trae el
+    // guion que separa el login, y dos rayas en la misma línea no se leen
+    if (u.es_yo) { return `${u.nombre} (yo)`; }
+    if (u.rol_cliente) { return `${u.nombre} (${String(u.rol_cliente).toLowerCase()} del cliente)`; }
+    return u.nombre;
+  }
+
+  /**
+   * Escribe en el campo de al lado el nombre de quien está elegido.
+   *
+   * Si el responsable que ya tiene la gestión no está en la lista —se le
+   * asignó cuando sí se podía, o lo puso un administrador— se enseña el nombre
+   * que trae la gestión: el campo no puede quedarse en blanco enseñando un id
+   * a secas.
+   */
+  private ponerNombreDelResponsable(): void {
+    const id = this.form?.controls['usuario_id']?.value;
+    if (!id) { this.responsableNombreControl.setValue(''); return; }
+
+    const u = this.asignables.find((x: any) => Number(x.id) === Number(id));
+    if (u) { this.responsableNombreControl.setValue(this.rotulo(u)); return; }
+
+    // Soy yo pero la lista no llegó: el nombre sale de la sesión
+    if (Number(id) === Number(this.yo)) {
+      this.responsableNombreControl.setValue(
+        nombreDeUsuario(this._seguridadService.getUserLogin()) + ' (yo)');
+      return;
+    }
+
+    this.responsableNombreControl.setValue(this.gestion?.responsable_nombre ?? 'Usuario ' + id);
+  }
+
+  /** Escribir el ID y salir del campo también resuelve el responsable. */
+  public async cargarResponsablePorId(): Promise<void> {
+    const id = Number(this.form.controls['usuario_id']?.value ?? 0);
+    if (!id) { this.responsableNombreControl.setValue(''); return; }
+
+    const u = this.asignables.find((x: any) => Number(x.id) === id);
+    if (u) { this.responsableNombreControl.setValue(this.rotulo(u)); return; }
+
+    // Se mira contra la lista y no contra el API de usuarios: el id puede
+    // existir y no ser de los que se le permiten, y es mejor decirlo ahora que
+    // al guardar
+    this.form.patchValue({ usuario_id: null }, { emitEvent: false });
+    this.responsableNombreControl.setValue('');
+    this._toastr.warning(
+      'Ese usuario no está entre los que puede elegir: su equipo o un responsable del cliente.',
+      'Responsable', { timeOut: 7000, closeButton: true });
+  }
+
+  /**
+   * El selector de siempre: la lista de usuarios con su árbol de grupos, la
+   * misma que abre «Reasignar cliente».
+   *
+   * Los que no se le permiten se ven pero quedan bloqueados
+   * (`usuariosPermitidos`), para que la lista siga siendo la que ya conoce y
+   * no una recortada que parezca que falta gente.
+   */
+  public async abrirSelectorResponsable(): Promise<void> {
+    if (this.esVista) { return; }
+
+    // Si la lista no llegó —se cayó la petición al abrir el modal—, se vuelve
+    // a pedir antes de abrir: con la lista vacía, `usuariosPermitidos` no
+    // restringe nada y el selector dejaría elegir a cualquiera para que el
+    // servidor lo rechazara después. Mejor no llegar ahí.
+    if (!this.asignables.length) { await this.cargarAsignables(); }
+
+    if (!this.asignables.length) {
+      this._toastr.error(
+        'No se pudo leer la lista de usuarios a los que puede asignar. Inténtelo de nuevo.',
+        'Responsable', { closeButton: true });
+      return;
+    }
+
+    const modalRef = this.modalService.open(ListUsuariosGruposComponent, {
+      size: 'xl', centered: true, backdrop: 'static'
+    });
+    modalRef.componentInstance.usuarioSeleccionadoId = this.form.controls['usuario_id']?.value || undefined;
+    modalRef.componentInstance.usuariosPermitidos = this.idsAsignables;
+    modalRef.componentInstance.ayuda =
+      'Haz clic sobre quien se hará cargo de esta gestión. Sólo puedes elegir a alguien de tu equipo o a un responsable del cliente.';
+
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(merge(this.destruir$, from(modalRef.result).pipe(catchError(() => of(null))))))
+      .subscribe((usuario: any) => {
+        this.form.patchValue({ usuario_id: usuario.id });
+        const u = this.asignables.find((x: any) => Number(x.id) === Number(usuario.id));
+        this.responsableNombreControl.setValue(u ? this.rotulo(u) : nombreDeUsuario(usuario));
+      });
+  }
+
+  /**
+   * Al registrar o programar algo nuevo, el responsable arranca en el USUARIO
+   * QUE ESTÁ DENTRO: lo normal es que la gestión la haga quien la registra, y
+   * dejarla a otro es la excepción, que se elige a mano.
+   *
+   * Antes arrancaba en el vendedor del cliente —como se comportaba cuando el
+   * campo no se podía elegir—, y eso hacía que al registrar una llamada que
+   * acabas de hacer tú la gestión apareciera en la agenda de otro.
+   *
+   * Al modificar o ver no se toca: la gestión ya trae el suyo (este método
+   * sale en cuanto el campo tiene valor).
+   *
+   * Nunca se queda vacío: una gestión sin responsable no entra en ninguna
+   * agenda, y era justo lo que pasaba con los clientes sin vendedor.
+   */
+  private elegirResponsablePorOmision(): void {
+    const ctrl = this.form?.controls['usuario_id'];
+    if (!ctrl || ctrl.value) { return; }
+
+    const hay = (id: any) => id && this.asignables.some((u: any) => Number(u.id) === Number(id));
+    // El vendedor del cliente queda como respaldo, por si el servidor no
+    // devolviera al propio usuario en la lista
+    const elegido = hay(this.yo) ? this.yo
+                  : hay(this.cliente?.vendedor_id) ? Number(this.cliente.vendedor_id)
+                  : null;
+
+    if (elegido) { ctrl.setValue(elegido, { emitEvent: false }); }
+  }
+
+  /**
+   * El responsable comparte su fila con la persona de contacto, cuando la hay:
+   * las dos dicen «con quién», y así la fila de abajo queda libre para el
+   * asunto, la duración y el resultado.
+   *
+   * Necesita sitio: es un buscador de tres piezas (id, nombre y lupa) y el
+   * nombre viene largo —«VCUENCA1  -  Cuenca Uno Vendedor (yo)»—.
+   */
+  get colResponsable(): string {
+    // Ya no comparte línea con la persona de contacto: en la columna estrecha
+    // (~340px) el buscador —id, nombre y lupa— se queda sin sitio para el
+    // nombre, que es lo que hay que leer
+    return 'col-12';
+  }
+
+  /**
+   * El aviso de debajo del campo, sólo cuando la gestión NO queda para uno
+   * mismo.
+   *
+   * Importa decirlo: desde que la visibilidad filtra por responsable, dejar
+   * una gestión a cargo de otro puede significar dejar de verla uno mismo.
+   */
+  get avisoResponsable(): string {
+    const elegido = this.form?.controls['usuario_id']?.value;
+    if (!elegido || !this.yo || Number(elegido) === Number(this.yo)) { return ''; }
+
+    const quien = this.responsableNombreControl.value || 'otro usuario';
+    return `Entrará en la agenda de ${quien}, no en la suya.`;
+  }
+
+  // ---------- Los anchos de los campos ----------
+  // Todos viven en la columna IZQUIERDA, que es la estrecha (5 de 12). Y los
+  // doce de esta rejilla son los de esa columna, no los del modal: un
+  // `col-md-4` aquí es un tercio de ~340px, no de la pantalla.
+  //
+  // De ahí que casi todo vaya a 6 y 12: dos campos cortos por línea —tipo con
+  // prioridad, duración con resultado— y a lo ancho lo que no entra de otra
+  // forma, que son la fecha y hora, el buscador del responsable, la persona
+  // de contacto y el asunto.
+  //
+  // Son getters y no clases escritas en la plantilla porque hay dos campos
+  // que aparecen y desaparecen —la fecha (no en «En este momento») y el
+  // resultado (sólo si ya se hizo)—, y a mano cada combinación dejaba un
+  // hueco distinto al final de la fila.
+
+  get colTipo(): string      { return 'col-6'; }
+  get colPrioridad(): string { return 'col-6'; }
+
+  /**
+   * Los tres de la última fila —asunto, duración y resultado— sólo caben
+   * juntos cuando el modal llega a su ancho entero (xl: 1140px, columna de
+   * unos 440px). Por debajo, la columna se queda en ~340px y un desplegable
+   * de 110px no deja leer «¿Cómo terminó?»: ahí el asunto se pone a lo ancho
+   * y los otros dos comparten la línea de abajo.
+   */
+  get colAsunto(): string {
+    return this.esProgramada ? 'col-12 col-xl-9' : 'col-12 col-xl-6';
+  }
+
+  /** Estrecha: son cuatro dígitos como mucho. */
+  get colDuracion(): string {
+    // Sin resultado al lado se queda sola en su línea: a lo ancho, para no
+    // dejar media fila vacía
+    return this.esProgramada ? 'col-12 col-xl-3' : 'col-6 col-xl-3';
+  }
+
+  get colResultado(): string { return 'col-6 col-xl-3'; }
 
   get ctrlEstado(): FormControl { return this.form.controls['estado'] as FormControl; }
 
   private initializeForm(): void {
     const g = this.gestion;
     const estadoInicial = this.modo === 'programar' ? 'PENDIENTE'
-                        : this.modo === 'editar'    ? (g?.estado ?? 'REALIZADA')
+                        : (this.modo === 'editar' || this.modo === 'ver') ? (g?.estado ?? 'REALIZADA')
                         : 'REALIZADA';
 
     this.form = this.fb.group({
@@ -515,8 +912,8 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       estado:           [estadoInicial, [Validators.required]],
       // El texto se conserva para poder enseñar el de una gestión vieja, pero
       // ya no se teclea: lo que se guarda y lo que valida es el asunto_id.
-      asunto:           [g?.asunto ?? this.asuntoInicial ?? ''],
-      asunto_id:        [g?.asunto_id ?? null, [Validators.required]],
+      asunto:           [g?.asunto ?? ''],
+      asunto_id:        [g?.asunto_id ?? this.asuntoInicial ?? null, [Validators.required]],
       contacto_id:      [g?.contacto_id ?? this.contactoInicial ?? null],
       telefono:         [g?.telefono ?? this.telefonoInicial ?? this.cliente?.celular ?? this.cliente?.telefono ?? '', [Validators.maxLength(20)]],
       prioridad:        [g?.prioridad ?? 'MEDIA', [Validators.required]],
@@ -524,7 +921,11 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       fecha_realizada:  [this.paraInput(g?.fecha_realizada) || (estadoInicial === 'REALIZADA' ? this.ahora() : '')],
       duracion_minutos: [g?.duracion_minutos ?? null, [Validators.min(0), Validators.max(1440)]],
       resultado:        [g?.resultado ?? (estadoInicial === 'REALIZADA' ? 'CONTACTADO' : null)],
-      nota:             [g?.nota ?? this.notaInicial ?? '', [Validators.maxLength(4000)]],
+      nota:             [g?.nota ?? this.notaInicial ?? '', [Validators.maxLength(100000)]],
+      // A quién le TOCA la gestión, que no es lo mismo que quién la registra:
+      // es lo que decide en qué agenda aparece. Al editar se respeta el que
+      // tenga; al crear lo pone cargarAsignables (vendedor del cliente, o yo).
+      usuario_id:       [g?.usuario_id ?? null],
     });
 
     // Una gestión nueva que se registra es, casi siempre, la que se acaba de
@@ -591,6 +992,10 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
 
   public async onSubmitForm($ev?: any): Promise<void> {
     $ev?.preventDefault?.();
+    // Aquí no se llega desde la pantalla —en modo ver no hay botón de guardar—,
+    // pero el pie es compartido y un Enter en un campo dispara el submit.
+    if (this.esVista) { return; }
+
     this._toastr.clear();
     this.form.markAllAsTouched();
 
@@ -629,11 +1034,15 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       // día se abre una gestión anterior al catálogo y se vuelve a guardar.
       asunto:           (v.asunto ?? '').trim() || null,
       asunto_id:        v.asunto_id ? Number(v.asunto_id) : null,
-      nota:             (v.nota ?? '').trim() || null,
-      // Quien atiende al cliente; si no tiene vendedor va sin dueño
-      // El responsable de la gestión es el vendedor del cliente, que desde el
-      // cambio de responsables es un USUARIO: así le aparece en su agenda
-      usuario_id:       this.cliente.vendedor_id ?? null,
+      // El editor devuelve «<p></p>» cuando no se escribio nada: eso no es
+      // una nota, es el envoltorio vacio. Se mira el texto para decidir.
+      nota:             soloTexto(v.nota) ? (v.nota ?? '').trim() : null,
+      // El RESPONSABLE: a quién le toca hacerla, y por tanto en qué agenda
+      // aparece. Antes se ponía siempre el vendedor del cliente y no se podía
+      // elegir —y si el cliente no tenía vendedor, la gestión se quedaba sin
+      // responsable—. Ahora sale del campo; si viniera vacío, el servidor pone
+      // a quien la crea.
+      usuario_id:       v.usuario_id ? Number(v.usuario_id) : null,
       contacto_id:      v.contacto_id || null,
       telefono:         (v.telefono ?? '').trim() || null,
       prioridad:        v.prioridad,
@@ -669,6 +1078,7 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       // cerrando primero algunos navegadores lo toman por una ventana
       // emergente y la bloquean.
       this.enviarWhatsappPendiente(idsAdjuntos);
+      this.enviarCorreoPendiente(idsAdjuntos);
 
       this.modal.close(res.data);
     } catch (error) {

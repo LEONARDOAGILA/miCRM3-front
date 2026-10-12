@@ -1,0 +1,100 @@
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+    [title]="quitaResponsable ? 'Quitar el ' + rolEnMinuscula : 'Repartir clientes'"
+    (onClose)="modal.dismiss('Cross click')">
+</app-modal-header>
+
+<div class="modal-body">
+
+  <!-- Qué se va a hacer, en una frase -->
+  <div class="reparto-aviso" [class.reparto-aviso--peligro]="quitaResponsable">
+    <div class="reparto-aviso__icono">
+      <i class="fa" [ngClass]="quitaResponsable ? 'fa-user-slash' : 'fa-people-arrows'" aria-hidden="true"></i>
+    </div>
+    <div>
+      <h6 class="reparto-aviso__titulo">
+        @if (quitaResponsable) {
+          ¿Quitar el {{ rolEnMinuscula }} a {{ clientes }} cliente(s)?
+        } @else {
+          ¿Repartir {{ clientes }} cliente(s) como {{ rolEnMinuscula }}?
+        }
+      </h6>
+      <p class="reparto-aviso__texto">
+        Se hace cliente por cliente y queda en el historial de cada uno. Los que
+        ya tengan a esa persona se saltan, y si alguno falla <b>no se detiene el
+        resto</b>: al terminar se dice cuántos cambiaron y cuáles no.
+      </p>
+    </div>
+  </div>
+
+  <!-- El detalle -->
+  <div class="list-group list-group-flush reparto-datos">
+
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+      <span class="reparto-datos__etiqueta">
+        <i class="fa fa-user-tag fa-fw me-1" aria-hidden="true"></i>Papel
+      </span>
+      <span class="reparto-datos__valor">{{ rolNombre }}</span>
+    </div>
+
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+      <span class="reparto-datos__etiqueta">
+        <i class="fa fa-users fa-fw me-1" aria-hidden="true"></i>Clientes
+      </span>
+      <span class="reparto-datos__valor">{{ clientes }}</span>
+    </div>
+
+    @for (r of reparto; track r.etiqueta) {
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="reparto-datos__etiqueta">
+          <i class="fa fa-user fa-fw me-1" aria-hidden="true"></i>{{ r.etiqueta }}
+        </span>
+        <span class="reparto-datos__valor">{{ r.cuantos }} cliente(s)</span>
+      </div>
+    }
+
+    @if (laAgendaCuenta) {
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="reparto-datos__etiqueta">
+          <i class="fa fa-calendar-day fa-fw me-1" aria-hidden="true"></i>Gestiones pendientes
+        </span>
+        <span class="reparto-datos__valor">
+          {{ moverAgenda ? 'se van con el cliente' : 'se quedan donde están' }}
+        </span>
+      </div>
+    }
+  </div>
+
+  @if (quitaResponsable) {
+    <p class="reparto-nota reparto-nota--peligro">
+      <i class="fa fa-triangle-exclamation fa-fw me-1" aria-hidden="true"></i>
+      No se eligió a nadie: estos clientes se quedan <b>sin {{ rolEnMinuscula }}</b>.
+      @if (laAgendaCuenta && moverAgenda) {
+        Sus gestiones pendientes se quedan además <b>sin responsable</b> y no saldrán
+        en la agenda de nadie.
+      }
+    </p>
+  }
+
+  <!-- Lo que se queda después: es lo que permite encadenar papeles -->
+  <p class="reparto-nota">
+    <i class="fa fa-circle-info fa-fw me-1" aria-hidden="true"></i>
+    Los {{ clientes }} <b>siguen marcados</b> al terminar, así que puede cambiar el
+    papel arriba y repartir los mismos como cobrador, asistente o postventa.
+  </p>
+
+</div>
+
+<!-- ===================== PIE ===================== -->
+<div class="modal-footer reparto-footer">
+  <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss('cancelar')">
+    <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+  </button>
+  <button type="button"
+          class="btn"
+          [ngClass]="quitaResponsable ? 'btn-danger' : 'btn-theme'"
+          (click)="modal.close(true)">
+    <i class="fa fa-check fa-fw me-1" aria-hidden="true"></i>
+    Sí, {{ quitaResponsable ? 'quitarlos' : 'repartir' }}
+  </button>
+</div>

@@ -1,9 +1,27 @@
-<div [class]="containerClass">
+<!-- El botón de quitar filtros y el campo van SIEMPRE juntos, así que viven
+     juntos. La caja de dentro es la que ancla la lupa y la ×, que van
+     position:absolute; la de fuera sólo los pone en fila. -->
+<div class="campo-busqueda-barra">
+
+  @if (conLimpiarFiltros) {
+    <button type="button"
+            class="btn btn-sm campo-busqueda__filtros"
+            [class.btn-outline-danger]="filtroActivo"
+            [class.btn-outline-secondary]="!filtroActivo"
+            [title]="tituloLimpiar"
+            [attr.aria-label]="tituloLimpiar"
+            (click)="alLimpiarFiltros()">
+      <!-- La × sólo aparece cuando hay algo que quitar -->
+      <i class="fas" [ngClass]="filtroActivo ? 'fa-filter-circle-xmark' : 'fa-filter'"></i>
+    </button>
+  }
+
+<div class="campo-busqueda__caja" [ngClass]="containerClass">
 
   <input
     #inputElement
     type="text"
-    class="form-control ps-35px rounded-3 fs-12px campo-busqueda__input"
+    class="form-control rounded-3 fs-12px campo-busqueda__input"
     [class.campo-busqueda__input--con-x]="limpiable && valor"
     [id]="id"
     [placeholder]="placeholder"
@@ -14,8 +32,14 @@
     (keydown.escape)="limpiar()"
   />
 
-  <!-- type="button": sin él, dentro de un formulario la lupa lo enviaba -->
-  <button type="button" class="btn position-absolute start-0 top-0 shadow-none" (click)="onButtonClick()">
+  <!-- type="button": sin él, dentro de un formulario la lupa lo enviaba.
+       Lleva borde y fondo propios: antes era un icono suelto encima del campo
+       y no se veía que se pudiera pulsar. -->
+  <button type="button"
+          class="btn position-absolute start-0 top-0 shadow-none campo-busqueda__lupa"
+          title="Buscar"
+          aria-label="Buscar"
+          (click)="onButtonClick()">
     <i [class]="iconClass"></i>
   </button>
 
@@ -30,4 +54,5 @@
       <span class="campo-busqueda__limpiar-x" aria-hidden="true">&times;</span>
     </button>
   }
+</div>
 </div>

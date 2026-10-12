@@ -1,7 +1,8 @@
 import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams, RowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
@@ -10,7 +11,6 @@ import { ToastrService } from 'ngx-toastr';
 ///   SERVICIOS    ///
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { ClienteService } from '../../../services/cliente.service';
-import { SoftphoneService } from '../../../services/softphone.service';
 import { AppPrintPdfService } from '../../../../../service/app-printPdf.service';
 import { AppExportExcelService } from '../../../../../service/app-exportExcel.service';
 import { AppExportCsvService } from '../../../../../service/app-exportCsv.service';
@@ -18,7 +18,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 
 ///   MODELOS    ///
-import { ClienteModel } from '../../../interfaces/clienteModel';
+import { ClienteModel, TIPOS_IDENTIFICACION } from '../../../interfaces/clienteModel';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 
 ///   COMPONENTES    ///
@@ -63,7 +63,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   // ---------- Paginación en servidor ----------
   public paginaActual: number = 1;
   public totalRegistros: number = 0;
-  public registrosPorPagina: number = 10;
+  public registrosPorPagina: number = 20;
   public ultimaPagina: number = 1;
 
   // ---------- ag-Grid ----------
@@ -100,6 +100,71 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   @ViewChild(CampoBusquedaPaginacionComponent) campoBusquedaPaginacion!: CampoBusquedaPaginacionComponent;
   public searchTerm: string = '';
 
+  // ================================================================
+  // MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, pero sin tener que llegar
+  // al final de la fila ni desplegar la columna cuando está plegada.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  /**
+   * Clic derecho sobre la rejilla.
+   *
+   * La fila la resuelve el servicio común desde el DOM: el evento
+   * `cellContextMenu` de ag-Grid no llega (comprobado contra la librería).
+   */
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara();
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se ofrece, según lo que permita el perfil. */
+  private opcionesPara(): OpcionContextual[] {
+    return [
+      { id: 'ver',      texto: 'Ver',       icono: 'fa-eye',
+        visible: this.accesoModel?.ver !== false },
+      { id: 'editar',   texto: 'Modificar', icono: 'fa-pen',
+        visible: this.accesoModel?.editar === true },
+      { id: 'clonar',   texto: 'Clonar',    icono: 'fa-clone',
+        visible: this.accesoModel?.crear === true,
+        ayuda: 'Crear un cliente nuevo copiando los datos de éste' },
+      { id: 'eliminar', texto: 'Eliminar',  icono: 'fa-trash',
+        peligro: true, separadorAntes: true,
+        visible: this.accesoModel?.eliminar === true },
+      { id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        separadorAntes: true,
+        visible: this.accesoModel?.auditar === true,
+        ayuda: 'Quién tocó este registro y cuándo' },
+    ];
+  }
+
+  /** Se eligió una opción del menú contextual. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'ver':       this.viewCliente(fila); break;
+      case 'editar':    this.editCliente(fila); break;
+      case 'clonar':    this.clonCliente(fila); break;
+      case 'eliminar':  this.deleteCliente(fila); break;
+      case 'auditoria': this.auditoria(); break;
+    }
+  }
+
   constructor(
     private host: ElementRef<HTMLElement>,
     private modal: NgbModal,
@@ -113,7 +178,6 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     private _toastr: ToastrService,
     private _seguridadService: SeguridadService,
     private _clienteService: ClienteService,
-    private _softphone: SoftphoneService,
   ) {
     this.titulo = "Clientes";
     this.accesoModel = this.activeRoute.snapshot.data.access;
@@ -161,8 +225,86 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   // AG-GRID
   // ================================================================
 
+  /**
+   * Por qué columnas se puede filtrar, y de qué tipo.
+   *
+   * Tiene que cuadrar con la lista blanca de ClienteController: lo que no esté
+   * allí se tira, así que ofrecer aquí un filtro de más sería prometer algo
+   * que el servidor no hace.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero', limite_credito: 'numero', dias_credito: 'numero', descuento: 'numero',
+    tipo_cliente: 'texto', tipo_identificacion: 'texto',
+    numero_identificacion: 'texto', nombre_completo: 'texto',
+    nombre_comercial: 'texto', email: 'texto', celular: 'texto', telefono: 'texto',
+    direccion: 'texto', provincia: 'texto', canton: 'texto', parroquia: 'texto',
+    forma_pago: 'texto', estado: 'texto', vendedor_nombre: 'texto',
+    created_by: 'texto', updated_by: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes.
+    // `activo` se queda fuera a propósito: es una casilla, y escribir en un
+    // filtro para marcar o desmarcar no se entiende; para eso está Estado.
+    created_at: 'texto', updated_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /**
+   * Los clientes cuya casilla «Activo» se está guardando ahora mismo.
+   *
+   * Mientras uno esté aquí su casilla se pinta como un giro y no acepta otro
+   * clic: dos pulsaciones seguidas mandarían dos peticiones, y la segunda
+   * desharía la primera sin que se vea por qué.
+   */
+  private readonly activoEnVuelo = new Set<number>();
+
+  /**
+   * Los clientes desactivados se ven, pero se ven apagados y tachados.
+   *
+   * No se esconden: siguen en el listado y se pueden buscar y abrir. Lo que se
+   * busca es que no haya que leer la casilla «Activo» fila por fila para saber
+   * que un cliente ya no está en juego.
+   *
+   * La regla y su CSS son los mismos en las nueve rejillas con casilla, así
+   * que viven en AppAgGridService y en styles.css.
+   */
+  public rowClassRules = this._appAgGridService.reglasFilaInactiva('activo');
+
+  /**
+   * Las columnas con su filtro de cabecera.
+   *
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique, porque sólo
+   * tiene las filas de la página— vive en AppAgGridService: lo mismo hacían
+   * tres pantallas con el código copiado. Aquí queda sólo el QUÉ.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+  /**
+   * La cabecera pidió otra cosa.
+   *
+   * Siempre a la página 1: con el filtro nuevo, la página siete puede no
+   * existir.
+   */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.allClientes(1);
+  }
+
+  /** Cuántas columnas llevan filtro, para decirlo en la pantalla. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o cualquier filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
+
+
   initializeGrid(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       {
         headerName: 'Id',
         field: 'id',
@@ -171,31 +313,47 @@ export class AllClientesComponent implements OnInit, OnDestroy {
         maxWidth: 70,
       },
       {
-        headerName: 'Foto',
-        field: 'foto',
-        minWidth: 60,
-        maxWidth: 60,
-        sortable: false,
-        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        cellRenderer: (params: any) => {
-          // Sin foto, el icono cambia según sea persona o empresa
-          if (!params.value) {
-            const icono = params.data?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user';
-            return `<span class="lista-foto lista-foto--vacia"><i class="fa ${icono}"></i></span>`;
-          }
-          const url = this._clienteService.getClienteImage(params.data.id, true);
-          return `<img src="${url}" alt="" class="lista-foto" onerror="this.onerror=null; this.src='/assets/img/user/default.png'" />`;
-        }
-      },
-      {
-        headerName: 'Tipo',
-        field: 'tipo_cliente',
+        // Segunda columna y PULSABLE: dar de baja a un cliente era abrir la
+        // ficha entera, bajar la casilla y guardar. Ahora se pulsa aquí.
+        headerName: 'Activo',
+        field: 'activo',
         cellStyle: { textAlign: 'center' },
-        minWidth: 90,
-        maxWidth: 100,
-        cellRenderer: (params: any) => params.value === 'EMPRESA'
-          ? '<span class="badge bg-indigo fs-10px">EMPRESA</span>'
-          : '<span class="badge bg-secondary bg-opacity-25 text-body fs-10px">PERSONA</span>',
+        minWidth: 80,
+        maxWidth: 80,
+        cellRenderer: (params: any) => this.casillaActivo(params),
+      },
+      // {
+      //   headerName: 'Foto',
+      //   field: 'foto',
+      //   minWidth: 60,
+      //   maxWidth: 60,
+      //   sortable: false,
+      //   cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+      //   cellRenderer: (params: any) => {
+      //     // Sin foto, el icono cambia según sea persona o empresa
+      //     if (!params.value) {
+      //       const icono = params.data?.tipo_cliente === 'EMPRESA' ? 'fa-building' : 'fa-user';
+      //       return `<span class="lista-foto lista-foto--vacia"><i class="fa ${icono}"></i></span>`;
+      //     }
+      //     const url = this._clienteService.getClienteImage(params.data.id, true);
+      //     return `<img src="${url}" alt="" class="lista-foto" onerror="this.onerror=null; this.src='/assets/img/user/default.png'" />`;
+      //   }
+      // },
+      {
+        // Con qué documento está identificado, que es lo que se busca al
+        // mirar esta columna. Antes decía PERSONA o EMPRESA, que es otra
+        // cosa —el tipo de cliente— y ya se adivina por el icono del nombre.
+        headerName: 'Tipo',
+        field: 'tipo_identificacion',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 100,
+        maxWidth: 120,
+        cellRenderer: (params: any) => {
+          const tono = params.value === 'RUC' ? 'bg-indigo'
+                     : params.value === 'PAS' ? 'bg-teal'
+                     : 'bg-secondary bg-opacity-25 text-body';
+          return `<span class="badge ${tono} fs-10px">${this.nombreIdentificacion(params.value)}</span>`;
+        },
       },
       {
         headerName: 'Identificación',
@@ -219,28 +377,18 @@ export class AllClientesComponent implements OnInit, OnDestroy {
         maxWidth: 260,
       },
       {
-        headerName: 'Correo',
-        field: 'email',
-        cellStyle: { textAlign: 'left' },
-        minWidth: 200,
-        maxWidth: 280,
-      },
-      {
         headerName: 'Celular',
         field: 'celular',
         cellStyle: { textAlign: 'left' },
         minWidth: 110,
         maxWidth: 140,
-        // El número marca con el softphone al pulsarlo. Se pinta como botón
-        // con data-accion, igual que el resto de acciones de la aplicación, y
-        // lo atiende onCellClicked.
-        cellRenderer: (params: any) => {
-          const n = this._softphone.numeroMarcable(params.value);
-          if (!n) { return ''; }
-          return `<button type="button" class="lista-llamar" data-accion="llamar" title="Marcar ${n} con el softphone">
-                    <i class="fa fa-phone"></i><span>${params.value}</span>
-                  </button>`;
-        },
+      },
+      {
+        headerName: 'Correo',
+        field: 'email',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 200,
+        maxWidth: 280,
       },
       {
         headerName: 'Ciudad',
@@ -306,20 +454,6 @@ export class AllClientesComponent implements OnInit, OnDestroy {
         },
       },
       {
-        headerName: 'Activo',
-        field: 'activo',
-        cellStyle: { textAlign: 'center' },
-        minWidth: 80,
-        maxWidth: 80,
-        cellRenderer: (params: any) =>
-          `
-          <div class="form-check mb-2 d-flex align-items-center justify-content-center" style="height: 100%;">
-            <input disabled class="form-check-input" type="checkbox" ${params.value === true ? 'checked' : ''} />
-            <label class="form-check-label"></label>
-          </div>
-          `,
-      },
-      {
         headerName: 'Creado',
         field: 'created_at',
         cellStyle: { textAlign: 'center' },
@@ -369,7 +503,17 @@ export class AllClientesComponent implements OnInit, OnDestroy {
           `
         }
       }
-    ];
+    ]);
+  }
+
+  /**
+   * «CC» → «Cédula». Del catálogo de siempre, no de una lista escrita aquí.
+   *
+   * Lo que no esté en el catálogo se enseña tal cual en vez de dejar el hueco
+   * en blanco: si un día entra un código nuevo, al menos se ve cuál es.
+   */
+  nombreIdentificacion(codigo: string | null | undefined): string {
+    return TIPOS_IDENTIFICACION.find(t => t.id === codigo)?.name ?? (codigo || '—');
   }
 
   /** 1500 → "$ 1.500,00"; vacío si no hay importe. */
@@ -485,24 +629,66 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     this.selectedRow = e.data;
 
     const origen = e.event?.target as HTMLElement | null;
-    if (origen?.closest('[data-accion="llamar"]')) { this.llamar(e.data); }
+    if (origen?.closest('[data-accion="activo"]')) {
+      // LA CASILLA NO DECIDE: la marca que acaba de poner el navegador es
+      // sólo un acuse de recibo. Quien dice si el cliente queda activo es el
+      // servidor, y la celda se vuelve a dibujar con lo que contesta: si la
+      // llamada falla, la marca vuelve donde estaba.
+      //
+      // No se intenta pararla con preventDefault: ag-Grid 28 avisa de este
+      // clic en el turno siguiente —comprobado contra la librería: el aviso
+      // no ha llegado tras un microtask y sí tras un setTimeout(0)—, y para
+      // entonces el navegador ya terminó con el evento.
+      this.cambiarActivo(e.data, e.node);
+    }
+  }
+
+
+  /** La casilla de la columna «Activo». */
+  private casillaActivo(params: any): string {
+    return this._appAgGridService.casillaActivo(params, {
+      puede: this.accesoModel?.editar === true,
+      enVuelo: this.activoEnVuelo,
+      que: 'cliente',
+    });
   }
 
   /**
-   * Marca el celular del cliente con el softphone del puesto.
+   * Activar o desactivar al cliente desde la casilla, sin abrir el formulario.
    *
-   * Si Zoiper ya está abierto marca pero puede no asomarse: eso se enciende en
-   * sus propias opciones («command line call auto popup»), el navegador no
-   * puede traer al frente la ventana de otro programa.
+   * Lo escribe ventas.fn_clientes_activar, que toca SÓLO esa columna: guardar
+   * la ficha entera para bajar una casilla revalidaba identificación, correos,
+   * cupo y descuento, y a un cliente cargado antes de que existieran esas
+   * reglas no había manera de desactivarlo sin arreglarle primero lo demás.
+   *
+   * El flujo —el giro mientras guarda, repintar con lo que contesta el
+   * servidor, volver atrás si falla— vive en AppAgGridService: es el mismo en
+   * las nueve rejillas que tienen esta casilla.
+   *
+   * `estado` no se toca. Es otra cosa —ACTIVO / SUSPENDIDO / MOROSO cuenta la
+   * relación comercial, `activo` dice si el registro está en juego— y en el
+   * formulario también se guardan por separado.
    */
-  llamar(cliente: ClienteModel | null): void {
-    const marcado = this._softphone.marcar(cliente?.celular);
-    if (!marcado) {
-      this._toastr.warning('Este cliente no tiene celular registrado', 'Sin número');
-      return;
-    }
-    this._toastr.info('Marcando ' + marcado + '…', cliente?.nombre_completo || 'Softphone', { timeOut: 2500 });
+  cambiarActivo(cliente: ClienteModel | null, nodo?: RowNode | null): void {
+    if (!cliente) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    this._appAgGridService.alternarActivo({
+      gridApi: this.gridApi,
+      filas: this.clienteModel,
+      fila: cliente, nodo,
+      campo: 'activo',
+      enVuelo: this.activoEnVuelo,
+      puede: this.accesoModel?.editar === true,
+      que: 'cliente',
+      llamar: (id, activo) => this._clienteService.activarCliente(id, activo),
+      nombre: (f: any) => f.nombre_completo,
+      hasta: this.unsubscribe$,
+      // El tachado de los inactivos es una rowClassRules, y ésas se evalúan al
+      // asentar la fila: de eso se encarga el setData de alternarActivo.
+    });
   }
+
 
   // ================================================================
   // DATOS
@@ -514,7 +700,8 @@ export class AllClientesComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
 
       const res = await firstValueFrom(
-        this._clienteService.allClientes(page, this.registrosPorPagina, this.searchTerm)
+        this._clienteService.allClientes(page, this.registrosPorPagina, this.searchTerm,
+                                         '', false, this.filtrosColumna)
       ) as any;
 
       if (res.body?.status !== 'success') {
@@ -550,7 +737,8 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
-        this._clienteService.allClientes(1, this.totalRegistros, this.searchTerm)
+        this._clienteService.allClientes(1, this.totalRegistros, this.searchTerm,
+                                         '', false, this.filtrosColumna)
       ) as any;
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
@@ -588,24 +776,48 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   // ================================================================
 
   async onFilterTextBoxChanged(term?: string) {
+    if (this.limpiando) { return; }
     if (term !== undefined) this.searchTerm = term;
     this.paginaActual = 1;
     await this.allClientes(1);
   }
 
+  /**
+   * Deja la pantalla como al entrar.
+   *
+   * UNA sola petición. Antes salían hasta cuatro: el reset del buscador emite
+   * una búsqueda vacía que ya recarga, setFilterModel dispara filterChanged
+   * que también recarga, luego se llamaba a onFilterChanged() a mano y encima
+   * a allClientes(). Cuatro viajes para vaciar dos campos.
+   *
+   * Se apaga el aviso de recarga mientras se limpia y se vuelve a encender al
+   * final, que es lo que deja una sola consulta en pie.
+   */
   clearAllFilters() {
-    this.campoBusquedaPaginacion?.reset();
-    if (this.gridApi) {
-      this.gridApi.setFilterModel(null);
-      this.searchTerm = '';
-      this.gridApi.onFilterChanged();
-      this.allClientes(this.paginaActual).then(() => {
-        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
-          this.goToPage(this.ultimaPagina);
-        }
-      });
-    }
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    this.limpiando = true;
+    this.searchTerm = '';
+    this.filtrosColumna = {};
+    // El campo se vacía solo: el botón de filtros vive dentro de él.
+    // Llamar aquí a reset() emitiría además una búsqueda vacía, o sea
+    // otra consulta para lo mismo.
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+    this.limpiando = false;
+
+    // Siempre a la página 1: sin filtros, la página siete puede no existir
+    this.allClientes(1);
   }
+
+  /**
+   * Mientras se limpia, los avisos de la rejilla y del buscador no recargan.
+   *
+   * No es un adorno: los dos disparan su propia recarga y, con el filtro ya
+   * vaciado a mano, serían consultas que devuelven lo mismo.
+   */
+  private limpiando = false;
 
   // ================================================================
   // PAGINACIÓN

@@ -1,0 +1,117 @@
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header title="Elegir icono" (onClose)="modal.dismiss('Cross click')">
+</app-modal-header>
+
+<div class="modal-body sel-cuerpo">
+
+  <!-- ---------- Buscar y filtrar por estilo ---------- -->
+  <div class="sel-barra">
+    <div class="sel-barra__buscador">
+      <app-campoBusqueda
+        [id]="'buscar-icono'"
+        [placeholder]="'Buscar: teléfono, correo, visita, factura…'"
+        [containerClass]="'w-100'"
+        [valorInicial]="termino"
+        (searchChange)="buscar($event)">
+      </app-campoBusqueda>
+    </div>
+
+    <div class="btn-group btn-group-sm sel-estilos" role="group" aria-label="Estilo">
+      <button type="button" class="btn"
+              [ngClass]="estilo === null ? 'btn-primary' : 'btn-white'"
+              (click)="filtrarPorEstilo(null)">
+        Todos <span class="sel-estilos__cuenta">{{ cuantos(null) }}</span>
+      </button>
+      @for (e of ['s', 'r', 'b']; track e) {
+        <button type="button" class="btn"
+                [ngClass]="estilo === e ? 'btn-primary' : 'btn-white'"
+                (click)="filtrarPorEstilo($any(e))">
+          {{ nombreEstilo[$any(e)] }} <span class="sel-estilos__cuenta">{{ cuantos($any(e)) }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ---------- Los sugeridos, mientras no se busque nada ---------- -->
+  @if (muestraSugeridos) {
+    <div class="sel-grupo">
+      <div class="sel-grupo__titulo">
+        <i class="fa fa-wand-magic-sparkles fa-fw me-1"></i>Para tipos de gestión
+      </div>
+      <div class="sel-rejilla">
+        @for (i of sugeridos; track clave($index, i)) {
+          <button type="button" class="sel-icono"
+                  [class.is-elegido]="elegido?.nombre === i.nombre && elegido?.estilo === i.estilo"
+                  [title]="i.nombre"
+                  (click)="marcar(i)" (dblclick)="confirmar(i)">
+            <i class="sel-icono__dibujo" [ngClass]="claseDe(i)"></i>
+            <span class="sel-icono__nombre">{{ i.nombre }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ---------- Todo lo demás ---------- -->
+  <div class="sel-grupo">
+    <div class="sel-grupo__titulo">
+      @if (cargando) {
+        <i class="fa fa-circle-notch fa-spin fa-fw me-1"></i>Cargando el catálogo…
+      } @else if (encontrados.length === 0) {
+        <i class="fa fa-face-frown fa-fw me-1"></i>Nada con «{{ termino }}»
+      } @else if (encontrados.length > tope) {
+        <i class="fa fa-list fa-fw me-1"></i>{{ tope }} de {{ encontrados.length }}
+        <span class="sel-grupo__pista">— escribe para afinar</span>
+      } @else {
+        <i class="fa fa-list fa-fw me-1"></i>{{ encontrados.length }}
+        {{ encontrados.length === 1 ? 'icono' : 'iconos' }}
+      }
+    </div>
+
+    @if (!cargando && encontrados.length === 0) {
+      <p class="sel-vacio">
+        Prueba con otra palabra. Se busca en castellano y en inglés: «teléfono»
+        y «phone» llevan al mismo sitio.
+      </p>
+    }
+
+    <div class="sel-rejilla">
+      @for (i of visibles; track clave($index, i)) {
+        <button type="button" class="sel-icono"
+                [class.is-elegido]="elegido?.nombre === i.nombre && elegido?.estilo === i.estilo"
+                [title]="i.nombre"
+                (click)="marcar(i)" (dblclick)="confirmar(i)">
+          <i class="sel-icono__dibujo" [ngClass]="claseDe(i)"></i>
+          <span class="sel-icono__nombre">{{ i.nombre }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<div class="modal-footer sel-pie">
+
+  <!-- Lo elegido, en grande y con la clase que se va a guardar: es lo que
+       habrá que escribir si algún día hay que tocarlo a mano -->
+  <div class="sel-elegido">
+    @if (elegido) {
+      <i class="sel-elegido__dibujo" [ngClass]="claseParaPintar(claseDelElegido)"></i>
+      <span class="sel-elegido__clase">{{ claseDelElegido }}</span>
+    } @else {
+      <span class="sel-elegido__nada">Nada elegido todavía</span>
+    }
+  </div>
+
+  <div class="sel-pie__botones">
+    <button type="button" class="btn btn-sm btn-white" (click)="sinIcono()">
+      <i class="fa fa-ban me-1"></i>Sin icono
+    </button>
+    <button type="button" class="btn btn-sm btn-white" (click)="modal.dismiss('cancelar')">
+      Cancelar
+    </button>
+    <button type="button" class="btn btn-sm btn-primary" [disabled]="!elegido" (click)="confirmar()">
+      <i class="fa fa-check me-1"></i>Usar este icono
+    </button>
+  </div>
+</div>

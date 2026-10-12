@@ -1,0 +1,129 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarNotaTitulo"
+     aria-describedby="eliminarNotaDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarNotaTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <!-- Advertencia -->
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Eliminar esta nota del cliente?</h6>
+        <p class="eliminar-aviso__texto" id="eliminarNotaDescripcion">
+          Lo que dice una nota no se puede volver a escribir de memoria. <b>No hay papelera para
+          las notas</b>: el contenido queda en la auditoría, pero no se restaura desde una
+          pantalla.
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-note-sticky fa-fw me-1" aria-hidden="true"></i>Título
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.titulo || '—' }}</span>
+      </div>
+
+      <!-- Cuánto hay escrito: es lo que distingue una nota de dos renglones
+           de un acta de reunión -->
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-align-left fa-fw me-1" aria-hidden="true"></i>Contenido
+        </span>
+        <span class="eliminar-datos__valor">
+          {{ palabras }} palabra{{ palabras === 1 ? '' : 's' }}
+          @if (tieneImagenes) { <span class="ms-1">· con imágenes</span> }
+        </span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-user-pen fa-fw me-1" aria-hidden="true"></i>Escrita por
+        </span>
+        <span class="eliminar-datos__valor">
+          {{ registro_selected?.registrado_por_nombre || registro_selected?.created_by || '—' }}
+        </span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-calendar fa-fw me-1" aria-hidden="true"></i>Creada
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.created_at || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-thumbtack fa-fw me-1" aria-hidden="true"></i>Fijada
+        </span>
+        <span class="badge fs-10px" [ngClass]="registro_selected?.fijada ? 'bg-warning' : 'bg-secondary'">
+          {{ registro_selected?.fijada ? 'SÍ' : 'NO' }}
+        </span>
+      </div>
+
+    </div>
+
+    @if (tieneImagenes) {
+      <p class="eliminar-nota">
+        <i class="fa fa-image fa-fw me-1" aria-hidden="true"></i>
+        Las imágenes que lleva pegadas se quedan como <b>archivos del cliente</b>: no se borran
+        con la nota, se ven en la pestaña Archivos.
+      </p>
+    }
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si la nota sólo dejó de hacer falta arriba, <b>quítele el fijado</b> en lugar de borrarla:
+      baja al final de la lista y el cliente conserva su historia.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="deleteNota()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+    </button>
+  </div>
+
+</div>

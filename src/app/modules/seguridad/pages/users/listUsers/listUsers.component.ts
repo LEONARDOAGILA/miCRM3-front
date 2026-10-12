@@ -7,6 +7,7 @@ import { UserService } from '../../../services/user.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
 
 /**
  * Modal de selección de usuario (mismo esquema que listHorarios).
@@ -62,13 +63,8 @@ export class ListUsersComponent implements OnInit {
 
   public isLoading$ = this._loadingService.isLoading$;
 
-  /** Tipos de usuario (seguridad.users.type_user), para la columna Tipo. */
-  private readonly TIPOS: { [k: number]: { texto: string; clase: string } } = {
-    1: { texto: 'Super',   clase: 'bg-danger' },
-    2: { texto: 'Admin',   clase: 'bg-warning' },
-    3: { texto: 'Sistema', clase: 'bg-primary' },
-    4: { texto: 'Web',     clase: 'bg-secondary' },
-  };
+  // La lista de tipos ya no se repite aquí: el back manda el tipo resuelto en
+  // `type_user_tipo` (nombre, icono y color) y lo pinta etiquetaTipoUsuario.
 
   constructor(
     public modal: NgbActiveModal,
@@ -139,10 +135,7 @@ export class ListUsersComponent implements OnInit {
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         minWidth: 90,
         maxWidth: 90,
-        cellRenderer: (params: any) => {
-          const t = this.TIPOS[params.value] ?? { texto: params.value ?? '', clase: 'bg-secondary' };
-          return `<span class="badge ${t.clase} fs-10px">${t.texto}</span>`;
-        }
+        cellRenderer: (params: any) => etiquetaTipoUsuario(params.data?.type_user_tipo, params.value)
       },
       {
         headerName: 'Activo',

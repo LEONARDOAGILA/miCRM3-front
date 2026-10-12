@@ -102,6 +102,7 @@
                  columna Nombre inicia el arrastre; aquí se resuelve dónde se suelta
                  (tercio superior/inferior = antes/después, centro = dentro). -->
             <div class="menus-grilla-wrap"
+                 (contextmenu)="onContextMenuGrilla($event)"
                  (dragover)="onDragOverGrilla($event)"
                  (dragleave)="onDragLeaveGrilla($event)"
                  (drop)="onDropGrilla($event)">
@@ -187,3 +188,11 @@
 
 
 </panel>
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO =================
+     Las mismas acciones que la columna ACCIONES, sin tener que llegar al
+     final de la fila ni desplegar la columna cuando está plegada. -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

@@ -50,6 +50,16 @@ export class ListUsuariosGruposComponent implements OnInit {
   @Input() usuarioSeleccionadoId?: number;
   /** Ids que no se pueden elegir (p. ej. quien ya ocupa otro papel). */
   @Input() usuariosExcluidos: number[] = [];
+  /**
+   * Si se indica, SÓLO estos ids se pueden elegir; el resto se ve pero queda
+   * bloqueado, igual que los excluidos.
+   *
+   * Es para quien tiene una lista corta de candidatos y aun así quiere el
+   * árbol de grupos y el buscador completos: el responsable de una gestión,
+   * por ejemplo, sólo puede ser alguien del equipo de quien asigna o un
+   * responsable del cliente. Vacío —lo normal— no restringe nada.
+   */
+  @Input() usuariosPermitidos: number[] = [];
   @Input() ayuda = 'Haz clic sobre un usuario para elegirlo.';
 
   @Output() seleccionado = new EventEmitter<any>();
@@ -189,7 +199,10 @@ export class ListUsuariosGruposComponent implements OnInit {
   }
 
   estaExcluido(id?: number): boolean {
-    return !!id && this.usuariosExcluidos.includes(id);
+    if (!id) { return false; }
+    // Con lista de permitidos, lo que no está en ella queda bloqueado
+    if (this.usuariosPermitidos.length && !this.usuariosPermitidos.includes(id)) { return true; }
+    return this.usuariosExcluidos.includes(id);
   }
 
   onCellKeyDown(e: CellKeyDownEvent): void {

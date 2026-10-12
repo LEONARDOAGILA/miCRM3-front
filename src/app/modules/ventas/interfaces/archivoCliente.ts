@@ -27,6 +27,8 @@ export interface ArchivoCliente {
   orden?: number;
   activo?: boolean;
   created_by?: string;
+  /** Quién lo registró, ya formateado: LOGIN  -  APELLIDOS NOMBRES */
+  registrado_por_nombre?: string | null;
   created_at?: string;
   updated_at?: string;
 }

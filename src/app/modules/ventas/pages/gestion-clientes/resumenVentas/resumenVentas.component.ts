@@ -155,6 +155,47 @@ export class ResumenVentasComponent implements OnInit {
   }
 
   /** La barra de cada vendedor se mide contra el que más cartera tiene. */
+  /** Qué parte de la cartera activa tiene un próximo paso agendado. */
+  public get porcentajeConProxima(): number {
+    const c = this.datos?.cobertura;
+    if (!c?.activos) { return 0; }
+    return Math.round((c.con_proxima / c.activos) * 100);
+  }
+
+  /** Lo mismo al revés, que es la cifra que preocupa. */
+  public get porcentajeDormidos(): number {
+    const c = this.datos?.cobertura;
+    if (!c?.activos) { return 0; }
+    return Math.round((c.dormidos / c.activos) * 100);
+  }
+
+  /**
+   * El color de la tasa de contacto.
+   *
+   * Los cortes son los de la casa al hablar de llamadas: por debajo de la
+   * mitad algo va mal con los horarios o con los números; por encima de tres
+   * cuartos se está contactando bien.
+   */
+  public get tonoTasa(): string {
+    const t = this.datos?.efectividad?.tasa_contacto ?? 0;
+    if (t >= 75) { return 'text-success'; }
+    if (t >= 50) { return 'text-warning'; }
+    return 'text-danger';
+  }
+
+  /** Minutos a «1 h 20 min», para no enseñar 80 min. */
+  public enHoras(minutos: number): string {
+    const m = minutos ?? 0;
+    if (m < 60) { return `${m} min`; }
+    return `${Math.floor(m / 60)} h ${m % 60} min`;
+  }
+
+  /** Barra del trabajo por persona, contra quien más hizo. */
+  anchoBarraUsuario(realizadas: number): string {
+    const mayor = this.datos?.usuarios?.[0]?.realizadas || 1;
+    return Math.max(4, Math.round((realizadas / mayor) * 100)) + '%';
+  }
+
   anchoBarra(clientes: number): string {
     const mayor = this.datos?.vendedores?.[0]?.clientes || 1;
     return Math.max(4, Math.round((clientes / mayor) * 100)) + '%';

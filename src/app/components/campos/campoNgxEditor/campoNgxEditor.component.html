@@ -1,0 +1,317 @@
+<!-- ============================================================
+     CAMPO DE TEXTO CON FORMATO
+
+     Dos piezas: la barra arriba y el área de escritura debajo.
+
+     La barra viene de dos formas. Por defecto, una tira seguida: vale para un
+     campo de dos líneas. Con [cinta], la de Word —pestañas y grupos con su
+     nombre debajo—, que es la que hace falta cuando lo que se escribe es un
+     correo entero.
+
+     Con [hoja] el área se convierte en un papel blanco centrado sobre fondo
+     gris, como en la pestaña Notas; con [expandible] hay un botón que lo lleva
+     a pantalla completa.
+     ============================================================ -->
+
+<div class="cne" #caja
+     [class.is-expandido]="expandido"
+     [class.is-bloqueado]="soloLectura"
+     [class.is-cinta]="cinta"
+     [class.is-sin-cinta-movil]="cinta && !cintaEnMovil">
+
+  <!-- El selector de fichero, escondido: el botón de la cinta lo dispara. El
+       de ngx-editor pide una URL, y lo que hace falta es coger un fichero. -->
+  <input #selectorImagen type="file" accept="image/*" hidden (change)="alElegirImagen($event)">
+
+  @if (cinta) {
+
+    <!-- ========================= LA CINTA ========================= -->
+    <div class="cinta">
+
+      <div class="cinta__pestanas">
+        @if (archivo) {
+          <button type="button" class="cinta__pestana" [class.is-activa]="pestana === 'archivo'"
+                  (click)="pestana = 'archivo'">Archivo</button>
+        }
+        <button type="button" class="cinta__pestana" [class.is-activa]="pestana === 'inicio'"
+                (click)="pestana = 'inicio'">Inicio</button>
+        <button type="button" class="cinta__pestana" [class.is-activa]="pestana === 'insertar'"
+                (click)="pestana = 'insertar'">Insertar</button>
+
+        <!-- Contextual, como las «Herramientas de tabla» de Word: aparece sola
+             al meter el cursor en una tabla y se va al salir -->
+        @if (enTabla) {
+          <button type="button" class="cinta__pestana cinta__pestana--contextual"
+                  [class.is-activa]="pestana === 'tabla'"
+                  (click)="pestana = 'tabla'">Tabla</button>
+        }
+
+        @if (expandible) {
+          <button type="button" class="cne__expandir cne__expandir--cinta"
+                  [title]="expandido ? 'Volver al tamaño normal (Esc)' : 'Pantalla completa'"
+                  (click)="alternarExpandido()">
+            <i class="fa" [ngClass]="expandido ? 'fa-compress' : 'fa-expand'"></i>
+          </button>
+        }
+
+        <!-- La cuenta, como la barra de estado de Word pero arriba: aquí no hay
+             pie donde ponerla -->
+        <span class="cinta__cuenta" title="Palabras y caracteres">
+          {{ conteo.palabras }} {{ conteo.palabras === 1 ? 'palabra' : 'palabras' }} · {{ conteo.caracteres }}
+        </span>
+      </div>
+
+      <!-- Los grupos de la pestaña abierta -->
+      <div class="cinta__grupos">
+        @switch (pestana) {
+
+          <!-- ---------------- ARCHIVO (lo pone la pantalla) ---------------- -->
+          @case ('archivo') {
+            <ng-container *ngTemplateOutlet="archivo"></ng-container>
+          }
+
+          <!-- ---------------- INICIO ---------------- -->
+          @case ('inicio') {
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbDeshacer"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Deshacer</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <!-- La letra y el tamaño son nuestros: la barra de ngx-editor no
+                     los tiene, son dos marcas del esquema (ver esquemaNotas.ts).
+                     Van de desplegable porque son listas, no interruptores. -->
+                <select class="cinta__select cinta__select--familia"
+                        title="Tipo de letra del texto seleccionado"
+                        [disabled]="soloLectura"
+                        [value]="tipografiaActual"
+                        (change)="cambiarTipografia($any($event.target).value)">
+                  @for (t of tipografiasVisibles; track t.valor) {
+                    <option [value]="t.valor" [style.font-family]="t.valor || null">{{ t.nombre }}</option>
+                  }
+                </select>
+
+                <select class="cinta__select cinta__select--tamano"
+                        title="Tamaño de letra, en puntos"
+                        [disabled]="soloLectura"
+                        [value]="tamanoActual"
+                        (change)="cambiarTamano($any($event.target).value)">
+                  @for (t of tamanosVisibles; track t.valor) {
+                    <option [value]="t.valor">{{ t.nombre }}</option>
+                  }
+                </select>
+
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbFuente"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Fuente</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbParrafo"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Párrafo</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbEstilos"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Estilos</div>
+            </div>
+          }
+
+          <!-- ---------------- INSERTAR ---------------- -->
+          @case ('insertar') {
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <button type="button" class="cinta__btn cinta__btn--grande"
+                        title="Insertar una imagen"
+                        [disabled]="subiendoImagen || soloLectura" (click)="abrirSelectorImagen()">
+                  @if (subiendoImagen) {
+                    <i class="fa fa-spinner fa-spin"></i><span>Subiendo…</span>
+                  } @else {
+                    <i class="fa fa-image"></i><span>Imagen</span>
+                  }
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Ilustraciones</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <button type="button" class="cinta__btn cinta__btn--grande"
+                        title="Insertar una tabla de 3x3"
+                        [disabled]="soloLectura" (click)="insertarTabla()">
+                  <i class="fa fa-table"></i><span>Tabla</span>
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Tablas</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <ngx-editor-menu [editor]="editor" [toolbar]="tbEnlaces"></ngx-editor-menu>
+              </div>
+              <div class="cinta__grupo__etiqueta">Enlaces y líneas</div>
+            </div>
+
+            @if (huecos) {
+              <div class="cinta__grupo">
+                <div class="cinta__grupo__fila">
+                  <app-huecosPlantilla
+                    [grupos]="huecos"
+                    [desactivado]="soloLectura"
+                    (elegido)="insertarTexto($event)">
+                  </app-huecosPlantilla>
+                </div>
+                <div class="cinta__grupo__etiqueta">Datos del cliente</div>
+              </div>
+            }
+
+            <span class="cinta__ayuda">También puedes pegar texto e imágenes</span>
+          }
+
+          <!-- ---------------- TABLA (contextual) ---------------- -->
+          @case ('tabla') {
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <button type="button" class="cinta__btn" title="Fila encima" (click)="filaArriba()">
+                  <i class="fa fa-arrow-up"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Fila debajo" (click)="filaAbajo()">
+                  <i class="fa fa-arrow-down"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Columna a la izquierda" (click)="columnaIzq()">
+                  <i class="fa fa-arrow-left"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Columna a la derecha" (click)="columnaDer()">
+                  <i class="fa fa-arrow-right"></i>
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Insertar</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <button type="button" class="cinta__btn" title="Unir las celdas elegidas" (click)="unirCeldas()">
+                  <i class="fa fa-compress"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Partir la celda" (click)="partirCelda()">
+                  <i class="fa fa-expand"></i>
+                </button>
+                <button type="button" class="cinta__btn" title="Poner o quitar la fila de cabecera"
+                        (click)="alternarCabecera()">
+                  <i class="fa fa-heading"></i>
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Celdas</div>
+            </div>
+
+            <div class="cinta__grupo">
+              <div class="cinta__grupo__fila">
+                <!-- La «f» y la «c»: con el icono del menos solo no se
+                     distinguen, y dos iconos iguales seguidos son una trampa -->
+                <button type="button" class="cinta__btn" title="Quitar esta fila" (click)="quitarFila()">
+                  <i class="fa fa-minus"></i><span class="cinta__btn__letra">f</span>
+                </button>
+                <button type="button" class="cinta__btn" title="Quitar esta columna" (click)="quitarColumna()">
+                  <i class="fa fa-minus"></i><span class="cinta__btn__letra">c</span>
+                </button>
+                <button type="button" class="cinta__btn cinta__btn--quitar" title="Quitar la tabla entera"
+                        (click)="quitarTabla()">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+              <div class="cinta__grupo__etiqueta">Quitar</div>
+            </div>
+
+            <span class="cinta__ayuda">Tabulador para pasar de celda · arrastra el borde para el ancho</span>
+          }
+        }
+      </div>
+    </div>
+
+  } @else {
+
+    <!-- ---------- La barra de una tira ---------- -->
+    <div class="cne__barra">
+      <ngx-editor-menu [editor]="editor" [toolbar]="tbDeshacer"></ngx-editor-menu>
+
+      @if (!barraCorta) {
+        <!-- La letra y el tamaño son nuestros: ngx-editor no los trae -->
+        <span class="cne__selects">
+          <select class="form-select form-select-sm cne__letra"
+                  title="Letra"
+                  [disabled]="soloLectura"
+                  [ngModel]="tipografiaActual"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="cambiarTipografia($event)">
+            @for (t of tipografiasVisibles; track t.valor) {
+              <option [value]="t.valor" [style.font-family]="t.valor || null">{{ t.nombre }}</option>
+            }
+          </select>
+          <select class="form-select form-select-sm cne__tamano"
+                  title="Tamaño de letra"
+                  [disabled]="soloLectura"
+                  [ngModel]="tamanoActual"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="cambiarTamano($event)">
+            @for (t of tamanosVisibles; track t.valor) {
+              <option [value]="t.valor">{{ t.nombre }}</option>
+            }
+          </select>
+        </span>
+      }
+
+      <ngx-editor-menu [editor]="editor" [toolbar]="tbFuente"></ngx-editor-menu>
+
+      @if (!barraCorta) {
+        <ngx-editor-menu [editor]="editor" [toolbar]="tbParrafo"></ngx-editor-menu>
+        <ngx-editor-menu [editor]="editor" [toolbar]="tbEstilos"></ngx-editor-menu>
+        <ngx-editor-menu [editor]="editor" [toolbar]="tbInsertar"></ngx-editor-menu>
+      }
+
+      @if (expandible) {
+        <button type="button" class="cne__expandir"
+                [title]="expandido ? 'Volver al tamaño normal (Esc)' : 'Pantalla completa'"
+                (click)="alternarExpandido()">
+          <i class="fa" [ngClass]="expandido ? 'fa-compress' : 'fa-expand'"></i>
+        </button>
+      }
+    </div>
+  }
+
+  <!-- ---------- Donde se escribe ---------- -->
+  <div class="cne__fondo" [class.is-hoja]="hoja" [style.--cne-alto]="alto">
+    <div class="cne__hoja">
+      <!-- El [disabled] no sobra: con soloLectura el css apaga el campo, pero
+           ProseMirror sigue con contenteditable y por teclado se podria
+           escribir. Esto llama al setDisabledState de ngx-editor, que es lo
+           que de verdad lo vuelve de lectura. -->
+      <ngx-editor [editor]="editor"
+                  [ngModel]="valor"
+                  [disabled]="soloLectura"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="alEscribir($event)"
+                  [placeholder]="placeholder"
+                  outputFormat="html">
+      </ngx-editor>
+    </div>
+  </div>
+
+  @if (subiendoImagen) {
+    <p class="cne__subiendo">
+      <i class="fa fa-spinner fa-spin fa-fw"></i>Subiendo la imagen…
+    </p>
+  }
+</div>
+
+<!-- A pantalla completa el campo sale de su sitio, así que se deja un hueco
+     del mismo alto: sin esto, lo de debajo del formulario da un salto. -->
+@if (expandido) {
+  <div class="cne__hueco" [style.height]="alto"></div>
+}

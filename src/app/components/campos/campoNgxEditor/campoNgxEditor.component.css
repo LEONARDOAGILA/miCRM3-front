@@ -1,0 +1,209 @@
+/* ============================================================
+   CAMPO DE TEXTO CON FORMATO
+
+   La cinta de Word -la de [cinta]- esta en cinta.css, al lado: la comparten
+   este campo, el editor de notas y el visor, y las tres tienen que verse
+   igual. Se trae con @import y no desde el styles.css global para que siga
+   siendo css de componente.
+
+   Los tintes van en rgba y no en color-mix(): esto corre en un iPhone 7
+   (ver .browserslistrc).
+   ============================================================ */
+@import './cinta.css';
+
+.cne {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  overflow: hidden;
+}
+
+.cne.is-bloqueado {
+  opacity: .75;
+  pointer-events: none;
+}
+
+/* ---------- La barra ---------- */
+.cne__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+:host ::ng-deep .cne__barra .NgxEditor__MenuBar {
+  border: 0;
+  padding: .125rem .25rem;
+  background: transparent;
+}
+
+:host ::ng-deep .cne__barra > *:not(:last-child) .NgxEditor__MenuBar {
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cne__selects {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+
+  padding: .125rem .375rem;
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cne__letra {
+  width: 8.5rem;
+}
+
+.cne__tamano {
+  width: 4.25rem;
+}
+
+.cne__letra,
+.cne__tamano {
+  height: 26px;
+  padding: 0 1.25rem 0 .375rem;
+  font-size: .6875rem;
+}
+
+/* El de expandir, al final de la barra y pegado a la derecha */
+.cne__expandir {
+  margin-left: auto;
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: .25rem;
+
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+}
+
+.cne__expandir:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  color: var(--bs-body-color, #212529);
+}
+
+/* ---------- Donde se escribe ---------- */
+.cne__fondo {
+  --cne-alto: 9rem;
+  overflow-y: auto;
+}
+
+:host ::ng-deep .cne__fondo .NgxEditor {
+  border: 0;
+  background: transparent;
+  min-height: var(--cne-alto);
+  font-size: .8125rem;
+}
+
+:host ::ng-deep .cne__fondo .NgxEditor__Content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Las imagenes, a lo ancho y nunca mas */
+:host ::ng-deep .cne__fondo .NgxEditor__Content img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ---------- La hoja ----------
+   El mismo gris de detras del papel que usa el visor, y el papel al ancho de
+   un A4. Se escribe sobre lo que luego se va a leer. */
+.cne__fondo.is-hoja {
+  padding: 1rem .75rem;
+  background-color: #525659;
+}
+
+.cne__fondo.is-hoja .cne__hoja {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2rem 2.25rem 2.5rem;
+
+  background-color: #fff;
+  color: #212529;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
+
+/* Dentro del papel el texto es negro aunque el tema sea oscuro: el papel es
+   papel, y lo que se escribe aqui acaba en un correo o impreso. */
+:host ::ng-deep .cne__fondo.is-hoja .NgxEditor__Content {
+  color: #212529;
+}
+
+.cne__subiendo {
+  margin: 0;
+  padding: .25rem .5rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6875rem;
+}
+
+/* ---------- Pantalla completa ----------
+   Por encima del modal (1055): es el modal el que se queda detras, no al
+   reves, que si no se escribe a traves de un velo. */
+.cne.is-expandido {
+  position: fixed;
+  inset: 0;
+  z-index: 1070;
+
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  border-radius: 0;
+
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.cne.is-expandido .cne__fondo {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .cne.is-expandido .NgxEditor {
+  min-height: 100%;
+}
+
+/* A pantalla completa la hoja respira como en Word */
+.cne.is-expandido .cne__fondo.is-hoja {
+  padding: 2rem 1rem;
+}
+
+.cne.is-expandido .cne__fondo.is-hoja .cne__hoja {
+  min-height: 100%;
+}
+
+/* ---------- Telefono ----------
+   Los margenes de papel en un telefono son sitio que se le quita al texto. */
+@media (max-width: 767.98px) {
+  .cne__letra {
+    width: 6rem;
+  }
+
+  .cne__tamano {
+    width: 3.75rem;
+  }
+
+  .cne__fondo.is-hoja {
+    padding: .5rem .25rem;
+  }
+
+  .cne__fondo.is-hoja .cne__hoja {
+    padding: 1rem;
+  }
+}
+
+/* ---------- Con cinta ----------
+   La cinta ya trae su propio borde abajo y su fondo; el marco del campo
+   sobra y se come la linea que separa las pestanas de los grupos. */
+.cne.is-cinta {
+  border-color: rgba(0, 0, 0, .15);
+}
+
+/* El de expandir, metido en la fila de pestanas: alli el margin-left:auto se
+   lo lleva la cuenta de palabras, asi que este va pegado a las pestanas. */
+.cne__expandir--cinta {
+  margin-left: .5rem;
+  align-self: center;
+}

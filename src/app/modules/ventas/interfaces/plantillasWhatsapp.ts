@@ -7,46 +7,75 @@
  * qué va el mensaje y el chat se abre con todo puesto: no hay que teclear lo
  * mismo cincuenta veces al día ni copiar y pegar.
  *
- * Los huecos entre llaves los rellena la pantalla:
- *   {cliente}   nombre completo o razón social
- *   {nombre}    sólo el primer nombre, para tutear sin sonar a circular
- *   {vendedor}  quien está usando el CRM
- *   {empresa}   la nuestra
+ * Los huecos entre llaves —{cliente}, {telefono}…— y la sustitución viven
+ * en huecosPlantilla.ts: los usan también las notas y los correos, y aquí
+ * dentro quedaban escondidos.
  *
- * LOS MENSAJES YA NO ESTÁN AQUÍ. Estaban, y este archivo decía que «si algún
- * día hay que editarlos desde la pantalla, se mueven a una tabla sin tocar lo
- * demás». Eso es lo que se hizo: viven en ventas.whatsapp_plantillas y se
- * mantienen desde Ventas > Respuestas de WhatsApp
- * (ver interfaces/whatsappPlantillaModel.ts). Aquí se queda lo que sigue
- * siendo código, que es lo de abajo.
+ * LOS MENSAJES YA NO ESTÁN AQUÍ. Estaban escritos a mano en este archivo;
+ * ahora son un campo del asunto del catálogo (ventas.gestiones_asuntos.mensaje)
+ * y se mantienen desde Ventas > Catálogo de gestiones, en el bocadillo de cada
+ * asunto. Aquí se queda lo que sigue siendo código, que es lo de abajo.
  */
 
 import { lanzarProtocolo } from '../../../service/lanzarProtocolo';
 
 /**
- * Rellena los huecos de una plantilla.
+ * El mismo mensaje, pero sin formato.
  *
- * Lo que no se sepa se deja en blanco y se limpian los espacios dobles que
- * quedan, para que no salga «Hola , le saluda».
+ * Los asuntos de correo guardan HTML, y hay sitios donde ese HTML no pinta
+ * nada: «Qué se habló» es el historial de la gestión, un campo de texto, y
+ * unas etiquetas <p> ahí sólo se leerían como basura. Se convierte lo que
+ * separa párrafos en saltos de línea y se tira el resto.
+ *
+ * No es un saneador de seguridad: para eso está no meter HTML ajeno en el
+ * DOM. Esto sólo quita el formato de algo que nosotros mismos escribimos.
  */
-export function aplicarPlantilla(
-  texto: string,
-  datos: { cliente?: string | null; nombre?: string | null; vendedor?: string | null; empresa?: string | null },
-): string {
-  // Sin empresa configurada, el mensaje no la nombra: «le saluda Leonardo»
-  // queda bien; «le saluda Leonardo de la empresa», no.
-  const base = (datos.empresa ?? '').trim()
-    ? texto
-    : texto.replace(/\s*de \{empresa\}/g, '');
+export function soloTexto(html?: string | null): string {
+  const bruto = (html ?? '').trim();
+  if (!bruto) { return ''; }
+  if (!/<[a-z!/]/i.test(bruto)) { return bruto; }
 
-  return base
-    .replace(/\{cliente\}/g, datos.cliente ?? '')
-    .replace(/\{nombre\}/g, datos.nombre ?? datos.cliente ?? '')
-    .replace(/\{vendedor\}/g, datos.vendedor ?? '')
-    .replace(/\{empresa\}/g, datos.empresa ?? '')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\s+([,.])/g, '$1')
+  return bruto
+    // Lo que en la pantalla se ve como un salto, salto se queda
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\s*\/\s*(p|div|li|tr|h[1-6])\s*>/gi, '\n')
+    .replace(/<\s*li[^>]*>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    // Las entidades más comunes; el resto se queda como está, que inventar un
+    // decodificador entero para esto sobra
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+/**
+ * Al revés: texto llano envuelto para un editor de HTML.
+ *
+ * Sin esto, un mensaje de WhatsApp con dos párrafos entra en el editor de
+ * «Qué se habló» como un churro seguido: el HTML no sabe de saltos de línea,
+ * y los que traía el texto se los come el navegador.
+ *
+ * Lo que ya viene con etiquetas se devuelve tal cual: es lo que pasa con el
+ * mensaje de un asunto de correo, que ya es HTML.
+ */
+export function comoHtml(texto?: string | null): string {
+  const bruto = (texto ?? '').trim();
+  if (!bruto) { return ''; }
+  if (/<[a-z!/]/i.test(bruto)) { return bruto; }
+
+  return bruto
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .split(/\n{2,}/)
+    .map(p => '<p>' + p.replace(/\n/g, '<br>') + '</p>')
+    .join('');
 }
 
 /**

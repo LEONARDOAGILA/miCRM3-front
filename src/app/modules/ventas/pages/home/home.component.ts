@@ -56,6 +56,22 @@ export class HomeComponent implements OnInit, OnDestroy {
       color: 'bg-success',
       descripcion: 'Llamadas hechas y programadas, seguimiento de la cartera y reasignación de vendedor'
     },
+    {
+      url: 'ventas/catalogoGestion',
+      label: 'CATÁLOGO DE GESTIONES',
+      icon: 'fa-list-check',
+      color: 'bg-info',
+      descripcion: 'Tipos de gestión, asuntos y los mensajes que se proponen al registrarlas'
+    },
+    {
+      // Sólo le sale a quien tenga el menú: el reparto está restringido por
+      // perfil, papel a papel, y la pantalla lo vuelve a comprobar
+      url: 'ventas/asignacionClienteMasiva',
+      label: 'REPARTO DE CLIENTES',
+      icon: 'fa-people-arrows',
+      color: 'bg-warning',
+      descripcion: 'Asignar vendedor, cobrador, asistente o postventa a muchos clientes de una vez'
+    },
   ];
 
   constructor(

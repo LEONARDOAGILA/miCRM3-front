@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 
 // Servicios
 import { UserService } from "../../../../seguridad/services/user.service";
+import { TipoUsuarioService } from "../../../../seguridad/services/tipoUsuario.service";
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 
 
@@ -21,7 +22,7 @@ import { UserModel } from "../../../interfaces/userModel";
 import { ListProfileComponent } from '../../profiles/listProfile/listProfile.component';
 import { ListHorariosComponent } from '../../horarios/listHorarios/listHorarios.component';
 import { ListGruposComponent } from '../../grupos/listGrupos/listGrupos.component';
-import { GrupoModel, typeUserDeGrupo } from '../../../interfaces/grupoModel';
+import { GrupoModel } from '../../../interfaces/grupoModel';
 
 @Component({
   selector: 'app-saveUser',
@@ -53,17 +54,43 @@ export class SaveUserComponent implements OnInit, OnDestroy {
   public horarioNombreControl = new FormControl({ value: '', disabled: true });
   public grupoNombreControl = new FormControl({ value: '', disabled: true });
 
-  public tipoUsuario = [
-    { id: 1, name: 'SUPER USUARIO' },
-    { id: 2, name: 'ADMINISTRADOR' },
-    { id: 3, name: 'USUARIO SISTEMA' },
-    { id: 4, name: 'USUARIO WEB' },
-  ];
+  /**
+   * Clases de usuario del catálogo (seguridad.tipos_usuarios), para el
+   * desplegable. Antes eran cuatro valores escritos aquí; ahora los trae el
+   * back, así que añadir «freelance» o «temporal» no toca este fichero.
+   *
+   * Arranca vacío y se llena en ngOnInit. Si la petición falla se queda vacío
+   * y el campo no ofrece nada, que es mejor que ofrecer una lista inventada
+   * que la base va a rechazar.
+   */
+  public tipoUsuario: { id: number; name: string }[] = [];
 
   /** Nombre del tipo de usuario seleccionado (para el resumen del avatar) */
   public get tipoUsuarioNombre(): string {
     const id = this.form?.controls['type_user']?.value;
     return this.tipoUsuario.find(t => t.id === id)?.name ?? '';
+  }
+
+  /**
+   * Trae el catálogo de tipos.
+   *
+   * Al EDITAR se piden también los retirados: si un usuario viejo tiene un
+   * tipo que ya no se asigna, el desplegable tiene que poder mostrarlo en vez
+   * de aparecer en blanco y guardar un cambio que nadie pidió.
+   */
+  private async cargarTiposUsuario(): Promise<void> {
+    try {
+      // Al dar de alta, sólo los vigentes: no tiene sentido ofrecer un tipo
+      // que caducó, porque el usuario no podría entrar
+      const res: any = await firstValueFrom(
+        this.accion === 'add'
+          ? this._tipoUsuarioService.listTiposUsuario(false, true)
+          : this._tipoUsuarioService.listTiposUsuario(true, false));
+      this.tipoUsuario = (res?.data ?? []).map((t: any) => ({ id: t.id, name: t.nombre }));
+    } catch (error: any) {
+      console.error('No se pudo leer el catálogo de tipos de usuario', error);
+      this.tipoUsuario = [];
+    }
   }
 
   public imagen_file: any = null;
@@ -125,6 +152,7 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     private _loadingService: LoadingService,
     private _seguridadService: SeguridadService,
     private _userService: UserService,
+    private _tipoUsuarioService: TipoUsuarioService,
     private _profileService: ProfileService,
     private _generadorClave: GeneradorClaveService,
     private _horarioService: HorarioService,
@@ -243,6 +271,10 @@ export class SaveUserComponent implements OnInit, OnDestroy {
     // Inicializar formulario
     this.initializeForm();
 
+    // El desplegable de tipos, antes de cargar el usuario: así al editar ya
+    // hay con qué pintar el valor que traiga
+    await this.cargarTiposUsuario();
+
     // Si la clave se edita a mano, deja de mostrarse la sugerida
     this.form.get('password')?.valueChanges
       .pipe(takeUntil(this.destroy$))
@@ -335,11 +367,10 @@ export class SaveUserComponent implements OnInit, OnDestroy {
       this.horarioNombreControl.setValue(g.chorario_nombre || '');
       aplicados.push('horario ' + (g.chorario_nombre || g.chorario_id));
     }
-    if (esNuevo || !this.form.get('type_user')?.value) {
-      const tipo = typeUserDeGrupo(g);
-      this.form.patchValue({ type_user: tipo });
-      aplicados.push(this.tipoUsuario.find(t => t.id === tipo)?.name?.toLowerCase() || '');
-    }
+    // El grupo NO hereda el tipo de usuario. Antes sí: ponía 2/3/4 según
+    // fuera administrador, de sistema o web, porque el campo decidía permisos.
+    // Ahora es la clase de usuario —freelance, temporal…— y un freelance puede
+    // estar en cualquier grupo, así que se elige a mano y no se pisa.
     if (aplicados.length) {
       this._toastr.info(`Del grupo «${g.nombre}»: ${aplicados.filter(Boolean).join(', ')}`, 'Valores heredados', { timeOut: 5000 });
     }

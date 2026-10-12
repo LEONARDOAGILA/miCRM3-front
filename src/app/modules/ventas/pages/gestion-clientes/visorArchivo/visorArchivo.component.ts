@@ -346,4 +346,17 @@ export class VisorArchivoComponent implements OnInit {
     if (!this.actual || !this.urlDe) { return; }
     window.open(this.urlDe(this.actual, true), '_blank', 'noopener');
   }
+
+  /**
+   * El archivo en una pestaña aparte, tal cual.
+   *
+   * Es la salida cuando el navegador se niega a incrustar el PDF —pasa con
+   * «Descargar los archivos PDF en lugar de abrirlos automáticamente»
+   * activado, y con algunas extensiones—: ahí el <iframe> se queda en negro
+   * y sin esto no hay forma de llegar al documento sin cerrar el visor.
+   */
+  abrirAparte(): void {
+    if (!this.url) { return; }
+    window.open(this.url, '_blank', 'noopener');
+  }
 }

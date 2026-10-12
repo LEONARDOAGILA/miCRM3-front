@@ -4,8 +4,12 @@ import { CommonModule } from '@angular/common';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { PanelModule } from '../../../../../components/panel/panel.module';
-import { NotaCliente, nombreDeColor, tinteDeNota } from '../../../interfaces/notaCliente';
+import { NotaCliente, conTokenLasImagenes, nombreDeColor, tinteDeNota } from '../../../interfaces/notaCliente';
 import { DatosDocumentoNota, descargarNotaWord, imprimirNota } from '../../../interfaces/notaDocumento';
+import { ClienteModel } from '../../../interfaces/clienteModel';
+import {
+  aplicarHuecos, datosDeHuecos,
+} from '../../../interfaces/huecosPlantilla';
 
 /**
  * Leer una nota entera.
@@ -38,6 +42,8 @@ export class VerNotaComponent {
 
   @Input() nota!: NotaCliente;
   @Input() clienteNombre = '';
+  /** La ficha entera: sin ella no se pueden resolver {telefono} y los demás. */
+  @Input() cliente: ClienteModel | null = null;
 
   public readonly tinteDeNota = tinteDeNota;
   public readonly nombreDeColor = nombreDeColor;
@@ -51,14 +57,30 @@ export class VerNotaComponent {
   ) {}
 
   get titulo(): string {
-    return this.nota?.titulo || 'Nota';
+    return this.resolver(this.nota?.titulo) || 'Nota';
+  }
+
+  /**
+   * La nota con los huecos cambiados por los datos de este cliente.
+   *
+   * Se guarda el hueco y se cambia aquí: así la nota dice el teléfono que el
+   * cliente tiene hoy, y no el que tenía el día que se escribió.
+   */
+  get contenido(): string {
+    return this.resolver(this.nota?.contenido);
+  }
+
+  private resolver(texto?: string | null): string {
+    // El token al final: sin él las imágenes del servidor dan 401 desde que
+    // ver/{id} dejó de ser pública
+    return conTokenLasImagenes(aplicarHuecos(texto ?? '', datosDeHuecos(this.cliente)));
   }
 
   /** Lo que necesita el documento, venga de aquí o del editor. */
   private get datos(): DatosDocumentoNota {
     return {
-      titulo: this.nota?.titulo,
-      contenido: this.nota?.contenido,
+      titulo: this.titulo,
+      contenido: this.contenido,
       color: this.nota?.color,
       autor: this.nota?.created_by,
       fecha: this.nota?.created_at,

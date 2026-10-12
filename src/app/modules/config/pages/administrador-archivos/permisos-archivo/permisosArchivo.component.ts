@@ -42,7 +42,8 @@ export interface FilaPermiso {
   login_user: string;
   name: string;
   surname: string;
-  type_user: number;
+  /** Su grupo administra el gestor, así que ya lo ve todo sin esta fila. */
+  es_administrador: boolean;
   isactive: boolean;
   ver: boolean; ejecutar: boolean; descargar: boolean; crear: boolean;
   editar: boolean; eliminar: boolean; administrar: boolean; restaurar: boolean;
@@ -769,7 +770,8 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
   private agregarFila(u: any, silencioso = false): void {
     if (this.filas.some(f => f.user_id === u.id)) { return; }
     const fila: FilaPermiso = {
-      user_id: u.id, login_user: u.login_user, name: u.name, surname: u.surname, type_user: u.type_user, isactive: u.isactive !== false,
+      user_id: u.id, login_user: u.login_user, name: u.name, surname: u.surname,
+      es_administrador: u.es_administrador === true, isactive: u.isactive !== false,
       ver: true, ejecutar: true, descargar: false, crear: false, editar: false, eliminar: false, administrar: false, restaurar: false,
       hereda: true, denegar: false, vigente_hasta: null, caducado: false,
       origen: 'DIRECTO', desde: null, nueva: true,
@@ -777,7 +779,9 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     this.filas = [fila, ...this.filas];
     if (silencioso) { return; }   // en lote: la grilla y el aviso los pone quien llama
     this.gridApi?.setRowData(this.filas);
-    if (u.type_user === 1 || u.type_user === 2) {
+    // Lo dice su grupo, no users.type_user: el gestor nació antes de que
+    // hubiera grupos y se quedó mirando el campo viejo
+    if (u.es_administrador === true) {
       this._toastr.info('Los administradores ya lo ven todo; la fila sólo sirve para dejarlo explícito.', 'Permisos', { timeOut: 4000 });
     }
   }

@@ -1,4 +1,5 @@
 import { ChangeDetectorRef, Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 /**
  * Campo de búsqueda de los listados que paginan en el servidor.
@@ -16,6 +17,7 @@ import { ChangeDetectorRef, Component, Input, Output, EventEmitter, ViewChild, E
 @Component({
   selector: 'app-campoBusquedaPaginacion',
   standalone: true,
+  imports: [CommonModule],
   templateUrl: './campoBusquedaPaginacion.component.html',
   styleUrls: ['./campoBusquedaPaginacion.component.css'],
 })
@@ -27,6 +29,68 @@ export class CampoBusquedaPaginacionComponent {
 
   /** Por si en alguna pantalla la × estorba. */
   @Input() limpiable: boolean = true;
+
+  // ================================================================
+  // EL BOTÓN DE QUITAR FILTROS
+  // ================================================================
+  // Iba suelto al lado del campo en catorce pantallas, con el mismo marcado
+  // copiado una y otra vez. Aquí dentro se escribe una vez y se pide con un
+  // atributo.
+
+  /** Si se enseña el botón de quitar filtros a la izquierda del campo. */
+  @Input() conLimpiarFiltros = false;
+
+  /**
+   * Si hay algo que quitar, para encender el botón.
+   *
+   * Lo dice la pantalla porque es la única que sabe de sus filtros de
+   * columna. Si no se pasa nada, el componente se apaña con lo que sí sabe:
+   * si hay texto escrito. Así una pantalla puede pedir el botón sin tocar su
+   * TypeScript y aun así se enciende cuando toca.
+   */
+  @Input() hayFiltro: boolean | null = null;
+
+  /**
+   * Cuántas columnas llevan filtro. Sólo para el rótulo.
+   *
+   * Importa decirlo: con veinte columnas filtrables es fácil dejarse una
+   * puesta en otra que no se está mirando y no entender por qué faltan filas.
+   */
+  @Input() columnasFiltradas = 0;
+
+  /** Se pulsó el botón. La pantalla limpia lo suyo; el campo se vacía solo. */
+  @Output() limpiarFiltros = new EventEmitter<void>();
+
+  /** Lo que de verdad decide si el botón va encendido. */
+  get filtroActivo(): boolean {
+    return this.hayFiltro === null ? !!this.valor : this.hayFiltro;
+  }
+
+  /** Qué dice el botón al pasar por encima. */
+  get tituloLimpiar(): string {
+    if (!this.filtroActivo) { return 'No hay filtros que quitar'; }
+
+    const partes: string[] = [];
+    if (this.valor) { partes.push('la búsqueda'); }
+    if (this.columnasFiltradas === 1) { partes.push('1 columna'); }
+    else if (this.columnasFiltradas > 1) { partes.push(this.columnasFiltradas + ' columnas'); }
+
+    return partes.length ? 'Quitar ' + partes.join(' y ') : 'Quitar los filtros';
+  }
+
+  /**
+   * El botón: vacía el campo SIN pedir el listado y avisa a la pantalla.
+   *
+   * No se usa reset(), que emite una búsqueda vacía: la pantalla va a
+   * recargar de todas formas al atender `limpiarFiltros`, y dos avisos son
+   * dos consultas para lo mismo.
+   */
+  alLimpiarFiltros(): void {
+    this.valor = '';
+    if (this.inputElement) { this.inputElement.nativeElement.value = ''; }
+    this.cd.detectChanges();
+    this.limpiarFiltros.emit();
+  }
 
   /** Texto de partida, cuando se vuelve a una pantalla con la búsqueda puesta. */
   @Input() set valorInicial(valor: string | null | undefined) {

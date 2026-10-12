@@ -159,9 +159,20 @@ export class AuthInterceptor implements HttpInterceptor {
       }
     }
 
-    return messages.length > 0 
-      ? messages.join('<br>') // Usamos <br> para saltos de línea en el toast
-      : 'Por favor verifique los datos ingresados';
+    if (messages.length > 0) {
+      return messages.join('<br>'); // Usamos <br> para saltos de línea en el toast
+    }
+
+    // Un 422 no siempre trae errores campo a campo: las reglas de negocio del
+    // servidor —las que levantan las funciones de PostgreSQL— devuelven UNA
+    // frase que ya dice qué pasó («El modo de registro no es válido»), y
+    // cambiarla por «verifique los datos» deja al usuario sin saber qué revisar
+    // y a quien lo soporta leyendo la respuesta en la consola del navegador.
+    if (typeof error?.message === 'string' && error.message.trim()) {
+      return error.message;
+    }
+
+    return 'Por favor verifique los datos ingresados';
   }
 
   private translateValidationMessage(field: string, message: string): string {

@@ -12,6 +12,7 @@ import { ToastrService } from 'ngx-toastr';
 import { LoadingService } from '../../../../../service/loading.service';
 import { GeneradorClaveService } from '../../../../../service/generador-clave.service';
 import { UserService } from '../../../services/user.service';
+import { TipoUsuarioDeUsuario } from '../../../interfaces/tipoUsuarioModel';
 
 @Component({
   selector: 'app-change-password',
@@ -104,16 +105,15 @@ passwordMatchValidator(formGroup: FormGroup) {
    */
   public claveGenerada: string | null = null;
 
-  private readonly TIPOS_USUARIO: { [id: number]: string } = {
-    1: 'SUPER USUARIO',
-    2: 'ADMINISTRADOR',
-    3: 'USUARIO SISTEMA',
-    4: 'USUARIO WEB',
-  };
-
-  /** Nombre del tipo de usuario, para el chip de la ficha */
+  /**
+   * Nombre del tipo de usuario, para el chip de la ficha.
+   *
+   * Lo manda el back resuelto en `type_user_tipo`; antes la lista estaba
+   * escrita aquí, repetida en cinco pantallas.
+   */
   public get tipoUsuarioNombre(): string {
-    return this.TIPOS_USUARIO[this.registro_selected?.type_user] || '';
+    const tipo: TipoUsuarioDeUsuario | null | undefined = this.registro_selected?.type_user_tipo;
+    return tipo?.nombre ?? '';
   }
 
   public handleAvatarError(): void {

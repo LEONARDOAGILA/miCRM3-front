@@ -14,14 +14,7 @@ import { HomeComponent } from './pages/home/home.component';
 
 
 
-import { AllReportesExternosComponent } from './pages/reportesExternos/allReportesExternos/allReportesExternos.component';
-import { SaveReporteExternoComponent } from './pages/reportesExternos/saveReporteExterno/saveReporteExterno.component';
-import { DeleteReporteExternoComponent } from './pages/reportesExternos/deleteReporteExterno/deleteReporteExterno.component';
-import { ModalReporteExternoComponent } from './pages/reportesExternos/modalReporteExterno/modalReporteExterno.component';
-import { UsuariosReportesExternosComponent } from './pages/reportesExternos/usuariosReportesExternos/usuariosReportesExternos.component';
-import { ListUsuariosReportesExternosComponent } from './pages/reportesExternos/listUsuariosReportesExternos/listUsuariosReportesExternos.component';
 
-import { ButtonAccionReporteExterno } from './pages/reportesExternos/allReportesExternos/allReportesExternos.component';
 
 
 
@@ -43,13 +36,6 @@ import { ComboComponent } from '../../components/campos/combo/combo.component';
      HomeComponent,
      
 
-     AllReportesExternosComponent,
-     SaveReporteExternoComponent,
-     DeleteReporteExternoComponent,
-     ButtonAccionReporteExterno,
-     ModalReporteExternoComponent,
-     UsuariosReportesExternosComponent,
-     ListUsuariosReportesExternosComponent,
 
     
      
