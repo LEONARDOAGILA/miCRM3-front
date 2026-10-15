@@ -116,8 +116,223 @@ export class Save2ProfileComponent implements OnInit  {
     };
   }
 
-  /** Filas sobre las que actúan los atajos: las visibles (respeta el filtro). */
+  // ================================================================
+  // PLEGAR Y DESPLEGAR EL ÁRBOL DE MENÚS
+  // ================================================================
+  //
+  // ag-Grid Community no trae `treeData` —es de la versión de pago—, así que
+  // se hace a mano, igual que en allMenus y allCategorias: la rejilla recibe
+  // SÓLO las filas visibles, y una fila lo es cuando ninguno de sus
+  // antepasados está plegado.
+  //
+  // Aquí la rejilla son PERMISOS, no un listado: esconder una fila no puede
+  // cambiar lo que se marca ni lo que se guarda. De eso se ocupan
+  // filasVisibles() y updateFormAccessFromGrid(), que leen el modelo.
+
+  /** Los ids de los menús plegados (sus descendientes no se pintan). */
+  private readonly plegados = new Set<number>();
+
+  /** Lo que de verdad recibe la rejilla: el árbol menos las ramas cerradas. */
+  public filasArbol: any[] = [];
+
+  /** Cuántos hijos tiene cada menú, contados una vez al cargar. */
+  private hijosPorId = new Map<number, number>();
+
+  /** Lo escrito en el buscador: con texto, el plegado se ignora. */
+  public searchTerm = '';
+
+  /** Dónde se recuerda el estado entre visitas. */
+  private static readonly CLAVE_PLEGADOS = 'seg.perfilAccesos.plegados';
+
+  /** La celda de «Nombre»: asa + flecha de submenú + nombre. */
+  private celdaNombre(params: any): string {
+    const m = params.data?.menu ?? {};
+    const id = Number(m.id ?? 0);
+    const nivel = Math.max(0, Number(m.nivel ?? 0));
+    const hijos = this.hijosPorId.get(id) ?? 0;
+    const plegado = this.plegados.has(id);
+
+    const asa = hijos > 0
+      ? `<button type="button" class="menu-asa" data-accion="plegar"
+                 title="${plegado ? 'Desplegar' : 'Contraer'} esta rama"
+                 aria-label="${plegado ? 'Desplegar' : 'Contraer'}">
+           <i class="fa fa-${plegado ? 'plus' : 'minus'}"></i>
+         </button>`
+      : `<span class="menu-asa menu-asa--hueco"></span>`;
+
+    // La flecha de los submenús se queda: es como se venían distinguiendo
+    const flecha = nivel > 0 ? '<i class="bi bi-arrow-return-right menu-flecha"></i>' : '';
+
+    // El nombre ESCAPADO: acaba dentro de una cadena de HTML, así que sin
+    // esto un `<` en el nombre de un menú rompe la celda.
+    const texto = String(params.value ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    return `<span class="menu-nombre nivel-${nivel}" style="padding-left:${nivel * 14}px">${asa}${flecha}${texto}</span>`;
+  }
+
+  /** Pliega o despliega una rama y lo recuerda. */
+  alternarPlegado(fila: any): void {
+    const id = Number(fila?.menu?.id ?? 0);
+    if (!id || (this.hijosPorId.get(id) ?? 0) === 0) { return; }
+
+    if (this.plegados.has(id)) { this.plegados.delete(id); }
+    else { this.plegados.add(id); }
+
+    this.guardarPlegados();
+    this.recalcularVisibles();
+  }
+
+  /** Cierra todas las ramas: sólo quedan los menús raíz. */
+  contraerTodo(): void {
+    this.plegados.clear();
+    this.hijosPorId.forEach((cuantos, id) => { if (cuantos > 0) { this.plegados.add(id); } });
+    this.guardarPlegados();
+    this.recalcularVisibles();
+  }
+
+  /** Abre el árbol entero. */
+  desplegarTodo(): void {
+    this.plegados.clear();
+    this.guardarPlegados();
+    this.recalcularVisibles();
+  }
+
+  /** Para encender o apagar el botón de la barra. */
+  get hayPlegados(): boolean { return this.plegados.size > 0; }
+
+  /** Cuántas ramas están cerradas. */
+  get plegadosCuantos(): number { return this.plegados.size; }
+
+  /** Tras cargar o cambiar los permisos: recuenta, limpia el estado y repinta. */
+  private refrescarArbol(): void {
+    this.recalcularHijos();
+    this.limpiarPlegados();
+    this.recalcularVisibles();
+  }
+
+  /** Recuenta los hijos de cada menú. */
+  private recalcularHijos(): void {
+    this.hijosPorId = new Map<number, number>();
+    (this.profile?.acceso ?? []).forEach((f: any) => {
+      const padre = f?.menu?.padre_id ?? null;
+      if (padre != null) {
+        const p = Number(padre);
+        this.hijosPorId.set(p, (this.hijosPorId.get(p) ?? 0) + 1);
+      }
+    });
+  }
+
+  /**
+   * Rehace la lista que ve la rejilla.
+   *
+   * Se esconde la RAMA ENTERA, no sólo los hijos directos: por eso se sube
+   * por los antepasados en vez de mirar únicamente `padre_id`.
+   */
+  private recalcularVisibles(): void {
+    const filas: any[] = this.profile?.acceso ?? [];
+
+    if (this.searchTerm || this.plegados.size === 0) {
+      this.filasArbol = [...filas];
+    } else {
+      // Un mapa id → padre para no recorrer el array por cada antepasado
+      const padres = new Map<number, number | null>();
+      filas.forEach((f: any) => padres.set(Number(f?.menu?.id), f?.menu?.padre_id ?? null));
+
+      this.filasArbol = filas.filter((f: any) => {
+        let p = padres.get(Number(f?.menu?.id)) ?? null;
+        while (p != null) {
+          if (this.plegados.has(Number(p))) { return false; }
+          p = padres.get(Number(p)) ?? null;
+        }
+        return true;
+      });
+    }
+    this.gridApi?.setRowData(this.filasArbol);
+    this.actualizarBotonesArbol();
+  }
+
+  /** Quita del estado los menús que ya no existen. */
+  private limpiarPlegados(): void {
+    const existen = new Set((this.profile?.acceso ?? []).map((f: any) => Number(f?.menu?.id)));
+    [...this.plegados].forEach(id => { if (!existen.has(id)) { this.plegados.delete(id); } });
+  }
+
+  private guardarPlegados(): void {
+    try {
+      localStorage.setItem(Save2ProfileComponent.CLAVE_PLEGADOS, JSON.stringify([...this.plegados]));
+    } catch {
+      // Ventana privada o almacenamiento bloqueado: se pierde al salir y ya
+    }
+  }
+
+  private leerPlegados(): void {
+    try {
+      const guardado = localStorage.getItem(Save2ProfileComponent.CLAVE_PLEGADOS);
+      if (!guardado) { return; }
+      const ids = JSON.parse(guardado);
+      if (Array.isArray(ids)) {
+        ids.forEach((id: any) => { if (Number.isFinite(Number(id))) { this.plegados.add(Number(id)); } });
+      }
+    } catch {
+      // Lo guardado no sirve: se empieza con el árbol abierto
+    }
+  }
+  /**
+   * Cabecera de «Nombre»: los botones de plegar y el título.
+   *
+   * Mismo esquema que `cabeceraConCasilla`: una plantilla propia del
+   * encabezado de ag-Grid. Se conservan `eMenu` y `eFilter` —esta columna
+   * tiene `filter: true`— porque una plantilla sin esos `ref` deja la
+   * cabecera sin el menú de filtro.
+   */
+  private cabeceraArbol(): any {
+    return {
+      template: `
+        <div class="ag-cell-label-container" role="presentation">
+          <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>
+          <div ref="eLabel" class="ag-header-cell-label cabecera-arbol" role="presentation">
+            <span class="cabecera-arbol__botones btn-group" role="group" aria-label="Plegar el árbol">
+              <button type="button" class="btn" data-arbol="contraer" title="Contraer todas las ramas">
+                <i class="fa fa-minus"></i>
+              </button>
+              <button type="button" class="btn" data-arbol="desplegar" title="Desplegar todas las ramas">
+                <i class="fa fa-plus"></i>
+              </button>
+            </span>
+            <span ref="eText" class="ag-header-cell-text"></span>
+            <span ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon"></span>
+          </div>
+        </div>`
+    };
+  }
+
+  /**
+   * Enciende o apaga los botones de la cabecera.
+   *
+   * La plantilla de ag-Grid es HTML suelto, no Angular: no hay `[disabled]`
+   * que valga y hay que ponerlo a mano cada vez que cambia el estado.
+   */
+  private actualizarBotonesArbol(): void {
+    const botones = this.host?.nativeElement?.querySelectorAll?.('[data-arbol]');
+    botones?.forEach((b: HTMLButtonElement) => {
+      b.disabled = b.dataset['arbol'] === 'contraer'
+        ? !!this.searchTerm                          // buscando se ve todo
+        : (!!this.searchTerm || !this.hayPlegados);  // nada que desplegar
+    });
+  }
+
+  /**
+   * Filas sobre las que actúan los atajos: las que deja el filtro.
+   *
+   * PLEGAR NO CUENTA. Sin filtro escrito son TODAS, aunque haya ramas
+   * cerradas: si no, «Marcar todo» dejaría fuera lo escondido sin que se
+   * note, y la casilla de la cabecera se vería marcada con menús sin marcar
+   * debajo. Lo plegado es una forma de mirar; el filtro sí es una elección.
+   */
   private filasVisibles(): any[] {
+    if (!this.filtroActivo) { return this.profile?.acceso ?? []; }
+
     const filas: any[] = [];
     this.gridApi?.forEachNodeAfterFilter(n => { if (n.data) { filas.push(n.data); } });
     return filas.length ? filas : (this.profile?.acceso ?? []);
@@ -165,6 +380,7 @@ export class Save2ProfileComponent implements OnInit  {
 
   /** Casillas de cabecera: marcada si toda la columna visible lo está; a medias si sólo parte. */
   actualizarCabeceras(): void {
+    this.actualizarBotonesArbol();
     const filas = this.filasVisibles();
     this.host.nativeElement.querySelectorAll<HTMLInputElement>('input.col-check').forEach(input => {
       const field = input.dataset['col']!;
@@ -178,6 +394,16 @@ export class Save2ProfileComponent implements OnInit  {
 
   /** Clic en una casilla de cabecera (se mira el target: la cabecera es HTML de ag-Grid). */
   onHeaderClicked(ev: MouseEvent): void {
+    // Los botones +/- de la cabecera de «Nombre». Van antes que las casillas
+    // y también funcionan en sólo lectura: plegar no toca los permisos.
+    const boton = (ev.target as HTMLElement).closest('[data-arbol]') as HTMLButtonElement | null;
+    if (boton) {
+      ev.stopPropagation();
+      if (boton.disabled) { return; }
+      if (boton.dataset['arbol'] === 'contraer') { this.contraerTodo(); } else { this.desplegarTodo(); }
+      return;
+    }
+
     const input = (ev.target as HTMLElement).closest('input.col-check') as HTMLInputElement | null;
     if (!input) { return; }
     ev.stopPropagation();
@@ -217,6 +443,8 @@ export class Save2ProfileComponent implements OnInit  {
       this.modal.close();
       return;
     }
+
+    this.leerPlegados();            // el árbol se abre como se dejó
 
     this.profile = { id: 0, nombre: '', inactividad: 0, activo: true, acceso: [] }; // valor por defecto para todos los casos
 
@@ -444,21 +672,15 @@ export class Save2ProfileComponent implements OnInit  {
           headerName: 'Nombre',
           field: 'menu.nombre',
           cellStyle: { textAlign: 'left' },
-          cellRenderer: (params) => {
-            // El color por nivel se aplica con clases (.nivel-N) para que
-            // siga el tema; antes eran colores fijos y además se leía
-            // 'menu.level', que no existe en el modelo (es 'menu.nivel').
-            const nivel = params.data?.menu?.nivel || 0;
-            const sangria = nivel * 14;
-            const flecha = nivel > 0
-              ? '<i class="bi bi-arrow-return-right menu-flecha"></i>'
-              : '';
-            return `<span class="menu-nombre nivel-${nivel}" style="padding-left:${sangria}px">${flecha}${params.value ?? ''}</span>`;
-          },
+          // El color por nivel se aplica con clases (.nivel-N) para que siga
+          // el tema; antes eran colores fijos y además se leía 'menu.level',
+          // que no existe en el modelo (es 'menu.nivel').
+          cellRenderer: (params) => this.celdaNombre(params),
           minWidth: 250,
           maxWidth: 600,
           sortable: false,
           filter: true,
+          headerComponentParams: this.cabeceraArbol(),
         },
 
         {
@@ -574,6 +796,14 @@ export class Save2ProfileComponent implements OnInit  {
     onFilterTextBoxChanged() {
       if (this.gridApi && this.gridApi.setQuickFilter) {
         const filterText = (document.getElementById('filter-text-box22') as HTMLInputElement).value;
+
+        // Al empezar o dejar de buscar cambia QUÉ filas se pintan: con texto
+        // escrito se abre el árbol entero (si no, una coincidencia dentro de
+        // una rama cerrada no saldría) y al limpiarlo vuelve a cerrarse.
+        const antes = !!this.searchTerm;
+        this.searchTerm = filterText;
+        if (antes !== !!this.searchTerm) { this.recalcularVisibles(); }
+
         this.gridApi.setQuickFilter(filterText);
         setTimeout(() => this.actualizarCabeceras());   // las casillas de cabecera miran las filas visibles
       }    
@@ -614,6 +844,7 @@ export class Save2ProfileComponent implements OnInit  {
   
         // Actualizar el profile.acceso con la estructura completa
         this.profile.acceso = allMenusWithAccess;
+        this.refrescarArbol();
         //console.log('this.profile.acceso:', this.profile.acceso);
         
         // Crear controles para cada menú
@@ -645,6 +876,7 @@ export class Save2ProfileComponent implements OnInit  {
           this.profile = res.data;
           this.profile.nombre = this.profile.nombre + this.textoClon;          
           this.profile.acceso = this.profile.acceso || [];  // Asegurarnos que access existe aunque esté vacío
+          this.refrescarArbol();
           this.form.patchValue(this.profile);
           this._appAgGridService.ajustarTamanoGrid(this.gridApi);
         } else {
@@ -664,6 +896,14 @@ export class Save2ProfileComponent implements OnInit  {
  navegarConTeclado = this._appAgGridService.navegacionConFlechas();
 
  onCellClicked(e: CellClickedEvent): void {
+  // El asa +/- de la columna Nombre va PRIMERO y también en sólo lectura:
+  // plegar es una forma de mirar, no un cambio en los permisos.
+  const origen = e.event?.target as HTMLElement | null;
+  if (origen?.closest('[data-accion="plegar"]')) {
+    this.alternarPlegado(e.data);
+    return;
+  }
+
   if (!this.isdisabled) {
     const field = e.column.getColId();
     if (field === 'todos') {
@@ -796,9 +1036,11 @@ export class Save2ProfileComponent implements OnInit  {
     private updateFormAccessFromGrid(): void {
       if (!this.gridApi) return;
   
-      // Obtener todos los datos actuales del grid
-      const rowData: any[] = [];
-      this.gridApi.forEachNode(node => rowData.push(node.data));
+      // Se leen del MODELO y no de los nodos de la rejilla: con una rama
+      // plegada esos nodos no existen, y los permisos de lo escondido —los
+      // que propaga «Ejecutar» a los hijos, que sólo tocan profile.acceso—
+      // no llegarían al formulario y se perderían al guardar.
+      const rowData: any[] = this.profile?.acceso ?? [];
       
       // Actualizar cada control en el FormArray 'access'
       this.acceso.controls.forEach(control => {

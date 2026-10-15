@@ -1,0 +1,173 @@
+<!-- ============================================================
+     CATÁLOGO DE PRODUCTOS
+
+     Estructura:
+       1. Miga de pan
+       2. <panel> del tema con imprimir / Excel / CSV / recargar / expandir
+          2a. Barra: buscador, filtro de marca, filtro de categoría, nuevo,
+              auditoría
+          2b. Rejilla ag-Grid (paginación en servidor)
+          2c. Controles de paginación
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Inventarios</a></li>
+  <li class="breadcrumb-item active">Productos</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       [ButtonPrint]="accesoModel?.reporte === true"
+       [ButtonExportExcel]="accesoModel?.reporte === true"
+       [ButtonExportCsv]="accesoModel?.reporte === true"
+       (panelReloaded)="allProductos(paginaActual)"
+       (panelExpanded)="ajustarTamanoGrid()"
+       (panelPrinted)="printPdf()"
+       (panelExportExceled)="exportExcel()"
+       (panelExportCsved)="exportCsv()"
+       [closeRoute]="'/inventarios'"
+       icono="box">
+
+  <div class="content-container1 lista-contenido">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <div class="content2">
+      <div class="example-wrapper">
+
+        <!-- ---------- 2a. BARRA DE HERRAMIENTAS ---------- -->
+        <div class="row g-2 m-2 align-items-center lista-barra">
+
+          <!-- Buscador con su botón de quitar filtros dentro -->
+          <div class="col-12 col-lg pe-1">
+            <app-campoBusquedaPaginacion
+              [id]="'filter-text-box'"
+              [placeholder]="'Buscar por código, nombre, modelo, marca…'"
+              [iconClass]="'fa fa-search fa-lg'"
+              [containerClass]="'w-100'"
+              [conLimpiarFiltros]="true"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiarFiltros)="clearAllFilters()">
+            </app-campoBusquedaPaginacion>
+          </div>
+
+          <!-- Filtro por marca. «Ver sólo las Samsung» es la consulta de
+               todos los días y con el buscador de texto es adivinar. -->
+          <div class="col-6 col-lg-auto ps-0">
+            <select class="form-select form-select-sm prod-filtro"
+                    title="Filtrar por marca"
+                    [(ngModel)]="marcaFiltro"
+                    (ngModelChange)="onFiltroCambiado()">
+              <option [ngValue]="null">Todas las marcas</option>
+              @for (m of marcas; track m.id) {
+                <option [ngValue]="m.id">{{ m.nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Filtro por categoría: baja POR LA RAMA, así que elegir
+               «Línea Blanca» trae también lo que cuelga de ella. -->
+          <div class="col-6 col-lg-auto ps-0">
+            <select class="form-select form-select-sm prod-filtro prod-filtro--ancho"
+                    title="Filtrar por categoría (incluye sus subcategorías)"
+                    [(ngModel)]="categoriaFiltro"
+                    (ngModelChange)="onFiltroCambiado()">
+              <option [ngValue]="null">Todas las categorías</option>
+              @for (c of categorias; track c.id) {
+                <option [ngValue]="c.id">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Nuevo producto -->
+          <div class="col-auto ps-0">
+            <button type="button"
+                    class="inactivo btn btn-primary lista-barra__btn"
+                    title="Agregar producto"
+                    [disabled]="accesoModel?.crear === false"
+                    (click)="addProducto()">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+
+          <!-- Auditoría de la fila seleccionada -->
+          @if (accesoModel?.auditar === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-warning lista-barra__btn position-relative"
+                      title="Ver historial de auditoría del registro seleccionado"
+                      [disabled]="!selectedRow"
+                      (click)="auditoria()">
+                <i class="fa fa-user-secret"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
+                  <i class="fa fa-search"></i>
+                </span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- ---------- 2b. REJILLA ---------- -->
+        <ag-grid-angular
+          class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
+          [rowData]="productoModel"
+          [columnDefs]="columnDefs"
+          [enableCellTextSelection]="true"
+          [defaultColDef]="_appAgGridService.defaultColDef"
+          [sideBar]="_appAgGridService.sideBar"
+          [rowHeight]="_appAgGridService.rowHeight"
+          [headerHeight]="_appAgGridService.headerHeight"
+          [localeText]="_appAgGridService.localeText"
+          [rowSelection]="'single'"
+          [pagination]="false"
+          [animateRows]="true"
+          [tooltipShowDelay]="400"
+          [navigateToNextCell]="navegarConTeclado"
+          [rowClassRules]="rowClassRules"
+          [overlayNoRowsTemplate]="'<span>No hay productos que cumplan el filtro</span>'"
+          (gridReady)="onGridReady($event)"
+          (cellClicked)="onCellClicked($event)">
+        </ag-grid-angular>
+
+        <!-- ---------- 2c. PAGINACIÓN ---------- -->
+        <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+
+          <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+            <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                    (click)="firstPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-angle-double-left"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                    (click)="prevPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-chevron-left"></i>
+            </button>
+            <span class="btn btn-sm btn-white pagination-page-badge disabled">
+              Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+            </span>
+            <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                    (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-chevron-right"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Última página"
+                    (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-angle-double-right"></i>
+            </button>
+          </div>
+
+          <div class="pagination-info small text-muted">
+            Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> productos
+            @if (hayFiltro) { <span class="prod-filtrado">(filtrado)</span> }
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</panel>

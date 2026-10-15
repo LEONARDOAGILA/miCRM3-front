@@ -82,6 +82,27 @@
                   </button>
                 </div>
 
+                <!-- Contraer / desplegar el árbol entero. Se apagan mientras
+                     hay una búsqueda escrita: entonces se ve todo igualmente. -->
+                <div class="col-auto">
+                  <div class="btn-group" role="group" aria-label="Plegar el árbol">
+                    <button type="button"
+                            class="btn btn-white d-flex align-items-center justify-content-center square-btn rounded-start-3"
+                            title="Contraer todas las ramas"
+                            [disabled]="!!searchTerm"
+                            (click)="contraerTodo()">
+                      <i class="fa fa-minus"></i>
+                    </button>
+                    <button type="button"
+                            class="btn btn-white d-flex align-items-center justify-content-center square-btn rounded-end-3"
+                            title="Desplegar todas las ramas"
+                            [disabled]="!!searchTerm || !hayPlegados"
+                            (click)="desplegarTodo()">
+                      <i class="fa fa-plus"></i>
+                    </button>
+                  </div>
+                </div>
+
                   <div class="col-auto" *ngIf="accesoModel.auditar === true">
                     <button
                       class="btn btn-warning d-flex align-items-center justify-content-center square-btn rounded-3 position-relative"
@@ -107,7 +128,7 @@
                  (dragleave)="onDragLeaveGrilla($event)"
                  (drop)="onDropGrilla($event)">
             <ag-grid-angular 
-                  [rowData]="menuModel" 
+                  [rowData]="filasVisibles" 
                   [columnDefs]="columnDefs"
                   [defaultColDef]="_appAgGridService.defaultColDef" 
                   [sideBar]="_appAgGridService.sideBar" 
@@ -166,6 +187,11 @@
 
                 <div class="pagination-info small text-muted">
                   Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> registros
+                  @if (hayPlegados && !searchTerm) {
+                    <span class="menus-plegados" title="Hay ramas contraídas">
+                      · <i class="fa fa-minus-square"></i> {{ plegadosCuantos }} contraída{{ plegadosCuantos === 1 ? '' : 's' }}
+                    </span>
+                  }
                 </div>
 
               </div>

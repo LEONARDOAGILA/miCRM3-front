@@ -1,0 +1,412 @@
+/* ============================================================
+   SAVE PRODUCTO - Estilos del modal (mismo esquema que save-horario)
+   Mismo lenguaje visual que los modales de usuario y perfil.
+   Colores tomados de las variables de Bootstrap / Color Admin,
+   por lo que funcionan igual en tema claro y oscuro.
+   ============================================================ */
+
+:host {
+  display: block;
+  --hr-radius: .5rem;
+}
+
+.producto-modal-body {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  padding: 1rem;
+}
+
+/* ============================================================
+   TARJETAS
+   ============================================================ */
+/* La cabecera y el marco los pone <panel>, igual que en saveUser.
+   Aquí sólo queda el relleno del cuerpo, con las medidas del estándar. */
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .25rem;
+}
+
+/* ---------- Contenido en la cabecera del panel ---------- */
+/* <panel> expone un slot [header] junto al título; ahí van el contador de
+   días y el botón de agregar, que antes vivían en la cabecera hecha a mano.
+   margin-left:auto los empuja al extremo derecho de la barra. */
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+.panel-acciones .btn {
+  font-size: .75rem;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   CHIPS
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: none;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip-muted { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-info  { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+
+/* ============================================================
+/* ============================================================
+   ESTADO DEL PRODUCTO (switch)
+   ============================================================ */
+.estado-producto {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  height: calc(3.5rem + 2px); /* mismo alto que un campo flotante */
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.estado-producto.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.estado-producto__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.estado-producto.is-on .estado-producto__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.estado-producto__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.estado-producto__label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+}
+
+.estado-producto__hint {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.estado-producto__switch {
+  margin-left: auto;
+}
+
+.estado-producto__switch ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.estado-producto__switch ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.estado-producto__switch ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.estado-producto__switch ::ng-deep .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  vertical-align: middle;
+}
+
+/* ============================================================
+   CAMPOS DEL ENCABEZADO
+   Los componentes compartidos reservan un label vacío bajo cada
+   campo; se elimina para igualar el ritmo vertical.
+   ============================================================ */
+:host ::ng-deep app-campoTexto {
+  display: block;
+}
+
+:host ::ng-deep app-campoTextoArea {
+  display: block;
+}
+
+/* app-combo (ng-select) alineado con los campos flotantes de al lado */
+.campo-combo {
+  margin-bottom: 1rem;
+}
+
+/* Ayuda bajo el salario */
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: -.5rem 0 .5rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* Quién y cuándo (edición / vista) */
+.producto-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1.25rem;
+  margin-top: .25rem;
+  padding-top: .5rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.producto-meta i {
+  margin-right: .3rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+@media (max-width: 767.98px) {
+  .producto-modal-body {
+    padding: .75rem;
+  }
+}
+
+/* ============================================================
+   LA GALERÍA
+   ============================================================
+   Las miniaturas en una fila que se parte; cada una con su barra de
+   acciones, que sólo aparece al pasar por encima para no llenar la caja de
+   botones. */
+.prod-galeria {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  align-items: flex-start;
+}
+
+.prod-foto {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  margin: 0;
+  overflow: hidden;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+/* La principal, con el borde del tema: es la que sale en la lista y tiene
+   que distinguirse sin tener que leer el sello */
+.prod-foto.is-principal {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+.prod-foto.is-pendiente {
+  border-style: dashed;
+  opacity: .85;
+}
+
+/* `cover` aquí sí: son fotos de producto y la miniatura es cuadrada */
+.prod-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.prod-foto__sello {
+  position: absolute;
+  top: .25rem;
+  left: .25rem;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+
+  border-radius: 50%;
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: .625rem;
+}
+
+.prod-foto__sello--espera {
+  background-color: var(--bs-warning, #f59c1a);
+}
+
+/* El velo con el giro mientras el servidor contesta: sin él, pulsar borrar
+   y no ver nada durante medio segundo invita a pulsar otra vez */
+.prod-foto__velo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, .45);
+  color: #fff;
+}
+
+.prod-foto__barra {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  display: flex;
+  justify-content: center;
+  gap: .1rem;
+  padding: .15rem;
+
+  background-color: rgba(0, 0, 0, .55);
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+
+.prod-foto:hover .prod-foto__barra,
+.prod-foto:focus-within .prod-foto__barra {
+  opacity: 1;
+}
+
+.prod-foto__barra button {
+  border: 0;
+  background: none;
+  color: #fff;
+  padding: .1rem .3rem;
+  font-size: .75rem;
+  cursor: pointer;
+}
+
+.prod-foto__barra button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.prod-foto__barra button:hover:not(:disabled) {
+  transform: scale(1.15);
+}
+
+.prod-foto__barra button.es-peligro {
+  color: var(--bs-danger, #ff5b57);
+}
+
+/* El cuadro de añadir, del mismo tamaño que las miniaturas: así la fila no
+   se descuadra cuando se sube la primera */
+.prod-anadir {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+
+  width: 108px;
+  height: 108px;
+
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.prod-anadir:hover {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.prod-anadir i {
+  font-size: 1.25rem;
+}
+
+/* ---------- El margen, junto al precio ---------- */
+.prod-margen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  height: 38px;
+  padding: 0 .6rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.prod-margen__label {
+  font-size: .625rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.prod-margen__valor {
+  font-size: .8125rem;
+  font-weight: 600;
+}
+
+.prod-margen.is-rojo {
+  border-color: var(--bs-danger, #ff5b57);
+}
+
+.prod-margen.is-rojo .prod-margen__valor {
+  color: var(--bs-danger, #ff5b57);
+}
+
+/* ---------- Los interruptores de existencias ---------- */
+.prod-interruptor {
+  padding: .5rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}

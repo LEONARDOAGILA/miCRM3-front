@@ -222,6 +222,7 @@
                 </button>
             </div> -->
 
+
             <div class="permisos-buscador me-4">
                 <app-campoBusqueda
                     [id]="'filter-text-box22'"
@@ -231,6 +232,11 @@
                     (searchChange)="onFilterTextBoxChanged()">
                 </app-campoBusqueda>
             </div>
+
+            <!-- Contraer / desplegar: los botones viven ahora en la cabecera de
+                 la columna «Nombre» del ag-grid (ver cabeceraArbol). -->
+
+            
         </div>
 
         <ng-container outsideBody>
@@ -240,7 +246,7 @@
         <!-- (click): las casillas de cabecera son HTML de ag-Grid, se atienden aquí -->
         <div class="perfil-grid" (click)="onHeaderClicked($event)">
             <ag-grid-angular
-                [rowData]="profile.acceso"
+                [rowData]="filasArbol"
                 [columnDefs]="columnDefs"
                 [defaultColDef]="_appAgGridService.defaultColDef"
                 [sideBar]="_appAgGridService.sideBar"

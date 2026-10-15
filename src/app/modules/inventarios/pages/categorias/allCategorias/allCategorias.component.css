@@ -1,0 +1,328 @@
+/* ============================================================
+   LISTADO DE CATEGORIAS
+
+   Lo que va aquí es sólo lo propio de esta pantalla. Las clases del
+   spinner (content-container1, overlay1, loader1), .inactivo y
+   .ag-grid-transparente son globales y viven en scss/angular.scss.
+   ============================================================ */
+
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida 20px: el tema deja un hueco entre la
+   cabecera de la aplicación y el primer elemento de la página que aquí
+   sobra, porque el panel ya trae el suyo. */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Cuerpo del panel ----------
+   Compensa el padding superior del panel-body del tema, para que la barra
+   de herramientas quede pegada a la cabecera del panel. */
+.lista-contenido {
+  margin-top: -19px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+/* Botones cuadrados a la altura del buscador (form-control del tema) */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* Lupa pequeña sobre el botón de auditoría */
+.lista-barra__badge {
+  font-size: 8px;
+}
+
+/* ---------- Grilla ----------
+   Altura de arranque; ajustarAlturaGrid() la sustituye en cuanto la grilla
+   está lista. La variable --ag-line-height es la altura de línea de celda
+   que usa el tema alpine. */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- Paginación ---------- */
+.pagination-controls {
+  gap: .5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto":
+   hereda el borde y la altura de los demás y queda alineado con ellos. */
+.pagination-page-badge.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* ---------- Responsive ---------- */
+/* Teléfonos: paginación apilada y centrada, botones más compactos */
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
+  }
+}
+
+/* Tablets: sólo botones un poco más compactos */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .pagination-buttons .btn {
+    padding: .2rem .5rem;
+    font-size: .75rem;
+  }
+}
+
+/* ---------- Modo oscuro ----------
+   btn-white del tema es blanco fijo; en oscuro se pasa a la superficie del
+   tema para que el grupo no destaque como un bloque blanco. */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
+}
+
+/* ============================================================
+   EL ÁRBOL
+   ============================================================
+   `::ng-deep` en todo lo que toca filas y celdas: las dibuja ag-Grid fuera
+   de la encapsulación del componente y una regla normal no las alcanzaría. */
+
+/* ---------- Dónde se va a soltar lo que se arrastra ----------
+   El centro de una fila la mete DENTRO; los bordes, antes o después. Son
+   tres señales distintas porque significan tres cosas distintas, y con una
+   sola nadie acierta a la primera. */
+:host ::ng-deep .ag-row.fila-destino .ag-cell {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .16) !important;
+  box-shadow: inset 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+:host ::ng-deep .ag-row.fila-insertar-antes .ag-cell {
+  box-shadow: inset 0 3px 0 0 var(--bs-primary, #348fe2);
+}
+
+:host ::ng-deep .ag-row.fila-insertar-despues .ag-cell {
+  box-shadow: inset 0 -3px 0 0 var(--bs-primary, #348fe2);
+}
+
+.cat-ayuda-dnd i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* El contenedor no puede tener alto propio: la rejilla de dentro se mide
+   contra la ventana y un wrapper con alto la dejaría cortada. */
+.cat-grilla-wrap {
+  display: block;
+}
+
+/* ---------- Color del texto por nivel ----------
+   Con la sangría sola, a partir del segundo nivel cuesta seguir de quién
+   cuelga cada fila. El color lo resuelve de un vistazo. */
+:host ::ng-deep .ag-cell.celda-nivel {
+  font-size: 12px;
+}
+
+:host ::ng-deep .ag-cell.nivel-0 {
+  color: var(--bs-body-color, #212529);
+  font-weight: 600;
+}
+
+:host ::ng-deep .ag-cell.nivel-1 {
+  color: var(--bs-app-theme, var(--bs-primary, #348fe2));
+}
+
+:host ::ng-deep .ag-cell.nivel-2 {
+  color: var(--bs-teal, #00acac);
+}
+
+:host ::ng-deep .ag-cell.nivel-3 {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Las columnas de auditoría no entran en el juego de colores: son datos de
+   control y compiten con el nombre por la atención. */
+:host ::ng-deep .ag-cell[col-id="created_at"].celda-nivel,
+:host ::ng-deep .ag-cell[col-id="updated_at"].celda-nivel,
+:host ::ng-deep .ag-cell[col-id="updated_by"].celda-nivel,
+:host ::ng-deep .ag-cell[col-id="descripcion"].celda-nivel {
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 400;
+}
+
+/* Modo oscuro: los tonos del tema suben un punto de luminosidad para leerse
+   sobre fondo oscuro. */
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-cell.nivel-1 {
+  color: color-mix(in srgb, var(--bs-app-theme, #348fe2) 70%, #fff);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-cell.nivel-2 {
+  color: color-mix(in srgb, var(--bs-teal, #00acac) 70%, #fff);
+}
+
+/* ============================================================
+   PLEGAR Y DESPLEGAR
+   ============================================================
+   ag-Grid Community no trae `treeData`, así que el árbol se dibuja a mano:
+   la sangría y el asa + / − van dentro de la celda del nombre. */
+:host ::ng-deep .cat-nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  min-width: 0;
+}
+
+/* La sangría en PÍXELES y no con `&nbsp;`: con espacios, el ancho depende de
+   la fuente y las columnas dejan de alinearse al cambiar de tema. */
+:host ::ng-deep .cat-sangria {
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+:host ::ng-deep .cat-asa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 16px;
+  height: 16px;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .2rem;
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+:host ::ng-deep .cat-asa:hover {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Las hojas llevan un hueco del mismo ancho: así los nombres de un mismo
+   nivel quedan alineados tengan hijas o no. */
+:host ::ng-deep .cat-asa--hueco {
+  border-color: transparent;
+  background: none;
+  cursor: default;
+}
+
+/* El asa NO se tacha en las filas desactivadas: un botón tachado se lee como
+   que no funciona, y éste sigue sirviendo.
+   Comprobado en una captura: la raya cae sobre el texto y no entra en el
+   botón porque el asa es un ítem flex con caja propia. Quitando esta regla
+   el resultado es el mismo, así que es sólo un seguro, no el mecanismo. */
+:host ::ng-deep .ag-row.fila-inactiva .cat-asa {
+  text-decoration: none;
+}
+
+.cat-plegadas {
+  white-space: nowrap;
+}
+
+.cat-plegadas i {
+  font-size: .6875rem;
+  opacity: .8;
+}
+
+
+/* Los productos propios de una categoría que además tiene subcategorías:
+   van junto al total de la rama, más pequeños, para que el número grande
+   siga siendo el de toda la rama. */
+:host ::ng-deep .cat-prod__propios {
+  margin-left: .2rem;
+  font-size: .6875rem;
+  opacity: .7;
+}
+
+/* ===================================================================
+   LOS BOTONES +/- DE LA CABECERA DE «CATEGORÍA»
+   =================================================================== */
+
+/* A LA IZQUIERDA, no centrada: el estándar de la aplicación centra todas las
+   cabeceras (`.ag-header-cell-label` en src/scss/angular.scss) y aquí el
+   título va con los botones sobre una columna de texto alineado a la
+   izquierda. Se le gana llevando también esa clase en el selector. */
+:host ::ng-deep .ag-header-cell-label.cabecera-arbol {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: .35rem;
+}
+
+:host ::ng-deep .cabecera-arbol .ag-header-cell-text {
+  text-align: left;
+}
+
+:host ::ng-deep .cabecera-arbol__botones {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+/* Pequeños: la cabecera es baja y comparten sitio con el título */
+:host ::ng-deep .cabecera-arbol__botones .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .5rem;
+  line-height: 1;
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:disabled {
+  opacity: .45;
+  cursor: default;
+}

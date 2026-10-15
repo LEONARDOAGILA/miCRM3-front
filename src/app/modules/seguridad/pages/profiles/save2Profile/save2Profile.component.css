@@ -93,13 +93,27 @@
 /* ============================================================
    PERMISOS
    ============================================================ */
+/* El tema pone `.panel-title { flex: 1 }` (src/scss/apple/ui/_panel.scss):
+   el título se queda el espacio libre y aprieta este bloque. Con `wrap`, el
+   buscador se iba a una segunda fila. Con `nowrap` se quedan siempre en la
+   misma línea y quien cede sitio es el buscador. */
 .permisos-header {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: .5rem;
+  min-width: 0;
 }
 
+/* El buscador y el grupo +/- van en la MISMA fila. Con `width: 100%` el
+   buscador reclamaba todo el ancho del contenedor flex y empujaba el grupo
+   de plegado a la línea de abajo. Con una base de 260px que puede encoger,
+   caben los dos; sólo se parte en pantallas muy estrechas. */
 .permisos-buscador {
-  width: 100%;
+  flex: 0 1 260px;
+  /* `width` DEFINIDO y no `auto`/100%: al medir cuánto ocupa esta barra no
+     cuenta un ancho en porcentaje y mandaba el tamaño propio del <input>
+     (~172px), así que el buscador salía más estrecho de la cuenta. */
+  width: 260px;
+  min-width: 110px;
   max-width: 260px;
 }
 
@@ -256,7 +270,11 @@
     padding: .75rem;
   }
 
+  /* En el móvil el buscador se acorta en vez de estirarse: así sigue
+     cabiendo en la misma fila que los botones +/-. */
   .permisos-buscador {
+    width: 180px;
+    min-width: 90px;
     max-width: none;
   }
 
@@ -453,5 +471,100 @@
 
 .visib-papel:disabled {
   opacity: .55;
+  cursor: default;
+}
+
+
+/* ===================================================================
+   EL ASA DE PLEGAR (+/-) DE LA COLUMNA NOMBRE
+   =================================================================== */
+
+:host ::ng-deep .menu-nombre .menu-asa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  margin-right: .25rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .2rem;
+  background-color: var(--bs-body-bg, #fff);
+  /* Color y grosor propios: .nivel-N pone el suyo con !important para el
+     texto, y el asa tiene que leerse igual en todos los niveles. */
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .5rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+}
+
+:host ::ng-deep .menu-nombre .menu-asa:hover {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Los menús sin hijos llevan un hueco del mismo ancho: así los nombres de un
+   mismo nivel quedan alineados tengan hijos o no. */
+:host ::ng-deep .menu-nombre .menu-asa--hueco {
+  border-color: transparent;
+  background: none;
+  cursor: default;
+}
+
+/* ===================================================================
+   LOS BOTONES +/- DE LA CABECERA DE «NOMBRE»
+   =================================================================== */
+
+/* A LA IZQUIERDA, no centrada: el estándar de la aplicación centra todas
+   las cabeceras (`.ag-header-cell-label` en src/scss/angular.scss), y aquí
+   el título va con los botones de plegar sobre una columna de texto
+   alineado a la izquierda. Se gana al estándar llevando también la clase
+   `.ag-header-cell-label` en el selector. */
+:host ::ng-deep .ag-header-cell-label.cabecera-arbol {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: .35rem;
+}
+
+/* El texto, por si lo centra el estándar */
+:host ::ng-deep .cabecera-arbol .ag-header-cell-text {
+  text-align: left;
+}
+
+:host ::ng-deep .cabecera-arbol__botones {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+/* Pequeños: la cabecera es baja y comparten sitio con el título */
+:host ::ng-deep .cabecera-arbol__botones .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .5rem;
+  line-height: 1;
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:disabled {
+  opacity: .45;
   cursor: default;
 }

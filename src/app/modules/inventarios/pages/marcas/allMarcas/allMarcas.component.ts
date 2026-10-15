@@ -1,0 +1,774 @@
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
+import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ToastrService } from 'ngx-toastr';
+
+///   SERVICIOS    ///
+import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
+import { MarcaService } from '../../../services/marca.service';
+import { AppPrintPdfService } from '../../../../../service/app-printPdf.service';
+import { AppExportExcelService } from '../../../../../service/app-exportExcel.service';
+import { AppExportCsvService } from '../../../../../service/app-exportCsv.service';
+import { AppAgGridService } from '../../../../../service/app-agGrid.service';
+import { LoadingService } from '../../../../../service/loading.service';
+
+///   MODELOS    ///
+import { MarcaModel } from '../../../interfaces/marcaModel';
+import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
+
+///   COMPONENTES    ///
+import { SaveMarcaComponent } from '../saveMarca/saveMarca.component';
+import { DeleteMarcaComponent } from '../deleteMarca/deleteMarca.component';
+import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+
+/**
+ * Listado de marcas (inventarios.marcas).
+ *
+ * Mismo esquema que allUsers: grilla ag-Grid con paginación EN SERVIDOR
+ * (rh.fn_marcas_listar_paginado con página, tamaño y filtro), barra con
+ * buscador / nuevo / auditoría, columna ACCIONES plegable y exportaciones
+ * que piden el listado completo aparte.
+ *
+ * Toda la lógica de modales vive aquí; el renderer de ACCIONES
+ * (ButtonAccionMarca, al final del fichero) sólo delega.
+ */
+@Component({
+  selector: 'app-allMarcas',
+  templateUrl: './allMarcas.component.html',
+  styleUrls: ['./allMarcas.component.css'],
+  standalone: false,
+})
+export class AllMarcasComponent implements OnInit, OnDestroy {
+
+  // ---------- Estado ----------
+  /** Permisos del perfil sobre esta pantalla (crear, reporte, auditar…), del resolver de la ruta. */
+  public accesoModel: AccesoModel;
+  /** Filas de la página actual — NO el listado completo. */
+  public marcaModel: MarcaModel[] = [];
+  /** Fila marcada en la grilla; habilita el botón de auditoría. */
+  public selectedRow: MarcaModel | null = null;
+  /** true mientras la columna ACCIONES está plegada. */
+  public accionesPlegadas = false;
+
+  public titulo: string;
+  public isLoading$ = this._loadingService.isLoading$;
+
+  // ---------- Paginación en servidor ----------
+  public paginaActual: number = 1;
+  public totalRegistros: number = 0;
+  public registrosPorPagina: number = 10;
+  public ultimaPagina: number = 1;
+
+  // ---------- ag-Grid ----------
+  public gridApi!: GridApi;
+  public columnDefs: any[] = [];
+
+  private touchStartTime = 0;
+  private touchStartX = 0;
+  private touchStartY = 0;
+
+  private readonly unsubscribe$ = new Subject<void>();
+  private timeoutIds = new Set<any>();
+  private resizeTimeoutId: any;
+
+  /** setTimeout que se da de baja solo al dispararse (ver allUsers). */
+  private programar(fn: () => void, ms: number): void {
+    const id = setTimeout(() => {
+      this.timeoutIds.delete(id);
+      fn();
+    }, ms);
+    this.timeoutIds.add(id);
+  }
+
+  /** Referencias estables a los listeners de la cabecera ACCIONES. */
+  private headerElement: Element | null = null;
+  private readonly onHeaderClick: EventListener = () => this.toggleActionsColumn();
+  private readonly onHeaderTouchStart: EventListener = (e) => this.handleTouchStart(e as TouchEvent);
+  private readonly onHeaderTouchEnd: EventListener = (e) => this.handleTouchEnd(e as TouchEvent);
+
+  @HostListener('window:resize')
+  onResize(): void { this.ajustarTamanoGrid(); }
+
+  // ---------- Búsqueda ----------
+  @ViewChild(CampoBusquedaPaginacionComponent) campoBusquedaPaginacion!: CampoBusquedaPaginacionComponent;
+  public searchTerm: string = '';
+
+  constructor(
+    private host: ElementRef<HTMLElement>,
+    private modal: NgbModal,
+    private route: Router,
+    private activeRoute: ActivatedRoute,
+    private _appPrintPdfService: AppPrintPdfService,
+    private _appExportExcelService: AppExportExcelService,
+    private _appExportCsvService: AppExportCsvService,
+    public _appAgGridService: AppAgGridService,
+    private _loadingService: LoadingService,
+    private _toastr: ToastrService,
+    private _seguridadService: SeguridadService,
+    private _marcaService: MarcaService,
+  ) {
+    this.titulo = "Marcas";
+    this.accesoModel = this.activeRoute.snapshot.data.access;
+  }
+
+  ngOnInit(): void {
+    this.allMarcas();
+    this.initializeGrid();
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribe$.next();
+    this.unsubscribe$.complete();
+    this.timeoutIds.forEach(id => clearTimeout(id));
+    this.timeoutIds.clear();
+    if (this.resizeTimeoutId) { clearTimeout(this.resizeTimeoutId); }
+    this.quitarListenersCabecera();
+    this.modal.dismissAll();
+  }
+
+  /** Suscribe al @Output de un modal y corta la suscripción al cerrarse o al destruir esta pantalla. */
+  public escucharModal<T>(modalRef: NgbModalRef, salida: EventEmitter<T>, alEmitir: (valor: T) => void): void {
+    const modalCerrado$ = from(modalRef.result).pipe(catchError(() => of(null)));
+    salida
+      .pipe(takeUntil(merge(this.unsubscribe$, modalCerrado$)))
+      .subscribe({
+        next: alEmitir,
+        error: (err) => console.error('Error en el modal:', err),
+      });
+  }
+
+  fun_home() {
+    this.route.navigate(['/inventarios']);
+  }
+
+  public get desde(): number {
+    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
+  }
+
+  public get hasta(): number {
+    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
+  }
+
+  // ================================================================
+  // AG-GRID
+  // ================================================================
+
+  initializeGrid(): void {
+    this.columnDefs = [
+      {
+        headerName: 'Id',
+        field: 'id',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 70,
+        maxWidth: 70,
+      },
+      {
+        // Segunda columna y PULSABLE: dar de baja esto era abrir la ficha
+        // entera, bajar la casilla y guardar. Ahora se pulsa aqui.
+        headerName: 'Activo',
+        field: 'activo',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 80,
+        maxWidth: 80,
+        cellRenderer: (params: any) => this.casillaActivo(params),
+      },
+      {
+        headerName: 'Marca',
+        field: 'nombre',
+        cellStyle: { textAlign: 'left', fontWeight: '600' },
+        minWidth: 220,
+        maxWidth: 400,
+      },
+      {
+        // El logo. Si no tiene, una etiqueta gris: así la columna no baila de
+        // ancho entre filas con y sin imagen.
+        headerName: 'Logo',
+        field: 'logo',
+        minWidth: 60,
+        maxWidth: 60,
+        sortable: false,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: (params: any) => {
+          if (!params.value) { return '<span class="lista-foto lista-foto--vacia"><i class="fa fa-tag"></i></span>'; }
+          // Sin refrescar: en la rejilla interesa la caché del navegador
+          const url = this._marcaService.urlLogo(params.data.id);
+          return `<img src="${url}" alt="" class="lista-foto"
+                       onerror="this.onerror=null; this.outerHTML='<span class=\\'lista-foto lista-foto--vacia\\'><i class=\\'fa fa-tag\\'></i></span>'" />`;
+        },
+      },
+      {
+        headerName: 'País de origen',
+        field: 'pais_origen',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 130,
+        maxWidth: 180,
+      },
+      {
+        headerName: 'Sitio web',
+        field: 'sitio_web',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 160,
+        maxWidth: 280,
+        sortable: false,
+        // Enlace de verdad, con rel="noopener": sin eso la página que se abre
+        // puede manipular la nuestra por window.opener
+        cellRenderer: (params: any) => {
+          const url = String(params.value ?? '').trim();
+          if (!url) { return ''; }
+          const href = /^https?:\/\//i.test(url) ? url : 'https://' + url;
+          return `<a href="${href}" target="_blank" rel="noopener noreferrer"
+                     title="Abrir en otra pestaña">${url}</a>`;
+        },
+      },
+      {
+        headerName: 'Descripción',
+        field: 'descripcion',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 200,
+        maxWidth: 600,
+      },
+      {
+        headerName: 'Productos',
+        field: 'num_productos',
+        headerTooltip: 'Productos de esta marca; con productos no se puede eliminar',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 100,
+        maxWidth: 110,
+      },
+      {
+        headerName: 'Creado',
+        field: 'created_at',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 160,
+        maxWidth: 180,
+      },
+      {
+        headerName: 'Actualizado',
+        field: 'updated_at',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 160,
+        maxWidth: 180,
+      },
+      {
+        headerName: 'Creado por',
+        field: 'created_by',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 130,
+        maxWidth: 200,
+        sortable: false,
+      },
+      {
+        headerName: 'Actualizado por',
+        field: 'updated_by',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 130,
+        maxWidth: 200,
+        sortable: false,
+      },
+      {
+        headerName: 'ACCIONES',
+        field: 'actions',
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: ButtonAccionMarca,
+        pinned: 'right',
+        minWidth: AllMarcasComponent.ANCHO_ACCIONES_ABIERTA,
+        maxWidth: AllMarcasComponent.ANCHO_ACCIONES_ABIERTA,
+        suppressMenu: true,
+        sortable: false,
+        resizable: false,
+        headerComponentParams: {
+          template: `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
+              <span>ACCIONES</span>
+              <i class="fas fa-arrow-right"></i>
+            </div>
+          `
+        }
+      }
+    ];
+  }
+
+
+  onGridReady(params: GridReadyEvent): void {
+    this.gridApi = params.api;
+    this.programar(() => this.montarListenersCabecera(), 500);
+    this._appAgGridService.ajustarTamanoGrid(this.gridApi);
+    this.ajustarAlturaGrid();
+  }
+
+  private montarListenersCabecera(): void {
+    this.quitarListenersCabecera();
+    this.headerElement = this.host.nativeElement.querySelector('.ag-header-cell[col-id="actions"]');
+    if (!this.headerElement) { return; }
+    this.headerElement.addEventListener('click', this.onHeaderClick);
+    this.headerElement.addEventListener('touchstart', this.onHeaderTouchStart, { passive: true });
+    this.headerElement.addEventListener('touchend', this.onHeaderTouchEnd);
+  }
+
+  private quitarListenersCabecera(): void {
+    if (!this.headerElement) { return; }
+    this.headerElement.removeEventListener('click', this.onHeaderClick);
+    this.headerElement.removeEventListener('touchstart', this.onHeaderTouchStart);
+    this.headerElement.removeEventListener('touchend', this.onHeaderTouchEnd);
+    this.headerElement = null;
+  }
+
+  handleTouchStart(e: TouchEvent) {
+    this.touchStartTime = Date.now();
+    this.touchStartX = e.touches[0].clientX;
+    this.touchStartY = e.touches[0].clientY;
+  }
+
+  handleTouchEnd(e: TouchEvent) {
+    const touchDuration = Date.now() - this.touchStartTime;
+    const distX = Math.abs(e.changedTouches[0].clientX - this.touchStartX);
+    const distY = Math.abs(e.changedTouches[0].clientY - this.touchStartY);
+    if (touchDuration < 300 && distX < 10 && distY < 10) {
+      this.toggleActionsColumn();
+      e.preventDefault();
+    }
+  }
+
+  private static readonly ANCHO_ACCIONES_ABIERTA = 130;
+  private static readonly ANCHO_ACCIONES_PLEGADA = 50;
+
+  /** Pliega o despliega la columna ACCIONES (pulsando su cabecera). */
+  toggleActionsColumn() {
+    const columnDefs = this.gridApi.getColumnDefs() as any[];
+    const actionsCol = columnDefs.find(col => col.field === 'actions');
+    if (!actionsCol) { return; }
+
+    const estabaPlegada = actionsCol.minWidth === AllMarcasComponent.ANCHO_ACCIONES_PLEGADA;
+    this.accionesPlegadas = !estabaPlegada;
+
+    const ancho = estabaPlegada ? AllMarcasComponent.ANCHO_ACCIONES_ABIERTA : AllMarcasComponent.ANCHO_ACCIONES_PLEGADA;
+    actionsCol.minWidth = ancho;
+    actionsCol.maxWidth = ancho;
+    actionsCol.cellStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center' };
+    actionsCol.headerComponentParams = {
+      template: estabaPlegada
+        ? `<div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
+            <span>ACCIONES</span>
+            <i class="fas fa-arrow-right"></i>
+          </div>`
+        : `<div style="display: flex; align-items: center; justify-content: center;" title="Mostrar los botones de acción">
+            <i class="fas fa-bars"></i>
+          </div>`
+    };
+
+    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.sizeColumnsToFit();
+    this.programar(() => {
+      this.gridApi.sizeColumnsToFit();
+      this.montarListenersCabecera();
+    }, 100);
+  }
+
+  ajustarTamanoGrid() {
+    if (!this.gridApi) { return; }
+    if (this.resizeTimeoutId) { clearTimeout(this.resizeTimeoutId); }
+    this.resizeTimeoutId = setTimeout(() => {
+      this._appAgGridService.ajustarTamanoGrid(this.gridApi);
+      this.ajustarAlturaGrid();
+    }, 100);
+  }
+
+  /** La grilla llena la pantalla hasta el final de la ventana, menos la paginación. */
+  ajustarAlturaGrid() {
+    const gridElement = this.host.nativeElement.querySelector('.ag-theme-alpine') as HTMLElement;
+    if (!gridElement) { return; }
+    const MARGEN_INFERIOR = 60;
+    const alturaDisponible = window.innerHeight - gridElement.getBoundingClientRect().top - MARGEN_INFERIOR;
+    gridElement.style.height = `${alturaDisponible}px`;
+    this.gridApi.sizeColumnsToFit();
+  }
+
+  clearSelection(): void {
+    this._appAgGridService.limpiarSeleccion(this.gridApi);
+  }
+
+  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
+
+  // ================================================================
+  // LA CASILLA DE «ACTIVO»
+  // ================================================================
+  //
+  // El dibujo y el flujo —el giro mientras guarda, repintar con lo que
+  // contesta el servidor, volver atrás si falla— viven en
+  // AppAgGridService: son los mismos en las nueve rejillas que tienen esta
+  // casilla. Aquí sólo van los datos de esta pantalla.
+
+  /**
+   * Los desactivados se ven, pero se ven apagados y tachados.
+   *
+   * No se esconden: siguen en la lista y se pueden buscar y abrir. Lo que se
+   * busca es no tener que leer la casilla fila por fila para saber cuál ya no
+   * está en juego. La regla y su CSS son los mismos en las nueve rejillas con
+   * casilla, así que viven en AppAgGridService y en styles.css.
+   */
+  public rowClassRules = this._appAgGridService.reglasFilaInactiva('activo');
+
+  /** Los que se están guardando ahora mismo: su casilla sale como un giro. */
+  private readonly activoEnVuelo = new Set<number>();
+
+  /** La casilla de la columna «Activo». */
+  private casillaActivo(params: any): string {
+    return this._appAgGridService.casillaActivo(params, {
+      puede: this.accesoModel?.editar === true,
+      enVuelo: this.activoEnVuelo,
+      que: 'marca',
+    });
+  }
+
+  /**
+   * Activar o desactivar desde la casilla, sin abrir el formulario.
+   *
+   * Lo escribe una función del servidor que toca SÓLO esa columna. Guardar
+   * la ficha entera para bajar una casilla la revalidaba toda, y un
+   * registro que hoy no cumpliría alguna regla —cargado antes de que
+   * existiera— no se podría desactivar hasta arreglarle todo lo demás.
+   */
+  cambiarActivo(fila: MarcaModel | null, nodo?: RowNode | null): void {
+    if (!fila) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    this._appAgGridService.alternarActivo({
+      gridApi: this.gridApi,
+      filas: this.marcaModel,
+      fila, nodo,
+      campo: 'activo',
+      enVuelo: this.activoEnVuelo,
+      puede: this.accesoModel?.editar === true,
+      que: 'marca',
+      llamar: (id, activo) => this._marcaService.activarMarca(id, activo),
+      nombre: (f: any) => f.nombre,
+        hasta: this.unsubscribe$,
+    });
+  }
+
+  onCellClicked(e: CellClickedEvent): void {
+    this.selectedRow = e.data;
+
+    // La casilla de «Activo» se marca con `data-accion`, igual que el botón
+    // de llamar de las rejillas de clientes: se atiende aquí y no con un
+    // componente por celda.
+    const origen = e.event?.target as HTMLElement | null;
+    if (origen?.closest('[data-accion="activo"]')) {
+      this.cambiarActivo(e.data, e.node);
+    }
+  }
+
+  // ================================================================
+  // DATOS
+  // ================================================================
+
+  /** Pide una página al servidor y la vuelca en la grilla (con el meta de paginación). */
+  async allMarcas(page: number = 1) {
+    try {
+      this._loadingService.setLoading(true);
+
+      const res = await firstValueFrom(
+        this._marcaService.allMarcas(page, this.registrosPorPagina, this.searchTerm)
+      ) as any;
+
+      if (res.body?.status !== 'success') {
+        this._toastr.error(res.body?.message || 'No se pudo obtener el listado de marcas', 'Error');
+        this.marcaModel = [];
+        this.totalRegistros = 0;
+        this.ultimaPagina = 1;
+        this.gridApi?.setRowData(this.marcaModel);
+        return;
+      }
+
+      this.marcaModel = res.body?.data?.data || [];
+
+      if (res.body?.data?.meta) {
+        this.totalRegistros = res.body.data.meta.total;
+        this.registrosPorPagina = res.body.data.meta.per_page;
+        this.paginaActual = res.body.data.meta.current_page;
+        this.ultimaPagina = res.body.data.meta.last_page;
+      }
+
+      if (this.gridApi) this.gridApi.setRowData(this.marcaModel);
+    } catch (error) {
+      // El AuthInterceptor ya muestra el toast del error HTTP
+      console.error('Error al cargar marcas:', error);
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /** Trae TODOS los registros que cumplen el filtro actual, para exportar. */
+  private async obtenerTodosParaExportar(): Promise<MarcaModel[]> {
+    if (this.totalRegistros === 0) { return []; }
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(
+        this._marcaService.allMarcas(1, this.totalRegistros, this.searchTerm)
+      ) as any;
+      if (res.body?.status !== 'success') {
+        this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
+        return [];
+      }
+      return res.body?.data?.data || [];
+    } catch (error) {
+      console.error('Error al obtener el listado completo:', error);
+      return [];
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /** Filas del reporte, ordenadas por nombre y con formato de salida. */
+  private filasReporte(marcas: MarcaModel[]): any[][] {
+    return marcas
+      .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+      .map(item => [
+        item.id,
+        item.nombre,
+        item.pais_origen || '',
+        item.sitio_web || '',
+        item.num_productos ?? 0,
+        item.activo ? 'Activo' : 'Inactivo'
+      ]);
+  }
+
+  // ================================================================
+  // BÚSQUEDA
+  // ================================================================
+
+  async onFilterTextBoxChanged(term?: string) {
+    if (term !== undefined) this.searchTerm = term;
+    this.paginaActual = 1;
+    await this.allMarcas(1);
+  }
+
+  clearAllFilters() {
+    this.campoBusquedaPaginacion?.reset();
+    if (this.gridApi) {
+      this.gridApi.setFilterModel(null);
+      this.searchTerm = '';
+      this.gridApi.onFilterChanged();
+      this.allMarcas(this.paginaActual).then(() => {
+        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
+          this.goToPage(this.ultimaPagina);
+        }
+      });
+    }
+  }
+
+  // ================================================================
+  // PAGINACIÓN
+  // ================================================================
+
+  firstPage(): void {
+    if (this.paginaActual !== 1) { this.goToPage(1); }
+  }
+
+  ultimaPagina2(): void {
+    if (this.paginaActual !== this.ultimaPagina) { this.goToPage(this.ultimaPagina); }
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.ultimaPagina) return;
+    this.paginaActual = page;
+    this.allMarcas(this.paginaActual);
+  }
+
+  nextPage(): void { this.goToPage(this.paginaActual + 1); }
+  prevPage(): void { this.goToPage(this.paginaActual - 1); }
+
+  // ================================================================
+  // IMPRESIÓN Y EXPORTACIÓN (listado completo que cumple el filtro)
+  // ================================================================
+
+  private readonly CABECERAS_REPORTE = ['ID', 'Marca', 'País de origen', 'Sitio web', 'Productos', 'Estado'];
+
+  private tituloReporte(): string {
+    return this.searchTerm ? `Listado de Marcas (filtro: ${this.searchTerm})` : 'Listado de Marcas';
+  }
+
+  async printPdf() {
+    const marcas = await this.obtenerTodosParaExportar();
+    if (marcas.length === 0) { this._toastr.info('No hay marcas para exportar'); return; }
+    this._appPrintPdfService.generarReporte({
+      tamanoPapel: "A4",
+      orientacion: "p",
+      title: "Reporte de Marcas",
+      titleTable: this.tituloReporte(),
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(marcas),
+      piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
+    });
+  }
+
+  async exportExcel() {
+    const marcas = await this.obtenerTodosParaExportar();
+    if (marcas.length === 0) { this._toastr.info('No hay marcas para exportar'); return; }
+    this._appExportExcelService.generarReporteExcel({
+      tamanoPapel: "A4",
+      orientacion: "p",
+      title: "Reporte de Marcas",
+      titleTable: this.tituloReporte(),
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(marcas),
+      piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
+    });
+  }
+
+  async exportCsv() {
+    const marcas = await this.obtenerTodosParaExportar();
+    if (marcas.length === 0) { this._toastr.info('No hay marcas para exportar'); return; }
+    this._appExportCsvService.generarReporteCSV({
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(marcas),
+    });
+  }
+
+  // ================================================================
+  // ACCIONES (modales)
+  // ================================================================
+
+  /** Abre saveMarca en el modo pedido. registro = 0 para crear. */
+  private abrirModalMarca(registro: any, accion: 'add' | 'edit' | 'clon' | 'view'): NgbModalRef {
+    const modalRef = this.modal.open(SaveMarcaComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: accion === 'view',
+    });
+    modalRef.componentInstance.registro_selected = registro;
+    modalRef.componentInstance.accion = accion;
+    return modalRef;
+  }
+
+  addMarca(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.abrirModalMarca(0, 'add');
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
+      this.marcaModel = [nuevo, ...this.marcaModel];
+      this.totalRegistros++;
+      this.gridApi?.setRowData(this.marcaModel);
+    });
+  }
+
+  clonMarca(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.abrirModalMarca(registro, 'clon');
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
+      this.marcaModel = [nuevo, ...this.marcaModel];
+      this.totalRegistros++;
+      this.gridApi?.setRowData(this.marcaModel);
+    });
+  }
+
+  /** Al guardar sustituye la fila en sitio: no hace falta volver al servidor. */
+  editMarca(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.abrirModalMarca(registro, 'edit');
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (actualizado: any) => {
+      const index = this.marcaModel.findIndex(r => r.id === actualizado.id);
+      if (index === -1) { return; }
+      this.marcaModel[index] = actualizado;
+      this.gridApi?.getRowNode(index.toString())?.setData(actualizado);
+    });
+  }
+
+  viewMarca(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+    this.abrirModalMarca(registro, 'view');
+  }
+
+  /** Quita la fila de la grilla con una transacción. */
+  deleteMarca(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(DeleteMarcaComponent, {
+      centered: true,
+      size: 'md',
+      backdrop: 'static',
+      keyboard: true
+    });
+    modalRef.componentInstance.registro_selected = registro;
+
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => {
+      const index = this.marcaModel.findIndex(r => r.id === registro.id);
+      if (index === -1) { return; }
+      this.marcaModel.splice(index, 1);
+      this.totalRegistros = Math.max(0, this.totalRegistros - 1);
+      this.gridApi?.applyTransaction({ remove: [registro] });
+      if (this.selectedRow?.id === registro.id) { this.selectedRow = null; }
+    });
+  }
+
+  /** Historial de auditoría de la fila seleccionada (tabla marcas). */
+  auditoria(): void {
+    if (!this.selectedRow) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(AuditoriaModalComponent, {
+      centered: true,
+      size: "xl",
+      backdrop: "static",
+      keyboard: true
+    });
+    modalRef.componentInstance.tablaNombre = 'marcas';
+    modalRef.componentInstance.registroId = this.selectedRow.id;
+  }
+}
+
+// ================================================================
+// RENDERER DE LA COLUMNA ACCIONES
+// ================================================================
+// Simple delegador: toda la lógica de modales vive en AllMarcasComponent.
+@Component({
+  selector: 'app-button-accion-marca',
+  standalone: false,
+  template: `
+    @if (parent.accionesPlegadas) {
+      <button type="button"
+              class="btn btn-sm btn-outline-primary acciones-desplegar"
+              title="Mostrar los botones de acción"
+              aria-label="Mostrar los botones de acción"
+              (click)="parent.toggleActionsColumn()">
+        <i class="fas fa-bars"></i>
+      </button>
+    } @else {
+      <app-action-buttons
+        [accesoModel]="parent.accesoModel"
+        [buttonView]="true"
+        [buttonEdit]="true"
+        [buttonClone]="true"
+        [buttonDelete]="true"
+        (view)="parent.viewMarca(params.data)"
+        (edit)="parent.editMarca(params.data)"
+        (clone)="parent.clonMarca(params.data)"
+        (delete)="parent.deleteMarca(params.data)">
+      </app-action-buttons>
+    }
+  `,
+  styles: [`
+    .acciones-desplegar {
+      width: 28px;
+      height: 24px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: .25rem;
+    }
+  `],
+})
+export class ButtonAccionMarca implements ICellRendererAngularComp {
+  public params: any;
+
+  constructor(public parent: AllMarcasComponent) { }
+
+  agInit(params: any): void { this.params = params; }
+
+  refresh(params: any): boolean { this.params = params; return true; }
+}
