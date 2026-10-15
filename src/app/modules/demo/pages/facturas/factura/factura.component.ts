@@ -14,7 +14,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { ClienteModel } from '../../../../../modules/ventas/interfaces/clienteModel';
-import { ProductoModel } from '../../../../../modules/inventarios/interfaces/productoModel';
+import { ProductoDemoModel as ProductoModel } from '../../../../../service/datos-prueba.model';
 import { LoadingService } from '../../../../../service/loading.service';
 import { DatosPruebaService } from '../../../../../service/datos-prueba.service';
 

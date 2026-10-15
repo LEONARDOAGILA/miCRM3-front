@@ -114,6 +114,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
 
     //   ******   INIT  - DESTROY  ******  //
     ngOnInit(): void {
+      this.leerPlegados();                 // el árbol se abre como se dejó
       this.allMenus();
       this.initializeGrid();
     }    
@@ -157,10 +158,10 @@ export class AllMenusComponent implements OnInit, OnDestroy{
           headerName: 'Nombre',
           field: 'nombre',
           cellClass: this.claseNivel, cellStyle: this.izquierda,
-          cellRenderer: (params) => {
-            const indentation = '&nbsp;'.repeat(params.data.nivel * 6); // Ajusta el número de espacios según necesites
-            return `${indentation}${params.value}`;
-          },
+          // Sangría por `nivel`, el asa de plegar y el nombre. Los menús sin
+          // hijos llevan un hueco del mismo ancho que el asa para que los
+          // nombres de un mismo nivel queden alineados.
+          cellRenderer: (params) => this.celdaNombre(params),
           minWidth: 280,
           maxWidth: 400, 
           sortable: false,
@@ -463,13 +464,28 @@ export class AllMenusComponent implements OnInit, OnDestroy{
 
    onCellClicked(e: CellClickedEvent): void {
       this.selectedRow = e.data;
-      //console.log('cliked', e.data)
-      //this.id = e.data.id;
-      //this.nombre = e.data.nombre;
+
+      // El asa +/- de la columna Nombre: pliega o despliega esa rama.
+      // Se mira el elemento pulsado y no una columna concreta porque el asa
+      // vive dentro de la celda del nombre, junto al texto.
+      const origen = e.event?.target as HTMLElement | null;
+      if (origen?.closest('[data-accion="plegar"]')) {
+        this.alternarPlegado(e.data);
+      }
     }
 
     onFilterTextBoxChanged() {
-      this.gridApi.setQuickFilter((document.getElementById('filter-text-box') as HTMLInputElement).value);
+      const texto = (document.getElementById('filter-text-box') as HTMLInputElement)?.value ?? '';
+      const antes = !!this.searchTerm;
+      this.searchTerm = texto;
+
+      // Al empezar o dejar de buscar cambia QUÉ filas se pintan: con texto
+      // escrito se abre todo (si no, una coincidencia dentro de una rama
+      // cerrada no saldría y parecería que el buscador no la encuentra) y al
+      // limpiarlo vuelven a cerrarse las ramas plegadas.
+      if (antes !== !!this.searchTerm) { this.recalcularVisibles(); }
+
+      this.gridApi?.setQuickFilter(this.searchTerm);
     }
 
     //   ******   IMPRESION   ******  //
@@ -527,6 +543,174 @@ export class AllMenusComponent implements OnInit, OnDestroy{
     }
 
 
+    // ================================================================
+    // PLEGAR Y DESPLEGAR EL ÁRBOL
+    // ================================================================
+    //
+    // ag-Grid Community no trae `treeData` —es de la versión de pago—, así
+    // que se hace a mano, igual que en allCategorias: la rejilla recibe SÓLO
+    // las filas visibles, y una fila lo es cuando ninguno de sus antepasados
+    // está plegado. El servidor ya manda el árbol en orden y con `nivel`.
+
+    /** Los ids de los menús plegados (sus descendientes no se pintan). */
+    private readonly plegados = new Set<number>();
+
+    /** Lo que de verdad recibe la rejilla: el árbol menos las ramas cerradas. */
+    public filasVisibles: MenuModel[] = [];
+
+    /**
+     * Cuántos hijos tiene cada menú.
+     *
+     * `MenuModel` no trae `num_hijos` —el listado no lo manda—, así que se
+     * cuenta aquí una vez al cargar y no en cada pintada de celda.
+     */
+    private hijosPorId = new Map<number, number>();
+
+    /** Lo escrito en el buscador: con texto, el plegado se ignora. */
+    public searchTerm = '';
+
+    /** Dónde se recuerda el estado entre visitas. */
+    private static readonly CLAVE_PLEGADOS = 'seg.menus.plegados';
+
+    /** La celda de «Nombre»: sangría + asa + nombre. */
+    private celdaNombre(params: any): string {
+      const d = params.data;
+      const id = Number(d?.id ?? 0);
+      const nivel = Math.max(0, Number(d?.nivel ?? 0));
+      const hijos = this.hijosPorId.get(id) ?? 0;
+      const plegado = this.plegados.has(id);
+
+      // La sangría va en PÍXELES y no en `&nbsp;`: con espacios el ancho
+      // depende de la fuente y las columnas dejan de alinearse al cambiar
+      // de tema.
+      const sangria = `<span class="menu-sangria" style="width:${nivel * 16}px"></span>`;
+
+      const asa = hijos > 0
+        ? `<button type="button" class="menu-asa" data-accion="plegar"
+                   title="${plegado ? 'Desplegar' : 'Contraer'} esta rama"
+                   aria-label="${plegado ? 'Desplegar' : 'Contraer'}">
+             <i class="fa fa-${plegado ? 'plus' : 'minus'}"></i>
+           </button>`
+        : `<span class="menu-asa menu-asa--hueco"></span>`;
+
+      // El nombre ESCAPADO: lo escribe un usuario y acaba dentro de una
+      // cadena de HTML, así que sin esto un `<` rompe la celda.
+      const texto = String(params.value ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      return `<span class="menu-nombre">${sangria}${asa}<span>${texto}</span></span>`;
+    }
+
+    /** Pliega o despliega una rama y lo recuerda. */
+    alternarPlegado(fila: MenuModel | null): void {
+      const id = Number(fila?.id ?? 0);
+      if (!id || (this.hijosPorId.get(id) ?? 0) === 0) { return; }
+
+      if (this.plegados.has(id)) { this.plegados.delete(id); }
+      else { this.plegados.add(id); }
+
+      this.guardarPlegados();
+      this.recalcularVisibles();
+    }
+
+    /** Cierra todas las ramas: sólo quedan los menús raíz. */
+    contraerTodo(): void {
+      this.plegados.clear();
+      this.hijosPorId.forEach((cuantos, id) => { if (cuantos > 0) { this.plegados.add(id); } });
+      this.guardarPlegados();
+      this.recalcularVisibles();
+    }
+
+    /** Abre el árbol entero. */
+    desplegarTodo(): void {
+      this.plegados.clear();
+      this.guardarPlegados();
+      this.recalcularVisibles();
+    }
+
+    /** Para encender o apagar el botón de la barra. */
+    get hayPlegados(): boolean { return this.plegados.size > 0; }
+
+    /** Cuántas ramas están cerradas, para decirlo en el pie. */
+    get plegadosCuantos(): number { return this.plegados.size; }
+
+    /** Tras cargar o cambiar el modelo: recuenta, limpia el estado y repinta. */
+    private refrescarArbol(): void {
+      this.recalcularHijos();
+      this.limpiarPlegados();
+      this.recalcularVisibles();
+    }
+
+    /** Recuenta los hijos de cada menú. */
+    private recalcularHijos(): void {
+      this.hijosPorId = new Map<number, number>();
+      this.menuModel.forEach((m: any) => {
+        const padre = m?.padre_id ?? null;
+        if (padre != null) {
+          const p = Number(padre);
+          this.hijosPorId.set(p, (this.hijosPorId.get(p) ?? 0) + 1);
+        }
+      });
+    }
+
+    /**
+     * Rehace la lista que ve la rejilla.
+     *
+     * Se esconde la RAMA ENTERA, no sólo los hijos directos: por eso se sube
+     * por los antepasados en vez de mirar únicamente `padre_id`.
+     */
+    private recalcularVisibles(): void {
+      if (this.searchTerm || this.plegados.size === 0) {
+        this.filasVisibles = [...this.menuModel];
+      } else {
+        // Un mapa id → padre para no recorrer el array por cada antepasado
+        const padres = new Map<number, number | null>();
+        this.menuModel.forEach((m: any) => padres.set(Number(m.id), m.padre_id ?? null));
+
+        this.filasVisibles = this.menuModel.filter((m: any) => {
+          let p = padres.get(Number(m.id)) ?? null;
+          while (p != null) {
+            if (this.plegados.has(Number(p))) { return false; }
+            p = padres.get(Number(p)) ?? null;
+          }
+          return true;
+        });
+      }
+      this.gridApi?.setRowData(this.filasVisibles);
+    }
+
+    /**
+     * Quita del estado los menús que ya no existen.
+     *
+     * Si se borra uno y su id se queda aquí, al crear otro podría tocarle ese
+     * mismo id y nacería plegado sin que nadie lo haya pedido.
+     */
+    private limpiarPlegados(): void {
+      const existen = new Set(this.menuModel.map((m: any) => Number(m.id)));
+      [...this.plegados].forEach(id => { if (!existen.has(id)) { this.plegados.delete(id); } });
+    }
+
+    private guardarPlegados(): void {
+      try {
+        localStorage.setItem(AllMenusComponent.CLAVE_PLEGADOS, JSON.stringify([...this.plegados]));
+      } catch {
+        // Ventana privada o almacenamiento bloqueado: se pierde al salir y ya
+      }
+    }
+
+    private leerPlegados(): void {
+      try {
+        const guardado = localStorage.getItem(AllMenusComponent.CLAVE_PLEGADOS);
+        if (!guardado) { return; }
+        const ids = JSON.parse(guardado);
+        if (Array.isArray(ids)) {
+          ids.forEach((id: any) => { if (Number.isFinite(Number(id))) { this.plegados.add(Number(id)); } });
+        }
+      } catch {
+        // Lo guardado no sirve: se empieza con el árbol abierto
+      }
+    }
+
     //   ******   LISTADO DE DATOS   ******  //
     async allMenus() {
       try {
@@ -535,15 +719,17 @@ export class AllMenusComponent implements OnInit, OnDestroy{
           if (res?.status === 'success') {
               this._loadingService.setLoading(false); // Finaliza carga    
               this.menuModel = res.data;
-              //console.log('response -> Menús obtenidos', this.menuModel);
+              this.refrescarArbol();
             }else{
               this._loadingService.setLoading(false); // Finaliza carga    
               this.menuModel = []; // Evita que sea `undefined`
+              this.refrescarArbol();
               console.error('response -> Error: Respuesta sin status success', res.message);
           }
       } catch (error: any) {
         this._loadingService.setLoading(false); // Finaliza carga    
         this.menuModel = []; // Evita que sea `undefined`
+        this.refrescarArbol();
         console.error('response -> Error en la petición', error);
       }
     }
@@ -761,9 +947,11 @@ export class AllMenusComponent implements OnInit, OnDestroy{
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe({
         next: () => {
-          // Se quita del modelo y de la rejilla sin recargar la lista entera
+          // Se quita del modelo y se repinta sin recargar la lista entera.
+          // No vale `applyTransaction({remove})`: al irse un menú cambian los
+          // recuentos de hijos y, con ellos, qué filas llevan asa.
           this.menuModel = this.menuModel.filter((m: any) => m.id !== fila.id);
-          this.gridApi?.applyTransaction({ remove: [fila] });
+          this.refrescarArbol();
           if (this.selectedRow?.id === fila.id) { this.selectedRow = null; }
         },
         error: (error: any) => console.error(error.message),

@@ -1,0 +1,189 @@
+<!-- ============================================================
+     GUARDAR MARCA (modal)
+
+     Mismo esquema que saveCargo: cabecera, cuerpo con paneles del tema
+     (datos + logo + descripción) y pie con Guardar. En 'view' el
+     formulario va deshabilitado y sin botón de guardar.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body marca-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- ---------- Datos de la marca ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos de la marca"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="tag"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        @if (esView) {
+          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+        }
+        @if (!esNuevo && numProductos > 0) {
+          <span class="chip chip-info" title="Productos de esta marca">
+            <i class="fa-solid fa-box"></i> {{ numProductos }} {{ numProductos === 1 ? 'producto' : 'productos' }}
+          </span>
+        }
+      </div>
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <!-- El logo, a la izquierda -->
+            <div class="col-12 col-md-3">
+              <div class="marca-logo">
+                <div class="marca-logo__marco" [class.is-vacio]="!logoVista">
+                  @if (logoVista) {
+                    <img [src]="logoVista" alt="Logo de la marca" class="marca-logo__img" />
+                  } @else {
+                    <i class="fa-solid fa-tag"></i>
+                  }
+                </div>
+
+                @if (!esView) {
+                  <div class="marca-logo__botones">
+                    <!-- El input va escondido y lo dispara el botón: el
+                         <input type=file> de serie no se puede estilar. -->
+                    <input type="file" id="logo-marca" class="d-none"
+                           accept="image/*" (change)="onLogoElegido($event)" />
+                    <label for="logo-marca" class="btn btn-sm btn-white" title="Elegir una imagen">
+                      <i class="fa-solid fa-image"></i> {{ logoVista ? 'Cambiar' : 'Subir logo' }}
+                    </label>
+                    @if (logoVista) {
+                      <button type="button" class="btn btn-sm btn-white text-danger"
+                              title="Quitar el logo de la vista" (click)="quitarLogo()">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    }
+                  </div>
+                  <p class="campo-hint text-center">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Hasta 10 MB. Se sube al guardar.
+                  </p>
+                }
+              </div>
+            </div>
+
+            <div class="col-12 col-md-9">
+              <div class="row g-3 align-items-start">
+
+                <!-- Nombre -->
+                <div class="col-12 col-md-7">
+                  <app-campoTexto
+                    [control]="form.controls['nombre']"
+                    label="NOMBRE DE LA MARCA"
+                    placeholder="Samsung, LG, HP, Indurama…"
+                    [maxLength]="100"
+                    [minLength]="2"
+                    [trimEspacios]="true">
+                  </app-campoTexto>
+                </div>
+
+                <!-- Estado -->
+                <div class="col-12 col-md-5">
+                  <div class="estado-marca" [class.is-on]="ctrlActivo.value">
+                    <span class="estado-marca__icon"><i class="fa-solid fa-power-off"></i></span>
+                    <div class="estado-marca__text">
+                      <span class="estado-marca__label">Estado</span>
+                      <span class="estado-marca__hint">
+                        {{ ctrlActivo.value ? 'Se ofrece al crear productos' : 'No se ofrece al crear productos' }}
+                      </span>
+                    </div>
+                    <app-checkbox class="estado-marca__switch"
+                      [control]="ctrlActivo"
+                      [label]="ctrlActivo.value ? 'Activa' : 'Inactiva'"
+                      [id]="'ck-marca-activo'">
+                    </app-checkbox>
+                  </div>
+                </div>
+
+                <!-- País de origen -->
+                <div class="col-12 col-md-6">
+                  <div class="campo-combo">
+                    <app-combo
+                      formControlName="pais_origen"
+                      [items]="paises"
+                      [label]="'País de origen'"
+                      bindLabel="name"
+                      bindValue="id">
+                    </app-combo>
+                  </div>
+                </div>
+
+                <!-- Sitio web -->
+                <div class="col-12 col-md-6">
+                  <app-campoTexto
+                    [control]="form.controls['sitio_web']"
+                    label="SITIO WEB"
+                    placeholder="https://www.samsung.com"
+                    [maxLength]="200"
+                    icono="fa-globe">
+                  </app-campoTexto>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Descripción ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Descripción"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="editar"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <app-campoTextoArea
+            [control]="form.controls['descripcion']"
+            label="DESCRIPCIÓN"
+            placeholder="Qué vende esta marca, acuerdos comerciales, contacto del representante… (opcional)"
+            [maxLength]="2000"
+            [alto]="110">
+          </app-campoTextoArea>
+
+          @if (!esNuevo && marcaModel) {
+            <div class="marca-meta">
+              <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ marcaModel.created_at }} por <b>{{ marcaModel.created_by || '—' }}</b></span>
+              <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ marcaModel.updated_at }} por <b>{{ marcaModel.updated_by || '—' }}</b></span>
+            </div>
+          }
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

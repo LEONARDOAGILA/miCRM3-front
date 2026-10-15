@@ -1,0 +1,110 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarMarcaTitulo"
+     aria-describedby="eliminarMarcaDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarMarcaTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <!-- Advertencia -->
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar esta marca?</h6>
+        <p class="eliminar-aviso__texto" id="eliminarMarcaDescripcion">
+          Esta acción no se puede deshacer. Su historial de auditoría se conserva.
+          @if (numProductos > 0) {
+            <br><b>Tiene {{ numProductos }} {{ numProductos === 1 ? 'producto' : 'productos' }}:</b>
+            el sistema no permitirá eliminarla; desactívela en su lugar.
+          }
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-tag fa-fw me-1" aria-hidden="true"></i>Marca
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.nombre || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-flag fa-fw me-1" aria-hidden="true"></i>País de origen
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.pais_origen || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-box fa-fw me-1" aria-hidden="true"></i>Productos
+        </span>
+        <span class="eliminar-datos__valor">{{ numProductos }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
+        </span>
+        <span class="badge fs-10px"
+              [ngClass]="registro_selected?.activo ? 'bg-teal' : 'bg-danger'">
+          {{ registro_selected?.activo ? 'ACTIVO' : 'INACTIVO' }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si el marca ya no se usa pero tiene historial, desactívelo desde
+      <b>Modificar marca</b> en lugar de eliminarlo.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="deleteMarca()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+    </button>
+  </div>
+
+</div>

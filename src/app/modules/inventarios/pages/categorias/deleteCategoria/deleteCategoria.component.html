@@ -1,0 +1,121 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarCategoriaTitulo"
+     aria-describedby="eliminarCategoriaDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarCategoriaTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <!-- Advertencia -->
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar esta categoría?</h6>
+        <p class="eliminar-aviso__texto" id="eliminarCategoriaDescripcion">
+          Esta acción no se puede deshacer. Su historial de auditoría se conserva.
+          @if (numHijos > 0) {
+            <br><b>Tiene {{ numHijos }} {{ numHijos === 1 ? 'subcategoría' : 'subcategorías' }}:</b>
+            el sistema no permitirá eliminarla. Muévalas a otra rama o bórrelas primero.
+          }
+          @if (numProductos > 0) {
+            <br><b>Tiene {{ numProductos }} {{ numProductos === 1 ? 'producto' : 'productos' }}:</b>
+            el sistema no permitirá eliminarla; desactívela en su lugar.
+          }
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-sitemap fa-fw me-1" aria-hidden="true"></i>Categoría
+        </span>
+        <span class="eliminar-datos__valor">{{ ruta }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-layer-group fa-fw me-1" aria-hidden="true"></i>Nivel
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.nivel ?? '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-diagram-project fa-fw me-1" aria-hidden="true"></i>Subcategorías
+        </span>
+        <span class="eliminar-datos__valor">{{ numHijos }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-box fa-fw me-1" aria-hidden="true"></i>Productos
+        </span>
+        <span class="eliminar-datos__valor">{{ numProductos }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
+        </span>
+        <span class="badge fs-10px"
+              [ngClass]="registro_selected?.activo ? 'bg-teal' : 'bg-danger'">
+          {{ registro_selected?.activo ? 'ACTIVO' : 'INACTIVO' }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si el categoria ya no se usa pero tiene historial, desactívelo desde
+      <b>Modificar categoria</b> en lugar de eliminarlo.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="deleteCategoria()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+    </button>
+  </div>
+
+</div>

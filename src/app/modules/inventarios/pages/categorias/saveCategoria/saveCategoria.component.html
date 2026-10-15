@@ -1,0 +1,174 @@
+<!-- ============================================================
+     GUARDAR CATEGORÍA (modal)
+
+     Igual que saveCargo, con una diferencia: el PADRE no se elige aquí.
+     Al crear llega decidido desde la rejilla y al modificar no se toca;
+     mover una rama se hace arrastrando, que es donde se ve dónde cae.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body categoria-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- ---------- Dónde va ---------- -->
+    <div class="cat-ubicacion">
+      <i class="fa-solid fa-sitemap cat-ubicacion__icono"></i>
+      <div>
+        <span class="cat-ubicacion__label">Cuelga de</span>
+        <span class="cat-ubicacion__valor">{{ dondeVa }}</span>
+      </div>
+      <span class="chip chip-muted ms-auto" title="Profundidad en el árbol (0 a 3)">
+        Nivel {{ nivelResultante }}
+      </span>
+    </div>
+
+    @if (accion === 'edit') {
+      <p class="campo-hint mb-3">
+        <i class="fa-solid fa-circle-info"></i>
+        Para cambiarla de rama, arrástrala en la lista: ahí se ve dónde va a caer.
+      </p>
+    }
+
+    <!-- ---------- Datos de la categoría ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos de la categoría"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="sitemap"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        @if (esView) {
+          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+        }
+        @if (!esNuevo && numHijos > 0) {
+          <span class="chip chip-info" title="Subcategorías directas">
+            <i class="fa-solid fa-diagram-project"></i> {{ numHijos }} {{ numHijos === 1 ? 'subcategoría' : 'subcategorías' }}
+          </span>
+        }
+        @if (!esNuevo && numProductos > 0) {
+          <span class="chip chip-info" title="Productos en esta categoría">
+            <i class="fa-solid fa-box"></i> {{ numProductos }} {{ numProductos === 1 ? 'producto' : 'productos' }}
+          </span>
+        }
+      </div>
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <!-- Nombre -->
+            <div class="col-12 col-md-7">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="NOMBRE DE LA CATEGORÍA"
+                placeholder="Refrigeración, Computadores, Celulares…"
+                [maxLength]="100"
+                [minLength]="2"
+                [trimEspacios]="true">
+              </app-campoTexto>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                No se puede repetir entre las categorías de la misma rama; en otra rama sí.
+              </p>
+            </div>
+
+            <!-- Estado -->
+            <div class="col-12 col-md-5">
+              <div class="estado-categoria" [class.is-on]="ctrlActivo.value">
+                <span class="estado-categoria__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-categoria__text">
+                  <span class="estado-categoria__label">Estado</span>
+                  <span class="estado-categoria__hint">
+                    {{ ctrlActivo.value ? 'Se ofrece al clasificar productos' : 'No se ofrece al clasificar productos' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-categoria__switch"
+                  [control]="ctrlActivo"
+                  [label]="ctrlActivo.value ? 'Activa' : 'Inactiva'"
+                  [id]="'ck-categoria-activo'">
+                </app-checkbox>
+              </div>
+              @if (!esNuevo && numHijos > 0) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  Desactivarla no desactiva sus {{ numHijos }} subcategorías.
+                </p>
+              }
+            </div>
+
+            <!-- Icono -->
+            <div class="col-12 col-md-6">
+              <label class="form-label cat-etiqueta">ICONO</label>
+              <!-- No lleva [disabled]: el control ya va deshabilitado desde el
+                   FormGroup cuando es solo lectura, y junto a formControlName
+                   Angular avisa por consola de que no se use. -->
+              <app-campoIcono
+                formControlName="icono"
+                placeholder="fa-snowflake">
+              </app-campoIcono>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                Opcional. Ayuda a reconocer la rama de un vistazo en la lista.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Descripción ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Descripción"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="editar"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <app-campoTextoArea
+            [control]="form.controls['descripcion']"
+            label="DESCRIPCIÓN"
+            placeholder="Qué entra en esta categoría y qué no (opcional)"
+            [maxLength]="2000"
+            [alto]="110">
+          </app-campoTextoArea>
+
+          @if (!esNuevo && categoriaModel) {
+            <div class="categoria-meta">
+              <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ categoriaModel.created_at }} por <b>{{ categoriaModel.created_by || '—' }}</b></span>
+              <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ categoriaModel.updated_at }} por <b>{{ categoriaModel.updated_by || '—' }}</b></span>
+            </div>
+          }
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

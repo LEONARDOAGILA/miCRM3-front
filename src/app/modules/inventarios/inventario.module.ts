@@ -17,18 +17,49 @@ import { ActionButtonsModule } from '../../components/botones/action-buttons/act
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
 import { CampoTextoComponent } from '../../components/campos/campoTexto/campoTexto.component';
+import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/campoTextoArea.component';
 import { CampoNumeroEnteroComponent } from '../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.component';
 import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/campoBusqueda.component';
+import { CampoBusquedaPaginacionComponent } from '../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { ComboComponent } from '../../components/campos/combo/combo.component';
+import { CampoIconoComponent } from '../../components/campos/campoIcono/campoIcono.component';
 import { FileTreeNodeComponent } from '../../components/file-tree-node/file-tree-node.component';
+import { MenuContextualComponent } from '../../components/menuContextual/menuContextual.component';
+
+//   ******   MARCAS   ******  //
+import { AllMarcasComponent, ButtonAccionMarca } from './pages/marcas/allMarcas/allMarcas.component';
+import { SaveMarcaComponent } from './pages/marcas/saveMarca/saveMarca.component';
+import { DeleteMarcaComponent } from './pages/marcas/deleteMarca/deleteMarca.component';
+
+//   ******   CATEGORÍAS (árbol)   ******  //
+import { AllCategoriasComponent, ButtonAccionCategoria } from './pages/categorias/allCategorias/allCategorias.component';
+import { SaveCategoriaComponent } from './pages/categorias/saveCategoria/saveCategoria.component';
+import { DeleteCategoriaComponent } from './pages/categorias/deleteCategoria/deleteCategoria.component';
+
+//   ******   PRODUCTOS   ******  //
+import { AllProductosComponent, ButtonAccionProducto } from './pages/productos/allProductos/allProductos.component';
+import { SaveProductoComponent } from './pages/productos/saveProducto/saveProducto.component';
+import { DeleteProductoComponent } from './pages/productos/deleteProducto/deleteProducto.component';
 
 @NgModule({
   declarations: [
     HomeComponent,
 
-    // AllProfilesComponent,
+    AllMarcasComponent,
+    ButtonAccionMarca,
+    SaveMarcaComponent,
+    DeleteMarcaComponent,
 
+    AllCategoriasComponent,
+    ButtonAccionCategoria,
+    SaveCategoriaComponent,
+    DeleteCategoriaComponent,
+
+    AllProductosComponent,
+    ButtonAccionProducto,
+    SaveProductoComponent,
+    DeleteProductoComponent,
   ],
   imports: [
     CommonModule,
@@ -42,16 +73,18 @@ import { FileTreeNodeComponent } from '../../components/file-tree-node/file-tree
     DirectiveModule,
     NgScrollbarModule,
     CampoTextoComponent,
+    CampoTextoAreaComponent,
     CampoNumeroEnteroComponent,
     CheckboxComponent,
     CampoBusquedaComponent,
+    CampoBusquedaPaginacionComponent,
     ComboComponent,
+    CampoIconoComponent,
     ActionButtonsModule,
     FileTreeNodeComponent,
+    MenuContextualComponent,
     ModalFooterComponent,
     ModalHeaderComponent,
-
   ]
 })
 export class InventarioModule { }
-

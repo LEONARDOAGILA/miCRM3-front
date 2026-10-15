@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ProductoModel } from '../modules/inventarios/interfaces/productoModel';
+import { ProductoDemoModel } from './datos-prueba.model';
 
 @Injectable({
   providedIn: 'root',
@@ -18,7 +18,7 @@ export class DatosPruebaService {
   ];
 
   // Productos de ejemplo
-  public productosEjemplo: ProductoModel[] = [
+  public productosEjemplo: ProductoDemoModel[] = [
     { id: 1, codigo: "001", nombre: 'Laptop HP Pavilion', descripcion: 'Laptop HP Pavilion', precio_unitario: 899.99, costo: 1799.98, stock: 10, estado: true },
     { id: 2, codigo: "002", nombre: 'Mouse Inalámbrico', descripcion: 'Mouse Inalámbrico', precio_unitario: 25.50, costo: 76.50, stock: 10, estado: true },
     { id: 3, codigo: "003", nombre: 'Teclado Mecánico', descripcion: 'Teclado Mecánico', precio_unitario: 89.99, costo: 89.99, stock: 10, estado: true },

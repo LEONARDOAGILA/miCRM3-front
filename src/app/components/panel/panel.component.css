@@ -15,6 +15,17 @@
 .panel-icono-usuario .panel-icono::before { content: '\f007'; }  /* fa-user */
 .panel-icono-usuarios .panel-icono::before { content: '\f0c0'; }  /* fa-users */
 .panel-icono-id-badge .panel-icono::before { content: '\f2c1'; }  /* fa-id-badge (cargos) */
+
+/* Inventarios. Se anaden aqui y no en cada pantalla porque la clase la arma
+   este componente: `icono="box"` se vuelve `panel-icono-box`, y si esa regla
+   no existe el panel sale SIN ICONO y sin dar ningun error. */
+.panel-icono-box .panel-icono::before { content: '\f466'; }      /* fa-box (productos) */
+.panel-icono-boxes .panel-icono::before { content: '\f468'; }    /* fa-boxes-stacked (existencias) */
+.panel-icono-tag .panel-icono::before { content: '\f02b'; }      /* fa-tag (marcas) */
+.panel-icono-sitemap .panel-icono::before { content: '\f0e8'; }  /* fa-sitemap (categorias) */
+.panel-icono-truck .panel-icono::before { content: '\f0d1'; }    /* fa-truck (despacho) */
+.panel-icono-dollar .panel-icono::before { content: '\f155'; }   /* fa-dollar-sign (precios) */
+.panel-icono-images .panel-icono::before { content: '\f302'; }   /* fa-images (galeria) */
 .panel-icono-briefcase .panel-icono::before { content: '\f0b1'; } /* fa-briefcase */
 .panel-icono-clave .panel-icono::before { content: '\f084'; }   /* fa-key */
 .panel-icono-email .panel-icono::before { content: '\f0e0'; }   /* fa-envelope */

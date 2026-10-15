@@ -6,7 +6,7 @@ import { AppAgGridService } from '../../../../../../app/service/app-agGrid.servi
 import { ProductoService } from '../../../../inventarios/services/producto.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { firstValueFrom } from 'rxjs';
-import { ProductoModel } from '../../../../inventarios/interfaces/productoModel';
+import { ProductoDemoModel as ProductoModel } from '../../../../../service/datos-prueba.model';
 
 @Component({
   selector: 'app-all-productos',
