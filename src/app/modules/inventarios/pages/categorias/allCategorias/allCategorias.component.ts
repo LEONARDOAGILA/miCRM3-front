@@ -23,7 +23,9 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 ///   COMPONENTES    ///
 import { SaveCategoriaComponent } from '../saveCategoria/saveCategoria.component';
 import { DeleteCategoriaComponent } from '../deleteCategoria/deleteCategoria.component';
+import { PapeleraCategoriasComponent } from '../papeleraCategorias/papeleraCategorias.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
 
 /**
@@ -172,6 +174,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         headerName: 'Id',
         field: 'id',
+        floatingFilter: true,
         cellClass: this.claseNivel,
         cellStyle: this.centrado,
         minWidth: 70,
@@ -211,6 +214,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         headerName: 'Categoría',
         field: 'nombre',
+        floatingFilter: true,
         cellClass: this.claseNivel,
         cellStyle: this.izquierda,
         minWidth: 280,
@@ -231,6 +235,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         headerName: 'Nivel',
         field: 'nivel',
+        floatingFilter: true,
         cellClass: this.claseNivel,
         cellStyle: this.centrado,
         minWidth: 80,
@@ -240,6 +245,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         headerName: 'Orden',
         field: 'orden',
+        floatingFilter: true,
         headerTooltip: 'Posición entre sus hermanas',
         cellClass: this.claseNivel,
         cellStyle: this.centrado,
@@ -250,6 +256,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         headerName: 'Subcategorías',
         field: 'num_hijos',
+        floatingFilter: true,
         headerTooltip: 'Subcategorías directas; con subcategorías no se puede eliminar',
         cellClass: this.claseNivel,
         cellStyle: this.centrado,
@@ -268,10 +275,17 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
         maxWidth: 110,
         sortable: false,
         cellRenderer: (params: any) => this.celdaProductos(params),
+        floatingFilter: true,
+        // Se filtra por el número que SE VE —el total de la rama— y no por
+        // `num_productos`, que son sólo los suyos: escribir 6 y que no
+        // salga la fila que pone 6 no habría quien lo entendiera.
+        filterValueGetter: (params: any) =>
+          Number(params.data?.productos_rama ?? params.data?.num_productos ?? 0),
       },
       {
         headerName: 'Descripción',
         field: 'descripcion',
+        floatingFilter: true,
         cellClass: this.claseNivel,
         cellStyle: this.izquierda,
         minWidth: 200,
@@ -281,6 +295,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         headerName: 'Creado',
         field: 'created_at',
+        floatingFilter: true,
         cellClass: this.claseNivel,
         cellStyle: this.centrado,
         minWidth: 160,
@@ -290,6 +305,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         headerName: 'Actualizado',
         field: 'updated_at',
+        floatingFilter: true,
         cellClass: this.claseNivel,
         cellStyle: this.centrado,
         minWidth: 160,
@@ -299,6 +315,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         headerName: 'Actualizado por',
         field: 'updated_by',
+        floatingFilter: true,
         cellClass: this.claseNivel,
         cellStyle: this.izquierda,
         minWidth: 130,
@@ -461,8 +478,8 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     const botones = this.host?.nativeElement?.querySelectorAll?.('[data-arbol]');
     botones?.forEach((b: HTMLButtonElement) => {
       b.disabled = b.dataset['arbol'] === 'contraer'
-        ? !!this.searchTerm                          // buscando se ve todo
-        : (!!this.searchTerm || !this.hayPlegadas);  // nada que desplegar
+        ? this.plegadoDesactivado                           // buscando o filtrando se ve todo
+        : (this.plegadoDesactivado || !this.hayPlegadas);   // nada que desplegar
     });
   }
 
@@ -479,6 +496,71 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     ev.stopPropagation();
     if (boton.disabled) { return; }
     if (boton.dataset['arbol'] === 'contraer') { this.contraerTodo(); } else { this.desplegarTodo(); }
+  }
+
+  // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Aquí los filtra ag-Grid, no el servidor: esta pantalla no pagina —trae el
+  // árbol entero— así que la rejilla tiene TODAS las filas y puede filtrar
+  // ella. En clientes o productos, que paginan, hay que mandarlos al servidor
+  // porque allí la rejilla sólo tiene la página.
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /** Cuántas columnas llevan filtro, para decirlo en el buscador. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o un filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
+
+  /**
+   * La cabecera pidió otra cosa.
+   *
+   * Con un filtro puesto el árbol se abre entero, por lo mismo que con el
+   * buscador: una coincidencia dentro de una rama cerrada no se vería y
+   * parecería que el filtro no encuentra lo que está ahí.
+   */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+
+    const antes = this.cuantasColumnasFiltradas > 0;
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    if (antes !== (this.cuantasColumnasFiltradas > 0)) { this.recalcularVisibles(); }
+  }
+
+  /**
+   * La × del buscador o el botón de limpiar filtros.
+   *
+   * Una sola pasada: se quita el texto, se quitan los filtros de columna y se
+   * repinta una vez.
+   */
+  clearAllFilters(): void {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    this.limpiando = true;
+    this.searchTerm = '';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+    this.gridApi?.setQuickFilter('');
+
+    // La bandera se baja en la siguiente vuelta: ag-Grid avisa del cambio de
+    // filtros DESPUÉS de esta línea (medido), y si se apagara aquí ese aviso
+    // entraría con ella ya baja y repintaría otra vez.
+    this.programar(() => { this.limpiando = false; }, 0);
+
+    this.recalcularVisibles();
   }
 
   /** Pliega o despliega una rama y lo recuerda. */
@@ -507,6 +589,9 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   /** Para encender o apagar el botón de la barra. */
   get hayPlegadas(): boolean { return this.plegadas.size > 0; }
 
+  /** Con un filtro puesto el árbol se ve entero: plegar no pinta nada. */
+  get plegadoDesactivado(): boolean { return !!this.searchTerm || this.cuantasColumnasFiltradas > 0; }
+
   /** Cuántas ramas están cerradas, para decirlo en el pie. */
   get plegadasCuantas(): number { return this.plegadas.size; }
 
@@ -518,7 +603,9 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
    * lo que está ahí. Buscar manda sobre el plegado.
    */
   private recalcularVisibles(): void {
-    if (this.searchTerm || this.plegadas.size === 0) {
+    // Con texto escrito O con un filtro de columna se abre el árbol entero:
+    // si no, lo que coincidiera dentro de una rama cerrada no saldría.
+    if (this.searchTerm || this.cuantasColumnasFiltradas > 0 || this.plegadas.size === 0) {
       this.filasVisibles = [...this.categoriaModel];
     } else {
       // Un mapa id → padre para no recorrer el array por cada antepasado
@@ -1060,6 +1147,24 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   }
 
   /** Quita la fila del árbol. El back rechaza si tiene hijas o productos. */
+  /**
+   * La papelera de reciclaje.
+   *
+   * Lo que se «elimina» no se borra: va aquí, y desde aquí se restaura o se
+   * borra de verdad. Sólo con el acceso «papelera» del perfil.
+   */
+  abrirPapelera(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(PapeleraCategoriasComponent, {
+      centered: true, size: 'xl', backdrop: 'static', keyboard: true
+    });
+    // El permiso viaja con el modal: allí también hay auditoría
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Al restaurar o borrar de verdad, el árbol ya no es fiel
+    this.escucharModal(modalRef, modalRef.componentInstance.cambio,
+                       () => this.allCategorias());
+  }
+
   deleteCategoria(registro: any): void {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.modal.open(DeleteCategoriaComponent, {
@@ -1077,6 +1182,115 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, pero sin tener que llegar
+  // hasta el final de la fila ni desplegar la columna cuando está plegada.
+  //
+  // NO SE USA EL EVENTO `cellContextMenu` DE ag-Grid: se probó contra la
+  // librería y no llega —el clic alcanza el contenedor de filas pero la
+  // rejilla lo descarta antes de emitirlo—, así que aquí se escucha el
+  // `contextmenu` del contenedor y la fila se resuelve con la API pública.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  /**
+   * Clic derecho sobre la rejilla.
+   *
+   * LO PRIMERO ES ELEGIR LA FILA: el menú actúa sobre «la fila», y si no se
+   * marcara se vería resaltada una y el menú trabajaría sobre otra.
+   */
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se puede hacer con esta fila, según el perfil y dónde está. */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    const puedeCrear   = this.accesoModel?.crear    === true;
+    const puedeEditar  = this.accesoModel?.editar   === true;
+    const puedeBorrar  = this.accesoModel?.eliminar === true;
+    const puedeVer     = this.accesoModel?.ver      === true;
+    const puedeAuditar = this.accesoModel?.auditar  === true;
+
+    // El último nivel no admite nada dentro: el árbol llega hasta el 3
+    const esUltimoNivel = Number(fila?.nivel ?? 0) >= 3;
+    const tieneHijos    = Number(fila?.num_hijos ?? 0) > 0;
+
+    return [
+      {
+        id: 'sub', texto: 'Nuevo subcategoría aquí', icono: 'fa-folder-plus',
+        visible: puedeCrear,
+        deshabilitada: esUltimoNivel,
+        ayuda: esUltimoNivel ? 'Éste es el último nivel: no admite nada dentro'
+                             : 'Crear un categoría dentro de éste',
+      },
+      {
+        id: 'raiz', texto: 'Nuevo categoría de primer nivel', icono: 'fa-plus',
+        visible: puedeCrear,
+      },
+      {
+        id: 'ver', texto: 'Ver', icono: 'fa-eye',
+        separadorAntes: true, visible: puedeVer,
+      },
+      {
+        id: 'editar', texto: 'Modificar', icono: 'fa-pen',
+        visible: puedeEditar,
+      },
+      {
+        id: 'clonar', texto: 'Clonar', icono: 'fa-clone',
+        visible: puedeCrear,
+      },
+      {
+        id: 'activo', texto: fila?.activo ? 'Desactivar' : 'Activar',
+        icono: fila?.activo ? 'fa-toggle-off' : 'fa-toggle-on',
+        separadorAntes: true, visible: puedeEditar,
+        ayuda: fila?.activo ? 'Dejar de usarlo, sin borrarlo' : 'Volver a usarlo',
+      },
+      {
+        id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        separadorAntes: true, visible: puedeAuditar,
+        ayuda: 'Quién tocó este categoría y cuándo',
+      },
+      {
+        id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
+        separadorAntes: true, peligro: true, visible: puedeBorrar,
+        deshabilitada: tieneHijos,
+        ayuda: tieneHijos ? 'Primero hay que mover o borrar lo que cuelga de él'
+                          : 'Se puede recuperar desde la papelera',
+      },
+    ];
+  }
+
+  /** Se eligió una opción del menú. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'sub':       this.addSubcategoria(fila); break;
+      case 'raiz':      this.addCategoria(); break;
+      case 'ver':       this.viewCategoria(fila); break;
+      case 'editar':    this.editCategoria(fila); break;
+      case 'clonar':    this.clonCategoria(fila); break;
+      case 'activo':    this.cambiarActivo(fila, this._appAgGridService.nodoDe(this.gridApi, fila.id)); break;
+      case 'auditoria': this.auditoria(); break;
+      case 'eliminar':  this.deleteCategoria(fila); break;
+    }
+  }
   /** Historial de auditoría de la fila seleccionada (tabla categorias). */
   auditoria(): void {
     if (!this.selectedRow) { return; }

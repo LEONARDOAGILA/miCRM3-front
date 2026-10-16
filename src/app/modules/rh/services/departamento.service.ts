@@ -74,4 +74,57 @@ export class DepartamentoService {
   findByIdDepartamento(id: any): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'findByIdDepartamento/' + id);
   }
+
+  // ================================================================
+  // EL ÁRBOL
+  // ================================================================
+
+  /**
+   * El árbol entero, ya ordenado para pintarlo.
+   *
+   * No pagina: son pocas filas y una rama partida entre dos páginas no se
+   * entiende. La rejilla filtra y pliega en el navegador.
+   */
+  arbolDepartamentos(soloActivos: boolean = false): Observable<any> {
+    const params = new HttpParams().set('activos', soloActivos ? '1' : '0');
+    return this._http.get(this.URL_SERVICIOS + 'arbolDepartamentos', { params });
+  }
+
+  /**
+   * Mueve un departamento de rama o le cambia el orden.
+   *
+   * `padreId` null lo deja en el primer nivel; `antesDe` null lo pone al
+   * final de sus hermanos.
+   */
+  moverDepartamento(id: number, padreId: number | null, antesDe: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'moverDepartamento/' + id,
+                           { padre_id: padreId, antes_de: antesDe });
+  }
+
+  // ================================================================
+  // PAPELERA DE RECICLAJE
+  // ================================================================
+  //
+  // `deleteDepartamento` es un borrado lógico: el departamento sale del árbol
+  // y de los combos. Desde aquí se saca o se borra de verdad.
+
+  /** Lo que hay en la papelera (más reciente primero). */
+  papelera(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'papelera');
+  }
+
+  /** Saca de la papelera uno o varios departamentos. */
+  restaurarDepartamentos(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'restaurarDepartamentos', { ids });
+  }
+
+  /** Borrado real de lo seleccionado (sólo de lo que está en la papelera). */
+  eliminarDefinitivo(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'eliminarDefinitivo', { ids });
+  }
+
+  /** Borrado real de todo lo que hay en la papelera. */
+  vaciarPapelera(): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera');
+  }
 }

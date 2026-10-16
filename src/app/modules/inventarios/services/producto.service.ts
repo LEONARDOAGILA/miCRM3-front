@@ -27,13 +27,20 @@ export class ProductoService {
 
   //   ******   LISTADO CON PAGINACIÓN   ******  //
   allProductos(page: number = 1, perPage: number = 10, search: string = '',
-               marcaId: number | null = null, categoriaId: number | null = null): Observable<any> {
+               marcaId: number | null = null, categoriaId: number | null = null,
+               filtros: any = null): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
     if (search)      { params = params.set('search', search); }
     if (marcaId)     { params = params.set('marca_id', String(marcaId)); }
     if (categoriaId) { params = params.set('categoria_id', String(categoriaId)); }
+
+    // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+    // servidor, sobre todo el catálogo: la rejilla sólo tiene la página.
+    if (filtros && Object.keys(filtros).length) {
+      params = params.set('filtros', JSON.stringify(filtros));
+    }
 
     // observe: 'response' como en allCargos: el componente lee res.body
     return this._http.get<any>(this.URL_SERVICIOS + 'allProductos', { params, observe: 'response' });
@@ -113,5 +120,32 @@ export class ProductoService {
    */
   urlImagen(imagenId: number | string, refrescar: boolean = false): string {
     return this.URL_SERVICIOS + 'getImagen/' + imagenId + (refrescar ? '?v=' + Date.now() : '');
+  }
+
+  // ================================================================
+  // PAPELERA DE RECICLAJE
+  // ================================================================
+  //
+  // `deleteProducto` es un borrado lógico: el producto va a la papelera y
+  // deja de salir en los listados. Desde aquí se saca o se borra de verdad.
+
+  /** Lo que hay en la papelera (más reciente primero). */
+  papelera(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'papelera');
+  }
+
+  /** Saca de la papelera uno o varios productos. */
+  restaurarProductos(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'restaurarProductos', { ids });
+  }
+
+  /** Borrado real de lo seleccionado (sólo de lo que está en la papelera). */
+  eliminarDefinitivo(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'eliminarDefinitivo', { ids });
+  }
+
+  /** Borrado real de todo lo que hay en la papelera. */
+  vaciarPapelera(): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera');
   }
 }

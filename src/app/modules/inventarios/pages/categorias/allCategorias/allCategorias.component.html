@@ -45,15 +45,19 @@
           <!-- El buscador filtra en el navegador (quickFilter): son pocas
                filas y no hace falta volver al servidor. -->
           <div class="col pe-1">
-            <app-campoBusqueda
+            <app-campoBusquedaPaginacion
               [id]="'filter-text-box'"
               [placeholder]="'Buscar en el árbol'"
               [iconClass]="'fa fa-search fa-lg'"
               [containerClass]="'w-100'"
               [valorInicial]="searchTerm"
-              (searchChange)="onFilterTextBoxChanged($event)"
-              (limpiado)="alLimpiarBusqueda()">
-            </app-campoBusqueda>
+              [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiado)="alLimpiarBusqueda()"
+              (limpiarFiltros)="clearAllFilters()">
+            </app-campoBusquedaPaginacion>
           </div>
 
           <!-- Nueva categoría raíz -->
@@ -83,6 +87,18 @@
           <!-- Contraer / desplegar todo vive en la cabecera de la columna
                «Categoría» del ag-grid (ver cabeceraArbol). -->
 
+          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
+          @if (accesoModel?.papelera === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-outline-secondary lista-barra__btn"
+                      title="Papelera de reciclaje de categorías"
+                      (click)="abrirPapelera()">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          }
+
           <!-- Auditoría de la fila seleccionada -->
           @if (accesoModel?.auditar === true) {
             <div class="col-auto">
@@ -105,6 +121,7 @@
              arrastre; aquí se resuelve dónde se suelta (tercio superior o
              inferior = antes/después, centro = dentro). -->
         <div class="cat-grilla-wrap"
+             (contextmenu)="onContextMenuGrilla($event)"
              (click)="alClicarCabecera($event)"
              (dragover)="onDragOverGrilla($event)"
              (dragleave)="onDragLeaveGrilla($event)"
@@ -127,6 +144,7 @@
             [rowClassRules]="rowClassRules"
             [overlayNoRowsTemplate]="'<span>Todavía no hay categorías. Crea la primera con el botón +</span>'"
             (gridReady)="onGridReady($event)"
+            (filterChanged)="onFiltroColumna()"
             (cellClicked)="onCellClicked($event)">
           </ag-grid-angular>
         </div>
@@ -162,3 +180,11 @@
   </div>
 
 </panel>
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO =================
+     Las mismas acciones que la columna ACCIONES, sin tener que llegar al
+     final de la fila ni desplegar la columna cuando está plegada. -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

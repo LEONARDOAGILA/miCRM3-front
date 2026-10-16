@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellClickedEvent, ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
@@ -9,6 +9,7 @@ import { BoletinService } from '../../../services/boletin.service';
 import { BoletinModel } from '../../../interfaces/boletinModel';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
+import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { VerBoletinesComponent } from '../verBoletines/verBoletines.component';
 
 /**
@@ -32,6 +33,14 @@ export class PapeleraBoletinesComponent implements OnInit, OnDestroy {
 
   /** Algo se restauró o se borró: el listado ya no es fiel. */
   @Output() cambio = new EventEmitter<void>();
+
+  /**
+   * Si el perfil puede auditar. Lo pasa la pantalla que abre la papelera.
+   *
+   * Por defecto `false`: sin el dato, no se enseña un botón que el
+   * servidor va a rechazar.
+   */
+  @Input() puedeAuditar = false;
 
   public isLoading$ = this._loadingService.isLoading$;
   public items: BoletinModel[] = [];
@@ -302,6 +311,37 @@ export class PapeleraBoletinesComponent implements OnInit, OnDestroy {
   }
 
   /** Confirmación destructiva con SweetAlert2, la misma que la papelera de usuarios. */
+  /**
+   * El registro sobre el que se puede auditar: exactamente uno.
+   *
+   * La auditoría es de UN registro, así que con varias casillas marcadas
+   * no hay a cuál mirar y el botón se apaga.
+   */
+  get auditable(): BoletinModel | null {
+    return this.lote.length === 1 ? this.lote[0] : null;
+  }
+
+  /**
+   * Historial de auditoría de un registro que está en la papelera.
+   *
+   * Está aquí porque el botón del listado sólo alcanza a las filas del
+   * listado, y lo eliminado no está en ninguna: para ver quién lo borró
+   * había que restaurarlo antes.
+   *
+   * Se abre ENCIMA de esta ventana (NgbModal, no NgbActiveModal): al
+   * cerrar la auditoría se sigue en la papelera.
+   */
+  auditoria(registro?: BoletinModel): void {
+    const quien = registro ?? this.auditable;
+    if (!quien || !this.puedeAuditar) { return; }
+
+    const ref = this.modalService.open(AuditoriaModalComponent, {
+      centered: true, size: 'xl', backdrop: 'static', keyboard: true
+    });
+    ref.componentInstance.tablaNombre = 'boletines';
+    ref.componentInstance.registroId = quien.id;
+  }
+
   private async confirmar(titulo: string, texto: string): Promise<boolean> {
     const r = await Swal.fire({
       title: titulo,

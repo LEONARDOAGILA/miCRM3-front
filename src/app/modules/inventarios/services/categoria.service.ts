@@ -79,4 +79,31 @@ export class CategoriaService {
   findByIdCategoria(id: any): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'findByIdCategoria/' + id);
   }
+
+  // ================================================================
+  // PAPELERA DE RECICLAJE
+  // ================================================================
+  //
+  // `deleteCategoria` es un borrado lógico: la categoría sale del árbol y de
+  // los combos. Desde aquí se saca o se borra de verdad.
+
+  /** Lo que hay en la papelera (más reciente primero). */
+  papelera(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'papelera');
+  }
+
+  /** Saca de la papelera una o varias categorías. */
+  restaurarCategorias(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'restaurarCategorias', { ids });
+  }
+
+  /** Borrado real de lo seleccionado (sólo de lo que está en la papelera). */
+  eliminarDefinitivo(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'eliminarDefinitivo', { ids });
+  }
+
+  /** Borrado real de todo lo que hay en la papelera. */
+  vaciarPapelera(): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera');
+  }
 }

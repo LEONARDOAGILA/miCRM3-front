@@ -36,11 +36,13 @@ import { DeleteMarcaComponent } from './pages/marcas/deleteMarca/deleteMarca.com
 import { AllCategoriasComponent, ButtonAccionCategoria } from './pages/categorias/allCategorias/allCategorias.component';
 import { SaveCategoriaComponent } from './pages/categorias/saveCategoria/saveCategoria.component';
 import { DeleteCategoriaComponent } from './pages/categorias/deleteCategoria/deleteCategoria.component';
+import { PapeleraCategoriasComponent } from './pages/categorias/papeleraCategorias/papeleraCategorias.component';
 
 //   ******   PRODUCTOS   ******  //
 import { AllProductosComponent, ButtonAccionProducto } from './pages/productos/allProductos/allProductos.component';
 import { SaveProductoComponent } from './pages/productos/saveProducto/saveProducto.component';
 import { DeleteProductoComponent } from './pages/productos/deleteProducto/deleteProducto.component';
+import { PapeleraProductosComponent } from './pages/productos/papeleraProductos/papeleraProductos.component';
 
 @NgModule({
   declarations: [
@@ -55,11 +57,13 @@ import { DeleteProductoComponent } from './pages/productos/deleteProducto/delete
     ButtonAccionCategoria,
     SaveCategoriaComponent,
     DeleteCategoriaComponent,
+    PapeleraCategoriasComponent,
 
     AllProductosComponent,
     ButtonAccionProducto,
     SaveProductoComponent,
     DeleteProductoComponent,
+    PapeleraProductosComponent,
   ],
   imports: [
     CommonModule,

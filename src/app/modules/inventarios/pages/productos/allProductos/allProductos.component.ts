@@ -25,6 +25,7 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 ///   COMPONENTES    ///
 import { SaveProductoComponent } from '../saveProducto/saveProducto.component';
 import { DeleteProductoComponent } from '../deleteProducto/deleteProducto.component';
+import { PapeleraProductosComponent } from '../papeleraProductos/papeleraProductos.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
@@ -171,8 +172,61 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   // AG-GRID
   // ================================================================
 
+  /**
+   * Las columnas que llevan filtro en la cabecera, y de qué tipo.
+   *
+   * Tiene que decir lo mismo que la lista blanca de ProductoController: lo
+   * que no esté allí se tira en el servidor, así que ponerlo sólo aquí sería
+   * pintar un filtro que no filtra.
+   *
+   * `activo`, `foto`, `maneja_serie` y las acciones se quedan fuera: son una
+   * casilla y unos iconos, y escribir texto para marcarlos no se entiende.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero', costo: 'numero', precio: 'numero', iva_porcentaje: 'numero',
+    garantia_meses: 'numero', stock_minimo: 'numero', num_imagenes: 'numero',
+    codigo: 'texto', nombre: 'texto', marca_nombre: 'texto',
+    categoria_nombre: 'texto', modelo: 'texto', updated_by: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
+    created_at: 'texto', updated_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /**
+   * Las columnas con su filtro de cabecera.
+   *
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique, porque sólo
+   * tiene las filas de la página— vive en AppAgGridService. Aquí queda el QUÉ.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+
+  /**
+   * La cabecera pidió otra cosa.
+   *
+   * Siempre a la página 1: con el filtro nuevo, la página siete puede no
+   * existir.
+   */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.paginaActual = 1;
+    this.allProductos(1);
+  }
+
+  /** Cuántas columnas llevan filtro, para decirlo en la pantalla. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
   initializeGrid(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       {
         headerName: 'Id',
         field: 'id',
@@ -358,7 +412,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
           `
         }
       }
-    ];
+    ]);
   }
 
   /** 1500 → "$ 1.500,00"; vacío si no hay valor. */
@@ -541,7 +595,8 @@ export class AllProductosComponent implements OnInit, OnDestroy {
 
       const res = await firstValueFrom(
         this._productoService.allProductos(page, this.registrosPorPagina, this.searchTerm,
-                                           this.marcaFiltro, this.categoriaFiltro)
+                                           this.marcaFiltro, this.categoriaFiltro,
+                                           this.filtrosColumna)
       ) as any;
 
       if (res.body?.status !== 'success') {
@@ -576,9 +631,10 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.allProductos(1);
   }
 
-  /** Si hay algo que quitar: lo escrito arriba o cualquiera de los dos combos. */
+  /** Si hay algo que quitar: lo de arriba, los combos o un filtro de columna. */
   get hayFiltro(): boolean {
-    return !!this.searchTerm || this.marcaFiltro !== null || this.categoriaFiltro !== null;
+    return !!this.searchTerm || this.marcaFiltro !== null || this.categoriaFiltro !== null
+        || this.cuantasColumnasFiltradas > 0;
   }
 
   /** Trae TODO lo que cumple el filtro actual, para exportar. */
@@ -588,7 +644,8 @@ export class AllProductosComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
         this._productoService.allProductos(1, this.totalRegistros, this.searchTerm,
-                                           this.marcaFiltro, this.categoriaFiltro)
+                                           this.marcaFiltro, this.categoriaFiltro,
+                                           this.filtrosColumna)
       ) as any;
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
@@ -629,14 +686,29 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   }
 
   clearAllFilters() {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medio
+    // quitar. No se llama a onFilterChanged() a mano por lo mismo.
+    this.limpiando = true;
     this.campoBusquedaPaginacion?.reset();
     this.searchTerm = '';
     this.marcaFiltro = null;
     this.categoriaFiltro = null;
-    if (this.gridApi) {
-      this.gridApi.setFilterModel(null);
-      this.gridApi.onFilterChanged();
-    }
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí. Medido contra
+    // ag-Grid 28: `setFilterModel` NO avisa en esta misma vuelta —el aviso
+    // llega tras la microtarea y antes de un setTimeout(0)—, así que
+    // apagándola en esta línea el aviso entraría con ella ya baja y
+    // pediría al servidor una segunda carga idéntica.
+    this.programar(() => { this.limpiando = false; }, 0);
+
+    this.paginaActual = 1;
     this.allProductos(1);
   }
 
@@ -675,6 +747,9 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     }
     if (this.categoriaFiltro) {
       partes.push(`categoría: ${this.categorias.find(c => c.id === this.categoriaFiltro)?.name ?? this.categoriaFiltro}`);
+    }
+    if (this.cuantasColumnasFiltradas > 0) {
+      partes.push(`${this.cuantasColumnasFiltradas} filtro(s) de columna`);
     }
     return partes.length ? `Catálogo de Productos (${partes.join(' · ')})` : 'Catálogo de Productos';
   }
@@ -767,6 +842,24 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   viewProducto(registro: any): void {
     if (this._seguridadService.isexpired()) { return; }
     this.abrirModalProducto(registro, 'view');
+  }
+
+  /**
+   * La papelera de reciclaje.
+   *
+   * Lo que se «elimina» no se borra: va aquí, y desde aquí se restaura o se
+   * borra de verdad. Sólo con el acceso «papelera» del perfil.
+   */
+  abrirPapelera(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(PapeleraProductosComponent, {
+      centered: true, size: 'xl', backdrop: 'static', keyboard: true
+    });
+    // El permiso viaja con el modal: allí también hay auditoría
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Al restaurar o borrar de verdad, el catálogo ya no es fiel
+    this.escucharModal(modalRef, modalRef.componentInstance.cambio,
+                       () => this.allProductos(this.paginaActual));
   }
 
   deleteProducto(registro: any): void {

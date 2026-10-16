@@ -213,3 +213,55 @@
   font-size: .6875rem;
   opacity: .8;
 }
+
+/* ===================================================================
+   LOS BOTONES +/- DE LA CABECERA DE «NOMBRE»
+   =================================================================== */
+
+/* A LA IZQUIERDA, no centrada: el estándar de la aplicación centra todas las
+   cabeceras (`.ag-header-cell-label` en src/scss/angular.scss) y aquí el
+   título va con los botones sobre una columna de texto alineado a la
+   izquierda. Se le gana llevando también esa clase en el selector. */
+:host ::ng-deep .ag-header-cell-label.cabecera-arbol {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: .35rem;
+}
+
+:host ::ng-deep .cabecera-arbol .ag-header-cell-text {
+  text-align: left;
+}
+
+:host ::ng-deep .cabecera-arbol__botones {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+/* Pequeños: la cabecera es baja y comparten sitio con el título */
+:host ::ng-deep .cabecera-arbol__botones .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .5rem;
+  line-height: 1;
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:disabled {
+  opacity: .45;
+  cursor: default;
+}

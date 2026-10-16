@@ -72,6 +72,16 @@
   </button>
 
   <div class="papelera-pie__derecha">
+    <!-- Auditoría: quién lo eliminó (y todo lo demás) sin restaurarlo -->
+    @if (puedeAuditar) {
+      <button type="button" class="btn btn-warning position-relative"
+              [disabled]="!auditable"
+              [title]="auditable ? 'Ver el historial de «' + auditable.nombre_completo + '»' : 'Seleccione un solo cliente'"
+              (click)="auditoria()">
+        <i class="fa fa-user-secret me-1"></i>
+        <span class="d-none d-sm-inline">Auditoría</span>
+      </button>
+    }
     <button type="button" class="btn btn-success"
             [disabled]="!lote.length"
             [title]="lote.length ? 'Restaurar ' + (lote.length > 1 ? lote.length + ' clientes' : '«' + lote[0].nombre_completo + '»') : 'Seleccione un cliente'"
@@ -111,6 +121,14 @@
         <i class="fa fa-rotate-left fa-fw text-success"></i> Restaurar
         <span class="menu-ctx__detalle">{{ menuCtx.lote.length > 1 ? menuCtx.lote.length + ' clientes' : el.numero_identificacion }}</span>
       </button>
+      @if (puedeAuditar) {
+        <button type="button" class="menu-ctx__item" role="menuitem"
+                [disabled]="menuCtx.lote.length > 1"
+                (click)="cerrarMenu(); auditoria(el)">
+          <i class="fa fa-user-secret fa-fw text-warning"></i> Auditoría
+          <span class="menu-ctx__detalle">quién lo eliminó</span>
+        </button>
+      }
       <div class="menu-ctx__sep"></div>
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminarDefinitivo(menuCtx.lote)">
         <i class="fa fa-trash fa-fw"></i> Eliminar definitivamente

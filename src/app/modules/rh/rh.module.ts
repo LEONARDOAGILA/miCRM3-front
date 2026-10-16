@@ -12,6 +12,7 @@ import { PanelModule } from '../../components/panel/panel.module';
 
 import { ModalFooterComponent } from '../../components/modal/modal-footer/modal-footer.component';
 import { ModalHeaderComponent } from '../../components/modal/modal-header/modal-header.component';
+import { MenuContextualComponent } from '../../components/menuContextual/menuContextual.component';
 import { ModalArrastrableDirective } from '../../components/modal/modal-arrastrable.directive';
 import { ActionButtonsModule } from '../../components/botones/action-buttons/action-buttons.module';
 import { NgScrollbarModule } from 'ngx-scrollbar';
@@ -41,6 +42,7 @@ import { AllDepartamentosComponent, ButtonAccionDepartamento } from './pages/dep
 import { SaveDepartamentoComponent } from './pages/departamentos/saveDepartamento/saveDepartamento.component';
 import { DeleteDepartamentoComponent } from './pages/departamentos/deleteDepartamento/deleteDepartamento.component';
 import { ListDepartamentosComponent } from './pages/departamentos/listDepartamentos/listDepartamentos.component';
+import { PapeleraDepartamentosComponent } from './pages/departamentos/papeleraDepartamentos/papeleraDepartamentos.component';
 import { AllEmpleadosComponent, ButtonAccionEmpleado } from './pages/empleados/allEmpleados/allEmpleados.component';
 import { SaveEmpleadoComponent } from './pages/empleados/saveEmpleado/saveEmpleado.component';
 import { DeleteEmpleadoComponent } from './pages/empleados/deleteEmpleado/deleteEmpleado.component';
@@ -69,6 +71,7 @@ import { CampoEmailComponent } from '../../components/campos/campoEmail/campoEma
     DeleteDepartamentoComponent,
     ListDepartamentosComponent,
     ButtonAccionDepartamento,
+    PapeleraDepartamentosComponent,
 
     AllEmpleadosComponent,
     SaveEmpleadoComponent,
@@ -111,6 +114,7 @@ import { CampoEmailComponent } from '../../components/campos/campoEmail/campoEma
     ActionButtonsModule,
     ModalFooterComponent,
     ModalHeaderComponent,
+    MenuContextualComponent,
   ]
 })
 export class RhModule { }
