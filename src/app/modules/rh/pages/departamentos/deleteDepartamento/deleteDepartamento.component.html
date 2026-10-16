@@ -29,9 +29,9 @@
         <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
       <div>
-        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar este departamento?</h6>
+        <h6 class="eliminar-aviso__titulo">¿Enviar este departamento a la papelera de reciclaje?</h6>
         <p class="eliminar-aviso__texto" id="eliminarDepartamentoDescripcion">
-          Esta acción no se puede deshacer. Su historial de auditoría se conserva.
+          Dejará de aparecer en el árbol y no se podrá elegir, pero <b>no se borra</b>: queda en la papelera, desde donde puede restaurarse a su mismo sitio. Su historial de auditoría se conserva.
           @if (numEmpleados > 0) {
             <br><b>Tiene {{ numEmpleados }} {{ numEmpleados === 1 ? 'empleado asignado' : 'empleados asignados' }}:</b>
             el sistema no permitirá eliminarlo; desactívelo en su lugar.
@@ -110,7 +110,7 @@
             class="btn btn-danger"
             [disabled]="isLoading"
             (click)="deleteDepartamento()">
-      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
     </button>
   </div>
 

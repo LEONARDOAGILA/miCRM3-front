@@ -408,6 +408,8 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
     const modalRef = this.modalService.open(PapeleraBoletinesComponent, {
       size: 'xl', centered: true, backdrop: 'static', keyboard: true,
     });
+    // El permiso viaja con el modal: allí también hay auditoría
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
     modalRef.componentInstance.cambio.subscribe(() => this.allBoletines(this.paginaActual));
   }
 

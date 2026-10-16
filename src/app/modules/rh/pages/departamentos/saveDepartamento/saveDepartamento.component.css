@@ -218,3 +218,38 @@
     padding: .75rem;
   }
 }
+
+
+/* La cajita de «Cuelga de» (la misma que en saveCategoria) */
+.dep-ubicacion {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+
+  margin-bottom: 1rem;
+  padding: .6rem .85rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-app-theme, #00acac);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.dep-ubicacion__icono {
+  font-size: 1.1rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.dep-ubicacion__label {
+  display: block;
+  font-size: .6875rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.dep-ubicacion__valor {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}

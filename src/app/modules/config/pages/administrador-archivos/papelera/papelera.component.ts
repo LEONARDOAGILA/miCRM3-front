@@ -1,6 +1,6 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellClickedEvent, ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { ArchivoService } from '../../../services/archivo.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
+import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { formatoTamano } from '../../../interfaces/tipoArchivo';
 
 /** Elemento en la papelera: la fila de `archivo` más la ruta donde estaba. */
@@ -47,6 +48,14 @@ export class PapeleraComponent implements OnInit, OnDestroy {
 
   /** Algo se restauró o se borró: el árbol del administrador ya no es fiel. */
   @Output() cambio = new EventEmitter<void>();
+
+  /**
+   * Si el perfil puede auditar. Lo pasa la pantalla que abre la papelera.
+   *
+   * Por defecto `false`: sin el dato, no se enseña un botón que el
+   * servidor va a rechazar.
+   */
+  @Input() puedeAuditar = false;
   /**
    * Modo usuario (permiso `restaurar`): sólo ve lo que puede restaurar y no
    * puede borrar definitivamente ni vaciar (eso es de administrador; el back
@@ -73,6 +82,8 @@ export class PapeleraComponent implements OnInit, OnDestroy {
 
   constructor(
     public modal: NgbActiveModal,
+    /** Para abrir la auditoría ENCIMA de esta ventana, sin cerrarla. */
+    private modalService: NgbModal,
     private _archivoService: ArchivoService,
     private _toastr: ToastrService,
     private _loadingService: LoadingService,
@@ -310,6 +321,27 @@ export class PapeleraComponent implements OnInit, OnDestroy {
   }
 
   /** Confirmación destructiva con SweetAlert2, el mismo que usa "Cerrar sesión". */
+  /**
+   * Historial de auditoría de un registro que está en la papelera.
+   *
+   * Está aquí porque el botón del listado sólo alcanza a las filas del
+   * listado, y lo eliminado no está en ninguna: para ver quién lo borró
+   * había que restaurarlo antes.
+   *
+   * Se abre ENCIMA de esta ventana (NgbModal, no NgbActiveModal): al
+   * cerrar la auditoría se sigue en la papelera.
+   */
+  auditoria(registro?: ItemPapelera): void {
+    const quien = registro ?? this.seleccionado;
+    if (!quien || !this.puedeAuditar) { return; }
+
+    const ref = this.modalService.open(AuditoriaModalComponent, {
+      centered: true, size: 'xl', backdrop: 'static', keyboard: true
+    });
+    ref.componentInstance.tablaNombre = 'archivos';
+    ref.componentInstance.registroId = quien.id;
+  }
+
   private async confirmar(titulo: string, texto: string): Promise<boolean> {
     const r = await Swal.fire({
       title: titulo,

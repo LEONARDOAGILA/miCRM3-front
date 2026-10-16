@@ -966,6 +966,9 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   abrirPapelera(): void {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.modal.open(PapeleraClientesComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
+    // El permiso viaja con el modal: allí también hay auditoría, y el botón
+    // sólo se enseña si el perfil puede auditar.
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.allClientes(this.paginaActual));
   }
 

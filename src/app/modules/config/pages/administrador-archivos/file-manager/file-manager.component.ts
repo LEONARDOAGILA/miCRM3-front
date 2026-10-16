@@ -601,6 +601,10 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       keyboard: true
     });
     modalRef.componentInstance.soloRestaurar = !this.esAdministrador;   // sin borrar definitivo ni vaciar
+    // El permiso viaja con el modal: allí también hay auditoría. Aquí la
+    // auditoría es cosa de administrador (igual que el botón de esta
+    // pantalla), no del acceso «auditar» del perfil.
+    modalRef.componentInstance.puedeAuditar = this.esAdministrador;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.loaddata());
   }
 

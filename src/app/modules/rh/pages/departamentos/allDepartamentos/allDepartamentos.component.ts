@@ -23,16 +23,26 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 ///   COMPONENTES    ///
 import { SaveDepartamentoComponent } from '../saveDepartamento/saveDepartamento.component';
 import { DeleteDepartamentoComponent } from '../deleteDepartamento/deleteDepartamento.component';
+import { PapeleraDepartamentosComponent } from '../papeleraDepartamentos/papeleraDepartamentos.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
-import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
+import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
 
 /**
- * Listado de departamentos (rh.departamentos).
+ * Árbol de departamentos (rh.departamentos).
  *
- * Mismo esquema que allUsers: grilla ag-Grid con paginación EN SERVIDOR
- * (rh.fn_departamentos_listar_paginado con página, tamaño y filtro), barra con
- * buscador / nuevo / auditoría, columna ACCIONES plegable y exportaciones
- * que piden el listado completo aparte.
+ * ES UN ÁRBOL, NO UNA LISTA, así que se parece más a allMenus que a
+ * allCargos:
+ *
+ *  · NO PAGINA. El servidor devuelve el árbol entero, ya ordenado para
+ *    pintarlo, y cada fila trae su `nivel`, que es lo que se usa para la
+ *    sangría. Un árbol partido en páginas deja la mitad de los padres fuera.
+ *  · El buscador filtra EN EL NAVEGADOR (quickFilter): al ser pocas filas no
+ *    hace falta volver al servidor, y además con el filtro puesto la
+ *    jerarquía se rompe igualmente —se ven las coincidencias sueltas—.
+ *  · Se arrastra una fila para moverla de padre o cambiarle el orden; lo que
+ *    decide si se puede (ciclos, nivel máximo, nombres repetidos) es
+ *    rh.fn_departamentos_mover.
  *
  * Toda la lógica de modales vive aquí; el renderer de ACCIONES
  * (ButtonAccionDepartamento, al final del fichero) sólo delega.
@@ -46,23 +56,17 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
 export class AllDepartamentosComponent implements OnInit, OnDestroy {
 
   // ---------- Estado ----------
-  /** Permisos del perfil sobre esta pantalla (crear, reporte, auditar…), del resolver de la ruta. */
+  /** Permisos del perfil sobre esta pantalla, del resolver de la ruta. */
   public accesoModel: AccesoModel;
-  /** Filas de la página actual — NO el listado completo. */
+  /** El árbol entero, en el orden en que se dibuja. */
   public departamentoModel: DepartamentoModel[] = [];
-  /** Fila marcada en la grilla; habilita el botón de auditoría. */
+  /** Fila marcada en la rejilla; habilita auditoría y «nueva subdepartamento». */
   public selectedRow: DepartamentoModel | null = null;
   /** true mientras la columna ACCIONES está plegada. */
   public accionesPlegadas = false;
 
   public titulo: string;
   public isLoading$ = this._loadingService.isLoading$;
-
-  // ---------- Paginación en servidor ----------
-  public paginaActual: number = 1;
-  public totalRegistros: number = 0;
-  public registrosPorPagina: number = 10;
-  public ultimaPagina: number = 1;
 
   // ---------- ag-Grid ----------
   public gridApi!: GridApi;
@@ -76,7 +80,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   private timeoutIds = new Set<any>();
   private resizeTimeoutId: any;
 
-  /** setTimeout que se da de baja solo al dispararse (ver allUsers). */
+  /** setTimeout que se da de baja solo al dispararse (ver allCargos). */
   private programar(fn: () => void, ms: number): void {
     const id = setTimeout(() => {
       this.timeoutIds.delete(id);
@@ -95,7 +99,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   onResize(): void { this.ajustarTamanoGrid(); }
 
   // ---------- Búsqueda ----------
-  @ViewChild(CampoBusquedaPaginacionComponent) campoBusquedaPaginacion!: CampoBusquedaPaginacionComponent;
+  @ViewChild(CampoBusquedaComponent) campoBusqueda!: CampoBusquedaComponent;
   public searchTerm: string = '';
 
   constructor(
@@ -112,11 +116,12 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     private _seguridadService: SeguridadService,
     private _departamentoService: DepartamentoService,
   ) {
-    this.titulo = "Departamentos";
+    this.titulo = 'Departamentos';
     this.accesoModel = this.activeRoute.snapshot.data.access;
   }
 
   ngOnInit(): void {
+    this.leerPlegados();
     this.allDepartamentos();
     this.initializeGrid();
   }
@@ -146,102 +151,181 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     this.route.navigate(['/rh']);
   }
 
-  public get desde(): number {
-    return this.totalRegistros === 0 ? 0 : (this.paginaActual - 1) * this.registrosPorPagina + 1;
-  }
-
-  public get hasta(): number {
-    return Math.min(this.paginaActual * this.registrosPorPagina, this.totalRegistros);
-  }
-
   // ================================================================
   // AG-GRID
   // ================================================================
+
+  /** Celda centrada / a la izquierda, para no repetir el objeto en cada columna. */
+  private readonly centrado = { textAlign: 'center' };
+  private readonly izquierda = { textAlign: 'left' };
+
+  /**
+   * Clase de la celda según el nivel (nivel-0 … nivel-3).
+   *
+   * El color por nivel es lo que hace legible el árbol de un vistazo: sólo
+   * con la sangría, a partir del segundo nivel cuesta seguir de quién cuelga
+   * cada fila.
+   */
+  private claseNivel = (params: any): string =>
+    'celda-nivel nivel-' + Math.min(Math.max(Number(params?.data?.nivel ?? 0), 0), 3);
 
   initializeGrid(): void {
     this.columnDefs = [
       {
         headerName: 'Id',
         field: 'id',
-        cellStyle: { textAlign: 'center' },
+        floatingFilter: true,
+        cellClass: this.claseNivel,
+        cellStyle: this.centrado,
         minWidth: 70,
         maxWidth: 70,
+        sortable: false,
       },
       {
-        // Segunda columna y PULSABLE: dar de baja esto era abrir la ficha
-        // entera, bajar la casilla y guardar. Ahora se pulsa aqui.
+        // Segunda columna y PULSABLE, igual que en las demás rejillas.
+        //
+        // Desactivar un departamento NO desactiva a sus hijas: son decisiones
+        // distintas, y apagar media rama de un clic no se ve venir.
         headerName: 'Activo',
         field: 'activo',
-        cellStyle: { textAlign: 'center' },
+        cellStyle: this.centrado,
         minWidth: 80,
         maxWidth: 80,
+        sortable: false,
         cellRenderer: (params: any) => this.casillaActivo(params),
+      },
+      {
+        // El código corto, que es por donde se busca en los papeles de RRHH
+        headerName: 'Código',
+        field: 'codigo',
+        headerTooltip: 'Código corto del departamento; es único en toda la empresa',
+        cellClass: this.claseNivel,
+        cellStyle: this.centrado,
+        minWidth: 90,
+        maxWidth: 110,
+        sortable: false,
+        floatingFilter: true,
       },
       {
         headerName: 'Departamento',
         field: 'nombre',
-        cellStyle: { textAlign: 'left', fontWeight: '600' },
-        minWidth: 220,
-        maxWidth: 400,
+        floatingFilter: true,
+        cellClass: this.claseNivel,
+        cellStyle: this.izquierda,
+        minWidth: 280,
+        maxWidth: 520,
+        sortable: false,
+        // Sangría por `nivel` (ya viene calculado del servidor), el asa de
+        // plegar y el nombre. Las hojas llevan un hueco del mismo ancho que
+        // el asa para que todos los nombres de un nivel queden alineados.
+        cellRenderer: (params: any) => this.celdaNombre(params),
+        // Los botones de contraer y desplegar todo van en la cabecera de
+        // esta columna, que es la del árbol (ver cabeceraArbol).
+        headerComponentParams: this.cabeceraArbol(),
+        // Arrastrar la fila (asa ⋮⋮) para moverla a otra rama o cambiar su
+        // orden: mismo esquema que allMenus. Sólo con permiso de editar.
+        dndSource: this.accesoModel?.editar === true,
+        dndSourceOnRowDrag: (params: any) => this.onDragStart(params.rowNode.data, params.dragEvent),
       },
       {
-        headerName: 'Código',
-        field: 'codigo',
-        cellStyle: { textAlign: 'center' },
-        minWidth: 100,
-        maxWidth: 120,
-        cellRenderer: (params: any) => params.value
-          ? `<span class="badge bg-secondary bg-opacity-25 text-body fs-10px">${params.value}</span>`
-          : '',
+        headerName: 'Nivel',
+        field: 'nivel',
+        floatingFilter: true,
+        cellClass: this.claseNivel,
+        cellStyle: this.centrado,
+        minWidth: 80,
+        maxWidth: 80,
+        sortable: false,
       },
       {
-        headerName: 'Responsable',
-        field: 'responsable',
-        cellStyle: { textAlign: 'left' },
-        minWidth: 180,
-        maxWidth: 260,
+        headerName: 'Orden',
+        field: 'orden',
+        floatingFilter: true,
+        headerTooltip: 'Posición entre sus hermanas',
+        cellClass: this.claseNivel,
+        cellStyle: this.centrado,
+        minWidth: 80,
+        maxWidth: 80,
+        sortable: false,
       },
       {
-        headerName: 'Descripción',
-        field: 'descripcion',
-        cellStyle: { textAlign: 'left' },
-        minWidth: 200,
-        maxWidth: 600,
+        headerName: 'Subdepartamentos',
+        field: 'num_hijos',
+        floatingFilter: true,
+        headerTooltip: 'Subdepartamentos directas; con subdepartamentos no se puede eliminar',
+        cellClass: this.claseNivel,
+        cellStyle: this.centrado,
+        minWidth: 120,
+        maxWidth: 130,
+        sortable: false,
       },
       {
         headerName: 'Empleados',
         field: 'num_empleados',
-        headerTooltip: 'Empleados del departamento',
-        cellStyle: { textAlign: 'center' },
+        headerTooltip: 'Empleados de toda la rama (los de el departamento más los de sus subdepartamentos). '
+                     + 'Entre paréntesis, los que cuelgan de ella directamente: ésos son los que impiden eliminarla',
+        cellClass: this.claseNivel,
+        cellStyle: this.centrado,
         minWidth: 100,
         maxWidth: 110,
+        sortable: false,
+        cellRenderer: (params: any) => this.celdaEmpleados(params),
+        floatingFilter: true,
+        // Se filtra por el número que SE VE —el total de la rama— y no por
+        // `num_empleados`, que son sólo los suyos: escribir 6 y que no
+        // salga la fila que pone 6 no habría quien lo entendiera.
+        filterValueGetter: (params: any) =>
+          Number(params.data?.empleados_rama ?? params.data?.num_empleados ?? 0),
+      },
+      {
+        // Quién lo dirige. Se enseña el nombre del empleado, no su id.
+        headerName: 'Responsable',
+        field: 'responsable',
+        headerTooltip: 'Empleado responsable del departamento',
+        cellClass: this.claseNivel,
+        cellStyle: this.izquierda,
+        minWidth: 160,
+        maxWidth: 260,
+        sortable: false,
+        floatingFilter: true,
+        valueGetter: (params: any) => params.data?.responsable || '',
+      },
+      {
+        headerName: 'Descripción',
+        field: 'descripcion',
+        floatingFilter: true,
+        cellClass: this.claseNivel,
+        cellStyle: this.izquierda,
+        minWidth: 200,
+        maxWidth: 600,
+        sortable: false,
       },
       {
         headerName: 'Creado',
         field: 'created_at',
-        cellStyle: { textAlign: 'center' },
+        floatingFilter: true,
+        cellClass: this.claseNivel,
+        cellStyle: this.centrado,
         minWidth: 160,
         maxWidth: 180,
+        sortable: false,
       },
       {
         headerName: 'Actualizado',
         field: 'updated_at',
-        cellStyle: { textAlign: 'center' },
+        floatingFilter: true,
+        cellClass: this.claseNivel,
+        cellStyle: this.centrado,
         minWidth: 160,
         maxWidth: 180,
-      },
-      {
-        headerName: 'Creado por',
-        field: 'created_by',
-        cellStyle: { textAlign: 'left' },
-        minWidth: 130,
-        maxWidth: 200,
         sortable: false,
       },
       {
         headerName: 'Actualizado por',
         field: 'updated_by',
-        cellStyle: { textAlign: 'left' },
+        floatingFilter: true,
+        cellClass: this.claseNivel,
+        cellStyle: this.izquierda,
         minWidth: 130,
         maxWidth: 200,
         sortable: false,
@@ -269,9 +353,323 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     ];
   }
 
+  // ================================================================
+  // PLEGAR Y DESPLEGAR RAMAS
+  // ================================================================
+  //
+  // ag-Grid Community no trae `treeData` —es de la versión de pago—, así que
+  // se hace a mano y resulta más simple: la rejilla recibe SÓLO las filas
+  // visibles, y una fila está visible cuando ninguno de sus antepasados está
+  // plegado. El servidor ya manda el árbol en orden y con `nivel`, que es lo
+  // que hacía falta.
+
+  /** Los ids de los departamentos plegados (sus descendientes no se pintan). */
+  private readonly plegados = new Set<number>();
+
+  /** Lo que de verdad recibe la rejilla: el árbol menos las ramas cerradas. */
+  public filasVisibles: DepartamentoModel[] = [];
+
+  /** Dónde se recuerda el estado entre visitas. */
+  private static readonly CLAVE_PLEGADOS = 'rh.departamentos.plegados';
+
+  /** La celda de «Departamento»: sangría + asa + nombre. */
+  private celdaNombre(params: any): string {
+    const d = params.data;
+    const nivel = Math.max(0, Number(d?.nivel ?? 0));
+    const hijos = Number(d?.num_hijos ?? 0);
+
+    // La sangría va en píxeles y no en espacios: con `&nbsp;` el ancho
+    // depende de la fuente y las columnas dejan de alinearse al cambiar de
+    // tema.
+    const sangria = `<span class="dep-sangria" style="width:${nivel * 16}px"></span>`;
+
+    const asa = hijos > 0
+      ? `<button type="button" class="dep-asa" data-accion="plegar"
+                 title="${this.plegados.has(d.id) ? 'Desplegar' : 'Contraer'} esta rama"
+                 aria-label="${this.plegados.has(d.id) ? 'Desplegar' : 'Contraer'}">
+           <i class="fa fa-${this.plegados.has(d.id) ? 'plus' : 'minus'}"></i>
+         </button>`
+      : `<span class="dep-asa dep-asa--hueco"></span>`;
+
+    // El nombre ESCAPADO: lo escribe un usuario y acaba dentro de una cadena
+    // de HTML, así que sin esto un `<` en el nombre rompe la celda.
+    const texto = String(params.value ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    return `<span class="dep-nombre">${sangria}${asa}<span>${texto}</span></span>`;
+  }
+
+  /**
+   * Suma los empleados de cada rama.
+   *
+   * A cada departamento se le añaden los empleados de todos sus descendientes,
+   * que es lo que interesa al contraer: el número de la raíz pasa a ser el
+   * de la rama entera. `num_empleados` se deja como está —son los suyos— y
+   * es el que manda en «con empleados no se puede eliminar».
+   */
+  private recalcularEmpleados(): void {
+    const porId = new Map<number, DepartamentoModel>();
+    this.departamentoModel.forEach(c => {
+      porId.set(c.id, c);
+      c.empleados_rama = Number(c.num_empleados ?? 0);
+    });
+
+    this.departamentoModel.forEach(c => {
+      const propios = Number(c.num_empleados ?? 0);
+      if (!propios) { return; }
+
+      // Se sube por los antepasados sumando. `vistos` es por si el árbol
+      // llegara con un ciclo: sin él, esto sería un bucle infinito.
+      const vistos = new Set<number>([c.id]);
+      let p = c.padre_id ?? null;
+      while (p != null && !vistos.has(p)) {
+        vistos.add(p);
+        const padre = porId.get(p);
+        if (!padre) { break; }
+        padre.empleados_rama = Number(padre.empleados_rama ?? 0) + propios;
+        p = padre.padre_id ?? null;
+      }
+    });
+  }
+
+  /**
+   * La celda de «Empleados»: el total de la rama y, si además tiene
+   * empleados propios, ésos entre paréntesis (son los que impiden
+   * eliminarla). En las hojas, donde los dos números coinciden, va sólo uno.
+   */
+  private celdaEmpleados(params: any): string {
+    const propios = Number(params.data?.num_empleados ?? 0);
+    const rama = Number(params.data?.empleados_rama ?? propios);
+
+    if (rama === propios) { return String(rama); }
+
+    const suyos = propios > 0
+      ? `<span class="dep-prod__propios">(${propios})</span>`
+      : '';
+    return `<span class="dep-prod" title="${rama} en toda la rama · ${propios} en este departamento">${rama}${suyos}</span>`;
+  }
+
+  /**
+   * Cabecera de «Departamento»: los botones de plegar y el título.
+   *
+   * Es una plantilla del encabezado de ag-Grid, no de Angular: el clic se
+   * atiende en `alClicarCabecera` (el contenedor de la rejilla lo escucha) y
+   * el encendido/apagado lo pone `actualizarBotonesArbol` a mano.
+   */
+  private cabeceraArbol(): any {
+    return {
+      template: `
+        <div class="ag-cell-label-container" role="presentation">
+          <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>
+          <div ref="eLabel" class="ag-header-cell-label cabecera-arbol" role="presentation">
+            <span class="cabecera-arbol__botones btn-group" role="group" aria-label="Plegar el árbol">
+              <button type="button" class="btn" data-arbol="contraer" title="Contraer todas las ramas">
+                <i class="fa fa-minus"></i>
+              </button>
+              <button type="button" class="btn" data-arbol="desplegar" title="Desplegar todas las ramas">
+                <i class="fa fa-plus"></i>
+              </button>
+            </span>
+            <span ref="eText" class="ag-header-cell-text"></span>
+          </div>
+        </div>`
+    };
+  }
+
+  /**
+   * Enciende o apaga los botones de la cabecera.
+   *
+   * La plantilla de ag-Grid es HTML suelto, no Angular: no hay `[disabled]`
+   * que valga y hay que ponerlo cada vez que cambia el estado.
+   */
+  private actualizarBotonesArbol(): void {
+    const botones = this.host?.nativeElement?.querySelectorAll?.('[data-arbol]');
+    botones?.forEach((b: HTMLButtonElement) => {
+      b.disabled = b.dataset['arbol'] === 'contraer'
+        ? this.plegadoDesactivado                           // buscando o filtrando se ve todo
+        : (this.plegadoDesactivado || !this.hayPlegados);   // nada que desplegar
+    });
+  }
+
+  /**
+   * Clic en la cabecera de la rejilla.
+   *
+   * Lo escucha el contenedor porque los botones los pinta ag-Grid y no
+   * Angular, así que no hay `(click)` al que agarrarse.
+   */
+  alClicarCabecera(ev: MouseEvent): void {
+    const boton = (ev.target as HTMLElement).closest('[data-arbol]') as HTMLButtonElement | null;
+    if (!boton) { return; }
+
+    ev.stopPropagation();
+    if (boton.disabled) { return; }
+    if (boton.dataset['arbol'] === 'contraer') { this.contraerTodo(); } else { this.desplegarTodo(); }
+  }
+
+  // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Aquí los filtra ag-Grid, no el servidor: esta pantalla no pagina —trae el
+  // árbol entero— así que la rejilla tiene TODAS las filas y puede filtrar
+  // ella. En clientes o empleados, que paginan, hay que mandarlos al servidor
+  // porque allí la rejilla sólo tiene la página.
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /** Cuántas columnas llevan filtro, para decirlo en el buscador. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o un filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
+
+  /**
+   * La cabecera pidió otra cosa.
+   *
+   * Con un filtro puesto el árbol se abre entero, por lo mismo que con el
+   * buscador: una coincidencia dentro de una rama cerrada no se vería y
+   * parecería que el filtro no encuentra lo que está ahí.
+   */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+
+    const antes = this.cuantasColumnasFiltradas > 0;
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    if (antes !== (this.cuantasColumnasFiltradas > 0)) { this.recalcularVisibles(); }
+  }
+
+  /**
+   * La × del buscador o el botón de limpiar filtros.
+   *
+   * Una sola pasada: se quita el texto, se quitan los filtros de columna y se
+   * repinta una vez.
+   */
+  clearAllFilters(): void {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    this.limpiando = true;
+    this.searchTerm = '';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+    this.gridApi?.setQuickFilter('');
+
+    // La bandera se baja en la siguiente vuelta: ag-Grid avisa del cambio de
+    // filtros DESPUÉS de esta línea (medido), y si se apagara aquí ese aviso
+    // entraría con ella ya baja y repintaría otra vez.
+    this.programar(() => { this.limpiando = false; }, 0);
+
+    this.recalcularVisibles();
+  }
+
+  /** Pliega o despliega una rama y lo recuerda. */
+  alternarPlegado(fila: DepartamentoModel | null): void {
+    if (!fila?.id || Number(fila.num_hijos ?? 0) === 0) { return; }
+    if (this.plegados.has(fila.id)) { this.plegados.delete(fila.id); }
+    else { this.plegados.add(fila.id); }
+    this.guardarPlegados();
+    this.recalcularVisibles();
+  }
+
+  /** Cierra todas las que tienen hijas. */
+  contraerTodo(): void {
+    this.plegados.clear();
+    this.departamentoModel.forEach(c => { if (Number(c.num_hijos ?? 0) > 0) { this.plegados.add(c.id); } });
+    this.guardarPlegados();
+    this.recalcularVisibles();
+  }
+
+  desplegarTodo(): void {
+    this.plegados.clear();
+    this.guardarPlegados();
+    this.recalcularVisibles();
+  }
+
+  /** Para encender o apagar el botón de la barra. */
+  get hayPlegados(): boolean { return this.plegados.size > 0; }
+
+  /** Con un filtro puesto el árbol se ve entero: plegar no pinta nada. */
+  get plegadoDesactivado(): boolean { return !!this.searchTerm || this.cuantasColumnasFiltradas > 0; }
+
+  /** Cuántas ramas están cerradas, para decirlo en el pie. */
+  get plegadosCuantas(): number { return this.plegados.size; }
+
+  /**
+   * Rehace la lista que ve la rejilla.
+   *
+   * CON BÚSQUEDA ESCRITA NO SE PLIEGA NADA: si no, una coincidencia dentro de
+   * una rama cerrada no aparecería y parecería que el buscador no encuentra
+   * lo que está ahí. Buscar manda sobre el plegado.
+   */
+  private recalcularVisibles(): void {
+    // Con texto escrito O con un filtro de columna se abre el árbol entero:
+    // si no, lo que coincidiera dentro de una rama cerrada no saldría.
+    if (this.searchTerm || this.cuantasColumnasFiltradas > 0 || this.plegados.size === 0) {
+      this.filasVisibles = [...this.departamentoModel];
+    } else {
+      // Un mapa id → padre para no recorrer el array por cada antepasado
+      const padres = new Map<number, number | null>();
+      this.departamentoModel.forEach(c => padres.set(c.id, c.padre_id ?? null));
+
+      this.filasVisibles = this.departamentoModel.filter(c => {
+        let p = padres.get(c.id) ?? null;
+        while (p != null) {
+          if (this.plegados.has(p)) { return false; }
+          p = padres.get(p) ?? null;
+        }
+        return true;
+      });
+    }
+    this.gridApi?.setRowData(this.filasVisibles);
+    this.actualizarBotonesArbol();
+  }
+
+  /**
+   * Quita del estado las que ya no existen.
+   *
+   * Si se borra un departamento y su id se queda aquí, al crear otra podría
+   * tocarle ese mismo id y nacería plegada sin que nadie lo haya pedido.
+   */
+  private limpiarPlegados(): void {
+    const existen = new Set(this.departamentoModel.map(c => c.id));
+    [...this.plegados].forEach(id => { if (!existen.has(id)) { this.plegados.delete(id); } });
+  }
+
+  private guardarPlegados(): void {
+    try {
+      localStorage.setItem(AllDepartamentosComponent.CLAVE_PLEGADOS, JSON.stringify([...this.plegados]));
+    } catch {
+      // Ventana privada o almacenamiento bloqueado: se pierde al salir y ya
+    }
+  }
+
+  private leerPlegados(): void {
+    try {
+      const guardado = localStorage.getItem(AllDepartamentosComponent.CLAVE_PLEGADOS);
+      if (!guardado) { return; }
+      const ids = JSON.parse(guardado);
+      if (Array.isArray(ids)) {
+        ids.forEach((id: any) => { if (Number.isFinite(Number(id))) { this.plegados.add(Number(id)); } });
+      }
+    } catch {
+      // Lo guardado no sirve: se empieza con el árbol abierto
+    }
+  }
+
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.programar(() => this.montarListenersCabecera(), 500);
+    // Los botones de la cabecera se pintan con ella: si el árbol llegó
+    // antes, su estado se pone aquí, cuando ya existen.
+    this.programar(() => { this.montarListenersCabecera(); this.actualizarBotonesArbol(); }, 500);
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
     this.ajustarAlturaGrid();
   }
@@ -309,7 +707,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     }
   }
 
-  private static readonly ANCHO_ACCIONES_ABIERTA = 130;
+  private static readonly ANCHO_ACCIONES_ABIERTA = 155;
   private static readonly ANCHO_ACCIONES_PLEGADA = 50;
 
   /** Pliega o despliega la columna ACCIONES (pulsando su cabecera). */
@@ -353,7 +751,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     }, 100);
   }
 
-  /** La grilla llena la pantalla hasta el final de la ventana, menos la paginación. */
+  /** La rejilla llena la pantalla hasta el final de la ventana. */
   ajustarAlturaGrid() {
     const gridElement = this.host.nativeElement.querySelector('.ag-theme-alpine') as HTMLElement;
     if (!gridElement) { return; }
@@ -367,29 +765,17 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     this._appAgGridService.limpiarSeleccion(this.gridApi);
   }
 
-  /** ↑ / ↓ seleccionan la fila como un clic (ver AppAgGridService.navegacionConFlechas). */
+  /** ↑ / ↓ seleccionan la fila como un clic. */
   navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.selectedRow = fila);
 
   // ================================================================
   // LA CASILLA DE «ACTIVO»
   // ================================================================
-  //
-  // El dibujo y el flujo —el giro mientras guarda, repintar con lo que
-  // contesta el servidor, volver atrás si falla— viven en
-  // AppAgGridService: son los mismos en las nueve rejillas que tienen esta
-  // casilla. Aquí sólo van los datos de esta pantalla.
 
-  /**
-   * Los desactivados se ven, pero se ven apagados y tachados.
-   *
-   * No se esconden: siguen en la lista y se pueden buscar y abrir. Lo que se
-   * busca es no tener que leer la casilla fila por fila para saber cuál ya no
-   * está en juego. La regla y su CSS son los mismos en las nueve rejillas con
-   * casilla, así que viven en AppAgGridService y en styles.css.
-   */
+  /** Los departamentos desactivadas se ven apagadas y tachadas. */
   public rowClassRules = this._appAgGridService.reglasFilaInactiva('activo');
 
-  /** Los que se están guardando ahora mismo: su casilla sale como un giro. */
+  /** Las que se están guardando ahora mismo: su casilla sale como un giro. */
   private readonly activoEnVuelo = new Set<number>();
 
   /** La casilla de la columna «Activo». */
@@ -401,21 +787,15 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Activar o desactivar desde la casilla, sin abrir el formulario.
-   *
-   * Lo escribe una función del servidor que toca SÓLO esa columna. Guardar
-   * la ficha entera para bajar una casilla la revalidaba toda, y un
-   * registro que hoy no cumpliría alguna regla —cargado antes de que
-   * existiera— no se podría desactivar hasta arreglarle todo lo demás.
-   */
   cambiarActivo(fila: DepartamentoModel | null, nodo?: RowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
     this._appAgGridService.alternarActivo({
       gridApi: this.gridApi,
-      filas: this.departamentoModel,
+      // La rejilla pinta `filasVisibles`: es ahí donde hay que sustituir la
+      // fila para que setData encuentre su nodo
+      filas: this.filasVisibles,
       fila, nodo,
       campo: 'activo',
       enVuelo: this.activoEnVuelo,
@@ -423,19 +803,27 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
       que: 'departamento',
       llamar: (id, activo) => this._departamentoService.activarDepartamento(id, activo),
       nombre: (f: any) => f.nombre,
-        hasta: this.unsubscribe$,
+      hasta: this.unsubscribe$,
+      // Y el árbol maestro también, que es de donde se recalcula lo visible:
+      // si no, al plegar o buscar volvería el valor viejo
+      alCambiar: (actualizada: any) => {
+        const i = this.departamentoModel.findIndex(c => c.id === actualizada.id);
+        if (i !== -1) { this.departamentoModel[i] = actualizada; }
+        this.recalcularEmpleados();   // la fila viene del servidor, sin la suma
+      },
     });
   }
 
   onCellClicked(e: CellClickedEvent): void {
     this.selectedRow = e.data;
 
-    // La casilla de «Activo» se marca con `data-accion`, igual que el botón
-    // de llamar de las rejillas de clientes: se atiende aquí y no con un
-    // componente por celda.
     const origen = e.event?.target as HTMLElement | null;
     if (origen?.closest('[data-accion="activo"]')) {
       this.cambiarActivo(e.data, e.node);
+      return;
+    }
+    if (origen?.closest('[data-accion="plegar"]')) {
+      this.alternarPlegado(e.data);
     }
   }
 
@@ -443,166 +831,261 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   // DATOS
   // ================================================================
 
-  /** Pide una página al servidor y la vuelca en la grilla (con el meta de paginación). */
-  async allDepartamentos(page: number = 1) {
+  /** Trae el árbol entero, ya ordenado para pintarlo. */
+  async allDepartamentos(): Promise<void> {
     try {
       this._loadingService.setLoading(true);
 
-      const res = await firstValueFrom(
-        this._departamentoService.allDepartamentos(page, this.registrosPorPagina, this.searchTerm)
-      ) as any;
+      const res = await firstValueFrom(this._departamentoService.arbolDepartamentos(false)) as any;
 
-      if (res.body?.status !== 'success') {
-        this._toastr.error(res.body?.message || 'No se pudo obtener el listado de departamentos', 'Error');
+      // El servicio de departamentos devuelve el CUERPO, no la respuesta
+      // entera (el de categorías usa `observe: 'response'`): aquí se lee
+      // `res.status`, como en el resto de pantallas de RRHH.
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo obtener el árbol de departamentos', 'Error');
         this.departamentoModel = [];
-        this.totalRegistros = 0;
-        this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.departamentoModel);
+        this.recalcularVisibles();
         return;
       }
 
-      this.departamentoModel = res.body?.data?.data || [];
-
-      if (res.body?.data?.meta) {
-        this.totalRegistros = res.body.data.meta.total;
-        this.registrosPorPagina = res.body.data.meta.per_page;
-        this.paginaActual = res.body.data.meta.current_page;
-        this.ultimaPagina = res.body.data.meta.last_page;
-      }
-
-      if (this.gridApi) this.gridApi.setRowData(this.departamentoModel);
+      this.departamentoModel = res?.data || [];
+      this.recalcularEmpleados();
+      this.limpiarPlegados();
+      this.recalcularVisibles();
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
-      console.error('Error al cargar departamentos:', error);
+      console.error('Error al cargar el árbol de departamentos:', error);
     } finally {
       this._loadingService.setLoading(false);
     }
   }
 
-  /** Trae TODOS los registros que cumplen el filtro actual, para exportar. */
-  private async obtenerTodosParaExportar(): Promise<DepartamentoModel[]> {
-    if (this.totalRegistros === 0) { return []; }
+  /** Cuántas hay en total (el pie de la pantalla). */
+  public get totalRegistros(): number { return this.departamentoModel.length; }
+
+  /** Filas del reporte, en el orden del árbol y con la ruta completa. */
+  private filasReporte(): any[][] {
+    return this.departamentoModel.map(item => [
+      item.id,
+      item.ruta || item.nombre,
+      item.codigo || '',
+      item.nivel,
+      item.num_hijos ?? 0,
+      item.num_empleados ?? 0,
+      item.empleados_rama ?? item.num_empleados ?? 0,
+      item.responsable || '',
+      item.activo ? 'Activo' : 'Inactivo'
+    ]);
+  }
+
+  // ================================================================
+  // BÚSQUEDA (en el navegador: son pocas filas)
+  // ================================================================
+
+  onFilterTextBoxChanged(term?: string) {
+    const antes = !!this.searchTerm;
+    if (term !== undefined) { this.searchTerm = term; }
+
+    // Al empezar o dejar de buscar cambia qué filas se pintan: con búsqueda
+    // se abre todo para que una coincidencia dentro de una rama cerrada no
+    // se quede escondida
+    if (antes !== !!this.searchTerm) { this.recalcularVisibles(); }
+
+    this.gridApi?.setQuickFilter(this.searchTerm);
+  }
+
+  /**
+   * Se pulsó la × del buscador.
+   *
+   * No hay botón de «quitar filtros» aparte: en esta pantalla el único
+   * filtro es ese texto, y el propio campo ya trae su × —de ahí sale este
+   * aviso—.
+   */
+  alLimpiarBusqueda() {
+    this.searchTerm = '';
+    this.recalcularVisibles();      // vuelven a cerrarse las ramas plegados
+    this.gridApi?.setQuickFilter('');
+  }
+
+  // ================================================================
+  // ARRASTRAR Y SOLTAR: mover de rama / cambiar el orden
+  // ================================================================
+  //
+  // Igual que en allMenus: el tercio superior o inferior de una fila es un
+  // hueco («antes de» / «después de», misma rama que esa fila); el centro es
+  // «dentro de» (pasa a ser su hija, al final). Lo demás —ciclos, nivel
+  // máximo, nombres repetidos entre hermanas, renumerar— lo decide el
+  // servidor (rh.fn_departamentos_mover).
+
+  /** El departamento que se está arrastrando. */
+  private arrastrando: any = null;
+  /** Fila resaltada como destino, para quitarle la clase después. */
+  private filaDestino: HTMLElement | null = null;
+
+  onDragStart(departamento: any, ev: DragEvent): void {
+    this.arrastrando = departamento;
+    if (ev.dataTransfer) {
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', departamento?.nombre ?? '');
+    }
+  }
+
+  @HostListener('document:dragend')
+  onDragEnd(): void {
+    this.arrastrando = null;
+    this.quitarFilaDestino();
+  }
+
+  /** Fila y zona (antes / dentro / después) bajo el cursor, si es un destino válido. */
+  private destinoBajo(ev: DragEvent): { el: HTMLElement; data: any; zona: 'antes' | 'dentro' | 'despues' } | null {
+    if (!this.arrastrando) { return null; }
+    const el = (ev.target as HTMLElement).closest('.ag-row') as HTMLElement | null;
+    if (!el) { return null; }
+    const data = this.gridApi?.getDisplayedRowAtIndex(Number(el.getAttribute('row-index')))?.data;
+    // Ni sobre sí misma ni dentro de su propia rama: eso lo rechazaría el
+    // servidor, pero es mejor que ni siquiera se pueda soltar ahí
+    if (!data || data.id === this.arrastrando.id || this.esDescendiente(data.id, this.arrastrando.id)) { return null; }
+    const r = el.getBoundingClientRect();
+    const y = (ev.clientY - r.top) / r.height;
+    const zona = y < .3 ? 'antes' : (y > .7 ? 'despues' : 'dentro');
+    return { el, data, zona };
+  }
+
+  /** true si `id` cuelga (a cualquier profundidad) de `ancestroId`. */
+  private esDescendiente(id: number, ancestroId: number): boolean {
+    let actual = this.departamentoModel.find((c: any) => c.id === id) as any;
+    while (actual?.padre_id != null) {
+      if (actual.padre_id === ancestroId) { return true; }
+      actual = this.departamentoModel.find((c: any) => c.id === actual.padre_id);
+    }
+    return false;
+  }
+
+  onDragOverGrilla(ev: DragEvent): void {
+    if (!this.arrastrando) { return; }
+    ev.preventDefault();
+    if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'move'; }
+    const d = this.destinoBajo(ev);
+    const clase = d ? ({ antes: 'fila-insertar-antes', dentro: 'fila-destino', despues: 'fila-insertar-despues' })[d.zona] : '';
+    if (!d || this.filaDestino !== d.el || !d.el.classList.contains(clase)) {
+      this.quitarFilaDestino();
+      if (d) { d.el.classList.add(clase); this.filaDestino = d.el; }
+    }
+  }
+
+  onDragLeaveGrilla(ev: DragEvent): void {
+    const a = ev.relatedTarget as Node | null;
+    if (a && (ev.currentTarget as HTMLElement).contains(a)) { return; }
+    this.quitarFilaDestino();
+  }
+
+  onDropGrilla(ev: DragEvent): void {
+    ev.preventDefault();
+    const departamento = this.arrastrando;
+    const d = this.destinoBajo(ev);
+    this.onDragEnd();
+    if (!departamento || !d) { return; }
+
+    let padreId: number | null;
+    let antesDe: number | null;
+    if (d.zona === 'dentro') {
+      padreId = d.data.id;
+      antesDe = null;                                  // al final de sus hijas
+    } else {
+      padreId = d.data.padre_id ?? null;               // hermana de la fila destino
+      antesDe = d.zona === 'antes' ? d.data.id : this.siguienteHermano(d.data, departamento.id);
+    }
+    // Soltada donde ya estaba: nada que hacer
+    if (padreId === (departamento.padre_id ?? null) && antesDe === this.siguienteHermano(departamento, departamento.id)) { return; }
+    this.moverDepartamento(departamento, padreId, antesDe);
+  }
+
+  /** id de la hermana que sigue a `c` (sin contar `excluir`); null si es la última. */
+  private siguienteHermano(c: any, excluir: number): number | null {
+    const hermanas = this.departamentoModel
+      .filter((x: any) => (x.padre_id ?? null) === (c.padre_id ?? null) && x.id !== excluir)
+      .sort((a: any, b: any) => (a.orden - b.orden) || String(a.nombre).localeCompare(String(b.nombre)));
+    const i = hermanas.findIndex((x: any) => x.id === c.id);
+    return i >= 0 ? (hermanas[i + 1]?.id ?? null) : null;
+  }
+
+  private quitarFilaDestino(): void {
+    this.filaDestino?.classList.remove('fila-destino', 'fila-insertar-antes', 'fila-insertar-despues');
+    this.filaDestino = null;
+  }
+
+  /**
+   * Manda el movimiento y recarga.
+   *
+   * Se recarga el árbol entero en vez de arreglar las filas a mano: un
+   * movimiento cambia el nivel de todo lo que cuelga y el orden de dos
+   * ramas, y rehacer eso en el navegador es duplicar la lógica del servidor
+   * con todas las papeletas de que acaben distintas.
+   */
+  private async moverDepartamento(departamento: any, padreId: number | null, antesDe: number | null): Promise<void> {
+    if (this._seguridadService.isexpired()) { return; }
     try {
       this._loadingService.setLoading(true);
-      const res = await firstValueFrom(
-        this._departamentoService.allDepartamentos(1, this.totalRegistros, this.searchTerm)
-      ) as any;
-      if (res.body?.status !== 'success') {
-        this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
-        return [];
+      const res: any = await firstValueFrom(this._departamentoService.moverDepartamento(departamento.id, padreId, antesDe));
+      if (res?.status !== 'success') {
+        this._toastr.error(res?.message || 'No se pudo mover el departamento', 'Mover');
+        return;
       }
-      return res.body?.data?.data || [];
-    } catch (error) {
-      console.error('Error al obtener el listado completo:', error);
-      return [];
+      this._toastr.success(`«${departamento.nombre}»: ${res.message}`, 'Departamentos', { timeOut: 2500 });
+      await this.allDepartamentos();
+      // Vuelve a marcar la fila movida
+      this.gridApi?.forEachNode(n => n.setSelected(n.data?.id === departamento.id));
+      this.selectedRow = this.departamentoModel.find((c: any) => c.id === departamento.id) ?? null;
+    } catch (e: any) {
+      // El AuthInterceptor ya muestra los errores HTTP; el back responde 409
+      // con el motivo (ciclo, nivel máximo, nombre repetido…)
+      console.error('Error al mover el departamento:', e);
     } finally {
       this._loadingService.setLoading(false);
     }
   }
 
-  /** Filas del reporte, ordenadas por nombre y con formato de salida. */
-  private filasReporte(departamentos: DepartamentoModel[]): any[][] {
-    return departamentos
-      .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
-      .map(item => [
-        item.id,
-        item.codigo || '',
-        item.nombre,
-        item.responsable || '',
-        item.num_empleados ?? 0,
-        item.activo ? 'Activo' : 'Inactivo'
-      ]);
-  }
-
   // ================================================================
-  // BÚSQUEDA
+  // IMPRESIÓN Y EXPORTACIÓN
   // ================================================================
 
-  async onFilterTextBoxChanged(term?: string) {
-    if (term !== undefined) this.searchTerm = term;
-    this.paginaActual = 1;
-    await this.allDepartamentos(1);
-  }
-
-  clearAllFilters() {
-    this.campoBusquedaPaginacion?.reset();
-    if (this.gridApi) {
-      this.gridApi.setFilterModel(null);
-      this.searchTerm = '';
-      this.gridApi.onFilterChanged();
-      this.allDepartamentos(this.paginaActual).then(() => {
-        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
-          this.goToPage(this.ultimaPagina);
-        }
-      });
-    }
-  }
-
-  // ================================================================
-  // PAGINACIÓN
-  // ================================================================
-
-  firstPage(): void {
-    if (this.paginaActual !== 1) { this.goToPage(1); }
-  }
-
-  ultimaPagina2(): void {
-    if (this.paginaActual !== this.ultimaPagina) { this.goToPage(this.ultimaPagina); }
-  }
-
-  goToPage(page: number): void {
-    if (page < 1 || page > this.ultimaPagina) return;
-    this.paginaActual = page;
-    this.allDepartamentos(this.paginaActual);
-  }
-
-  nextPage(): void { this.goToPage(this.paginaActual + 1); }
-  prevPage(): void { this.goToPage(this.paginaActual - 1); }
-
-  // ================================================================
-  // IMPRESIÓN Y EXPORTACIÓN (listado completo que cumple el filtro)
-  // ================================================================
-
-  private readonly CABECERAS_REPORTE = ['ID', 'Código', 'Departamento', 'Responsable', 'Empleados', 'Estado'];
+  private readonly CABECERAS_REPORTE = ['ID', 'Departamento', 'Código', 'Nivel', 'Subdepartamentos', 'Empleados', 'En la rama', 'Responsable', 'Estado'];
 
   private tituloReporte(): string {
-    return this.searchTerm ? `Listado de Departamentos (filtro: ${this.searchTerm})` : 'Listado de Departamentos';
+    return 'Árbol de Departamentos';
   }
 
   async printPdf() {
-    const departamentos = await this.obtenerTodosParaExportar();
-    if (departamentos.length === 0) { this._toastr.info('No hay departamentos para exportar'); return; }
+    if (this.departamentoModel.length === 0) { this._toastr.info('No hay departamentos para exportar'); return; }
     this._appPrintPdfService.generarReporte({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Departamentos",
       titleTable: this.tituloReporte(),
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(departamentos),
+      data: this.filasReporte(),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
-    const departamentos = await this.obtenerTodosParaExportar();
-    if (departamentos.length === 0) { this._toastr.info('No hay departamentos para exportar'); return; }
+    if (this.departamentoModel.length === 0) { this._toastr.info('No hay departamentos para exportar'); return; }
     this._appExportExcelService.generarReporteExcel({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Departamentos",
       titleTable: this.tituloReporte(),
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(departamentos),
+      data: this.filasReporte(),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
-    const departamentos = await this.obtenerTodosParaExportar();
-    if (departamentos.length === 0) { this._toastr.info('No hay departamentos para exportar'); return; }
+    if (this.departamentoModel.length === 0) { this._toastr.info('No hay departamentos para exportar'); return; }
     this._appExportCsvService.generarReporteCSV({
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(departamentos),
+      data: this.filasReporte(),
     });
   }
 
@@ -611,7 +1094,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   // ================================================================
 
   /** Abre saveDepartamento en el modo pedido. registro = 0 para crear. */
-  private abrirModalDepartamento(registro: any, accion: 'add' | 'edit' | 'clon' | 'view'): NgbModalRef {
+  private abrirModalDepartamento(registro: any, accion: 'add' | 'edit' | 'clon' | 'view', padre: DepartamentoModel | null = null): NgbModalRef {
     const modalRef = this.modal.open(SaveDepartamentoComponent, {
       centered: true,
       size: 'lg',
@@ -620,30 +1103,46 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     });
     modalRef.componentInstance.registro_selected = registro;
     modalRef.componentInstance.accion = accion;
+    modalRef.componentInstance.padre = padre;
     return modalRef;
   }
 
+  /**
+   * Nueva departamento raíz.
+   *
+   * Tras crear se recarga el árbol en vez de meter la fila a mano: la nueva
+   * va al final de sus hermanas y el orden lo decide el servidor.
+   */
   addDepartamento(): void {
     if (this._seguridadService.isexpired()) { return; }
-    const modalRef = this.abrirModalDepartamento(0, 'add');
-    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
-      this.departamentoModel = [nuevo, ...this.departamentoModel];
-      this.totalRegistros++;
-      this.gridApi?.setRowData(this.departamentoModel);
-    });
+    const modalRef = this.abrirModalDepartamento(0, 'add', null);
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => this.allDepartamentos());
+  }
+
+  /** Nueva subdepartamento colgando de la fila marcada. */
+  addSubdepartamento(padre?: DepartamentoModel | null): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const sobre = padre ?? this.selectedRow;
+    if (!sobre) {
+      this._toastr.info('Elige primero el departamento de la que va a colgar', 'Nueva subdepartamento');
+      return;
+    }
+    if ((sobre.nivel ?? 0) >= 3) {
+      this._toastr.warning('El árbol admite hasta cuatro niveles y ésta ya está en el último', 'Nueva subdepartamento');
+      return;
+    }
+    const modalRef = this.abrirModalDepartamento(0, 'add', sobre);
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => this.allDepartamentos());
   }
 
   clonDepartamento(registro: any): void {
     if (this._seguridadService.isexpired()) { return; }
-    const modalRef = this.abrirModalDepartamento(registro, 'clon');
-    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
-      this.departamentoModel = [nuevo, ...this.departamentoModel];
-      this.totalRegistros++;
-      this.gridApi?.setRowData(this.departamentoModel);
-    });
+    const padre = this.departamentoModel.find(c => c.id === registro?.padre_id) ?? null;
+    const modalRef = this.abrirModalDepartamento(registro, 'clon', padre);
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => this.allDepartamentos());
   }
 
-  /** Al guardar sustituye la fila en sitio: no hace falta volver al servidor. */
+  /** Al guardar sustituye la fila en sitio: cambiar el nombre no mueve el árbol. */
   editDepartamento(registro: any): void {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.abrirModalDepartamento(registro, 'edit');
@@ -651,7 +1150,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
       const index = this.departamentoModel.findIndex(r => r.id === actualizado.id);
       if (index === -1) { return; }
       this.departamentoModel[index] = actualizado;
-      this.gridApi?.getRowNode(index.toString())?.setData(actualizado);
+      this._appAgGridService.ponerFila(this.gridApi, this.filasVisibles, actualizado, 'activo');
     });
   }
 
@@ -660,7 +1159,25 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     this.abrirModalDepartamento(registro, 'view');
   }
 
-  /** Quita la fila de la grilla con una transacción. */
+  /** Quita la fila del árbol. El back rechaza si tiene hijas o empleados. */
+  /**
+   * La papelera de reciclaje.
+   *
+   * Lo que se «elimina» no se borra: va aquí, y desde aquí se restaura o se
+   * borra de verdad. Sólo con el acceso «papelera» del perfil.
+   */
+  abrirPapelera(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(PapeleraDepartamentosComponent, {
+      centered: true, size: 'xl', backdrop: 'static', keyboard: true
+    });
+    // El permiso viaja con el modal: allí también hay auditoría
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Al restaurar o borrar de verdad, el árbol ya no es fiel
+    this.escucharModal(modalRef, modalRef.componentInstance.cambio,
+                       () => this.allDepartamentos());
+  }
+
   deleteDepartamento(registro: any): void {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.modal.open(DeleteDepartamentoComponent, {
@@ -672,15 +1189,121 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.registro_selected = registro;
 
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => {
-      const index = this.departamentoModel.findIndex(r => r.id === registro.id);
-      if (index === -1) { return; }
-      this.departamentoModel.splice(index, 1);
-      this.totalRegistros = Math.max(0, this.totalRegistros - 1);
-      this.gridApi?.applyTransaction({ remove: [registro] });
       if (this.selectedRow?.id === registro.id) { this.selectedRow = null; }
+      // Al borrar se renumeran las hermanas: hay que volver a traer el árbol
+      this.allDepartamentos();
     });
   }
 
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, pero sin tener que llegar
+  // hasta el final de la fila ni desplegar la columna cuando está plegada.
+  //
+  // NO SE USA EL EVENTO `cellContextMenu` DE ag-Grid: se probó contra la
+  // librería y no llega —el clic alcanza el contenedor de filas pero la
+  // rejilla lo descarta antes de emitirlo—, así que aquí se escucha el
+  // `contextmenu` del contenedor y la fila se resuelve con la API pública.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  /**
+   * Clic derecho sobre la rejilla.
+   *
+   * LO PRIMERO ES ELEGIR LA FILA: el menú actúa sobre «la fila», y si no se
+   * marcara se vería resaltada una y el menú trabajaría sobre otra.
+   */
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se puede hacer con esta fila, según el perfil y dónde está. */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    const puedeCrear   = this.accesoModel?.crear    === true;
+    const puedeEditar  = this.accesoModel?.editar   === true;
+    const puedeBorrar  = this.accesoModel?.eliminar === true;
+    const puedeVer     = this.accesoModel?.ver      === true;
+    const puedeAuditar = this.accesoModel?.auditar  === true;
+
+    // El último nivel no admite nada dentro: el árbol llega hasta el 3
+    const esUltimoNivel = Number(fila?.nivel ?? 0) >= 3;
+    const tieneHijos    = Number(fila?.num_hijos ?? 0) > 0;
+
+    return [
+      {
+        id: 'sub', texto: 'Nuevo subdepartamento aquí', icono: 'fa-folder-plus',
+        visible: puedeCrear,
+        deshabilitada: esUltimoNivel,
+        ayuda: esUltimoNivel ? 'Éste es el último nivel: no admite nada dentro'
+                             : 'Crear un departamento dentro de éste',
+      },
+      {
+        id: 'raiz', texto: 'Nuevo departamento de primer nivel', icono: 'fa-plus',
+        visible: puedeCrear,
+      },
+      {
+        id: 'ver', texto: 'Ver', icono: 'fa-eye',
+        separadorAntes: true, visible: puedeVer,
+      },
+      {
+        id: 'editar', texto: 'Modificar', icono: 'fa-pen',
+        visible: puedeEditar,
+      },
+      {
+        id: 'clonar', texto: 'Clonar', icono: 'fa-clone',
+        visible: puedeCrear,
+      },
+      {
+        id: 'activo', texto: fila?.activo ? 'Desactivar' : 'Activar',
+        icono: fila?.activo ? 'fa-toggle-off' : 'fa-toggle-on',
+        separadorAntes: true, visible: puedeEditar,
+        ayuda: fila?.activo ? 'Dejar de usarlo, sin borrarlo' : 'Volver a usarlo',
+      },
+      {
+        id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        separadorAntes: true, visible: puedeAuditar,
+        ayuda: 'Quién tocó este departamento y cuándo',
+      },
+      {
+        id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
+        separadorAntes: true, peligro: true, visible: puedeBorrar,
+        deshabilitada: tieneHijos,
+        ayuda: tieneHijos ? 'Primero hay que mover o borrar lo que cuelga de él'
+                          : 'Se puede recuperar desde la papelera',
+      },
+    ];
+  }
+
+  /** Se eligió una opción del menú. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'sub':       this.addSubdepartamento(fila); break;
+      case 'raiz':      this.addDepartamento(); break;
+      case 'ver':       this.viewDepartamento(fila); break;
+      case 'editar':    this.editDepartamento(fila); break;
+      case 'clonar':    this.clonDepartamento(fila); break;
+      case 'activo':    this.cambiarActivo(fila, this._appAgGridService.nodoDe(this.gridApi, fila.id)); break;
+      case 'auditoria': this.auditoria(); break;
+      case 'eliminar':  this.deleteDepartamento(fila); break;
+    }
+  }
   /** Historial de auditoría de la fila seleccionada (tabla departamentos). */
   auditoria(): void {
     if (!this.selectedRow) { return; }
@@ -700,6 +1323,8 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
 // RENDERER DE LA COLUMNA ACCIONES
 // ================================================================
 // Simple delegador: toda la lógica de modales vive en AllDepartamentosComponent.
+// Lleva un botón de más que las otras rejillas —«nueva subdepartamento»—, que es
+// la forma natural de ir construyendo el árbol: desde la rama donde va.
 @Component({
   selector: 'app-button-accion-departamento',
   standalone: false,
@@ -713,6 +1338,17 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
         <i class="fas fa-bars"></i>
       </button>
     } @else {
+      <button type="button"
+              class="btn-icon btn-subdepartamento"
+              [title]="parent.accesoModel?.crear !== true
+                        ? 'Nueva subdepartamento - Desactivado'
+                        : (params.data?.nivel >= 3
+                            ? 'Nueva subdepartamento - ya está en el último nivel'
+                            : 'Nueva subdepartamento dentro de ésta')"
+              [disabled]="parent.accesoModel?.crear !== true || params.data?.nivel >= 3"
+              (click)="parent.addSubdepartamento(params.data)">
+        <i class="fa fa-diagram-project"></i>
+      </button>
       <app-action-buttons
         [accesoModel]="parent.accesoModel"
         [buttonView]="true"
@@ -727,6 +1363,22 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     }
   `,
   styles: [`
+    :host {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* El host del componente hijo: sin esto sigue siendo un elemento en
+       línea con un bloque dentro. No hace falta ::ng-deep porque el
+       elemento está en ESTA plantilla. */
+    app-action-buttons {
+      display: inline-flex;
+      align-items: center;
+    }
+
     .acciones-desplegar {
       width: 28px;
       height: 24px;
@@ -736,6 +1388,22 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
       justify-content: center;
       border-radius: .25rem;
     }
+
+    /* El mismo botón de icono que trae app-action-buttons: esa clase vive
+       dentro de SU css con alcance, así que aquí hay que repetirla. */
+    .btn-subdepartamento {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 3px 5px;
+      font-size: 1.1em;
+      color: var(--bs-app-theme, #00acac);
+      transition: all .3s ease;
+    }
+
+    .btn-subdepartamento:hover:not(:disabled) { transform: scale(1.2); }
+    .btn-subdepartamento:active:not(:disabled) { transform: scale(.95); }
+    .btn-subdepartamento:disabled { opacity: .35; cursor: not-allowed; }
   `],
 })
 export class ButtonAccionDepartamento implements ICellRendererAngularComp {

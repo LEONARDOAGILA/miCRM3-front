@@ -87,6 +87,16 @@
   }
 
   <div class="papelera-pie__derecha">
+    <!-- Auditoría: quién lo eliminó (y todo lo demás) sin restaurarlo -->
+    @if (puedeAuditar) {
+      <button type="button" class="btn btn-warning position-relative"
+              [disabled]="!seleccionado"
+              [title]="seleccionado ? 'Ver el historial de «' + seleccionado.nombre + '»' : 'Seleccione un elemento'"
+              (click)="auditoria()">
+        <i class="fa fa-user-secret me-1"></i>
+        <span class="d-none d-sm-inline">Auditoría</span>
+      </button>
+    }
     <button type="button" class="btn btn-success"
             [disabled]="!seleccionado"
             [title]="seleccionado ? 'Restaurar «' + seleccionado.nombre + '» a «' + seleccionado.ruta + '»' : 'Seleccione un elemento'"
@@ -130,6 +140,13 @@
         <i class="fa fa-rotate-left fa-fw text-success"></i> Restaurar
         <span class="menu-ctx__detalle">a «{{ el.ruta }}»</span>
       </button>
+      @if (puedeAuditar) {
+        <button type="button" class="menu-ctx__item" role="menuitem"
+                (click)="cerrarMenu(); auditoria(el)">
+          <i class="fa fa-user-secret fa-fw text-warning"></i> Auditoría
+          <span class="menu-ctx__detalle">quién lo eliminó</span>
+        </button>
+      }
       @if (!soloRestaurar) {
       <div class="menu-ctx__sep"></div>
       <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem" (click)="cerrarMenu(); eliminarDefinitivo()">

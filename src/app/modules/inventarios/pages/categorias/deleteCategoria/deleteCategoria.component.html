@@ -29,9 +29,13 @@
         <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
       <div>
-        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar esta categoría?</h6>
+        <h6 class="eliminar-aviso__titulo">¿Enviar esta categoría a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): la categoría sale del
+             árbol y de los combos y deja de contar como subcategoría de la
+             suya, pero puede volver desde la papelera. -->
         <p class="eliminar-aviso__texto" id="eliminarCategoriaDescripcion">
-          Esta acción no se puede deshacer. Su historial de auditoría se conserva.
+          Dejará de aparecer en el árbol y no se podrá elegir, pero <b>no se borra</b>:
+          queda en la papelera, desde donde puede restaurarse a su mismo sitio.
           @if (numHijos > 0) {
             <br><b>Tiene {{ numHijos }} {{ numHijos === 1 ? 'subcategoría' : 'subcategorías' }}:</b>
             el sistema no permitirá eliminarla. Muévalas a otra rama o bórrelas primero.
@@ -114,7 +118,7 @@
             class="btn btn-danger"
             [disabled]="isLoading"
             (click)="deleteCategoria()">
-      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
     </button>
   </div>
 

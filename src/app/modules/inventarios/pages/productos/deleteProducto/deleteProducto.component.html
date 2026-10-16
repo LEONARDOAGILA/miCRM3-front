@@ -29,14 +29,18 @@
         <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
       <div>
-        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar este producto?</h6>
+        <h6 class="eliminar-aviso__titulo">¿Enviar este producto a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): el producto va a la
+             papelera, deja de salir en el catálogo y de contar para su marca
+             y su categoría, y desde allí se restaura o se borra de verdad. -->
         <p class="eliminar-aviso__texto" id="eliminarProductoDescripcion">
-          Esta acción no se puede deshacer. Su historial de auditoría se conserva.
+          Dejará de aparecer en el catálogo y no se podrá elegir en ningún sitio, pero
+          <b>no se borra</b>: queda en la papelera, desde donde puede restaurarse tal como estaba.
           @if (numImagenes > 0) {
-            <br><b>Se borrarán también sus {{ numImagenes }} {{ numImagenes === 1 ? 'imagen' : 'imágenes' }}</b>,
-            tanto de la ficha como del servidor.
+            <br>Sus {{ numImagenes }} {{ numImagenes === 1 ? 'imagen' : 'imágenes' }} se conservan
+            y vuelven con él; sólo se borran del servidor al eliminarlo definitivamente desde la papelera.
           }
-          <br>Si sólo quiere que deje de venderse, <b>desactívelo</b> en lugar de borrarlo.
+          <br>Si sólo quiere que deje de venderse, <b>desactívelo</b> en lugar de enviarlo a la papelera.
         </p>
       </div>
     </div>
@@ -118,7 +122,7 @@
             class="btn btn-danger"
             [disabled]="isLoading"
             (click)="deleteProducto()">
-      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
     </button>
   </div>
 

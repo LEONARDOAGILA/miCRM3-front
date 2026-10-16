@@ -82,26 +82,8 @@
                   </button>
                 </div>
 
-                <!-- Contraer / desplegar el árbol entero. Se apagan mientras
-                     hay una búsqueda escrita: entonces se ve todo igualmente. -->
-                <div class="col-auto">
-                  <div class="btn-group" role="group" aria-label="Plegar el árbol">
-                    <button type="button"
-                            class="btn btn-white d-flex align-items-center justify-content-center square-btn rounded-start-3"
-                            title="Contraer todas las ramas"
-                            [disabled]="!!searchTerm"
-                            (click)="contraerTodo()">
-                      <i class="fa fa-minus"></i>
-                    </button>
-                    <button type="button"
-                            class="btn btn-white d-flex align-items-center justify-content-center square-btn rounded-end-3"
-                            title="Desplegar todas las ramas"
-                            [disabled]="!!searchTerm || !hayPlegados"
-                            (click)="desplegarTodo()">
-                      <i class="fa fa-plus"></i>
-                    </button>
-                  </div>
-                </div>
+                <!-- Contraer / desplegar el árbol entero vive en la cabecera
+                     de la columna «Nombre» del ag-grid (ver cabeceraArbol). -->
 
                   <div class="col-auto" *ngIf="accesoModel.auditar === true">
                     <button
@@ -123,6 +105,7 @@
                  columna Nombre inicia el arrastre; aquí se resuelve dónde se suelta
                  (tercio superior/inferior = antes/después, centro = dentro). -->
             <div class="menus-grilla-wrap"
+                 (click)="alClicarCabecera($event)"
                  (contextmenu)="onContextMenuGrilla($event)"
                  (dragover)="onDragOverGrilla($event)"
                  (dragleave)="onDragLeaveGrilla($event)"

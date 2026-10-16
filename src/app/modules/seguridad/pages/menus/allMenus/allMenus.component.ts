@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { firstValueFrom,  Subject, takeUntil } from 'rxjs';
 import { CellClickedEvent, GridApi,  GridReadyEvent } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -89,6 +89,8 @@ export class AllMenusComponent implements OnInit, OnDestroy{
 
 
     constructor(
+      /** Para encontrar los botones de la cabecera sin salir de esta pantalla. */
+      private host: ElementRef<HTMLElement>,
       private modal: NgbModal,
       private activeRoute: ActivatedRoute,
       private route: Router,
@@ -162,6 +164,9 @@ export class AllMenusComponent implements OnInit, OnDestroy{
           // hijos llevan un hueco del mismo ancho que el asa para que los
           // nombres de un mismo nivel queden alineados.
           cellRenderer: (params) => this.celdaNombre(params),
+          // Los botones de contraer y desplegar todo van en la cabecera de
+          // esta columna, que es la del árbol (ver cabeceraArbol).
+          headerComponentParams: this.cabeceraArbol(),
           minWidth: 280,
           maxWidth: 400, 
           sortable: false,
@@ -356,6 +361,10 @@ export class AllMenusComponent implements OnInit, OnDestroy{
           headerElement.addEventListener('touchstart', this.handleTouchStart.bind(this), {passive: true});
           headerElement.addEventListener('touchend', this.handleTouchEnd.bind(this));
         }
+
+        // Los botones de plegar se pintan con la cabecera: si el árbol llegó
+        // antes que ella, su estado se pone aquí, cuando ya existen.
+        this.actualizarBotonesArbol();
       }, 500);
 
       this._appAgGridService.ajustarTamanoGrid(this.gridApi);      
@@ -601,6 +610,63 @@ export class AllMenusComponent implements OnInit, OnDestroy{
       return `<span class="menu-nombre">${sangria}${asa}<span>${texto}</span></span>`;
     }
 
+    /**
+     * Cabecera de «Nombre»: los botones de plegar y el título.
+     *
+     * Es una plantilla del encabezado de ag-Grid, no de Angular: el clic se
+     * atiende en `alClicarCabecera` (lo escucha el contenedor de la rejilla)
+     * y el encendido/apagado lo pone `actualizarBotonesArbol` a mano.
+     */
+    private cabeceraArbol(): any {
+      return {
+        template: `
+          <div class="ag-cell-label-container" role="presentation">
+            <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>
+            <div ref="eLabel" class="ag-header-cell-label cabecera-arbol" role="presentation">
+              <span class="cabecera-arbol__botones btn-group" role="group" aria-label="Plegar el árbol">
+                <button type="button" class="btn" data-arbol="contraer" title="Contraer todas las ramas">
+                  <i class="fa fa-minus"></i>
+                </button>
+                <button type="button" class="btn" data-arbol="desplegar" title="Desplegar todas las ramas">
+                  <i class="fa fa-plus"></i>
+                </button>
+              </span>
+              <span ref="eText" class="ag-header-cell-text"></span>
+            </div>
+          </div>`
+      };
+    }
+
+    /**
+     * Enciende o apaga los botones de la cabecera.
+     *
+     * La plantilla de ag-Grid es HTML suelto, no Angular: no hay `[disabled]`
+     * que valga y hay que ponerlo cada vez que cambia el estado.
+     */
+    private actualizarBotonesArbol(): void {
+      const botones = this.host?.nativeElement?.querySelectorAll?.('[data-arbol]');
+      botones?.forEach((b: HTMLButtonElement) => {
+        b.disabled = b.dataset['arbol'] === 'contraer'
+          ? !!this.searchTerm                          // buscando se ve todo
+          : (!!this.searchTerm || !this.hayPlegados);  // nada que desplegar
+      });
+    }
+
+    /**
+     * Clic en la cabecera de la rejilla.
+     *
+     * Lo escucha el contenedor porque esos botones los pinta ag-Grid y no
+     * Angular, así que no hay `(click)` al que agarrarse.
+     */
+    alClicarCabecera(ev: MouseEvent): void {
+      const boton = (ev.target as HTMLElement).closest('[data-arbol]') as HTMLButtonElement | null;
+      if (!boton) { return; }
+
+      ev.stopPropagation();
+      if (boton.disabled) { return; }
+      if (boton.dataset['arbol'] === 'contraer') { this.contraerTodo(); } else { this.desplegarTodo(); }
+    }
+
     /** Pliega o despliega una rama y lo recuerda. */
     alternarPlegado(fila: MenuModel | null): void {
       const id = Number(fila?.id ?? 0);
@@ -677,6 +743,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         });
       }
       this.gridApi?.setRowData(this.filasVisibles);
+      this.actualizarBotonesArbol();
     }
 
     /**

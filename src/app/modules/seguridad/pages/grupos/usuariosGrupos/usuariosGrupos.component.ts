@@ -883,6 +883,8 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
   abrirPapelera(): void {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.modal.open(PapeleraUsuariosComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
+    // El permiso viaja con el modal: allí también hay auditoría
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.recargar());
   }
 

@@ -51,6 +51,8 @@
               [iconClass]="'fa fa-search fa-lg'"
               [containerClass]="'w-100'"
               [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
               (buscar)="onFilterTextBoxChanged($event)"
               (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
@@ -95,6 +97,18 @@
             </button>
           </div>
 
+          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
+          @if (accesoModel?.papelera === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-outline-secondary lista-barra__btn"
+                      title="Papelera de reciclaje de productos"
+                      (click)="abrirPapelera()">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          }
+
           <!-- Auditoría de la fila seleccionada -->
           @if (accesoModel?.auditar === true) {
             <div class="col-auto">
@@ -131,6 +145,7 @@
           [rowClassRules]="rowClassRules"
           [overlayNoRowsTemplate]="'<span>No hay productos que cumplan el filtro</span>'"
           (gridReady)="onGridReady($event)"
+          (filterChanged)="onFiltroColumna()"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>
 

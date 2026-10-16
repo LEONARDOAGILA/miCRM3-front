@@ -26,6 +26,16 @@ export class SaveDepartamentoComponent implements OnInit, OnDestroy {
 
   @Input() registro_selected: any = {};
   @Input() accion: AccionDepartamento = 'add';
+
+  /**
+   * De quién va a colgar el departamento nuevo.
+   *
+   * Lo manda la rejilla cuando se pulsa «nuevo subdepartamento» sobre una
+   * fila. No hay combo de padres: en un árbol se elige la rama desde el
+   * árbol, que además enseña dónde va a caer. Al modificar no se usa: la
+   * rama se cambia arrastrando.
+   */
+  @Input() padre: DepartamentoModel | null = null;
   @Output() registrosE: EventEmitter<any> = new EventEmitter();
 
   public form: FormGroup;
@@ -33,6 +43,24 @@ export class SaveDepartamentoComponent implements OnInit, OnDestroy {
   public response: any;
   public isdisabled = false;
   public titulo = '';
+
+  /** Dónde va a quedar: la ruta del padre, o «Primer nivel» si no tiene. */
+  get dondeVa(): string {
+    if (this.accion === 'add' || this.accion === 'clon') {
+      return this.padre ? (this.padre.ruta || this.padre.nombre) : 'Primer nivel (raíz)';
+    }
+    const ruta = this.departamentoModel?.ruta ?? '';
+    const corte = ruta.lastIndexOf(' > ');
+    return corte > 0 ? ruta.slice(0, corte) : 'Primer nivel (raíz)';
+  }
+
+  /** El nivel que va a tener: el del padre más uno. */
+  get nivelResultante(): number {
+    if (this.accion === 'add' || this.accion === 'clon') {
+      return this.padre ? Number(this.padre.nivel ?? 0) + 1 : 0;
+    }
+    return Number(this.departamentoModel?.nivel ?? 0);
+  }
   public textoClon = '';
   public departamentoModel: DepartamentoModel | null = null;
 
@@ -73,7 +101,7 @@ export class SaveDepartamentoComponent implements OnInit, OnDestroy {
 
     switch (this.accion) {
       case 'add':
-        this.titulo = 'Nuevo Departamento';
+        this.titulo = this.padre ? 'Nuevo Subdepartamento' : 'Nuevo Departamento';
         break;
       case 'edit':
         this.titulo = 'Modificar Departamento';
@@ -158,6 +186,12 @@ export class SaveDepartamentoComponent implements OnInit, OnDestroy {
     payload.codigo = (payload.codigo ?? '').trim().toUpperCase() || null;
     payload.descripcion = (payload.descripcion ?? '').trim() || null;
     payload.empleado_id = payload.empleado_id || null;
+
+    // El padre sólo se manda al crear: al modificar, la rama no se toca aquí
+    // (se cambia arrastrando en la rejilla, que es donde se ve el árbol).
+    if (this.accion === 'add' || this.accion === 'clon') {
+      payload.padre_id = this.padre?.id ?? null;
+    }
 
     await this.saveRecord(payload);
   }
