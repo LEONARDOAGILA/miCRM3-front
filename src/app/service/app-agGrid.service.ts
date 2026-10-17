@@ -518,5 +518,40 @@ export class AppAgGridService {
     });
   }
 
+  /**
+   * Los filtros puestos, en castellano y uno por línea.
+   *
+   * Para decirle al usuario por qué salen 14 y no 200: en el diálogo de
+   * descarga, en el título de un reporte o en un aviso. El modelo de ag-Grid
+   * («{nombre: {type: 'contains', filter: 'sam'}}») no se le puede enseñar a
+   * nadie, y el nombre de la columna que él ve está en la definición, no en
+   * el modelo.
+   *
+   * Los nombres de las operaciones salen de los mismos `filterOptions` que
+   * ve en la cabecera, así que no hay una segunda lista que se desincronice.
+   *
+   * @param modelo   Lo que devuelve gridApi.getFilterModel().
+   * @param columnas Las definiciones de columna, para sacar el headerName.
+   */
+  descripcionDeFiltros(modelo: any, columnas: any[] = []): string[] {
+    const nombres: { [clave: string]: string } = {};
+    [...this.filtroTextoDeServidor.filterOptions, ...this.filtroNumeroDeServidor.filterOptions]
+      .forEach((o: any) => { nombres[o.displayKey] = o.displayName; });
+
+    return Object.keys(modelo || {}).map(campo => {
+      const col = (columnas || []).find(c => (c.field ?? c.colId) === campo);
+      const cabecera = col?.headerName ?? campo;
+      const f = modelo[campo] || {};
+      const operacion = (nombres[f.type] ?? f.type ?? '').toLowerCase();
+
+      // «Entre» lleva dos valores; «en blanco» y «no en blanco», ninguno
+      if (f.type === 'inRange') { return `${cabecera}: entre ${f.filter} y ${f.filterTo}`; }
+      if (f.filter === undefined || f.filter === null || f.filter === '') {
+        return `${cabecera}: ${operacion}`;
+      }
+      return `${cabecera}: ${operacion} «${f.filter}»`;
+    });
+  }
+
 
 }

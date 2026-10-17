@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { Subject, firstValueFrom } from 'rxjs';
 import { CellClickedEvent, GridApi,  GridReadyEvent, RowNode } from 'ag-grid-community';
@@ -24,6 +24,8 @@ import { DeleteProfileComponent } from '../deleteProfile/deleteProfile.component
 import { Save2ProfileComponent } from '../save2Profile/save2Profile.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 
 
 
@@ -34,6 +36,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class AllProfilesComponent implements OnInit, OnDestroy{
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   public accesoModel: AccesoModel;
   public perfilModel: PerfilModel[] = [];
@@ -553,66 +558,111 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 
 
   //   ******   FUNCIONES DE IMPRESIÓN   ******  //
-  async printPdf() {
-      this._appPrintPdfService.generarReporte({
-        tamanoPapel:"A4",
-        orientacion: "p",
-        title: "Reporte de Perfiles",
-        titleTable: "Listado de Perfiles",        
-        headers: ['ID', 'Nombre','Inactividad', 'Estado', 'Creado' , 'Modificado'],
-
-        data: this.perfilModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre)) // Ordena por nombre
-        .map(item => [
-          item.id,
-          item.nombre,
-          `${item.inactividad}`,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),        
-
-        piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
-
-      });  
+  /**
+   * Trae TODOS los que cumplen el filtro, para exportar.
+   *
+   * La pantalla pagina en el servidor, así que `perfilModel` es sólo la
+   * página: hasta ahora el reporte salía con esas filas aunque dijera
+   * «Listado». Se pide una página del tamaño del total.
+   */
+  private async obtenerTodosParaExportar(): Promise<any[]> {
+    if (this.totalRegistros === 0) { return []; }
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(
+        this._profile.allProfiles(1, this.totalRegistros, this.searchTerm)
+      ) as any;
+      // Del error HTTP ya avisa el interceptor; aqui basta con no
+      // devolver filas para que no se descargue un fichero vacio.
+      if (res.body?.status !== 'success') { return []; }
+      return res.body?.data?.data || [];
+    } catch (error) {
+      console.error('Error al obtener el listado completo:', error);
+      return [];
+    } finally {
+      this._loadingService.setLoading(false);
+    }
   }
-  async exportExcel() {
-    this._appExportExcelService.generarReporteExcel({
-      tamanoPapel:"A4",
-      orientacion: "p",
-      title: "Reporte de Perfiles",
-      titleTable: "Listado de Perfiles",        
-      headers: ['ID', 'Nombre','Inactividad', 'Estado', 'Creado' , 'Modificado'],
 
-      data: this.perfilModel
-      .sort((a, b) => a.nombre.localeCompare(b.nombre)) // Ordena por nombre
+  /** Las cabeceras del reporte, en un solo sitio. */
+  private readonly CABECERAS_REPORTE = ['ID', 'Nombre', 'Inactividad', 'Estado', 'Creado', 'Modificado'];
+
+  /**
+   * Filas del reporte con formato de salida.
+   *
+   * `ordenarPorNombre` sólo al exportar el listado completo: si se
+   * exporta la página hay que respetar lo que se tiene delante. Y se
+   * ordena sobre una COPIA, porque `sort` cambia el array que recibe
+   * y el de la página es el de la grilla.
+   */
+  private filasReporte(lista: any[], ordenarPorNombre: boolean = true): any[][] {
+    return (ordenarPorNombre ? [...lista].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '')) : lista)
       .map(item => [
-        item.id,
-        item.nombre,
-        `${item.inactividad}`,
-        item.activo ? 'Activo' : 'Inactivo',
-        item.created_at,
-        item.updated_at,
-      ]),
-
-      piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
-
-    });  
+      item.id,
+      item.nombre,
+      `${item.inactividad}`,
+      item.activo ? 'Activo' : 'Inactivo',
+      item.created_at,
+      item.updated_at,
+      ]);
   }
+
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'perfiles',
+      tituloBase: 'Listado de Perfiles',
+      gridApi: this.gridApi,
+      filasDePagina: this.perfilModel,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
+  }
+
+  async printPdf() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
+    this._appPrintPdfService.generarReporte({
+      tamanoPapel: 'A4',
+      orientacion: 'p',
+      title: 'Reporte de Perfiles',
+      titleTable: salida.titulo,
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
+      piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
+    });
+  }
+
+  async exportExcel() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }
+    this._appExportExcelService.generarReporteExcel({
+      tamanoPapel: 'A4',
+      orientacion: 'p',
+      title: 'Reporte de Perfiles',
+      titleTable: salida.titulo,
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
+      piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
+    });
+  }
+
   async exportCsv() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }
     this._appExportCsvService.generarReporteCSV({
-        headers: ['ID', 'Nombre','Inactividad', 'Estado', 'Creado' , 'Modificado'],
-        data: this.perfilModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre)) // Ordena por nombre
-        .map(item => [
-          item.id,
-          item.nombre,
-          `${item.inactividad}`,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),        
-    });  
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
+    });
   }
 
 

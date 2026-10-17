@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
@@ -14,6 +14,8 @@ import { AppPrintPdfService } from '../../../../../service/app-printPdf.service'
 import { AppExportExcelService } from '../../../../../service/app-exportExcel.service';
 import { AppExportCsvService } from '../../../../../service/app-exportCsv.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 import { LoadingService } from '../../../../../service/loading.service';
 
 ///   MODELOS    ///
@@ -44,6 +46,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class AllEmpleadosComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   // ---------- Estado ----------
   /** Permisos del perfil sobre esta pantalla (crear, reporte, auditar…), del resolver de la ruta. */
@@ -568,9 +573,18 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
   }
 
   /** Filas del reporte, ordenadas por nombre y con formato de salida. */
-  private filasReporte(empleados: EmpleadoModel[]): any[][] {
-    return empleados
-      .sort((a, b) => (a.apellidos || '').localeCompare(b.apellidos || ''))
+  /**
+   * Filas del reporte con formato de salida.
+   *
+   * `ordenarPorNombre` sólo cuando se exporta el listado completo: si se
+   * exporta la página hay que respetar lo que el usuario tiene delante.
+   * Se ordena sobre una COPIA: `sort` cambia el array que recibe, y el de
+   * la página es el de la grilla.
+   */
+  private filasReporte(empleados: EmpleadoModel[], ordenarPorNombre: boolean = true): any[][] {
+    return (ordenarPorNombre
+      ? [...empleados].sort((a, b) => (a.apellidos || '').localeCompare(b.apellidos || ''))
+      : empleados)
       .map(item => [
         item.id,
         item.numero_identificacion,
@@ -635,44 +649,63 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
 
   private readonly CABECERAS_REPORTE = ['ID', 'Identificación', 'Apellidos', 'Nombres', 'Cargo', 'Departamento', 'Correo', 'Estado', 'Activo'];
 
-  private tituloReporte(): string {
-    return this.searchTerm ? `Listado de Empleados (filtro: ${this.searchTerm})` : 'Listado de Empleados';
+
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'empleados',
+      tituloBase: 'Listado de Empleados',
+      gridApi: this.gridApi,
+      filasDePagina: this.empleadoModel,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      // (esta pantalla todavia no tiene filtros de columna)
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
   }
 
   async printPdf() {
-    const empleados = await this.obtenerTodosParaExportar();
-    if (empleados.length === 0) { this._toastr.info('No hay empleados para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appPrintPdfService.generarReporte({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Empleados",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(empleados),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
-    const empleados = await this.obtenerTodosParaExportar();
-    if (empleados.length === 0) { this._toastr.info('No hay empleados para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportExcelService.generarReporteExcel({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Empleados",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(empleados),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
-    const empleados = await this.obtenerTodosParaExportar();
-    if (empleados.length === 0) { this._toastr.info('No hay empleados para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportCsvService.generarReporteCSV({
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(empleados),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
     });
   }
 

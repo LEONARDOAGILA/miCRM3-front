@@ -59,6 +59,8 @@
               [iconClass]="'fa fa-search fa-lg'"
               [containerClass]="'w-100'"
               [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
               (buscar)="onFilterTextBoxChanged($event)"
               (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
@@ -130,7 +132,9 @@
           [animateRows]="true"
           [navigateToNextCell]="navegarConTeclado"
           [rowClassRules]="rowClassRules"
+          [overlayNoRowsTemplate]="'<span>No hay usuarios que cumplan el filtro</span>'"
           (gridReady)="onGridReady($event)"
+          (filterChanged)="onFiltroColumna()"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>
         </div>
@@ -165,6 +169,7 @@
 
           <div class="pagination-info small text-muted">
             Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> registros
+            @if (hayFiltro) { <span class="lista-filtrado">(filtrado)</span> }
           </div>
 
         </div>

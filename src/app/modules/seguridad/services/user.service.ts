@@ -29,15 +29,22 @@ export class UserService {
   }
   
   //   ******   LISTADO CON PAGINACIÓN   ******  //
-allUsers(page: number = 1, perPage: number = 10, search: string = ''): Observable<any> {
+allUsers(page: number = 1, perPage: number = 10, search: string = '',
+         filtros: any = null): Observable<any> {
   let params = new HttpParams()
     .set('page', page.toString())
     .set('per_page', perPage.toString());
-  
+
   if (search) {
     params = params.set('search', search);
   }
-  
+
+  // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+  // servidor, sobre todos los usuarios: la rejilla sólo tiene la página.
+  if (filtros && Object.keys(filtros).length) {
+    params = params.set('filtros', JSON.stringify(filtros));
+  }
+
   // Especifica el tipo de retorno con observe: 'response'
   return this._http.get<any>(this.URL_SERVICIOS + 'allUsers', { params, observe: 'response' });
 }

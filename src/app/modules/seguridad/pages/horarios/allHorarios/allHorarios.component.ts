@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Subject, firstValueFrom } from 'rxjs';
 import { GridApi, GridReadyEvent, CellClickedEvent, RowNode } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -18,6 +18,8 @@ import { HorarioService } from '../../../services/horario.service';
 //   ******   MODELOS   ******  //
 import { AccesoModel } from '../../../interfaces/accesoModel';
 import { ChorarioModel } from '../../../interfaces/chorarioModel';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 
 //   ******   COMPONENTES   ******  //
 import { SaveHorarioComponent } from '../save-horario/save-horario.component';
@@ -32,6 +34,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class AllHorariosComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
   
   // ****** AG-GRID ****** //
   @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
@@ -672,58 +677,109 @@ addHorario() {
 
 
   // ****** IMPRESIÓN ****** //
+  /**
+   * Trae TODOS los que cumplen el filtro, para exportar.
+   *
+   * La pantalla pagina en el servidor, así que `chorarioModel` es sólo la
+   * página: hasta ahora el reporte salía con esas filas aunque dijera
+   * «Listado». Se pide una página del tamaño del total.
+   */
+  private async obtenerTodosParaExportar(): Promise<any[]> {
+    if (this.totalRegistros === 0) { return []; }
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(
+        this._horarioService.allHorarios(1, this.totalRegistros, this.searchTerm)
+      ) as any;
+      // Del error HTTP ya avisa el interceptor; aqui basta con no
+      // devolver filas para que no se descargue un fichero vacio.
+      if (res.body?.status !== 'success') { return []; }
+      return res.body?.data?.data || [];
+    } catch (error) {
+      console.error('Error al obtener el listado completo:', error);
+      return [];
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /** Las cabeceras del reporte, en un solo sitio. */
+  private readonly CABECERAS_REPORTE = ['ID', 'Nombre', 'Estado', 'Creado', 'Modificado'];
+
+  /**
+   * Filas del reporte con formato de salida.
+   *
+   * `ordenarPorNombre` sólo al exportar el listado completo: si se
+   * exporta la página hay que respetar lo que se tiene delante. Y se
+   * ordena sobre una COPIA, porque `sort` cambia el array que recibe
+   * y el de la página es el de la grilla.
+   */
+  private filasReporte(lista: any[], ordenarPorNombre: boolean = true): any[][] {
+    return (ordenarPorNombre ? [...lista].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '')) : lista)
+      .map(item => [
+      item.id,
+      item.nombre,
+      item.activo ? 'Activo' : 'Inactivo',
+      item.created_at,
+      item.updated_at,
+      ]);
+  }
+
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'horarios',
+      tituloBase: 'Listado de Horarios',
+      gridApi: this.gridApi,
+      filasDePagina: this.chorarioModel,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
+  }
+
   async printPdf() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appPrintPdfService.generarReporte({
-      tamanoPapel: "A4",
-      orientacion: "p",
-      title: "Reporte de Horarios",
-      titleTable: "Listado de Horarios",
-      headers: ['ID', 'Nombre', 'Estado', 'Creado', 'Modificado'],
-      data: this.chorarioModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        .map(item => [
-          item.id,
-          item.nombre,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),
+      tamanoPapel: 'A4',
+      orientacion: 'p',
+      title: 'Reporte de Horarios',
+      titleTable: salida.titulo,
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }
     this._appExportExcelService.generarReporteExcel({
-      tamanoPapel: "A4",
-      orientacion: "p",
-      title: "Reporte de Horarios",
-      titleTable: "Listado de Horarios",
-      headers: ['ID', 'Nombre', 'Estado', 'Creado', 'Modificado'],
-      data: this.chorarioModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        .map(item => [
-          item.id,
-          item.nombre,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),
+      tamanoPapel: 'A4',
+      orientacion: 'p',
+      title: 'Reporte de Horarios',
+      titleTable: salida.titulo,
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }
     this._appExportCsvService.generarReporteCSV({
-      headers: ['ID', 'Nombre', 'Estado', 'Creado', 'Modificado'],
-      data: this.chorarioModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        .map(item => [
-          item.id,
-          item.nombre,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
     });
   }
 

@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
@@ -14,6 +14,8 @@ import { AppPrintPdfService } from '../../../../../service/app-printPdf.service'
 import { AppExportExcelService } from '../../../../../service/app-exportExcel.service';
 import { AppExportCsvService } from '../../../../../service/app-exportCsv.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 import { LoadingService } from '../../../../../service/loading.service';
 
 ///   MODELOS    ///
@@ -54,6 +56,9 @@ import { CampoBusquedaComponent } from '../../../../../components/campos/campoBu
   standalone: false,
 })
 export class AllCategoriasComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (lo desplegado o el árbol entero) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   // ---------- Estado ----------
   /** Permisos del perfil sobre esta pantalla, del resolver de la ruta. */
@@ -853,8 +858,8 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   public get totalRegistros(): number { return this.categoriaModel.length; }
 
   /** Filas del reporte, en el orden del árbol y con la ruta completa. */
-  private filasReporte(): any[][] {
-    return this.categoriaModel.map(item => [
+  private filasReporte(lista: any[] = this.categoriaModel): any[][] {
+    return lista.map(item => [
       item.id,
       item.ruta || item.nombre,
       item.nivel,
@@ -1038,41 +1043,62 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
 
   private readonly CABECERAS_REPORTE = ['ID', 'Categoría', 'Nivel', 'Subcategorías', 'Productos', 'En la rama', 'Estado'];
 
-  private tituloReporte(): string {
-    return 'Árbol de Categorías';
+
+  /**
+   * Lo que se le pide al servicio de descargas.
+   *
+   * AQUÍ NO HAY PAGINACIÓN: el árbol entero está en memoria y la rejilla
+   * sólo pinta lo que está desplegado. Por eso «la página que estoy
+   * viendo» son las ramas abiertas y «todo» es el árbol completo, que es
+   * justo la diferencia que se pierde al exportar sin preguntar.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'categorías',
+      tituloBase: 'Árbol de Categorías',
+      gridApi: this.gridApi,
+      total: this.categoriaModel.length,
+      busqueda: this.searchTerm,
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.categoriaModel,
+    };
   }
 
   async printPdf() {
-    if (this.categoriaModel.length === 0) { this._toastr.info('No hay categorías para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appPrintPdfService.generarReporte({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Categorías",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(),
+      data: this.filasReporte(salida.filas),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
-    if (this.categoriaModel.length === 0) { this._toastr.info('No hay categorías para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportExcelService.generarReporteExcel({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Categorías",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(),
+      data: this.filasReporte(salida.filas),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
-    if (this.categoriaModel.length === 0) { this._toastr.info('No hay categorías para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportCsvService.generarReporteCSV({
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(),
+      data: this.filasReporte(salida.filas),
     });
   }
 

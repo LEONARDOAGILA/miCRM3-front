@@ -10,6 +10,10 @@ export interface MarcaModel {
   activo: boolean;
   /** Productos de esta marca (informativo: con productos no se puede eliminar) */
   num_productos?: number;
+  /** Cuándo se envió a la papelera; null mientras la marca está vigente */
+  deleted_at?: string | null;
+  /** Quién la envió a la papelera */
+  deleted_by?: string | null;
   created_at?: string;
   updated_at?: string;
   created_by?: string;

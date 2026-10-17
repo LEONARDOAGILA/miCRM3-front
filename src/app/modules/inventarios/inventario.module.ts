@@ -31,6 +31,7 @@ import { MenuContextualComponent } from '../../components/menuContextual/menuCon
 import { AllMarcasComponent, ButtonAccionMarca } from './pages/marcas/allMarcas/allMarcas.component';
 import { SaveMarcaComponent } from './pages/marcas/saveMarca/saveMarca.component';
 import { DeleteMarcaComponent } from './pages/marcas/deleteMarca/deleteMarca.component';
+import { PapeleraMarcasComponent } from './pages/marcas/papeleraMarcas/papeleraMarcas.component';
 
 //   ******   CATEGORÍAS (árbol)   ******  //
 import { AllCategoriasComponent, ButtonAccionCategoria } from './pages/categorias/allCategorias/allCategorias.component';
@@ -52,6 +53,7 @@ import { PapeleraProductosComponent } from './pages/productos/papeleraProductos/
     ButtonAccionMarca,
     SaveMarcaComponent,
     DeleteMarcaComponent,
+    PapeleraMarcasComponent,
 
     AllCategoriasComponent,
     ButtonAccionCategoria,

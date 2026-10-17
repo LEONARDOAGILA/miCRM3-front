@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
@@ -15,6 +15,8 @@ import { AppPrintPdfService } from '../../../../../service/app-printPdf.service'
 import { AppExportExcelService } from '../../../../../service/app-exportExcel.service';
 import { AppExportCsvService } from '../../../../../service/app-exportCsv.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 import { LoadingService } from '../../../../../service/loading.service';
 
 ///   MODELOS    ///
@@ -56,6 +58,9 @@ import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
   standalone: false,
 })
 export class AllUsersComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   // ---------- Estado ----------
   /** Permisos del usuario sobre esta pantalla (crear, reporte, auditar…), del resolver de la ruta. */
@@ -292,8 +297,71 @@ export class AllUsersComponent implements OnInit, OnDestroy {
    * La columna ACCIONES va fijada a la derecha (pinned) y su cabecera es
    * pulsable para plegarla (ver toggleActionsColumn).
    */
+  // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Los aplica el SERVIDOR, no la rejilla: esta pantalla pagina, así que
+  // ag-Grid sólo tiene las quince filas de la página y filtrar ahí buscaría
+  // dentro de quince. La cabecera sólo recoge lo que el usuario pidió.
+
+  /**
+   * Las columnas que llevan filtro, y de qué tipo.
+   *
+   * Tiene que decir lo mismo que la lista blanca de UserController: lo que no
+   * esté allí se tira en el servidor, así que ponerlo sólo aquí sería pintar
+   * una caja que no filtra.
+   *
+   * SE FILTRA POR LO QUE SE VE. «Tipo Usuario» enseña el nombre del tipo, no
+   * el número que guarda la tabla, y por ese nombre se filtra; «Grupo» sin
+   * asignar se enseña y se filtra como «Sin grupo». `isactive` se queda
+   * fuera: es una casilla, y escribir texto para filtrarla no se entiende.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero',
+    login_user: 'texto', surname: 'texto', name: 'texto',
+    email: 'texto', phone: 'texto',
+    type_user: 'texto', perfil_nombre: 'texto', chorario_nombre: 'texto', grupo_nombre: 'texto',
+    created_by: 'texto', updated_by: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
+    last_login_at: 'texto', created_at: 'texto', updated_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /**
+   * Las columnas con su filtro de cabecera.
+   *
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique— vive en
+   * AppAgGridService. Aquí queda sólo el QUÉ.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+
+  /** La cabecera pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.paginaActual = 1;
+    this.allUsers(1);
+  }
+
+  /** Cuántas columnas llevan filtro; el buscador lo enseña y se pone rojo. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o un filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
   initializeGrid(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       // {
       //   headerName: 'Avatar',
       //   field: 'avatar',
@@ -458,7 +526,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
           `
         }
       }
-    ];
+    ]);
   }
 
   onGridReady(params: GridReadyEvent): void {
@@ -692,7 +760,8 @@ export class AllUsersComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
 
       const res = await firstValueFrom(
-        this._userService.allUsers(page, this.registrosPorPagina, this.searchTerm)
+        this._userService.allUsers(page, this.registrosPorPagina, this.searchTerm,
+                                   this.filtrosColumna)
       ) as any;
 
       // El backend responde 200 aunque la función de PostgreSQL devuelva
@@ -739,7 +808,8 @@ export class AllUsersComponent implements OnInit, OnDestroy {
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
-        this._userService.allUsers(1, this.totalRegistros, this.searchTerm)
+        this._userService.allUsers(1, this.totalRegistros, this.searchTerm,
+                                   this.filtrosColumna)
       ) as any;
 
       if (res.body?.status !== 'success') {
@@ -756,9 +826,18 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   }
 
   /** Filas del reporte, ya ordenadas y con el formato de salida. */
-  private filasReporte(usuarios: UserModel[]): any[][] {
-    return usuarios
-      .sort((a, b) => (a.login_user || '').localeCompare(b.login_user || ''))
+  /**
+   * Filas del reporte con formato de salida.
+   *
+   * `ordenarPorNombre` sólo cuando se exporta el listado completo: si se
+   * exporta la página hay que respetar lo que el usuario tiene delante.
+   * Se ordena sobre una COPIA: `sort` cambia el array que recibe, y el de
+   * la página es el de la grilla.
+   */
+  private filasReporte(usuarios: UserModel[], ordenarPorNombre: boolean = true): any[][] {
+    return (ordenarPorNombre
+      ? [...usuarios].sort((a, b) => (a.login_user || '').localeCompare(b.login_user || ''))
+      : usuarios)
       .map(item => [
         item.id,
         item.login_user,
@@ -782,19 +861,27 @@ export class AllUsersComponent implements OnInit, OnDestroy {
 
   /** Vacía el buscador y los filtros de columna de ag-Grid y recarga. */
   clearAllFilters() {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medias.
+    this.limpiando = true;
     // reset() ya vacía el input del buscador: el getElementById que había aquí
     // hacía lo mismo por segunda vez y a nivel de documento.
     this.campoBusquedaPaginacion?.reset();
-    if (this.gridApi) {
-      this.gridApi.setFilterModel(null);
-      this.searchTerm = '';
-      this.gridApi.onFilterChanged();
-      this.allUsers(this.paginaActual).then(() => {
-        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
-          this.goToPage(this.ultimaPagina);
-        }
-      });
-    }
+    this.searchTerm = '';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí: medido contra
+    // ag-Grid 28, `setFilterModel` avisa DESPUÉS de esta línea, así que
+    // apagándola aquí ese aviso pediría una segunda carga idéntica.
+    this.programar(() => { this.limpiando = false; }, 0);
+
+    this.paginaActual = 1;
+    this.allUsers(1);
   }
 
   // ================================================================
@@ -836,58 +923,66 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   // página visible (ver obtenerTodosParaExportar).
 
   /** Título del reporte, indicando si sale filtrado. */
-  private tituloReporte(): string {
-    return this.searchTerm
-      ? `Listado de Usuarios (filtro: ${this.searchTerm})`
-      : 'Listado de Usuarios';
+
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'usuarios',
+      tituloBase: 'Listado de Usuarios',
+      gridApi: this.gridApi,
+      filasDePagina: this.userModel,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      filtrosColumna: this.filtrosColumna,
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
   }
 
   async printPdf() {
-    const usuarios = await this.obtenerTodosParaExportar();
-    if (usuarios.length === 0) {
-      this._toastr.info('No hay usuarios para exportar');
-      return;
-    }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
 
     this._appPrintPdfService.generarReporte({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Usuarios",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: ['ID', 'Usuario', 'Nombre', 'Apellido', 'Email', 'Activo'],
-      data: this.filasReporte(usuarios),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
-    const usuarios = await this.obtenerTodosParaExportar();
-    if (usuarios.length === 0) {
-      this._toastr.info('No hay usuarios para exportar');
-      return;
-    }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
 
     this._appExportExcelService.generarReporteExcel({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Usuarios",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: ['ID', 'Usuario', 'Nombre', 'Apellido', 'Email', 'Activo'],
-      data: this.filasReporte(usuarios),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
-    const usuarios = await this.obtenerTodosParaExportar();
-    if (usuarios.length === 0) {
-      this._toastr.info('No hay usuarios para exportar');
-      return;
-    }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
 
     this._appExportCsvService.generarReporteCSV({
       headers: ['ID', 'Usuario', 'Nombre', 'Apellido', 'Email', 'Activo'],
-      data: this.filasReporte(usuarios),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
     });
   }
 
@@ -972,6 +1067,10 @@ export class AllUsersComponent implements OnInit, OnDestroy {
   abrirPapelera(): void {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.modal.open(PapeleraUsuariosComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
+    // El permiso viaja con el modal: allí también hay auditoría, que es como
+    // se ve quién borró a alguien sin tener que restaurarlo antes. Sin esta
+    // línea el botón no salía al abrir la papelera desde aquí.
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.allUsers(this.paginaActual));
   }
 

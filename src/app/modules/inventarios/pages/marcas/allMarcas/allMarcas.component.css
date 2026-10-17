@@ -143,3 +143,11 @@
   color: var(--bs-gray-500, #adb5bd);
   font-size: 11px;
 }
+
+/* El aviso del pie cuando el total no es el de todas las marcas, sino el
+   de las que pasan el filtro. Sin esto el número engaña. */
+.lista-filtrado {
+  margin-left: .35rem;
+  font-style: italic;
+  color: var(--bs-danger, #dc3545);
+}

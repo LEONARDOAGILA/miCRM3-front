@@ -144,6 +144,7 @@
           [navigateToNextCell]="navegarConTeclado"
           [rowClassRules]="rowClassRules"
           [overlayNoRowsTemplate]="'<span>No hay productos que cumplan el filtro</span>'"
+          (contextmenu)="onContextMenuGrilla($event)"
           (gridReady)="onGridReady($event)"
           (filterChanged)="onFiltroColumna()"
           (cellClicked)="onCellClicked($event)">
@@ -186,3 +187,11 @@
   </div>
 
 </panel>
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO =================
+     Las mismas acciones que la columna ACCIONES, sin tener que llegar al
+     final de la fila ni desplegar la columna cuando está plegada. -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

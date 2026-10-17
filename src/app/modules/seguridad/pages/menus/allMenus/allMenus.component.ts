@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { firstValueFrom,  Subject, takeUntil } from 'rxjs';
 import { CellClickedEvent, GridApi,  GridReadyEvent } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -24,6 +24,8 @@ import { PerfilModel } from '../../../interfaces/perfilModel';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { ToastrService } from 'ngx-toastr';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 
 
 @Component({
@@ -33,6 +35,9 @@ import { MenuContextualComponent, OpcionContextual } from '../../../../../compon
   standalone: false,
 })
 export class AllMenusComponent implements OnInit, OnDestroy{
+
+  /** Pregunta qué descargar (lo que se ve o el árbol entero) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   public title: string;
   //public isLoading = false;
@@ -498,57 +503,81 @@ export class AllMenusComponent implements OnInit, OnDestroy{
     }
 
     //   ******   IMPRESION   ******  //
+    /**
+     * Lo que se le pide al servicio de descargas.
+     *
+     * Esta pantalla es un árbol Y ADEMÁS pagina con la propia rejilla, así
+     * que «la página que estoy viendo» son las filas desplegadas de la
+     * página actual de ag-Grid, y «todo» es el árbol entero (menuModel).
+     */
+    private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+      return {
+        accion,
+        nombrePlural: 'menús',
+        tituloBase: 'Listado de Menús',
+        gridApi: this.gridApi,
+        filasDePagina: this.filasVisibles,
+        total: this.menuModel.length,
+        busqueda: this.searchTerm,
+        columnDefs: this.columnDefs,
+        traerTodo: () => this.menuModel,
+      };
+    }
+
+    /** Las cabeceras del reporte, en un solo sitio. */
+    private readonly CABECERAS_REPORTE = ['ID', 'Nombre', 'Estado', 'Creado', 'Modificado'];
+
+    /**
+     * Filas del reporte.
+     *
+     * Antes faltaba el estado: la cabecera decía cinco columnas y las filas
+     * traían cuatro, así que «Creado» salía debajo de «Estado».
+     */
+    private filasReporte(lista: any[]): any[][] {
+      return lista.map(item => [
+        item.id,
+        item.nombre,
+        item.activo ? 'Activo' : 'Inactivo',
+        item.created_at_formateado,
+        item.updated_at_formateado,
+      ]);
+    }
+
     async printPdf() {
+      const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+      if (!salida) { return; }       // no hay nada que descargar, o canceló
       this._appPrintPdfService.generarReporte({
-        tamanoPapel:"A4",
-        orientacion: "p",
-        title: "Reporte de Departamentos",
-        titleTable: "Listado de Departamentos",        
-        headers: ['ID', 'Nombre', 'Estado', 'Creado' , 'Modificado'],
-
-        data: this.menuModel
-        .map(item => [
-          item.id,
-          item.nombre,
-          item.created_at_formateado,
-          item.updated_at_formateado,
-        ]),        
-
+        tamanoPapel: 'A4',
+        orientacion: 'p',
+        title: 'Reporte de Menús',
+        titleTable: salida.titulo,
+        headers: this.CABECERAS_REPORTE,
+        data: this.filasReporte(salida.filas),
         piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
-
-      });  
+      });
     }
+
     async exportExcel() {
+      const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+      if (!salida) { return; }
       this._appExportExcelService.generarReporteExcel({
-        tamanoPapel:"A4",
-        orientacion: "p",
-        title: "Reporte de Departamentos",
-        titleTable: "Listado de Departamentos",        
-        headers: ['ID', 'Nombre', 'Estado', 'Creado' , 'Modificado'],
-
-        data: this.menuModel
-        .map(item => [
-          item.id,
-          item.nombre,
-          item.created_at_formateado,
-          item.updated_at_formateado,
-        ]),
-
+        tamanoPapel: 'A4',
+        orientacion: 'p',
+        title: 'Reporte de Menús',
+        titleTable: salida.titulo,
+        headers: this.CABECERAS_REPORTE,
+        data: this.filasReporte(salida.filas),
         piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
-
-      });  
+      });
     }
+
     async exportCsv() {
+      const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+      if (!salida) { return; }
       this._appExportCsvService.generarReporteCSV({
-          headers: ['ID', 'Nombre', 'Estado', 'Creado' , 'Modificado'],
-          data: this.menuModel
-          .map(item => [
-            item.id,
-            item.nombre,
-            item.created_at_formateado,
-            item.updated_at_formateado,
-          ]),        
-      });  
+        headers: this.CABECERAS_REPORTE,
+        data: this.filasReporte(salida.filas),
+      });
     }
 
 

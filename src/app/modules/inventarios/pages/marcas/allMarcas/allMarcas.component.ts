@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
@@ -25,6 +25,10 @@ import { SaveMarcaComponent } from '../saveMarca/saveMarca.component';
 import { DeleteMarcaComponent } from '../deleteMarca/deleteMarca.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
+import { PapeleraMarcasComponent } from '../papeleraMarcas/papeleraMarcas.component';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 
 /**
  * Listado de marcas (inventarios.marcas).
@@ -44,6 +48,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class AllMarcasComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   // ---------- Estado ----------
   /** Permisos del perfil sobre esta pantalla (crear, reporte, auditar…), del resolver de la ruta. */
@@ -158,8 +165,65 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
   // AG-GRID
   // ================================================================
 
+  // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Los aplica el SERVIDOR, no la rejilla: esta pantalla pagina, así que
+  // ag-Grid sólo tiene las quince filas de la página y filtrar ahí buscaría
+  // dentro de quince. La cabecera sólo recoge lo que el usuario pidió.
+
+  /**
+   * Las columnas que llevan filtro, y de qué tipo.
+   *
+   * Tiene que decir lo mismo que la lista blanca de MarcaController: lo que
+   * no esté allí se tira en el servidor, así que ponerlo sólo aquí sería
+   * pintar un filtro que no filtra.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero', num_productos: 'numero',
+    nombre: 'texto', pais_origen: 'texto', sitio_web: 'texto', descripcion: 'texto',
+    created_by: 'texto', updated_by: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
+    created_at: 'texto', updated_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /**
+   * Las columnas con su filtro de cabecera.
+   *
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique— vive en
+   * AppAgGridService. Aquí queda sólo el QUÉ.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+
+  /** La cabecera pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.paginaActual = 1;
+    this.allMarcas(1);
+  }
+
+  /** Cuántas columnas llevan filtro; el buscador lo enseña y se pone rojo. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o un filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
+
   initializeGrid(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       {
         headerName: 'Id',
         field: 'id',
@@ -290,7 +354,7 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
           `
         }
       }
-    ];
+    ]);
   }
 
 
@@ -474,7 +538,8 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
 
       const res = await firstValueFrom(
-        this._marcaService.allMarcas(page, this.registrosPorPagina, this.searchTerm)
+        this._marcaService.allMarcas(page, this.registrosPorPagina, this.searchTerm,
+                                    this.filtrosColumna)
       ) as any;
 
       if (res.body?.status !== 'success') {
@@ -510,7 +575,8 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
-        this._marcaService.allMarcas(1, this.totalRegistros, this.searchTerm)
+        this._marcaService.allMarcas(1, this.totalRegistros, this.searchTerm,
+                                    this.filtrosColumna)
       ) as any;
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
@@ -525,10 +591,20 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Filas del reporte, ordenadas por nombre y con formato de salida. */
-  private filasReporte(marcas: MarcaModel[]): any[][] {
-    return marcas
-      .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+  /**
+   * Filas del reporte con formato de salida.
+   *
+   * `ordenarPorNombre` sólo cuando se exporta el listado completo: si se
+   * exporta la página hay que respetar lo que el usuario tiene delante.
+   * Se ordena sobre una COPIA: `sort` cambia el array que recibe, y el de la
+   * página es el de la grilla.
+   */
+  private filasReporte(marcas: MarcaModel[], ordenarPorNombre: boolean = true): any[][] {
+    const lista = ordenarPorNombre
+      ? [...marcas].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+      : marcas;
+
+    return lista
       .map(item => [
         item.id,
         item.nombre,
@@ -550,17 +626,25 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
   }
 
   clearAllFilters() {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medias.
+    this.limpiando = true;
     this.campoBusquedaPaginacion?.reset();
-    if (this.gridApi) {
-      this.gridApi.setFilterModel(null);
-      this.searchTerm = '';
-      this.gridApi.onFilterChanged();
-      this.allMarcas(this.paginaActual).then(() => {
-        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
-          this.goToPage(this.ultimaPagina);
-        }
-      });
-    }
+    this.searchTerm = '';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí: medido contra
+    // ag-Grid 28, `setFilterModel` avisa DESPUÉS de esta línea, así que
+    // apagándola aquí ese aviso pediría una segunda carga idéntica.
+    this.programar(() => { this.limpiando = false; }, 0);
+
+    this.paginaActual = 1;
+    this.allMarcas(1);
   }
 
   // ================================================================
@@ -590,44 +674,62 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
 
   private readonly CABECERAS_REPORTE = ['ID', 'Marca', 'País de origen', 'Sitio web', 'Productos', 'Estado'];
 
-  private tituloReporte(): string {
-    return this.searchTerm ? `Listado de Marcas (filtro: ${this.searchTerm})` : 'Listado de Marcas';
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'marcas',
+      tituloBase: 'Listado de Marcas',
+      gridApi: this.gridApi,
+      filasDePagina: this.marcaModel,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      filtrosColumna: this.filtrosColumna,
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
   }
 
   async printPdf() {
-    const marcas = await this.obtenerTodosParaExportar();
-    if (marcas.length === 0) { this._toastr.info('No hay marcas para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appPrintPdfService.generarReporte({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Marcas",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(marcas),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
-    const marcas = await this.obtenerTodosParaExportar();
-    if (marcas.length === 0) { this._toastr.info('No hay marcas para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportExcelService.generarReporteExcel({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Marcas",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(marcas),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
-    const marcas = await this.obtenerTodosParaExportar();
-    if (marcas.length === 0) { this._toastr.info('No hay marcas para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportCsvService.generarReporteCSV({
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(marcas),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
     });
   }
 
@@ -706,6 +808,119 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * La papelera de reciclaje.
+   *
+   * Lo que se «elimina» no se borra: va aquí, y desde aquí se restaura o se
+   * borra de verdad. Sólo con el acceso «papelera» del perfil.
+   */
+  abrirPapelera(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(PapeleraMarcasComponent, {
+      centered: true, size: 'xl', backdrop: 'static', keyboard: true
+    });
+    // El permiso viaja con el modal: allí también hay auditoría
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    this.escucharModal(modalRef, modalRef.componentInstance.cambio,
+                       () => this.allMarcas(this.paginaActual));
+  }
+
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, sin tener que llegar hasta
+  // el final de la fila ni desplegar la columna cuando está plegada.
+  //
+  // NO SE USA EL EVENTO `cellContextMenu` DE ag-Grid: se probó contra la
+  // librería y no llega. Aquí se escucha el `contextmenu` de la rejilla y la
+  // fila se resuelve con la API pública.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se puede hacer con esta marca, según el perfil. */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    const puedeCrear   = this.accesoModel?.crear    === true;
+    const puedeEditar  = this.accesoModel?.editar   === true;
+    const puedeBorrar  = this.accesoModel?.eliminar === true;
+    const puedeVer     = this.accesoModel?.ver      === true;
+    const puedeAuditar = this.accesoModel?.auditar  === true;
+
+    const conProductos = Number(fila?.num_productos ?? 0) > 0;
+    const sitio = String(fila?.sitio_web ?? '').trim();
+
+    return [
+      { id: 'ver',    texto: 'Ver',        icono: 'fa-eye',  visible: puedeVer },
+      { id: 'editar', texto: 'Modificar',  icono: 'fa-pen',  visible: puedeEditar },
+      { id: 'clonar', texto: 'Clonar',     icono: 'fa-clone', visible: puedeCrear,
+        ayuda: 'Crear otra marca partiendo de ésta' },
+      {
+        id: 'activo', texto: fila?.activo ? 'Desactivar' : 'Activar',
+        icono: fila?.activo ? 'fa-toggle-off' : 'fa-toggle-on',
+        separadorAntes: true, visible: puedeEditar,
+        ayuda: fila?.activo ? 'Dejar de usarla, sin borrarla' : 'Volver a usarla',
+      },
+      {
+        id: 'sitio', texto: 'Abrir el sitio web', icono: 'fa-up-right-from-square',
+        separadorAntes: true,
+        deshabilitada: sitio === '',
+        ayuda: sitio !== '' ? sitio : 'Esta marca no tiene sitio web',
+      },
+      {
+        id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        visible: puedeAuditar,
+        ayuda: 'Quién tocó esta marca y cuándo',
+      },
+      {
+        id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
+        separadorAntes: true, peligro: true, visible: puedeBorrar,
+        deshabilitada: conProductos,
+        ayuda: conProductos ? 'Tiene productos: desactívela en lugar de borrarla'
+                            : 'Se puede recuperar desde la papelera',
+      },
+    ];
+  }
+
+  /** Se eligió una opción del menú. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'ver':       this.viewMarca(fila); break;
+      case 'editar':    this.editMarca(fila); break;
+      case 'clonar':    this.clonMarca(fila); break;
+      case 'activo':    this.cambiarActivo(fila, this._appAgGridService.nodoDe(this.gridApi, fila.id)); break;
+      case 'sitio':     this.abrirSitio(fila); break;
+      case 'auditoria': this.auditoria(); break;
+      case 'eliminar':  this.deleteMarca(fila); break;
+    }
+  }
+
+  /** El sitio web de la marca, en otra pestaña. */
+  private abrirSitio(fila: any): void {
+    const sitio = String(fila?.sitio_web ?? '').trim();
+    if (!sitio) { return; }
+    // `noopener` es obligatorio: sin él la página que se abre puede tocar
+    // ésta a través de window.opener.
+    window.open(/^https?:\/\//i.test(sitio) ? sitio : 'https://' + sitio, '_blank', 'noopener');
+  }
   /** Historial de auditoría de la fila seleccionada (tabla marcas). */
   auditoria(): void {
     if (!this.selectedRow) { return; }
