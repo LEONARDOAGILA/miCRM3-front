@@ -1,0 +1,152 @@
+<!-- ============================================================
+     ALTA / MODIFICACIÓN DE UNA CARACTERÍSTICA
+
+     Una línea de la lista que se le pedirá a cada producto de la categoría:
+     «Procesador», «Pulgadas», «Resolución». Aquí se dice cómo se llama y
+     dónde va; el valor lo pone cada producto.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.dismiss()">
+</app-modal-header>
+
+<div class="modal-body">
+  <form [formGroup]="form" novalidate>
+
+    <panel
+      headerClass="bg-gray-800"
+      title="La característica"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="tag"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <!-- Categoría: id + ruta + lupa, pegados como en saveProducto -->
+            <div class="col-12">
+              <div class="campo-lookup">
+                <div class="row g-0 flex-nowrap">
+                  <div class="col-4">
+                    <app-campoNumeroEntero
+                      [control]="form.controls['categoria_id']"
+                      label="ID Categ."
+                      placeholder="ID"
+                      [maxLength]="10"
+                      [limpiable]="false"
+                      (blur)="cargarCategoriaPorId()">
+                    </app-campoNumeroEntero>
+                  </div>
+                  <div class="col">
+                    <app-campoTexto
+                      [control]="categoriaNombreControl"
+                      label="Categoría"
+                      placeholder="Sin categoría">
+                    </app-campoTexto>
+                  </div>
+                  @if (!esView) {
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-lookup"
+                              (click)="abrirModalCategorias()" title="Buscar categoría">
+                        <i class="fa fa-search"></i>
+                      </button>
+                    </div>
+                    @if (form.controls['categoria_id'].value) {
+                      <div class="col-auto">
+                        <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                (click)="limpiarCategoria()" title="Quitar la categoría">
+                          <i class="fa fa-times"></i>
+                        </button>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                Esta característica se pedirá en los productos de esta categoría.
+              </p>
+            </div>
+
+            <!-- Nombre -->
+            <div class="col-12 col-md-8">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="NOMBRE DE LA CARACTERÍSTICA"
+                placeholder="Procesador, Memoria RAM, Pulgadas…"
+                [maxLength]="100"
+                [minLength]="2"
+                [trimEspacios]="true">
+              </app-campoTexto>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                No se puede repetir dentro de la misma categoría; en otra sí.
+              </p>
+            </div>
+
+            <!-- Orden -->
+            <div class="col-12 col-md-4">
+              <app-campoNumeroEntero
+                [control]="form.controls['orden']"
+                label="ORDEN"
+                placeholder="Al final"
+                [maxLength]="4">
+              </app-campoNumeroEntero>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                En qué posición se pide. Vacío: al final de la lista.
+              </p>
+            </div>
+
+            <!-- Estado -->
+            <div class="col-12">
+              <div class="estado-caracteristica" [class.is-on]="ctrlActivo.value">
+                <span class="estado-caracteristica__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-caracteristica__text">
+                  <span class="estado-caracteristica__label">Estado</span>
+                  <span class="estado-caracteristica__hint">
+                    {{ ctrlActivo.value
+                        ? 'Se pide al crear o modificar un producto'
+                        : 'No se pide: lo ya relleno se conserva' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-caracteristica__switch"
+                  [control]="ctrlActivo"
+                  [label]="ctrlActivo.value ? 'Activa' : 'Inactiva'"
+                  [id]="'ck-caracteristica-activa'">
+                </app-checkbox>
+              </div>
+
+              @if (accion === 'edit' && numProductos > 0) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  {{ numProductos }} {{ numProductos === 1 ? 'producto la tiene' : 'productos la tienen' }}
+                  rellena. Cambiarle el nombre no toca lo que ya guardaron: cada producto
+                  conserva el nombre con el que lo rellenó.
+                </p>
+              }
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<app-modal-footer
+  [isDisabled]="isdisabled"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.dismiss()"
+  (onSubmit)="onSubmitForm()">
+</app-modal-footer>

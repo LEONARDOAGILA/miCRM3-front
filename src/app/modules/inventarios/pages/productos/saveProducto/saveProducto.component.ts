@@ -13,6 +13,7 @@ import { ListCategoriaComponent } from '../../categorias/listCategoria/listCateg
 // Pasa el HTML del editor a texto. Vive en ventas porque allí nació (las
 // plantillas de WhatsApp), pero no es de ventas: es una función suelta.
 import { soloTexto } from '../../../../ventas/interfaces/plantillasWhatsapp';
+import { CaracteristicaService } from '../../../services/caracteristica.service';
 import { CategoriaService } from '../../../services/categoria.service';
 import {
   ProductoModel, ImagenProductoModel,
@@ -74,6 +75,26 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
    * «Accesorios» en el árbol y a secas no se sabe de cuál se trata.
    */
   public categoriaNombreControl = new FormControl({ value: '', disabled: true });
+
+  /**
+   * LAS CARACTERÍSTICAS DE LA CATEGORÍA, para rellenar.
+   *
+   * Cada una lleva su propio FormControl porque el campo de texto de la
+   * casa (app-campoTexto) trabaja con controles, no con ngModel. No van
+   * en el FormGroup del producto: son una lista que cambia entera cada
+   * vez que se cambia de categoría, y un FormArray que se rehace a cada
+   * rato no aporta nada aquí.
+   */
+  public caracteristicas: {
+    caracteristica_id: number | null;
+    nombre: string;
+    orden: number;
+    en_plantilla: boolean;
+    control: FormControl;
+  }[] = [];
+
+  /** Mientras se pide la plantilla al cambiar de categoría. */
+  public cargandoCaracteristicas = false;
   public unidades = UNIDADES_PRODUCTO;
   public tarifasIva = TARIFAS_IVA;
   public garantias = GARANTIAS_MESES;
@@ -103,6 +124,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     public _productoService: ProductoService,
     private _marcaService: MarcaService,
     private _categoriaService: CategoriaService,
+    private _caracteristicaService: CaracteristicaService,
   ) {}
 
   // ================================================================
@@ -374,6 +396,8 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
             `«${res.data.ruta || res.data.nombre}» está inactiva: actívela desde Categorías para poder usarla`,
             'Categoría no disponible', { timeOut: 4000 });
         }
+
+        await this.cargarPlantilla(Number(id));
       } else {
         this.limpiarCategoria();
         this._toastr.warning('Categoría no encontrada');
@@ -402,6 +426,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     const sub = modalRef.componentInstance.seleccionado.subscribe((categoria: any) => {
       this.form.patchValue({ categoria_id: categoria.id });
       this.categoriaNombreControl.setValue(categoria.ruta || categoria.nombre || '');
+      this.cargarPlantilla(categoria.id);
     });
     modalRef.result.catch(() => {}).finally(() => sub.unsubscribe());
   }
@@ -410,6 +435,94 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
   limpiarCategoria(): void {
     this.form.patchValue({ categoria_id: null });
     this.categoriaNombreControl.setValue('');
+    // Sin categoría no hay plantilla que rellenar
+    this.caracteristicas = [];
+  }
+
+  // ================================================================
+  // LAS CARACTERÍSTICAS DE LA CATEGORÍA
+  // ================================================================
+  //
+  // La categoría manda qué hay que rellenar: un portátil pide procesador
+  // y memoria; un televisor, pulgadas y resolución. La lista la mantiene
+  // la pantalla de Características (inventarios/allCaracteristicas).
+
+  /** Hay algo que enseñar en el panel. */
+  get hayCaracteristicas(): boolean { return this.caracteristicas.length > 0; }
+
+  /** Cuántas llevan valor, para decirlo en la cabecera del panel. */
+  get caracteristicasRellenas(): number {
+    return this.caracteristicas.filter(c => !!(c.control.value ?? '').toString().trim()).length;
+  }
+
+  /**
+   * Trae la plantilla de una categoría y la deja lista para rellenar.
+   *
+   * SE CONSERVA LO YA ESCRITO: si alguien escribió «16 GB» y cambia de
+   * categoría a otra que también pide «Memoria RAM», el valor se queda.
+   * Se compara por nombre porque el id de la plantilla es otro en cada
+   * categoría.
+   */
+  async cargarPlantilla(categoriaId: number | null): Promise<void> {
+    if (!categoriaId) { this.caracteristicas = []; return; }
+
+    const escritoAntes = new Map<string, string>();
+    this.caracteristicas.forEach(c => {
+      const v = (c.control.value ?? '').toString().trim();
+      if (v) { escritoAntes.set(c.nombre.trim().toUpperCase(), v); }
+    });
+
+    try {
+      this.cargandoCaracteristicas = true;
+      const res: any = await firstValueFrom(
+        this._caracteristicaService.listCaracteristicas(categoriaId, true));
+
+      const filas = (res?.data ?? []) as any[];
+      this.caracteristicas = filas.map((k: any) => this.filaCaracteristica({
+        caracteristica_id: k.id,
+        nombre: k.nombre,
+        orden: k.orden,
+        en_plantilla: true,
+        valor: escritoAntes.get(String(k.nombre).trim().toUpperCase()) ?? '',
+      }));
+    } catch (error) {
+      // El AuthInterceptor ya enseña el error HTTP. Sin plantilla se puede
+      // guardar igual: las características son opcionales.
+      console.error('Error al cargar las características de la categoría:', error);
+      this.caracteristicas = [];
+    } finally {
+      this.cargandoCaracteristicas = false;
+    }
+  }
+
+  /** Las que ya tiene rellenas un producto que existe. */
+  private async cargarCaracteristicasDelProducto(productoId: number): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(this._productoService.caracteristicas(productoId));
+      const filas = (res?.data ?? []) as any[];
+      this.caracteristicas = filas.map((c: any) => this.filaCaracteristica({
+        caracteristica_id: c.caracteristica_id ?? null,
+        nombre: c.nombre,
+        orden: c.orden ?? 1,
+        en_plantilla: c.en_plantilla !== false,
+        valor: c.valor ?? '',
+      }));
+    } catch (error) {
+      console.error('Error al cargar las características del producto:', error);
+      this.caracteristicas = [];
+    }
+  }
+
+  /** Una fila de la lista, con su control (deshabilitado al ver). */
+  private filaCaracteristica(d: { caracteristica_id: number | null; nombre: string;
+                                  orden: number; en_plantilla: boolean; valor: string }) {
+    return {
+      caracteristica_id: d.caracteristica_id,
+      nombre: d.nombre,
+      orden: d.orden,
+      en_plantilla: d.en_plantilla,
+      control: new FormControl({ value: d.valor, disabled: this.esView }),
+    };
   }
   //   ******   CARGA EL REGISTRO   ******  //
   async findByIdProducto(id: number): Promise<void> {
@@ -454,6 +567,15 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       // pedirlo aparte.
       this.marcaNombreControl.setValue(m.marca_nombre ?? '');
       this.categoriaNombreControl.setValue(m.categoria_ruta ?? m.categoria_nombre ?? '');
+
+      // Las características: las del producto si ya existe, y la plantilla
+      // de la categoría si es un clon (el clon nace sin valores, como nace
+      // sin fotos).
+      if (this.accion === 'clon') {
+        await this.cargarPlantilla(m.categoria_id ?? null);
+      } else {
+        await this.cargarCaracteristicasDelProducto(Number(id));
+      }
 
       // La galería sólo se hereda al VER o MODIFICAR. Al clonar, la copia
       // empieza sin fotos: duplicar ficheros en disco para un producto que
@@ -669,6 +791,17 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     for (const k of ['codigo_barras', 'modelo']) {
       payload[k] = (payload[k] ?? '').toString().trim() || null;
     }
+
+    // Las características rellenas. Van siempre, aunque la lista esté
+    // vacía: es la foto completa de la ficha, y el servidor borra lo que
+    // no venga. Lo que quede sin valor lo descarta él (una característica
+    // sin valor no es un dato).
+    payload.caracteristicas = this.caracteristicas.map(c => ({
+      caracteristica_id: c.caracteristica_id,
+      nombre: c.nombre,
+      valor: (c.control.value ?? '').toString().trim(),
+      orden: c.orden,
+    }));
 
     // La descripción ahora es HTML: el editor devuelve «<p></p>» cuando no
     // se escribió nada, y eso no es una descripción, es el envoltorio

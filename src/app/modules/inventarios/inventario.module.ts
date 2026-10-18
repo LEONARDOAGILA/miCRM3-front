@@ -34,6 +34,9 @@ import { DeleteMarcaComponent } from './pages/marcas/deleteMarca/deleteMarca.com
 import { PapeleraMarcasComponent } from './pages/marcas/papeleraMarcas/papeleraMarcas.component';
 import { ListMarcaComponent } from './pages/marcas/listMarca/listMarca.component';
 import { ListCategoriaComponent } from './pages/categorias/listCategoria/listCategoria.component';
+import { AllCaracteristicasComponent } from './pages/caracteristicas/allCaracteristicas/allCaracteristicas.component';
+import { SaveCaracteristicaComponent } from './pages/caracteristicas/saveCaracteristica/saveCaracteristica.component';
+import { DeleteCaracteristicaComponent } from './pages/caracteristicas/deleteCaracteristica/deleteCaracteristica.component';
 // Standalone: va en imports, no en declarations
 import { CampoNgxEditorComponent } from '../../components/campos/campoNgxEditor/campoNgxEditor.component';
 
@@ -60,6 +63,9 @@ import { PapeleraProductosComponent } from './pages/productos/papeleraProductos/
     PapeleraMarcasComponent,
     ListMarcaComponent,
     ListCategoriaComponent,
+    AllCaracteristicasComponent,
+    SaveCaracteristicaComponent,
+    DeleteCaracteristicaComponent,
 
     AllCategoriasComponent,
     ButtonAccionCategoria,

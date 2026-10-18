@@ -87,6 +87,17 @@ export class ProductoService {
   // LA GALERÍA
   // ================================================================
 
+  /**
+   * Las características rellenas del producto.
+   *
+   * Trae la plantilla vigente de su categoría con los valores puestos, y
+   * además lo que se rellenó en su día y hoy ya no está en la plantilla
+   * (viene con en_plantilla = false).
+   */
+  caracteristicas(productoId: any): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'caracteristicas/' + productoId);
+  }
+
   imagenes(productoId: any): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'imagenes/' + productoId);
   }

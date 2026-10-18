@@ -9,6 +9,7 @@ import { HomeComponent } from './pages/home/home.component';
 import { AllMarcasComponent } from './pages/marcas/allMarcas/allMarcas.component';
 import { AllCategoriasComponent } from './pages/categorias/allCategorias/allCategorias.component';
 import { AllProductosComponent } from './pages/productos/allProductos/allProductos.component';
+import { AllCaracteristicasComponent } from './pages/caracteristicas/allCaracteristicas/allCaracteristicas.component';
 
 // ============================================================================
 // EL `path` TIENE QUE COINCIDIR CON LA URL DEL MENÚ (seguridad.menus.url).
@@ -25,6 +26,8 @@ const routes: Routes = [
       { path: 'allCategorias', component: AllCategoriasComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
       { path: 'allMarcas',     component: AllMarcasComponent,     canActivate: [AuthGuard], resolve: { access: AccessResolver } },
       { path: 'allProductos',  component: AllProductosComponent,  canActivate: [AuthGuard], resolve: { access: AccessResolver } },
+      // La plantilla de caracteristicas de cada categoria
+      { path: 'allCaracteristicas', component: AllCaracteristicasComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
 
       { path: 'home', component: HomeComponent, data: { title: 'Home page' } },
       { path: '**', component: ErrorPage },

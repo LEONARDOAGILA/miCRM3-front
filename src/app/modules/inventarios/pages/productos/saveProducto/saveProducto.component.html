@@ -453,6 +453,76 @@
            para escribir una ficha larga a pantalla completa. Los otros tres
            botones (recargar, minimizar, cerrar) se apagan uno a uno, porque
            noButton los apaga TODOS, expandir incluido. -->
+      <!-- ---------- 6. Características ----------
+           Lo que hay que rellenar sale de la CATEGORÍA: un portátil pide
+           procesador y memoria; un televisor, pulgadas y resolución. La
+           lista se mantiene en Inventarios → Características, y aquí sólo se
+           rellena. Si la categoría no tiene lista, el panel lo dice en vez
+           de quedarse vacío sin explicación. -->
+      <panel
+        headerClass="bg-gray-800"
+        title="Características"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-3"
+        icono="tag"
+        fondoGris="true">
+
+        <div header class="panel-acciones">
+          @if (hayCaracteristicas) {
+            <span class="chip chip-info" title="Rellenas de la lista de la categoría">
+              <i class="fa-solid fa-list-check"></i>
+              {{ caracteristicasRellenas }} / {{ caracteristicas.length }}
+            </span>
+          }
+        </div>
+
+        <ng-container outsideBody>
+          <div class="form-card__body">
+
+            @if (cargandoCaracteristicas) {
+              <p class="campo-hint">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                Cargando la lista de la categoría…
+              </p>
+            } @else if (!hayCaracteristicas) {
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                @if (form.controls['categoria_id'].value) {
+                  Esta categoría todavía no tiene características definidas. Se definen una
+                  sola vez en <b>Inventarios → Características</b> y desde entonces se piden
+                  en todos sus productos.
+                } @else {
+                  Elija primero la categoría del producto: de ella sale la lista de
+                  características que hay que rellenar.
+                }
+              </p>
+            } @else {
+              <div class="row g-3">
+                @for (c of caracteristicas; track c.nombre) {
+                  <div class="col-12 col-md-6 col-xxl-4">
+                    <app-campoTexto
+                      [control]="c.control"
+                      [label]="c.nombre"
+                      placeholder="Sin especificar"
+                      [maxLength]="500">
+                    </app-campoTexto>
+                    @if (!c.en_plantilla) {
+                      <p class="campo-hint">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Ya no está en la lista de esta categoría. Se sigue enseñando porque
+                        este producto la tiene rellena; si la vacía, desaparece.
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+          </div>
+        </ng-container>
+      </panel>
+
       <panel
         headerClass="bg-gray-800"
         title="Descripción"
