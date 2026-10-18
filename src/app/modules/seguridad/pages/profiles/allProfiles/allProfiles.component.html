@@ -47,6 +47,8 @@
                       [iconClass]="'fa fa-search fa-lg'"
                       [containerClass]="'w-100'"
                       [conLimpiarFiltros]="true"
+                      [hayFiltro]="hayFiltro"
+                      [columnasFiltradas]="cuantasColumnasFiltradas"
                       (buscar)="onFilterTextBoxChanged($event)"
                       (limpiarFiltros)="clearAllFilters()">
                     </app-campoBusquedaPaginacion>
@@ -58,6 +60,17 @@
                       [disabled]="accesoModel.crear === false"
                       (click)="addProfile()">
                       <i class="fa fa-plus"></i>
+                    </button>
+                  </div>
+
+                  <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil.
+                       Lo eliminado conserva sus accesos y se restaura desde ahí. -->
+                  <div class="col-auto" *ngIf="accesoModel.papelera === true">
+                    <button
+                      class="btn btn-outline-secondary d-flex align-items-center justify-content-center square-btn rounded-3"
+                      title="Papelera de reciclaje de perfiles"
+                      (click)="abrirPapelera()">
+                      <i class="fa fa-trash-can"></i>
                     </button>
                   </div>
 
@@ -95,6 +108,7 @@
               style="height: 360.4px; --ag-line-height: 30px;margin-top: -10px;"
               [navigateToNextCell]="navegarConTeclado"
               [rowClassRules]="rowClassRules"
+              (filterChanged)="onFiltroColumna()"
               (gridReady)="onGridReady($event)" 
               (cellClicked)="onCellClicked($event)"                 
               ></ag-grid-angular>

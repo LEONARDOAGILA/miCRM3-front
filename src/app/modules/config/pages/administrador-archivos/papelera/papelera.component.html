@@ -77,13 +77,16 @@
 <div class="modal-footer papelera-pie">
   <!-- Borrar para siempre: sólo administradores (soloRestaurar = false) -->
   @if (!soloRestaurar) {
-  <button type="button" class="btn btn-danger papelera-pie__vaciar"
-          [disabled]="!items.length"
-          title="Borrar para siempre todo lo que hay en la papelera"
-          (click)="vaciar()">
-    <i class="fa fa-broom me-1"></i>
-    <span class="d-none d-sm-inline">Vaciar papelera</span>
-  </button>
+  <!-- Vaciar pide el permiso «vaciar»: sin él se entra a la papelera y se restaura, pero no se borra -->
+  @if (puedeVaciar) {
+    <button type="button" class="btn btn-danger papelera-pie__vaciar"
+            [disabled]="!items.length"
+            title="Borrar para siempre todo lo que hay en la papelera"
+            (click)="vaciar()">
+      <i class="fa fa-broom me-1"></i>
+      <span class="d-none d-sm-inline">Vaciar papelera</span>
+    </button>
+  }
   }
 
   <div class="papelera-pie__derecha">
@@ -105,13 +108,16 @@
       <span class="d-none d-sm-inline">Restaurar</span>
     </button>
     @if (!soloRestaurar) {
-    <button type="button" class="btn btn-outline-danger"
-            [disabled]="!seleccionado"
-            [title]="seleccionado ? 'Borrar «' + seleccionado.nombre + '» para siempre' : 'Seleccione un elemento'"
-            (click)="eliminarDefinitivo()">
-      <i class="fa fa-trash me-1"></i>
-      <span class="d-none d-sm-inline">Eliminar definitivamente</span>
-    </button>
+    <!-- Eliminar definitivamente: lo mismo, hace falta «vaciar» -->
+    @if (puedeVaciar) {
+      <button type="button" class="btn btn-outline-danger"
+              [disabled]="!seleccionado"
+              [title]="seleccionado ? 'Borrar «' + seleccionado.nombre + '» para siempre' : 'Seleccione un elemento'"
+              (click)="eliminarDefinitivo()">
+        <i class="fa fa-trash me-1"></i>
+        <span class="d-none d-sm-inline">Eliminar definitivamente</span>
+      </button>
+    }
     }
     <button type="button" class="btn btn-default" (click)="modal.dismiss()">
       <i class="fa fa-times me-1"></i> Cerrar
@@ -159,10 +165,13 @@
         <span>Papelera</span>
       </div>
       @if (!soloRestaurar) {
-      <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem"
-              [disabled]="!items.length" (click)="cerrarMenu(); vaciar()">
-        <i class="fa fa-broom fa-fw"></i> Vaciar papelera
-      </button>
+      <!-- Sólo con «vaciar» -->
+      @if (puedeVaciar) {
+        <button type="button" class="menu-ctx__item menu-ctx__item--peligro" role="menuitem"
+                [disabled]="!items.length" (click)="cerrarMenu(); vaciar()">
+          <i class="fa fa-broom fa-fw"></i> Vaciar papelera
+        </button>
+      }
       <div class="menu-ctx__sep"></div>
       }
       <button type="button" class="menu-ctx__item" role="menuitem" (click)="cerrarMenu(); cargar()">

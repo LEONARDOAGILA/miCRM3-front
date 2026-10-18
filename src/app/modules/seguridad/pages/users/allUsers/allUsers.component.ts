@@ -1071,6 +1071,8 @@ export class AllUsersComponent implements OnInit, OnDestroy {
     // se ve quién borró a alguien sin tener que restaurarlo antes. Sin esta
     // línea el botón no salía al abrir la papelera desde aquí.
     modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.allUsers(this.paginaActual));
   }
 

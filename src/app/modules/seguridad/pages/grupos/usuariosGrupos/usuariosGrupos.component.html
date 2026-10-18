@@ -256,6 +256,8 @@
               [iconClass]="'fa fa-search fa-lg'"
               [containerClass]="'w-100'"
               [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
               (buscar)="onFilterTextBoxChanged($event)"
               (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
@@ -281,6 +283,7 @@
             [overlayNoRowsTemplate]="'<span>No hay usuarios en «' + nombreSeleccion + '». Cree uno con <b>Nuevo usuario</b> o arrastre usuarios desde otro grupo.</span>'"
             [navigateToNextCell]="navegarConTeclado"
             [rowClassRules]="rowClassRules"
+            (filterChanged)="onFiltroColumna()"
             (gridReady)="onGridReady($event)"
             (cellClicked)="onCellClicked($event)">
           </ag-grid-angular>

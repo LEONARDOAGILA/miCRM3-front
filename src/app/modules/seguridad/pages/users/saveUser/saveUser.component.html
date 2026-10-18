@@ -246,8 +246,11 @@
                       </div>
 
                       <!-- Perfil -->
-                      <div class="campo campo-lookup">
-                        <div class="row g-2 flex-nowrap"> <!-- Agrega flex-nowrap -->
+                      <!-- campo-lookup--pegado: las piezas sin hueco, con el
+                           borde compartido y el redondeo solo en los extremos,
+                           como la marca en saveProducto (ver el .css). -->
+                      <div class="campo campo-lookup campo-lookup--pegado">
+                        <div class="row g-0 flex-nowrap">
                           <div class="col-4">
                             <app-campoNumeroEntero
                               [control]="form.controls['perfil_id']"
@@ -275,8 +278,10 @@
                       </div>
 
                       <!-- Horario -->
-                      <div class="campo campo-lookup">
-                        <div class="row g-2">
+                      <div class="campo campo-lookup campo-lookup--pegado">
+                        <!-- flex-nowrap, que aqui faltaba: sin el, en estrecho
+                             la lupa se bajaba a la linea siguiente. -->
+                        <div class="row g-0 flex-nowrap">
                           <div class="col-4">
                             <app-campoNumeroEntero
                               [control]="form.controls['chorario_id']"

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom } from 'rxjs';
 
@@ -8,6 +8,11 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import { LoadingService } from '../../../../../service/loading.service';
 import { ProductoService } from '../../../services/producto.service';
 import { MarcaService } from '../../../services/marca.service';
+import { ListMarcaComponent } from '../../marcas/listMarca/listMarca.component';
+import { ListCategoriaComponent } from '../../categorias/listCategoria/listCategoria.component';
+// Pasa el HTML del editor a texto. Vive en ventas porque allí nació (las
+// plantillas de WhatsApp), pero no es de ventas: es una función suelta.
+import { soloTexto } from '../../../../ventas/interfaces/plantillasWhatsapp';
 import { CategoriaService } from '../../../services/categoria.service';
 import {
   ProductoModel, ImagenProductoModel,
@@ -54,8 +59,21 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
   public productoModel: ProductoModel | null = null;
 
   // ---------- Catálogos ----------
-  public marcas: { id: number; name: string }[] = [];
-  public categorias: { id: number; name: string }[] = [];
+  /**
+   * El nombre de la marca elegida, para enseñarlo al lado del id.
+   *
+   * Va deshabilitado a propósito: no se escribe, lo pone el id o el selector.
+   * Es el mismo trato que le da saveUser al nombre del perfil.
+   */
+  public marcaNombreControl = new FormControl({ value: '', disabled: true });
+  /**
+   * La ruta de la categoría elegida, para enseñarla al lado de su id.
+   *
+   * Deshabilitado por lo mismo que el de la marca: no se escribe, lo pone
+   * el id o el selector. Se enseña la RUTA y no el nombre porque hay dos
+   * «Accesorios» en el árbol y a secas no se sabe de cuál se trata.
+   */
+  public categoriaNombreControl = new FormControl({ value: '', disabled: true });
   public unidades = UNIDADES_PRODUCTO;
   public tarifasIva = TARIFAS_IVA;
   public garantias = GARANTIAS_MESES;
@@ -77,6 +95,8 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     public modal: NgbActiveModal,
+    /** Para abrir OTRO modal encima: el selector de marcas. */
+    private modalService: NgbModal,
     private _toastr: ToastrService,
     private _loadingService: LoadingService,
     private _seguridadService: SeguridadService,
@@ -92,6 +112,9 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
   get esView(): boolean { return this.accion === 'view'; }
   get esNuevo(): boolean { return this.accion === 'add' || this.accion === 'clon'; }
   get ctrlActivo(): FormControl { return this.form.controls['activo'] as FormControl; }
+  /** El editor se ata con [formControl], que es lo que entiende: es un
+   *  ControlValueAccessor, no tiene @Input() control. */
+  get ctrlDescripcion(): FormControl { return this.form.controls['descripcion'] as FormControl; }
   get ctrlManejaStock(): FormControl { return this.form.controls['maneja_stock'] as FormControl; }
   get ctrlManejaSerie(): FormControl { return this.form.controls['maneja_serie'] as FormControl; }
 
@@ -132,7 +155,6 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
 
     this.isdisabled = this.esView;
     this.initializeForm();
-    await this.cargarCatalogos();
 
     switch (this.accion) {
       case 'add':
@@ -170,7 +192,11 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       codigo:         [{ value: '', disabled: this.isdisabled }, [Validators.required, Validators.minLength(2), Validators.maxLength(30)]],
       codigo_barras:  [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
       nombre:         [{ value: '', disabled: this.isdisabled }, [Validators.required, Validators.minLength(3), Validators.maxLength(150)]],
-      descripcion:    [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(4000)]],
+      // 20.000 y no 4.000: ahora lo que se guarda es HTML, y las etiquetas
+      // ocupan. Una ficha de media página en texto pasa de 4.000 en cuanto
+      // lleva una lista y tres negritas. La columna es `text`, no tiene
+      // límite propio; el del servidor subió igual.
+      descripcion:    [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(20000)]],
 
       // Clasificación
       marca_id:       [{ value: null, disabled: this.isdisabled }],
@@ -202,23 +228,189 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Marcas y categorías para los dos combos. */
-  private async cargarCatalogos(): Promise<void> {
+  // Ya no se piden catálogos al abrir: marca y categoría tienen cada una su
+  // selector, que pide lo suyo cuando se abre. Antes se traían TODAS las
+  // marcas y TODAS las categorías para llenar dos desplegables, en cada
+  // apertura del formulario y aunque no se tocaran.
+
+  // ================================================================
+  // LA MARCA (id + nombre + lupa)
+  // ================================================================
+  //
+  // El mismo trío que usa saveUser para el perfil. Antes era un desplegable
+  // con todas las marcas dentro: con cuatro marcas iba bien, con doscientas
+  // es una lista imposible de recorrer y no se puede buscar por país.
+
+  /**
+   * Se escribió un id a mano: se trae el nombre.
+   *
+   * Si no existe (el servidor responde P0013 «La marca no existe», que cae
+   * en el catch) o está en la papelera, se limpian los dos campos: más vale
+   * el campo vacío que un id que nadie va a reconocer.
+   */
+  async cargarMarcaPorId(): Promise<void> {
+    const id = this.form.get('marca_id')?.value;
+
+    if (!id) { this.marcaNombreControl.setValue(''); return; }
+
     try {
-      const [marcas, categorias]: any[] = await Promise.all([
-        firstValueFrom(this._marcaService.listMarcas(true)),
-        firstValueFrom(this._categoriaService.listCategorias(true)),
-      ]);
-      this.marcas = (marcas?.data ?? []).map((m: any) => ({ id: m.id, name: m.nombre }));
-      // La RUTA y no el nombre: «Accesorios» a secas no dice de qué
-      this.categorias = (categorias?.data ?? []).map((c: any) => ({ id: c.id, name: c.ruta || c.nombre }));
+      this._loadingService.setLoading(true);
+      const res: any = await firstValueFrom(this._marcaService.findByIdMarca(id));
+
+      if (res?.status === 'success' && res.data) {
+        this.marcaNombreControl.setValue(res.data.nombre ?? '');
+
+        // Una marca en la papelera no vale: el selector no la ofrece y, si se
+        // vacía la papelera, el producto se quedaría apuntando a nada.
+        // fn_marcas_json la devuelve igual (no filtra deleted_at), así que
+        // el corte se hace aquí.
+        if (res.data.deleted_at) {
+          this.limpiarMarca();
+          this._toastr.warning(
+            'Esa marca está en la papelera de reciclaje',
+            'Marca no disponible', { timeOut: 4000 });
+          return;
+        }
+
+        // De baja SÍ la deja guardar el servidor (fn_productos_validar sólo
+        // comprueba que la marca exista), pero el desplegable de antes sólo
+        // traía las activas (listMarcas(soloActivos)); se mantiene la regla
+        // y se avisa, sin bloquear lo que ya estuviera guardado.
+        if (res.data.activo === false) {
+          this._toastr.warning(
+            `«${res.data.nombre}» está inactiva: actívela desde Marcas para poder usarla`,
+            'Marca no disponible', { timeOut: 4000 });
+        }
+      } else {
+        this.limpiarMarca();
+        this._toastr.warning('Marca no encontrada');
+      }
     } catch (error) {
-      // Sin combos se puede guardar igual: marca y categoría son opcionales
-      console.error('Error al cargar marcas y categorías:', error);
-      this._toastr.warning('No se pudieron cargar marcas y categorías', 'Catálogos');
+      console.error('Error al cargar la marca:', error);
+      this.limpiarMarca();
+    } finally {
+      this._loadingService.setLoading(false);
     }
   }
 
+  /** La lupa: el selector con buscador y paginación. */
+  abrirModalMarcas(): void {
+    if (this.esView) { return; }
+
+    const modalRef = this.modalService.open(ListMarcaComponent, {
+      size: 'md', centered: true, backdrop: 'static'
+    });
+
+    // Para que el selector marque como «Actual» la que ya tiene el producto
+    modalRef.componentInstance.marcaSeleccionadaId = this.form.get('marca_id')?.value;
+
+    // La suscripcion se corta cuando el selector se cierra, se elija algo o
+    // se cancele: el modal se destruye y con el su EventEmitter.
+    const sub = modalRef.componentInstance.seleccionado.subscribe((marca: any) => {
+      this.form.patchValue({ marca_id: marca.id });
+      this.marcaNombreControl.setValue(marca.nombre ?? '');
+    });
+    modalRef.result.catch(() => {}).finally(() => sub.unsubscribe());
+  }
+
+  /** Producto sin marca: se vacían los dos campos a la vez. */
+  limpiarMarca(): void {
+    this.form.patchValue({ marca_id: null });
+    this.marcaNombreControl.setValue('');
+  }
+  // ================================================================
+  // LA CATEGORÍA (id + ruta + lupa)
+  // ================================================================
+  //
+  // Lo mismo que la marca, con una diferencia: las categorías son un ÁRBOL.
+  // El desplegable las enseñaba en lista, con la ruta entera en cada línea,
+  // y con tres niveles eso es una pared de texto donde no se ve qué cuelga
+  // de qué. El selector las pinta como árbol (ver ListCategoriaComponent).
+
+  /**
+   * Se escribió un id a mano: se trae la ruta.
+   *
+   * Si no existe (el servidor responde P0013, que cae en el catch) o está en
+   * la papelera, se limpian los dos campos.
+   */
+  async cargarCategoriaPorId(): Promise<void> {
+    const id = this.form.get('categoria_id')?.value;
+
+    if (!id) { this.categoriaNombreControl.setValue(''); return; }
+
+    try {
+      this._loadingService.setLoading(true);
+      const res: any = await firstValueFrom(this._categoriaService.findByIdCategoria(id));
+
+      if (res?.status === 'success' && res.data) {
+        this.categoriaNombreControl.setValue(res.data.ruta || res.data.nombre || '');
+
+        // En la papelera no vale: el selector no la ofrece y, si se vacía la
+        // papelera, el producto se quedaría apuntando a nada.
+        if (res.data.deleted_at) {
+          this.limpiarCategoria();
+          this._toastr.warning(
+            'Esa categoría está en la papelera de reciclaje',
+            'Categoría no disponible', { timeOut: 4000 });
+          return;
+        }
+
+        // Las que sólo agrupan no admiten productos: el selector no las
+        // ofrece y el servidor las rechaza (fn_productos_validar), así que
+        // tecleando el id tampoco pueden entrar.
+        if (res.data.es_transaccion === false) {
+          this.limpiarCategoria();
+          this._toastr.warning(
+            `«${res.data.nombre}» agrupa: elija una de las categorías que cuelgan de ella`,
+            'Esa categoría no admite productos', { timeOut: 4000 });
+          return;
+        }
+
+        // De baja SÍ la deja guardar el servidor, pero el desplegable de
+        // antes sólo traía las activas (listCategorias(soloActivas)); se
+        // mantiene la regla.
+        if (res.data.activo === false) {
+          this._toastr.warning(
+            `«${res.data.ruta || res.data.nombre}» está inactiva: actívela desde Categorías para poder usarla`,
+            'Categoría no disponible', { timeOut: 4000 });
+        }
+      } else {
+        this.limpiarCategoria();
+        this._toastr.warning('Categoría no encontrada');
+      }
+    } catch (error) {
+      console.error('Error al cargar la categoría:', error);
+      this.limpiarCategoria();
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /** La lupa: el selector con el árbol. */
+  abrirModalCategorias(): void {
+    if (this.esView) { return; }
+
+    const modalRef = this.modalService.open(ListCategoriaComponent, {
+      size: 'lg', centered: true, backdrop: 'static'
+    });
+
+    // Para que el selector marque como «Actual» la que ya tiene el producto
+    modalRef.componentInstance.categoriaSeleccionadaId = this.form.get('categoria_id')?.value;
+
+    // La suscripcion se corta cuando el selector se cierra, se elija algo o
+    // se cancele: el modal se destruye y con el su EventEmitter.
+    const sub = modalRef.componentInstance.seleccionado.subscribe((categoria: any) => {
+      this.form.patchValue({ categoria_id: categoria.id });
+      this.categoriaNombreControl.setValue(categoria.ruta || categoria.nombre || '');
+    });
+    modalRef.result.catch(() => {}).finally(() => sub.unsubscribe());
+  }
+
+  /** Producto sin categoría: se vacían los dos campos a la vez. */
+  limpiarCategoria(): void {
+    this.form.patchValue({ categoria_id: null });
+    this.categoriaNombreControl.setValue('');
+  }
   //   ******   CARGA EL REGISTRO   ******  //
   async findByIdProducto(id: number): Promise<void> {
     try {
@@ -256,6 +448,12 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         profundidad_cm: m.profundidad_cm != null ? Number(m.profundidad_cm) : null,
         activo:         m.activo !== false,
       });
+
+      // El nombre de la marca, al lado de su id: lo trae el propio producto
+      // (fn_productos_json devuelve marca_nombre), así que no hace falta
+      // pedirlo aparte.
+      this.marcaNombreControl.setValue(m.marca_nombre ?? '');
+      this.categoriaNombreControl.setValue(m.categoria_ruta ?? m.categoria_nombre ?? '');
 
       // La galería sólo se hereda al VER o MODIFICAR. Al clonar, la copia
       // empieza sin fotos: duplicar ficheros en disco para un producto que
@@ -468,9 +666,16 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     const payload: any = this.form.getRawValue();
 
     // Los vacíos van como null, no como '': el back los distingue
-    for (const k of ['codigo_barras', 'descripcion', 'modelo']) {
+    for (const k of ['codigo_barras', 'modelo']) {
       payload[k] = (payload[k] ?? '').toString().trim() || null;
     }
+
+    // La descripción ahora es HTML: el editor devuelve «<p></p>» cuando no
+    // se escribió nada, y eso no es una descripción, es el envoltorio
+    // vacío. Se mira el TEXTO para decidir, como en saveGestion.
+    payload.descripcion = soloTexto(payload.descripcion)
+      ? (payload.descripcion ?? '').trim()
+      : null;
     for (const k of ['stock_maximo', 'peso_kg', 'alto_cm', 'ancho_cm', 'profundidad_cm']) {
       payload[k] = (payload[k] === '' || payload[k] === null || payload[k] === undefined) ? null : Number(payload[k]);
     }

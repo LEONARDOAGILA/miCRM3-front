@@ -41,6 +41,8 @@
               [iconClass]="'fa fa-search fa-lg'"
               [containerClass]="'w-100'"
               [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
               (buscar)="onFilterTextBoxChanged($event)"
               (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
@@ -114,9 +116,11 @@
           (rowDragEnd)="alSoltarFila()"
           [pagination]="false"
           [animateRows]="true"
-          [overlayNoRowsTemplate]="'<span>No hay boletines</span>'"
+          [overlayNoRowsTemplate]="'<span>No hay boletines que cumplan el filtro</span>'"
           [navigateToNextCell]="navegarConTeclado"
           [rowClassRules]="rowClassRules"
+          (contextmenu)="onContextMenuGrilla($event)"
+          (filterChanged)="onFiltroColumna()"
           (gridReady)="onGridReady($event)"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>
@@ -150,3 +154,12 @@
     </div>
   </div>
 </panel>
+
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO =================
+     Las mismas acciones que la columna ACCIONES y las de la barra, sin
+     tener que llegar al final de la fila ni desplegar la columna. -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

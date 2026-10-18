@@ -59,6 +59,8 @@ import { SaveGrupoComponent } from './pages/grupos/saveGrupo/saveGrupo.component
 import { DeleteGrupoComponent } from './pages/grupos/deleteGrupo/deleteGrupo.component';
 import { ListGruposComponent } from './pages/grupos/listGrupos/listGrupos.component';
 import { PapeleraUsuariosComponent } from './pages/grupos/papeleraUsuarios/papeleraUsuarios.component';
+import { PapeleraPerfilesComponent } from './pages/profiles/papeleraPerfiles/papeleraPerfiles.component';
+import { PapeleraHorariosComponent } from './pages/horarios/papeleraHorarios/papeleraHorarios.component';
 import { FileTreeNodeComponent } from '../../components/file-tree-node/file-tree-node.component';
 import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/campoTextoArea.component';
 
@@ -106,6 +108,8 @@ import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/
     DeleteGrupoComponent,
     ListGruposComponent,
     PapeleraUsuariosComponent,
+    PapeleraPerfilesComponent,
+    PapeleraHorariosComponent,
 
     
 

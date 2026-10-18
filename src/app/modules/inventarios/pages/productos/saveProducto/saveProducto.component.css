@@ -8,6 +8,14 @@
 :host {
   display: block;
   --hr-radius: .5rem;
+
+  /* Las mismas medidas que el modal de usuario: si los dos formularios se
+     ven seguidos, el ritmo tiene que ser el mismo. */
+  /* El alto REAL de un campo: .form-floating impone
+     min-height: calc(3.5rem + 2px) y eso gana a la utilidad .h-45px del
+     tema (un minimo manda sobre un alto). Medido, no supuesto. */
+  --sp-field-h: calc(3.5rem + 2px);
+  --sp-gap: 1rem;            /* hueco entre campos de una misma fila */
 }
 
 .producto-modal-body {
@@ -180,6 +188,15 @@
 }
 
 /* Ayuda bajo el salario */
+/* LA AYUDA DE UNA CASILLA NO LLEVA MARGEN NEGATIVO. El de abajo existe para
+   que la ayuda caiga DENTRO del hueco que cada campo reserva para su
+   mensaje de validación; una casilla es un .form-check pelado, no reserva
+   nada, y ahí ese margen la montaba 6px encima de la etiqueta. */
+.prod-interruptor .campo-hint,
+.estado-producto .campo-hint {
+  margin-top: .35rem;
+}
+
 .campo-hint {
   display: flex;
   align-items: flex-start;
@@ -211,6 +228,23 @@
 .producto-meta i {
   margin-right: .3rem;
   color: var(--bs-app-theme, #00acac);
+}
+
+/* ============================================================
+   LAS DOS COLUMNAS
+   ============================================================
+   A partir de xl el formulario se parte en dos: los datos a la derecha y
+   las imágenes a la izquierda, como el avatar en el modal de usuario. Por
+   debajo de xl todo va en una sola columna y manda el orden del DOM, que
+   es el de rellenar: primero lo que se escribe, las fotos al final. */
+@media (min-width: 1200px) {
+  /* La columna de imágenes acompaña al desplazamiento del formulario: en
+     un producto con muchos campos, si no, se queda arriba sola. */
+  .prod-col-media {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+  }
 }
 
 @media (max-width: 767.98px) {
@@ -370,12 +404,17 @@
 }
 
 /* ---------- El margen, junto al precio ---------- */
+/* NO ES UN CAMPO, pero tiene que medir como uno: 45px de alto y el mismo
+   hueco de 1.25rem debajo que los campos reservan para su mensaje. Con 38px
+   y sin hueco, esta caja quedaba más baja que sus vecinas y lo que venía
+   detrás en su columna subía 20px. */
 .prod-margen {
   display: flex;
   flex-direction: column;
   justify-content: center;
 
-  height: 38px;
+  height: var(--sp-field-h);
+  margin-bottom: 1.25rem;
   padding: 0 .6rem;
 
   border: 1px solid var(--bs-border-color, #dee2e6);
@@ -409,4 +448,203 @@
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .375rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* ============================================================
+   LA GALERÍA EN EL MÓVIL
+   ============================================================
+   Va al FINAL del fichero a propósito: `.prod-foto` fija 108px más
+   arriba y, con la misma especificidad, gana la que se escribe después.
+   Puesta junto a las demás reglas del móvil no se aplicaba. */
+@media (max-width: 767.98px) {
+  /* Con 84px entran cuatro por fila en un teléfono y la galería se ve
+     entera sin desplazar. */
+  .prod-foto,
+  .prod-anadir {
+    width: 84px;
+    height: 84px;
+  }
+}
+
+/* ============================================================
+   LOS CAMPOS DE NÚMERO
+   ============================================================
+   La flecha de subir/bajar del navegador se come 17px por la derecha, y
+   con etiquetas como «PROFUNDIDAD (cm)» en media columna el texto llega
+   hasta ella y se monta (medido: el texto pide 121px y quedan 94px).
+   Aquí no hace falta: estas cifras se escriben, no se suben de una en
+   una. Se quita la flecha y la etiqueta recupera su sitio. */
+:host ::ng-deep .campo-texto input[type="number"] {
+  -moz-appearance: textfield;   /* Firefox */
+  appearance: textfield;
+}
+
+:host ::ng-deep .campo-texto input[type="number"]::-webkit-outer-spin-button,
+:host ::ng-deep .campo-texto input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ============================================================
+   EL CAMPO CON LUPA (la marca)
+   ============================================================
+   Mismo trío que usa saveUser para el perfil: id + nombre + lupa. El
+   botón mide lo que el campo (--sp-field-h) para que la fila quede recta;
+   en saveUser esa variable dice 45px y por eso allí el botón queda algo
+   más bajo que el campo. */
+.campo-lookup .row {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.btn-lookup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 42px;
+  height: var(--sp-field-h);
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #ced4da);
+  border-radius: .375rem;
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  color: var(--bs-body-color, #212529);
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.btn-lookup:hover,
+.btn-lookup:focus {
+  background-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  color: #fff;
+}
+
+/* Quitar la marca: en rojo al pasar, como el de quitar grupo en saveUser */
+.btn-lookup--quitar:hover,
+.btn-lookup--quitar:focus {
+  background-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger, #dc3545);
+}
+
+/* El nombre de la marca va deshabilitado: que se vea de solo lectura y no
+   apagado, la misma regla que saveUser usa para el nombre del perfil. */
+:host ::ng-deep .campo-lookup .form-control:disabled,
+:host ::ng-deep .campo-lookup .form-control[readonly] {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+}
+
+/* LAS CUATRO PIEZAS, PEGADAS.
+   La plantilla las pone sin hueco (g-0) y aqui se comparte el borde
+   entre piezas (margen de -1px) y se redondean solo los extremos: a la
+   vista es un campo unico, no cuatro cosas sueltas. Al enfocar o pasar
+   por encima, la pieza sube de capa para que se le vea el borde entero
+   y no medio tapado por la de al lado. */
+:host ::ng-deep .campo-lookup .form-control,
+.campo-lookup .btn-lookup {
+  border-radius: 0;
+}
+
+.campo-lookup .row > * + * {
+  margin-left: -1px;
+}
+
+:host ::ng-deep .campo-lookup .row > *:first-child .form-control {
+  border-top-left-radius: .375rem;
+  border-bottom-left-radius: .375rem;
+}
+
+/* El ultimo es un boton mientras se edita y el nombre cuando solo se ve */
+:host ::ng-deep .campo-lookup .row > *:last-child .form-control,
+.campo-lookup .row > *:last-child .btn-lookup {
+  border-top-right-radius: .375rem;
+  border-bottom-right-radius: .375rem;
+}
+
+:host ::ng-deep .campo-lookup .form-control:focus,
+.campo-lookup .btn-lookup:hover,
+.campo-lookup .btn-lookup:focus {
+  position: relative;
+  z-index: 2;
+}
+
+/* ============================================================
+   LA DESCRIPCION (campoNgxEditor)
+   ============================================================
+   En una pantalla grande el editor se queda corto con sus 12rem: debajo
+   no hay nada mas que las fechas, asi que el hueco esta libre y una
+   ficha de producto se escribe mejor viendo mas de seis lineas.
+
+   --cne-alto lo pone campoNgxEditor EN LINEA (desde su [alto]), y un
+   estilo en linea gana a la hoja de estilos: de ahi el !important. Es el
+   mismo apaño que usa cerrarGestion. */
+@media (min-width: 992px) {
+  :host ::ng-deep .prod-descripcion .cne__fondo {
+    --cne-alto: 18rem !important;
+  }
+}
+
+/* ---------- El panel de la descripcion, expandido ----------
+   .panel-expand lo pone el tema: fixed, inset 0 y flex en columna. Lo que
+   el panel PROYECTA (nuestro .form-card__body) es hijo directo suyo, asi
+   que hay que decirle que crezca, y al editor con el; si no, el editor se
+   queda con sus 12rem en mitad de una pantalla vacia.
+
+   El ultimo escalon (.NgxEditor a 100%) es el mismo que usa el propio
+   campoNgxEditor para su pantalla completa: sin el, la zona de escritura
+   mide lo que mide el texto y no se puede pinchar debajo. */
+:host ::ng-deep .panel.panel-expand > .form-card__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .panel.panel-expand .prod-descripcion {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .panel.panel-expand .prod-descripcion .cne {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .panel.panel-expand .prod-descripcion .cne__fondo {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* --cne-alto y no min-height:100%: lo segundo no resuelve contra un padre
+   de alto automatico y la hoja se quedaba de 36px en medio de la pantalla
+   (medido al expandir en la pantalla de verdad). Los 220px son la
+   cabecera del panel, la cinta y el aire de la hoja. */
+:host ::ng-deep .panel.panel-expand .prod-descripcion .cne__fondo {
+  --cne-alto: calc(100vh - 220px) !important;
+}
+
+/* LA ZONA EDITABLE LLENA LA HOJA.
+   Medido en la pantalla de verdad: .ProseMirror —que es lo editable—
+   mide lo que mide el texto (36px con una linea), asi que al pinchar en
+   la mitad de abajo de la hoja no pasaba nada: el foco se quedaba en el
+   modal. Con la cadena en flex, lo editable ocupa toda la hoja.
+   Va tambien SIN expandir, porque el problema es el mismo con la hoja
+   pequena. */
+:host ::ng-deep .prod-descripcion .NgxEditor {
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .prod-descripcion .ProseMirror {
+  flex: 1 1 auto;
+}
+
+/* Las fechas de creado/actualizado no crecen: se quedan abajo */
+:host ::ng-deep .panel.panel-expand .producto-meta {
+  flex: 0 0 auto;
 }

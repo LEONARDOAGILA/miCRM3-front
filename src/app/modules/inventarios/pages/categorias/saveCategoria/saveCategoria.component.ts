@@ -64,6 +64,7 @@ export class SaveCategoriaComponent implements OnInit, OnDestroy {
   get esView(): boolean { return this.accion === 'view'; }
   get esNuevo(): boolean { return this.accion === 'add' || this.accion === 'clon'; }
   get ctrlActivo(): FormControl { return this.form.controls['activo'] as FormControl; }
+  get ctrlEsTransaccion(): FormControl { return this.form.controls['es_transaccion'] as FormControl; }
   get ctrlIcono(): FormControl { return this.form.controls['icono'] as FormControl; }
 
   /** Subcategorías directas (sólo informativo, viene del back). */
@@ -139,6 +140,9 @@ export class SaveCategoriaComponent implements OnInit, OnDestroy {
       icono:       [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
       descripcion: [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(2000)]],
       activo:      [{ value: true, disabled: this.isdisabled }],
+      // De transacción por omisión: la mayoría de las que se crean son
+      // hojas, donde después se cuelgan los productos.
+      es_transaccion: [{ value: true, disabled: this.isdisabled }],
     });
   }
 
@@ -157,7 +161,16 @@ export class SaveCategoriaComponent implements OnInit, OnDestroy {
         icono:       this.categoriaModel!.icono ?? '',
         descripcion: this.categoriaModel!.descripcion ?? '',
         activo:      this.categoriaModel!.activo !== false,
+        es_transaccion: this.categoriaModel!.es_transaccion !== false,
       });
+
+      // CON PRODUCTOS DENTRO NO SE PUEDE QUITAR: esos productos quedarían
+      // colgando de algo que el selector ya no ofrece y que el servidor
+      // rechaza al guardar (fn_categorias_modificar lo corta con P0021).
+      // Se apaga aquí para no ofrecer algo que va a fallar.
+      if (this.accion === 'edit' && this.numProductos > 0) {
+        this.ctrlEsTransaccion.disable();
+      }
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar la categoría:', error);

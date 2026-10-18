@@ -24,12 +24,19 @@ export class NotificacionService {
   }
 
   //   ******   ADMINISTRACIÓN   ******  //
-  allNotificaciones(page: number = 1, perPage: number = 15, search: string = '', tipo: string = 'TODOS'): Observable<any> {
+  allNotificaciones(page: number = 1, perPage: number = 15, search: string = '', tipo: string = 'TODOS',
+                    filtros: any = null): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString())
       .set('tipo', tipo || 'TODOS');
     if (search) { params = params.set('search', search); }
+
+    // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+    // servidor, sobre todas las notificaciones: la rejilla sólo tiene la página.
+    if (filtros && Object.keys(filtros).length) {
+      params = params.set('filtros', JSON.stringify(filtros));
+    }
     return this._http.get<any>(this.URL_SERVICIOS + 'allNotificaciones', { params, observe: 'response' });
   }
 

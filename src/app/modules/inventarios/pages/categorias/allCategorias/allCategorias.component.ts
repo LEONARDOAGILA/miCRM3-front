@@ -288,6 +288,26 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
           Number(params.data?.productos_rama ?? params.data?.num_productos ?? 0),
       },
       {
+        // ADMITE PRODUCTOS (es_transaccion). Las de arriba del arbol
+        // agrupan: «Tecnologia» no es un sitio donde poner un producto,
+        // lo es «Portatiles». Solo las marcadas salen en el selector de
+        // saveProducto, y el servidor rechaza las demas.
+        // Se cambia desde la pantalla de la categoria, no de un clic
+        // aqui: quitarla con productos dentro no se puede, y eso hay que
+        // explicarlo donde se ve el aviso.
+        headerName: 'Admite',
+        field: 'es_transaccion',
+        headerTooltip: 'Si admite productos. Las que agrupan no se pueden elegir al crear un producto',
+        cellClass: this.claseNivel,
+        cellStyle: this.centrado,
+        minWidth: 100,
+        maxWidth: 110,
+        sortable: false,
+        cellRenderer: (params: any) => params.value === false
+          ? '<span class="badge bg-secondary fs-10px" title="Solo agrupa">AGRUPA</span>'
+          : '<span class="badge bg-teal fs-10px" title="Admite productos">PRODUCTOS</span>',
+      },
+      {
         headerName: 'Descripción',
         field: 'descripcion',
         floatingFilter: true,
@@ -1186,6 +1206,8 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     });
     // El permiso viaja con el modal: allí también hay auditoría
     modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     // Al restaurar o borrar de verdad, el árbol ya no es fiel
     this.escucharModal(modalRef, modalRef.componentInstance.cambio,
                        () => this.allCategorias());

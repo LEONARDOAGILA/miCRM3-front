@@ -32,6 +32,10 @@ import { AllMarcasComponent, ButtonAccionMarca } from './pages/marcas/allMarcas/
 import { SaveMarcaComponent } from './pages/marcas/saveMarca/saveMarca.component';
 import { DeleteMarcaComponent } from './pages/marcas/deleteMarca/deleteMarca.component';
 import { PapeleraMarcasComponent } from './pages/marcas/papeleraMarcas/papeleraMarcas.component';
+import { ListMarcaComponent } from './pages/marcas/listMarca/listMarca.component';
+import { ListCategoriaComponent } from './pages/categorias/listCategoria/listCategoria.component';
+// Standalone: va en imports, no en declarations
+import { CampoNgxEditorComponent } from '../../components/campos/campoNgxEditor/campoNgxEditor.component';
 
 //   ******   CATEGORÍAS (árbol)   ******  //
 import { AllCategoriasComponent, ButtonAccionCategoria } from './pages/categorias/allCategorias/allCategorias.component';
@@ -54,6 +58,8 @@ import { PapeleraProductosComponent } from './pages/productos/papeleraProductos/
     SaveMarcaComponent,
     DeleteMarcaComponent,
     PapeleraMarcasComponent,
+    ListMarcaComponent,
+    ListCategoriaComponent,
 
     AllCategoriasComponent,
     ButtonAccionCategoria,
@@ -80,6 +86,7 @@ import { PapeleraProductosComponent } from './pages/productos/papeleraProductos/
     NgScrollbarModule,
     CampoTextoComponent,
     CampoTextoAreaComponent,
+    CampoNgxEditorComponent,
     CampoNumeroEnteroComponent,
     CheckboxComponent,
     CampoBusquedaComponent,

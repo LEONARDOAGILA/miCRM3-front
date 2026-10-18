@@ -10,6 +10,7 @@ import { ToastrService } from 'ngx-toastr';
 ///   SERVICIOS    ///
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { ProductoService } from '../../../services/producto.service';
+import { soloTexto } from '../../../../ventas/interfaces/plantillasWhatsapp';
 import { MarcaService } from '../../../services/marca.service';
 import { CategoriaService } from '../../../services/categoria.service';
 import { AppPrintPdfService } from '../../../../../service/app-printPdf.service';
@@ -281,7 +282,9 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'left' },
         minWidth: 240,
         maxWidth: 480,
-        tooltipField: 'descripcion',
+        // La descripción se guarda con formato desde saveProducto: en un
+        // tooltip, el HTML crudo saldría con las etiquetas a la vista.
+        tooltipValueGetter: (p: any) => soloTexto(p.data?.descripcion).slice(0, 400),
       },
       {
         headerName: 'Marca',
@@ -888,6 +891,8 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     });
     // El permiso viaja con el modal: allí también hay auditoría
     modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     // Al restaurar o borrar de verdad, el catálogo ya no es fiel
     this.escucharModal(modalRef, modalRef.componentInstance.cambio,
                        () => this.allProductos(this.paginaActual));

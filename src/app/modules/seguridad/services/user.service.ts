@@ -52,13 +52,21 @@ allUsers(page: number = 1, perPage: number = 10, search: string = '',
 
   //   ******   USUARIOS DE UN GRUPO (árbol de grupos + grilla)   ******  //
   /** grupoId null = todos; 0 = sin grupo; n = del grupo (y subgrupos si se pide). Misma respuesta que allUsers. */
-  usuariosPorGrupo(grupoId: number | null, subgrupos: boolean, page: number = 1, perPage: number = 10, search: string = ''): Observable<any> {
+  usuariosPorGrupo(grupoId: number | null, subgrupos: boolean, page: number = 1, perPage: number = 10,
+                   search: string = '', filtros: any = null): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString())
       .set('subgrupos', subgrupos ? '1' : '0');
     if (grupoId !== null && grupoId !== undefined) { params = params.set('grupo_id', String(grupoId)); }
     if (search) { params = params.set('search', search); }
+
+    // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+    // servidor, sobre todos los usuarios del grupo: la rejilla sólo tiene la página.
+    if (filtros && Object.keys(filtros).length) {
+      params = params.set('filtros', JSON.stringify(filtros));
+    }
+
     return this._http.get<any>(this.URL_SERVICIOS + 'usuariosPorGrupo', { params, observe: 'response' });
   }
 

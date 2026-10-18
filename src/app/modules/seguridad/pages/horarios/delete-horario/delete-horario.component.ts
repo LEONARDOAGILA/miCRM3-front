@@ -12,6 +12,10 @@ import { HorarioService } from '../../../services/horario.service';
 })
 export class DeleteHorarioComponent implements OnInit, OnDestroy {
   @Input() registro_selected: any = null;
+
+  /** Quién depende de él: la base no deja mandarlo a la papelera si hay alguien. */
+  get usuarios(): number { return Number(this.registro_selected?.num_usuarios ?? 0); }
+  get grupos(): number { return Number(this.registro_selected?.num_grupos ?? 0); }
   @Output() registrosE: EventEmitter<any> = new EventEmitter();
 
   public title: string;

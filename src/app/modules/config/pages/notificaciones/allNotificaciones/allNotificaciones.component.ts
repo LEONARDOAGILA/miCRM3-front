@@ -21,6 +21,7 @@ import { SaveNotificacionComponent } from '../saveNotificacion/saveNotificacion.
 import { DestinatariosNotificacionComponent } from '../destinatariosNotificacion/destinatariosNotificacion.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 
 /**
  * Listado de notificaciones enviadas.
@@ -116,8 +117,71 @@ export class AllNotificacionesComponent implements OnInit, OnDestroy {
   // COLUMNAS
   // ================================================================
 
+  // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Los aplica el SERVIDOR, no la rejilla: esta pantalla pagina, así que
+  // ag-Grid sólo tiene las diez filas de la página y filtrar ahí buscaría
+  // dentro de diez. La cabecera sólo recoge lo que el usuario pidió.
+
+  /**
+   * Las columnas que llevan filtro, y de qué tipo.
+   *
+   * Tiene que decir lo mismo que la lista blanca de NotificacionController:
+   * lo que no esté allí se tira en el servidor, así que ponerlo sólo aquí
+   * sería pintar una caja que no filtra.
+   *
+   * SE FILTRA POR LO QUE SE VE: «Tipo» guarda INFO, EXITO, AVISO o ERROR
+   * pero en la rejilla pone Información, Éxito, Aviso y Problema, y por ese
+   * texto se filtra; «Leída por» es una cuenta de otra tabla.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero', leidas: 'numero',
+    titulo: 'texto', mensaje: 'texto', tipo: 'texto', origen: 'texto', created_by: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
+    created_at: 'texto', caduca_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /**
+   * Las columnas con su filtro de cabecera.
+   *
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique— vive en
+   * AppAgGridService. Aquí queda sólo el QUÉ.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+
+  /** La cabecera pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.allNotificaciones(1);
+  }
+
+  /** Cuántas columnas llevan filtro; el buscador lo enseña y se pone rojo. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /**
+   * Si hay algo que quitar.
+   *
+   * Cuenta también el combo de tipo, que es un filtro más aunque no viva en
+   * la cabecera.
+   */
+  get hayFiltro(): boolean {
+    return !!this.busqueda || this.tipo !== 'TODOS' || this.cuantasColumnasFiltradas > 0;
+  }
   private armarColumnas(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       { headerName: 'ID', field: 'id', minWidth: 70, maxWidth: 80, cellStyle: { textAlign: 'center' } },
       {
         headerName: 'Tipo', field: 'tipo', minWidth: 120, maxWidth: 140, cellStyle: { textAlign: 'center' },
@@ -175,7 +239,7 @@ export class AllNotificacionesComponent implements OnInit, OnDestroy {
         suppressMenu: true, sortable: false, resizable: false,
         headerComponentParams: { template: this.plantillaCabecera(false) },
       },
-    ];
+    ]);
   }
 
   private escapar(s: string): string {
@@ -250,7 +314,8 @@ export class AllNotificacionesComponent implements OnInit, OnDestroy {
     try {
       this._loadingService.setLoading(true);
       const res: any = await firstValueFrom(
-        this._notificacionService.allNotificaciones(page, this.registrosPorPagina, this.busqueda, this.tipo)
+        this._notificacionService.allNotificaciones(page, this.registrosPorPagina, this.busqueda, this.tipo,
+                                                    this.filtrosColumna)
       );
 
       if (res.body?.status !== 'success') { return; }
@@ -276,8 +341,24 @@ export class AllNotificacionesComponent implements OnInit, OnDestroy {
   cambiarTipo(): void { this.allNotificaciones(1); }
 
   clearAllFilters(): void {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medias.
+    this.limpiando = true;
+    this.campoBusquedaPaginacion?.reset();
     this.busqueda = '';
     this.tipo = 'TODOS';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí: medido contra
+    // ag-Grid 28, `setFilterModel` avisa DESPUÉS de esta línea, así que
+    // apagándola aquí ese aviso pediría una segunda carga idéntica.
+    this.programar(() => { this.limpiando = false; }, 0);
+
     this.allNotificaciones(1);
   }
 
@@ -368,6 +449,101 @@ export class AllNotificacionesComponent implements OnInit, OnDestroy {
    * El modal espera «tablaNombre» —así se llama su @Input— y ese nombre es el
    * de la tabla en auditoria.logs_cambios, sin el esquema.
    */
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES y las de la barra, sin tener
+  // que llegar hasta el final de la fila ni desplegar la columna cuando está
+  // plegada.
+  //
+  // NO SE USA EL EVENTO `cellContextMenu` DE ag-Grid: se probó contra la
+  // librería y no llega. Aquí se escucha el `contextmenu` de la rejilla y la
+  // fila se resuelve con la API pública.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se puede hacer con esta notificación, según el perfil. */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    const puedeCrear   = this.accesoModel?.crear    === true;
+    const puedeBorrar  = this.accesoModel?.eliminar === true;
+    const puedeAuditar = this.accesoModel?.auditar  === true;
+
+    const destinatarios = Number(fila?.destinatarios ?? 0);
+    const url = String(fila?.url ?? '').trim();
+
+    return [
+      { id: 'ver', texto: 'Ver la notificación', icono: 'fa-eye' },
+      {
+        id: 'reenviar', texto: 'Volver a enviarla', icono: 'fa-rotate-right',
+        visible: puedeCrear,
+        ayuda: 'Abre el alta con los mismos datos',
+      },
+      {
+        id: 'destinatarios', texto: 'Quién la recibió', icono: 'fa-users',
+        separadorAntes: true,
+        deshabilitada: destinatarios === 0,
+        ayuda: destinatarios
+          ? `${fila?.leidas ?? 0} de ${destinatarios} la han leído`
+          : 'No llegó a nadie',
+      },
+      {
+        id: 'enlace', texto: 'Abrir el enlace', icono: 'fa-up-right-from-square',
+        deshabilitada: url === '',
+        ayuda: url !== '' ? url : 'Esta notificación no lleva a ningún sitio',
+      },
+      {
+        id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        visible: puedeAuditar,
+        ayuda: 'Quién la envió y cuándo',
+      },
+      {
+        id: 'eliminar', texto: 'Eliminarla para todos', icono: 'fa-trash',
+        separadorAntes: true, peligro: true, visible: puedeBorrar,
+        ayuda: 'Desaparece de la campana de quien la recibió; no hay papelera',
+      },
+    ];
+  }
+
+  /** Se eligió una opción del menú. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'ver':           this.viewNotificacion(fila); break;
+      case 'reenviar':      this.reenviar(fila); break;
+      case 'destinatarios': this.verDestinatarios(); break;
+      case 'enlace':        this.abrirEnlace(fila); break;
+      case 'auditoria':     this.auditoria(); break;
+      case 'eliminar':      this.deleteNotificacion(fila); break;
+    }
+  }
+
+  /** El enlace de la notificación, en otra pestaña. */
+  private abrirEnlace(fila: any): void {
+    const url = String(fila?.url ?? '').trim();
+    if (!url) { return; }
+    // `noopener` es obligatorio: sin él la página que se abre puede tocar
+    // ésta a través de window.opener.
+    window.open(/^https?:\/\//i.test(url) ? url : 'https://' + url, '_blank', 'noopener');
+  }
   auditoria(): void {
     if (!this.selectedRow) { return; }
     const modalRef = this.modalService.open(AuditoriaModalComponent, { size: 'xl', centered: true, backdrop: 'static', keyboard: true });

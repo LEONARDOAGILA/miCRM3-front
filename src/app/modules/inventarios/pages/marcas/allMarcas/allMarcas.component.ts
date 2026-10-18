@@ -821,6 +821,8 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
     });
     // El permiso viaja con el modal: allí también hay auditoría
     modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio,
                        () => this.allMarcas(this.paginaActual));
   }

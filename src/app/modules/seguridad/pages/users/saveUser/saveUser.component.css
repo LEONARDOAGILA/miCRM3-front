@@ -9,7 +9,11 @@
      sumaban ~44px de separación: el formulario ocupaba el doble de alto. */
   --su-gap: 1.25rem;
 
-  --su-field-h: 45px;               /* alto real de un campo */
+  /* El alto REAL de un campo, que no es 45px: .form-floating > .form-control
+     lleva min-height: calc(3.5rem + 2px) y un minimo gana a la utilidad
+     .h-45px del tema. Medido en el navegador: campo 58px, boton 45px, o sea
+     13px de escalon al lado del campo. Lo usa solo .btn-lookup. */
+  --su-field-h: calc(3.5rem + 2px);
 }
 
 .form-card__body {
@@ -343,6 +347,42 @@
 :host ::ng-deep .campo-lookup .form-control:disabled,
 :host ::ng-deep .campo-lookup .form-control[readonly] {
   background-color: var(--bs-secondary-bg, #e9ecef);
+}
+
+/* ---------- Las piezas, pegadas (campo-lookup--pegado) ----------
+   Lo mismo que la marca en saveProducto: la plantilla las pone sin hueco
+   (g-0) y aqui se comparte el borde entre piezas (margen de -1px) y se
+   redondean solo los extremos, asi que a la vista es un campo unico. Al
+   enfocar o pasar por encima, la pieza sube de capa para que se le vea el
+   borde entero y no medio tapado por la de al lado.
+   Va con clase propia a proposito: el campo de GRUPO tambien es un
+   .campo-lookup y se queda como estaba. */
+:host ::ng-deep .campo-lookup--pegado .form-control,
+.campo-lookup--pegado .btn-lookup {
+  border-radius: 0;
+}
+
+.campo-lookup--pegado .row > * + * {
+  margin-left: -1px;
+}
+
+:host ::ng-deep .campo-lookup--pegado .row > *:first-child .form-control {
+  border-top-left-radius: .375rem;
+  border-bottom-left-radius: .375rem;
+}
+
+/* El ultimo es la lupa mientras se edita y el nombre cuando solo se ve */
+:host ::ng-deep .campo-lookup--pegado .row > *:last-child .form-control,
+.campo-lookup--pegado .row > *:last-child .btn-lookup {
+  border-top-right-radius: .375rem;
+  border-bottom-right-radius: .375rem;
+}
+
+:host ::ng-deep .campo-lookup--pegado .form-control:focus,
+.campo-lookup--pegado .btn-lookup:hover,
+.campo-lookup--pegado .btn-lookup:focus {
+  position: relative;
+  z-index: 2;
 }
 
 /* ============================================================

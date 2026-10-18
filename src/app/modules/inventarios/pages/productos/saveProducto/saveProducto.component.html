@@ -20,510 +20,632 @@
 <!-- ===================== CUERPO ===================== -->
 <div class="modal-body producto-modal-body">
   <form [formGroup]="form" class="form-validate" novalidate>
+    <!-- DOS COLUMNAS A PARTIR DE xl, UNA SOLA POR DEBAJO.
+         Las imágenes van escritas LAS ÚLTIMAS pero con `order-xl-first`: en
+         el móvil se rellena primero lo que se escribe (nadie sube fotos antes
+         de poner el nombre) y en pantalla ancha quedan a la izquierda, como
+         el avatar en el formulario de usuario. -->
+    <div class="row g-3">
 
-    <!-- ---------- 1. Identificación ---------- -->
-    <panel
-      headerClass="bg-gray-800"
-      title="Identificación"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-3"
-      icono="box"
-      fondoGris="true">
+      <!-- ============ LOS DATOS ============ -->
+      <div class="col-12 col-xl-8">
 
-      <div header class="panel-acciones">
-        @if (esView) {
-          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
-        }
-      </div>
+      <!-- ---------- 1. Identificación ---------- -->
+      <panel
+        headerClass="bg-gray-800"
+        title="Identificación"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-3"
+        icono="box"
+        fondoGris="true">
 
-      <ng-container outsideBody>
-        <div class="form-card__body">
-          <div class="row g-3 align-items-start">
+        <div header class="panel-acciones">
+          @if (esView) {
+            <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+          }
+        </div>
 
-            <!-- Código (SKU) -->
-            <div class="col-12 col-md-3">
-              <app-campoTexto
-                [control]="form.controls['codigo']"
-                label="CÓDIGO (SKU)"
-                placeholder="RF-28K"
-                [maxLength]="30"
-                [minLength]="2"
-                [trimEspacios]="true">
-              </app-campoTexto>
-              <p class="campo-hint">
-                <i class="fa-solid fa-circle-info"></i>
-                Se guarda en mayúsculas. No se repite.
-              </p>
-            </div>
+        <ng-container outsideBody>
+          <div class="form-card__body">
+            <div class="row g-3 align-items-start">
 
-            <!-- Código de barras -->
-            <div class="col-12 col-md-3">
-              <app-campoTexto
-                [control]="form.controls['codigo_barras']"
-                label="CÓDIGO DE BARRAS"
-                placeholder="EAN / UPC del fabricante"
-                [maxLength]="50"
-                icono="fa-barcode">
-              </app-campoTexto>
-              <p class="campo-hint">
-                <i class="fa-solid fa-circle-info"></i>
-                Opcional; los accesorios casi nunca traen.
-              </p>
-            </div>
-
-            <!-- Nombre -->
-            <div class="col-12 col-md-6">
-              <app-campoTexto
-                [control]="form.controls['nombre']"
-                label="NOMBRE DEL PRODUCTO"
-                placeholder="Refrigeradora Samsung 28 pies French Door"
-                [maxLength]="150"
-                [minLength]="3"
-                [trimEspacios]="true">
-              </app-campoTexto>
-            </div>
-
-            <!-- Marca -->
-            <div class="col-12 col-md-4">
-              <div class="campo-combo">
-                <app-combo
-                  formControlName="marca_id"
-                  [items]="marcas"
-                  [label]="'Marca'"
-                  bindLabel="name"
-                  bindValue="id">
-                </app-combo>
+              <!-- Código (SKU) -->
+              <div class="col-6 col-md-3">
+                <app-campoTexto
+                  [control]="form.controls['codigo']"
+                  label="CÓDIGO (SKU)"
+                  placeholder="RF-28K"
+                  [maxLength]="30"
+                  [minLength]="2"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Se guarda en mayúsculas. No se repite.
+                </p>
               </div>
-            </div>
 
-            <!-- Categoría -->
-            <div class="col-12 col-md-5">
-              <div class="campo-combo">
-                <app-combo
-                  formControlName="categoria_id"
-                  [items]="categorias"
-                  [label]="'Categoría'"
-                  bindLabel="name"
-                  bindValue="id">
-                </app-combo>
+              <!-- Código de barras -->
+              <div class="col-6 col-md-3">
+                <app-campoTexto
+                  [control]="form.controls['codigo_barras']"
+                  label="CÓDIGO DE BARRAS"
+                  placeholder="EAN / UPC del fabricante"
+                  [maxLength]="50"
+                  icono="fa-barcode">
+                </app-campoTexto>
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Opcional; los accesorios casi nunca traen.
+                </p>
               </div>
-            </div>
 
-            <!-- Modelo -->
-            <div class="col-12 col-md-3">
-              <app-campoTexto
-                [control]="form.controls['modelo']"
-                label="MODELO"
-                placeholder="RF28K9070SR"
-                [maxLength]="80">
-              </app-campoTexto>
-            </div>
+              <!-- Nombre -->
+              <div class="col-12 col-md-6">
+                <app-campoTexto
+                  [control]="form.controls['nombre']"
+                  label="NOMBRE DEL PRODUCTO"
+                  placeholder="Refrigeradora Samsung 28 pies French Door"
+                  [maxLength]="150"
+                  [minLength]="3"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+              </div>
 
-            <!-- Estado -->
-            <div class="col-12">
-              <div class="estado-producto" [class.is-on]="ctrlActivo.value">
-                <span class="estado-producto__icon"><i class="fa-solid fa-power-off"></i></span>
-                <div class="estado-producto__text">
-                  <span class="estado-producto__label">Estado</span>
-                  <span class="estado-producto__hint">
-                    {{ ctrlActivo.value ? 'Se ofrece al vender' : 'No se ofrece al vender' }}
+              <!-- Marca: id + nombre + lupa, como el perfil en saveUser.
+                   Se escribe el id y al salir del campo se trae el nombre; o
+                   se busca con la lupa. El nombre va deshabilitado porque es
+                   lo que dice la marca elegida, no algo que se escriba.
+                   MEDIA FILA: son cuatro piezas en línea y con un tercio de
+                   la columna se quedan en 214px, donde ni las etiquetas
+                   caben (medido). -->
+              <div class="col-12 col-md-6 col-xxl-6">
+                <div class="campo-lookup">
+                  <!-- g-0: sin hueco entre piezas. Los bordes se comparten
+                       desde el CSS para que las cuatro se lean como un solo
+                       campo, no como cuatro cosas sueltas. -->
+                  <div class="row g-0 flex-nowrap">
+                    <div class="col-4">
+                      <app-campoNumeroEntero
+                        [control]="form.controls['marca_id']"
+                        label="ID Marca"
+                        placeholder="ID"
+                        [maxLength]="10"
+                        [limpiable]="false"
+                        (blur)="cargarMarcaPorId()">
+                      </app-campoNumeroEntero>
+                    </div>
+                    <div class="col">
+                      <app-campoTexto
+                        [control]="marcaNombreControl"
+                        label="Marca"
+                        placeholder="Sin marca">
+                      </app-campoTexto>
+                    </div>
+                    @if (!esView) {
+                      <div class="col-auto">
+                        <button type="button" class="btn btn-lookup"
+                                (click)="abrirModalMarcas()" title="Buscar marca">
+                          <i class="fa fa-search"></i>
+                        </button>
+                      </div>
+                      @if (form.controls['marca_id'].value) {
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                  (click)="limpiarMarca()" title="Quitar la marca">
+                            <i class="fa fa-times"></i>
+                          </button>
+                        </div>
+                      }
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Categoría: id + nombre + lupa, igual que la marca. El
+                   nombre que se enseña es la RUTA entera («Tecnología >
+                   Celulares > Accesorios») porque hay dos «Accesorios» en el
+                   árbol y a secas no se sabe cuál es. -->
+              <div class="col-12 col-md-6 col-xxl-6">
+                <div class="campo-lookup">
+                  <div class="row g-0 flex-nowrap">
+                    <div class="col-4">
+                      <app-campoNumeroEntero
+                        [control]="form.controls['categoria_id']"
+                        label="ID Categ."
+                        placeholder="ID"
+                        [maxLength]="10"
+                        [limpiable]="false"
+                        (blur)="cargarCategoriaPorId()">
+                      </app-campoNumeroEntero>
+                    </div>
+                    <div class="col">
+                      <app-campoTexto
+                        [control]="categoriaNombreControl"
+                        label="Categoría"
+                        placeholder="Sin categoría">
+                      </app-campoTexto>
+                    </div>
+                    @if (!esView) {
+                      <div class="col-auto">
+                        <button type="button" class="btn btn-lookup"
+                                (click)="abrirModalCategorias()" title="Buscar categoría">
+                          <i class="fa fa-search"></i>
+                        </button>
+                      </div>
+                      @if (form.controls['categoria_id'].value) {
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                  (click)="limpiarCategoria()" title="Quitar la categoría">
+                            <i class="fa fa-times"></i>
+                          </button>
+                        </div>
+                      }
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Modelo -->
+              <div class="col-12 col-md-6 col-xxl-4">
+                <app-campoTexto
+                  [control]="form.controls['modelo']"
+                  label="MODELO"
+                  placeholder="RF28K9070SR"
+                  [maxLength]="80">
+                </app-campoTexto>
+              </div>
+
+            </div>
+          </div>
+        </ng-container>
+      </panel>
+
+      <!-- ---------- 2. Comercial ---------- -->
+      <panel
+        headerClass="bg-gray-800"
+        title="Precio y condiciones"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-3"
+        icono="dollar"
+        fondoGris="true">
+
+        <ng-container outsideBody>
+          <div class="form-card__body">
+            <div class="row g-3 align-items-start">
+
+              <!-- Unidad -->
+              <div class="col-6 col-md-4 col-xxl-2">
+                <div class="campo-combo">
+                  <app-combo
+                    formControlName="unidad"
+                    [items]="unidades"
+                    [label]="'Unidad'"
+                    bindLabel="name"
+                    bindValue="id">
+                  </app-combo>
+                </div>
+              </div>
+
+              <!-- Costo -->
+              <div class="col-6 col-md-4 col-xxl-2">
+                <app-campoTexto
+                  [control]="form.controls['costo']"
+                  label="COSTO"
+                  placeholder="0.00"
+                  type="number"
+                  [maxLength]="14"
+                  icono="fa-dollar-sign">
+                </app-campoTexto>
+              </div>
+
+              <!-- Precio -->
+              <div class="col-6 col-md-4 col-xxl-2">
+                <app-campoTexto
+                  [control]="form.controls['precio']"
+                  label="PRECIO"
+                  placeholder="0.00"
+                  type="number"
+                  [maxLength]="14"
+                  icono="fa-dollar-sign">
+                </app-campoTexto>
+              </div>
+
+              <!-- El margen, informativo -->
+              <div class="col-6 col-md-4 col-xxl-2">
+                <div class="prod-margen" [class.is-rojo]="margenEnRojo">
+                  <span class="prod-margen__label">Margen</span>
+                  <span class="prod-margen__valor">
+                    {{ margen === null ? '—' : (margen | number:'1.1-1') + ' %' }}
                   </span>
                 </div>
-                <app-checkbox class="estado-producto__switch"
-                  [control]="ctrlActivo"
-                  [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
-                  [id]="'ck-producto-activo'">
-                </app-checkbox>
+                @if (margenEnRojo) {
+                  <p class="campo-hint text-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    El precio está por debajo del costo.
+                  </p>
+                }
               </div>
-            </div>
 
+              <!-- IVA -->
+              <div class="col-6 col-md-4 col-xxl-2">
+                <div class="campo-combo">
+                  <app-combo
+                    formControlName="iva_porcentaje"
+                    [items]="tarifasIva"
+                    [label]="'IVA'"
+                    bindLabel="name"
+                    bindValue="id">
+                  </app-combo>
+                </div>
+              </div>
+
+              <!-- Garantía -->
+              <div class="col-6 col-md-4 col-xxl-2">
+                <div class="campo-combo">
+                  <app-combo
+                    formControlName="garantia_meses"
+                    [items]="garantias"
+                    [label]="'Garantía'"
+                    bindLabel="name"
+                    bindValue="id">
+                  </app-combo>
+                </div>
+              </div>
+
+            </div>
           </div>
-        </div>
-      </ng-container>
-    </panel>
+        </ng-container>
+      </panel>
 
-    <!-- ---------- 2. Comercial ---------- -->
-    <panel
-      headerClass="bg-gray-800"
-      title="Precio y condiciones"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-3"
-      icono="dollar"
-      fondoGris="true">
+      <!-- ---------- 3 y 4. Existencias y medidas ----------
+           Los dos son cortos, pero sólo caben uno al lado del otro cuando hay
+           sitio: a xl la columna de datos mide 749px y, partida en dos, el
+           campo se queda en 135px y «PROFUNDIDAD (cm)» no entra. Por eso
+           van en paralelo a partir de xxl y apilados por debajo. `h-100`
+           les da la misma altura aunque uno tenga una línea más. -->
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-xxl-6">
+      <panel
+        headerClass="bg-gray-800"
+        title="Existencias"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-3"
+        icono="boxes"
+        fondoGris="true">
 
-      <ng-container outsideBody>
-        <div class="form-card__body">
-          <div class="row g-3 align-items-start">
+        <ng-container outsideBody>
+          <div class="form-card__body">
+            <div class="row g-3 align-items-start">
 
-            <!-- Unidad -->
-            <div class="col-6 col-md-2">
-              <div class="campo-combo">
-                <app-combo
-                  formControlName="unidad"
-                  [items]="unidades"
-                  [label]="'Unidad'"
-                  bindLabel="name"
-                  bindValue="id">
-                </app-combo>
+              <!-- ¿Lleva stock? -->
+              <div class="col-12">
+                <div class="prod-interruptor">
+                  <app-checkbox
+                    [control]="ctrlManejaStock"
+                    label="Controla existencias"
+                    [id]="'ck-producto-stock'">
+                  </app-checkbox>
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Apágalo para servicios o instalaciones, que no tienen bodega.
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <!-- Costo -->
-            <div class="col-6 col-md-2">
-              <app-campoTexto
-                [control]="form.controls['costo']"
-                label="COSTO"
-                placeholder="0.00"
-                type="number"
-                [maxLength]="14"
-                icono="fa-dollar-sign">
-              </app-campoTexto>
-            </div>
-
-            <!-- Precio -->
-            <div class="col-6 col-md-2">
-              <app-campoTexto
-                [control]="form.controls['precio']"
-                label="PRECIO"
-                placeholder="0.00"
-                type="number"
-                [maxLength]="14"
-                icono="fa-dollar-sign">
-              </app-campoTexto>
-            </div>
-
-            <!-- El margen, informativo -->
-            <div class="col-6 col-md-2">
-              <div class="prod-margen" [class.is-rojo]="margenEnRojo">
-                <span class="prod-margen__label">Margen</span>
-                <span class="prod-margen__valor">
-                  {{ margen === null ? '—' : (margen | number:'1.1-1') + ' %' }}
-                </span>
+              <!-- Mínimo y máximo -->
+              <div class="col-6">
+                <app-campoTexto
+                  [control]="form.controls['stock_minimo']"
+                  label="STOCK MÍNIMO"
+                  placeholder="0"
+                  type="number"
+                  [maxLength]="12">
+                </app-campoTexto>
               </div>
-              @if (margenEnRojo) {
-                <p class="campo-hint text-danger">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                  El precio está por debajo del costo.
-                </p>
-              }
-            </div>
 
-            <!-- IVA -->
-            <div class="col-6 col-md-2">
-              <div class="campo-combo">
-                <app-combo
-                  formControlName="iva_porcentaje"
-                  [items]="tarifasIva"
-                  [label]="'IVA'"
-                  bindLabel="name"
-                  bindValue="id">
-                </app-combo>
+              <div class="col-6">
+                <app-campoTexto
+                  [control]="form.controls['stock_maximo']"
+                  label="STOCK MÁXIMO"
+                  placeholder="Sin tope"
+                  type="number"
+                  [maxLength]="12">
+                </app-campoTexto>
               </div>
-            </div>
 
-            <!-- Garantía -->
-            <div class="col-6 col-md-2">
-              <div class="campo-combo">
-                <app-combo
-                  formControlName="garantia_meses"
-                  [items]="garantias"
-                  [label]="'Garantía'"
-                  bindLabel="name"
-                  bindValue="id">
-                </app-combo>
+              <!-- ¿Por número de serie? -->
+              <div class="col-12">
+                <div class="prod-interruptor">
+                  <app-checkbox
+                    [control]="ctrlManejaSerie"
+                    label="Control por serie / IMEI"
+                    [id]="'ck-producto-serie'">
+                  </app-checkbox>
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Enciéndelo en lo que se garantiza por unidad: electrodomésticos, computadores, celulares.
+                  </p>
+                </div>
               </div>
-            </div>
 
+            </div>
           </div>
+        </ng-container>
+      </panel>
+
         </div>
-      </ng-container>
-    </panel>
 
-    <!-- ---------- 3. Existencias ---------- -->
-    <panel
-      headerClass="bg-gray-800"
-      title="Existencias"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-3"
-      icono="boxes"
-      fondoGris="true">
+        <div class="col-12 col-xxl-6">
+      <panel
+        headerClass="bg-gray-800"
+        title="Peso y medidas"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-3"
+        icono="truck"
+        fondoGris="true">
 
-      <ng-container outsideBody>
-        <div class="form-card__body">
-          <div class="row g-3 align-items-start">
+        <ng-container outsideBody>
+          <div class="form-card__body">
+            <div class="row g-3 align-items-start">
 
-            <!-- ¿Lleva stock? -->
-            <div class="col-12 col-md-4">
-              <div class="prod-interruptor">
-                <app-checkbox
-                  [control]="ctrlManejaStock"
-                  label="Controla existencias"
-                  [id]="'ck-producto-stock'">
-                </app-checkbox>
+              <div class="col-6">
+                <app-campoTexto
+                  [control]="form.controls['peso_kg']"
+                  label="PESO (kg)"
+                  placeholder="0.000"
+                  type="number"
+                  [maxLength]="10">
+                </app-campoTexto>
+              </div>
+
+              <div class="col-6">
+                <app-campoTexto
+                  [control]="form.controls['alto_cm']"
+                  label="ALTO (cm)"
+                  placeholder="0.00"
+                  type="number"
+                  [maxLength]="10">
+                </app-campoTexto>
+              </div>
+
+              <div class="col-6">
+                <app-campoTexto
+                  [control]="form.controls['ancho_cm']"
+                  label="ANCHO (cm)"
+                  placeholder="0.00"
+                  type="number"
+                  [maxLength]="10">
+                </app-campoTexto>
+              </div>
+
+              <div class="col-6">
+                <app-campoTexto
+                  [control]="form.controls['profundidad_cm']"
+                  label="PROFUNDIDAD (cm)"
+                  placeholder="0.00"
+                  type="number"
+                  [maxLength]="10">
+                </app-campoTexto>
+              </div>
+
+              <div class="col-12">
                 <p class="campo-hint mb-0">
                   <i class="fa-solid fa-circle-info"></i>
-                  Apágalo para servicios o instalaciones, que no tienen bodega.
+                  Opcionales. Son las de la caja, para calcular el flete y lo que cabe en el camión.
                 </p>
               </div>
-            </div>
 
-            <!-- Mínimo y máximo -->
-            <div class="col-6 col-md-2">
-              <app-campoTexto
-                [control]="form.controls['stock_minimo']"
-                label="STOCK MÍNIMO"
-                placeholder="0"
-                type="number"
-                [maxLength]="12">
-              </app-campoTexto>
             </div>
-
-            <div class="col-6 col-md-2">
-              <app-campoTexto
-                [control]="form.controls['stock_maximo']"
-                label="STOCK MÁXIMO"
-                placeholder="Sin tope"
-                type="number"
-                [maxLength]="12">
-              </app-campoTexto>
-            </div>
-
-            <!-- ¿Por número de serie? -->
-            <div class="col-12 col-md-4">
-              <div class="prod-interruptor">
-                <app-checkbox
-                  [control]="ctrlManejaSerie"
-                  label="Control por serie / IMEI"
-                  [id]="'ck-producto-serie'">
-                </app-checkbox>
-                <p class="campo-hint mb-0">
-                  <i class="fa-solid fa-circle-info"></i>
-                  Enciéndelo en lo que se garantiza por unidad: electrodomésticos, computadores, celulares.
-                </p>
-              </div>
-            </div>
-
           </div>
+        </ng-container>
+      </panel>
         </div>
-      </ng-container>
-    </panel>
-
-    <!-- ---------- 4. Despacho ---------- -->
-    <panel
-      headerClass="bg-gray-800"
-      title="Peso y medidas"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-3"
-      icono="truck"
-      fondoGris="true">
-
-      <ng-container outsideBody>
-        <div class="form-card__body">
-          <div class="row g-3 align-items-start">
-
-            <div class="col-6 col-md-3">
-              <app-campoTexto
-                [control]="form.controls['peso_kg']"
-                label="PESO (kg)"
-                placeholder="0.000"
-                type="number"
-                [maxLength]="10">
-              </app-campoTexto>
-            </div>
-
-            <div class="col-6 col-md-3">
-              <app-campoTexto
-                [control]="form.controls['alto_cm']"
-                label="ALTO (cm)"
-                placeholder="0.00"
-                type="number"
-                [maxLength]="10">
-              </app-campoTexto>
-            </div>
-
-            <div class="col-6 col-md-3">
-              <app-campoTexto
-                [control]="form.controls['ancho_cm']"
-                label="ANCHO (cm)"
-                placeholder="0.00"
-                type="number"
-                [maxLength]="10">
-              </app-campoTexto>
-            </div>
-
-            <div class="col-6 col-md-3">
-              <app-campoTexto
-                [control]="form.controls['profundidad_cm']"
-                label="PROFUNDIDAD (cm)"
-                placeholder="0.00"
-                type="number"
-                [maxLength]="10">
-              </app-campoTexto>
-            </div>
-
-            <div class="col-12">
-              <p class="campo-hint mb-0">
-                <i class="fa-solid fa-circle-info"></i>
-                Opcionales. Son las de la caja, para calcular el flete y lo que cabe en el camión.
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </ng-container>
-    </panel>
-
-    <!-- ---------- 5. Galería ---------- -->
-    <panel
-      headerClass="bg-gray-800"
-      title="Imágenes"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-3"
-      icono="images"
-      fondoGris="true">
-
-      <div header class="panel-acciones">
-        @if (totalImagenes > 0) {
-          <span class="chip chip-info">
-            <i class="fa-solid fa-images"></i> {{ totalImagenes }}
-          </span>
-        }
-        @if (esNuevo && imagenesPendientes.length > 0) {
-          <span class="chip chip-muted" title="Se suben al guardar">
-            <i class="fa-solid fa-clock"></i> pendientes
-          </span>
-        }
       </div>
 
-      <ng-container outsideBody>
-        <div class="form-card__body">
+      <!-- ---------- 6. Descripción ---------- -->
+      <!-- Este panel SÍ lleva botonera, al revés que los demás del
+           formulario: es el único con el de expandir, que es lo que sirve
+           para escribir una ficha larga a pantalla completa. Los otros tres
+           botones (recargar, minimizar, cerrar) se apagan uno a uno, porque
+           noButton los apaga TODOS, expandir incluido. -->
+      <panel
+        headerClass="bg-gray-800"
+        title="Descripción"
+        noBody="true"
+        [noButtonReload]="true"
+        [noButtonCollapse]="true"
+        [noButtonRemove]="true"
+        panelClass="mb-0"
+        icono="editar"
+        fondoGris="true">
 
-          <div class="prod-galeria">
+        <ng-container outsideBody>
+          <div class="form-card__body">
+            <!-- El editor con formato, el mismo que «Qué se habló» de una
+                 gestión (cerrarGestion). Una descripción de producto lleva
+                 listas —lo que trae la caja—, negritas y algún enlace, y en
+                 un textarea eso se escribe con guiones y se lee peor.
 
-            <!-- Las ya guardadas -->
-            @for (img of imagenes; track img.id; let i = $index) {
-              <figure class="prod-foto" [class.is-principal]="img.principal">
-                <img [src]="urlImagen(img)" [alt]="img.nombre_original || 'Imagen del producto'" />
+                 El de pantalla completa es el de la CABECERA del panel, no
+                 el de la cinta ([expandible]): dos botones para lo mismo
+                 solo confunden, y el del panel es el que llevan las demas
+                 pantallas. Al expandir, el editor crece con el panel (ver
+                 .panel-expand en el .css).
 
-                @if (img.principal) {
-                  <span class="prod-foto__sello" title="Es la que sale en la lista">
-                    <i class="fa-solid fa-star"></i>
-                  </span>
-                }
+                 [cintaEnMovil]="false": en el teléfono la cinta se comería
+                 media pantalla para dar un formato que ahí nadie va a dar. -->
+            <app-campoNgxEditor
+              class="prod-descripcion"
+              [formControl]="ctrlDescripcion"
+              [placeholder]="'Características, lo que incluye la caja, condiciones de la garantía… (opcional)'"
+              [cinta]="true"
+              [hoja]="true"
+              [cintaEnMovil]="false"
+              [soloLectura]="esView"
+              alto="12rem">
+            </app-campoNgxEditor>
 
-                @if (imagenEnVuelo === img.id) {
-                  <span class="prod-foto__velo">
-                    <span class="spinner-border spinner-border-sm" role="status" aria-label="Guardando"></span>
-                  </span>
-                } @else if (!esView) {
-                  <figcaption class="prod-foto__barra">
-                    <button type="button" title="Mover a la izquierda"
-                            [disabled]="i === 0" (click)="moverImagen(i, -1)">
-                      <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <button type="button"
-                            [title]="img.principal ? 'Ya es la principal' : 'Hacerla la principal'"
-                            [disabled]="img.principal" (click)="marcarPrincipal(img)">
-                      <i class="fa-solid fa-star"></i>
-                    </button>
-                    <button type="button" class="es-peligro" title="Quitar esta imagen"
-                            (click)="quitarImagen(img)">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                    <button type="button" title="Mover a la derecha"
-                            [disabled]="i === imagenes.length - 1" (click)="moverImagen(i, 1)">
-                      <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                  </figcaption>
-                }
-              </figure>
-            }
-
-            <!-- Las que esperan a que el producto exista -->
-            @for (p of imagenesPendientes; track $index; let i = $index) {
-              <figure class="prod-foto is-pendiente" title="Se subirá al guardar">
-                <img [src]="p.vista" [alt]="p.file.name" />
-                <span class="prod-foto__sello prod-foto__sello--espera">
-                  <i class="fa-solid fa-clock"></i>
-                </span>
-                @if (!esView) {
-                  <figcaption class="prod-foto__barra">
-                    <button type="button" class="es-peligro" title="Quitar de la lista"
-                            (click)="quitarPendiente(i)">
-                      <i class="fa-solid fa-xmark"></i>
-                    </button>
-                  </figcaption>
-                }
-              </figure>
-            }
-
-            <!-- Añadir -->
-            @if (!esView) {
-              <label class="prod-anadir" for="imagenes-producto"
-                     title="Elegir una o varias imágenes">
-                @if (imagenEnVuelo === 'nueva') {
-                  <span class="spinner-border spinner-border-sm" role="status" aria-label="Subiendo"></span>
-                } @else {
-                  <i class="fa-solid fa-plus"></i>
-                  <span>Añadir</span>
-                }
-              </label>
-              <input type="file" id="imagenes-producto" class="d-none"
-                     accept="image/*" multiple (change)="onImagenesElegidas($event)" />
-            }
-
-            @if (totalImagenes === 0 && esView) {
-              <p class="text-muted small mb-0">Este producto no tiene imágenes.</p>
+            @if (!esNuevo && productoModel) {
+              <div class="producto-meta">
+                <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ productoModel.created_at }} por <b>{{ productoModel.created_by || '—' }}</b></span>
+                <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ productoModel.updated_at }} por <b>{{ productoModel.updated_by || '—' }}</b></span>
+              </div>
             }
           </div>
+        </ng-container>
+      </panel>
 
-          @if (!esView) {
-            <p class="campo-hint mt-2 mb-0">
-              <i class="fa-solid fa-circle-info"></i>
-              Hasta 10 MB cada una. La marcada con <i class="fa-solid fa-star"></i> es la que sale en la lista.
-              @if (esNuevo) { Las nuevas se suben al guardar el producto. }
-            </p>
-          }
+      </div>
 
+      <!-- ============ LAS IMÁGENES ============
+           order-xl-first: a la izquierda en pantalla ancha, al final en el
+           móvil (ver la nota de arriba). -->
+      <div class="col-12 col-xl-4 order-xl-first prod-col-media">
+
+      <!-- Estado: aqui arriba, encima de las imagenes. En la columna de
+           datos quedaba al final del primer panel, que es donde menos se
+           mira; aqui es lo primero que se ve al abrir el producto. -->
+      <div class="estado-producto mb-3" [class.is-on]="ctrlActivo.value">
+        <span class="estado-producto__icon"><i class="fa-solid fa-power-off"></i></span>
+        <div class="estado-producto__text">
+          <span class="estado-producto__label">Estado</span>
+          <span class="estado-producto__hint">
+            {{ ctrlActivo.value ? 'Se ofrece al vender' : 'No se ofrece al vender' }}
+          </span>
         </div>
-      </ng-container>
-    </panel>
+        <app-checkbox class="estado-producto__switch"
+          [control]="ctrlActivo"
+          [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
+          [id]="'ck-producto-activo'">
+        </app-checkbox>
+      </div>
 
-    <!-- ---------- 6. Descripción ---------- -->
-    <panel
-      headerClass="bg-gray-800"
-      title="Descripción"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-0"
-      icono="editar"
-      fondoGris="true">
 
-      <ng-container outsideBody>
-        <div class="form-card__body">
-          <app-campoTextoArea
-            [control]="form.controls['descripcion']"
-            label="DESCRIPCIÓN"
-            placeholder="Características, lo que incluye la caja, condiciones de la garantía… (opcional)"
-            [maxLength]="4000"
-            [alto]="110">
-          </app-campoTextoArea>
-
-          @if (!esNuevo && productoModel) {
-            <div class="producto-meta">
-              <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ productoModel.created_at }} por <b>{{ productoModel.created_by || '—' }}</b></span>
-              <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ productoModel.updated_at }} por <b>{{ productoModel.updated_by || '—' }}</b></span>
+      <!-- ---------- 5. Galería ---------- -->
+      <panel
+        headerClass="bg-gray-800"
+        title="Imágenes"
+        noButton="true"
+        noBody="true"
+        panelClass="h-100 mb-0"
+        icono="images"
+        fondoGris="true">
+  
+        <div header class="panel-acciones">
+          @if (totalImagenes > 0) {
+            <span class="chip chip-info">
+              <i class="fa-solid fa-images"></i> {{ totalImagenes }}
+            </span>
+          }
+          @if (esNuevo && imagenesPendientes.length > 0) {
+            <span class="chip chip-muted" title="Se suben al guardar">
+              <i class="fa-solid fa-clock"></i> pendientes
+            </span>
+          }
+        </div>
+  
+        <ng-container outsideBody>
+          <div class="form-card__body">
+  
+            <div class="prod-galeria">
+  
+              <!-- Las ya guardadas -->
+              @for (img of imagenes; track img.id; let i = $index) {
+                <figure class="prod-foto" [class.is-principal]="img.principal">
+                  <img [src]="urlImagen(img)" [alt]="img.nombre_original || 'Imagen del producto'" />
+  
+                  @if (img.principal) {
+                    <span class="prod-foto__sello" title="Es la que sale en la lista">
+                      <i class="fa-solid fa-star"></i>
+                    </span>
+                  }
+  
+                  @if (imagenEnVuelo === img.id) {
+                    <span class="prod-foto__velo">
+                      <span class="spinner-border spinner-border-sm" role="status" aria-label="Guardando"></span>
+                    </span>
+                  } @else if (!esView) {
+                    <figcaption class="prod-foto__barra">
+                      <button type="button" title="Mover a la izquierda"
+                              [disabled]="i === 0" (click)="moverImagen(i, -1)">
+                        <i class="fa-solid fa-chevron-left"></i>
+                      </button>
+                      <button type="button"
+                              [title]="img.principal ? 'Ya es la principal' : 'Hacerla la principal'"
+                              [disabled]="img.principal" (click)="marcarPrincipal(img)">
+                        <i class="fa-solid fa-star"></i>
+                      </button>
+                      <button type="button" class="es-peligro" title="Quitar esta imagen"
+                              (click)="quitarImagen(img)">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                      <button type="button" title="Mover a la derecha"
+                              [disabled]="i === imagenes.length - 1" (click)="moverImagen(i, 1)">
+                        <i class="fa-solid fa-chevron-right"></i>
+                      </button>
+                    </figcaption>
+                  }
+                </figure>
+              }
+  
+              <!-- Las que esperan a que el producto exista -->
+              @for (p of imagenesPendientes; track $index; let i = $index) {
+                <figure class="prod-foto is-pendiente" title="Se subirá al guardar">
+                  <img [src]="p.vista" [alt]="p.file.name" />
+                  <span class="prod-foto__sello prod-foto__sello--espera">
+                    <i class="fa-solid fa-clock"></i>
+                  </span>
+                  @if (!esView) {
+                    <figcaption class="prod-foto__barra">
+                      <button type="button" class="es-peligro" title="Quitar de la lista"
+                              (click)="quitarPendiente(i)">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </figcaption>
+                  }
+                </figure>
+              }
+  
+              <!-- Añadir -->
+              @if (!esView) {
+                <label class="prod-anadir" for="imagenes-producto"
+                       title="Elegir una o varias imágenes">
+                  @if (imagenEnVuelo === 'nueva') {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-label="Subiendo"></span>
+                  } @else {
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Añadir</span>
+                  }
+                </label>
+                <input type="file" id="imagenes-producto" class="d-none"
+                       accept="image/*" multiple (change)="onImagenesElegidas($event)" />
+              }
+  
+              @if (totalImagenes === 0 && esView) {
+                <p class="text-muted small mb-0">Este producto no tiene imágenes.</p>
+              }
             </div>
-          }
-        </div>
-      </ng-container>
-    </panel>
+  
+            @if (!esView) {
+              <p class="campo-hint mt-2 mb-0">
+                <i class="fa-solid fa-circle-info"></i>
+                Hasta 10 MB cada una. La marcada con <i class="fa-solid fa-star"></i> es la que sale en la lista.
+                @if (esNuevo) { Las nuevas se suben al guardar el producto. }
+              </p>
+            }
+  
+          </div>
+        </ng-container>
+      </panel>
 
+      </div>
+
+    </div>
   </form>
 </div>
 

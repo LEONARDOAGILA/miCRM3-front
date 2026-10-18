@@ -1002,6 +1002,8 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     // El permiso viaja con el modal: allí también hay auditoría, y el botón
     // sólo se enseña si el perfil puede auditar.
     modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.allClientes(this.paginaActual));
   }
 
