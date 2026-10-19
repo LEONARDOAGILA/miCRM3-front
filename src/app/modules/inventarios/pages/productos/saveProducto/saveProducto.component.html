@@ -30,7 +30,15 @@
       <!-- ============ LOS DATOS ============ -->
       <div class="col-12 col-xl-8">
 
-      <!-- ---------- 1. Identificación ---------- -->
+      <!-- ---------- 1 y 2. Identificación y precio ----------
+           En paralelo a partir de xxl y apilados por debajo, como
+           Existencias y Peso y medidas. OJO: al partir la columna de datos
+           en dos, cada panel se queda en unos 360px, así que las rejillas
+           de dentro llevan su propio col-xxl-*: con los de antes, el
+           buscador de marca caía a 180px (necesita 259, medido) y los
+           campos de precio a 60px. -->
+      <div class="row g-3">
+        <div class="col-12 col-xxl-6">
       <panel
         headerClass="bg-gray-800"
         title="Identificación"
@@ -51,7 +59,7 @@
             <div class="row g-3 align-items-start">
 
               <!-- Código (SKU) -->
-              <div class="col-6 col-md-3">
+              <div class="col-6 col-md-3 col-xxl-5">
                 <app-campoTexto
                   [control]="form.controls['codigo']"
                   label="CÓDIGO (SKU)"
@@ -60,14 +68,10 @@
                   [minLength]="2"
                   [trimEspacios]="true">
                 </app-campoTexto>
-                <p class="campo-hint">
-                  <i class="fa-solid fa-circle-info"></i>
-                  Se guarda en mayúsculas. No se repite.
-                </p>
               </div>
 
               <!-- Código de barras -->
-              <div class="col-6 col-md-3">
+              <div class="col-6 col-md-3 col-xxl-7">
                 <app-campoTexto
                   [control]="form.controls['codigo_barras']"
                   label="CÓDIGO DE BARRAS"
@@ -75,14 +79,10 @@
                   [maxLength]="50"
                   icono="fa-barcode">
                 </app-campoTexto>
-                <p class="campo-hint">
-                  <i class="fa-solid fa-circle-info"></i>
-                  Opcional; los accesorios casi nunca traen.
-                </p>
               </div>
 
               <!-- Nombre -->
-              <div class="col-12 col-md-6">
+              <div class="col-12">
                 <app-campoTexto
                   [control]="form.controls['nombre']"
                   label="NOMBRE DEL PRODUCTO"
@@ -93,6 +93,17 @@
                 </app-campoTexto>
               </div>
 
+              <!-- Modelo: debajo del nombre y del mismo ancho, que es su
+                   pareja natural (el nombre dice qué es y el modelo cuál). -->
+              <div class="col-12">
+                <app-campoTexto
+                  [control]="form.controls['modelo']"
+                  label="MODELO"
+                  placeholder="RF28K9070SR"
+                  [maxLength]="80">
+                </app-campoTexto>
+              </div>
+
               <!-- Marca: id + nombre + lupa, como el perfil en saveUser.
                    Se escribe el id y al salir del campo se trae el nombre; o
                    se busca con la lupa. El nombre va deshabilitado porque es
@@ -100,7 +111,7 @@
                    MEDIA FILA: son cuatro piezas en línea y con un tercio de
                    la columna se quedan en 214px, donde ni las etiquetas
                    caben (medido). -->
-              <div class="col-12 col-md-6 col-xxl-6">
+              <div class="col-12 col-md-6 col-xxl-12">
                 <div class="campo-lookup">
                   <!-- g-0: sin hueco entre piezas. Los bordes se comparten
                        desde el CSS para que las cuatro se lean como un solo
@@ -147,7 +158,7 @@
                    nombre que se enseña es la RUTA entera («Tecnología >
                    Celulares > Accesorios») porque hay dos «Accesorios» en el
                    árbol y a secas no se sabe cuál es. -->
-              <div class="col-12 col-md-6 col-xxl-6">
+              <div class="col-12 col-md-6 col-xxl-12">
                 <div class="campo-lookup">
                   <div class="row g-0 flex-nowrap">
                     <div class="col-4">
@@ -187,22 +198,13 @@
                 </div>
               </div>
 
-              <!-- Modelo -->
-              <div class="col-12 col-md-6 col-xxl-4">
-                <app-campoTexto
-                  [control]="form.controls['modelo']"
-                  label="MODELO"
-                  placeholder="RF28K9070SR"
-                  [maxLength]="80">
-                </app-campoTexto>
-              </div>
-
             </div>
           </div>
         </ng-container>
       </panel>
+        </div>
 
-      <!-- ---------- 2. Comercial ---------- -->
+        <div class="col-12 col-xxl-6">
       <panel
         headerClass="bg-gray-800"
         title="Precio y condiciones"
@@ -217,7 +219,7 @@
             <div class="row g-3 align-items-start">
 
               <!-- Unidad -->
-              <div class="col-6 col-md-4 col-xxl-2">
+              <div class="col-6 col-md-4 col-xxl-6">
                 <div class="campo-combo">
                   <app-combo
                     formControlName="unidad"
@@ -230,7 +232,7 @@
               </div>
 
               <!-- Costo -->
-              <div class="col-6 col-md-4 col-xxl-2">
+              <div class="col-6 col-md-4 col-xxl-6">
                 <app-campoTexto
                   [control]="form.controls['costo']"
                   label="COSTO"
@@ -242,7 +244,7 @@
               </div>
 
               <!-- Precio -->
-              <div class="col-6 col-md-4 col-xxl-2">
+              <div class="col-6 col-md-4 col-xxl-6">
                 <app-campoTexto
                   [control]="form.controls['precio']"
                   label="PRECIO"
@@ -254,7 +256,7 @@
               </div>
 
               <!-- El margen, informativo -->
-              <div class="col-6 col-md-4 col-xxl-2">
+              <div class="col-6 col-md-4 col-xxl-6">
                 <div class="prod-margen" [class.is-rojo]="margenEnRojo">
                   <span class="prod-margen__label">Margen</span>
                   <span class="prod-margen__valor">
@@ -269,21 +271,8 @@
                 }
               </div>
 
-              <!-- IVA -->
-              <div class="col-6 col-md-4 col-xxl-2">
-                <div class="campo-combo">
-                  <app-combo
-                    formControlName="iva_porcentaje"
-                    [items]="tarifasIva"
-                    [label]="'IVA'"
-                    bindLabel="name"
-                    bindValue="id">
-                  </app-combo>
-                </div>
-              </div>
-
               <!-- Garantía -->
-              <div class="col-6 col-md-4 col-xxl-2">
+              <div class="col-6 col-md-4 col-xxl-6">
                 <div class="campo-combo">
                   <app-combo
                     formControlName="garantia_meses"
@@ -295,10 +284,28 @@
                 </div>
               </div>
 
+              <!-- ¿Grava impuesto? Aquí sólo se dice SÍ o NO: la tarifa ya
+                   no se escribe en la ficha del producto. -->
+              <div class="col-12">
+                <div class="prod-interruptor">
+                  <app-checkbox
+                    [control]="ctrlImpuesto"
+                    label="Grava impuesto"
+                    [id]="'ck-producto-impuesto'">
+                  </app-checkbox>
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Apágalo en lo exento. El porcentaje no se pone aquí: saldrá de las tablas de impuestos.
+                  </p>
+                </div>
+              </div>
+
             </div>
           </div>
         </ng-container>
       </panel>
+        </div>
+      </div>
 
       <!-- ---------- 3 y 4. Existencias y medidas ----------
            Los dos son cortos, pero sólo caben uno al lado del otro cuando hay
@@ -475,6 +482,16 @@
               {{ caracteristicasRellenas }} / {{ caracteristicas.length }}
             </span>
           }
+          <!-- Para algo que sólo tiene ESTE producto. Lo que se repita en
+               todos los de su categoría va en Inventarios → Características,
+               que entonces se pide solo. -->
+          @if (!esView) {
+            <button type="button" class="btn btn-sm btn-primary"
+                    title="Añadir una característica sólo para este producto"
+                    (click)="agregarCaracteristica()">
+              <i class="fa fa-plus me-1"></i>Agregar
+            </button>
+          }
         </div>
 
         <ng-container outsideBody>
@@ -498,25 +515,55 @@
                 }
               </p>
             } @else {
-              <div class="row g-3">
-                @for (c of caracteristicas; track c.nombre) {
-                  <div class="col-12 col-md-6 col-xxl-4">
-                    <app-campoTexto
-                      [control]="c.control"
-                      [label]="c.nombre"
-                      placeholder="Sin especificar"
-                      [maxLength]="500">
-                    </app-campoTexto>
-                    @if (!c.en_plantilla) {
-                      <p class="campo-hint">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        Ya no está en la lista de esta categoría. Se sigue enseñando porque
-                        este producto la tiene rellena; si la vacía, desaparece.
-                      </p>
-                    }
-                  </div>
-                }
+              <!-- Una rejilla y no ocho campos flotantes: con ocho
+                   características los campos se comían media pantalla y aquí
+                   caben en ocho filas. El NOMBRE no se toca (lo pone la lista
+                   de la categoría); se escribe en la columna VALOR, con un
+                   solo clic, como en «Personas de contacto» de saveCliente. -->
+              <div class="carac-grid">
+                <ag-grid-angular
+                  class="ag-theme-alpine ag-grid-transparente w-100"
+                  [rowData]="caracteristicas"
+                  [columnDefs]="columnDefsCaracteristicas"
+                  [defaultColDef]="_appAgGridService.defaultColDef"
+                  [domLayout]="'autoHeight'"
+                  [rowHeight]="30"
+                  [headerHeight]="30"
+                  [localeText]="_appAgGridService.localeText"
+                  [rowClassRules]="rowClassRulesCaracteristicas"
+                  [getRowId]="getRowIdCaracteristica"
+                  [singleClickEdit]="true"
+                  [stopEditingWhenCellsLoseFocus]="true"
+                  [suppressRowClickSelection]="true"
+                  [pagination]="false"
+                  [animateRows]="true"
+                  [rowDragManaged]="true"
+                  [suppressMoveWhenRowDragging]="false"
+                  [tooltipShowDelay]="400"
+                  (gridReady)="onGridCaracteristicasReady($event)"
+                  (rowDragEnd)="onFilaArrastrada()"
+                  (cellClicked)="onCeldaCaracteristicaClic($event)"
+                  (cellValueChanged)="onCaracteristicaChanged($event)">
+                </ag-grid-angular>
               </div>
+
+              @if (!esView) {
+                <!-- El texto va dentro de un <span>: .campo-hint es flex, y
+                     suelto cada <b> se convertía en un ítem propio y la frase
+                     salía troceada en columnas (visto en una captura). -->
+                <p class="campo-hint carac-leyenda">
+                  <i class="fa-solid fa-hand-pointer"></i>
+                  <span>
+                    Haz clic en la columna <b>Valor</b> y escribe; lo que se deje vacío no se guarda.
+                    Los nombres salen de la lista de la categoría, que se mantiene en
+                    <b>Inventarios → Características</b>.
+                  </span>
+                  <button type="button" class="btn btn-link btn-sm carac-leyenda__limpiar"
+                          (click)="limpiarCaracteristicas()">
+                    Vaciar todos los valores
+                  </button>
+                </p>
+              }
             }
 
           </div>
@@ -552,6 +599,8 @@
             <app-campoNgxEditor
               class="prod-descripcion"
               [formControl]="ctrlDescripcion"
+              [almacen]="almacenDeImagenes"
+              [avisar]="avisarDelPegado"
               [placeholder]="'Características, lo que incluye la caja, condiciones de la garantía… (opcional)'"
               [cinta]="true"
               [hoja]="true"

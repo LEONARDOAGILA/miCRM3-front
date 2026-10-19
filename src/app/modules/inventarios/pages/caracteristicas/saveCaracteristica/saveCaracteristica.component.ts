@@ -41,7 +41,10 @@ export class SaveCaracteristicaComponent implements OnInit {
 
   public form!: FormGroup;
   public titulo = 'Nueva Característica';
+  /** Viendo: los campos nacen deshabilitados. No tiene que ver con el pie. */
   public isdisabled = false;
+  /** Guardando: bloquea el pie para que un doble clic no mande dos veces. */
+  public guardando = false;
   public response: any;
 
   /** La ruta de la categoría, al lado de su id. Va deshabilitado: lo pone el selector. */
@@ -65,6 +68,9 @@ export class SaveCaracteristicaComponent implements OnInit {
 
   /** Cuántos productos la tienen rellena: avisa de que tocarla no es gratis. */
   get numProductos(): number { return Number(this.registro_selected?.num_productos ?? 0); }
+
+  /** En qué posición está hoy. Sólo para decirlo: aquí no se cambia. */
+  get ordenActual(): number { return Number(this.registro_selected?.orden ?? 0); }
 
   async ngOnInit(): Promise<void> {
     this.isdisabled = this.esView;
@@ -91,9 +97,9 @@ export class SaveCaracteristicaComponent implements OnInit {
       categoria_id: [{ value: null, disabled: this.isdisabled }, [Validators.required]],
       nombre:       [{ value: '', disabled: this.isdisabled },
                      [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      // El orden en que se le enseñan a quien rellena el producto. Vacío =
-      // la última de su categoría (lo decide el servidor).
-      orden:        [{ value: null, disabled: this.isdisabled }, [Validators.min(1), Validators.max(9999)]],
+      // El ORDEN no está en el formulario: se manda null y lo pone el
+      // servidor (la última de su categoría al crear, y la que ya tenía al
+      // modificar). El sitio se cambia arrastrando las filas del listado.
       activo:       [{ value: true, disabled: this.isdisabled }],
     });
   }
@@ -114,7 +120,6 @@ export class SaveCaracteristicaComponent implements OnInit {
         // Al clonar, el nombre no puede repetirse dentro de la misma
         // categoría: se marca para que quien clona lo cambie.
         nombre:       (k.nombre ?? '') + (this.accion === 'clon' ? ' (copia)' : ''),
-        orden:        k.orden,
         activo:       k.activo !== false,
       });
       this.categoriaNombreControl.setValue(k.categoria_ruta || k.categoria_nombre || '');
@@ -191,6 +196,7 @@ export class SaveCaracteristicaComponent implements OnInit {
 
   async onSubmitForm(): Promise<void> {
     if (this.esView) { this.modal.dismiss(); return; }
+    if (this.guardando) { return; }
 
     this.form.markAllAsTouched();
     if (this.form.invalid) {
@@ -201,18 +207,22 @@ export class SaveCaracteristicaComponent implements OnInit {
 
     const payload: any = this.form.getRawValue();
     payload.nombre = (payload.nombre ?? '').trim();
-    payload.orden  = payload.orden === '' || payload.orden === null ? null : Number(payload.orden);
+
+    // Sin orden: al crear, el servidor la pone la última de su categoría
+    // (MAX(orden) + 1); al modificar, le deja el que ya tenía. Clonar también
+    // entra al final, que si no la copia empataría con el original.
+    payload.orden = null;
 
     try {
       this._loadingService.setLoading(true);
-      this.isdisabled = true;
+      this.guardando = true;
 
       this.response = this.accion === 'edit'
         ? await firstValueFrom(this._caracteristicaService.editCaracteristica(this.registro_selected.id, payload))
         : await firstValueFrom(this._caracteristicaService.addCaracteristica(payload));
 
       if (this.response?.status !== 'success') {
-        this.isdisabled = false;
+        this.guardando = false;
         return;
       }
 
@@ -223,7 +233,7 @@ export class SaveCaracteristicaComponent implements OnInit {
     } catch (error: any) {
       // El AuthInterceptor ya notificó el error HTTP (409 con el motivo)
       console.error('Error al guardar la característica:', error);
-      this.isdisabled = false;
+      this.guardando = false;
     } finally {
       this._loadingService.setLoading(false);
     }

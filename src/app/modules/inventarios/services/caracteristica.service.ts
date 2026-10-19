@@ -50,12 +50,12 @@ export class CaracteristicaService {
 
   //   ******   LA PLANTILLA DE UNA CATEGORÍA   ******  //
   /** Lo que el formulario del producto tiene que pedir al elegir categoría. */
-  listCaracteristicas(categoriaId: number, soloActivas: boolean = true): Observable<any> {
-    return this._http.get(this.URL_SERVICIOS + 'listCaracteristicas', {
-      params: new HttpParams()
-        .set('categoria_id', String(categoriaId))
-        .set('activos', soloActivas ? '1' : '0'),
-    });
+  /** Sin `categoriaId` las trae TODAS: así se cuentan por categoría. */
+  listCaracteristicas(categoriaId: number | null, soloActivas: boolean = true): Observable<any> {
+    let params = new HttpParams().set('activos', soloActivas ? '1' : '0');
+    if (categoriaId) { params = params.set('categoria_id', String(categoriaId)); }
+
+    return this._http.get(this.URL_SERVICIOS + 'listCaracteristicas', { params });
   }
 
   //   ******   BUSCAR POR ID   ******  //
@@ -78,6 +78,18 @@ export class CaracteristicaService {
   activarCaracteristica(id: any, activo?: boolean): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'activarCaracteristica/' + id,
                            activo === undefined ? {} : { activo });
+  }
+
+  //   ******   CAMBIAR EL ORDEN   ******  //
+  /**
+   * Los ids EN EL ORDEN NUEVO, al arrastrar las filas de la rejilla.
+   *
+   * Todos tienen que ser de la misma categoría: el orden es dentro de su
+   * lista. Se mandan sólo las filas que se ven (la página) y el servidor
+   * reparte entre ellas los números de orden que ya ocupaban.
+   */
+  ordenarCaracteristicas(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'ordenarCaracteristicas', { ids });
   }
 
   //   ******   A LA PAPELERA   ******  //

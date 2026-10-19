@@ -77,8 +77,12 @@
               </p>
             </div>
 
-            <!-- Nombre -->
-            <div class="col-12 col-md-8">
+            <!-- Nombre.
+                 El ORDEN ya no es un campo: una nueva entra al final de su
+                 categoría y el sitio se cambia arrastrando las filas en el
+                 listado, que es donde se ve la lista entera. Poner aquí un
+                 número a ciegas obligaba a adivinar qué hay en esa posición. -->
+            <div class="col-12">
               <app-campoTexto
                 [control]="form.controls['nombre']"
                 label="NOMBRE DE LA CARACTERÍSTICA"
@@ -91,19 +95,15 @@
                 <i class="fa-solid fa-circle-info"></i>
                 No se puede repetir dentro de la misma categoría; en otra sí.
               </p>
-            </div>
-
-            <!-- Orden -->
-            <div class="col-12 col-md-4">
-              <app-campoNumeroEntero
-                [control]="form.controls['orden']"
-                label="ORDEN"
-                placeholder="Al final"
-                [maxLength]="4">
-              </app-campoNumeroEntero>
               <p class="campo-hint">
-                <i class="fa-solid fa-circle-info"></i>
-                En qué posición se pide. Vacío: al final de la lista.
+                <i class="fa-solid fa-arrows-up-down"></i>
+                @if (esNuevo) {
+                  Se añadirá al final de la lista de la categoría; el orden se cambia
+                  arrastrando las filas en el listado.
+                } @else {
+                  Ocupa la posición {{ ordenActual }} de su categoría. El orden se cambia
+                  arrastrando las filas en el listado.
+                }
               </p>
             </div>
 
@@ -144,8 +144,13 @@
   </form>
 </div>
 
+<!-- OJO con `isDisabled`: NO deshabilita, decide si sale el botón de guardar
+     (así se llama en las 13 pantallas que usan el pie). Por eso va `!esView`,
+     igual que en saveMarca y saveCategoria: viendo no hay nada que guardar.
+     Lo de bloquear mientras se guarda es `cargando`. -->
 <app-modal-footer
-  [isDisabled]="isdisabled"
+  [isDisabled]="!esView"
+  [cargando]="guardando"
   [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
   (onClose)="modal.dismiss()"
   (onSubmit)="onSubmitForm()">

@@ -29,6 +29,11 @@ const routes: Routes = [
       // La plantilla de caracteristicas de cada categoria
       { path: 'allCaracteristicas', component: AllCaracteristicasComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
 
+      // El menu apunta a 'inventarios/home-inventarios' (asi esta en
+      // seguridad.menus) y esa ruta no existia: el modulo entero caia en el
+      // 404 al pulsar su entrada. Se deja tambien 'home', que es a donde
+      // redirige la ruta vacia y lo que usan los 'volver' de las pantallas.
+      { path: 'home-inventarios', component: HomeComponent, data: { title: 'Home page' }, canActivate: [AuthGuard] },
       { path: 'home', component: HomeComponent, data: { title: 'Home page' } },
       { path: '**', component: ErrorPage },
     ]

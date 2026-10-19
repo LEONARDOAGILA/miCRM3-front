@@ -190,9 +190,11 @@ export class AllProductosComponent implements OnInit, OnDestroy {
    * casilla y unos iconos, y escribir texto para marcarlos no se entiende.
    */
   private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
-    id: 'numero', costo: 'numero', precio: 'numero', iva_porcentaje: 'numero',
+    id: 'numero', costo: 'numero', precio: 'numero',
     garantia_meses: 'numero', stock_minimo: 'numero', num_imagenes: 'numero',
     codigo: 'texto', nombre: 'texto', marca_nombre: 'texto',
+    // Se filtra por lo que SE VE en la celda: «Sí» / «No»
+    impuesto: 'texto',
     categoria_nombre: 'texto', modelo: 'texto', updated_by: 'texto',
     // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
     created_at: 'texto', updated_at: 'texto',
@@ -326,13 +328,15 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         valueFormatter: (params: any) => this.formatoMoneda(params.value),
       },
       {
-        headerName: 'IVA',
-        field: 'iva_porcentaje',
+        // Ya no es el porcentaje: el producto sólo dice SI grava impuesto, y
+        // la tarifa saldrá de las tablas de impuestos.
+        headerName: 'Impuesto',
+        field: 'impuesto',
+        headerTooltip: 'Si el producto grava impuesto; la tarifa no está en la ficha',
         cellStyle: { textAlign: 'center' },
-        minWidth: 70,
-        maxWidth: 90,
-        valueFormatter: (params: any) =>
-          (params.value === null || params.value === undefined) ? '' : Number(params.value).toFixed(0) + ' %',
+        minWidth: 90,
+        maxWidth: 110,
+        valueFormatter: (params: any) => params.value === false ? 'No' : 'Sí',
       },
       {
         headerName: 'Garantía',

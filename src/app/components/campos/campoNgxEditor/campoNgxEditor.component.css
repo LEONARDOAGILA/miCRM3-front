@@ -207,3 +207,111 @@
   margin-left: .5rem;
   align-self: center;
 }
+
+/* ============================================================
+   COMO SE VE LO ESCRITO (listas, titulos, citas, imagenes, tablas)
+   ============================================================
+   Esto vivia en el .css de saveNota, o sea en UNA pantalla, y el resto
+   de las que usan este campo se quedaban sin ello: en el formulario de
+   producto se insertaba una tabla y no se veia —entraba en el HTML pero
+   sin bordes ni celdas— y las imagenes salian sin ajustar. Las reglas
+   son del CONTENIDO del editor, asi que su sitio es el editor.
+   saveNota conserva las suyas, mas especificas, y siguen mandando. */
+
+:host ::ng-deep .cne__fondo .NgxEditor__Content :is(p, ul, ol) { margin: 0 0 .85rem; }
+:host ::ng-deep .cne__fondo .NgxEditor__Content ul,
+:host ::ng-deep .cne__fondo .NgxEditor__Content ol { padding-left: 1.5rem; }
+/* El tema quita las viñetas en toda la aplicación; en una nota sí hacen falta */
+:host ::ng-deep .cne__fondo .NgxEditor__Content ul { list-style: disc outside; }
+:host ::ng-deep .cne__fondo .NgxEditor__Content ol { list-style: decimal outside; }
+:host ::ng-deep .cne__fondo .NgxEditor__Content li { margin-bottom: .25rem; }
+
+:host ::ng-deep .cne__fondo .NgxEditor__Content :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1.25rem 0 .5rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+:host ::ng-deep .cne__fondo .NgxEditor__Content h1 { font-size: 1.25rem; }
+:host ::ng-deep .cne__fondo .NgxEditor__Content h2 { font-size: 1.125rem; }
+:host ::ng-deep .cne__fondo .NgxEditor__Content h3 { font-size: 1.0625rem; }
+:host ::ng-deep .cne__fondo .NgxEditor__Content h4 { font-size: 1rem; }
+/* Los dos pequeños: se ofrecen en el desplegable, así que tienen que verse
+   distintos del texto normal o elegirlos parece no hacer nada */
+:host ::ng-deep .cne__fondo .NgxEditor__Content h5 { font-size: .9375rem; }
+:host ::ng-deep .cne__fondo .NgxEditor__Content h6 {
+  font-size: .875rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+:host ::ng-deep .cne__fondo .NgxEditor__Content blockquote {
+  margin: .85rem 0;
+  padding: .25rem 0 .25rem 1rem;
+  border-left: 3px solid #dee2e6;
+  color: #6c757d;
+}
+
+:host ::ng-deep .cne__fondo .NgxEditor__Content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem auto;
+  border: 1px solid #e9ecef;
+  border-radius: .25rem;
+}
+
+/* ---------- Las tablas dentro del editor ----------
+   prosemirror-tables pinta la tabla con <colgroup> y mete su propio asa para
+   arrastrar el ancho; lo que falta es que se vea como una tabla. */
+:host ::ng-deep .cne__fondo .NgxEditor__Content table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  overflow: hidden;
+}
+
+:host ::ng-deep .cne__fondo .NgxEditor__Content td,
+:host ::ng-deep .cne__fondo .NgxEditor__Content th {
+  position: relative;
+  padding: .375rem .5rem;
+  border: 1px solid #ced4da;
+  vertical-align: top;
+}
+
+:host ::ng-deep .cne__fondo .NgxEditor__Content th {
+  background-color: #f1f3f5;
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Lo de dentro de una celda va más apretado: con el margen normal de párrafo,
+   una tabla de cuatro filas ocupaba media hoja */
+:host ::ng-deep .cne__fondo .NgxEditor__Content :is(td, th) > p { margin: 0; }
+:host ::ng-deep .cne__fondo .NgxEditor__Content :is(td, th) > p + p { margin-top: .35rem; }
+
+/* Las celdas elegidas, para que se vea qué se va a unir o borrar */
+:host ::ng-deep .cne__fondo .NgxEditor__Content .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(47, 128, 237, .2);
+  pointer-events: none;
+}
+
+/* El asa para arrastrar el ancho de la columna */
+:host ::ng-deep .cne__fondo .NgxEditor__Content .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: 0;
+  width: 4px;
+  background-color: #2f80ed;
+  pointer-events: none;
+  z-index: 20;
+}
+
+:host ::ng-deep .cne__fondo .NgxEditor__Content.resize-cursor {
+  cursor: col-resize;
+}

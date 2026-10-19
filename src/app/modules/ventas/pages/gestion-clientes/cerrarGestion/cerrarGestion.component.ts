@@ -4,6 +4,7 @@ import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
+import { conTokenLaImagen, conTokenLasImagenes, sinTokenLasImagenes } from '../../../interfaces/notaCliente';
 
 import { GestionService } from '../../../services/gestion.service';
 import { NotaClienteService } from '../../../services/notaCliente.service';
@@ -84,13 +85,19 @@ export class CerrarGestionComponent implements OnInit, OnDestroy {
     subir: async (f: File) => {
       try {
         const res: any = await firstValueFrom(this._notaService.subirImagen(this.clienteId!, f));
-        return res?.status === 'success' ? this._notaService.urlDeImagen(res.data.url) : null;
+        return res?.status === 'success'
+          // Con token, para que se vea ya en el editor (al guardar se quita)
+          ? conTokenLaImagen(this._notaService.urlDeImagen(res.data.url))
+          : null;
       } catch { return null; }
     },
     traerDeFuera: async (u: string) => {
       try {
         const res: any = await firstValueFrom(this._notaService.traerImagen(this.clienteId!, u));
-        return res?.status === 'success' ? this._notaService.urlDeImagen(res.data.url) : null;
+        return res?.status === 'success'
+          // Con token, para que se vea ya en el editor (al guardar se quita)
+          ? conTokenLaImagen(this._notaService.urlDeImagen(res.data.url))
+          : null;
       } catch {
         // Es normal que alguna no se deje traer; no merece un toast por cada una
         return null;
@@ -140,7 +147,7 @@ export class CerrarGestionComponent implements OnInit, OnDestroy {
     this.form = this.fb.group({
       resultado:        ['CONTACTADO', [Validators.required]],
       duracion_minutos: [this.gestion?.duracion_minutos ?? null, [Validators.min(0), Validators.max(1440)]],
-      nota:             [this.gestion?.nota ?? '', [Validators.maxLength(100000)]],
+      nota:             [conTokenLasImagenes(this.gestion?.nota ?? ''), [Validators.maxLength(100000)]],
 
       // El seguimiento
       programar:        [false],
@@ -357,7 +364,7 @@ export class CerrarGestionComponent implements OnInit, OnDestroy {
     const payload: any = {
       resultado: v.resultado,
       // «<p></p>» es el editor vacio, no una nota
-      nota: soloTexto(v.nota) ? (v.nota ?? '').trim() : null,
+      nota: soloTexto(v.nota) ? sinTokenLasImagenes((v.nota ?? '').trim()) : null,
       duracion_minutos: v.duracion_minutos === '' || v.duracion_minutos === null ? null : Number(v.duracion_minutos),
     };
     if (v.programar) {

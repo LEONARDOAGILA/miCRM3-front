@@ -648,3 +648,153 @@
 :host ::ng-deep .panel.panel-expand .producto-meta {
   flex: 0 0 auto;
 }
+
+/* ============================================================
+   LA REJILLA DE CARACTERISTICAS
+   ============================================================
+   Dos columnas: el nombre, que viene de la lista de la categoria y no se
+   toca, y el valor, que se escribe con un solo clic. Mismo trato que
+   «Personas de contacto» en saveCliente.
+
+   domLayout="autoHeight" en la plantilla: la rejilla crece con las filas en
+   vez de reservar un alto fijo. Con tres caracteristicas no sobra hueco y
+   con ocho no hay que hacer scroll dentro de una caja pequena. */
+.carac-grid {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+/* La primera columna se lee, no se escribe: fondo apagado y sin cursor de
+   texto, para que se note sin tener que intentarlo. */
+:host ::ng-deep .carac-grid .ag-cell.celda-nombre-caracteristica {
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  cursor: default;
+}
+
+/* El hueco sin rellenar: en gris y en cursiva, que es una pista, no un dato */
+:host ::ng-deep .carac-sin-valor {
+  color: var(--bs-secondary-color, #adb5bd);
+  font-style: italic;
+}
+
+:host ::ng-deep .carac-grid .ag-cell.celda-vacia {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .05);
+}
+
+/* Lo que el producto tiene relleno y ya no esta en la lista de su categoria:
+   se marca, porque si se vacia desaparece para siempre. */
+:host ::ng-deep .carac-grid .ag-row.fila-fuera-plantilla .celda-nombre-caracteristica {
+  color: var(--bs-secondary-color, #6c757d);
+  font-style: italic;
+}
+
+:host ::ng-deep .carac-grid .ag-row.fila-fuera-plantilla .celda-nombre-caracteristica::after {
+  content: '\f071';            /* triangulo de aviso de Font Awesome */
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: .625rem;
+  margin-left: .35rem;
+  color: var(--bs-warning, #ffc107);
+}
+
+/* La celda en edicion, que se vea cual es */
+:host ::ng-deep .carac-grid .ag-cell-inline-editing {
+  box-shadow: inset 0 0 0 2px var(--bs-app-theme, #00acac);
+  border-radius: 0;
+}
+
+.carac-leyenda {
+  margin-top: .5rem;
+  align-items: center;
+}
+
+.carac-leyenda__limpiar {
+  --bs-btn-padding-x: .25rem;
+  --bs-btn-padding-y: 0;
+  --bs-btn-font-size: .7rem;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ---------- Los botones de la rejilla de caracteristicas ---------- */
+/* Subir, bajar y quitar, como en «Personas de contacto» de saveCliente. */
+:host ::ng-deep .carac-grid .carac-acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: .15rem;
+}
+
+:host ::ng-deep .carac-grid .carac-acciones .btn {
+  --bs-btn-padding-x: .35rem;
+  --bs-btn-padding-y: .05rem;
+  --bs-btn-font-size: .7rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  line-height: 1.2;
+}
+
+:host ::ng-deep .carac-grid .carac-acciones .btn:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+:host ::ng-deep .carac-grid .carac-acciones .btn-quitar:hover:not(:disabled) {
+  border-color: var(--bs-danger, #ff5b57);
+  color: var(--bs-danger, #ff5b57);
+}
+
+:host ::ng-deep .carac-grid .carac-acciones .btn:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+/* Una fila anadida a mano: el nombre SI se escribe, asi que se ve como un
+   campo y no como una etiqueta fija. */
+:host ::ng-deep .carac-grid .ag-row.fila-nueva .celda-nombre-caracteristica {
+  background-color: var(--bs-body-bg, #fff);
+  font-style: normal;
+  cursor: text;
+}
+
+:host ::ng-deep .carac-grid .ag-row.fila-nueva .celda-nombre-caracteristica:empty::before {
+  content: 'Escriba el nombre…';
+  color: var(--bs-secondary-color, #adb5bd);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* ---------- El asa de arrastrar ---------- */
+/* La columna estrecha de la izquierda. El icono lo pinta ag-Grid
+   (.ag-drag-handle); aqui solo se le pone el cursor y el sitio. */
+:host ::ng-deep .carac-grid .ag-cell.celda-asa {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+:host ::ng-deep .carac-grid .ag-drag-handle {
+  color: var(--bs-secondary-color, #adb5bd);
+  cursor: grab;
+}
+
+:host ::ng-deep .carac-grid .ag-drag-handle:active {
+  cursor: grabbing;
+}
+
+:host ::ng-deep .carac-grid .ag-row:hover .ag-drag-handle {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* La fila mientras se arrastra, para no perderla de vista */
+:host ::ng-deep .ag-dnd-ghost {
+  border: 1px solid var(--bs-app-theme, #00acac);
+  border-radius: 4px;
+  font-size: .75rem;
+}
