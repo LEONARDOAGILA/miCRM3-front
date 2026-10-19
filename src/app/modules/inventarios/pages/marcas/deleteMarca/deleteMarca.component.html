@@ -29,13 +29,18 @@
         <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
       <div>
-        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar esta marca?</h6>
+        <h6 class="eliminar-aviso__titulo">¿Enviar esta marca a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): la marca va a la
+             papelera, deja de salir en el listado y de poder elegirse en un
+             producto, y desde allí se restaura o se borra de verdad. -->
         <p class="eliminar-aviso__texto" id="eliminarMarcaDescripcion">
-          Esta acción no se puede deshacer. Su historial de auditoría se conserva.
+          Dejará de aparecer en el listado y no se podrá elegir al crear o modificar un producto, pero
+          <b>no se borra</b>: queda en la papelera, desde donde puede restaurarse tal como estaba, con su logo.
           @if (numProductos > 0) {
             <br><b>Tiene {{ numProductos }} {{ numProductos === 1 ? 'producto' : 'productos' }}:</b>
-            el sistema no permitirá eliminarla; desactívela en su lugar.
+            el sistema no permitirá enviarla a la papelera; desactívela en su lugar.
           }
+          <br>Si sólo quiere que deje de usarse, <b>desactívela</b> en lugar de enviarla a la papelera.
         </p>
       </div>
     </div>
@@ -86,8 +91,8 @@
     <!-- Alternativa no destructiva -->
     <p class="eliminar-nota">
       <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
-      Si el marca ya no se usa pero tiene historial, desactívelo desde
-      <b>Modificar marca</b> en lugar de eliminarlo.
+      Si la marca ya no se usa pero tiene historial, desactívela desde
+      <b>Modificar marca</b> en lugar de enviarla a la papelera.
     </p>
 
   </div>
@@ -103,7 +108,7 @@
             class="btn btn-danger"
             [disabled]="isLoading"
             (click)="deleteMarca()">
-      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
     </button>
   </div>
 

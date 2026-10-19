@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Subject, firstValueFrom } from 'rxjs';
 import { GridApi, GridReadyEvent, CellClickedEvent, RowNode } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -18,10 +18,13 @@ import { HorarioService } from '../../../services/horario.service';
 //   ******   MODELOS   ******  //
 import { AccesoModel } from '../../../interfaces/accesoModel';
 import { ChorarioModel } from '../../../interfaces/chorarioModel';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 
 //   ******   COMPONENTES   ******  //
 import { SaveHorarioComponent } from '../save-horario/save-horario.component';
 import { DeleteHorarioComponent } from '../delete-horario/delete-horario.component';
+import { PapeleraHorariosComponent } from '../papeleraHorarios/papeleraHorarios.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
@@ -32,6 +35,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class AllHorariosComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
   
   // ****** AG-GRID ****** //
   @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
@@ -211,13 +217,17 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
       { id: 'clonar',   texto: 'Clonar',         icono: 'fa-clone',
         visible: this.accesoModel?.crear === true,
         ayuda: 'Crear un horario nuevo copiando los datos de este' },
-      { id: 'eliminar', texto: 'Eliminar',       icono: 'fa-trash',
+      { id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
         peligro: true, separadorAntes: true,
-        visible: this.accesoModel?.eliminar === true },
+        visible: this.accesoModel?.eliminar === true,
+        ayuda: 'Conserva sus días; se puede restaurar' },
       { id: 'auditoria', texto: 'Ver auditoria', icono: 'fa-user-secret',
         separadorAntes: true,
         visible: this.accesoModel?.auditar === true,
         ayuda: 'Quien toco este horario y cuando' },
+      { id: 'papelera', texto: 'Abrir la papelera', icono: 'fa-trash-can',
+        visible: this.accesoModel?.papelera === true,
+        ayuda: 'Los horarios eliminados, para restaurarlos' },
     ];
   }
 
@@ -232,6 +242,7 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
       case 'clonar':    this.clonHorario(fila); break;
       case 'eliminar':  this.deleteHorario(fila); break;
       case 'auditoria': this.auditoria(); break;
+      case 'papelera':  this.abrirPapelera(); break;
     }
   }
 
@@ -262,6 +273,9 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
     if (this.resizeTimeoutId) { 
       clearTimeout(this.resizeTimeoutId); 
     }
+    if (this.limpiandoTimeoutId) {
+      clearTimeout(this.limpiandoTimeoutId);
+    }
     this.unsubscribe$.next();
     this.unsubscribe$.complete();
   }
@@ -277,7 +291,8 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
       
       const res = await firstValueFrom(
-        this._horarioService.allHorarios(page, this.registrosPorPagina, this.searchTerm)
+        this._horarioService.allHorarios(page, this.registrosPorPagina, this.searchTerm,
+                                         this.filtrosColumna)
       ) as any;
       
       this.chorarioModel = res.body?.data?.data || [];
@@ -307,22 +322,27 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
   
 
   clearAllFilters() {
-    this.campoBusquedaPaginacion.reset();
-    if (this.gridApi) {
-      this.gridApi.setFilterModel(null);
-      const quickFilterInput = document.getElementById('filter-text-box') as HTMLInputElement;
-      if (quickFilterInput) {
-        quickFilterInput.value = '';
-      }
-      this.searchTerm = '';
-      this.gridApi.onFilterChanged();
-      this.allHorarios(this.paginaActual).then(() => {
-        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
-          this.goToPage(this.ultimaPagina);
-        }
-      });
-    }
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medias.
+    this.limpiando = true;
+    this.campoBusquedaPaginacion?.reset();
+    this.searchTerm = '';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí: medido contra
+    // ag-Grid 28, `setFilterModel` avisa DESPUÉS de esta línea, así que
+    // apagándola aquí ese aviso pediría una segunda carga idéntica.
+    this.limpiandoTimeoutId = setTimeout(() => { this.limpiando = false; }, 0);
+
+    this.paginaActual = 1;
+    this.allHorarios(1);
   }
+
 
   // ****** FUNCIONES DE PAGINACIÓN ****** //
   /** Primer registro mostrado; 0 sin resultados (antes decía "1 - 0 de 0"). */
@@ -362,8 +382,84 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
   }
 
   // ****** FUNCIONES DE AG-GRID ****** //
+  /**
+   * La papelera de reciclaje.
+   *
+   * Lo que se «elimina» no se borra: va aquí CON SUS DÍAS, y desde aquí se
+   * restaura tal cual o se borra de verdad. Un horario son siete franjas con
+   * sus horas, y rehacerlas a mano es un rato.
+   */
+  abrirPapelera(): void {
+    const modalRef = this.modal.open(PapeleraHorariosComponent, {
+      centered: true, size: 'xl', backdrop: 'static', keyboard: true
+    });
+    // Los permisos viajan con el modal: allí hay auditoría, y borrar de
+    // verdad pide «vaciar», que es otro permiso distinto de «papelera».
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    modalRef.componentInstance.puedeVaciar  = this.accesoModel?.vaciar === true;
+    modalRef.componentInstance.cambio.subscribe(() => this.allHorarios(this.paginaActual));
+  }
+  // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Los aplica el SERVIDOR, no la rejilla: esta pantalla pagina, así que
+  // ag-Grid sólo tiene las filas de la página y filtrar ahí buscaría dentro
+  // de diez. La cabecera sólo recoge lo que el usuario pidió.
+
+  /**
+   * Las columnas que llevan filtro, y de qué tipo.
+   *
+   * Tiene que decir lo mismo que la lista blanca de HorarioController: lo que
+   * no esté allí se tira en el servidor, así que ponerlo sólo aquí sería
+   * pintar una caja que no filtra. `activo` se queda fuera: es una casilla, y
+   * escribir texto para filtrarla no se entiende.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero',
+    nombre: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
+    created_at: 'texto', updated_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+  /** El temporizador que la baja; se limpia al salir, como el del resize. */
+  private limpiandoTimeoutId?: any;
+
+  /**
+   * Las columnas con su filtro de cabecera.
+   *
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique— vive en
+   * AppAgGridService. Aquí queda sólo el QUÉ.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+
+  /** La cabecera pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.paginaActual = 1;
+    this.allHorarios(1);
+  }
+
+  /** Cuántas columnas llevan filtro; el buscador lo enseña y se pone rojo. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o un filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
+
   initializeGrid(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       {
         headerName: 'Id',
         field: 'id',
@@ -422,7 +518,7 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
           `
         }
       },
-    ];
+    ]);
   }
 
   onGridReady(params: GridReadyEvent): void {
@@ -672,58 +768,110 @@ addHorario() {
 
 
   // ****** IMPRESIÓN ****** //
+  /**
+   * Trae TODOS los que cumplen el filtro, para exportar.
+   *
+   * La pantalla pagina en el servidor, así que `chorarioModel` es sólo la
+   * página: hasta ahora el reporte salía con esas filas aunque dijera
+   * «Listado». Se pide una página del tamaño del total.
+   */
+  private async obtenerTodosParaExportar(): Promise<any[]> {
+    if (this.totalRegistros === 0) { return []; }
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(
+        this._horarioService.allHorarios(1, this.totalRegistros, this.searchTerm,
+                                         this.filtrosColumna)
+      ) as any;
+      // Del error HTTP ya avisa el interceptor; aqui basta con no
+      // devolver filas para que no se descargue un fichero vacio.
+      if (res.body?.status !== 'success') { return []; }
+      return res.body?.data?.data || [];
+    } catch (error) {
+      console.error('Error al obtener el listado completo:', error);
+      return [];
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /** Las cabeceras del reporte, en un solo sitio. */
+  private readonly CABECERAS_REPORTE = ['ID', 'Nombre', 'Estado', 'Creado', 'Modificado'];
+
+  /**
+   * Filas del reporte con formato de salida.
+   *
+   * `ordenarPorNombre` sólo al exportar el listado completo: si se
+   * exporta la página hay que respetar lo que se tiene delante. Y se
+   * ordena sobre una COPIA, porque `sort` cambia el array que recibe
+   * y el de la página es el de la grilla.
+   */
+  private filasReporte(lista: any[], ordenarPorNombre: boolean = true): any[][] {
+    return (ordenarPorNombre ? [...lista].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '')) : lista)
+      .map(item => [
+      item.id,
+      item.nombre,
+      item.activo ? 'Activo' : 'Inactivo',
+      item.created_at,
+      item.updated_at,
+      ]);
+  }
+
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'horarios',
+      tituloBase: 'Listado de Horarios',
+      gridApi: this.gridApi,
+      filasDePagina: this.chorarioModel,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
+  }
+
   async printPdf() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appPrintPdfService.generarReporte({
-      tamanoPapel: "A4",
-      orientacion: "p",
-      title: "Reporte de Horarios",
-      titleTable: "Listado de Horarios",
-      headers: ['ID', 'Nombre', 'Estado', 'Creado', 'Modificado'],
-      data: this.chorarioModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        .map(item => [
-          item.id,
-          item.nombre,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),
+      tamanoPapel: 'A4',
+      orientacion: 'p',
+      title: 'Reporte de Horarios',
+      titleTable: salida.titulo,
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }
     this._appExportExcelService.generarReporteExcel({
-      tamanoPapel: "A4",
-      orientacion: "p",
-      title: "Reporte de Horarios",
-      titleTable: "Listado de Horarios",
-      headers: ['ID', 'Nombre', 'Estado', 'Creado', 'Modificado'],
-      data: this.chorarioModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        .map(item => [
-          item.id,
-          item.nombre,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),
+      tamanoPapel: 'A4',
+      orientacion: 'p',
+      title: 'Reporte de Horarios',
+      titleTable: salida.titulo,
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }
     this._appExportCsvService.generarReporteCSV({
-      headers: ['ID', 'Nombre', 'Estado', 'Creado', 'Modificado'],
-      data: this.chorarioModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre))
-        .map(item => [
-          item.id,
-          item.nombre,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
     });
   }
 

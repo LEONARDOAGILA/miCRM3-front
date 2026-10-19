@@ -605,6 +605,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     // auditoría es cosa de administrador (igual que el botón de esta
     // pantalla), no del acceso «auditar» del perfil.
     modalRef.componentInstance.puedeAuditar = this.esAdministrador;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.loaddata());
   }
 

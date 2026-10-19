@@ -31,6 +31,14 @@ import { MenuContextualComponent } from '../../components/menuContextual/menuCon
 import { AllMarcasComponent, ButtonAccionMarca } from './pages/marcas/allMarcas/allMarcas.component';
 import { SaveMarcaComponent } from './pages/marcas/saveMarca/saveMarca.component';
 import { DeleteMarcaComponent } from './pages/marcas/deleteMarca/deleteMarca.component';
+import { PapeleraMarcasComponent } from './pages/marcas/papeleraMarcas/papeleraMarcas.component';
+import { ListMarcaComponent } from './pages/marcas/listMarca/listMarca.component';
+import { ListCategoriaComponent } from './pages/categorias/listCategoria/listCategoria.component';
+import { AllCaracteristicasComponent } from './pages/caracteristicas/allCaracteristicas/allCaracteristicas.component';
+import { SaveCaracteristicaComponent } from './pages/caracteristicas/saveCaracteristica/saveCaracteristica.component';
+import { DeleteCaracteristicaComponent } from './pages/caracteristicas/deleteCaracteristica/deleteCaracteristica.component';
+// Standalone: va en imports, no en declarations
+import { CampoNgxEditorComponent } from '../../components/campos/campoNgxEditor/campoNgxEditor.component';
 
 //   ******   CATEGORÍAS (árbol)   ******  //
 import { AllCategoriasComponent, ButtonAccionCategoria } from './pages/categorias/allCategorias/allCategorias.component';
@@ -52,6 +60,12 @@ import { PapeleraProductosComponent } from './pages/productos/papeleraProductos/
     ButtonAccionMarca,
     SaveMarcaComponent,
     DeleteMarcaComponent,
+    PapeleraMarcasComponent,
+    ListMarcaComponent,
+    ListCategoriaComponent,
+    AllCaracteristicasComponent,
+    SaveCaracteristicaComponent,
+    DeleteCaracteristicaComponent,
 
     AllCategoriasComponent,
     ButtonAccionCategoria,
@@ -78,6 +92,7 @@ import { PapeleraProductosComponent } from './pages/productos/papeleraProductos/
     NgScrollbarModule,
     CampoTextoComponent,
     CampoTextoAreaComponent,
+    CampoNgxEditorComponent,
     CampoNumeroEnteroComponent,
     CheckboxComponent,
     CampoBusquedaComponent,

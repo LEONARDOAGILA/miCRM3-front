@@ -90,7 +90,7 @@ export class Save2ProfileComponent implements OnInit  {
   // ================================================================
 
   /** Campos de permiso, en el orden de las columnas. */
-  readonly camposPermiso = ['ejecutar', 'listar', 'ver', 'crear', 'editar', 'eliminar', 'reporte', 'auditar', 'papelera'];
+  readonly camposPermiso = ['ejecutar', 'listar', 'ver', 'crear', 'editar', 'eliminar', 'reporte', 'auditar', 'papelera', 'vaciar'];
 
   /** Casilla de la fila «Todos»: marcada si tiene todos los permisos; a medias si tiene alguno. */
   private checkboxTodosRenderer(params: any): string {
@@ -722,10 +722,16 @@ export class Save2ProfileComponent implements OnInit  {
 
         ...[
           ['listar', 'Listar', 95], ['ver', 'Ver', 95], ['crear', 'Crear', 95], ['editar', 'Modificar', 105],
-          ['eliminar', 'Eliminar', 95], ['reporte', 'Imprimir', 95], ['auditar', 'Auditoria', 105], ['papelera', 'Papelera', 105],
+          ['eliminar', 'Eliminar', 95], ['reporte', 'Imprimir', 95], ['auditar', 'Auditoria', 105],
+          ['papelera', 'Papelera', 105], ['vaciar', 'Vaciar papelera', 130],
         ].map(([field, headerName, ancho]) => ({
           headerName, field,
-          headerTooltip: field === 'papelera' ? 'Puede abrir la papelera de reciclaje del componente (restaurar / borrar definitivamente)' : undefined,
+          // Qué significa cada uno de los dos permisos de la papelera: el
+          // primero deja entrar y restaurar, el segundo deja borrar de verdad.
+          headerTooltip:
+            field === 'papelera' ? 'Puede abrir la papelera de reciclaje del componente y restaurar lo eliminado'
+          : field === 'vaciar'   ? 'Dentro de la papelera, puede ELIMINAR DEFINITIVAMENTE y vaciarla. No tiene vuelta atrás: requiere también «Papelera»'
+          : undefined,
           cellStyle: { textAlign: 'center' },
           minWidth: ancho,
           maxWidth: ancho,
@@ -838,7 +844,8 @@ export class Save2ProfileComponent implements OnInit  {
             reporte: existingAccess?.reporte || false,
             ejecutar: existingAccess?.ejecutar || false,
             auditar: existingAccess?.auditar || false,
-            papelera: existingAccess?.papelera || false
+            papelera: existingAccess?.papelera || false,
+            vaciar: existingAccess?.vaciar || false
           };
         });
   
@@ -994,6 +1001,7 @@ export class Save2ProfileComponent implements OnInit  {
             ejecutar: [{value: false, disabled: this.isdisabled}],
             auditar: [{value: false, disabled: this.isdisabled}],
             papelera: [{value: false, disabled: this.isdisabled}],
+            vaciar: [{value: false, disabled: this.isdisabled}],
         });
         this.acceso.push(control);
     }
@@ -1057,7 +1065,8 @@ export class Save2ProfileComponent implements OnInit  {
                   reporte: currentRow.reporte,
                   ejecutar: currentRow.ejecutar,
                   auditar: currentRow.auditar,
-                  papelera: currentRow.papelera
+                  papelera: currentRow.papelera,
+                  vaciar: currentRow.vaciar
               }, { emitEvent: false });
           }
       });

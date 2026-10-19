@@ -19,7 +19,8 @@ export class ProfileService {
   }
   
 
-allProfiles(page: number = 1, perPage: number = 5, search: string = ''): Observable<any> {
+allProfiles(page: number = 1, perPage: number = 5, search: string = '',
+            filtros: any = null): Observable<any> {
   let params = new HttpParams()
     .set('page', page.toString())
     .set('per_page', perPage.toString());
@@ -28,7 +29,40 @@ allProfiles(page: number = 1, perPage: number = 5, search: string = ''): Observa
     params = params.set('search', search);
   }
   
+  // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+  // servidor, sobre todos los perfiles: la rejilla sólo tiene la página.
+  if (filtros && Object.keys(filtros).length) {
+    params = params.set('filtros', JSON.stringify(filtros));
+  }
+
   return this._http.get(this.URL_SERVICIOS + 'allProfiles', { params, observe: 'response' });
+}
+
+// ================================================================
+// PAPELERA DE RECICLAJE
+// ================================================================
+//
+// `deleteProfile` es un borrado lógico: el perfil sale del listado y del
+// combo pero conserva sus accesos. Desde aquí se saca o se borra de verdad.
+
+/** Lo que hay en la papelera (más reciente primero). */
+papelera(): Observable<any> {
+  return this._http.get(this.URL_SERVICIOS + 'papeleraProfiles');
+}
+
+/** Saca de la papelera uno o varios perfiles, con sus accesos. */
+restaurarPerfiles(ids: number[]): Observable<any> {
+  return this._http.post(this.URL_SERVICIOS + 'restaurarProfiles', { ids });
+}
+
+/** Borrado real de lo seleccionado (sólo de lo que está en la papelera). */
+eliminarDefinitivo(ids: number[]): Observable<any> {
+  return this._http.post(this.URL_SERVICIOS + 'eliminarDefinitivoProfiles', { ids });
+}
+
+/** Borrado real de todo lo que hay en la papelera. */
+vaciarPapelera(): Observable<any> {
+  return this._http.delete(this.URL_SERVICIOS + 'vaciarPapeleraProfiles');
 }
 
 

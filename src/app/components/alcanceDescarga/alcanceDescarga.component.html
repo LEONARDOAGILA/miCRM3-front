@@ -1,0 +1,87 @@
+<!-- ============================================================
+     ¿QUÉ SE DESCARGA: LA PÁGINA O TODO?
+     Dos opciones y cuántas filas trae cada una, para que la cuenta se vea
+     ANTES de abrir el fichero y no después.
+     ============================================================ -->
+
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.dismiss()">
+</app-modal-header>
+
+<div class="modal-body alcance-body">
+
+  <div class="alcance-opciones" role="radiogroup" [attr.aria-label]="titulo">
+
+    <!-- La página que tiene delante -->
+    <button type="button"
+            class="alcance-opcion"
+            role="radio"
+            [class.alcance-opcion--activa]="alcance === 'pagina'"
+            [attr.aria-checked]="alcance === 'pagina'"
+            (click)="marcar('pagina')"
+            (dblclick)="marcar('pagina'); confirmar()">
+      <!-- Sin marcar, el circulo VACIO (far): con el relleno de `fa` la
+           opcion no elegida parecia la elegida. -->
+      <i class="fa-fw" [ngClass]="alcance === 'pagina' ? 'fa fa-circle-dot' : 'far fa-circle'"></i>
+      <span class="alcance-opcion__texto">
+        <b>La página que estoy viendo</b>
+        <small>Las filas que tiene delante, en el orden en que se ven</small>
+      </span>
+      <span class="badge alcance-opcion__cuenta">{{ datos.enLaPagina }}</span>
+    </button>
+
+    <!-- Todo lo que cumple el filtro -->
+    <button type="button"
+            class="alcance-opcion"
+            role="radio"
+            [class.alcance-opcion--activa]="alcance === 'todo'"
+            [attr.aria-checked]="alcance === 'todo'"
+            (click)="marcar('todo')"
+            (dblclick)="marcar('todo'); confirmar()">
+      <i class="fa-fw" [ngClass]="alcance === 'todo' ? 'fa fa-circle-dot' : 'far fa-circle'"></i>
+      <span class="alcance-opcion__texto">
+        <b>{{ hayFiltros ? 'Todo lo que cumple el filtro' : 'Todos los ' + datos.nombrePlural }}</b>
+        <small>Se piden al servidor; con muchas filas puede tardar</small>
+      </span>
+      <span class="badge alcance-opcion__cuenta">{{ datos.enTotal }}</span>
+    </button>
+
+  </div>
+
+  <!-- Qué filtros hay puestos: de ahí sale el número de la derecha -->
+  @if (hayFiltros) {
+    <div class="alcance-filtros">
+      <i class="fa fa-filter me-1"></i>
+      <span>
+        @for (f of datos.filtros; track f; let ultimo = $last) {
+          <span class="alcance-filtros__uno">{{ f }}</span>{{ ultimo ? '' : ' · ' }}
+        }
+      </span>
+    </div>
+  } @else {
+    <p class="alcance-nota">
+      <i class="fa fa-circle-info me-1"></i>
+      No hay ningún filtro puesto: son {{ datos.nombrePlural }} de todo el listado.
+    </p>
+  }
+
+  @if (mismaCosa) {
+    <p class="alcance-nota alcance-nota--aviso">
+      <i class="fa fa-triangle-exclamation me-1"></i>
+      Cabe todo en una página: las dos opciones dan el mismo fichero.
+    </p>
+  }
+
+</div>
+
+<div class="modal-footer alcance-pie">
+  <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">
+    <i class="fa fa-times me-1"></i>Cancelar
+  </button>
+  <!-- Con el foco aquí, Enter descarga y Escape cancela (lo de Escape lo
+       hace el propio modal con keyboard: true). -->
+  <button type="button" class="btn btn-primary" (click)="confirmar()" autofocus>
+    <i class="fa me-1" [ngClass]="iconoConfirmar"></i>{{ textoConfirmar }}
+  </button>
+</div>

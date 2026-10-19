@@ -42,6 +42,10 @@ export class DeleteProfileComponent implements OnInit, OnDestroy {
     this.unsubscribe$.complete();
   }
 
+  /** Cuánta gente depende de él: la base no deja mandarlo a la papelera si hay alguien. */
+  get usuarios(): number { return Number(this.registro_selected?.num_usuarios ?? 0); }
+  get grupos(): number { return Number(this.registro_selected?.num_grupos ?? 0); }
+
   deleteProfile() {
     this.isLoading = true;
     this.loadingBar.start();

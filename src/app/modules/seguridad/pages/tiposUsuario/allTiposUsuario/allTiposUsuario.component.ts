@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { GridApi, GridReadyEvent, CellClickedEvent } from 'ag-grid-community';
@@ -18,6 +18,8 @@ import { TipoUsuarioService } from '../../../services/tipoUsuario.service';
 //   ******   MODELOS   ******  //
 import { AccesoModel } from '../../../interfaces/accesoModel';
 import { TipoUsuarioModel } from '../../../interfaces/tipoUsuarioModel';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 
 //   ******   COMPONENTES   ******  //
 import { PanelModule } from '../../../../../components/panel/panel.module';
@@ -46,6 +48,9 @@ import { DeleteTipoUsuarioComponent } from '../deleteTipoUsuario/deleteTipoUsuar
   styleUrls: ['./allTiposUsuario.component.css'],
 })
 export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   // ****** AG-GRID ****** //
   @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
@@ -396,8 +401,9 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
 
   // ****** IMPRESIÓN Y EXPORTACIÓN ****** //
   /** Las mismas filas para las tres salidas, en el orden en que se ven. */
-  private filasParaReporte(): any[][] {
-    return this.tiposUsuario.map(t => [
+  /** Las filas del reporte; `lista` es lo que se eligio descargar. */
+  private filasParaReporte(lista: any[] = this.tiposUsuario): any[][] {
+    return lista.map(t => [
       t.id,
       t.codigo,
       t.nombre,
@@ -410,34 +416,87 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
 
   private readonly cabecerasReporte = ['ID', 'Código', 'Nombre', 'Desde', 'Hasta', 'Estado', 'Usuarios'];
 
+  /**
+   * Trae TODOS los que cumplen el filtro, para exportar.
+   *
+   * La pantalla pagina en el servidor, así que `tiposUsuario` es sólo la
+   * página: hasta ahora el reporte salía con esas filas aunque dijera
+   * «Listado». Se pide una página del tamaño del total.
+   */
+  private async obtenerTodosParaExportar(): Promise<any[]> {
+    if (this.totalRegistros === 0) { return []; }
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(
+        this._tipoUsuarioService.allTiposUsuario(1, this.totalRegistros, this.searchTerm)
+      ) as any;
+      // Del error HTTP ya avisa el interceptor; aqui basta con no
+      // devolver filas para que no se descargue un fichero vacio.
+      if (res.body?.status !== 'success') { return []; }
+      return res.body?.data?.data || [];
+    } catch (error) {
+      console.error('Error al obtener el listado completo:', error);
+      return [];
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'tipos de usuario',
+      tituloBase: 'Listado de Tipos de Usuario',
+      gridApi: this.gridApi,
+      filasDePagina: this.tiposUsuario,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
+  }
+
   async printPdf() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appPrintPdfService.generarReporte({
       tamanoPapel: 'A4',
       orientacion: 'p',
-      title: 'Reporte de Tipos de Usuario',
-      titleTable: 'Listado de Tipos de Usuario',
+      title: 'Reporte de Tipos de usuario',
+      titleTable: salida.titulo,
       headers: this.cabecerasReporte,
-      data: this.filasParaReporte(),
+      data: this.filasParaReporte(salida.filas),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }
     this._appExportExcelService.generarReporteExcel({
       tamanoPapel: 'A4',
       orientacion: 'p',
-      title: 'Reporte de Tipos de Usuario',
-      titleTable: 'Listado de Tipos de Usuario',
+      title: 'Reporte de Tipos de usuario',
+      titleTable: salida.titulo,
       headers: this.cabecerasReporte,
-      data: this.filasParaReporte(),
+      data: this.filasParaReporte(salida.filas),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }
     this._appExportCsvService.generarReporteCSV({
       headers: this.cabecerasReporte,
-      data: this.filasParaReporte(),
+      data: this.filasParaReporte(salida.filas),
     });
   }
 }

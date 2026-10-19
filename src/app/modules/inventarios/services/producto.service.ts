@@ -87,6 +87,37 @@ export class ProductoService {
   // LA GALERÍA
   // ================================================================
 
+  /**
+   * Las características rellenas del producto.
+   *
+   * Trae la plantilla vigente de su categoría con los valores puestos, y
+   * además lo que se rellenó en su día y hoy ya no está en la plantilla
+   * (viene con en_plantilla = false).
+   */
+  //   ******   IMÁGENES DENTRO DE LA DESCRIPCIÓN   ******  //
+  /**
+   * Sube una imagen que va dentro del texto de la descripción.
+   *
+   * No es una foto de la galería: no sale en el listado. Devuelve el nombre
+   * del fichero, que luego se convierte en URL con urlImagenDescripcion.
+   * Se sube en vez de incrustarla en base64 porque una foto se llevaría los
+   * 20.000 caracteres que admite la descripción.
+   */
+  subirImagenDescripcion(fichero: File): Observable<any> {
+    const data = new FormData();
+    data.append('imagen', fichero);
+    return this._http.post(this.URL_SERVICIOS + 'subirImagenDescripcion', data);
+  }
+
+  /** La URL pública de una de esas imágenes (la pide un <img src>). */
+  urlImagenDescripcion(archivo: string): string {
+    return this.URL_SERVICIOS + 'getImagenDescripcion/' + encodeURIComponent(archivo);
+  }
+
+  caracteristicas(productoId: any): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'caracteristicas/' + productoId);
+  }
+
   imagenes(productoId: any): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'imagenes/' + productoId);
   }

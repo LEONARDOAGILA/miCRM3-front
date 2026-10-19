@@ -34,6 +34,15 @@ export class PapeleraProductosComponent implements OnInit, OnDestroy {
   @Output() cambio = new EventEmitter<void>();
 
   /**
+   * Si el perfil puede ELIMINAR DEFINITIVAMENTE y vaciar la papelera.
+   *
+   * Es otro permiso distinto de «papelera»: con aquél se entra y se
+   * restaura —que se puede deshacer—, y con éste se borra de verdad, que no.
+   * Lo pasa la pantalla que abre la papelera, y el servidor lo exige otra
+   * vez: esconder el botón no es un permiso.
+   */
+  @Input() puedeVaciar = false;
+  /**
    * Si el perfil puede auditar. Lo pasa la pantalla que abre la papelera.
    *
    * Por defecto `false`: sin el dato, no se enseña un botón que el
@@ -231,6 +240,9 @@ export class PapeleraProductosComponent implements OnInit, OnDestroy {
 
   /** Borrado real: pide confirmación porque no hay vuelta atrás. */
   async eliminarDefinitivo(productos?: ProductoModel[]): Promise<void> {
+    // Sin el permiso «vaciar» no se eliminar definitivamente, ni aunque se
+    // llame a mano desde el menú del botón derecho.
+    if (!this.puedeVaciar) { return; }
     const lote = productos?.length ? productos : this.lote;
     if (!lote.length) { return; }
 
@@ -258,6 +270,9 @@ export class PapeleraProductosComponent implements OnInit, OnDestroy {
   }
 
   async vaciar(): Promise<void> {
+    // Sin el permiso «vaciar» no se vaciar la papelera, ni aunque se
+    // llame a mano desde el menú del botón derecho.
+    if (!this.puedeVaciar) { return; }
     if (!this.items.length) { return; }
 
     const confirmado = await this.confirmar(

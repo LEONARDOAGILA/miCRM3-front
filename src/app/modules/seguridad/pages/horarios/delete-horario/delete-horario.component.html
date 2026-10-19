@@ -29,10 +29,21 @@
         <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
       <div>
-        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar este horario?</h6>
+        <h6 class="eliminar-aviso__titulo">¿Enviar este horario a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): el horario va a la
+             papelera CON SUS DÍAS, deja de salir en el listado y de poder
+             elegirse en la ficha de un usuario, y desde allí se restaura tal
+             cual o se borra de verdad. -->
         <p class="eliminar-aviso__texto" id="eliminarHorarioDescripcion">
-          Esta acción no se puede deshacer. Se eliminarán también las franjas
-          horarias de cada día que tenga configuradas.
+          Dejará de aparecer en el listado y no se podrá asignar a ningún usuario, pero
+          <b>no se borra</b>: queda en la papelera <b>con sus franjas horarias</b>, y desde allí
+          puede restaurarse tal como estaba.
+          @if (usuarios > 0 || grupos > 0) {
+            <br><b>Está en uso</b>
+            ({{ usuarios }} {{ usuarios === 1 ? 'usuario' : 'usuarios' }},
+             {{ grupos }} {{ grupos === 1 ? 'grupo' : 'grupos' }}):
+            el sistema no permitirá enviarlo a la papelera; desactívelo en su lugar.
+          }
         </p>
       </div>
     </div>

@@ -1,0 +1,584 @@
+/* ============================================================
+   LISTADO DE MARCAS
+
+   Lo que va aquí es sólo lo propio de esta pantalla. Las clases del
+   spinner (content-container1, overlay1, loader1), .inactivo y
+   .ag-grid-transparente son globales y viven en scss/angular.scss.
+   ============================================================ */
+
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida 20px: el tema deja un hueco entre la
+   cabecera de la aplicación y el primer elemento de la página que aquí
+   sobra, porque el panel ya trae el suyo. */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Cuerpo del panel ----------
+   Compensa el padding superior del panel-body del tema, para que la barra
+   de herramientas quede pegada a la cabecera del panel. */
+.lista-contenido {
+  margin-top: -19px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+/* Botones cuadrados a la altura del buscador (form-control del tema) */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* Lupa pequeña sobre el botón de auditoría */
+.lista-barra__badge {
+  font-size: 8px;
+}
+
+/* ---------- Grilla ----------
+   Altura de arranque; ajustarAlturaGrid() la sustituye en cuanto la grilla
+   está lista. La variable --ag-line-height es la altura de línea de celda
+   que usa el tema alpine. */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- Paginación ---------- */
+.pagination-controls {
+  gap: .5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto":
+   hereda el borde y la altura de los demás y queda alineado con ellos. */
+.pagination-page-badge.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* ---------- Responsive ---------- */
+/* Teléfonos: paginación apilada y centrada, botones más compactos */
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
+  }
+}
+
+/* Tablets: sólo botones un poco más compactos */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .pagination-buttons .btn {
+    padding: .2rem .5rem;
+    font-size: .75rem;
+  }
+}
+
+/* ---------- Modo oscuro ----------
+   btn-white del tema es blanco fijo; en oscuro se pasa a la superficie del
+   tema para que el grupo no destaque como un bloque blanco. */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
+}
+
+/* ---------- El logo en la rejilla ----------
+   `::ng-deep` porque las celdas las dibuja ag-Grid fuera de la encapsulación
+   del componente: una regla normal nunca las alcanzaría.
+
+   El hueco gris de las marcas sin logo mide lo mismo que la imagen: así la
+   fila no cambia de alto según tenga logo o no. */
+:host ::ng-deep .lista-foto {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+}
+
+:host ::ng-deep .lista-foto--vacia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background-color: var(--bs-gray-800, #2d353c);
+  color: var(--bs-gray-500, #adb5bd);
+  font-size: 11px;
+}
+
+/* El aviso del pie cuando el total no es el de todas las marcas, sino el
+   de las que pasan el filtro. Sin esto el número engaña. */
+.lista-filtrado {
+  margin-left: .35rem;
+  font-style: italic;
+  color: var(--bs-danger, #dc3545);
+}
+
+/* ============================================================
+   LO PROPIO DE ESTA PANTALLA
+   ============================================================
+   El resto del CSS viene de allMarcas (barra, grilla, paginación): es la
+   misma pantalla con otras columnas. */
+
+/* La casilla de «Activa»: un interruptor, no un checkbox, porque enciende y
+   apaga al instante contra el servidor. */
+:host ::ng-deep .carac-activo {
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+:host ::ng-deep .carac-activo .text-teal { color: var(--bs-app-theme, #00acac); }
+
+/* Los cuatro botones de ACCIONES, en fila y sin que la celda crezca */
+:host ::ng-deep .carac-acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+:host ::ng-deep .carac-acciones .btn {
+  --bs-btn-padding-x: .4rem;
+  --bs-btn-padding-y: .15rem;
+  --bs-btn-font-size: .75rem;
+  border: 1px solid transparent;
+}
+
+:host ::ng-deep .carac-acciones .btn-ver    { color: #5b9bd5; }
+:host ::ng-deep .carac-acciones .btn-editar { color: var(--bs-app-theme, #00acac); }
+:host ::ng-deep .carac-acciones .btn-clonar { color: #8e7cc3; }
+:host ::ng-deep .carac-acciones .btn-borrar { color: var(--bs-danger, #ff5b57); }
+
+:host ::ng-deep .carac-acciones .btn:hover {
+  background-color: rgba(0, 0, 0, .06);
+}
+
+/* La chapa del filtro por categoría, con su × */
+.carac-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  max-width: 320px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.carac-chip__quitar {
+  border: 0;
+  background: none;
+  padding: 0 0 0 .15rem;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.carac-chip__quitar:hover { opacity: .7; }
+
+/* Las inactivas, apagadas (rowClassRules del .ts) */
+:host ::ng-deep .ag-theme-alpine .ag-row.fila-inactiva {
+  opacity: .6;
+}
+
+/* ============================================================
+   CARACTERISTICAS: ARBOL A LA IZQUIERDA, REJILLA A LA DERECHA
+   ============================================================
+   El lateral, el divisor arrastrable y el contenido vienen de usuariosGrupos
+   (que a su vez los sacó del administrador de archivos):
+   es la misma pantalla de dos columnas con otro arbol y otra rejilla.
+   Solo cambia el prefijo de las clases. */
+
+:host {
+  display: block;
+}
+
+.car-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ============================================================
+   BARRA DE HERRAMIENTAS
+   ============================================================ */
+.car-toolbar {
+  align-items: center;
+  gap: .25rem;
+  padding: .375rem .5rem;
+}
+
+
+/* ============================================================
+   LATERAL: ÁRBOL DE GRUPOS
+   ============================================================ */
+.car-lateral {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.car-lateral__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.car-lateral__titulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.car-lateral__acciones .btn {
+  padding: .15rem .45rem;
+  font-size: 11px;
+}
+
+.car-lateral__buscador {
+  position: relative;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.car-lateral__buscador .form-control {
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+}
+
+.car-lateral__lupa {
+  position: absolute;
+  top: 50%;
+  left: 1.3rem;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.car-lateral__limpiar {
+  position: absolute;
+  top: 50%;
+  right: 1.1rem;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.car-lateral__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+.car-lateral__arbol {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.car-arbol {
+  min-height: 100%;
+  /* El ancho del lateral, NO el de la rama más larga. usuariosGrupos usa
+     aquí `width: max-content` para que el árbol se desplace a lo ancho; en
+     esta pantalla el dato es la chapita con la cuenta de la rama, y con
+     max-content se quedaba fuera de la vista (un 33 se leía «3»). */
+  width: 100%;
+  padding: .5rem .75rem .5rem .25rem;
+}
+
+/* Soltar un grupo en el fondo del árbol = a la raíz */
+.car-arbol.is-destino-raiz {
+  outline: 2px dashed var(--bs-app-theme, #00acac);
+  outline-offset: -4px;
+  border-radius: .375rem;
+}
+
+.car-arbol__vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.car-arbol__vacio i {
+  font-size: 1.5rem;
+  opacity: .5;
+}
+
+.car-lateral__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.car-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0;
+  font-size: 11.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.car-switch .form-check-input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.car-lateral__ayuda {
+  color: var(--bs-app-theme, #00acac);
+  font-size: 12px;
+  cursor: help;
+}
+
+/* ============================================================
+   DIVISOR (mismo que el administrador de archivos, estilo VS Code)
+   ============================================================ */
+.car-divisor {
+  position: relative;
+  flex: 0 0 10px;
+  box-sizing: border-box;
+  background-color: var(--bs-body-bg, #e4e7e8);
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.car-divisor::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background-color: transparent;
+  transition: background-color .1s ease .25s;
+}
+
+.car-divisor::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 15px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background-image: radial-gradient(circle, rgba(var(--bs-body-color-rgb, 33, 37, 41), .45) 1.1px, transparent 1.4px);
+  background-size: 3px 5px;
+  background-repeat: repeat-y;
+  background-position: center;
+  transition: opacity .1s ease .25s;
+  pointer-events: none;
+}
+
+.car-divisor:hover::before,
+.ug.is-redimensionando .car-divisor::before {
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.ug.is-redimensionando .car-divisor::before {
+  transition-delay: 0s;
+}
+
+.car-divisor:hover::after,
+.ug.is-redimensionando .car-divisor::after {
+  opacity: 0;
+}
+
+.ug.is-redimensionando,
+.ug.is-redimensionando * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.ug.is-redimensionando .file-manager-sidebar {
+  transition: none;
+}
+
+/* ============================================================
+   CONTENIDO: RUTA + GRILLA + PAGINACIÓN
+   ============================================================ */
+.car-contenido {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-inline-start: 0 !important;
+}
+
+/* La barra de arriba de la columna derecha: ruta + buscador + nuevo, todo
+   en UNA fila. El buscador se estira con el hueco que quede y la ruta se
+   encoge (lleva su propio scroll); el botón nunca se parte. */
+.car-ubicacion {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: .75rem;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+/* Esto se quedó sin estilo al montar la pantalla: al ser un bloque, el
+   buscador ocupaba el 100% y el botón de nuevo caía a una segunda fila. */
+.car-ubicacion__acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: .5rem;
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+/* El buscador se come el hueco libre; el botón se queda de su tamaño */
+:host ::ng-deep .car-ubicacion__acciones app-campoBusquedaPaginacion {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.car-ubicacion__acciones .lista-barra__btn {
+  flex: 0 0 auto;
+}
+
+/* El aviso de «aquí se puede arrastrar para ordenar». Apagado cuando no se
+   puede, y el título dice por qué (puedeOrdenar / pistaOrden). */
+.car-ubicacion__pista {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 24px;
+  border-radius: .25rem;
+
+  color: var(--bs-app-theme, #00acac);
+  font-size: 12px;
+  cursor: help;
+}
+
+.car-ubicacion__pista.is-apagada {
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .45;
+}
+
+/* ---------- Que la chapita nunca se salga del lateral ---------- */
+/* El componente del árbol NO recorta los nombres a propósito: la rama crece
+   a lo ancho y se desplaza, como el Explorador de Windows. Aquí eso dejaba
+   la chapita fuera de la vista en las ramas hondas, y desde que cuenta la
+   rama entera un «33» se leía «3».
+   En esta pantalla la chapita es el dato, así que manda ella: el nombre cede
+   y se recorta con puntos suspensivos. La ruta entera sigue estando en el
+   título del nodo, y el lateral se ensancha con el divisor. */
+/* La caja que ng-scrollbar pone alrededor del contenido se hace tan ancha
+   como la fila más larga (fit-content: 309px con el lateral en 280), y
+   entonces un `max-width: 100%` de las filas se mide contra esos 309 y no
+   recorta nada. Medido: con esto puesto, el árbol ya no desborda. */
+:host ::ng-deep .car-lateral__arbol .ng-scroll-content {
+  max-width: 100%;
+}
+
+:host ::ng-deep .car-arbol .file-link {
+  max-width: 100%;
+}
+
+:host ::ng-deep .car-arbol .file-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- El asa de arrastrar de la rejilla ---------- */
+/* Columna estrecha y sin relleno: dentro sólo cabe el agarre de ag-Grid. */
+:host ::ng-deep .car-grilla .ag-cell.celda-asa {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+:host ::ng-deep .car-grilla .ag-drag-handle {
+  color: var(--bs-secondary-color, #adb5bd);
+  cursor: grab;
+}
+
+:host ::ng-deep .car-grilla .ag-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* La fila mientras se arrastra: el fantasma que sigue al ratón */
+:host ::ng-deep .ag-dnd-ghost {
+  font-size: 12px;
+}
+
+.car-ruta {
+  display: flex;
+  align-items: center;
+  gap: .125rem;
+  min-width: 0;
+  /* Cede sitio al buscador en vez de empujarlo: la ruta ya lleva su propio
+     scroll horizontal cuando la rama es larga. */
+  flex: 0 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}

@@ -530,8 +530,70 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
   // GRILLA
   // ================================================================
 
+  // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Los aplica el SERVIDOR, no la rejilla: esta pantalla pagina, así que
+  // ag-Grid sólo tiene las filas de la página y filtrar ahí buscaría dentro
+  // de diez. La cabecera sólo recoge lo que el usuario pidió, y se suma al
+  // grupo elegido en el árbol y a la búsqueda de arriba.
+
+  /**
+   * Las columnas que llevan filtro, y de qué tipo.
+   *
+   * Son las mismas de allUsers y con los mismos nombres: filtrar por
+   * «Perfil» tiene que significar lo mismo en las dos pantallas. Aquí no hay
+   * columna de Id, así que no se ofrece.
+   *
+   * SE FILTRA POR LO QUE SE VE: «Tipo» enseña el nombre del tipo de usuario,
+   * no el número que guarda la tabla, y «Grupo» sin asignar se enseña y se
+   * filtra como «Sin grupo». `isactive` se queda fuera: es una casilla, y
+   * escribir texto para filtrarla no se entiende.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    login_user: 'texto', surname: 'texto', name: 'texto', email: 'texto',
+    grupo_nombre: 'texto', type_user: 'texto',
+    perfil_nombre: 'texto', chorario_nombre: 'texto',
+    // La fecha, como texto sobre lo que se ve: «2026-10» busca el mes
+    last_login_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /**
+   * Las columnas con su filtro de cabecera.
+   *
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique— vive en
+   * AppAgGridService. Aquí queda sólo el QUÉ.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+
+  /** La cabecera pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.paginaActual = 1;
+    this.cargarUsuarios(1);
+  }
+
+  /** Cuántas columnas llevan filtro; el buscador lo enseña y se pone rojo. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o un filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
   initializeGrid(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       {
         headerName: 'Usuario', field: 'login_user', minWidth: 170, maxWidth: 300,
         cellStyle: { textAlign: 'left' },
@@ -581,7 +643,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
         suppressMenu: true, sortable: false, resizable: false,
         headerComponentParams: { template: this.plantillaCabeceraAcciones(false) },
       },
-    ];
+    ]);
   }
 
   private escapeHtml(s: string): string {
@@ -717,7 +779,8 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
       const grupoParam = this.seleccionId === NODO_TODOS ? null : this.seleccionId;
       const res: any = await firstValueFrom(
-        this._userService.usuariosPorGrupo(grupoParam, this.incluirSubgrupos, page, this.registrosPorPagina, this.searchTerm)
+        this._userService.usuariosPorGrupo(grupoParam, this.incluirSubgrupos, page, this.registrosPorPagina,
+                                           this.searchTerm, this.filtrosColumna)
       );
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado de usuarios', 'Error');
@@ -759,9 +822,24 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
   }
 
   clearAllFilters(): void {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medias.
+    this.limpiando = true;
     this.campoBusquedaPaginacion?.reset();
     this.searchTerm = '';
-    this.gridApi?.setFilterModel(null);
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí: medido contra
+    // ag-Grid 28, `setFilterModel` avisa DESPUÉS de esta línea, así que
+    // apagándola aquí ese aviso pediría una segunda carga idéntica.
+    this.programar(() => { this.limpiando = false; }, 0);
+
+    this.paginaActual = 1;
     this.cargarUsuarios(1);
   }
 
@@ -885,6 +963,8 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
     const modalRef = this.modal.open(PapeleraUsuariosComponent, { centered: true, size: 'xl', backdrop: 'static', keyboard: true });
     // El permiso viaja con el modal: allí también hay auditoría
     modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.recargar());
   }
 

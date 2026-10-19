@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
@@ -10,12 +10,15 @@ import { ToastrService } from 'ngx-toastr';
 ///   SERVICIOS    ///
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { ProductoService } from '../../../services/producto.service';
+import { soloTexto } from '../../../../ventas/interfaces/plantillasWhatsapp';
 import { MarcaService } from '../../../services/marca.service';
 import { CategoriaService } from '../../../services/categoria.service';
 import { AppPrintPdfService } from '../../../../../service/app-printPdf.service';
 import { AppExportExcelService } from '../../../../../service/app-exportExcel.service';
 import { AppExportCsvService } from '../../../../../service/app-exportCsv.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 import { LoadingService } from '../../../../../service/loading.service';
 
 ///   MODELOS    ///
@@ -27,6 +30,7 @@ import { SaveProductoComponent } from '../saveProducto/saveProducto.component';
 import { DeleteProductoComponent } from '../deleteProducto/deleteProducto.component';
 import { PapeleraProductosComponent } from '../papeleraProductos/papeleraProductos.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
 /**
@@ -54,6 +58,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class AllProductosComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   // ---------- Estado ----------
   public accesoModel: AccesoModel;
@@ -183,9 +190,11 @@ export class AllProductosComponent implements OnInit, OnDestroy {
    * casilla y unos iconos, y escribir texto para marcarlos no se entiende.
    */
   private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
-    id: 'numero', costo: 'numero', precio: 'numero', iva_porcentaje: 'numero',
+    id: 'numero', costo: 'numero', precio: 'numero',
     garantia_meses: 'numero', stock_minimo: 'numero', num_imagenes: 'numero',
     codigo: 'texto', nombre: 'texto', marca_nombre: 'texto',
+    // Se filtra por lo que SE VE en la celda: «Sí» / «No»
+    impuesto: 'texto',
     categoria_nombre: 'texto', modelo: 'texto', updated_by: 'texto',
     // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
     created_at: 'texto', updated_at: 'texto',
@@ -275,7 +284,9 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'left' },
         minWidth: 240,
         maxWidth: 480,
-        tooltipField: 'descripcion',
+        // La descripción se guarda con formato desde saveProducto: en un
+        // tooltip, el HTML crudo saldría con las etiquetas a la vista.
+        tooltipValueGetter: (p: any) => soloTexto(p.data?.descripcion).slice(0, 400),
       },
       {
         headerName: 'Marca',
@@ -317,13 +328,15 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         valueFormatter: (params: any) => this.formatoMoneda(params.value),
       },
       {
-        headerName: 'IVA',
-        field: 'iva_porcentaje',
+        // Ya no es el porcentaje: el producto sólo dice SI grava impuesto, y
+        // la tarifa saldrá de las tablas de impuestos.
+        headerName: 'Impuesto',
+        field: 'impuesto',
+        headerTooltip: 'Si el producto grava impuesto; la tarifa no está en la ficha',
         cellStyle: { textAlign: 'center' },
-        minWidth: 70,
-        maxWidth: 90,
-        valueFormatter: (params: any) =>
-          (params.value === null || params.value === undefined) ? '' : Number(params.value).toFixed(0) + ' %',
+        minWidth: 90,
+        maxWidth: 110,
+        valueFormatter: (params: any) => params.value === false ? 'No' : 'Sí',
       },
       {
         headerName: 'Garantía',
@@ -661,9 +674,18 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   }
 
   /** Filas del reporte, ordenadas por código. */
-  private filasReporte(productos: ProductoModel[]): any[][] {
-    return productos
-      .sort((a, b) => (a.codigo || '').localeCompare(b.codigo || ''))
+  /**
+   * Filas del reporte con formato de salida.
+   *
+   * `ordenarPorNombre` sólo cuando se exporta el listado completo: si se
+   * exporta la página hay que respetar lo que el usuario tiene delante.
+   * Se ordena sobre una COPIA: `sort` cambia el array que recibe, y el de
+   * la página es el de la grilla.
+   */
+  private filasReporte(productos: ProductoModel[], ordenarPorNombre: boolean = true): any[][] {
+    return (ordenarPorNombre
+      ? [...productos].sort((a, b) => (a.codigo || '').localeCompare(b.codigo || ''))
+      : productos)
       .map(item => [
         item.codigo,
         item.nombre,
@@ -739,55 +761,71 @@ export class AllProductosComponent implements OnInit, OnDestroy {
 
   private readonly CABECERAS_REPORTE = ['Código', 'Producto', 'Marca', 'Categoría', 'Costo', 'Precio', 'Estado'];
 
-  private tituloReporte(): string {
-    const partes: string[] = [];
-    if (this.searchTerm) { partes.push(`texto: ${this.searchTerm}`); }
-    if (this.marcaFiltro) {
-      partes.push(`marca: ${this.marcas.find(m => m.id === this.marcaFiltro)?.nombre ?? this.marcaFiltro}`);
-    }
-    if (this.categoriaFiltro) {
-      partes.push(`categoría: ${this.categorias.find(c => c.id === this.categoriaFiltro)?.name ?? this.categoriaFiltro}`);
-    }
-    if (this.cuantasColumnasFiltradas > 0) {
-      partes.push(`${this.cuantasColumnasFiltradas} filtro(s) de columna`);
-    }
-    return partes.length ? `Catálogo de Productos (${partes.join(' · ')})` : 'Catálogo de Productos';
+
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'productos',
+      tituloBase: 'Catálogo de Productos',
+      gridApi: this.gridApi,
+      filasDePagina: this.productoModel,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      filtrosColumna: this.filtrosColumna,
+      columnDefs: this.columnDefs,
+      filtrosExtra: [
+        ...(this.marcaFiltro
+            ? [`Marca: ${this.marcas.find(m => m.id === this.marcaFiltro)?.nombre ?? this.marcaFiltro}`]
+            : []),
+        ...(this.categoriaFiltro
+            ? [`Categoría: ${this.categorias.find(c => c.id === this.categoriaFiltro)?.name ?? this.categoriaFiltro}`]
+            : []),
+      ],
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
   }
 
   async printPdf() {
-    const productos = await this.obtenerTodosParaExportar();
-    if (productos.length === 0) { this._toastr.info('No hay productos para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appPrintPdfService.generarReporte({
       tamanoPapel: "A4",
       orientacion: "l",
       title: "Reporte de Productos",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(productos),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
-    const productos = await this.obtenerTodosParaExportar();
-    if (productos.length === 0) { this._toastr.info('No hay productos para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportExcelService.generarReporteExcel({
       tamanoPapel: "A4",
       orientacion: "l",
       title: "Reporte de Productos",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(productos),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
-    const productos = await this.obtenerTodosParaExportar();
-    if (productos.length === 0) { this._toastr.info('No hay productos para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportCsvService.generarReporteCSV({
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(productos),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
     });
   }
 
@@ -857,6 +895,8 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     });
     // El permiso viaja con el modal: allí también hay auditoría
     modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     // Al restaurar o borrar de verdad, el catálogo ya no es fiel
     this.escucharModal(modalRef, modalRef.componentInstance.cambio,
                        () => this.allProductos(this.paginaActual));
@@ -882,6 +922,138 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, pero sin tener que llegar
+  // hasta el final de la fila ni desplegar la columna cuando está plegada.
+  //
+  // NO SE USA EL EVENTO `cellContextMenu` DE ag-Grid: se probó contra la
+  // librería y no llega —el clic alcanza el contenedor de filas pero la
+  // rejilla lo descarta antes de emitirlo—, así que aquí se escucha el
+  // `contextmenu` de la rejilla y la fila se resuelve con la API pública.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  /**
+   * Clic derecho sobre la rejilla.
+   *
+   * LO PRIMERO ES ELEGIR LA FILA: el menú actúa sobre «la fila», y si no se
+   * marcara se vería resaltada una y el menú trabajaría sobre otra.
+   */
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se puede hacer con este producto, según el perfil. */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    const puedeCrear   = this.accesoModel?.crear    === true;
+    const puedeEditar  = this.accesoModel?.editar   === true;
+    const puedeBorrar  = this.accesoModel?.eliminar === true;
+    const puedeVer     = this.accesoModel?.ver      === true;
+    const puedeAuditar = this.accesoModel?.auditar  === true;
+
+    const codigo = String(fila?.codigo ?? '').trim();
+
+    return [
+      {
+        id: 'ver', texto: 'Ver', icono: 'fa-eye',
+        visible: puedeVer,
+      },
+      {
+        id: 'editar', texto: 'Modificar', icono: 'fa-pen',
+        visible: puedeEditar,
+      },
+      {
+        id: 'clonar', texto: 'Clonar', icono: 'fa-clone',
+        visible: puedeCrear,
+        ayuda: 'Crear otro producto partiendo de éste',
+      },
+      {
+        id: 'activo', texto: fila?.activo ? 'Desactivar' : 'Activar',
+        icono: fila?.activo ? 'fa-toggle-off' : 'fa-toggle-on',
+        separadorAntes: true, visible: puedeEditar,
+        ayuda: fila?.activo ? 'Dejar de venderlo, sin borrarlo' : 'Volver a venderlo',
+      },
+      {
+        id: 'codigo', texto: 'Copiar el código', icono: 'fa-copy',
+        separadorAntes: true,
+        deshabilitada: codigo === '',
+        ayuda: codigo !== '' ? codigo : 'Este producto no tiene código',
+      },
+      {
+        id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        visible: puedeAuditar,
+        ayuda: 'Quién tocó este producto y cuándo',
+      },
+      {
+        id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
+        separadorAntes: true, peligro: true, visible: puedeBorrar,
+        ayuda: 'Se puede recuperar desde la papelera',
+      },
+    ];
+  }
+
+  /** Se eligió una opción del menú. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'ver':       this.viewProducto(fila); break;
+      case 'editar':    this.editProducto(fila); break;
+      case 'clonar':    this.clonProducto(fila); break;
+      case 'activo':    this.cambiarActivo(fila, this._appAgGridService.nodoDe(this.gridApi, fila.id)); break;
+      case 'codigo':    this.copiarCodigo(fila); break;
+      case 'auditoria': this.auditoria(); break;
+      case 'eliminar':  this.deleteProducto(fila); break;
+    }
+  }
+
+  /**
+   * El código al portapapeles.
+   *
+   * En un catálogo es lo que se pega todo el día en un chat o en una orden
+   * de compra, y seleccionarlo a mano en una celda es incómodo.
+   */
+  private copiarCodigo(fila: any): void {
+    const codigo = String(fila?.codigo ?? '').trim();
+    if (!codigo) { return; }
+
+    const avisar = () => this._toastr.success(codigo, 'Código copiado', { timeOut: 2000 });
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(codigo).then(avisar, () => this.copiarALaAntigua(codigo, avisar));
+    } else {
+      this.copiarALaAntigua(codigo, avisar);
+    }
+  }
+
+  /** El portapapeles de antes, para cuando no hay permiso o no es https. */
+  private copiarALaAntigua(texto: string, alCopiar: () => void): void {
+    const caja = document.createElement('textarea');
+    caja.value = texto;
+    caja.style.position = 'fixed';
+    caja.style.opacity = '0';
+    document.body.appendChild(caja);
+    caja.select();
+    try { document.execCommand('copy'); alCopiar(); }
+    catch { this._toastr.warning('No se pudo copiar', 'Código'); }
+    finally { document.body.removeChild(caja); }
+  }
   /** Historial de auditoría de la fila seleccionada (tabla productos). */
   auditoria(): void {
     if (!this.selectedRow) { return; }

@@ -16,6 +16,15 @@ export interface CategoriaModel {
   activo: boolean;
   /** Subcategorías directas (con hijas no se puede eliminar) */
   num_hijos?: number;
+
+  /**
+   * true = se le pueden asignar productos; false = sólo agrupa.
+   *
+   * Sin esto, al crear un producto se podía elegir cualquier nodo del
+   * árbol, incluidos los que sólo agrupan: un producto colgado de
+   * «Tecnología» no se encuentra donde se le busca.
+   */
+  es_transaccion?: boolean;
   /** Productos en esta categoría (con productos no se puede eliminar) */
   num_productos?: number;
   /**

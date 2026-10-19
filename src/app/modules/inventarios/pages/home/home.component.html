@@ -1,33 +1,64 @@
-<div>
-  <!-- BEGIN breadcrumb -->
-  <ol class="breadcrumb float-xl-end">
-    <li class="breadcrumb-item"><a (click)="fun_home();">Inicio</a></li>
-    <li class="breadcrumb-item active">Menu Configuracion</li>
-  </ol>
-  <!-- END breadcrumb -->
-  <!-- BEGIN page-header -->
-  <h1 class="page-header">Configuracion <small>Seleccione una opción...</small></h1>
-  <!-- END page-header -->
-</div>
+<!-- ============================================================
+     PORTADA DE INVENTARIOS
 
+     Misma estructura que la de Seguridad: cabecera con el nombre del módulo
+     y la vuelta al inicio, y debajo una tarjeta por pantalla, sólo las que
+     el perfil puede abrir (ver cargarModulosPermitidos en el .ts).
+     ============================================================ -->
+<div class="inv-home">
 
+  <div class="inv-home__fondo">
 
+    <!-- ===================== CABECERA ===================== -->
+    <div class="inv-header">
+      <div class="inv-header__icono">
+        <i class="fa fa-boxes-stacked" aria-hidden="true"></i>
+      </div>
 
-<div style="min-height: 100vh; background: url(/assets/img/cover/cover-scrum-board.png) no-repeat fixed; background-size: 360px; background-position: right bottom;">
+      <div class="inv-header__texto">
+        <h1 class="inv-header__titulo">Menú Inventarios</h1>
+        <p class="inv-header__ayuda">
+          Categorías, características, marcas y la ficha de cada producto
+        </p>
+      </div>
 
-
-<div class="menu-container">   
-    <div class="menu-grid">
-        <a *ngFor="let item of menuItems" 
-           [routerLink]="item.link" 
-           class="menu-button"
-           [style.background-color]="item.color">
-            <i [class]="item.icon" 
-               [style.color]="item.iconColor || '#FFFFFF'"></i>
-            <span [style.color]="item.iconColor || '#FFFFFF'">{{ item.label }}</span>
-        </a>
+      <!-- «Volver» es navegación, no un módulo: va en la cabecera y no
+           mezclado entre las tarjetas. -->
+      <a routerLink="/home" class="btn btn-outline-secondary btn-sm inv-header__volver">
+        <i class="fa fa-circle-left fa-fw me-1" aria-hidden="true"></i>
+        <span class="d-none d-sm-inline">Volver al inicio</span>
+        <span class="d-inline d-sm-none">Volver</span>
+      </a>
     </div>
-</div>
 
+    <!-- ===================== PANTALLAS ===================== -->
+    <div class="row g-3">
+      @if (modulosPermitidos.length > 0) {
+        @for (modulo of modulosPermitidos; track modulo.url) {
+          <div class="col-xl-4 col-md-6">
+            <a [routerLink]="['/' + modulo.url]" class="inv-card">
+              <span class="inv-card__icono {{ modulo.color }}">
+                <i class="fa {{ modulo.icon }}" aria-hidden="true"></i>
+              </span>
+              <span class="inv-card__cuerpo">
+                <span class="inv-card__titulo">{{ modulo.label }}</span>
+                <span class="inv-card__descripcion">{{ modulo.descripcion }}</span>
+              </span>
+              <i class="fa fa-arrow-right inv-card__flecha" aria-hidden="true"></i>
+            </a>
+          </div>
+        }
+      } @else {
+        <!-- Sin permisos quedaba una rejilla vacía sin explicación -->
+        <div class="col-12">
+          <div class="inv-vacio">
+            <i class="fa fa-lock" aria-hidden="true"></i>
+            <p>No tiene pantallas de inventarios asignadas en su perfil</p>
+            <a routerLink="/home" class="btn btn-sm btn-outline-secondary">Volver al inicio</a>
+          </div>
+        </div>
+      }
+    </div>
 
+  </div>
 </div>

@@ -1,0 +1,125 @@
+<!-- ============================================================
+     SELECCIONAR CATEGORÍA (modal)
+
+     Mismo esquema que listMarca, con el árbol de allCategorias:
+       1. Spinner de carga (clases globales de scss/angular.scss)
+       2. Cabecera del modal
+       3. Cuerpo: buscador + plegar/desplegar + árbol
+       4. Pie: cancelar
+
+     Un clic en cualquier celda elige la fila y cierra el modal, salvo en el
+     asa + / −, que abre o cierra la rama (ver onCellClicked en el .ts). La
+     categoría ya asignada lleva la etiqueta «Actual»; las inactivas se ven
+     apagadas y no se pueden elegir.
+
+     NO HAY PAGINACIÓN: el árbol viene entero. Paginarlo dejaría padres fuera
+     de la página y la sangría quedaría colgando de nada.
+     ============================================================ -->
+
+<!-- 1. Spinner y velo mientras carga -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- 2. Cabecera -->
+<div appModalArrastrable class="modal-header">
+  <h4 class="modal-title">
+    <i class="fa fa-sitemap me-2 text-primary"></i>Seleccionar categoría
+  </h4>
+  <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+</div>
+
+<!-- 3. Cuerpo -->
+<div class="modal-body">
+
+  <!-- Buscador (filtra aquí, no en el servidor: el árbol está entero) y los
+       dos botones de plegar, que se apagan mientras se busca -->
+  <div class="row g-2 mb-3 align-items-center">
+    <div class="col">
+      <app-campoBusquedaPaginacion
+        [id]="'filter-text-box-categoria'"
+        [placeholder]="'Buscar categoría por nombre o ruta...'"
+        [iconClass]="'fa fa-search fa-lg'"
+        [containerClass]="'position-relative w-100'"
+        (buscar)="onSearch($event)">
+      </app-campoBusquedaPaginacion>
+    </div>
+
+    <div class="col-auto">
+      <div class="btn-group" role="group" aria-label="Plegar el árbol">
+        <button type="button"
+                class="btn btn-outline-secondary lista-barra__btn"
+                title="Contraer todas las ramas"
+                [disabled]="plegadoDesactivado"
+                (click)="contraerTodo()">
+          <i class="fa fa-minus"></i>
+        </button>
+        <button type="button"
+                class="btn btn-outline-secondary lista-barra__btn"
+                title="Desplegar todas las ramas"
+                [disabled]="plegadoDesactivado || !hayPlegadas"
+                (click)="desplegarTodo()">
+          <i class="fa fa-plus"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="col-auto">
+      <button type="button"
+              class="btn btn-outline-secondary lista-barra__btn"
+              title="Limpiar búsqueda"
+              (click)="limpiarBusqueda()">
+        <i class="fa fa-eraser"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Pista para el usuario -->
+  <p class="lista-ayuda">
+    <i class="fa fa-hand-pointer me-1"></i>
+    Haz clic sobre una categoría para elegirla; el
+    <i class="fa fa-minus mx-1"></i>abre y cierra la rama. Las que sólo agrupan
+    (<i class="fas fa-layer-group mx-1"></i>) y las inactivas no admiten productos.
+  </p>
+
+  <!-- El árbol. El aspecto viene del skin global de ag-Grid
+       (scss/angular.scss); aquí sólo se añaden el cursor de mano, la fila
+       «Actual» y la sangría del árbol (ver .css). -->
+  <ag-grid-angular
+    class="ag-theme-alpine ag-grid-transparente lista-grilla"
+    [rowData]="filasVisibles"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="_appAgGridService.defaultColDef"
+    [localeText]="_appAgGridService.localeText"
+    [rowClassRules]="rowClassRules"
+    [rowHeight]="35"
+    [headerHeight]="35"
+    [rowSelection]="'single'"
+    [pagination]="false"
+    [enableCellTextSelection]="true"
+    [navigateToNextCell]="navegarConTeclado"
+    [overlayNoRowsTemplate]="'<span>Ninguna categoría coincide con la búsqueda</span>'"
+    (cellKeyDown)="onCellKeyDown($event)"
+    (gridReady)="onGridReady($event)"
+    (cellClicked)="onCellClicked($event)">
+  </ag-grid-angular>
+
+  <!-- Cuántas se ven, que aquí sustituye a la paginación -->
+  <div class="d-flex justify-content-end mt-2 px-2">
+    <span class="pagination-info small text-muted">
+      @if (cuantasVisibles === cuantasTotal) {
+        <b>{{ cuantasTotal }}</b> categorías
+      } @else {
+        Mostrando <b>{{ cuantasVisibles }}</b> de <b>{{ cuantasTotal }}</b> categorías
+      }
+    </span>
+  </div>
+</div>
+
+<!-- 4. Pie -->
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" (click)="modal.dismiss()">
+    <i class="fa fa-times me-1"></i> Cancelar
+  </button>
+</div>

@@ -12,11 +12,18 @@ export class HorarioService {
 
     constructor(private _http: HttpClient) { }
 
-    allHorarios(page: number = 1, perPage: number = 15, search: string = ''): Observable<any> {
+    allHorarios(page: number = 1, perPage: number = 15, search: string = '',
+                filtros: any = null): Observable<any> {
         let params = new HttpParams()
             .set('page', page.toString())
             .set('per_page', perPage.toString());
         if (search) params = params.set('search', search);
+
+        // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+        // servidor, sobre todos los horarios: la rejilla sólo tiene la página.
+        if (filtros && Object.keys(filtros).length) {
+            params = params.set('filtros', JSON.stringify(filtros));
+        }
         return this._http.get(this.URL_SERVICIOS + 'allHorarios', { params, observe: 'response' });
     }
 
@@ -48,6 +55,34 @@ editHorario(id: number, data: any): Observable<any> {
 
 deleteHorario(id: number): Observable<any> {
   return this._http.delete(this.URL_SERVICIOS + `deleteHorario/${id}`);
+}
+
+// ================================================================
+// PAPELERA DE RECICLAJE
+// ================================================================
+//
+// `deleteHorario` es un borrado lógico: el horario sale del listado y del
+// combo de la ficha de usuario, pero conserva sus días. Desde aquí se saca
+// o se borra de verdad.
+
+/** Lo que hay en la papelera (más reciente primero). */
+papelera(): Observable<any> {
+  return this._http.get(this.URL_SERVICIOS + 'papeleraHorarios');
+}
+
+/** Saca de la papelera uno o varios horarios, con sus días. */
+restaurarHorarios(ids: number[]): Observable<any> {
+  return this._http.post(this.URL_SERVICIOS + 'restaurarHorarios', { ids });
+}
+
+/** Borrado real de lo seleccionado (sólo de lo que está en la papelera). */
+eliminarDefinitivo(ids: number[]): Observable<any> {
+  return this._http.post(this.URL_SERVICIOS + 'eliminarDefinitivoHorarios', { ids });
+}
+
+/** Borrado real de todo lo que hay en la papelera. */
+vaciarPapelera(): Observable<any> {
+  return this._http.delete(this.URL_SERVICIOS + 'vaciarPapeleraHorarios');
 }
 
 

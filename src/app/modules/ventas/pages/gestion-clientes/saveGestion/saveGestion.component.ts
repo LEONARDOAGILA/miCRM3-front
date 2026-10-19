@@ -5,6 +5,7 @@ import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, filter, map, takeUntil } from 'rxjs/operators';
+import { conTokenLaImagen, conTokenLasImagenes, sinTokenLasImagenes } from '../../../interfaces/notaCliente';
 
 import Swal from 'sweetalert2';
 
@@ -163,13 +164,19 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
     subir: async (f: File) => {
       try {
         const res: any = await firstValueFrom(this._notaService.subirImagen(this.cliente!.id!, f));
-        return res?.status === 'success' ? this._notaService.urlDeImagen(res.data.url) : null;
+        return res?.status === 'success'
+          // Con token, para que se vea ya en el editor (al guardar se quita)
+          ? conTokenLaImagen(this._notaService.urlDeImagen(res.data.url))
+          : null;
       } catch { return null; }
     },
     traerDeFuera: async (u: string) => {
       try {
         const res: any = await firstValueFrom(this._notaService.traerImagen(this.cliente!.id!, u));
-        return res?.status === 'success' ? this._notaService.urlDeImagen(res.data.url) : null;
+        return res?.status === 'success'
+          // Con token, para que se vea ya en el editor (al guardar se quita)
+          ? conTokenLaImagen(this._notaService.urlDeImagen(res.data.url))
+          : null;
       } catch {
         // Es normal que alguna no se deje traer; no merece un toast por cada una
         return null;
@@ -921,7 +928,9 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       fecha_realizada:  [this.paraInput(g?.fecha_realizada) || (estadoInicial === 'REALIZADA' ? this.ahora() : '')],
       duracion_minutos: [g?.duracion_minutos ?? null, [Validators.min(0), Validators.max(1440)]],
       resultado:        [g?.resultado ?? (estadoInicial === 'REALIZADA' ? 'CONTACTADO' : null)],
-      nota:             [g?.nota ?? this.notaInicial ?? '', [Validators.maxLength(100000)]],
+      // Con el token puesto: si no, las imagenes de la gestion salen rotas
+      // mientras se edita (ver conTokenLasImagenes)
+      nota:             [conTokenLasImagenes(g?.nota ?? this.notaInicial ?? ''), [Validators.maxLength(100000)]],
       // A quién le TOCA la gestión, que no es lo mismo que quién la registra:
       // es lo que decide en qué agenda aparece. Al editar se respeta el que
       // tenga; al crear lo pone cargarAsignables (vendedor del cliente, o yo).
@@ -1036,7 +1045,7 @@ export class SaveGestionComponent implements OnInit, OnDestroy {
       asunto_id:        v.asunto_id ? Number(v.asunto_id) : null,
       // El editor devuelve «<p></p>» cuando no se escribio nada: eso no es
       // una nota, es el envoltorio vacio. Se mira el texto para decidir.
-      nota:             soloTexto(v.nota) ? (v.nota ?? '').trim() : null,
+      nota:             soloTexto(v.nota) ? sinTokenLasImagenes((v.nota ?? '').trim()) : null,
       // El RESPONSABLE: a quién le toca hacerla, y por tanto en qué agenda
       // aparece. Antes se ponía siempre el vendedor del cliente y no se podía
       // elegir —y si el cliente no tenía vendedor, la gestión se quedaba sin

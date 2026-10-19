@@ -118,3 +118,11 @@
   border-color: var(--bs-border-color, #334155);
   color: var(--bs-body-color, #e2e8f0);
 }
+
+/* El aviso del pie cuando el total no es el de todos los usuarios, sino el
+   de los que pasan el filtro. Sin esto el número engaña. */
+.lista-filtrado {
+  margin-left: .35rem;
+  font-style: italic;
+  color: var(--bs-danger, #dc3545);
+}

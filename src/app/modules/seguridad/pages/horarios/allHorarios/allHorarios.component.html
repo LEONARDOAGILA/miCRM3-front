@@ -41,6 +41,8 @@
               [iconClass]="'fa fa-search fa-lg'"
               [containerClass]="'w-100'"
               [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
               (buscar)="onFilterTextBoxChanged($event)"
               (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
@@ -51,6 +53,17 @@
                     [disabled]="accesoModel.crear === false"
                     (click)="addHorario()">
               <i class="fa fa-plus"></i>
+            </button>
+          </div>
+
+          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil.
+               Lo eliminado conserva sus días y se restaura desde ahí. -->
+          <div class="col-auto" *ngIf="accesoModel.papelera === true">
+            <button
+              class="btn btn-outline-secondary d-flex align-items-center justify-content-center square-btn rounded-3"
+              title="Papelera de reciclaje de horarios"
+              (click)="abrirPapelera()">
+              <i class="fa fa-trash-can"></i>
             </button>
           </div>
 
@@ -87,6 +100,7 @@
           class="ag-theme-alpine ag-grid-transparente p-2 ag-grid-responsive"
           [navigateToNextCell]="navegarConTeclado"
           [rowClassRules]="rowClassRules"
+          (filterChanged)="onFiltroColumna()"
           (gridReady)="onGridReady($event)" 
           (cellClicked)="onCellClicked($event)"                 
         ></ag-grid-angular>

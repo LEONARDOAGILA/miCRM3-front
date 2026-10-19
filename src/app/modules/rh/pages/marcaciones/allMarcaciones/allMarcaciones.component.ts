@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
@@ -26,6 +26,8 @@ import { DeleteMarcacionComponent } from '../deleteMarcacion/deleteMarcacion.com
 import { ListEmpleadosComponent } from '../../empleados/listEmpleados/listEmpleados.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 
 /**
  * Listado de marcaciones (entradas y salidas).
@@ -41,6 +43,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class AllMarcacionesComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   public accesoModel: AccesoModel;
   public titulo = 'Marcaciones';
@@ -425,35 +430,60 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
     return m.map(x => [x.fecha, x.hora, x.empleado, x.identificacion ?? '', x.tipo === 'ENTRADA' ? 'Entrada' : 'Salida', x.origen, x.similitud ? Math.round(x.similitud) + '%' : '']);
   }
 
-  private get tituloReporte(): string {
+  /**
+   * Lo que se le pide al servicio de descargas.
+   *
+   * Las marcaciones SIEMPRE se miran por rango de fechas, así que el rango
+   * (y el empleado, si se eligió uno) va como filtro de la pantalla: sale en
+   * la ventana que pregunta y en el título del reporte.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
     const rango = this.desde === this.hasta ? this.desde : `${this.desde} a ${this.hasta}`;
-    return `Marcaciones ${rango}${this.empleadoNombre ? ' · ' + this.empleadoNombre : ''}`;
+    return {
+      accion,
+      nombrePlural: 'marcaciones',
+      tituloBase: 'Marcaciones',
+      gridApi: this.gridApi,
+      filasDePagina: this.marcaciones,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      columnDefs: this.columnDefs,
+      filtrosExtra: [
+        `Fechas: ${rango}`,
+        ...(this.empleadoNombre ? [`Empleado: ${this.empleadoNombre}`] : []),
+        ...(this.tipo ? [`Tipo: ${this.tipo}`] : []),
+        ...(this.origen ? [`Origen: ${this.origen}`] : []),
+      ],
+      traerTodo: () => this.todasParaExportar(),
+    };
   }
 
   private readonly CABECERAS = ['Fecha', 'Hora', 'Empleado', 'Identificación', 'Tipo', 'Origen', 'Coincidencia'];
 
   async printPdf(): Promise<void> {
-    const datos = await this.todasParaExportar();
-    if (!datos.length) { this._toastr.info('No hay marcaciones para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appPrintPdfService.generarReporte({
-      tamanoPapel: 'A4', orientacion: 'l', title: 'Reporte de Marcaciones', titleTable: this.tituloReporte,
-      headers: this.CABECERAS, data: this.filas(datos), piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....',
+      tamanoPapel: 'A4', orientacion: 'l', title: 'Reporte de Marcaciones', titleTable: salida.titulo,
+      headers: this.CABECERAS, data: this.filas(salida.filas), piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....',
     });
   }
 
   async exportExcel(): Promise<void> {
-    const datos = await this.todasParaExportar();
-    if (!datos.length) { this._toastr.info('No hay marcaciones para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportExcelService.generarReporteExcel({
-      tamanoPapel: 'A4', orientacion: 'l', title: 'Reporte de Marcaciones', titleTable: this.tituloReporte,
-      headers: this.CABECERAS, data: this.filas(datos), piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....',
+      tamanoPapel: 'A4', orientacion: 'l', title: 'Reporte de Marcaciones', titleTable: salida.titulo,
+      headers: this.CABECERAS, data: this.filas(salida.filas), piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....',
     });
   }
 
   async exportCsv(): Promise<void> {
-    const datos = await this.todasParaExportar();
-    if (!datos.length) { this._toastr.info('No hay marcaciones para exportar'); return; }
-    this._appExportCsvService.generarReporteCSV({ headers: this.CABECERAS, data: this.filas(datos) });
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
+    this._appExportCsvService.generarReporteCSV({ headers: this.CABECERAS, data: this.filas(salida.filas) });
   }
 }
 

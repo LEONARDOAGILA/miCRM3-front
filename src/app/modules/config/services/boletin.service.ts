@@ -25,12 +25,19 @@ export class BoletinService {
   }
 
   //   ******   LISTADO CON PAGINACIÓN   ******  //
-  allBoletines(page: number = 1, perPage: number = 10, search: string = '', estado: string = 'TODOS'): Observable<any> {
+  allBoletines(page: number = 1, perPage: number = 10, search: string = '', estado: string = 'TODOS',
+               filtros: any = null): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString())
       .set('estado', estado || 'TODOS');
     if (search) { params = params.set('search', search); }
+
+    // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+    // servidor, sobre todos los boletines: la rejilla sólo tiene la página.
+    if (filtros && Object.keys(filtros).length) {
+      params = params.set('filtros', JSON.stringify(filtros));
+    }
     return this._http.get<any>(this.URL_SERVICIOS + 'allBoletines', { params, observe: 'response' });
   }
 

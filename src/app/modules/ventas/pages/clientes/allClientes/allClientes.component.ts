@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
@@ -15,6 +15,8 @@ import { AppPrintPdfService } from '../../../../../service/app-printPdf.service'
 import { AppExportExcelService } from '../../../../../service/app-exportExcel.service';
 import { AppExportCsvService } from '../../../../../service/app-exportCsv.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 import { LoadingService } from '../../../../../service/loading.service';
 
 ///   MODELOS    ///
@@ -46,6 +48,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class AllClientesComponent implements OnInit, OnDestroy {
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   // ---------- Estado ----------
   /** Permisos del perfil sobre esta pantalla (crear, reporte, auditar…), del resolver de la ruta. */
@@ -754,9 +759,18 @@ export class AllClientesComponent implements OnInit, OnDestroy {
   }
 
   /** Filas del reporte, ordenadas por nombre y con formato de salida. */
-  private filasReporte(clientes: ClienteModel[]): any[][] {
-    return clientes
-      .sort((a, b) => (a.nombre_completo || '').localeCompare(b.nombre_completo || ''))
+  /**
+   * Filas del reporte con formato de salida.
+   *
+   * `ordenarPorNombre` sólo cuando se exporta el listado completo: si se
+   * exporta la página hay que respetar lo que el usuario tiene delante.
+   * Se ordena sobre una COPIA: `sort` cambia el array que recibe, y el de
+   * la página es el de la grilla.
+   */
+  private filasReporte(clientes: ClienteModel[], ordenarPorNombre: boolean = true): any[][] {
+    return (ordenarPorNombre
+      ? [...clientes].sort((a, b) => (a.nombre_completo || '').localeCompare(b.nombre_completo || ''))
+      : clientes)
       .map(item => [
         item.id,
         item.numero_identificacion,
@@ -846,44 +860,63 @@ export class AllClientesComponent implements OnInit, OnDestroy {
 
   private readonly CABECERAS_REPORTE = ['ID', 'Identificación', 'Cliente', 'Tipo', 'Correo', 'Teléfono', 'Ciudad', 'Vendedor', 'Estado', 'Activo'];
 
-  private tituloReporte(): string {
-    return this.searchTerm ? `Listado de Clientes (filtro: ${this.searchTerm})` : 'Listado de Clientes';
+
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'clientes',
+      tituloBase: 'Listado de Clientes',
+      gridApi: this.gridApi,
+      filasDePagina: this.clienteModel,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      filtrosColumna: this.filtrosColumna,
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
   }
 
   async printPdf() {
-    const clientes = await this.obtenerTodosParaExportar();
-    if (clientes.length === 0) { this._toastr.info('No hay clientes para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appPrintPdfService.generarReporte({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Clientes",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(clientes),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportExcel() {
-    const clientes = await this.obtenerTodosParaExportar();
-    if (clientes.length === 0) { this._toastr.info('No hay clientes para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportExcelService.generarReporteExcel({
       tamanoPapel: "A4",
       orientacion: "p",
       title: "Reporte de Clientes",
-      titleTable: this.tituloReporte(),
+      titleTable: salida.titulo,
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(clientes),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
       piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
     });
   }
 
   async exportCsv() {
-    const clientes = await this.obtenerTodosParaExportar();
-    if (clientes.length === 0) { this._toastr.info('No hay clientes para exportar'); return; }
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
     this._appExportCsvService.generarReporteCSV({
       headers: this.CABECERAS_REPORTE,
-      data: this.filasReporte(clientes),
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
     });
   }
 
@@ -969,6 +1002,8 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     // El permiso viaja con el modal: allí también hay auditoría, y el botón
     // sólo se enseña si el perfil puede auditar.
     modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     this.escucharModal(modalRef, modalRef.componentInstance.cambio, () => this.allClientes(this.paginaActual));
   }
 

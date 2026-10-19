@@ -1,0 +1,229 @@
+<!-- ============================================================
+     CARACTERÍSTICAS: ÁRBOL A LA IZQUIERDA, REJILLA A LA DERECHA
+
+     Misma estructura que Usuarios y grupos (que a su vez la sacó del
+     administrador de archivos):
+       1. Miga de pan
+       2. <panel> a toda la altura
+          2a. Lateral: el árbol de categorías, con su buscador
+          2b. Divisor arrastrable (doble clic: ancho por defecto)
+          2c. Contenido: la rejilla de la categoría elegida
+
+     Antes la categoría se elegía con un botón que abría el árbol en un
+     modal. Se trabaja categoría por categoría, así que el árbol se queda a
+     la vista.
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb car-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Inventarios</a></li>
+  <li class="breadcrumb-item active">Características</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       (panelReloaded)="cargarArbol(); allCaracteristicas(paginaActual)"
+       (panelExpanded)="ajustarGrid()"
+       [closeRoute]="'/inventarios'"
+       icono="tag"
+       class="flex-1 d-flex flex-column overflow-hidden"
+       bodyClass="p-0 flex-1 overflow-hidden"
+       panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
+
+  <div class="file-manager h-100 car"
+       [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled, 'is-redimensionando': redimensionando }"
+       [style.--bs-file-manager-sidebar-width]="anchoLateral + 'px'"
+       [style.--bs-file-manager-mobile-sidebar-margin]="(-anchoLateral) + 'px'">
+
+    <!-- .file-manager es flex en COLUMNA (el tema); la fila de verdad es
+         .file-manager-container. Sin él, el árbol y la rejilla se apilan
+         uno encima del otro a todo lo ancho (medido). -->
+    <div class="file-manager-container">
+
+    <!-- ---------- 2a. LATERAL: EL ÁRBOL ---------- -->
+    <div class="file-manager-sidebar car-lateral">
+
+      <div class="file-manager-sidebar-mobile-toggler">
+        <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Categorías">
+          <i class="fa" [ngClass]="mobileSidebarToggled ? 'fa-chevron-left' : 'fa-sitemap'"></i>
+        </button>
+      </div>
+
+      <div class="car-lateral__cabecera">
+        <span class="car-lateral__titulo"><i class="fa fa-sitemap me-1"></i> Categorías</span>
+        <div class="btn-group car-lateral__acciones" role="group" aria-label="Árbol">
+          <button type="button" class="btn btn-xs btn-white" title="Expandir todo" (click)="expandirTodo()">
+            <i class="fa fa-angles-down"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Contraer todo" (click)="contraerTodo()">
+            <i class="fa fa-angles-up"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Todas las características" (click)="seleccionar(NODO_TODAS)">
+            <i class="fa fa-list-check"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="car-lateral__buscador">
+        <i class="fa fa-search car-lateral__lupa"></i>
+        <input type="text" class="form-control form-control-sm" placeholder="Buscar categoría…"
+               [(ngModel)]="searchQuery" (input)="filterNodes()">
+        @if (searchQuery) {
+          <button type="button" class="car-lateral__limpiar" title="Limpiar" (click)="limpiarBusquedaArbol()">&times;</button>
+        }
+      </div>
+
+      <div class="car-lateral__arbol position-relative">
+        @if (recargandoArbol) {
+          <div class="loader1" role="status" aria-label="Recargando"></div>
+          <div class="overlay1" aria-hidden="true"></div>
+        }
+        <ng-scrollbar class="h-100">
+          <div class="car-arbol">
+            @for (node of nodes; track node.id) {
+              <app-file-tree-node
+                [node]="node"
+                [isSelected]="node.isSelected"
+                (nodeSelected)="onNodeSelect($event)"
+                (nodeToggled)="onNodeToggle($event)">
+              </app-file-tree-node>
+            } @empty {
+              <div class="car-arbol__vacio">
+                <i class="fa fa-search"></i>
+                <span>Nada coincide con «{{ searchQuery }}»</span>
+              </div>
+            }
+          </div>
+        </ng-scrollbar>
+      </div>
+
+      <div class="file-manager-sidebar-footer car-lateral__pie">
+        <span class="car-lateral__ayuda" title="La chapita de cada categoría dice cuántas características tiene">
+          <i class="fa fa-hand-pointer"></i>
+        </span>
+      </div>
+    </div>
+
+    <!-- ---------- 2b. DIVISOR ARRASTRABLE ---------- -->
+    <div class="car-divisor"
+         role="separator"
+         aria-orientation="vertical"
+         title="Arrastra para cambiar el ancho del árbol (doble clic: ancho por defecto)"
+         (pointerdown)="iniciarRedimension($event)"
+         (dblclick)="anchoLateral = ANCHO_LATERAL_DEFECTO; guardarAnchoLateral(); ajustarGrid()">
+    </div>
+
+    <!-- ---------- 2c. CONTENIDO: LA REJILLA ---------- -->
+    <div class="file-manager-content car-contenido">
+
+      <!-- Dónde estoy + buscador + nueva -->
+      <div class="car-ubicacion">
+        <nav class="car-ruta" aria-label="Categoría">
+          <button type="button" class="car-ruta__tramo"
+                  [class.is-actual]="seleccionId === NODO_TODAS"
+                  (click)="seleccionar(NODO_TODAS)">
+            <i class="fa fa-list-check"></i> Todas
+          </button>
+          @if (categoriaFiltroRuta) {
+            <span class="car-ruta__sep">/</span>
+            <span class="car-ruta__tramo is-actual" [title]="categoriaFiltroRuta">{{ categoriaFiltroRuta }}</span>
+          }
+        </nav>
+
+        <!-- Si se puede arrastrar para ordenar, y si no, por qué no -->
+        <span class="car-ubicacion__pista" [class.is-apagada]="!puedeOrdenar" [title]="pistaOrden">
+          <i class="fa fa-arrows-up-down"></i>
+        </span>
+
+        <div class="car-ubicacion__acciones">
+          <app-campoBusquedaPaginacion
+            [id]="'filter-text-box'"
+            [placeholder]="'Buscar por característica o categoría'"
+            [iconClass]="'fa fa-search fa-lg'"
+            [containerClass]="'w-100'"
+            [conLimpiarFiltros]="true"
+            [hayFiltro]="hayFiltro"
+            [columnasFiltradas]="cuantasColumnasFiltradas"
+            (buscar)="onFilterTextBoxChanged($event)"
+            (limpiarFiltros)="clearAllFilters()">
+          </app-campoBusquedaPaginacion>
+
+          <button type="button"
+                  class="inactivo btn btn-primary lista-barra__btn"
+                  [title]="categoriaFiltro ? 'Agregar una característica a «' + categoriaFiltroRuta + '»' : 'Agregar característica'"
+                  [disabled]="accesoModel?.crear === false"
+                  (click)="addCaracteristica()">
+            <i class="fa fa-plus"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- La rejilla. [pagination]="false": la paginación la hace el
+           servidor y los controles son los de abajo. -->
+      <div class="car-grilla-caja">
+        <ag-grid-angular
+          class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla car-grilla"
+          [rowData]="caracteristicaModel"
+          [columnDefs]="columnDefs"
+          [enableCellTextSelection]="true"
+          [defaultColDef]="_appAgGridService.defaultColDef"
+          [sideBar]="_appAgGridService.sideBar"
+          [rowHeight]="_appAgGridService.rowHeight"
+          [headerHeight]="_appAgGridService.headerHeight"
+          [localeText]="_appAgGridService.localeText"
+          [rowSelection]="'single'"
+          [pagination]="false"
+          [animateRows]="true"
+          [rowDragManaged]="true"
+          [suppressMoveWhenRowDragging]="false"
+          [navigateToNextCell]="navegarConTeclado"
+          [rowClassRules]="rowClassRules"
+          [tooltipShowDelay]="400"
+          [overlayNoRowsTemplate]="'<span>' + mensajeSinFilas + '</span>'"
+          (gridReady)="onGridReady($event)"
+          (filterChanged)="onFiltroColumna()"
+          (sortChanged)="onOrdenColumna()"
+          (rowDragEnd)="onFilaArrastrada()"
+          (cellClicked)="onCellClicked($event)">
+        </ag-grid-angular>
+      </div>
+
+      <!-- Paginación -->
+      <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap px-2 car-paginacion">
+
+        <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+          <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                  (click)="firstPage()" [disabled]="paginaActual === 1">
+            <i class="fa fa-angle-double-left"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                  (click)="prevPage()" [disabled]="paginaActual === 1">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <span class="btn btn-sm btn-white pagination-page-badge disabled">
+            Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+          </span>
+          <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                  (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-white" title="Última página"
+                  (click)="lastPage()" [disabled]="paginaActual === ultimaPagina">
+            <i class="fa fa-angle-double-right"></i>
+          </button>
+        </div>
+
+        <div class="pagination-info small text-muted">
+          Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> registros
+          @if (hayFiltro) { <span class="lista-filtrado">(filtrado)</span> }
+        </div>
+
+      </div>
+    </div>
+
+    </div>
+  </div>
+
+</panel>

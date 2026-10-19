@@ -127,6 +127,43 @@
               </p>
             </div>
 
+            <!-- Admite productos (es_transaccion).
+                 Las de arriba del árbol agrupan: «Tecnología» no es un sitio
+                 donde poner un producto, lo es «Portátiles». Con esto apagado
+                 la categoría sigue en el árbol pero no sale en el selector de
+                 productos, y el servidor rechaza asignarla. -->
+            <div class="col-12 col-md-6">
+              <div class="estado-categoria" [class.is-on]="ctrlEsTransaccion.value">
+                <span class="estado-categoria__icon"><i class="fa-solid fa-box"></i></span>
+                <div class="estado-categoria__text">
+                  <span class="estado-categoria__label">Admite productos</span>
+                  <span class="estado-categoria__hint">
+                    {{ ctrlEsTransaccion.value
+                        ? 'Se puede elegir al crear un producto'
+                        : 'Sólo agrupa: no se ofrece al crear un producto' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-categoria__switch"
+                  [control]="ctrlEsTransaccion"
+                  [label]="ctrlEsTransaccion.value ? 'Sí' : 'No'"
+                  [id]="'ck-categoria-transaccion'">
+                </app-checkbox>
+              </div>
+              @if (!esNuevo && numProductos > 0) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-lock"></i>
+                  No se puede quitar: ya tiene {{ numProductos }}
+                  {{ numProductos === 1 ? 'producto' : 'productos' }}. Muévalos antes a otra categoría.
+                </p>
+              } @else if (numHijos > 0 && ctrlEsTransaccion.value) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Tiene subcategorías: lo habitual es que agrupe y que los productos
+                  cuelguen de las de abajo.
+                </p>
+              }
+            </div>
+
           </div>
         </div>
       </ng-container>

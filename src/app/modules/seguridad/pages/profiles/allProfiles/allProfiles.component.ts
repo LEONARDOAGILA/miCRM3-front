@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { Subject, firstValueFrom } from 'rxjs';
 import { CellClickedEvent, GridApi,  GridReadyEvent, RowNode } from 'ag-grid-community';
@@ -24,6 +24,9 @@ import { DeleteProfileComponent } from '../deleteProfile/deleteProfile.component
 import { Save2ProfileComponent } from '../save2Profile/save2Profile.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { PapeleraPerfilesComponent } from '../papeleraPerfiles/papeleraPerfiles.component';
+import { AppDescargaService, PeticionDescarga, AccionDescarga }
+  from '../../../../../service/app-descarga.service';
 
 
 
@@ -34,6 +37,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   standalone: false,
 })
 export class AllProfilesComponent implements OnInit, OnDestroy{
+
+  /** Pregunta qué descargar (la página o todo) y trae las filas. */
+  private readonly _appDescargaService = inject(AppDescargaService);
 
   public accesoModel: AccesoModel;
   public perfilModel: PerfilModel[] = [];
@@ -114,6 +120,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 
     }
     ngOnDestroy(): void {    
+      if (this.limpiandoTimeoutId) { clearTimeout(this.limpiandoTimeoutId); }
       // Cancela el timeout cuando el componente se destruye (evita fugas)
       if (this.resizeTimeoutId) { 
         clearTimeout(this.resizeTimeoutId); 
@@ -132,8 +139,84 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 
     
     //   ******   FUNCIONES DE AG-GRID   ******  //
+    // ================================================================
+    // FILTROS DE LA CABECERA
+    // ================================================================
+    //
+    // Los aplica el SERVIDOR, no la rejilla: esta pantalla pagina, así que
+    // ag-Grid sólo tiene las filas de la página y filtrar ahí buscaría dentro
+    // de cinco. La cabecera sólo recoge lo que el usuario pidió.
+
+    /**
+     * Las columnas que llevan filtro, y de qué tipo.
+     *
+     * Tiene que decir lo mismo que la lista blanca de ProfileController: lo
+     * que no esté allí se tira en el servidor, así que ponerlo sólo aquí
+     * sería pintar una caja que no filtra. `activo` se queda fuera: es una
+     * casilla, y escribir texto para filtrarla no se entiende.
+     */
+    private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+      id: 'numero', inactividad: 'numero',
+      nombre: 'texto', created_by: 'texto', updated_by: 'texto',
+      // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
+      created_at: 'texto', updated_at: 'texto',
+    };
+
+    /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+    public filtrosColumna: any = {};
+
+    /** Para no recargar mientras se limpian los filtros de golpe. */
+    private limpiando = false;
+    /** El temporizador que baja esa bandera; se cancela al salir. */
+    private limpiandoTimeoutId?: any;
+
+    /**
+     * Las columnas con su filtro de cabecera.
+     *
+     * El CÓMO —que la rejilla recoja el filtro pero no lo aplique— vive en
+     * AppAgGridService. Aquí queda sólo el QUÉ.
+     */
+    private conFiltros(columnas: any[]): any[] {
+      return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+    }
+
+    /** La cabecera pidió otra cosa. Siempre a la página 1. */
+    onFiltroColumna(): void {
+      if (this.limpiando) { return; }
+      this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+      this.paginaActual = 1;
+      this.allProfiles(1);
+    }
+
+    /** Cuántas columnas llevan filtro; el buscador lo enseña y se pone rojo. */
+    get cuantasColumnasFiltradas(): number {
+      return Object.keys(this.filtrosColumna || {}).length;
+    }
+
+    /** Si hay algo que quitar: lo escrito arriba o un filtro de columna. */
+    get hayFiltro(): boolean {
+      return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+    }
+
+    /**
+     * La papelera de reciclaje.
+     *
+     * Lo que se «elimina» no se borra: va aquí CON SUS ACCESOS, y desde aquí
+     * se restaura tal cual o se borra de verdad. Un perfil son sus permisos
+     * pantalla por pantalla, y rehacerlos a mano es media tarde.
+     */
+    abrirPapelera(): void {
+      const modalRef = this.modal.open(PapeleraPerfilesComponent, {
+        centered: true, size: 'xl', backdrop: 'static', keyboard: true
+      });
+      // El permiso viaja con el modal: allí también hay auditoría
+      modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+      // Y si puede borrar de verdad, que es otro permiso distinto
+      modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
+      modalRef.componentInstance.cambio.subscribe(() => this.allProfiles(this.paginaActual));
+    }
     initializeGrid(): void {
-      this.columnDefs = [
+      this.columnDefs = this.conFiltros([
         {
           headerName: 'Id',
           field: 'id',
@@ -221,7 +304,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
           }
         }
 
-      ];     
+      ]);
     }
     onGridReady(params: GridReadyEvent): void {
       this.gridApi = params.api;
@@ -435,7 +518,8 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
       // Realiza la petición al backend con los parámetros de paginación y búsqueda
       // firstValueFrom convierte el observable en promesa y cancela la suscripción automáticamente
       const res = await firstValueFrom(
-        this._profile.allProfiles(page, this.registrosPorPagina, this.searchTerm)
+        this._profile.allProfiles(page, this.registrosPorPagina, this.searchTerm,
+                                  this.filtrosColumna)
       );
       
       // Extrae el array de perfiles de la respuesta (estructura anidada: body.data.data)
@@ -475,34 +559,25 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
     await this.allProfiles(1);
   }
   clearAllFilters() {
-        this.campoBusquedaPaginacion.reset();
-      // if (this.inputElement) {
-      //   this.inputElement.nativeElement.value = '';
-      // }
+    if (!this.hayFiltro) { return; }
 
-    if (this.gridApi) {
-      // Remove any column filters
-      this.gridApi.setFilterModel(null);
-      
-      // Clear the search input field and the search term variable
-      const quickFilterInput = document.getElementById('filter-text-box') as HTMLInputElement;
-      if (quickFilterInput) {
-        quickFilterInput.value = '';
-      }
-      this.searchTerm = '';
-      
-      // Notify the grid that filters changed (if needed)
-      this.gridApi.onFilterChanged();
-      
-      // Reload data with the cleared search term but stay on the current page
-      // However, if the current page exceeds the new total pages, go to last page.
-      this.allProfiles(this.paginaActual).then(() => {
-        // After reload, check if current page is still valid; if not, go to last page
-        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
-          this.goToPage(this.ultimaPagina);
-        }
-      });
-    }
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medias.
+    this.limpiando = true;
+    this.campoBusquedaPaginacion?.reset();
+    this.searchTerm = '';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí: medido contra
+    // ag-Grid 28, `setFilterModel` avisa DESPUÉS de esta línea, así que
+    // apagándola aquí ese aviso pediría una segunda carga idéntica.
+    this.limpiandoTimeoutId = setTimeout(() => { this.limpiando = false; }, 0);
+
+    this.paginaActual = 1;
+    this.allProfiles(1);
   }
 
 
@@ -553,66 +628,112 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 
 
   //   ******   FUNCIONES DE IMPRESIÓN   ******  //
-  async printPdf() {
-      this._appPrintPdfService.generarReporte({
-        tamanoPapel:"A4",
-        orientacion: "p",
-        title: "Reporte de Perfiles",
-        titleTable: "Listado de Perfiles",        
-        headers: ['ID', 'Nombre','Inactividad', 'Estado', 'Creado' , 'Modificado'],
-
-        data: this.perfilModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre)) // Ordena por nombre
-        .map(item => [
-          item.id,
-          item.nombre,
-          `${item.inactividad}`,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),        
-
-        piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
-
-      });  
+  /**
+   * Trae TODOS los que cumplen el filtro, para exportar.
+   *
+   * La pantalla pagina en el servidor, así que `perfilModel` es sólo la
+   * página: hasta ahora el reporte salía con esas filas aunque dijera
+   * «Listado». Se pide una página del tamaño del total.
+   */
+  private async obtenerTodosParaExportar(): Promise<any[]> {
+    if (this.totalRegistros === 0) { return []; }
+    try {
+      this._loadingService.setLoading(true);
+      const res = await firstValueFrom(
+        this._profile.allProfiles(1, this.totalRegistros, this.searchTerm,
+                                  this.filtrosColumna)
+      ) as any;
+      // Del error HTTP ya avisa el interceptor; aqui basta con no
+      // devolver filas para que no se descargue un fichero vacio.
+      if (res.body?.status !== 'success') { return []; }
+      return res.body?.data?.data || [];
+    } catch (error) {
+      console.error('Error al obtener el listado completo:', error);
+      return [];
+    } finally {
+      this._loadingService.setLoading(false);
+    }
   }
-  async exportExcel() {
-    this._appExportExcelService.generarReporteExcel({
-      tamanoPapel:"A4",
-      orientacion: "p",
-      title: "Reporte de Perfiles",
-      titleTable: "Listado de Perfiles",        
-      headers: ['ID', 'Nombre','Inactividad', 'Estado', 'Creado' , 'Modificado'],
 
-      data: this.perfilModel
-      .sort((a, b) => a.nombre.localeCompare(b.nombre)) // Ordena por nombre
+  /** Las cabeceras del reporte, en un solo sitio. */
+  private readonly CABECERAS_REPORTE = ['ID', 'Nombre', 'Inactividad', 'Estado', 'Creado', 'Modificado'];
+
+  /**
+   * Filas del reporte con formato de salida.
+   *
+   * `ordenarPorNombre` sólo al exportar el listado completo: si se
+   * exporta la página hay que respetar lo que se tiene delante. Y se
+   * ordena sobre una COPIA, porque `sort` cambia el array que recibe
+   * y el de la página es el de la grilla.
+   */
+  private filasReporte(lista: any[], ordenarPorNombre: boolean = true): any[][] {
+    return (ordenarPorNombre ? [...lista].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '')) : lista)
       .map(item => [
-        item.id,
-        item.nombre,
-        `${item.inactividad}`,
-        item.activo ? 'Activo' : 'Inactivo',
-        item.created_at,
-        item.updated_at,
-      ]),
-
-      piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
-
-    });  
+      item.id,
+      item.nombre,
+      `${item.inactividad}`,
+      item.activo ? 'Activo' : 'Inactivo',
+      item.created_at,
+      item.updated_at,
+      ]);
   }
+
+  /**
+   * Lo que se le pide al servicio de descargas: la misma caja para los
+   * tres botones. Él pregunta si hace falta, trae las filas y arma el
+   * título con los filtros puestos.
+   */
+  private peticionDescarga(accion: AccionDescarga): PeticionDescarga<any> {
+    return {
+      accion,
+      nombrePlural: 'perfiles',
+      tituloBase: 'Listado de Perfiles',
+      gridApi: this.gridApi,
+      filasDePagina: this.perfilModel,
+      total: this.totalRegistros,
+      pagina: this.paginaActual,
+      ultimaPagina: this.ultimaPagina,
+      busqueda: this.searchTerm,
+      columnDefs: this.columnDefs,
+      traerTodo: () => this.obtenerTodosParaExportar(),
+    };
+  }
+
+  async printPdf() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('imprimir'));
+    if (!salida) { return; }       // no hay nada que descargar, o canceló
+    this._appPrintPdfService.generarReporte({
+      tamanoPapel: 'A4',
+      orientacion: 'p',
+      title: 'Reporte de Perfiles',
+      titleTable: salida.titulo,
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
+      piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
+    });
+  }
+
+  async exportExcel() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('excel'));
+    if (!salida) { return; }
+    this._appExportExcelService.generarReporteExcel({
+      tamanoPapel: 'A4',
+      orientacion: 'p',
+      title: 'Reporte de Perfiles',
+      titleTable: salida.titulo,
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
+      piePagina: 'Pie de página - Mi Empresa en Desarrollo S.A....'
+    });
+  }
+
   async exportCsv() {
+    const salida = await this._appDescargaService.preparar(this.peticionDescarga('csv'));
+    if (!salida) { return; }
     this._appExportCsvService.generarReporteCSV({
-        headers: ['ID', 'Nombre','Inactividad', 'Estado', 'Creado' , 'Modificado'],
-        data: this.perfilModel
-        .sort((a, b) => a.nombre.localeCompare(b.nombre)) // Ordena por nombre
-        .map(item => [
-          item.id,
-          item.nombre,
-          `${item.inactividad}`,
-          item.activo ? 'Activo' : 'Inactivo',
-          item.created_at,
-          item.updated_at,
-        ]),        
-    });  
+      headers: this.CABECERAS_REPORTE,
+      data: this.filasReporte(salida.filas, salida.alcance === 'todo'),
+    });
   }
 
 
@@ -856,13 +977,17 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
       { id: 'clonar', texto: 'Clonar',          icono: 'fa-clone',
         visible: this.accesoModel?.crear === true,
         ayuda: 'Crear un perfil nuevo copiando los accesos de éste' },
-      { id: 'eliminar', texto: 'Eliminar',      icono: 'fa-trash',
+      { id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
         peligro: true, separadorAntes: true,
-        visible: this.accesoModel?.eliminar === true },
+        visible: this.accesoModel?.eliminar === true,
+        ayuda: 'Conserva sus accesos; se puede restaurar' },
       { id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
         separadorAntes: true,
         visible: this.accesoModel?.auditar === true,
         ayuda: 'Quién tocó este perfil y cuándo' },
+      { id: 'papelera', texto: 'Abrir la papelera', icono: 'fa-trash-can',
+        visible: this.accesoModel?.papelera === true,
+        ayuda: 'Los perfiles eliminados, para restaurarlos' },
     ];
   }
 
@@ -877,6 +1002,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
       case 'clonar':    this.clonProfile(fila); break;
       case 'eliminar':  this.deleteProfile(fila); break;
       case 'auditoria': this.auditoria(); break;
+      case 'papelera':  this.abrirPapelera(); break;
     }
   }
 

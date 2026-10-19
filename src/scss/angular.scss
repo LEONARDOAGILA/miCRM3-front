@@ -347,6 +347,35 @@
     padding-left: 4px;
   }
 
+  // ---------- La columna que está filtrada se ve ----------
+  //
+  // Con los filtros en la cabecera, una columna puede estar filtrando sin que
+  // se note: la caja queda arriba y, si se ha desplazado la rejilla o el
+  // filtro es «en blanco» (que no escribe nada en la caja), no hay pista de
+  // cuál está filtrada y el listado parece incompleto sin motivo.
+  //
+  // `ag-header-cell-filtered` la pone ag-Grid en la celda de la cabecera, y
+  // el embudo lo tiene ahí escondido con `ag-hidden` hasta que la columna
+  // lleva filtro. Está comprobado contra ag-Grid 28.2.1 que lo marca TAMBIÉN
+  // con nuestros filtros, que recogen pero no filtran en el navegador (el
+  // filtrado lo hace el servidor), y que lo quita al limpiar.
+  //
+  // Sólo se pinta la fila de los nombres. La fila de las cajas no lleva ni
+  // `col-id` ni clase de estado —medido—, así que para alcanzarla haría falta
+  // `:has()`, que no existe en el iOS 14 que tenemos que soportar.
+  .ag-header-cell-filtered {
+    .ag-filter-icon {
+      color: var(--bs-danger, #dc3545);
+      padding-left: 4px;
+    }
+
+    // El nombre también: el embudo es pequeño y en una rejilla de trece
+    // columnas hay que poder ver de un golpe cuál está filtrada.
+    .ag-header-cell-text {
+      color: var(--bs-danger, #dc3545);
+    }
+  }
+
   // Fila seleccionada: además del fondo, una barra en el borde izquierdo.
   // Sólo en el contenedor central para que no se repita en la columna fijada.
   .ag-center-cols-container .ag-row-selected {

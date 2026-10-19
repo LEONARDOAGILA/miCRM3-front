@@ -76,8 +76,40 @@ export function nombreDeColor(color?: string | null): string {
  * recuadros rotos. El token NO se guarda en la nota —caducaría—: se le pone al
  * pintarla, que es cuando se sabe quién está mirando.
  */
+/** El token de quien está mirando, si lo hay. */
+function tokenActual(): string {
+  try { return localStorage.getItem('token') ?? ''; } catch { return ''; }
+}
+
+/**
+ * UNA url de imagen con el token puesto, para enseñarla YA.
+ *
+ * Hace falta al insertar o pegar una imagen en el editor: recién subida, el
+ * <img> apunta a /archivoCliente/ver/N, que sin token devuelve 401, y la
+ * imagen salía con el recuadro roto mientras se escribía la nota. Al pintar
+ * la nota ya guardada lo hace conTokenLasImagenes; esto es lo mismo para una
+ * sola url.
+ */
+export function conTokenLaImagen(url: string): string {
+  const t = tokenActual();
+  if (!url || !t) { return url; }
+  if (!/archivoCliente\/ver\/\d+/.test(url) || /[?&]t=/.test(url)) { return url; }
+  return url + (url.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(t);
+}
+
+/**
+ * Quita el token de las imágenes antes de GUARDAR.
+ *
+ * Lo guardado tiene que servir mañana, y un token caduca: en la base queda
+ * la url limpia y el token se le pone al pintarla, que es cuando se sabe
+ * quién mira. Es el reverso de conTokenLasImagenes.
+ */
+export function sinTokenLasImagenes(html?: string | null): string {
+  return (html ?? '').replace(/(archivoCliente\/ver\/\d+)[?&]t=[^\"'\s>&]*/g, '$1');
+}
+
 export function conTokenLasImagenes(html?: string | null): string {
-  const t = (() => { try { return localStorage.getItem('token') ?? ''; } catch { return ''; } })();
+  const t = tokenActual();
   if (!html || !t) { return html ?? ''; }
 
   // Sólo las que ya apuntan al servidor y aún no llevan token

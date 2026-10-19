@@ -24,6 +24,7 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 import { PapeleraBoletinesComponent } from '../papeleraBoletines/papeleraBoletines.component';
 import { VistasBoletinComponent } from '../vistasBoletin/vistasBoletin.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 
 /**
  * Listado de boletines.
@@ -118,8 +119,75 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
   // COLUMNAS
   // ================================================================
 
+  // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Los aplica el SERVIDOR, no la rejilla: esta pantalla pagina, así que
+  // ag-Grid sólo tiene las diez filas de la página y filtrar ahí buscaría
+  // dentro de diez. La cabecera sólo recoge lo que el usuario pidió.
+
+  /**
+   * Las columnas que llevan filtro, y de qué tipo.
+   *
+   * Tiene que decir lo mismo que la lista blanca de BoletinController: lo que
+   * no esté allí se tira en el servidor, así que ponerlo sólo aquí sería
+   * pintar una caja que no filtra.
+   *
+   * SE FILTRA POR LO QUE SE VE: «Estado» no es una columna de la tabla sino
+   * un cálculo con `activo` y las fechas, y se filtra por el valor que sale
+   * en la rejilla; «Imágenes», «Destinatarios» y «Vistos» son cuentas de
+   * otras tablas. `activo` se queda fuera: es una casilla, y «Estado» ya
+   * distingue el inactivo.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero', orden: 'numero',
+    num_imagenes: 'numero', num_usuarios: 'numero', num_vistos: 'numero',
+    titulo: 'texto', estado: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
+    desde: 'texto', hasta: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /**
+   * Las columnas con su filtro de cabecera.
+   *
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique— vive en
+   * AppAgGridService. Aquí queda sólo el QUÉ.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+
+  /** La cabecera pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.allBoletines(1);
+  }
+
+  /** Cuántas columnas llevan filtro; el buscador lo enseña y se pone rojo. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /**
+   * Si hay algo que quitar.
+   *
+   * Aquí cuenta también el combo de estado, que es un filtro más aunque no
+   * viva en la cabecera: con «Sólo vigentes» puesto, el botón de limpiar
+   * tiene trabajo.
+   */
+  get hayFiltro(): boolean {
+    return !!this.busqueda || this.estado !== 'TODOS' || this.cuantasColumnasFiltradas > 0;
+  }
   private armarColumnas(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       {
         // El asa del arrastre va en esta columna: se coge la fila y se sube o
         // se baja. El número es la posición que ocupa en la lista.
@@ -184,7 +252,7 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
         suppressMenu: true, sortable: false, resizable: false,
         headerComponentParams: { template: this.plantillaCabecera(false) },
       },
-    ];
+    ]);
   }
 
   private escapar(s: string): string {
@@ -326,7 +394,8 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
     try {
       this._loadingService.setLoading(true);
       const res: any = await firstValueFrom(
-        this._boletinService.allBoletines(page, this.registrosPorPagina, this.busqueda, this.estado)
+        this._boletinService.allBoletines(page, this.registrosPorPagina, this.busqueda, this.estado,
+                                          this.filtrosColumna)
       );
 
       if (res.body?.status !== 'success') { return; }
@@ -410,12 +479,30 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
     });
     // El permiso viaja con el modal: allí también hay auditoría
     modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
     modalRef.componentInstance.cambio.subscribe(() => this.allBoletines(this.paginaActual));
   }
 
   clearAllFilters(): void {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medias.
+    this.limpiando = true;
+    this.campoBusquedaPaginacion?.reset();
     this.busqueda = '';
     this.estado = 'TODOS';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí: medido contra
+    // ag-Grid 28, `setFilterModel` avisa DESPUÉS de esta línea, así que
+    // apagándola aquí ese aviso pediría una segunda carga idéntica.
+    this.programar(() => { this.limpiando = false; }, 0);
+
     this.allBoletines(1);
   }
 
@@ -524,6 +611,98 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES y las de la barra, sin tener
+  // que llegar hasta el final de la fila ni desplegar la columna cuando está
+  // plegada.
+  //
+  // NO SE USA EL EVENTO `cellContextMenu` DE ag-Grid: se probó contra la
+  // librería y no llega. Aquí se escucha el `contextmenu` de la rejilla y la
+  // fila se resuelve con la API pública.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se puede hacer con este boletín, según el perfil y su estado. */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    const puedeEditar  = this.accesoModel?.editar   === true;
+    const puedeBorrar  = this.accesoModel?.eliminar === true;
+    const puedeAuditar = this.accesoModel?.auditar  === true;
+
+    const inactivo = fila?.estado === 'INACTIVO';
+    const sinImagenes = Number(fila?.num_imagenes ?? 0) === 0;
+
+    return [
+      {
+        id: 'previsualizar', texto: 'Ver como lo verá el usuario', icono: 'fa-eye',
+        deshabilitada: sinImagenes,
+        ayuda: sinImagenes ? 'Este boletín no tiene imágenes' : 'Con su marca de agua',
+      },
+      {
+        id: 'lanzar', texto: 'Lanzarlo ahora', icono: 'fa-paper-plane',
+        deshabilitada: inactivo,
+        ayuda: inactivo
+          ? 'Un boletín inactivo no se puede lanzar'
+          : 'Les sale en pantalla a los destinatarios conectados',
+      },
+      { id: 'editar', texto: 'Modificar', icono: 'fa-pen', separadorAntes: true, visible: puedeEditar },
+      {
+        id: 'activo', texto: fila?.activo ? 'Desactivar' : 'Activar',
+        icono: fila?.activo ? 'fa-toggle-off' : 'fa-toggle-on',
+        visible: puedeEditar,
+        ayuda: fila?.activo ? 'Dejar de mostrarlo, sin borrarlo' : 'Volver a mostrarlo',
+      },
+      {
+        id: 'vistas', texto: 'Quién lo ha visto', icono: 'fa-users-viewfinder',
+        separadorAntes: true,
+        ayuda: `${fila?.num_vistos ?? 0} de ${fila?.num_usuarios ?? 0} destinatarios directos`,
+      },
+      {
+        id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        visible: puedeAuditar,
+        ayuda: 'Quién tocó este boletín y cuándo',
+      },
+      {
+        id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
+        separadorAntes: true, peligro: true, visible: puedeBorrar,
+        ayuda: 'Se puede recuperar desde la papelera',
+      },
+    ];
+  }
+
+  /** Se eligió una opción del menú. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'previsualizar': this.previsualizar(fila); break;
+      case 'lanzar':        this.lanzar(fila); break;
+      case 'editar':        this.editBoletin(fila); break;
+      case 'activo':        this.cambiarActivo(fila, this._appAgGridService.nodoDe(this.gridApi, fila.id)); break;
+      case 'vistas':        this.verVistas(); break;
+      case 'auditoria':     this.auditoria(); break;
+      case 'eliminar':      this.deleteBoletin(fila); break;
+    }
+  }
   /**
    * Historial de cambios del boletín seleccionado.
    *

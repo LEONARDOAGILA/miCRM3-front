@@ -35,8 +35,12 @@ export interface ProductoModel {
   unidad: string;
   costo: number;
   precio: number;
-  /** Tarifa del producto; 15 es la vigente en Ecuador, pero hay partidas con 0 */
-  iva_porcentaje: number;
+  /**
+   * Si el producto grava impuesto. Sólo eso: el PORCENTAJE no vive en la
+   * ficha, saldrá de las tablas de impuestos (antes era `iva_porcentaje`,
+   * un número escrito a mano producto por producto).
+   */
+  impuesto: boolean;
 
   // ---------- Existencias ----------
   maneja_stock: boolean;
@@ -84,19 +88,6 @@ export const UNIDADES_PRODUCTO: { id: string; name: string }[] = [
   { id: 'PAR',     name: 'Par' },
   { id: 'METRO',   name: 'Metro' },
   { id: 'PAQUETE', name: 'Paquete' },
-];
-
-/**
- * Tarifas de IVA.
- *
- * 15% es la general en Ecuador; 0% lo llevan las partidas exentas, y 5% se
- * ha usado en rebajas temporales por decreto. Va en el producto y no en una
- * constante del código porque cambia.
- */
-export const TARIFAS_IVA: { id: number; name: string }[] = [
-  { id: 15, name: '15 %' },
-  { id: 5,  name: '5 %' },
-  { id: 0,  name: '0 %' },
 ];
 
 /** Garantías que más se repiten, para no escribirlas a mano. */

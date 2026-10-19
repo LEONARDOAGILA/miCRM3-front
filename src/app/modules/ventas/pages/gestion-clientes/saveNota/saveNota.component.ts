@@ -22,7 +22,7 @@ import { firstValueFrom } from 'rxjs';
 import { PanelModule } from '../../../../../components/panel/panel.module';
 import { HuecosPlantillaComponent } from '../../../../../components/campos/huecosPlantilla/huecosPlantilla.component';
 import { NotaClienteService } from '../../../services/notaCliente.service';
-import { COLORES_NOTA, ColorNota, NotaCliente, tinteDeNota } from '../../../interfaces/notaCliente';
+import { COLORES_NOTA, ColorNota, NotaCliente, tinteDeNota, conTokenLaImagen, conTokenLasImagenes, sinTokenLasImagenes } from '../../../interfaces/notaCliente';
 import { ClienteModel } from '../../../interfaces/clienteModel';
 import { DatosDocumentoNota, descargarNotaWord, imprimirNota, wordAHtml } from '../../../interfaces/notaDocumento';
 
@@ -207,7 +207,10 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.nota) {
       this.titulo = this.nota.titulo ?? '';
-      this.contenido = this.nota.contenido ?? '';
+      // Con el token puesto: las imagenes ya guardadas apuntan a
+      // /archivoCliente/ver/N, que sin el devuelve 401 y saldrian rotas
+      // mientras se edita. Al guardar se les vuelve a quitar.
+      this.contenido = conTokenLasImagenes(this.nota.contenido ?? '');
       this.color = this.nota.color ?? 'gris';
       this.fijada = !!this.nota.fijada;
     }
@@ -567,7 +570,7 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       const res: any = await firstValueFrom(this._notaService.traerImagen(this.clienteId, url));
       if (res?.status !== 'success') { return null; }
-      return this._notaService.urlDeImagen(res.data.url);
+      return conTokenLaImagen(this._notaService.urlDeImagen(res.data.url));
     } catch {
       // Es normal que alguna no se deje traer; no merece un toast por cada una
       return null;
@@ -579,7 +582,10 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       const res: any = await firstValueFrom(this._notaService.subirImagen(this.clienteId, fichero));
       if (res?.status !== 'success') { return null; }
-      return this._notaService.urlDeImagen(res.data.url);
+      // Con el token: recien subida, /archivoCliente/ver/N sin el devuelve
+      // 401 y la imagen sale con el recuadro roto mientras se escribe. Al
+      // guardar se le quita (sinTokenLasImagenes), que caduca.
+      return conTokenLaImagen(this._notaService.urlDeImagen(res.data.url));
     } catch (error) {
       console.error('Error al subir una imagen pegada:', error);
       return null;
@@ -772,7 +778,9 @@ export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const datos: any = {
       titulo,
-      contenido: this.contenido,
+      // Sin el token de las imagenes: lo guardado tiene que servir manana
+      // y un token caduca. Se le vuelve a poner al pintar la nota.
+      contenido: sinTokenLasImagenes(this.contenido),
       color: this.color,
       fijada: this.fijada,
     };

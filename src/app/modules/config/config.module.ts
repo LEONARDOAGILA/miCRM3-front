@@ -35,6 +35,7 @@ import { CampoNumeroEnteroComponent } from '../../components/campos/campoNumeroE
 import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.component';
 import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/campoBusqueda.component';
 import { CampoBusquedaPaginacionComponent } from "../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component";
+import { MenuContextualComponent } from '../../components/menuContextual/menuContextual.component';
 import { ComboComponent } from '../../components/campos/combo/combo.component';
 import { FileTreeNodeComponent } from '../../components/file-tree-node/file-tree-node.component';
 
@@ -108,6 +109,7 @@ import { SaveNotificacionComponent } from './pages/notificaciones/saveNotificaci
     CheckboxComponent,
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
+    MenuContextualComponent,
     ModalArrastrableDirective,
     DropzoneComponent,
     MoverArchivoComponent,
