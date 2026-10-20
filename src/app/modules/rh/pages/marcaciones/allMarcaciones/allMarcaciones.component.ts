@@ -148,7 +148,7 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
       { headerName: 'Fecha', field: 'fecha', minWidth: 110, maxWidth: 120, cellStyle: { textAlign: 'center' } },
       { headerName: 'Hora',  field: 'hora',  minWidth: 100, maxWidth: 110, cellStyle: { textAlign: 'center' } },
       {
-        headerName: 'Empleado', field: 'empleado', minWidth: 200, maxWidth: 320, cellStyle: { textAlign: 'left' },
+        headerName: 'Empleado', field: 'empleado', minWidth: 170, maxWidth: 320, cellStyle: { textAlign: 'left' },
         cellRenderer: (p: any) => {
           const id = p.data?.empleado_id;
           const img = p.data?.empleado_foto
@@ -157,21 +157,46 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
           return `<span class="mar-empleado" title="Empleado #${id}">${img}<span>${this.escapar(p.value ?? '')}</span></span>`;
         },
       },
-      { headerName: 'Identificación', field: 'identificacion', minWidth: 120, maxWidth: 140, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Identificación', field: 'identificacion', minWidth: 110, maxWidth: 140, cellStyle: { textAlign: 'left' } },
       {
-        headerName: 'Tipo', field: 'tipo', minWidth: 110, maxWidth: 120, cellStyle: { textAlign: 'center' },
+        headerName: 'Tipo', field: 'tipo', minWidth: 90, maxWidth: 120, cellStyle: { textAlign: 'center' },
         cellRenderer: (p: any) => `<span class="mar-tipo ${p.value === 'ENTRADA' ? 'is-entrada' : 'is-salida'}">${p.value === 'ENTRADA' ? 'Entrada' : 'Salida'}</span>`,
       },
       {
-        headerName: 'Origen', field: 'origen', minWidth: 110, maxWidth: 130, cellStyle: { textAlign: 'center' },
+        headerName: 'Origen', field: 'origen', minWidth: 100, maxWidth: 130, cellStyle: { textAlign: 'center' },
         valueFormatter: (p: any) => this.origenes.find(o => o.id === p.value)?.name ?? p.value,
       },
       {
-        headerName: 'Coincidencia', field: 'similitud', minWidth: 110, maxWidth: 120, cellStyle: { textAlign: 'center' },
+        headerName: 'Coincidencia', field: 'similitud', minWidth: 100, maxWidth: 120, cellStyle: { textAlign: 'center' },
         valueFormatter: (p: any) => p.value === null || p.value === undefined ? '—' : `${Math.round(p.value)}%`,
       },
-      { headerName: 'Departamento', field: 'departamento', minWidth: 140, maxWidth: 220, cellStyle: { textAlign: 'left' } },
-      { headerName: 'Dispositivo',  field: 'dispositivo',  minWidth: 130, maxWidth: 200, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Departamento', field: 'departamento', minWidth: 120, maxWidth: 220, cellStyle: { textAlign: 'left' } },
+      { headerName: 'Dispositivo',  field: 'dispositivo',  minWidth: 110, maxWidth: 200, cellStyle: { textAlign: 'left' } },
+      {
+        // Dónde se registró. Se enseñan las coordenadas tal como las formatea
+        // el servidor, y el error del GPS al lado: un punto a 20 km no es una
+        // mentira, es un aparato sin GPS ubicándose por su conexión.
+        headerName: 'Dónde', field: 'coordenadas', minWidth: 150, maxWidth: 190,
+        cellStyle: { textAlign: 'left' },
+        headerTooltip: 'Coordenadas desde donde se registró la marcación',
+        tooltipValueGetter: (p: any) => {
+          if (!p.data?.coordenadas) { return 'Esta marcación no trae ubicación'; }
+          const e = Number(p.data?.precision_m ?? 0);
+          if (!e) { return p.data.coordenadas; }
+          const error = e >= 1000 ? `${(e / 1000).toFixed(1)} km` : `${Math.round(e)} m`;
+          return `${p.data.coordenadas} · el GPS declaró ${error} de error`
+               + (e > 500 ? ' — el punto es orientativo' : '');
+        },
+        // En la celda caben las coordenadas y poco más, así que el error del
+        // GPS va en el título y, cuando es grande, en el color: un punto con
+        // kilómetros de error no se debe leer como si fuera exacto.
+        valueFormatter: (p: any) => {
+          const lat = p.data?.latitud, lng = p.data?.longitud;
+          if (lat === null || lat === undefined || lng === null || lng === undefined) { return '—'; }
+          return `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`;
+        },
+        cellClass: (p: any) => Number(p.data?.precision_m ?? 0) > 500 ? 'celda-ubicacion-dudosa' : '',
+      },
       { headerName: 'Observación',  field: 'observacion',  minWidth: 150, maxWidth: 320, cellStyle: { textAlign: 'left' } },
       { headerName: 'Registrado por', field: 'created_by', minWidth: 130, maxWidth: 180, cellStyle: { textAlign: 'left' } },
       {
@@ -185,11 +210,25 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
     ];
   }
 
+  /**
+   * Abre en el mapa el punto donde se registró la marcación.
+   *
+   * El enlace lo arma el SERVIDOR con las coordenadas que guardó, así que
+   * lleva siempre al punto que de verdad quedó en la ficha.
+   */
+  verUbicacion(registro: any): void {
+    if (!registro?.link_ubicacion) {
+      this._toastr.info('Esta marcación no trae ubicación', 'Dónde marcó');
+      return;
+    }
+    window.open(registro.link_ubicacion, '_blank', 'noopener');
+  }
+
   private escapar(s: string): string {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  private static readonly ANCHO_ABIERTA = 110;
+  private static readonly ANCHO_ABIERTA = 140;
   private static readonly ANCHO_PLEGADA = 50;
 
   private plantillaCabecera(plegada: boolean): string {
@@ -499,19 +538,37 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
         <i class="fas fa-bars"></i>
       </button>
     } @else {
-      <app-action-buttons
-        [accesoModel]="parent.accesoModel"
-        [buttonView]="true"
-        [buttonEdit]="true"
-        [buttonDelete]="true"
-        (view)="parent.viewMarcacion(params.data)"
-        (edit)="parent.editMarcacion(params.data)"
-        (delete)="parent.deleteMarcacion(params.data)">
-      </app-action-buttons>
+      <div class="acciones-fila">
+        <app-action-buttons
+          [accesoModel]="parent.accesoModel"
+          [buttonView]="true"
+          [buttonEdit]="true"
+          [buttonDelete]="true"
+          (view)="parent.viewMarcacion(params.data)"
+          (edit)="parent.editMarcacion(params.data)"
+          (delete)="parent.deleteMarcacion(params.data)">
+        </app-action-buttons>
+
+        <!-- Dónde marcó. Va aparte de app-action-buttons, que lo comparte
+             media aplicación. Apagado cuando esa marcación no trae punto. -->
+        <button type="button"
+                class="btn-icon acciones-mapa"
+                [class.is-apagado]="!params.data?.link_ubicacion"
+                [title]="params.data?.link_ubicacion
+                          ? 'Ver en el mapa dónde se registró'
+                          : 'Esta marcación no trae ubicación'"
+                [disabled]="!params.data?.link_ubicacion"
+                (click)="parent.verUbicacion(params.data)">
+          <i class="fa fa-location-dot"></i>
+        </button>
+      </div>
     }
   `,
   styles: [`
     .acciones-desplegar { width: 28px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: .25rem; }
+    .acciones-fila { display: flex; align-items: center; justify-content: center; }
+    .acciones-mapa { color: #348FE2; }
+    .acciones-mapa.is-apagado { color: var(--bs-secondary-color, #6c757d); opacity: .4; cursor: not-allowed; }
   `],
 })
 export class ButtonAccionMarcacion implements ICellRendererAngularComp {

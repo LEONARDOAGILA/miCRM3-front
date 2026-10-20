@@ -19,8 +19,11 @@
        [noButton]="false"
        [noButtonCollapse]="true"
        (panelReloaded)="cargarRecorrido()"
+       (panelExpanded)="ajustarAlto()"
        [closeRoute]="'/ventas'"
-       icono="route">
+       icono="route"
+       class="flex-1 d-flex flex-column"
+       panelClass="flex-1 m-0 d-flex flex-column">
 
   <div class="content-container1 ruta-contenido">
 
@@ -111,7 +114,12 @@
 
     <!-- Las dos columnas. Mismo reparto que en zonas: el mapa manda y la
          lista acompaña. En pantallas estrechas se apilan. -->
-    <div class="ruta-paneles" [style.--ruta-izq.%]="anchoIzquierda">
+    <!-- El alto lo pone el componente (ajustarAlto): así las columnas, y
+         con ellas el panel, llegan al final de la ventana en vez de dejar
+         una franja gris debajo. -->
+    <div class="ruta-paneles"
+         [style.--ruta-izq.%]="anchoIzquierda"
+         [style.height.px]="altoPaneles">
 
       <!-- ===================== EL MAPA ===================== -->
       <div class="ruta-panel">

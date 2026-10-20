@@ -1,13 +1,15 @@
 import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import * as faceapi from 'face-api.js';
 
 import { MarcacionService } from '../../../services/marcacion.service';
-import { EmpleadoService } from '../../../services/empleado.service';
+import { UbicacionDispositivoService } from '../../../services/ubicacionDispositivo.service';
 import { MarcacionModel, RostroEmpleado } from '../../../interfaces/marcacionModel';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
+import { AjustesKioscoComponent, AjustesDelKiosco } from './ajustesKiosco/ajustesKiosco.component';
 
 /** Lo que se ve de cada rostro en el fotograma actual. */
 interface RostroEnPantalla {
@@ -15,6 +17,8 @@ interface RostroEnPantalla {
   nombre: string;
   similitud: number;
   conocido: boolean;
+  /** Qué le falta para marcar: «parpadea», «confirmando 3/6», «ya marcó». */
+  pista?: string;
 }
 
 /**
@@ -23,9 +27,12 @@ interface RostroEnPantalla {
  * Reconoce al empleado con la cámara (face-api.js y las plantillas faciales
  * guardadas en rh.rostros_empleados) y registra la marcación en el servidor:
  * el tipo (entrada / salida) lo decide el back alternando con la última del
- * día, y hay una espera anti-duplicado. Incluye prueba de vida por parpadeo,
- * registro de nuevas plantillas (capturando muestras o desde la foto del
- * empleado) y la lista de las marcaciones del día.
+ * día, y hay una espera anti-duplicado. Incluye prueba de vida por parpadeo
+ * y la lista de las marcaciones del día.
+ *
+ * Las plantillas faciales se REGISTRAN EN EMPLEADOS (Recursos Humanos >
+ * Empleados, botón «Registrar rostro» de la columna ACCIONES); aquí sólo se
+ * usan para reconocer.
  *
  * Pensado para dejarlo abierto en una tablet o PC en la puerta.
  */
@@ -70,15 +77,6 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
   enPantalla: RostroEnPantalla[] = [];
   cargandoDatos = false;
 
-  // ---------- Registro de plantillas ----------
-  empleados: any[] = [];
-  empleadoSeleccionado: number | null = null;
-  capturando = false;
-  capturasHechas = 0;
-  readonly CAPTURAS_NECESARIAS = 5;
-  importando = false;
-  registrando = false;
-
   /** Cartel grande de la última marcación / aviso */
   aviso: { nombre: string; texto: string; hora: string; tono: 'ok' | 'info' | 'error' } | null = null;
 
@@ -87,12 +85,36 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
   private matcher: any = null;
   private bucle = 0;
   private parar = false;
-  private candidato: { id: number; veces: number } | null = null;
+  /**
+   * Fotogramas seguidos viendo a cada empleado, UNO POR EMPLEADO.
+   *
+   * Antes era un solo candidato para todos: con dos caras delante (alguien
+   * que pasa por detrás, una foto en la pared) el contador se reiniciaba en
+   * cada fotograma y no llegaba a confirmar nunca. Ahora cada quien lleva la
+   * suya, y al que no sale en un fotograma se le resta uno en vez de borrarle
+   * la cuenta: un fallo suelto de detección ya no tira lo andado.
+   */
+  private vistosSeguidos = new Map<number, number>();
   private parpadeo = new Map<number, boolean>();
   private ojosCerrados = new Map<number, boolean>();
-  private ultimaMarcacion = new Map<number, number>();
-  private capturasBuffer: number[][] = [];
-  private ultimaCapturaT = 0;
+  /**
+   * La apertura de ojos NORMAL de cada cara, para medir el parpadeo contra
+   * ella y no contra un número fijo: el valor depende de la persona, de lo
+   * lejos que esté y de la resolución.
+   */
+  private earAbierto = new Map<number, number>();
+  /** Hasta cuándo no se vuelve a intentar marcar a ese empleado. */
+  private esperarHasta = new Map<number, number>();
+
+  /** Se dan por cerrados los ojos cuando bajan de esta parte de lo suyo. */
+  private readonly CIERRE_RELATIVO = 0.80;
+  /** Tras un envío fallido, lo que se espera antes de reintentar. */
+  private readonly REINTENTO_SEGUNDOS = 5;
+  /** Instante del fotograma anterior, para los fps de verdad. */
+  private ultimoFotograma = 0;
+
+  /** Cuánto se reaprovecha la ubicación del kiosco (está fijo: media hora). */
+  private readonly UBICACION_VIGENTE_MS = 30 * 60 * 1000;
   private cache: { x: number; y: number; empleadoId: number; nombre: string; similitud: number; t: number }[] = [];
   private ultimoReconocimiento = 0;
   private readonly RECONOCER_CADA = 400;
@@ -100,9 +122,10 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
 
   constructor(
     private zone: NgZone,
+    private modal: NgbModal,
     private _toastr: ToastrService,
     private _marcacionService: MarcacionService,
-    private _empleadoService: EmpleadoService,
+    private _ubicacion: UbicacionDispositivoService,
     private activeRoute: ActivatedRoute,
   ) {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
@@ -111,6 +134,11 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
 
   async ngAfterViewInit(): Promise<void> {
     this.timerReloj = setInterval(() => this.reloj = new Date(), 1000);
+
+    // El kiosco está fijo en una puerta: una lectura del GPS vale para toda
+    // la jornada. Se pide ya, sin esperarla, para que la primera marcación
+    // no se retrase por el GPS.
+    this._ubicacion.donde(this.UBICACION_VIGENTE_MS).then(() => { /* lo que haya */ });
     try {
       await this.cargarModelos();
       await Promise.all([this.cargarRostros(), this.cargarMarcacionesHoy()]);
@@ -157,9 +185,40 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
     } catch { /* sin storage */ }
   }
 
-  onUmbralCambia(): void {
-    this.rehacerMatcher();
-    this.guardarAjustes();
+  /**
+   * El engranaje de la barra. El modal trabaja sobre una copia y sólo al
+   * guardar se aplican aquí: así mover un deslizador no cambia el
+   * comportamiento del kiosco mientras alguien está marcando.
+   */
+  abrirAjustes(): void {
+    const modalRef = this.modal.open(AjustesKioscoComponent, {
+      centered: true, size: 'md', backdrop: 'static',
+    });
+    modalRef.componentInstance.ajustes = {
+      umbral: this.umbral,
+      confirmaciones: this.confirmaciones,
+      esperaSegundos: this.esperaSegundos,
+      dispositivo: this.dispositivo,
+      exigirParpadeo: this.exigirParpadeo,
+      guardarFoto: this.guardarFoto,
+    } as AjustesDelKiosco;
+
+    modalRef.result.then((a: AjustesDelKiosco) => {
+      if (!a) { return; }
+      const cambiaElUmbral = a.umbral !== this.umbral;
+
+      this.umbral = a.umbral;
+      this.confirmaciones = a.confirmaciones;
+      this.esperaSegundos = a.esperaSegundos;
+      this.dispositivo = a.dispositivo;
+      this.exigirParpadeo = a.exigirParpadeo;
+      this.guardarFoto = a.guardarFoto;
+
+      // El emparejador lleva el umbral dentro: hay que rehacerlo
+      if (cambiaElUmbral) { this.rehacerMatcher(); }
+      this.guardarAjustes();
+      this._toastr.success('Ajustes guardados', 'Kiosco', { timeOut: 2500 });
+    }).catch(() => { /* salió sin guardar */ });
   }
 
   // ================================================================
@@ -291,7 +350,7 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
       const t0 = performance.now();
       const opciones = new faceapi.TinyFaceDetectorOptions({ inputSize: 288, scoreThreshold: 0.5 });
       // El descriptor es lo caro: cada RECONOCER_CADA ms (o siempre que se capture)
-      const conDescriptores = this.capturando || (!!this.matcher && performance.now() - this.ultimoReconocimiento > this.RECONOCER_CADA);
+      const conDescriptores = !!this.matcher && performance.now() - this.ultimoReconocimiento > this.RECONOCER_CADA;
 
       try {
         const base = faceapi.detectAllFaces(video, opciones).withFaceLandmarks();
@@ -300,6 +359,7 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
 
         const ajustadas = faceapi.resizeResults(detecciones, { width: canvas.width, height: canvas.height });
         const vistos: RostroEnPantalla[] = [];
+        const vistosAhora = new Set<number>();
 
         for (const d of ajustadas) {
           const caja = d.detection.box;
@@ -323,25 +383,40 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
             if (previo) { empleadoId = previo.empleadoId; nombre = previo.nombre; similitud = previo.similitud; conocido = !!empleadoId; }
           }
 
-          vistos.push({ caja: { x: caja.x, y: caja.y, w: caja.width, h: caja.height }, nombre, similitud, conocido });
+          const visto: RostroEnPantalla = {
+            caja: { x: caja.x, y: caja.y, w: caja.width, h: caja.height }, nombre, similitud, conocido,
+          };
+          vistos.push(visto);
 
-          if (this.capturando && ajustadas.length === 1 && d.descriptor) { this.capturarMuestra(d.descriptor); }
-          if (!this.capturando && conocido) {
+          if (conocido) {
+            vistosAhora.add(empleadoId);
             this.seguirParpadeo(empleadoId, ear);
-            this.confirmar(empleadoId, similitud, video);
+            visto.pista = this.confirmar(empleadoId, similitud, video);
           }
         }
 
-        if (!ajustadas.length) { this.candidato = null; }
+        // Al que no se ha visto en este fotograma se le resta una confirmación
+        this.enfriarNoVistos(vistosAhora);
         this.pintar(canvas, vistos);
+
+        // Los fps DE VERDAD: de fotograma a fotograma. Antes se medía sólo lo
+        // que tardaba el cálculo, sin contar el descanso, y la pantalla decía
+        // 25 fps mientras el bucle iba a 9.
+        const ahoraT = performance.now();
+        const entreFotogramas = this.ultimoFotograma ? ahoraT - this.ultimoFotograma : 0;
+        this.ultimoFotograma = ahoraT;
+
         this.zone.run(() => {
           this.enPantalla = vistos;
-          this.fps = Math.round(1000 / Math.max(1, performance.now() - t0));
+          if (entreFotogramas > 0) { this.fps = Math.round(1000 / Math.max(1, entreFotogramas)); }
         });
       } catch (e) {
         console.error('Error en la detección:', e);
       }
-      await new Promise(r => setTimeout(r, Math.max(0, 110 - (performance.now() - t0))));
+      // Con alguien reconocido delante se mira más seguido: un parpadeo dura
+      // una décima de segundo y con un fotograma cada 110 ms se escapaba.
+      const descanso = this.enPantalla.some(r => r.conocido) ? 65 : 110;
+      await new Promise(r => setTimeout(r, Math.max(0, descanso - (performance.now() - t0))));
     }
     this.bucle = requestAnimationFrame(() => this.procesar());
   }
@@ -351,13 +426,14 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
     if (!ctx) { return; }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (const r of rostros) {
-      const color = this.capturando ? '#f59c1a' : (r.conocido ? '#00acac' : '#dc3545');
+      const color = r.conocido ? '#00acac' : '#dc3545';
       ctx.strokeStyle = color;
       ctx.lineWidth = 3;
       ctx.strokeRect(r.caja.x, r.caja.y, r.caja.w, r.caja.h);
 
-      const etiqueta = this.capturando ? `Capturando ${this.capturasHechas}/${this.CAPTURAS_NECESARIAS}`
-        : (r.conocido ? `${r.nombre} · ${Math.round(r.similitud * 100)}%` : 'No registrado');
+      const etiqueta = r.conocido
+        ? `${r.nombre} · ${Math.round(r.similitud * 100)}%` + (r.pista ? ` · ${r.pista}` : '')
+        : 'No registrado';
       ctx.font = 'bold 16px system-ui, sans-serif';
       ctx.fillStyle = color;
       ctx.fillRect(r.caja.x, Math.max(0, r.caja.y - 26), ctx.measureText(etiqueta).width + 14, 26);
@@ -366,7 +442,7 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  /** Apertura de los ojos (EAR): por debajo de 0,22 están cerrados. */
+  /** Apertura de los ojos (EAR). Qué es «cerrado» lo decide seguirParpadeo. */
   private aperturaOjos(landmarks: any): number {
     const medir = (p: any[]) => {
       const d = (a: any, b: any) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -375,9 +451,38 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
     try { return (medir(landmarks.getLeftEye()) + medir(landmarks.getRightEye())) / 2; } catch { return 1; }
   }
 
+  /**
+   * Prueba de vida: ojos abiertos -> cerrados -> abiertos.
+   *
+   * El umbral NO es fijo. Antes se daban por cerrados los ojos por debajo de
+   * 0,22, y eso dejaba fuera a mucha gente: con la cámara algo lejos el valor
+   * normal ya ronda 0,20 —y entonces los ojos están «siempre cerrados» y el
+   * parpadeo no se completa nunca—, y a quien los tiene muy abiertos un
+   * parpadeo no le baja de 0,24 —y entonces no se ve—. Ahora cada cara trae
+   * su propia referencia de ojos abiertos y se da por cerrado un descenso
+   * claro respecto de ELLA.
+   */
   private seguirParpadeo(id: number, ear: number): void {
-    if (ear < 0.22) { this.ojosCerrados.set(id, true); }
+    if (!Number.isFinite(ear) || ear <= 0) { return; }
+
+    const referencia = this.earAbierto.get(id) ?? ear;
+    const cerrado = ear < referencia * this.CIERRE_RELATIVO;
+
+    // La referencia sólo se mueve con los ojos abiertos: si se actualizara
+    // también al parpadear, se iría detrás y no habría caída que ver.
+    if (!cerrado) { this.earAbierto.set(id, referencia * 0.9 + ear * 0.1); }
+
+    if (cerrado) { this.ojosCerrados.set(id, true); }
     else if (this.ojosCerrados.get(id)) { this.ojosCerrados.set(id, false); this.parpadeo.set(id, true); }
+  }
+
+  /** Al que no sale en el fotograma se le resta una confirmación. */
+  private enfriarNoVistos(vistos: Set<number>): void {
+    for (const [id, veces] of this.vistosSeguidos) {
+      if (vistos.has(id)) { continue; }
+      if (veces <= 1) { this.vistosSeguidos.delete(id); this.earAbierto.delete(id); }
+      else { this.vistosSeguidos.set(id, veces - 1); }
+    }
   }
 
   private recordar(caja: any, empleadoId: number, nombre: string, similitud: number): void {
@@ -396,38 +501,59 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
   // MARCACIÓN
   // ================================================================
 
-  private confirmar(empleadoId: number, similitud: number, video: HTMLVideoElement): void {
-    if (this.enviando) { return; }
-    if (this.candidato?.id === empleadoId) { this.candidato.veces++; }
-    else { this.candidato = { id: empleadoId, veces: 1 }; }
-    if (this.candidato.veces < this.confirmaciones) { return; }
+  /**
+   * ¿Toca marcar a este empleado? Devuelve qué le falta, para pintarlo junto
+   * a su cara: así se ve POR QUÉ no marca, en vez de quedarse esperando.
+   */
+  private confirmar(empleadoId: number, similitud: number, video: HTMLVideoElement): string {
+    const veces = (this.vistosSeguidos.get(empleadoId) ?? 0) + 1;
+    this.vistosSeguidos.set(empleadoId, veces);
+
+    if (this.enviando) { return 'registrando…'; }
+    if (veces < this.confirmaciones) { return `confirmando ${veces}/${this.confirmaciones}`; }
 
     const ahora = Date.now();
-    if (ahora - (this.ultimaMarcacion.get(empleadoId) ?? 0) < this.esperaSegundos * 1000) { return; }
+    const hasta = this.esperarHasta.get(empleadoId) ?? 0;
+    if (ahora < hasta) { return `ya marcó · espere ${Math.ceil((hasta - ahora) / 1000)} s`; }
 
     if (this.exigirParpadeo && !this.parpadeo.get(empleadoId)) {
       this.zone.run(() => this.aviso = { nombre: this.nombreDe(empleadoId), texto: 'Parpadea para confirmar', hora: '', tono: 'info' });
-      return;
+      return 'parpadea';
     }
 
-    this.candidato = null;
+    this.vistosSeguidos.delete(empleadoId);
     this.parpadeo.set(empleadoId, false);
-    this.ultimaMarcacion.set(empleadoId, ahora);
+    // Freno corto mientras va la petición; al responder se pone la espera que
+    // toque. Antes se ponía aquí la espera entera, así que un envío fallido
+    // dejaba a la persona un minuto sin poder volver a intentarlo.
+    this.esperarHasta.set(empleadoId, ahora + this.REINTENTO_SEGUNDOS * 1000);
+
     const foto = this.guardarFoto ? this.miniatura(video) : null;
     this.zone.run(() => this.enviarMarcacion(empleadoId, similitud, foto));
+    return 'registrando…';
   }
 
   private async enviarMarcacion(empleadoId: number, similitud: number, foto: string | null): Promise<void> {
     this.enviando = true;
     try {
+      // De dónde salió la marcación. Si no hay permiso de GPS devuelve null
+      // y se registra igual: perder la marcación por eso sería peor.
+      const donde = await this._ubicacion.donde(this.UBICACION_VIGENTE_MS);
+
       const res: any = await firstValueFrom(this._marcacionService.registrar({
         empleado_id: empleadoId,
         similitud: Math.round(similitud * 1000) / 10,     // 0..100 con un decimal
         dispositivo: this.dispositivo || 'Kiosco',
         foto_base64: foto,
         espera_segundos: this.esperaSegundos,
+        latitud: donde?.lat,
+        longitud: donde?.lng,
+        precision_m: donde?.precision ?? null,
       }));
       if (res?.status !== 'success') { return; }
+
+      // Marcó: ahora sí, la espera entera
+      this.esperarHasta.set(empleadoId, Date.now() + this.esperaSegundos * 1000);
 
       const m: MarcacionModel = res.data;
       this.marcacionesHoy = [m, ...this.marcacionesHoy];
@@ -442,6 +568,11 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
     } catch (e: any) {
       // 429 = ya marcó hace poco (el back manda el mensaje); el interceptor ya avisa
       const msg = e?.error?.message ?? 'No se pudo registrar la marcación';
+      // Si el servidor dice que ya marcó, se respeta su espera; si fue otro
+      // fallo (red, 500), se reintenta en unos segundos y no en un minuto.
+      if (e?.status === 429) {
+        this.esperarHasta.set(empleadoId, Date.now() + this.esperaSegundos * 1000);
+      }
       this.aviso = { nombre: this.nombreDe(empleadoId), texto: msg, hora: '', tono: 'error' };
       setTimeout(() => { if (this.aviso?.tono === 'error') { this.aviso = null; } }, 5000);
     } finally {
@@ -456,121 +587,6 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
       c.getContext('2d')!.drawImage(video, 0, 0, c.width, c.height);
       return c.toDataURL('image/jpeg', 0.6);
     } catch { return null; }
-  }
-
-  // ================================================================
-  // REGISTRO DE PLANTILLAS
-  // ================================================================
-
-  async cargarEmpleados(): Promise<void> {
-    if (this.empleados.length) { return; }
-    try {
-      const res: any = await firstValueFrom(this._empleadoService.listEmpleados(true));
-      this.empleados = res?.status === 'success' ? (res.data ?? []) : [];
-    } catch (e) {
-      console.error('Error al cargar empleados:', e);
-    }
-  }
-
-  /**
-   * Texto de cada opción del selector. La lista simple (fn_empleados_listar)
-   * trae `nombre`; la paginada, `nombre_completo`: se aceptan las dos.
-   */
-  nombreEmpleado(e: any): string {
-    const nombre = e?.nombre || e?.nombre_completo || `${e?.nombres ?? ''} ${e?.apellidos ?? ''}`.trim();
-    const cargo = e?.cargo_nombre || e?.cargo;
-    return (nombre || `Empleado ${e?.id}`) + (cargo ? ` — ${cargo}` : '');
-  }
-
-  iniciarCaptura(): void {
-    if (!this.empleadoSeleccionado) { this._toastr.warning('Elige el empleado', 'Registrar rostro'); return; }
-    if (!this.camaraEncendida) { this._toastr.warning('Enciende la cámara primero', 'Registrar rostro'); return; }
-    this.capturasBuffer = [];
-    this.capturasHechas = 0;
-    this.capturando = true;
-    this._toastr.info(`Que mire a la cámara y mueva un poco la cabeza: ${this.CAPTURAS_NECESARIAS} muestras`, 'Registrar rostro', { timeOut: 4000 });
-  }
-
-  cancelarCaptura(): void {
-    this.capturando = false;
-    this.capturasBuffer = [];
-    this.capturasHechas = 0;
-  }
-
-  private capturarMuestra(descriptor: Float32Array): void {
-    const ahora = Date.now();
-    if (ahora - this.ultimaCapturaT < 500) { return; }
-    this.ultimaCapturaT = ahora;
-
-    this.capturasBuffer.push(Array.from(descriptor));
-    this.zone.run(() => this.capturasHechas = this.capturasBuffer.length);
-
-    if (this.capturasBuffer.length >= this.CAPTURAS_NECESARIAS) {
-      const muestras = [...this.capturasBuffer];
-      this.capturando = false;
-      this.zone.run(() => this.guardarMuestras(muestras, 'CAMARA'));
-    }
-  }
-
-  private async guardarMuestras(muestras: number[][], origen: 'CAMARA' | 'FOTO'): Promise<void> {
-    if (!this.empleadoSeleccionado) { return; }
-    this.registrando = true;
-    try {
-      const res: any = await firstValueFrom(this._marcacionService.addRostro(this.empleadoSeleccionado, muestras, origen));
-      if (res?.status === 'success') {
-        this._toastr.success(res.message, 'Registrar rostro', { closeButton: true });
-        await this.cargarRostros();
-        this.empleadoSeleccionado = null;
-      }
-    } catch (e) {
-      console.error('Error al guardar las muestras:', e);   // el interceptor ya avisó
-    } finally {
-      this.registrando = false;
-      this.cancelarCaptura();
-    }
-  }
-
-  /** Calcula el descriptor a partir de la foto del empleado en RRHH. */
-  async registrarDesdeFoto(): Promise<void> {
-    if (!this.empleadoSeleccionado) { this._toastr.warning('Elige el empleado', 'Registrar rostro'); return; }
-    this.importando = true;
-    try {
-      const url = this._empleadoService.getEmpleadoImage(this.empleadoSeleccionado, true);
-      const r = await fetch(url, { mode: 'cors' });
-      const img = new Image();
-      img.src = URL.createObjectURL(await r.blob());
-      await img.decode();
-
-      const d = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 416 }))
-        .withFaceLandmarks().withFaceDescriptor();
-      URL.revokeObjectURL(img.src);
-      if (!d) { this._toastr.warning('No se reconoció ningún rostro en la foto del empleado', 'Registrar rostro'); return; }
-
-      await this.guardarMuestras([Array.from(d.descriptor)], 'FOTO');
-    } catch (e) {
-      console.error('Error al procesar la foto del empleado:', e);
-      this._toastr.error('No se pudo procesar la foto del empleado', 'Registrar rostro');
-    } finally {
-      this.importando = false;
-    }
-  }
-
-  async quitarPlantillas(r: RostroEmpleado): Promise<void> {
-    try {
-      const res: any = await firstValueFrom(this._marcacionService.deleteRostrosEmpleado(r.empleado_id));
-      if (res?.status === 'success') {
-        this._toastr.info(`${r.empleado}: plantillas eliminadas`, 'Rostros');
-        await this.cargarRostros();
-      }
-    } catch (e) {
-      console.error('Error al eliminar las plantillas:', e);
-    }
-  }
-
-  /** Marcación a mano desde el kiosco (si la cámara no reconoce a alguien). */
-  async marcarAMano(r: RostroEmpleado): Promise<void> {
-    this.ultimaMarcacion.set(r.empleado_id, Date.now());
-    await this.enviarMarcacion(r.empleado_id, 1, null);
   }
 
   // ================================================================
@@ -589,8 +605,7 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
     if (this.estado === 'cargando') { return 'Cargando el reconocimiento facial…'; }
     if (this.estado === 'error') { return this.mensajeError; }
     if (!this.camaraEncendida) { return 'Cámara apagada'; }
-    if (this.capturando) { return `Capturando muestras (${this.capturasHechas}/${this.CAPTURAS_NECESARIAS})`; }
-    if (!this.matcher) { return 'Sin plantillas faciales: registra a alguien para empezar'; }
+    if (!this.matcher) { return 'Sin plantillas faciales: regístralas en Empleados'; }
     if (!this.enPantalla.length) { return 'Esperando a alguien…'; }
     const conocidos = this.enPantalla.filter(r => r.conocido).length;
     return conocidos ? `${conocidos} persona(s) reconocida(s)` : 'Rostro no registrado';
@@ -598,10 +613,6 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
 
   fotoMarcacion(m: MarcacionModel): string {
     return this._marcacionService.getImagenMarcacion(m.id);
-  }
-
-  fotoEmpleado(empleadoId: number): string {
-    return this._empleadoService.getEmpleadoImage(empleadoId, false);
   }
 
   async recargar(): Promise<void> {

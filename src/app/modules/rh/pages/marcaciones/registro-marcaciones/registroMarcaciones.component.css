@@ -1,0 +1,242 @@
+/* ============================================================
+   REGISTRO DE MARCACIONES (celular)
+
+   Una columna, texto grande y zonas de pulsación cómodas: esto
+   se usa de pie, en la puerta, con una mano.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.rm {
+  max-width: 520px;          /* en un monitor no se estira a lo ancho */
+  margin: 0 auto;
+  padding: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+/* ---------- Mensajes de pantalla completa ---------- */
+.rm-centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  min-height: 60vh;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.rm-centro h2 { font-size: 1.15rem; margin: 0; color: var(--bs-body-color, #212529); }
+.rm-centro p  { margin: 0; }
+.rm-centro small { font-size: .78rem; }
+.rm-centro--aviso i { color: var(--bs-warning, #f59c1a); }
+.rm-centro--error i { color: var(--bs-danger, #dc3545); }
+
+/* ---------- Quién soy ---------- */
+.rm-ficha {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+
+  padding: .6rem .7rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .75rem;
+  background: var(--bs-component-bg, #fff);
+}
+
+.rm-ficha__foto {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bs-tertiary-bg, #f1f3f5);
+}
+
+.rm-ficha__texto { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.rm-ficha__texto b { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rm-ficha__texto small { font-size: .78rem; color: var(--bs-secondary-color, #6c757d); }
+
+.rm-reloj {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* ---------- Cómo está hoy ---------- */
+.rm-estado {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding: .6rem .7rem;
+  border-radius: .75rem;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  font-size: .88rem;
+}
+
+.rm-estado i { color: var(--bs-secondary-color, #6c757d); }
+.rm-estado.is-dentro i { color: var(--bs-success, #198754); }
+
+.rm-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+
+  padding: .6rem .7rem;
+  border-radius: .75rem;
+  background: rgba(var(--bs-warning-rgb, 245, 156, 26), .12);
+  color: var(--bs-body-color, #212529);
+  font-size: .85rem;
+}
+
+.rm-aviso i { color: var(--bs-warning, #f59c1a); margin-top: .15rem; }
+
+/* ---------- El botón grande ---------- */
+.rm-grande {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .25rem;
+
+  padding: 1.5rem 1rem;
+  border: 0;
+  border-radius: 1rem;
+
+  background: var(--bs-app-theme, #00acac);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+}
+
+.rm-grande:disabled { opacity: .5; box-shadow: none; }
+.rm-grande i { font-size: 2rem; }
+.rm-grande__texto { font-size: 1.15rem; font-weight: 700; }
+.rm-grande small { opacity: .85; font-size: .8rem; letter-spacing: .02em; }
+.rm-grande.is-salida { background: #348FE2; }
+
+.rm-boton {
+  width: 100%;
+  border-radius: .75rem;
+  padding: .75rem 1rem;
+  font-size: 1rem;
+}
+
+.rm-ayuda {
+  margin: 0;
+  font-size: .78rem;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.rm-ayuda i { margin-right: .25rem; }
+
+/* ---------- La cámara ---------- */
+.rm-camara {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .9rem;
+  padding-top: .5rem;
+}
+
+/* Un círculo: dice sin palabras dónde hay que poner la cara */
+.rm-circulo {
+  position: relative;
+  width: min(78vw, 320px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 0 0 4px var(--bs-app-theme, #00acac), 0 8px 24px rgba(0, 0, 0, .25);
+}
+
+.rm-circulo video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* En espejo: uno se ve como en el espejo del baño, no al revés */
+  transform: scaleX(-1);
+}
+
+.rm-pista {
+  margin: 0;
+  min-height: 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--bs-body-color, #212529);
+}
+
+/* ---------- Éxito ---------- */
+.rm-exito {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.rm-exito__sello {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 96px;
+  height: 96px;
+  margin-bottom: .5rem;
+  border-radius: 50%;
+
+  background: var(--bs-success, #198754);
+  color: #fff;
+  font-size: 2.5rem;
+
+  animation: rm-sello .35s ease-out;
+}
+
+.rm-exito.is-salida .rm-exito__sello { background: #348FE2; }
+
+@keyframes rm-sello {
+  from { transform: scale(.6); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+
+.rm-exito h2 { margin: 0; font-size: 1.3rem; }
+.rm-exito__hora {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.rm-exito__quien { margin: 0; color: var(--bs-secondary-color, #6c757d); }
+
+.rm-exito__datos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .15rem;
+  margin: .5rem 0 1rem;
+  font-size: .8rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- El botón del historial ---------- */
+.rm-historial {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  padding: .85rem 1rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .75rem;
+  font-size: 1rem;
+}
+
+.rm-historial i:first-child { color: var(--bs-app-theme, #00acac); }
+.rm-historial i:last-child  { color: var(--bs-secondary-color, #6c757d); font-size: .8rem; }
+
+.text-app { color: var(--bs-app-theme, #00acac); }

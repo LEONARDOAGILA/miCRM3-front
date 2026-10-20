@@ -1,0 +1,137 @@
+<!-- ============================================================
+     REGISTRO DE MARCACIONES — EL CELULAR DEL EMPLEADO
+
+     Una sola columna, botones grandes y un paso a la vez: se abre,
+     se pulsa, se marca. Pensada para un teléfono en la mano, no
+     para un escritorio.
+     ============================================================ -->
+
+<div class="rm">
+
+  <!-- ================= CARGANDO ================= -->
+  @if (paso === 'cargando') {
+    <div class="rm-centro">
+      <span class="spinner-border text-app"></span>
+      <p>Cargando su ficha…</p>
+    </div>
+  }
+
+  <!-- ================= SIN EMPLEADO ENLAZADO ================= -->
+  @if (paso === 'sin-empleado') {
+    <div class="rm-centro rm-centro--aviso">
+      <i class="fa fa-user-slash fa-3x"></i>
+      <h2>No podemos saber quién es usted</h2>
+      <p>{{ mensajeError }}</p>
+      <small>Recursos Humanos debe enlazar su usuario con su ficha de empleado.</small>
+    </div>
+  }
+
+  <!-- ================= ERROR ================= -->
+  @if (paso === 'error') {
+    <div class="rm-centro rm-centro--error">
+      <i class="fa fa-circle-exclamation fa-3x"></i>
+      <h2>{{ tituloError }}</h2>
+      <p>{{ mensajeError }}</p>
+      <button type="button" class="btn btn-lg btn-primary rm-boton" (click)="cargarMiFicha()">
+        <i class="fa fa-rotate-right me-2"></i>Volver a intentar
+      </button>
+    </div>
+  }
+
+  <!-- ================= LISTO: EL BOTÓN GRANDE ================= -->
+  @if (paso === 'listo') {
+    <div class="rm-ficha">
+      <img [src]="foto" alt="" class="rm-ficha__foto" onerror="this.style.visibility='hidden'">
+      <div class="rm-ficha__texto">
+        <b>{{ nombre }}</b>
+        <small>{{ empleado?.cargo_nombre || empleado?.cargo || 'Empleado' }}</small>
+      </div>
+      <span class="rm-reloj">{{ reloj | date:'HH:mm' }}</span>
+    </div>
+
+    <div class="rm-estado" [class.is-dentro]="ultima?.tipo === 'ENTRADA'">
+      @if (ultima) {
+        <i class="fa" [ngClass]="ultima.tipo === 'ENTRADA' ? 'fa-right-to-bracket' : 'fa-right-from-bracket'"></i>
+        <span>
+          Su última marcación de hoy fue una
+          <b>{{ ultima.tipo === 'ENTRADA' ? 'entrada' : 'salida' }}</b>
+          a las <b>{{ ultima.hora }}</b>
+        </span>
+      } @else {
+        <i class="fa fa-mug-hot"></i>
+        <span>Hoy todavía no ha marcado</span>
+      }
+    </div>
+
+    @if (muestrasRostro === 0) {
+      <div class="rm-aviso">
+        <i class="fa fa-triangle-exclamation"></i>
+        <span>
+          <b>Su rostro no está registrado.</b>
+          Pida en Recursos Humanos que lo registren y después podrá marcar desde aquí.
+        </span>
+      </div>
+    }
+
+    <button type="button" class="btn rm-grande"
+            [class.is-salida]="proximoTipo === 'SALIDA'"
+            [disabled]="!puedeMarcar"
+            (click)="iniciar()">
+      <i class="fa fa-camera"></i>
+      <span class="rm-grande__texto">Iniciar marcación</span>
+      <small>Se registrará su {{ proximoTipo === 'ENTRADA' ? 'ENTRADA' : 'SALIDA' }}</small>
+    </button>
+
+    <p class="rm-ayuda">
+      <i class="fa fa-circle-info"></i>
+      Se le pedirá la cámara para reconocerle y la ubicación para dejar constancia de
+      dónde marcó. Mire al frente, con buena luz, y espere: en cuanto le reconozca
+      se registra solo.
+    </p>
+
+    <!-- El historial, en un modal: la pantalla principal se queda con lo
+         que se viene a hacer, que es marcar. -->
+    <button type="button" class="btn btn-white rm-historial" (click)="abrirMisMarcaciones()">
+      <i class="fa fa-clipboard-list me-2"></i>
+      <span>Mis marcaciones</span>
+      <i class="fa fa-chevron-right ms-auto"></i>
+    </button>
+  }
+
+  <!-- ================= MARCANDO: LA CÁMARA ================= -->
+  @if (paso === 'marcando') {
+    <div class="rm-camara">
+      <div class="rm-circulo">
+        <video #video autoplay muted playsinline></video>
+      </div>
+
+      <p class="rm-pista">{{ pista }}</p>
+
+      <button type="button" class="btn btn-lg btn-white rm-boton" (click)="cancelar()">
+        <i class="fa fa-times me-2"></i>Cancelar
+      </button>
+    </div>
+  }
+
+  <!-- ================= ÉXITO ================= -->
+  @if (paso === 'exito' && hecha) {
+    <div class="rm-exito" [class.is-salida]="hecha.tipo === 'SALIDA'">
+      <div class="rm-exito__sello"><i class="fa fa-check"></i></div>
+
+      <h2>{{ hecha.tipo === 'ENTRADA' ? '¡Entrada registrada!' : '¡Salida registrada!' }}</h2>
+      <p class="rm-exito__hora">{{ hecha.hora }}</p>
+      <p class="rm-exito__quien">{{ hecha.empleado }}</p>
+
+      <div class="rm-exito__datos">
+        <span><i class="fa fa-location-dot fa-fw"></i>{{ textoUbicacion }}</span>
+        @if (hecha.link_ubicacion) {
+          <a [href]="hecha.link_ubicacion" target="_blank" rel="noopener">Ver en el mapa</a>
+        }
+      </div>
+
+      <button type="button" class="btn btn-lg btn-primary rm-boton" (click)="listo()">
+        <i class="fa fa-check me-2"></i>Listo
+      </button>
+    </div>
+  }
+</div>

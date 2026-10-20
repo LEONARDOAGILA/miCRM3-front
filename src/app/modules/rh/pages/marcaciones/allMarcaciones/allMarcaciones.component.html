@@ -185,6 +185,8 @@
         }
 
         <!-- ---------- 2c. GRILLA ---------- -->
+        <!-- tooltipShowDelay: sin él, el tooltip de «Dónde» (el error que
+             declaró el GPS) no llega a enseñarse nunca. -->
         <ag-grid-angular
           class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
           [rowData]="marcaciones"
@@ -199,6 +201,7 @@
           [pagination]="false"
           [animateRows]="true"
           [overlayNoRowsTemplate]="'<span>No hay marcaciones en el rango elegido</span>'"
+          [tooltipShowDelay]="400"
           [navigateToNextCell]="navegarConTeclado"
           (gridReady)="onGridReady($event)"
           (cellClicked)="onCellClicked($event)">

@@ -15,8 +15,21 @@
   margin: -20px 0 0;
 }
 
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .ruta-contenido {
   margin-top: -10px;
+
+  /* Columna: los filtros y el aviso ocupan lo suyo y las dos cajas se
+     quedan con el resto. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .ruta-aviso {
@@ -74,6 +87,11 @@
   display: flex;
   align-items: stretch;
   gap: .75rem;
+
+  /* El alto en píxeles lo escribe el componente; esto es sólo por si
+     todavía no ha medido (el primer pintado). */
+  flex: 1 1 auto;
+  min-height: 26rem;
 }
 
 .ruta-panel {
@@ -131,7 +149,9 @@
    ============================================================ */
 .ruta-mapa {
   flex: 1 1 auto;
-  min-height: 26rem;
+  /* Antes eran 26rem y era lo que decidía el alto de la pantalla. Ahora el
+     alto viene de arriba y el mapa sólo necesita no desaparecer. */
+  min-height: 12rem;
   width: 100%;
 }
 
@@ -275,7 +295,13 @@
    pantalla de mapa y media de tabla no deja ver ninguna de las dos.
    ============================================================ */
 @media (max-width: 991.98px) {
-  .ruta-paneles { flex-direction: column; }
+  /* Apiladas, el alto medido no vale: dos cajas dentro de una pantalla de
+     móvil no dejan ver ninguna. Se desplaza la página, como antes. */
+  .ruta-paneles {
+    flex-direction: column;
+    height: auto !important;
+    min-height: 0;
+  }
   .ruta-panel:first-child,
   .ruta-panel:last-child { flex: 1 1 auto; }
 

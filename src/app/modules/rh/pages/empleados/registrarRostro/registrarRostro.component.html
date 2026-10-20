@@ -1,0 +1,151 @@
+<!-- ============================================================
+     REGISTRAR EL ROSTRO DE UN EMPLEADO
+
+     Cinco muestras con la cámara. Lo que se guarda no es la foto: son
+     cinco descriptores de 128 números, que es con lo que el kiosco
+     reconoce después a la persona.
+     ============================================================ -->
+
+<app-modal-header
+  [title]="'Registrar rostro — ' + nombre"
+  (onClose)="cerrar()">
+</app-modal-header>
+
+<div class="modal-body rostro-cuerpo">
+
+  <div class="rostro-columnas">
+
+    <!-- ---------- LA CÁMARA ---------- -->
+    <div class="rostro-video" [class.is-espejo]="espejo">
+      <video #video autoplay muted playsinline></video>
+      <canvas #canvas></canvas>
+
+      @if (estado === 'cargando') {
+        <div class="rostro-velo">
+          <span class="spinner-border text-light"></span>
+          <span>Cargando el reconocimiento facial…</span>
+        </div>
+      } @else if (estado === 'error') {
+        <div class="rostro-velo rostro-velo--error">
+          <i class="fa fa-triangle-exclamation fa-2x"></i>
+          <span>{{ mensajeError }}</span>
+          <button type="button" class="btn btn-sm btn-white" (click)="encenderCamara()">Reintentar</button>
+        </div>
+      } @else if (!camaraEncendida) {
+        <div class="rostro-velo">
+          <i class="fa fa-video-slash fa-2x"></i>
+          <span>Cámara apagada</span>
+          <button type="button" class="btn btn-sm btn-primary" (click)="encenderCamara()">Encender cámara</button>
+        </div>
+      }
+
+      <!-- Lo que hay que corregir: cerca, de frente y uno solo -->
+      @if (camaraEncendida && estado === 'listo') {
+        <div class="rostro-pista" [class.is-ok]="caraLista">
+          <i class="fa" [ngClass]="caraLista ? 'fa-circle-check' : 'fa-circle-info'"></i>
+          <span>{{ pista }}</span>
+        </div>
+      }
+
+      @if (capturando) {
+        <div class="rostro-captura">
+          <span>Capturando {{ capturasHechas }}/{{ CAPTURAS_NECESARIAS }}</span>
+          <div class="rostro-captura__barra"><span [style.width.%]="progreso"></span></div>
+          <button type="button" class="btn btn-xs btn-white" (click)="cancelar()">Cancelar</button>
+        </div>
+      }
+
+      @if (guardando) {
+        <div class="rostro-velo">
+          <span class="spinner-border text-light"></span>
+          <span>Guardando el rostro…</span>
+        </div>
+      }
+    </div>
+
+    <!-- ---------- QUIÉN ES Y QUÉ TIENE ---------- -->
+    <div class="rostro-lateral">
+
+      <div class="rostro-quien">
+        <img [src]="foto" alt="" class="rostro-quien__foto"
+             onerror="this.style.visibility='hidden'">
+        <div class="rostro-quien__texto">
+          <b>{{ nombre }}</b>
+          <small>{{ empleado?.cargo_nombre || empleado?.cargo || 'Empleado' }} · id {{ empleadoId }}</small>
+        </div>
+      </div>
+
+      <div class="rostro-ficha" [class.is-registrado]="muestrasGuardadas > 0">
+        <i class="fa" [ngClass]="muestrasGuardadas > 0 ? 'fa-user-check' : 'fa-user-slash'"></i>
+        @if (muestrasGuardadas > 0) {
+          <div>
+            <b>Ya tiene {{ muestrasGuardadas }} muestra(s)</b>
+            <small>
+              Tomadas
+              {{ origenGuardado === 'FOTO' ? 'de su foto'
+                 : (origenGuardado === 'MIXTO' ? 'con la cámara y de su foto' : 'con la cámara') }}.
+              Volver a registrar añade las nuevas a las que ya hay.
+            </small>
+          </div>
+        } @else {
+          <div>
+            <b>Todavía no tiene rostro registrado</b>
+            <small>Sin muestras, el kiosco no puede reconocerle.</small>
+          </div>
+        }
+      </div>
+
+      @if (camaras.length > 1) {
+        <div class="rostro-campo">
+          <label class="rostro-campo__rotulo" for="rostroCamara">Cámara</label>
+          <select id="rostroCamara" class="form-select form-select-sm"
+                  [(ngModel)]="camaraId" (ngModelChange)="cambiarCamara()">
+            @for (c of camaras; track c.deviceId) {
+              <option [value]="c.deviceId">{{ c.label || 'Cámara' }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="form-check form-switch rostro-espejo">
+        <input class="form-check-input" type="checkbox" id="rostroEspejo" [(ngModel)]="espejo">
+        <label class="form-check-label" for="rostroEspejo">Ver en espejo</label>
+      </div>
+
+      <p class="rostro-ayuda">
+        <i class="fa-solid fa-circle-info"></i>
+        Cinco tomas de la misma cara en poses algo distintas. Pida a la persona que
+        <b>mire al frente y gire despacio la cabeza</b>: las tomas casi idénticas se
+        descartan, así que el contador avanza cuando hay algo nuevo que guardar.
+      </p>
+
+      @if (muestrasGuardadas > 0) {
+        <button type="button" class="btn btn-sm btn-outline-danger w-100"
+                [disabled]="borrando || capturando || guardando"
+                (click)="borrarGuardadas()">
+          <i class="fa fa-trash fa-fw me-1"></i>
+          {{ borrando ? 'Borrando…' : 'Borrar las muestras guardadas' }}
+        </button>
+      }
+    </div>
+  </div>
+</div>
+
+<div class="modal-footer pie-modal">
+  <button type="button" class="btn btn-danger pie-modal__boton" (click)="cerrar()">
+    <i class="fa fa-times fa-fw me-1"></i><span>Salir</span>
+  </button>
+
+  @if (capturando) {
+    <button type="button" class="btn btn-warning pie-modal__boton" (click)="cancelar()">
+      <i class="fa fa-stop fa-fw me-1"></i><span>Cancelar captura</span>
+    </button>
+  } @else {
+    <button type="button" class="btn btn-primary pie-modal__boton"
+            [disabled]="!camaraEncendida || estado !== 'listo' || guardando"
+            (click)="empezar()">
+      <i class="fa fa-fw me-1" [ngClass]="guardando ? 'fa-circle-notch fa-spin' : 'fa-camera'"></i>
+      <span>{{ guardando ? 'Guardando…' : 'Capturar ' + CAPTURAS_NECESARIAS + ' muestras' }}</span>
+    </button>
+  }
+</div>
