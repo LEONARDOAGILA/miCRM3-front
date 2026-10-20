@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -111,7 +111,28 @@ export class RutaCobradorComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Ancho de la columna del mapa, en %. */
   public anchoIzquierda = 62;
 
+  /**
+   * Alto de las dos columnas, en píxeles.
+   *
+   * El panel crecía sólo lo que pedía su contenido (el mapa, 26rem), y debajo
+   * quedaba una franja gris hasta el final de la ventana. Aquí se mide dónde
+   * empieza la zona de las columnas y se le da lo que queda de pantalla, así
+   * que el mapa y la tabla llegan abajo y el panel con ellos.
+   *
+   * Se calcula y no se hace con CSS porque lo que hay encima cambia de alto:
+   * los filtros se parten en dos líneas al estrechar y el aviso de GPS impreciso
+   * aparece y desaparece.
+   */
+  public altoPaneles: number | null = null;
+
+  /** Lo que se deja por debajo: el relleno del panel y el aire de la página. */
+  private readonly MARGEN_INFERIOR = 36;
+
+  /** Agrupa los muchos avisos seguidos de un redimensionado. */
+  private resizeTimeoutId: any = null;
+
   constructor(
+    private host: ElementRef<HTMLElement>,
     private _recorridos: RecorridoService,
     private _loader: GoogleMapsLoaderService,
     private _toastr: ToastrService,
@@ -136,6 +157,8 @@ export class RutaCobradorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async ngAfterViewInit(): Promise<void> {
+    this.ajustarAlto();
+
     if (!this._loader.hayClave) { this.estadoApi = 'sin-clave'; return; }
 
     // Antes de construir el mapa: el rechazo llega al construirlo, que es
@@ -164,7 +187,31 @@ export class RutaCobradorComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  @HostListener('window:resize')
+  onResize(): void { this.ajustarAlto(); }
+
+  /**
+   * Da a las dos columnas lo que queda de ventana.
+   *
+   * Se agrupan los avisos seguidos (arrastrar el borde dispara decenas) y se
+   * respeta un mínimo: en una ventana muy baja es mejor que la página se
+   * desplace a que el mapa quede en una rendija.
+   */
+  ajustarAlto(): void {
+    if (this.resizeTimeoutId) { clearTimeout(this.resizeTimeoutId); }
+
+    this.resizeTimeoutId = setTimeout(() => {
+      this.resizeTimeoutId = null;
+      const caja = this.host.nativeElement.querySelector('.ruta-paneles') as HTMLElement | null;
+      if (!caja) { return; }
+
+      const disponible = window.innerHeight - caja.getBoundingClientRect().top - this.MARGEN_INFERIOR;
+      this.altoPaneles = Math.max(320, Math.round(disponible));
+    }, 60);
+  }
+
   ngOnDestroy(): void {
+    if (this.resizeTimeoutId) { clearTimeout(this.resizeTimeoutId); }
     if (this.engancheAuth) {
       (window as any).gm_authFailure = this.authFailurePrevio;
       this.engancheAuth = false;
@@ -260,6 +307,9 @@ export class RutaCobradorComponent implements OnInit, AfterViewInit, OnDestroy {
       this.limpiarDibujo();
     } finally {
       this.cargando = false;
+      // El aviso de lecturas imprecisas sale o se va según el día, y eso
+      // mueve dónde empiezan las columnas
+      this.ajustarAlto();
     }
   }
 

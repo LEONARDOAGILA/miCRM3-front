@@ -23,6 +23,12 @@ export interface MarcacionModel {
   dispositivo?: string | null;
   latitud?: number | null;
   longitud?: number | null;
+  /** «-2.900123, -79.005099», ya formateado por el servidor */
+  coordenadas?: string | null;
+  /** Enlace a Google Maps del punto; lo arma el servidor con lo guardado */
+  link_ubicacion?: string | null;
+  /** Error que declaró el GPS, en metros */
+  precision_m?: number | null;
   /** Fichero de la foto del momento (storage/img/marcaciones) */
   foto?: string | null;
   observacion?: string | null;

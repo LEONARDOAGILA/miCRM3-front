@@ -46,12 +46,48 @@ export class MarcacionService {
     return this._http.get(this.URL + 'findByIdMarcacion/' + id);
   }
 
-  /** Kiosco: el tipo se deduce solo y hay espera anti-duplicado. */
+  /**
+   * Kiosco y celular: el tipo se deduce solo y hay espera anti-duplicado.
+   *
+   * La ubicación es opcional —sin permiso de GPS la marcación entra igual—,
+   * y el enlace del mapa NO se manda: lo arma el servidor con las
+   * coordenadas que de verdad guardó.
+   */
   registrar(datos: {
     empleado_id: number; similitud?: number; dispositivo?: string; foto_base64?: string | null;
-    latitud?: number; longitud?: number; espera_segundos?: number; tipo?: string; observacion?: string;
+    latitud?: number; longitud?: number; precision_m?: number | null;
+    espera_segundos?: number; tipo?: string; observacion?: string;
   }): Observable<any> {
     return this._http.post(this.URL + 'registrar', datos);
+  }
+
+  // ---------- DESDE MI CELULAR ----------
+
+  /** Quién soy (el empleado de mi usuario), lo de hoy y mis muestras de rostro. */
+  miEmpleado(): Observable<any> {
+    return this._http.get(this.URL + 'miEmpleado');
+  }
+
+  /** MIS marcaciones, paginadas: el empleado lo pone el servidor. */
+  misMarcaciones(page = 1, perPage = 10, filtros: { desde?: string; hasta?: string; tipo?: string } = {}): Observable<any> {
+    let params = new HttpParams().set('page', String(page)).set('per_page', String(perPage));
+    if (filtros.desde) { params = params.set('desde', filtros.desde); }
+    if (filtros.hasta) { params = params.set('hasta', filtros.hasta); }
+    if (filtros.tipo)  { params = params.set('tipo', filtros.tipo); }
+    return this._http.get(this.URL + 'misMarcaciones', { params });
+  }
+
+  /**
+   * Marco YO, desde mi teléfono.
+   *
+   * No lleva empleado_id a propósito: lo pone el servidor con el usuario de
+   * la sesión, así nadie marca por un compañero cambiando un número.
+   */
+  registrarMia(datos: {
+    similitud?: number; dispositivo?: string; foto_base64?: string | null;
+    latitud?: number; longitud?: number; precision_m?: number | null; observacion?: string;
+  }): Observable<any> {
+    return this._http.post(this.URL + 'registrarMia', datos);
   }
 
   /** Alta manual (con tipo y fecha/hora). */

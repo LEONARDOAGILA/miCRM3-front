@@ -1,0 +1,61 @@
+<!-- ============================================================
+     AJUSTES DEL KIOSCO
+
+     Los mismos controles que estaban en el panel derecho. Se trabaja
+     sobre una copia: Salir deja el kiosco como estaba.
+     ============================================================ -->
+
+<app-modal-header title="Ajustes del kiosco" (onClose)="modal.dismiss()"></app-modal-header>
+
+<div class="modal-body aju-cuerpo">
+
+  <label class="aju-campo">
+    <span>Exigencia al comparar <b>{{ copia.umbral | number:'1.2-2' }}</b></span>
+    <input type="range" class="form-range" min="0.35" max="0.7" step="0.01" [(ngModel)]="copia.umbral">
+    <small>Menor = más estricto. Si confunde a dos personas, bájalo; si no reconoce a nadie, súbelo.</small>
+  </label>
+
+  <label class="aju-campo">
+    <span>Fotogramas para confirmar <b>{{ copia.confirmaciones }}</b></span>
+    <input type="range" class="form-range" min="2" max="15" step="1" [(ngModel)]="copia.confirmaciones">
+    <small>Cuántas veces seguidas hay que ver la misma cara antes de marcar.</small>
+  </label>
+
+  <label class="aju-campo">
+    <span>Espera entre marcaciones <b>{{ copia.esperaSegundos }} s</b></span>
+    <input type="range" class="form-range" min="10" max="600" step="10" [(ngModel)]="copia.esperaSegundos">
+    <small>Lo que tiene que pasar entre dos marcaciones de la misma persona.</small>
+  </label>
+
+  <label class="aju-campo">
+    <span>Nombre del dispositivo</span>
+    <input type="text" class="form-control form-control-sm" [(ngModel)]="copia.dispositivo"
+           maxlength="150" placeholder="Kiosco recepción">
+    <small>Queda guardado en cada marcación: sirve para saber por qué puerta entró.</small>
+  </label>
+
+  <label class="aju-switch">
+    <input type="checkbox" class="form-check-input" [(ngModel)]="copia.exigirParpadeo">
+    <span>
+      Exigir parpadeo (prueba de vida)
+      <small>Sin esto, una foto en el celular podría marcar.</small>
+    </span>
+  </label>
+
+  <label class="aju-switch">
+    <input type="checkbox" class="form-check-input" [(ngModel)]="copia.guardarFoto">
+    <span>
+      Guardar foto de cada marcación
+      <small>Una miniatura del momento, para revisar después.</small>
+    </span>
+  </label>
+</div>
+
+<div class="modal-footer pie-modal">
+  <button type="button" class="btn btn-danger pie-modal__boton" (click)="modal.dismiss()">
+    <i class="fa fa-times fa-fw me-1"></i><span>Salir</span>
+  </button>
+  <button type="button" class="btn btn-primary pie-modal__boton" (click)="guardar()">
+    <i class="fa fa-save fa-fw me-1"></i><span>Guardar</span>
+  </button>
+</div>

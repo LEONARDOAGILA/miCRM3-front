@@ -11,6 +11,7 @@ import { AllDepartamentosComponent } from './pages/departamentos/allDepartamento
 import { AllEmpleadosComponent } from './pages/empleados/allEmpleados/allEmpleados.component';
 import { AllMarcacionesComponent } from './pages/marcaciones/allMarcaciones/allMarcaciones.component';
 import { KioscoMarcacionComponent } from './pages/marcaciones/kiosco/kioscoMarcacion.component';
+import { RegistroMarcacionesComponent } from './pages/marcaciones/registro-marcaciones/registroMarcaciones.component';
 
 const routes: Routes = [
 {
@@ -23,6 +24,10 @@ const routes: Routes = [
         { path: 'allEmpleados', component: AllEmpleadosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'allMarcaciones', component: AllMarcacionesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'kioscoMarcacion', component: KioscoMarcacionComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        // El empleado marca desde su propio celular. El programa/menú
+        // 'registroMarcaciones' hay que crearlo en seguridad.accesos o la
+        // ruta cae en el 404: el programa sale del segundo tramo de la url.
+        { path: 'registroMarcaciones', component: RegistroMarcacionesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         { path: 'home-rh', component: HomeComponent, data: { title: 'Recursos Humanos' }, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
         { path: '**', component: ErrorPage },

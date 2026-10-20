@@ -267,3 +267,11 @@
     min-width: 100%;
   }
 }
+
+/* ---------- Ubicación poco fiable ----------
+   Más de 500 m de error: el aparato se ubicó por la conexión, no por GPS.
+   Se pinta en ámbar para que nadie lea ese punto como si fuera exacto; el
+   detalle está en el título de la celda. */
+:host ::ng-deep .ag-cell.celda-ubicacion-dudosa {
+  color: var(--bs-warning, #f59c1a);
+}

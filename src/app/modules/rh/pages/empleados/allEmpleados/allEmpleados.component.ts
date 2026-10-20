@@ -25,6 +25,7 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 ///   COMPONENTES    ///
 import { SaveEmpleadoComponent } from '../saveEmpleado/saveEmpleado.component';
 import { DeleteEmpleadoComponent } from '../deleteEmpleado/deleteEmpleado.component';
+import { RegistrarRostroComponent } from '../registrarRostro/registrarRostro.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
@@ -726,6 +727,28 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     return modalRef;
   }
 
+  /**
+   * Registrar el rostro del empleado de la fila (para el kiosco de marcación).
+   *
+   * Se hace aquí y no sólo en el kiosco porque el alta de la persona es donde
+   * se tiene delante su ficha: el kiosco es la puerta, no el escritorio.
+   */
+  registrarRostro(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+    if (this.accesoModel?.editar === false) {
+      this._toastr.warning('No tiene permiso para modificar empleados', 'Acceso denegado');
+      return;
+    }
+
+    const modalRef = this.modal.open(RegistrarRostroComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: false,
+    });
+    modalRef.componentInstance.empleado = registro;
+  }
+
   addEmpleado(): void {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.abrirModalEmpleado(0, 'add');
@@ -816,20 +839,50 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
         <i class="fas fa-bars"></i>
       </button>
     } @else {
-      <app-action-buttons
-        [accesoModel]="parent.accesoModel"
-        [buttonView]="true"
-        [buttonEdit]="true"
-        [buttonClone]="true"
-        [buttonDelete]="true"
-        (view)="parent.viewEmpleado(params.data)"
-        (edit)="parent.editEmpleado(params.data)"
-        (clone)="parent.clonEmpleado(params.data)"
-        (delete)="parent.deleteEmpleado(params.data)">
-      </app-action-buttons>
+      <div class="acciones-fila">
+        <app-action-buttons
+          [accesoModel]="parent.accesoModel"
+          [buttonView]="true"
+          [buttonEdit]="true"
+          [buttonClone]="true"
+          [buttonDelete]="true"
+          (view)="parent.viewEmpleado(params.data)"
+          (edit)="parent.editEmpleado(params.data)"
+          (clone)="parent.clonEmpleado(params.data)"
+          (delete)="parent.deleteEmpleado(params.data)">
+        </app-action-buttons>
+
+        <!-- El rostro para el kiosco de marcación. Va aparte de
+             app-action-buttons, que es compartido por media aplicación. -->
+        <button type="button"
+                class="btn-icon acciones-rostro"
+                [title]="parent.accesoModel?.editar === false
+                          ? 'Registrar rostro - Desactivado'
+                          : 'Registrar rostro para el kiosco'"
+                [disabled]="parent.accesoModel?.editar === false"
+                (click)="parent.registrarRostro(params.data)">
+          <i class="fa fa-user-check"></i>
+        </button>
+      </div>
     }
   `,
   styles: [`
+    .acciones-fila {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Del mismo tamaño que los de app-action-buttons, en el tono del kiosco */
+    .acciones-rostro {
+      color: var(--bs-app-theme, #00acac);
+    }
+
+    .acciones-rostro:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
     .acciones-desplegar {
       width: 28px;
       height: 24px;

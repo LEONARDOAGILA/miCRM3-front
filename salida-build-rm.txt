@@ -1,0 +1,439 @@
+One or more browsers which are configured in the project's Browserslist configuration fall outside Angular's browser support for this version.
+Unsupported browsers:
+ios_saf 15.6-15.8, ios_saf 15.5, ios_saf 15.4, ios_saf 15.2-15.3, ios_saf 15.0-15.1, ios_saf 14.5-14.8, ios_saf 14.0-14.4, safari 15.6, safari 15.5, safari 15.4, safari 15.2-15.3, safari 15.1, safari 15, safari 14.1, safari 14
+
+Initial chunk files                                                                                     | Names                                                 |  Raw size
+vendor.js                                                                                               | vendor                                                |   5.43 MB | 
+styles.css                                                                                              | styles                                                |   1.73 MB | 
+main.js                                                                                                 | main                                                  | 906.38 kB | 
+scripts.js                                                                                              | scripts                                               | 692.12 kB | 
+polyfills.js                                                                                            | polyfills                                             | 142.48 kB | 
+runtime.js                                                                                              | runtime                                               |  14.66 kB | 
+
+                                                                                                        | Initial total                                         |   8.92 MB
+
+Lazy chunk files                                                                                        | Names                                                 |  Raw size
+src_app_modules_demo_demo_module_ts.js                                                                  | modules-demo-demo-module                              |   5.08 MB | 
+src_app_modules_ventas_ventas_module_ts.js                                                              | modules-ventas-ventas-module                          |   2.67 MB | 
+default-src_app_components_campos_campoBusqueda_campoBusqueda_component_ts-src_app_components-10a829.js | modules-demo-demo-module                              |   2.48 MB | 
+node_modules_turbodocx_html-to-docx_dist_html-to-docx_browser_esm_js.js                                 | turbodocx-html-to-docx                                |   2.39 MB | 
+default-src_app_service_app-printPdf_service_ts-node_modules_exceljs_dist_exceljs_min_js.js             | modules-demo-demo-module                              |   2.21 MB | 
+src_app_modules_seguridad_seguridad_module_ts.js                                                        | modules-seguridad-seguridad-module                    |   1.79 MB | 
+src_app_modules_config_config_module_ts.js                                                              | modules-config-config-module                          |   1.79 MB | 
+default-node_modules_swimlane_ngx-charts_fesm2022_swimlane-ngx-charts_mjs.js                            | modules-demo-demo-module                              |   1.67 MB | 
+node_modules_highlight_js_es_index_js.js                                                                | highlight-js                                          |   1.46 MB | 
+default-src_app_modules_rh_services_empleado_service_ts-src_app_service_google-maps-loader_se-646042.js | modules-demo-demo-module                              |   1.28 MB | 
+src_app_modules_rh_rh_module_ts.js                                                                      | modules-rh-rh-module                                  |   1.26 MB | 
+src_app_modules_inventarios_inventario_module_ts.js                                                     | modules-inventarios-inventario-module                 |   1.20 MB | 
+default-node_modules_ngx-editor_fesm2022_ngx-editor_mjs.js                                              | modules-demo-demo-module                              | 903.39 kB | 
+default-node_modules_moment_moment_js-node_modules_ngx-daterangepicker-material_fesm2020_ngx--80024f.js | modules-demo-demo-module                              | 849.89 kB | 
+node_modules_apexcharts_dist_apexcharts_esm_js.js                                                       | apexcharts                                            | 842.80 kB | 
+node_modules_mammoth_mammoth_browser_js.js                                                              | mammoth-mammoth-browser-js                            | 758.41 kB | 
+default-node_modules_angular-calendar_date-adapters_esm_date-fns_index_js-node_modules_angula-35c317.js | modules-demo-demo-module                              | 519.70 kB | 
+node_modules_canvg_lib_index_es_js.js                                                                   | canvg                                                 | 440.00 kB | 
+default-src_app_components_campos_campoIdentificacion_campoIdentificacion_component_ts-src_ap-44c4b0.js | modules-rh-rh-module                                  | 395.06 kB | 
+node_modules_html2canvas_dist_html2canvas_js.js                                                         | html2canvas                                           | 386.65 kB | 
+default-src_app_components_campos_campoIcono_campoIcono_component_ts-src_app_components_campo-e635a3.js | modules-ventas-ventas-module                          | 353.94 kB | 
+node_modules_lity_dist_lity_js.js                                                                       | lity                                                  | 295.21 kB | 
+default-src_app_components_campos_campoTexto_campoTexto_component_ts-src_app_components_campo-49cb14.js | modules-demo-demo-module                              | 268.19 kB | 
+default-node_modules_jsvectormap_dist_jsvectormap_esm_js-node_modules_jsvectormap_dist_maps_w-174102.js | modules-demo-demo-module                              | 192.12 kB | 
+default-src_app_components_auditoria-modal_auditoria-modal_component_ts-src_app_components_ca-e0e537.js | modules-config-config-module                          | 188.86 kB | 
+src_app_modules_demo_pages_scannerQrDemo_scannerQrDemo_component_ts.js                                  | pages-scannerQrDemo-scannerQrDemo-component           | 143.90 kB | 
+default-src_app_components_selector-iconos_selector-iconos_component_ts-src_app_modules_segur-8aa406.js | modules-config-config-module                          | 112.92 kB | 
+src_app_components_dashboards_dashboard3_dashboard3_component_ts-node_modules_rxjs_dist_esm_i-67df14.js | components-dashboards-dashboard3-dashboard3-component |  87.14 kB | 
+node_modules_buffer_index_js.js                                                                         | buffer                                                |  64.72 kB | 
+node_modules_dompurify_dist_purify_es_mjs.js                                                            | dompurify                                             |  62.97 kB | 
+default-src_app_components_botones_action-buttons_action-buttons_module_ts-src_app_components-cdf446.js | modules-config-config-module                          |  61.82 kB | 
+default-src_app_components_campos_campoEmail_campoEmail_component_ts-src_app_components_campo-4ee4ff.js | modules-seguridad-seguridad-module                    |  60.41 kB | 
+src_app_components_dashboards_dashboard1_dashboard1_component_ts.js                                     | components-dashboards-dashboard1-dashboard1-component |  56.75 kB | 
+src_app_components_dashboards_dashboard2_dashboard2_component_ts-node_modules_rxjs_dist_esm_i-432773.js | components-dashboards-dashboard2-dashboard2-component |  52.60 kB | 
+default-src_app_service_app-descarga_service_ts-src_app_service_app-exportCsv_service_ts-src_-922691.js | modules-seguridad-seguridad-module                    |  39.23 kB | 
+src_app_components_contactanos_contactanos_component_ts.js                                              | components-contactanos-contactanos-component          |  38.16 kB | 
+default-src_app_components_file-tree-node_file-tree-node_component_ts-src_app_modules_segurid-9b897f.js | modules-config-config-module                          |  29.50 kB | 
+node_modules_capacitor-community_http_dist_esm_web_js.js                                                | web                                                   |  25.22 kB | 
+src_app_modules_reportes_reportes_module_ts.js                                                          | modules-reportes-reportes-module                      |  24.31 kB | 
+default-src_app_service_app-agGrid_service_ts.js                                                        | modules-demo-demo-module                              |  21.64 kB | 
+default-node_modules_ngx-trend_fesm2020_ngx-trend_mjs.js                                                | modules-demo-demo-module                              |  21.45 kB | 
+default-src_app_components_campos_campoTextoArea_campoTextoArea_component_ts.js                         | modules-config-config-module                          |  21.11 kB | 
+default-node_modules_tslib_tslib_es6_mjs.js                                                             | modules-demo-demo-module                              |  20.60 kB | 
+node_modules_ngx-highlightjs_fesm2022_ngx-highlightjs-line-numbers_mjs.js                               | ngx-highlightjs-line-numbers                          |  15.33 kB | 
+common.js                                                                                               | common                                                |  15.12 kB | 
+node_modules_capacitor_geolocation_dist_esm_web_js.js                                                   | web                                                   |   3.59 kB | 
+
+Build at: 2026-10-20T03:56:27.849Z - Hash: 1f5546fae06c9ba3 - Time: 43338ms
+
+./node_modules/face-api.js/build/es6/env/createFileSystem.js:5:11-24 - Warning: Module not found: Error: Can't resolve 'fs' in 'C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\face-api.js\build\es6\env'
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 0, column 8 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/angular.scss:0:8:
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+0 | @import 'default/styles';
+
+
+src\scss\angular.scss 1:9  root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 3, column 6 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_functions.scss:3:6:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use meta.type-of instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+3 |   @if type-of($number) == 'number' and not unitless($number) {
+
+
+src\scss\default\_functions.scss 4:7     strip-unit()
+src\scss\default\_functions.scss 11:11   rem-default()
+src\scss\default\_variables.scss 385:37  @import
+src\scss\default\styles.scss 8:9         @import
+src\scss\angular.scss 1:9                root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 3, column 43 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_functions.scss:3:43:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use math.is-unitless instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+3 |   @if type-of($number) == 'number' and not unitless($number) {
+
+
+src\scss\default\_functions.scss 4:44    strip-unit()
+src\scss\default\_functions.scss 11:11   rem-default()
+src\scss\default\_variables.scss 385:37  @import
+src\scss\default\styles.scss 8:9         @import
+src\scss\angular.scss 1:9                root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 5, column 8 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/styles.scss:5:8:
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+5 | @import 'font';
+
+
+src\scss\default\styles.scss 6:9  @import
+src\scss\angular.scss 1:9         root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 6, column 8 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/styles.scss:6:8:
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+6 | @import 'functions';
+
+
+src\scss\default\styles.scss 7:9  @import
+src\scss\angular.scss 1:9         root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 7, column 8 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/styles.scss:7:8:
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+7 | @import 'variables';
+
+
+src\scss\default\styles.scss 8:9  @import
+src\scss\angular.scss 1:9         root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 8, column 8 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/styles.scss:8:8:
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+8 | @import 'variables-dark';
+
+
+src\scss\default\styles.scss 9:9  @import
+src\scss\angular.scss 1:9         root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 21, column 10 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_functions.scss:21:10:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.mix instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+21 |   @return mix(white, $color, $weight);
+
+
+src\scss\default\_functions.scss 22:11   tint-color()
+src\scss\default\_variables.scss 157:14  @import
+src\scss\default\styles.scss 8:9         @import
+src\scss\angular.scss 1:9                root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 26, column 10 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_functions.scss:26:10:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.mix instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+26 |   @return mix(black, $color, $weight);
+
+
+src\scss\default\_functions.scss 27:11   shade-color()
+src\scss\default\_variables.scss 162:14  @import
+src\scss\default\styles.scss 8:9         @import
+src\scss\angular.scss 1:9                root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 135, column 53 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_variables-dark.scss:135:53:
+darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -19.4285714286%)
+color.adjust($color, $lightness: -4%)
+
+More info: https://sass-lang.com/d/color-functions
+
+135 | $app-top-menu-control-link-hover-bg-dark:            darken($gray-800, 4%) !default;	
+
+
+src\scss\default\_variables-dark.scss 136:54  @import
+src\scss\default\styles.scss 9:9              @import
+src\scss\angular.scss 1:9                     root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 165, column 53 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_variables-dark.scss:165:53:
+darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -19.4285714286%)
+color.adjust($color, $lightness: -4%)
+
+More info: https://sass-lang.com/d/color-functions
+
+165 | $app-sidebar-minify-btn-bg-dark:                     darken($dark, 4%) !default;
+
+
+src\scss\default\_variables-dark.scss 166:54  @import
+src\scss\default\styles.scss 9:9              @import
+src\scss\angular.scss 1:9                     root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 167, column 53 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_variables-dark.scss:167:53:
+lighten() is deprecated. Suggestions:
+
+color.scale($color, $lightness: 9.4444444444%)
+color.adjust($color, $lightness: 7.5%)
+
+More info: https://sass-lang.com/d/color-functions
+
+167 | $app-sidebar-grid-border-color-dark:                 lighten($dark, 7.5%) !default;
+
+
+src\scss\default\_variables-dark.scss 168:54  @import
+src\scss\default\styles.scss 9:9              @import
+src\scss\angular.scss 1:9                     root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 271, column 26 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_variables.scss:271:26:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.mix instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+271 | $light-bg-subtle:         mix($gray-100, $white) !default;
+
+
+src\scss\default\_variables.scss 272:27  @import
+src\scss\default\styles.scss 8:9         @import
+src\scss\angular.scss 1:9                root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 598, column 53 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_variables.scss:598:53:
+lighten() is deprecated. Suggestions:
+
+color.scale($color, $lightness: 33.5526315789%)
+color.adjust($color, $lightness: 2.5%)
+
+More info: https://sass-lang.com/d/color-functions
+
+598 | $app-sidebar-component-active-bg:                    lighten($gray-200, 2.5%) !default;
+
+
+src\scss\default\_variables.scss 599:54  @import
+src\scss\default\styles.scss 8:9         @import
+src\scss\angular.scss 1:9                root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 1590, column 36 of file:///C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/scss/default/_variables.scss:1590:36:
+darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -22.7678571429%)
+color.adjust($color, $lightness: -15%)
+
+More info: https://sass-lang.com/d/color-functions
+
+1590 | $code-color:                        darken($pink, 15%) !default;
+
+
+src\scss\default\_variables.scss 1591:37  @import
+src\scss\default\styles.scss 8:9          @import
+src\scss\angular.scss 1:9                 root stylesheet
+
+
+./src/scss/angular.scss - Warning: Module Warning (from ./node_modules/@angular-devkit/build-angular/node_modules/sass-loader/dist/cjs.js):
+349 repetitive deprecation warnings omitted.
+Run in verbose mode to see all warnings.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/components/campos/image-handler/image-handler.component.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/components/time-picker/time-picker.component.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/resolvers/company.resolver.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/AgGrid.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/CasoEstadoDos.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/FormCampoTipo.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/MessageModel.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/Transacciones.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/ValidacionCedulaRucEcuadorService.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/VariosService.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/clasificacionProducto.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/colores.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/coloresprincipales.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/comprimirImagen.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/config.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/core/shared/usuarioTipo.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/modules/config/interfaces/companyModel.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/modules/config/services/company.service.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:/xampp/htdocs/desarrollo/miCRM3/miCRM3-front/src/app/pages/access-deny/access-deny.component.ts is part of the TypeScript compilation but it's unused.
+Add only entry points to the 'files' or 'include' properties in your tsconfig.
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\buffer\index.js depends on 'base64-js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\buffer\index.js depends on 'ieee754'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.array.index-of.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.array.iterator.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.array.reduce.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.array.reverse.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.promise.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.regexp.to-string.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.ends-with.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.includes.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.match.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.replace.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.split.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.starts-with.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/es.string.trim.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'core-js/modules/web.dom-collections.iterator.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'raf'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\canvg\lib\index.es.js depends on 'rgbcolor'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\node_modules\face-api.js\build\es6\index.js depends on '@tensorflow/tfjs-core'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\src\app\components\header\header.component.ts depends on 'sweetalert2'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\src\app\config\config.ts depends on 'pusher-js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\src\app\modules\demo\pages\printpdf\printpdf.component.ts depends on 'jspdf-autotable'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\src\app\modules\demo\pages\ubicacion-gps\ubicacion-gps.component.ts depends on 'leaflet'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\src\app\modules\demo\services\excel.service.ts depends on 'file-saver'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\src\app\modules\ventas\interfaces\notaDocumento.ts depends on 'buffer'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\src\app\modules\ventas\interfaces\notaDocumento.ts depends on 'mammoth/mammoth.browser.js'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+Warning: C:\xampp\htdocs\desarrollo\miCRM3\miCRM3-front\src\app\service\app-exportExcel.service.ts depends on 'exceljs'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+

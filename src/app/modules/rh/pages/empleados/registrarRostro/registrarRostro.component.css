@@ -1,0 +1,210 @@
+/* ============================================================
+   REGISTRAR ROSTRO (modal)
+
+   Los colores salen de variables de Bootstrap para que siga al
+   tema y al modo oscuro sin reglas aparte.
+   ============================================================ */
+
+.rostro-cuerpo {
+  padding: .75rem;
+}
+
+.rostro-columnas {
+  display: flex;
+  gap: .75rem;
+  align-items: stretch;
+}
+
+/* ---------- La cámara ---------- */
+.rostro-video {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+
+  /* Alto fijo: el vídeo manda y así el modal no cambia de tamaño al
+     encender la cámara */
+  aspect-ratio: 4 / 3;
+  max-height: 60vh;
+
+  border-radius: .5rem;
+  overflow: hidden;
+  background: #000;
+}
+
+.rostro-video video,
+.rostro-video canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* El espejo es sólo para quien se mira: lo que se guarda es el vídeo
+   original, así que se voltean la imagen Y el recuadro a la vez. */
+.rostro-video.is-espejo video,
+.rostro-video.is-espejo canvas {
+  transform: scaleX(-1);
+}
+
+.rostro-velo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+
+  background: rgba(0, 0, 0, .65);
+  color: #fff;
+  font-size: .85rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.rostro-velo--error { color: #ffd4d4; }
+
+/* La pista: qué le falta a la foto para servir */
+.rostro-pista {
+  position: absolute;
+  left: .5rem;
+  right: .5rem;
+  top: .5rem;
+
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .35rem .6rem;
+  border-radius: .375rem;
+  background: rgba(0, 0, 0, .6);
+  color: #ffd79a;
+  font-size: .8rem;
+}
+
+.rostro-pista.is-ok { color: #8fe6e6; }
+
+/* El avance de la captura */
+.rostro-captura {
+  position: absolute;
+  left: .5rem;
+  right: .5rem;
+  bottom: .5rem;
+
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding: .4rem .6rem;
+  border-radius: .375rem;
+  background: rgba(0, 0, 0, .7);
+  color: #fff;
+  font-size: .8rem;
+}
+
+.rostro-captura__barra {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .25);
+  overflow: hidden;
+}
+
+.rostro-captura__barra span {
+  display: block;
+  height: 100%;
+  background: var(--bs-app-theme, #00acac);
+  transition: width .2s ease;
+}
+
+/* ---------- El lateral ---------- */
+.rostro-lateral {
+  flex: 0 0 17rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  min-width: 0;
+}
+
+.rostro-quien {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.rostro-quien__foto {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bs-tertiary-bg, #f1f3f5);
+}
+
+.rostro-quien__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rostro-quien__texto b {
+  font-size: .85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rostro-quien__texto small {
+  font-size: .72rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.rostro-ficha {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+
+  padding: .5rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  font-size: .78rem;
+}
+
+.rostro-ficha i { margin-top: .15rem; color: var(--bs-secondary-color, #6c757d); }
+.rostro-ficha.is-registrado i { color: var(--bs-app-theme, #00acac); }
+.rostro-ficha div { display: flex; flex-direction: column; min-width: 0; }
+.rostro-ficha small { color: var(--bs-secondary-color, #6c757d); font-size: .72rem; }
+
+.rostro-campo {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.rostro-campo__rotulo {
+  font-size: .7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+  margin: 0;
+}
+
+.rostro-espejo { font-size: .8rem; }
+
+.rostro-ayuda {
+  margin: 0;
+  font-size: .74rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.rostro-ayuda i { margin-right: .25rem; }
+
+/* ---------- Pantallas estrechas ---------- */
+@media (max-width: 767.98px) {
+  .rostro-columnas { flex-direction: column; }
+  .rostro-lateral { flex: 1 1 auto; }
+  .rostro-video { max-height: 45vh; }
+}
