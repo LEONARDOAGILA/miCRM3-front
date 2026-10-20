@@ -11,6 +11,7 @@ import { GestionClientesComponent } from './pages/gestion-clientes/gestionClient
 import { CatalogoGestionComponent } from './pages/catalogo-gestion/catalogoGestion.component';
 import { AsignacionClienteMasivaComponent } from './pages/gestion-clientes/asignacionClienteMasiva/asignacionClienteMasiva.component';
 import { AllZonasComponent } from './pages/zonas/allZonas/allZonas.component';
+import { RutaCobradorComponent } from './pages/ruta-cobrador/rutaCobrador.component';
 
 const routes: Routes = [
 {
@@ -28,6 +29,11 @@ const routes: Routes = [
         // la url del menú (ventas/asignacionClienteMasiva -> ASIGNACIONCLIENTEMASIVA)
         { path: 'asignacionClienteMasiva', component: AsignacionClienteMasivaComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'allZonas', component: AllZonasComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+
+        // El programa/menú 'rutaCobrador' hay que crearlo en seguridad.accesos
+        // o esta ruta cae en el 404 aunque el componente esté bien: el programa
+        // sale del segundo tramo de la url (ventas/rutaCobrador -> RUTACOBRADOR).
+        { path: 'rutaCobrador', component: RutaCobradorComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         { path: 'home-ventas', component: HomeComponent, data: { title: 'Ventas' }, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
         { path: '**', component: ErrorPage },

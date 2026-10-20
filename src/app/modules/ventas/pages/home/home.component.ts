@@ -72,6 +72,16 @@ export class HomeComponent implements OnInit, OnDestroy {
       color: 'bg-warning',
       descripcion: 'Asignar vendedor, cobrador, asistente o postventa a muchos clientes de una vez'
     },
+    {
+      // El recorrido lo manda el celular del cobrador; esta pantalla sólo lo
+      // lee. Sin el programa en seguridad.accesos la tarjeta no sale, que es
+      // lo que se quiere: no todo el mundo mira por dónde anduvo otro.
+      url: 'ventas/rutaCobrador',
+      label: 'RUTA DEL COBRADOR',
+      icon: 'fa-route',
+      color: 'bg-indigo',
+      descripcion: 'Por dónde anduvo cada cobrador, dónde se detuvo y con qué cliente coincide cada parada'
+    },
   ];
 
   constructor(
