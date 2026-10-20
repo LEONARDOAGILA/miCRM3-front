@@ -1,0 +1,296 @@
+/* ============================================================
+   RUTA DEL COBRADOR
+
+   Los colores salen de variables de Bootstrap, así que la pantalla
+   acompaña al tema de «Ajustes de la aplicación» y al modo oscuro
+   sin reglas aparte. Ojo con --bs-primary: ésa no cambia con el
+   tema; la que cambia es --bs-app-theme.
+   ============================================================ */
+
+/* Miga de pan: alineada a la derecha y subida, como en los listados */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+.ruta-contenido {
+  margin-top: -10px;
+}
+
+.ruta-aviso {
+  display: block;
+  margin-bottom: .75rem;
+}
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+.ruta-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .5rem .75rem;
+  margin-bottom: .75rem;
+}
+
+.ruta-campo {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  /* Los tres numéricos son estrechos a propósito: un campo de «60» tan
+     ancho como el nombre del cobrador desequilibra la barra. */
+  flex: 0 0 7rem;
+  min-width: 0;
+}
+
+.ruta-campo--ancho { flex: 1 1 13rem; }
+
+.ruta-campo__rotulo {
+  font-size: .7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.ruta-filtros__accion {
+  /* Alineado con los campos, no con sus rótulos */
+  margin-bottom: 1px;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   LAS DOS COLUMNAS
+
+   Sin divisor arrastrable: aquí no se dibuja nada, así que el
+   reparto fijo basta y ahorra los oyentes de ratón del documento.
+   El ancho vive en --ruta-izq, que escribe el componente.
+   ============================================================ */
+.ruta-paneles {
+  display: flex;
+  align-items: stretch;
+  gap: .75rem;
+}
+
+.ruta-panel {
+  min-width: 0;            /* o el contenido impide que la columna encoja */
+  display: flex;
+}
+
+.ruta-panel:first-child { flex: 0 0 calc(var(--ruta-izq, 62%) - .75rem); }
+.ruta-panel:last-child  { flex: 1 1 auto; }
+
+.ruta-caja {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid var(--bs-border-color);
+  border-radius: .375rem;
+  background: var(--bs-component-bg, #fff);
+  overflow: hidden;
+}
+
+.ruta-caja__barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  flex-wrap: wrap;
+
+  padding: .4rem .6rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg, rgba(0, 0, 0, .03));
+}
+
+.ruta-caja__barra--sub {
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.ruta-caja__titulo {
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.ruta-caja__pie {
+  font-size: .72rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ============================================================
+   EL MAPA
+
+   El alto lo marca el panel: al expandirlo con el botón de la
+   cabecera, el mapa crece con él en vez de quedarse en una franja.
+   ============================================================ */
+.ruta-mapa {
+  flex: 1 1 auto;
+  min-height: 26rem;
+  width: 100%;
+}
+
+.ruta-mapa.is-oculto {
+  /* Oculto pero con tamaño: Google necesita un div medible para montarse */
+  visibility: hidden;
+}
+
+.ruta-mapa__estado {
+  position: absolute;
+  inset: auto;
+  align-self: center;
+  margin: auto;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El estado se superpone al div del mapa, que sigue ocupando sitio */
+.ruta-panel:first-child .ruta-caja { position: relative; }
+.ruta-mapa__estado { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); }
+
+/* ============================================================
+   LAS CIFRAS DE LA JORNADA
+   ============================================================ */
+.ruta-cifras {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--bs-border-color);
+}
+
+.ruta-cifra {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .1rem;
+  padding: .6rem .4rem;
+  background: var(--bs-component-bg, #fff);
+}
+
+.ruta-cifra__valor {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.ruta-cifra__rotulo {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ============================================================
+   LA TABLA DE PARADAS
+   ============================================================ */
+.ruta-tabla {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ruta-tabla table {
+  font-size: .78rem;
+}
+
+.ruta-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+}
+
+.ruta-fila { cursor: pointer; }
+
+.ruta-fila.is-elegida > td {
+  background: var(--bs-primary-bg-subtle, rgba(52, 143, 226, .12));
+  font-weight: 500;
+}
+
+/* El número de la parada, igual que el del mapa: así se encuentran uno a
+   otro sin tener que contar filas. */
+.ruta-pastilla {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: #348FE2;
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+}
+
+/* Ámbar cuando no hay cliente cerca, el mismo del mapa. No es una
+   acusación: es lo que hay que mirar antes que lo demás. */
+.ruta-pastilla--sin { background: #F59C1A; }
+
+.ruta-horario { white-space: nowrap; }
+.ruta-minutos { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.ruta-cliente {
+  font-weight: 500;
+  /* Un nombre largo no puede ensanchar la columna y empujar la tabla */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 14rem;
+}
+
+/* ============================================================
+   VACÍOS
+   ============================================================ */
+.ruta-vacio {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .15rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.ruta-vacio--chico { padding: 1.5rem 1rem; }
+.ruta-vacio small { font-size: .72rem; }
+
+/* ============================================================
+   PANTALLAS ESTRECHAS
+
+   Se apilan y el mapa se queda más bajo: en un celular, media
+   pantalla de mapa y media de tabla no deja ver ninguna de las dos.
+   ============================================================ */
+@media (max-width: 991.98px) {
+  .ruta-paneles { flex-direction: column; }
+  .ruta-panel:first-child,
+  .ruta-panel:last-child { flex: 1 1 auto; }
+
+  .ruta-mapa { min-height: 20rem; }
+
+  .ruta-campo,
+  .ruta-campo--ancho { flex: 1 1 100%; }
+
+  .ruta-filtros__accion { width: 100%; }
+
+  .ruta-cifras { grid-template-columns: repeat(4, 1fr); }
+  .ruta-cifra__valor { font-size: 1rem; }
+}
+
+@media (max-width: 575.98px) {
+  .ruta-cifras { grid-template-columns: repeat(2, 1fr); }
+  .ruta-cliente { max-width: 9rem; }
+}

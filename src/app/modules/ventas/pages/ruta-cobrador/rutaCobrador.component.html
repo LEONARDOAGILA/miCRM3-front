@@ -1,0 +1,265 @@
+<!-- ============================================================
+     RUTA DEL COBRADOR
+
+     Se elige un cobrador y un día y se ve por dónde anduvo: el
+     trazo, dónde se paró, cuánto rato y si en esa parada había un
+     cliente de la cartera.
+
+     Las paradas NO están guardadas: las calcula el servidor con el
+     criterio de los tres controles de arriba, así que cambiarlos
+     recarga. Es a propósito —ver más abajo en el componente—.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Ventas</a></li>
+  <li class="breadcrumb-item active">Ruta del cobrador</li>
+</ol>
+
+<panel title="Ruta del cobrador"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       (panelReloaded)="cargarRecorrido()"
+       [closeRoute]="'/ventas'"
+       icono="route">
+
+  <div class="content-container1 ruta-contenido">
+
+    <!-- ===================== FILTROS ===================== -->
+    <div class="ruta-filtros">
+
+      <div class="ruta-campo ruta-campo--ancho">
+        <label class="ruta-campo__rotulo" for="rutaCobrador">Cobrador</label>
+        <select id="rutaCobrador"
+                class="form-select form-select-sm"
+                [(ngModel)]="cobradorId"
+                (ngModelChange)="cambiarCobrador()"
+                [disabled]="cargandoCobradores">
+          <option [ngValue]="null">
+            {{ cargandoCobradores ? 'Cargando…' : 'Elija un cobrador' }}
+          </option>
+          @for (c of cobradores; track c.usuario_id) {
+            <option [ngValue]="c.usuario_id">
+              {{ c.nombre || c.login_user }} ({{ c.dias }} {{ c.dias === 1 ? 'día' : 'días' }})
+            </option>
+          }
+        </select>
+      </div>
+
+      <!-- Los días salen de un desplegable y no de un calendario: los días
+           sin recorrido no se pueden elegir porque no existen, y dejar que
+           alguien escoja uno vacío sólo sirve para enseñarle un mapa en
+           blanco y hacerle dudar de la pantalla. -->
+      <div class="ruta-campo ruta-campo--ancho">
+        <label class="ruta-campo__rotulo" for="rutaFecha">Día</label>
+        <select id="rutaFecha"
+                class="form-select form-select-sm"
+                [(ngModel)]="fecha"
+                (ngModelChange)="cargarRecorrido()"
+                [disabled]="!cobradorId || cargandoDias || dias.length === 0">
+          @if (dias.length === 0) {
+            <option [ngValue]="fecha">{{ cargandoDias ? 'Cargando…' : 'Sin días con recorrido' }}</option>
+          }
+          @for (d of dias; track d.fecha) {
+            <option [ngValue]="d.fecha">{{ d.fecha }} · {{ d.km }} km</option>
+          }
+        </select>
+      </div>
+
+      <div class="ruta-campo">
+        <label class="ruta-campo__rotulo" for="rutaRadio">
+          Parada <small class="text-muted">(m)</small>
+        </label>
+        <input id="rutaRadio" type="number" min="5" max="2000" step="10"
+               class="form-control form-control-sm"
+               [(ngModel)]="radioParada" (change)="cargarRecorrido()">
+      </div>
+
+      <div class="ruta-campo">
+        <label class="ruta-campo__rotulo" for="rutaMinutos">
+          Mínimo <small class="text-muted">(min)</small>
+        </label>
+        <input id="rutaMinutos" type="number" min="1" max="600" step="1"
+               class="form-control form-control-sm"
+               [(ngModel)]="minutosParada" (change)="cargarRecorrido()">
+      </div>
+
+      <div class="ruta-campo">
+        <label class="ruta-campo__rotulo" for="rutaCliente">
+          Cliente a <small class="text-muted">(m)</small>
+        </label>
+        <input id="rutaCliente" type="number" min="5" max="2000" step="10"
+               class="form-control form-control-sm"
+               [(ngModel)]="radioCliente" (change)="cargarRecorrido()">
+      </div>
+
+      <button type="button" class="btn btn-sm btn-outline-secondary ruta-filtros__accion"
+              (click)="encuadrar()"
+              [disabled]="!recorrido || recorrido.resumen.puntos === 0">
+        <i class="fa fa-expand fa-fw me-1"></i>Ver todo
+      </button>
+    </div>
+
+    @if (trazoDudoso) {
+      <app-aviso class="ruta-aviso" tono="alerta">
+        <b>{{ recorrido?.resumen?.lecturas_imprecisas }}</b> de
+        {{ recorrido?.resumen?.puntos }} lecturas traen más de 50 m de error. El
+        trazo se dibuja igual, pero con esta precisión <b>no sirve para afirmar
+        dónde estuvo nadie</b>: lo normal es que el celular pasara el rato sin
+        buena señal.
+      </app-aviso>
+    }
+
+    <!-- Las dos columnas. Mismo reparto que en zonas: el mapa manda y la
+         lista acompaña. En pantallas estrechas se apilan. -->
+    <div class="ruta-paneles" [style.--ruta-izq.%]="anchoIzquierda">
+
+      <!-- ===================== EL MAPA ===================== -->
+      <div class="ruta-panel">
+        <div class="ruta-caja">
+          <div class="ruta-caja__barra">
+            <span class="ruta-caja__titulo">
+              <i class="fa fa-map fa-fw me-1"></i>Recorrido
+            </span>
+            @if (recorrido && recorrido.resumen.puntos > 0) {
+              <span class="ruta-caja__pie">
+                {{ recorrido.resumen.inicio }} a {{ recorrido.resumen.fin }}
+                · {{ recorrido.resumen.puntos }} lecturas
+              </span>
+            }
+          </div>
+
+          <!-- El mapa vive siempre: si se montara sólo cuando la API
+               responde, el div no existiría al llegar. -->
+          <div class="ruta-mapa" #mapa [class.is-oculto]="estadoApi !== 'listo'"></div>
+
+          @if (estadoApi !== 'listo') {
+            <div class="ruta-mapa__estado">
+              @switch (estadoApi) {
+                @case ('cargando') { <i class="fa fa-circle-notch fa-spin fa-2x mb-2"></i><div>Cargando el mapa…</div> }
+                @case ('sin-clave') {
+                  <i class="fa fa-key fa-2x mb-2"></i>
+                  <div>No hay clave de Google Maps configurada.</div>
+                  <small>Se pone en <code>GOOGLE_MAPS_API_KEY</code> del environment.</small>
+                }
+                @case ('sin-permiso') {
+                  <i class="fa fa-ban fa-2x mb-2 text-warning"></i>
+                  <div>La clave de Google Maps no autoriza este origen.</div>
+                  <small>
+                    Agregue <code>{{ origenActual }}/*</code> en Google Cloud Console →
+                    Credenciales → su clave → Restricciones de aplicación → Sitios web.
+                  </small>
+                }
+                @default {
+                  <i class="fa fa-triangle-exclamation fa-2x mb-2 text-danger"></i>
+                  <div>No se pudo cargar el mapa.</div>
+                  <small>{{ errorApi }}</small>
+                }
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- ===================== RESUMEN Y PARADAS ===================== -->
+      <div class="ruta-panel">
+        <div class="ruta-caja">
+
+          @if (cargando) {
+            <div class="ruta-vacio">
+              <i class="fa fa-circle-notch fa-spin fa-2x mb-2"></i>
+              <div>Armando el recorrido…</div>
+            </div>
+          } @else if (!recorrido || recorrido.resumen.puntos === 0) {
+            <div class="ruta-vacio">
+              <i class="fa fa-location-crosshairs fa-2x mb-2"></i>
+              <div>{{ cobradorId ? 'Sin recorrido ese día' : 'Elija un cobrador' }}</div>
+              <small>El recorrido lo manda el celular del cobrador durante la jornada.</small>
+            </div>
+          } @else {
+
+            <!-- Los números de la jornada -->
+            <div class="ruta-cifras">
+              <div class="ruta-cifra">
+                <span class="ruta-cifra__valor">{{ recorrido.resumen.km }}</span>
+                <span class="ruta-cifra__rotulo">km</span>
+              </div>
+              <div class="ruta-cifra">
+                <span class="ruta-cifra__valor">{{ comoDuracion(recorrido.resumen.minutos) }}</span>
+                <span class="ruta-cifra__rotulo">en la calle</span>
+              </div>
+              <div class="ruta-cifra">
+                <span class="ruta-cifra__valor">{{ recorrido.resumen.paradas }}</span>
+                <span class="ruta-cifra__rotulo">paradas</span>
+              </div>
+              <div class="ruta-cifra">
+                <span class="ruta-cifra__valor">{{ comoDuracion(recorrido.resumen.minutos_parado) }}</span>
+                <span class="ruta-cifra__rotulo">detenido</span>
+              </div>
+            </div>
+
+            <div class="ruta-caja__barra ruta-caja__barra--sub">
+              <span class="ruta-caja__titulo">
+                <i class="fa fa-hand fa-fw me-1"></i>Paradas
+              </span>
+              <span class="ruta-caja__pie">de {{ minutosParada }} min o más</span>
+            </div>
+
+            <!-- La tabla se desplaza dentro de su caja; el alto lo pone el
+                 panel, igual que en zonas. -->
+            <div class="ruta-tabla">
+              @if (recorrido.paradas.length === 0) {
+                <div class="ruta-vacio ruta-vacio--chico">
+                  <i class="fa fa-person-walking fa-2x mb-2"></i>
+                  <div>No se detuvo en ningún sitio {{ minutosParada }} minutos seguidos</div>
+                  <small>Baje el mínimo o amplíe el radio si esperaba ver visitas.</small>
+                </div>
+              } @else {
+                <table class="table table-sm table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th style="width:2.5rem">#</th>
+                      <th>Horario</th>
+                      <th class="text-end">Rato</th>
+                      <th>¿Qué hay ahí?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of recorrido.paradas; track p.orden) {
+                      <tr class="ruta-fila"
+                          [class.is-elegida]="paradaElegida === p.orden"
+                          (click)="enfocarParada(p)">
+                        <td>
+                          <span class="ruta-pastilla"
+                                [class.ruta-pastilla--sin]="!p.cliente">{{ p.orden }}</span>
+                        </td>
+                        <td class="ruta-horario">
+                          {{ p.desde }}<span class="text-muted"> a </span>{{ p.hasta }}
+                          @if (p.peor_precision_m && p.peor_precision_m > 50) {
+                            <i class="fa fa-triangle-exclamation text-warning ms-1"
+                               [title]="'El GPS llegó a declarar ' + p.peor_precision_m + ' m de error aquí'"></i>
+                          }
+                        </td>
+                        <td class="text-end ruta-minutos">{{ comoDuracion(p.minutos) }}</td>
+                        <td>
+                          @if (p.cliente) {
+                            <div class="ruta-cliente">{{ p.cliente.nombre_completo }}</div>
+                            <small class="text-muted">a {{ p.cliente.metros }} m</small>
+                          } @else {
+                            <small class="text-warning">
+                              <i class="fa fa-circle-question fa-fw"></i>
+                              Ningún cliente a {{ radioCliente }} m
+                            </small>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</panel>
