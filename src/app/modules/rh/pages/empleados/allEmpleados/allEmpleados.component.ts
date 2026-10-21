@@ -26,6 +26,7 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { SaveEmpleadoComponent } from '../saveEmpleado/saveEmpleado.component';
 import { DeleteEmpleadoComponent } from '../deleteEmpleado/deleteEmpleado.component';
 import { RegistrarRostroComponent } from '../registrarRostro/registrarRostro.component';
+import { AsignarSucursalComponent } from '../asignarSucursal/asignarSucursal.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
@@ -232,6 +233,20 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
         maxWidth: 260,
       },
       {
+        // DÓNDE TRABAJA. Importa porque es lo que decide desde dónde puede
+        // marcar asistencia: sin sucursal, desde cualquier lugar.
+        headerName: 'Sucursal',
+        field: 'sucursal_nombre',
+        headerTooltip: 'Sin sucursal, el empleado puede marcar asistencia desde cualquier lugar',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 150,
+        maxWidth: 240,
+        cellRenderer: (params: any) => params.value
+          ? `<span class="emp-sucursal">${params.value}</span>`
+          : `<span class="emp-sucursal emp-sucursal--no" title="Puede marcar desde cualquier lugar">
+               <i class="fa fa-earth-americas"></i> Sin sucursal</span>`,
+      },
+      {
         headerName: 'Correo',
         field: 'email',
         cellStyle: { textAlign: 'left' },
@@ -382,7 +397,9 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     }
   }
 
-  private static readonly ANCHO_ACCIONES_ABIERTA = 130;
+  // Seis iconos en la fila (ver, modificar, clonar, eliminar, rostro y
+  // sucursal): con 130 el último quedaba cortado.
+  private static readonly ANCHO_ACCIONES_ABIERTA = 160;
   private static readonly ANCHO_ACCIONES_PLEGADA = 50;
 
   /** Pliega o despliega la columna ACCIONES (pulsando su cabecera). */
@@ -749,6 +766,39 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.empleado = registro;
   }
 
+  /**
+   * Dónde trabaja: la sucursal del empleado de la fila.
+   *
+   * Cambiar de local es un cambio de una línea y se hace desde la rejilla,
+   * no abriendo una ficha de treinta campos. Lo que se decide es desde dónde
+   * puede marcar asistencia: dentro del perímetro de su sucursal o, sin
+   * sucursal, desde cualquier lugar.
+   */
+  asignarSucursal(registro: any): void {
+    if (this._seguridadService.isexpired()) { return; }
+    if (this.accesoModel?.editar === false) {
+      this._toastr.warning('No tiene permiso para modificar empleados', 'Acceso denegado');
+      return;
+    }
+
+    const modalRef = this.modal.open(AsignarSucursalComponent, {
+      centered: true,
+      size: 'md',
+      backdrop: 'static',
+      keyboard: true,
+    });
+    modalRef.componentInstance.empleado = registro;
+
+    // El servidor devuelve la ficha ya con su sucursal: la fila se repinta
+    // con setData, que es lo único que refresca una celda en ag-Grid 28.
+    this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (actualizado: any) => {
+      const index = this.empleadoModel.findIndex(r => r.id === actualizado.id);
+      if (index === -1) { return; }
+      this.empleadoModel[index] = { ...this.empleadoModel[index], ...actualizado };
+      this.gridApi?.getRowNode(index.toString())?.setData(this.empleadoModel[index]);
+    });
+  }
+
   addEmpleado(): void {
     if (this._seguridadService.isexpired()) { return; }
     const modalRef = this.abrirModalEmpleado(0, 'add');
@@ -863,6 +913,21 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
                 (click)="parent.registrarRostro(params.data)">
           <i class="fa fa-user-check"></i>
         </button>
+
+        <!-- Dónde trabaja: la sucursal, que es lo que decide desde dónde
+             puede marcar. Se tiñe de ámbar cuando no tiene ninguna. -->
+        <button type="button"
+                class="btn-icon acciones-sucursal"
+                [class.is-sin]="!params.data?.sucursal_id"
+                [title]="parent.accesoModel?.editar === false
+                          ? 'Sucursal - Desactivado'
+                          : (params.data?.sucursal_nombre
+                              ? 'Sucursal: ' + params.data.sucursal_nombre
+                              : 'Sin sucursal: puede marcar desde cualquier lugar')"
+                [disabled]="parent.accesoModel?.editar === false"
+                (click)="parent.asignarSucursal(params.data)">
+          <i class="fa fa-shop"></i>
+        </button>
       </div>
     }
   `,
@@ -878,9 +943,20 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
       color: var(--bs-app-theme, #00acac);
     }
 
-    .acciones-rostro:disabled {
+    .acciones-rostro:disabled,
+    .acciones-sucursal:disabled {
       opacity: .45;
       cursor: not-allowed;
+    }
+
+    /* La sucursal, en el azul de los enlaces; en ámbar si no tiene ninguna,
+       que es cuando esa persona puede marcar desde cualquier sitio. */
+    .acciones-sucursal {
+      color: var(--bs-primary, #0d6efd);
+    }
+
+    .acciones-sucursal.is-sin {
+      color: var(--bs-warning, #f59c1a);
     }
 
     .acciones-desplegar {

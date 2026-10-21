@@ -1,0 +1,629 @@
+/* ============================================================
+   SAVE SUCURSAL - Estilos del modal
+
+   Mismo lenguaje visual que saveMarca (paneles del tema, chips, switch de
+   estado), más lo propio de aquí: la barra de dibujo y el marco del mapa.
+   Los colores salen de las variables de Bootstrap / Color Admin, así que
+   valen igual en tema claro y oscuro.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.suc-modal-body {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  padding: 1rem;
+}
+
+/* La cabecera y el marco los pone <panel>; aquí sólo el relleno del cuerpo */
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .25rem;
+}
+
+/* ---------- Contenido en la cabecera del panel ---------- */
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+/* ============================================================
+   CHIPS
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip-muted { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-info  { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+
+/* ============================================================
+   ESTADO DE LA SUCURSAL (switch)
+   ============================================================ */
+.estado-suc {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  padding: .5rem .75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.estado-suc.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.estado-suc__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.estado-suc.is-on .estado-suc__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.estado-suc__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.estado-suc__label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+}
+
+.estado-suc__hint {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.estado-suc__switch {
+  margin-left: auto;
+}
+
+.estado-suc__switch ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.estado-suc__switch ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.estado-suc__switch ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.estado-suc__switch ::ng-deep .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  vertical-align: middle;
+}
+
+/* ============================================================
+   CAMPOS
+   ============================================================ */
+:host ::ng-deep app-campoTexto,
+:host ::ng-deep app-campoEmail,
+:host ::ng-deep app-campoTelefono,
+:host ::ng-deep app-campoNumeroEntero {
+  display: block;
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: -.5rem 0 .5rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ============================================================
+   DIRECCIÓN CON BUSCADOR DE GOOGLE
+   ============================================================ */
+/* Ancla de la lista de sugerencias */
+.suc-direccion {
+  position: relative;
+}
+
+.suc-direccion__fila {
+  display: flex;
+  align-items: flex-start;
+  gap: .375rem;
+}
+
+/* app-campoTexto trae su propio envoltorio .col-md; aquí sólo tiene que
+   quedarse con el sitio que deja el botón de la lupa. */
+.suc-direccion__campo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.suc-direccion__campo ::ng-deep .col-md {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Del alto del campo (h-45px), para que no quede flotando */
+.suc-direccion__btn {
+  flex: 0 0 auto;
+  width: 45px;
+  height: 45px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .375rem;
+}
+
+.suc-direccion__hint {
+  margin-top: -.75rem;
+}
+
+/* ---------- La lista de sugerencias ----------
+   Flota sobre lo de abajo y sólo mientras se escribe: si empujara el
+   formulario, los campos bailarían con cada tecla. El z-index tiene que
+   ganarle al mapa, que va después en el marcado. */
+.suc-sugerencias {
+  position: absolute;
+  /* Justo debajo del campo (45px de alto), no del hueco de los mensajes */
+  top: 3.1rem;
+  left: 0;
+  right: 3.25rem;
+  z-index: 30;
+
+  margin: 0;
+  padding: .25rem 0;
+  list-style: none;
+
+  max-height: 14rem;
+  overflow-y: auto;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+
+.suc-sugerencia {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .3rem .55rem;
+  cursor: pointer;
+}
+
+.suc-sugerencia:hover,
+.suc-sugerencia.is-activa {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.suc-sugerencia__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.suc-sugerencia__principal {
+  font-size: .75rem;
+  font-weight: 600;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suc-sugerencia__secundario {
+  font-size: .625rem;
+  color: var(--bs-secondary-color, #6c757d);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Quién y cuándo (edición / vista) */
+.suc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1.25rem;
+  margin-top: .5rem;
+  padding-top: .5rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.suc-meta i {
+  margin-right: .3rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* ============================================================
+   EL PUNTO DE LA SUCURSAL (coordenadas + enlace)
+   ============================================================ */
+.suc-punto {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .4rem .6rem;
+  margin-bottom: 1rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-danger, #dc3545);
+  border-radius: .375rem;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+/* Sin punto no hay nada que celebrar: el borde se apaga */
+.suc-punto.is-vacio {
+  border-left-color: var(--bs-secondary, #6c757d);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.suc-punto__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-danger, #dc3545);
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);
+}
+
+.suc-punto.is-vacio .suc-punto__icono {
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.suc-punto__texto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.suc-punto__label {
+  font-size: .625rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Monoespaciada: dos coordenadas se comparan de un vistazo */
+.suc-punto__valor {
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+}
+
+.suc-punto__hint {
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.suc-punto__botones {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  margin-left: auto;
+}
+
+.suc-punto__botones .btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .75rem;
+}
+
+/* ============================================================
+   LAS IMÁGENES
+   ============================================================
+   El marco mide lo mismo con imagen y sin ella: así el formulario no se
+   mueve al elegir un fichero. */
+.suc-img {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.suc-img__marco {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+/* Sin imagen: el icono apagado, para que se vea que el hueco es de una
+   foto y no un error de carga */
+.suc-img__marco.is-vacio {
+  border-style: dashed;
+  color: var(--bs-secondary-color, #adb5bd);
+  font-size: 1.75rem;
+}
+
+/* `cover` y no `contain`: aquí la foto es del local y llena el marco */
+.suc-img__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.suc-img__pie {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  flex-wrap: wrap;
+}
+
+.suc-img__titulo {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+}
+
+.suc-img__botones {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  margin-left: auto;
+}
+
+.suc-img__botones .btn,
+.suc-img__botones label.btn {
+  font-size: .7rem;
+  margin: 0;
+}
+
+.suc-img__hint {
+  margin-top: .75rem;
+  margin-bottom: .25rem;
+}
+
+/* ============================================================
+   EL RESULTADO DE «¿SE PUEDE MARCAR DESDE AQUÍ?»
+   ============================================================ */
+.suc-prueba {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  padding: .4rem .6rem;
+  border-radius: .375rem;
+  font-size: .75rem;
+  line-height: 1.35;
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .1);
+  color: var(--bs-danger-text-emphasis, #b02a37);
+}
+
+.suc-prueba.is-ok {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .12);
+  color: var(--bs-success-text-emphasis, #0f5132);
+}
+
+.suc-prueba i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+}
+
+/* ============================================================
+   EL MAPA
+   ============================================================ */
+.suc-mapa-caja {
+  display: flex;
+  flex-direction: column;
+  padding: .75rem .875rem .5rem;
+}
+
+/* ---------- La barra de dibujo ---------- */
+.suc-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .375rem;
+  margin-bottom: .5rem;
+}
+
+.suc-barra .btn {
+  font-size: .75rem;
+  white-space: nowrap;
+}
+
+/* Mientras se pulsan esquinas: la guía manda, así que ocupa su línea */
+.suc-barra__guia {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.suc-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.suc-radio label {
+  margin: 0;
+  font-weight: 600;
+}
+
+.suc-radio input {
+  width: 5.5rem;
+}
+
+/* ---------- Los colores del perímetro ---------- */
+.suc-colores {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  margin-left: auto;
+}
+
+.suc-color {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  outline: 1px solid var(--bs-border-color, #dee2e6);
+  cursor: pointer;
+}
+
+.suc-color.is-sel {
+  border-color: var(--bs-body-bg, #fff);
+  outline-width: 2px;
+  outline-color: var(--bs-component-color, #212529);
+}
+
+/* ---------- El marco y el lienzo ---------- */
+/* El mapa NO se mete en un @if: Google necesita el div existiendo para
+   pintar, así que los estados (cargando / sin clave / error) se tapan con
+   una capa encima. */
+.suc-mapa-marco {
+  position: relative;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  overflow: hidden;
+  background-color: var(--bs-tertiary-bg, #f1f3f5);
+}
+
+.suc-mapa {
+  width: 100%;
+  /* Alto cómodo para dibujar, pero sin sacar el modal de la pantalla en un
+     portátil: lo que sobre del alto de la ventana se lo queda el mapa. */
+  height: max(320px, calc(100vh - 430px));
+}
+
+.suc-mapa-capa {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.suc-mapa-capa i {
+  font-size: 1.5rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.suc-mapa-capa small {
+  font-size: .7rem;
+  max-width: 28rem;
+}
+
+.suc-pie {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .5rem 0 0;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.suc-pie i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ============================================================
+   PANTALLAS ESTRECHAS
+   ============================================================ */
+@media (max-width: 991.98px) {
+  /* En columna, el mapa ya no compite por el alto con el formulario */
+  .suc-mapa {
+    height: 340px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .suc-modal-body {
+    padding: .75rem;
+  }
+
+  .suc-colores {
+    margin-left: 0;
+  }
+}

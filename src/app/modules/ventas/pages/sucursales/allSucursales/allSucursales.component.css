@@ -1,0 +1,142 @@
+/* ============================================================
+   LISTADO DE SUCURSALES
+
+   Lo propio de esta pantalla. Las clases del spinner
+   (content-container1, overlay1, loader1), .inactivo y
+   .ag-grid-transparente son globales y viven en scss/angular.scss.
+   ============================================================ */
+
+/* ---------- Miga de pan ---------- */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Cuerpo del panel ---------- */
+.lista-contenido {
+  margin-top: -19px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+.lista-barra__badge {
+  font-size: 8px;
+}
+
+/* ---------- Rejilla ----------
+   Altura de arranque; ajustarAlturaGrid() la sustituye en cuanto está lista. */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- La columna PERÍMETRO ----------
+   `::ng-deep` porque las celdas las dibuja ag-Grid fuera de la
+   encapsulación del componente: una regla normal no las alcanzaría.
+
+   Sin perímetro se puede marcar desde cualquier lugar, así que esa fila no
+   se deja en gris: se marca en ámbar para que se vea de un barrido quién
+   está sin control de ubicación. */
+:host ::ng-deep .suc-perim {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .suc-perim--si {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .12);
+  color: var(--bs-success-text-emphasis, #0f5132);
+}
+
+:host ::ng-deep .suc-perim--no {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .18);
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+/* ---------- Paginación ---------- */
+.pagination-controls {
+  gap: .5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón «muerto» */
+.pagination-page-badge.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* El aviso del pie cuando el total es el de las filas que pasan el filtro */
+.lista-filtrado {
+  margin-left: .35rem;
+  font-style: italic;
+  color: var(--bs-danger, #dc3545);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .pagination-buttons .btn {
+    padding: .2rem .5rem;
+    font-size: .75rem;
+  }
+}
+
+/* ---------- Modo oscuro ---------- */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
+}

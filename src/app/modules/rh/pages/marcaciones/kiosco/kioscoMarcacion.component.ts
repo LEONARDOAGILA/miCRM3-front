@@ -568,13 +568,24 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
     } catch (e: any) {
       // 429 = ya marcó hace poco (el back manda el mensaje); el interceptor ya avisa
       const msg = e?.error?.message ?? 'No se pudo registrar la marcación';
-      // Si el servidor dice que ya marcó, se respeta su espera; si fue otro
-      // fallo (red, 500), se reintenta en unos segundos y no en un minuto.
-      if (e?.status === 429) {
+
+      // FUERA DEL PERÍMETRO DE SU SUCURSAL. Llega como 422 y NO es un fallo
+      // pasajero: mientras esa persona siga delante de la cámara, volvería a
+      // fallar igual. Se la enfría como si hubiera marcado, o el kiosco
+      // reintentaría cada pocos segundos contra el mismo muro.
+      //
+      // Se reconoce por el texto porque el sobre de la API no lleva el
+      // SQLSTATE; los dos mensajes los escribe fn_marcaciones_registrar.
+      const fueraDelPerimetro = e?.status === 422
+        && /perímetro|permitir la ubicación/i.test(String(msg));
+
+      if (e?.status === 429 || fueraDelPerimetro) {
         this.esperarHasta.set(empleadoId, Date.now() + this.esperaSegundos * 1000);
       }
       this.aviso = { nombre: this.nombreDe(empleadoId), texto: msg, hora: '', tono: 'error' };
-      setTimeout(() => { if (this.aviso?.tono === 'error') { this.aviso = null; } }, 5000);
+      // El de la sucursal es más largo de leer, y hay que hacer algo con él
+      const cuanto = fueraDelPerimetro ? 9000 : 5000;
+      setTimeout(() => { if (this.aviso?.tono === 'error') { this.aviso = null; } }, cuanto);
     } finally {
       this.enviando = false;
     }

@@ -1,0 +1,573 @@
+<!-- ============================================================
+     GUARDAR SUCURSAL (modal)
+
+     A la izquierda los datos y a la derecha el mapa con el perímetro.
+     El perímetro se dibuja a mano, esquina por esquina, igual que en la
+     pantalla de Zonas: el DrawingManager de Google está retirado.
+
+     El div del mapa está SIEMPRE en el DOM —los estados se tapan con una
+     capa encima— porque Google necesita un elemento existente para pintar.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body suc-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+    <div class="row g-3">
+
+      <!-- ============ COLUMNA IZQUIERDA: LOS DATOS ============ -->
+      <div class="col-12 col-lg-5">
+
+        <panel
+          headerClass="bg-gray-800"
+          title="Datos de la sucursal"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-3"
+          icono="briefcase"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (esView) {
+              <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+            }
+            @if (!esNuevo && registro_selected?.num_empleados > 0) {
+              <span class="chip chip-info" title="Empleados asignados a esta sucursal">
+                <i class="fa-solid fa-users"></i>
+                {{ registro_selected.num_empleados }}
+                {{ registro_selected.num_empleados === 1 ? 'empleado' : 'empleados' }}
+              </span>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+              <div class="row g-3 align-items-start">
+
+                <!-- Código -->
+                <div class="col-12 col-md-5">
+                  <app-campoTexto
+                    [control]="form.controls['codigo']"
+                    label="CÓDIGO"
+                    placeholder="MTZ, SUC01…"
+                    [maxLength]="20"
+                    [minLength]="2"
+                    [mayusculas]="true"
+                    [noEspacios]="true">
+                  </app-campoTexto>
+                </div>
+
+                <!-- Nombre -->
+                <div class="col-12 col-md-7">
+                  <app-campoTexto
+                    [control]="form.controls['nombre']"
+                    label="NOMBRE"
+                    placeholder="Matriz, Sucursal Norte…"
+                    [maxLength]="150"
+                    [minLength]="3"
+                    [trimEspacios]="true">
+                  </app-campoTexto>
+                </div>
+
+                <!-- Dirección, con el buscador de Google.
+                     La lista de sugerencias FLOTA sobre lo de abajo (y sólo
+                     mientras se escribe): si empujara el formulario, los
+                     campos bailarían con cada tecla. -->
+                <div class="col-12">
+                  <div class="suc-direccion" (keydown)="onDireccionTecla($event)">
+
+                    <div class="suc-direccion__fila">
+                      <app-campoTexto
+                        class="suc-direccion__campo"
+                        [control]="form.controls['direccion']"
+                        label="DIRECCIÓN"
+                        placeholder="Av. Solano y 12 de Abril"
+                        [maxLength]="250"
+                        icono="fa-location-dot"
+                        (valueChange)="onDireccionCambia($event)">
+                      </app-campoTexto>
+
+                      @if (!esView) {
+                        <button type="button" class="btn btn-white suc-direccion__btn"
+                                title="Buscar esta dirección en el mapa"
+                                [disabled]="buscandoLugar || estadoApi !== 'listo'"
+                                (click)="buscarDireccionEnElMapa()">
+                          <i class="fa" [ngClass]="buscandoLugar ? 'fa-spinner fa-spin' : 'fa-magnifying-glass-location'"></i>
+                        </button>
+                      }
+                    </div>
+
+                    @if (sugerencias.length) {
+                      <ul class="suc-sugerencias" role="listbox">
+                        @for (s of sugerencias; track s.placeId; let i = $index) {
+                          <li class="suc-sugerencia" role="option"
+                              [class.is-activa]="i === sugerenciaActiva"
+                              (click)="irALaDireccion(s)">
+                            <i class="fa fa-location-dot fa-fw"></i>
+                            <span class="suc-sugerencia__texto">
+                              <span class="suc-sugerencia__principal">{{ s.principal }}</span>
+                              @if (s.secundario) {
+                                <span class="suc-sugerencia__secundario">{{ s.secundario }}</span>
+                              }
+                            </span>
+                          </li>
+                        }
+                      </ul>
+                    }
+
+                    @if (!esView) {
+                      <p class="campo-hint suc-direccion__hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Escriba la dirección y elíjala de la lista: el mapa se va
+                        allí y deja un alfiler para dibujar el perímetro alrededor.
+                      </p>
+                    }
+                  </div>
+                </div>
+
+                <!-- EL PUNTO DE LA SUCURSAL: lo que se guarda en latitud y
+                     longitud, y de donde sale el enlace de Google. El alfiler
+                     del mapa se puede arrastrar: la dirección cae en el número
+                     de la calle y la puerta puede estar a media cuadra. -->
+                <div class="col-12">
+                  <div class="suc-punto" [class.is-vacio]="!punto">
+                    <span class="suc-punto__icono"><i class="fa fa-map-pin"></i></span>
+
+                    <div class="suc-punto__texto">
+                      <span class="suc-punto__label">Coordenadas</span>
+                      @if (punto) {
+                        <span class="suc-punto__valor">{{ textoCoordenadas }}</span>
+                      } @else {
+                        <span class="suc-punto__hint">
+                          Sin punto propio: se guardará el centro del perímetro
+                        </span>
+                      }
+                    </div>
+
+                    <div class="suc-punto__botones">
+                      @if (punto) {
+                        <button type="button" class="btn btn-sm btn-white"
+                                title="Copiar las coordenadas" (click)="copiarCoordenadas()">
+                          <i class="fa fa-copy"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-white"
+                                title="Abrir en Google Maps" (click)="abrirEnGoogleMaps()">
+                          <i class="fa fa-map-location-dot"></i>
+                        </button>
+                      }
+                      @if (!esView) {
+                        <button type="button" class="btn btn-sm btn-white"
+                                title="Poner la puerta donde estoy ahora"
+                                (click)="ponerPuntoEnMiUbicacion()">
+                          <i class="fa fa-crosshairs"></i>
+                        </button>
+                        @if (punto) {
+                          <button type="button" class="btn btn-sm btn-white text-danger"
+                                  title="Quitar el punto" (click)="quitarAlfiler()">
+                            <i class="fa fa-xmark"></i>
+                          </button>
+                        }
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Teléfono -->
+                <div class="col-12 col-md-6">
+                  <app-campoTelefono
+                    [control]="form.controls['telefono']"
+                    label="TELÉFONO"
+                    [required]="false"
+                    [maxLength]="50">
+                  </app-campoTelefono>
+                </div>
+
+                <!-- Correo -->
+                <div class="col-12 col-md-6">
+                  <app-campoEmail
+                    [control]="form.controls['email']"
+                    label="CORREO"
+                    [required]="false"
+                    [maxLength]="150">
+                  </app-campoEmail>
+                </div>
+
+                <!-- Estado -->
+                <div class="col-12">
+                  <div class="estado-suc" [class.is-on]="ctrlActivo.value">
+                    <span class="estado-suc__icon"><i class="fa-solid fa-power-off"></i></span>
+                    <div class="estado-suc__text">
+                      <span class="estado-suc__label">Estado</span>
+                      <span class="estado-suc__hint">
+                        {{ ctrlActivo.value ? 'Se ofrece al asignar empleados' : 'No se ofrece al asignar empleados' }}
+                      </span>
+                    </div>
+                    <app-checkbox class="estado-suc__switch"
+                      [control]="ctrlActivo"
+                      [label]="ctrlActivo.value ? 'Activa' : 'Inactiva'"
+                      [id]="'ck-sucursal-activo'">
+                    </app-checkbox>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </ng-container>
+        </panel>
+
+        <!-- ---------- El control de la marcación ---------- -->
+        <panel
+          headerClass="bg-gray-800"
+          title="Control de marcación"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-0"
+          icono="clock"
+          fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <!-- Qué hace el perímetro, dicho una vez y claro: de esto
+                   depende que su gente pueda o no marcar asistencia. -->
+              @if (hayPerimetro) {
+                <app-aviso tono="exito" icono="fa-map-location-dot" titulo="Con perímetro">
+                  @if (tipo === 'POLIGONO') {
+                    Su gente sólo podrá marcar asistencia desde dentro del área dibujada (más la tolerancia).
+                  } @else {
+                    Su gente sólo podrá marcar asistencia a menos de {{ radioCirculo }} m del centro (más la tolerancia).
+                  }
+                </app-aviso>
+              } @else {
+                <app-aviso tono="alerta" icono="fa-triangle-exclamation" titulo="Sin perímetro">
+                  Mientras no dibuje un perímetro, su gente podrá marcar
+                  asistencia desde cualquier lugar.
+                </app-aviso>
+              }
+
+              <div class="row g-3 align-items-start mt-1">
+                <div class="col-12 col-md-6">
+                  <app-campoNumeroEntero
+                    [control]="form.controls['tolerancia_metros']"
+                    label="TOLERANCIA (m)"
+                    placeholder="50">
+                  </app-campoNumeroEntero>
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Margen para el error del GPS. Con 50 m se acepta a quien
+                    marque justo en la puerta.
+                  </p>
+                </div>
+
+                <!-- Probar el perímetro desde aquí -->
+                <div class="col-12 col-md-6">
+                  <button type="button" class="btn btn-white w-100"
+                          [disabled]="probando || !registro_selected?.id"
+                          title="Usa su ubicación y pregunta al servidor"
+                          (click)="probarAqui()">
+                    @if (probando) {
+                      <i class="fa-solid fa-spinner fa-spin"></i> Comprobando…
+                    } @else {
+                      <i class="fa-solid fa-location-crosshairs"></i> ¿Se puede marcar desde aquí?
+                    }
+                  </button>
+
+                  @if (prueba) {
+                    <div class="suc-prueba mt-2" [class.is-ok]="prueba.dentro">
+                      <i class="fa-solid" [class.fa-circle-check]="prueba.dentro"
+                         [class.fa-circle-xmark]="!prueba.dentro"></i>
+                      {{ prueba.texto }}
+                    </div>
+                  }
+                </div>
+              </div>
+
+              @if (!esNuevo && registro_selected?.created_at) {
+                <div class="suc-meta">
+                  <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ registro_selected.created_at }} por <b>{{ registro_selected.created_by || '—' }}</b></span>
+                  <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ registro_selected.updated_at }} por <b>{{ registro_selected.updated_by || '—' }}</b></span>
+                </div>
+              }
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+      <!-- ============ COLUMNA DERECHA: EL MAPA ============ -->
+      <div class="col-12 col-lg-7">
+        <panel
+          headerClass="bg-gray-800"
+          title="Perímetro en el mapa"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-3"
+          icono="map"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (tipo === 'POLIGONO' && numVertices >= 3) {
+              <span class="chip chip-info"><i class="fa-solid fa-draw-polygon"></i> {{ numVertices }} esquinas</span>
+            }
+            @if (tipo === 'CIRCULO' && hayPerimetro) {
+              <span class="chip chip-info"><i class="fa-regular fa-circle"></i> {{ radioCirculo }} m</span>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="suc-mapa-caja">
+
+              <!-- ---------- La barra de dibujo ---------- -->
+              @if (!esView) {
+                <div class="suc-barra">
+                  @if (dibujando === 'POLIGONO') {
+                    <!-- Dibujando: sólo lo que sirve ahora mismo -->
+                    <span class="suc-barra__guia">
+                      <i class="fa-solid fa-hand-pointer"></i>
+                      Pulse las esquinas en el mapa
+                    </span>
+                    <button type="button" class="btn btn-sm btn-primary" (click)="cerrarArea()">
+                      <i class="fa-solid fa-check"></i> Cerrar área
+                    </button>
+                    <button type="button" class="btn btn-sm btn-white" (click)="deshacerPunto()">
+                      <i class="fa-solid fa-rotate-left"></i> Deshacer
+                    </button>
+                    <button type="button" class="btn btn-sm btn-white text-danger" (click)="cancelarDibujo()">
+                      <i class="fa-solid fa-xmark"></i> Cancelar
+                    </button>
+                  } @else {
+                    <button type="button" class="btn btn-sm btn-white" (click)="dibujarArea()"
+                            title="Pulsar esquina por esquina">
+                      <i class="fa-solid fa-draw-polygon"></i> Dibujar área
+                    </button>
+                    <button type="button" class="btn btn-sm btn-white" (click)="dibujarCirculo()"
+                            title="Un centro y un radio">
+                      <i class="fa-regular fa-circle"></i> Círculo
+                    </button>
+
+                    @if (tipo === 'CIRCULO' && hayPerimetro) {
+                      <span class="suc-radio">
+                        <label for="suc-radio">Radio</label>
+                        <input id="suc-radio" type="number" class="form-control form-control-sm"
+                               min="20" max="20000" step="10"
+                               [(ngModel)]="radioCirculo" [ngModelOptions]="{standalone: true}"
+                               (change)="cambiarRadio()" />
+                        <span>m</span>
+                      </span>
+                    }
+
+                    <button type="button" class="btn btn-sm btn-white" (click)="irAMiUbicacion()"
+                            title="Centrar el mapa donde estoy">
+                      <i class="fa-solid fa-crosshairs"></i>
+                    </button>
+
+                    <!-- La foto del mapa. La da la Maps Static API con el
+                         mismo perímetro: el mapa de Google no se puede
+                         volcar a un canvas. -->
+                    <button type="button" class="btn btn-sm btn-white"
+                            [disabled]="capturandoMapa || estadoApi !== 'listo'"
+                            title="Guardar una foto del mapa con el perímetro"
+                            (click)="capturarMapa()">
+                      @if (capturandoMapa) {
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                      } @else {
+                        <i class="fa-solid fa-camera"></i>
+                      }
+                      Capturar mapa
+                    </button>
+
+                    @if (hayPerimetro) {
+                      <button type="button" class="btn btn-sm btn-white text-danger"
+                              title="Quitar el perímetro" (click)="borrarPerimetro()">
+                        <i class="fa-solid fa-trash"></i> Borrar perímetro
+                      </button>
+                    }
+
+                    <!-- El alfiler de la dirección buscada. No es el
+                         perímetro: se quita aparte y no guarda nada. -->
+                    @if (hayAlfiler) {
+                      <button type="button" class="btn btn-sm btn-white"
+                              title="Quitar el alfiler de la dirección" (click)="quitarAlfiler()">
+                        <i class="fa-solid fa-map-pin"></i>
+                      </button>
+                    }
+                  }
+
+                  <!-- El color del perímetro -->
+                  <span class="suc-colores">
+                    @for (c of colores; track c) {
+                      <button type="button" class="suc-color"
+                              [class.is-sel]="ctrlColor.value === c"
+                              [style.background-color]="c"
+                              [title]="'Color ' + c"
+                              (click)="cambiarColor(c)"></button>
+                    }
+                  </span>
+                </div>
+              }
+
+              <!-- ---------- El mapa ---------- -->
+              <div class="suc-mapa-marco">
+                <div #mapa class="suc-mapa"></div>
+
+                @if (estadoApi !== 'listo') {
+                  <div class="suc-mapa-capa">
+                    @switch (estadoApi) {
+                      @case ('cargando') {
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <span>Cargando el mapa…</span>
+                      }
+                      @case ('sin-clave') {
+                        <i class="fa-solid fa-key"></i>
+                        <span>No hay clave de Google Maps configurada.</span>
+                        <small>Los datos de la sucursal se pueden guardar igual, pero sin perímetro.</small>
+                      }
+                      @default {
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>No se pudo cargar el mapa.</span>
+                        <small>{{ errorApi }}</small>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+
+              @if (!esView) {
+                <p class="suc-pie">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Dibujada el área, arrastre las esquinas para corregirla, y el
+                  alfiler rojo hasta la puerta. Se guarda tal como quede aquí.
+                </p>
+              }
+            </div>
+          </ng-container>
+        </panel>
+
+        <!-- ---------- Las imágenes ---------- -->
+        <panel
+          headerClass="bg-gray-800"
+          title="Imágenes"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-0"
+          icono="images"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (esNuevo && hayImagenes) {
+              <span class="chip chip-info">
+                <i class="fa-solid fa-upload"></i> Se suben al guardar
+              </span>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+              <div class="row g-3">
+
+                <!-- La foto del local -->
+                <div class="col-12 col-sm-6">
+                  <div class="suc-img">
+                    <div class="suc-img__marco" [class.is-vacio]="!fotoVista">
+                      @if (fotoVista) {
+                        <img [src]="fotoVista" alt="Foto de la sucursal" class="suc-img__img" />
+                      } @else {
+                        <i class="fa-solid fa-shop"></i>
+                      }
+                    </div>
+
+                    <div class="suc-img__pie">
+                      <span class="suc-img__titulo">Foto del local</span>
+                      @if (!esView) {
+                        <span class="suc-img__botones">
+                          <!-- El input va escondido y lo dispara la etiqueta:
+                               el <input type=file> de serie no se puede estilar -->
+                          <input type="file" id="foto-sucursal" class="d-none"
+                                 accept="image/*" (change)="onFotoElegida($event)" />
+                          <label for="foto-sucursal" class="btn btn-sm btn-white"
+                                 title="Elegir una imagen de la galería">
+                            <i class="fa-solid fa-image"></i>
+                            {{ fotoVista ? 'Cambiar' : 'Subir' }}
+                          </label>
+                          @if (fotoVista) {
+                            <button type="button" class="btn btn-sm btn-white text-danger"
+                                    title="Quitar la foto" (click)="quitarImagen('foto')">
+                              <i class="fa-solid fa-trash"></i>
+                            </button>
+                          }
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <!-- La captura del mapa -->
+                <div class="col-12 col-sm-6">
+                  <div class="suc-img">
+                    <div class="suc-img__marco" [class.is-vacio]="!mapaVista">
+                      @if (mapaVista) {
+                        <img [src]="mapaVista" alt="Captura del mapa" class="suc-img__img" />
+                      } @else {
+                        <i class="fa-solid fa-map-location-dot"></i>
+                      }
+                    </div>
+
+                    <div class="suc-img__pie">
+                      <span class="suc-img__titulo">Mapa con el perímetro</span>
+                      @if (!esView) {
+                        <span class="suc-img__botones">
+                          <button type="button" class="btn btn-sm btn-white"
+                                  [disabled]="capturandoMapa || estadoApi !== 'listo'"
+                                  title="Tomar la foto del mapa como se ve ahora"
+                                  (click)="capturarMapa()">
+                            <i class="fa-solid" [ngClass]="capturandoMapa ? 'fa-spinner fa-spin' : 'fa-camera'"></i>
+                            {{ mapaVista ? 'Repetir' : 'Capturar' }}
+                          </button>
+                          @if (mapaVista) {
+                            <button type="button" class="btn btn-sm btn-white text-danger"
+                                    title="Quitar la captura" (click)="quitarImagen('mapa')">
+                              <i class="fa-solid fa-trash"></i>
+                            </button>
+                          }
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              @if (!esView) {
+                <p class="campo-hint suc-img__hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Hasta 10 MB cada una. Se guardan al pulsar Guardar; la del
+                  mapa sale del perímetro y del alfiler tal como estén ahora.
+                </p>
+              }
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [cargando]="guardando"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm()">
+</app-modal-footer>

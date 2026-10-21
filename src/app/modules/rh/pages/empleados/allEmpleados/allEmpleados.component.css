@@ -136,3 +136,27 @@
   color: var(--bs-gray-500, #adb5bd);
   font-size: 11px;
 }
+
+/* ---------- La columna SUCURSAL ----------
+   `::ng-deep` porque las celdas las dibuja ag-Grid fuera de la
+   encapsulación del componente: una regla normal no las alcanzaría.
+
+   «Sin sucursal» no se deja en gris: quien no tiene sucursal puede marcar
+   asistencia desde cualquier lugar, y eso hay que verlo de un barrido. */
+:host ::ng-deep .emp-sucursal {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:host ::ng-deep .emp-sucursal--no {
+  padding: .05rem .4rem;
+  border-radius: 999px;
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .18);
+  color: var(--bs-warning-text-emphasis, #997404);
+  font-size: .6875rem;
+  font-weight: 600;
+}

@@ -376,9 +376,21 @@ export class RegistroMarcacionesComponent implements OnInit, OnDestroy {
     } catch (e: any) {
       this.apagarCamara();
       this.paso = 'error';
-      // 429 = ya marcó hace poco; el mensaje del servidor lo explica
-      this.tituloError = this.codigoDe(e) === 429 ? 'Ya había marcado' : 'No se registró';
-      this.mensajeError = e?.error?.message ?? e?.message ?? 'No se pudo registrar la marcación';
+      const msg = e?.error?.message ?? e?.message ?? 'No se pudo registrar la marcación';
+      const codigo = this.codigoDe(e);
+
+      // El titular dice EN DOS PALABRAS qué pasó; el cuerpo es el mensaje del
+      // servidor, que ya explica a cuántos metros está o qué falta.
+      //
+      // Lo de la sucursal llega como 422 y se reconoce por el texto: el sobre
+      // de la API no lleva el SQLSTATE, y esos dos mensajes los escribe
+      // fn_marcaciones_registrar.
+      this.tituloError =
+          codigo === 429 ? 'Ya había marcado'
+        : codigo === 422 && /perímetro/i.test(String(msg)) ? 'Está fuera de su sucursal'
+        : codigo === 422 && /permitir la ubicación/i.test(String(msg)) ? 'Falta su ubicación'
+        : 'No se registró';
+      this.mensajeError = msg;
     } finally {
       this.enviando = false;
     }

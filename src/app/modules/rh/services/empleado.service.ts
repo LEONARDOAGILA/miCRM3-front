@@ -62,6 +62,16 @@ export class EmpleadoService {
                            activo === undefined ? {} : { activo });
   }
 
+  //   ******   DÓNDE TRABAJA: LA SUCURSAL   ******  //
+  // Va aparte de editEmpleado porque la ficha tiene treinta campos y esto se
+  // cambia solo, desde la rejilla, cuando alguien cambia de local. Mandar
+  // `sucursalId` nulo se la quita, y entonces esa persona puede marcar
+  // asistencia desde cualquier lugar.
+  asignarSucursal(id: any, sucursalId: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'asignarSucursal/' + id,
+                           { sucursal_id: sucursalId });
+  }
+
 //   ******   EDITAR   ******  //
   editEmpleado(id: any, data: any): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'editEmpleado/' + id, data);
