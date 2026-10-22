@@ -29,11 +29,16 @@
         <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
       <div>
-        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar este empleado?</h6>
+        <h6 class="eliminar-aviso__titulo">¿Enviar este empleado a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): el empleado va a la
+             papelera, deja de salir en el listado y de poder elegirse como
+             jefe o marcar asistencia, y desde allí se restaura. -->
         <p class="eliminar-aviso__texto" id="eliminarEmpleadoDescripcion">
-          Esta acción no se puede deshacer; se borra también su foto y sus contactos de emergencia.
-          Su historial de auditoría se conserva. Si es jefe o responsable de un departamento, o tiene
-          historial de cargos o ausencias, el sistema no permitirá eliminarlo.
+          Dejará de aparecer en el listado, no se podrá elegir como jefe y no podrá marcar
+          asistencia, pero <b>no se borra</b>: queda en la papelera, desde donde puede
+          restaurarse tal como estaba, con su foto, sus contactos y su historial.
+          Si es jefe de alguien o responsable de un departamento, el sistema no lo permitirá:
+          reasígnelos primero o desactívelo.
         </p>
       </div>
     </div>
@@ -108,7 +113,7 @@
             class="btn btn-danger"
             [disabled]="isLoading"
             (click)="deleteEmpleado()">
-      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
     </button>
   </div>
 

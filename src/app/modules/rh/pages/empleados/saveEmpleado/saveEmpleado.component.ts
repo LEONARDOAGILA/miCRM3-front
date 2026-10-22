@@ -20,6 +20,8 @@ import { ContactoEmergencia, EmpleadoModel, ESTADOS_EMPLEADO, GENEROS, PARENTESC
 import { ListCargosComponent } from '../../cargos/listCargos/listCargos.component';
 import { ListDepartamentosComponent } from '../../departamentos/listDepartamentos/listDepartamentos.component';
 import { ListEmpleadosComponent } from '../listEmpleados/listEmpleados.component';
+import { ListSucursalComponent } from '../../../../ventas/pages/sucursales/listSucursal/listSucursal.component';
+import { SucursalService } from '../../../../ventas/services/sucursal.service';
 import {
   SeleccionarUbicacionComponent, UbicacionElegida,
 } from '../../../../../components/ubicacion-google-maps/seleccionarUbicacion.component';
@@ -67,6 +69,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
   public cargoNombreControl = new FormControl({ value: '', disabled: true });
   public departamentoNombreControl = new FormControl({ value: '', disabled: true });
   public jefeNombreControl = new FormControl({ value: '', disabled: true });
+  public sucursalNombreControl = new FormControl({ value: '', disabled: true });
 
   public tiposIdentificacion = TIPOS_IDENTIFICACION;
   public generos = GENEROS;
@@ -115,6 +118,8 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     private _empleadoService: EmpleadoService,
     private _cargoService: CargoService,
     private _departamentoService: DepartamentoService,
+    /** Para traer el nombre de la sucursal cuando se escribe su id a mano. */
+    private _sucursalService: SucursalService,
     public _appAgGridService: AppAgGridService,
   ) {}
 
@@ -338,6 +343,187 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     this.gridApi?.setRowData(this.contactos);
   }
 
+  // ================================================================
+  // DÓNDE MÁS PUEDE MARCAR (rh.empleados_marcacion_sucursal)
+  // ================================================================
+  //
+  // La sucursal de arriba dice dónde trabaja; éstas son las OTRAS donde
+  // también se le acepta la marcación. Un cobrador, un jefe de zona o un
+  // gerente pasan por varios locales, y con una sola sucursal el perímetro
+  // los dejaba fuera de todos menos uno.
+  //
+  // Se mandan TODAS juntas al guardar y el servidor sincroniza, igual que
+  // los contactos de emergencia.
+
+  public sucursalesMarcacion: any[] = [];
+  /** Copia de lo cargado, para saber si hay algo que mandar. */
+  private sucursalesMarcacionOriginal = '[]';
+  public gridApiSucursales!: GridApi;
+  public columnDefsSucursales: any[] = [];
+  private claveSucursalMarcacion = 0;
+
+  get sucursalesMarcacionCambiadas(): boolean {
+    return JSON.stringify(this.normalizarSucursalesMarcacion()) !== this.sucursalesMarcacionOriginal;
+  }
+
+  /** La fila de una sucursal que ya no sirve se ve apagada. */
+  public rowClassRulesSucursales = {
+    'fila-inactiva': (p: any) => p.data?.sucursal_activa === false,
+  };
+
+  initializeGridSucursales(): void {
+    this.columnDefsSucursales = [
+      {
+        headerName: 'Código', field: 'codigo', minWidth: 90, maxWidth: 120,
+        sortable: false, filter: false,
+        cellStyle: { textAlign: 'left', fontWeight: '600' },
+      },
+      {
+        headerName: 'Sucursal', field: 'nombre', minWidth: 180,
+        sortable: false, filter: false,
+        cellStyle: { textAlign: 'left' },
+      },
+      {
+        // Lo que de verdad decide si allí se controla la ubicación
+        headerName: 'Perímetro', field: 'tiene_perimetro', minWidth: 130, maxWidth: 150,
+        sortable: false, filter: false,
+        cellStyle: { textAlign: 'center' },
+        cellRenderer: (p: any) => {
+          if (!p.data?.tiene_perimetro) {
+            return '<span class="suc-perim suc-perim--no">Sin perímetro</span>';
+          }
+          const detalle = p.data?.tipo === 'CIRCULO'
+            ? `${Math.round(Number(p.data?.radio_metros ?? 0))} m`
+            : `${p.data?.num_vertices} esquinas`;
+          return `<span class="suc-perim suc-perim--si">${detalle}</span>`;
+        },
+      },
+      {
+        headerName: 'Por qué', field: 'observacion', minWidth: 180,
+        headerTooltip: 'Para qué se le autorizó: «cobra en esta zona», «cubre los sábados»…',
+        editable: !this.esView, sortable: false, filter: false,
+        cellStyle: { textAlign: 'left' },
+      },
+      {
+        headerName: 'Activo', field: 'activo', minWidth: 76, maxWidth: 76,
+        sortable: false, filter: false,
+        cellStyle: { textAlign: 'center' },
+        cellRenderer: (p: any) => this.checkboxCellRenderer(p),
+      },
+      {
+        headerName: '', field: 'actions', pinned: 'right',
+        minWidth: 50, maxWidth: 50,
+        suppressMenu: true, sortable: false, filter: false, resizable: false,
+        cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+        cellRenderer: () =>
+          `<button type="button" class="btn-icon btn-quitar" data-accion="quitar"
+                   title="Quitar esta sucursal"><i class="fa fa-times"></i></button>`,
+        hide: this.esView,
+      },
+    ];
+  }
+
+  onGridSucursalesReady(params: GridReadyEvent): void {
+    this.gridApiSucursales = params.api;
+    this._appAgGridService.ajustarTamanoGrid(this.gridApiSucursales);
+  }
+
+  getRowIdSucursal = (p: any) => String(p.data._clave);
+
+  onCellSucursalClicked(e: CellClickedEvent): void {
+    const fila = e.data;
+    if (!fila) { return; }
+
+    const campo = e.column.getColId();
+    if (campo === 'actions') {
+      const accion = ((e.event?.target as HTMLElement)?.closest('[data-accion]') as HTMLElement)?.dataset['accion'];
+      if (accion === 'quitar') { this.quitarSucursalMarcacion(fila); }
+      return;
+    }
+    if (campo === 'activo' && !this.esView) {
+      fila.activo = !fila.activo;
+      // setData y no refreshCells: en ag-Grid 28 es lo único que repinta
+      this.gridApiSucursales?.getRowNode(String(fila._clave))?.setData({ ...fila });
+    }
+  }
+
+  /**
+   * Añade una sucursal con el mismo selector que usa el campo de arriba.
+   *
+   * No se deja repetir ni añadir la suya: en las dos la marcación ya está
+   * permitida y la línea no diría nada nuevo.
+   */
+  agregarSucursalMarcacion(): void {
+    if (this.esView) { return; }
+
+    const modalRef = this.modalService.open(ListSucursalComponent, { size: 'lg', centered: true, backdrop: 'static' });
+    modalRef.componentInstance.ayuda = 'Haz clic sobre otra sucursal donde esta persona pueda marcar.';
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(this.hastaQueCierre(modalRef)))
+      .subscribe((sucursal: any) => {
+        const principal = Number(this.form.get('sucursal_id')?.value ?? 0);
+        if (principal && Number(sucursal.id) === principal) {
+          this._toastr.info('Ésa ya es su sucursal: allí puede marcar sin añadirla aquí', 'Sucursales');
+          return;
+        }
+        if (this.sucursalesMarcacion.some(s => Number(s.sucursal_id) === Number(sucursal.id))) {
+          this._toastr.info(`«${sucursal.nombre}» ya está en la lista`, 'Sucursales');
+          return;
+        }
+
+        this.sucursalesMarcacion = [...this.sucursalesMarcacion, {
+          _clave: ++this.claveSucursalMarcacion,
+          id: null,
+          sucursal_id: sucursal.id,
+          codigo: sucursal.codigo,
+          nombre: sucursal.nombre,
+          tipo: sucursal.tipo,
+          radio_metros: sucursal.radio_metros,
+          num_vertices: sucursal.num_vertices,
+          tiene_perimetro: sucursal.tiene_perimetro,
+          sucursal_activa: true,
+          observacion: '',
+          activo: true,
+        }];
+        this.gridApiSucursales?.setRowData(this.sucursalesMarcacion);
+      });
+  }
+
+  quitarSucursalMarcacion(fila: any): void {
+    if (this.esView) { return; }
+    this.sucursalesMarcacion = this.sucursalesMarcacion.filter(s => s !== fila);
+    this.gridApiSucursales?.setRowData(this.sucursalesMarcacion);
+  }
+
+  private normalizarSucursalesMarcacion(): any[] {
+    return this.sucursalesMarcacion.map(s => ({
+      id: s.id ?? null,
+      sucursal_id: Number(s.sucursal_id),
+      observacion: (s.observacion ?? '').trim() || null,
+      activo: s.activo !== false,
+    }));
+  }
+
+  private cargarSucursalesMarcacion(lista: any[]): void {
+    // Al clonar se copian sin id: se crean para el empleado nuevo
+    this.sucursalesMarcacion = (lista ?? []).map((s: any) => ({
+      ...s, id: this.esClon ? null : s.id, _clave: ++this.claveSucursalMarcacion,
+    }));
+    this.sucursalesMarcacionOriginal = this.esClon ? '[]' : JSON.stringify(this.normalizarSucursalesMarcacion());
+    this.gridApiSucursales?.setRowData(this.sucursalesMarcacion);
+  }
+
+  private async guardarSucursalesMarcacion(): Promise<void> {
+    if (!this.empleadoId) { return; }
+    if (!this.sucursalesMarcacionCambiadas) { return; }
+
+    const res: any = await firstValueFrom(
+      this._empleadoService.guardarSucursalesMarcacion(this.empleadoId, this.normalizarSucursalesMarcacion()));
+    if (res?.status === 'success') {
+      this.cargarSucursalesMarcacion(res.data);
+    }
+  }
+
   private async guardarContactos(): Promise<void> {
     if (!this.empleadoId) { return; }
     if (!this.contactosCambiados) { return; }
@@ -363,6 +549,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     this.isdisabled = this.esView;
     this.initializeForm();
     this.initializeGridContactos();
+    this.initializeGridSucursales();
 
     switch (this.accion) {
       case 'add':
@@ -422,6 +609,9 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
       cargo_id:              [{ value: null, disabled: d }, [Validators.required]],
       departamento_id:       [{ value: null, disabled: d }, [Validators.required]],
       jefe_id:               [{ value: null, disabled: d }],
+      // Dónde trabaja. Vacío = sin sucursal, y entonces puede marcar
+      // asistencia desde cualquier lugar.
+      sucursal_id:           [{ value: null, disabled: d }],
       fecha_ingreso:         [{ value: this.hoyIso(), disabled: d }, [Validators.required]],
       fecha_salida:          [{ value: '', disabled: d }],
       estado:                [{ value: 'ACTIVO', disabled: d }, [Validators.required]],
@@ -477,6 +667,20 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Vacía el cargo: el id y el nombre a la vez.
+   *
+   * El cargo es OBLIGATORIO, así que quitarlo deja el formulario inválido y
+   * el campo en rojo hasta que se elija otro. Eso es lo que se quiere: el
+   * botón sirve para cambiarlo, y verlo vacío avisa mejor que un id viejo
+   * que ya no corresponde.
+   */
+  limpiarCargo(): void {
+    if (this.isdisabled) { return; }
+    this.form.patchValue({ cargo_id: null });
+    this.cargoNombreControl.setValue('');
+  }
+
   abrirModalCargos() {
     if (this.isdisabled) return;
     const modalRef = this.modalService.open(ListCargosComponent, { size: 'lg', centered: true, backdrop: 'static' });
@@ -511,6 +715,13 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Vacía el departamento. También es obligatorio (ver limpiarCargo). */
+  limpiarDepartamento(): void {
+    if (this.isdisabled) { return; }
+    this.form.patchValue({ departamento_id: null });
+    this.departamentoNombreControl.setValue('');
+  }
+
   abrirModalDepartamentos() {
     if (this.isdisabled) return;
     const modalRef = this.modalService.open(ListDepartamentosComponent, { size: 'lg', centered: true, backdrop: 'static' });
@@ -522,6 +733,80 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
         this.form.patchValue({ departamento_id: dep.id });
         this.departamentoNombreControl.setValue(dep.nombre);
       });
+  }
+
+  // ================================================================
+  // LA SUCURSAL (id + nombre + lupa)
+  // ================================================================
+  //
+  // El mismo trío que el cargo, y que la marca en saveProducto. No es un
+  // dato más de la ficha: de él depende DESDE DÓNDE puede marcar asistencia
+  // esta persona —sólo dentro del perímetro de su sucursal—, así que al
+  // elegirla se dice en qué queda.
+
+  async cargarSucursalPorId(): Promise<void> {
+    const id = this.form.get('sucursal_id')?.value;
+    if (!id) { this.sucursalNombreControl.setValue(''); return; }
+
+    try {
+      this._loadingService.setLoading(true);
+      const res: any = await firstValueFrom(this._sucursalService.findByIdSucursal(id));
+
+      if (res?.status === 'success' && res.data) {
+        this.sucursalNombreControl.setValue(res.data.nombre ?? '');
+
+        // Una sucursal en la papelera no vale: el selector no la ofrece y el
+        // servidor la rechaza, así que mejor cortarlo aquí que al guardar.
+        if (res.data.deleted_at) {
+          this.limpiarSucursal();
+          this._toastr.warning('Esa sucursal está en la papelera de reciclaje',
+                               'Sucursal no disponible', { timeOut: 4000 });
+          return;
+        }
+        if (res.data.activo === false) {
+          this.limpiarSucursal();
+          this._toastr.warning(
+            `«${res.data.nombre}» está inactiva: actívela desde Sucursales para poder usarla`,
+            'Sucursal no disponible', { timeOut: 4000 });
+        }
+      } else {
+        this.limpiarSucursal();
+        this._toastr.warning('Sucursal no encontrada');
+      }
+    } catch (error) {
+      console.error('Error al cargar la sucursal:', error);
+      this.limpiarSucursal();
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  abrirModalSucursales(): void {
+    if (this.isdisabled) { return; }
+
+    const modalRef = this.modalService.open(ListSucursalComponent, { size: 'lg', centered: true, backdrop: 'static' });
+    modalRef.componentInstance.sucursalSeleccionadaId = this.form.get('sucursal_id')?.value;
+    modalRef.componentInstance.ayuda = 'Haz clic sobre la sucursal donde trabaja. Sólo podrá marcar asistencia dentro de su perímetro.';
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(this.hastaQueCierre(modalRef)))
+      .subscribe((sucursal: any) => {
+        this.form.patchValue({ sucursal_id: sucursal.id });
+        this.sucursalNombreControl.setValue(sucursal.nombre ?? '');
+
+        // Lo que de verdad cambia al elegirla; una sucursal sin perímetro no
+        // controla nada y conviene saberlo antes de guardar.
+        this._toastr.info(
+          sucursal.tiene_perimetro
+            ? `Sólo podrá marcar asistencia dentro del perímetro de «${sucursal.nombre}»`
+            : `«${sucursal.nombre}» no tiene perímetro: podrá marcar desde cualquier lugar`,
+          'Sucursal', { timeOut: 5000 });
+      });
+  }
+
+  /** Sin sucursal: se vacían los dos campos a la vez. */
+  limpiarSucursal(): void {
+    this.form.patchValue({ sucursal_id: null });
+    this.sucursalNombreControl.setValue('');
   }
 
   async cargarJefePorId() {
@@ -607,6 +892,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
         cargo_id:              m.cargo_id,
         departamento_id:       m.departamento_id,
         jefe_id:               m.jefe_id ?? null,
+        sucursal_id:           m.sucursal_id ?? null,
         fecha_ingreso:         m.fecha_ingreso ?? this.hoyIso(),
         fecha_salida:          m.fecha_salida ?? '',
         estado:                m.estado || 'ACTIVO',
@@ -631,6 +917,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
       this.cargoNombreControl.setValue(m.cargo_nombre || '');
       this.departamentoNombreControl.setValue(m.departamento_nombre || '');
       this.jefeNombreControl.setValue(m.jefe_nombre || '');
+      this.sucursalNombreControl.setValue(m.sucursal_nombre || '');
 
       // Contactos de emergencia del empleado
       try {
@@ -638,6 +925,14 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
         this.cargarContactos(rc?.status === 'success' ? rc.data : []);
       } catch (e) {
         console.error('Error al cargar contactos:', e);
+      }
+
+      // Las otras sucursales donde puede marcar
+      try {
+        const rs: any = await firstValueFrom(this._empleadoService.listSucursalesMarcacion(id));
+        this.cargarSucursalesMarcacion(rs?.status === 'success' ? rs.data : []);
+      } catch (e) {
+        console.error('Error al cargar las sucursales de marcación:', e);
       }
 
       if (m.foto) {
@@ -866,7 +1161,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     const payload = this.form.getRawValue();
     delete payload.foto;   // la foto va aparte (addImagen)
     payload.salario = (payload.salario === '' || payload.salario === null || payload.salario === undefined) ? null : Number(payload.salario);
-    for (const k of ['email_personal', 'telefono', 'celular', 'fecha_nacimiento', 'fecha_salida', 'direccion', 'genero', 'jefe_id']) {
+    for (const k of ['email_personal', 'telefono', 'celular', 'fecha_nacimiento', 'fecha_salida', 'direccion', 'genero', 'jefe_id', 'sucursal_id']) {
       if (payload[k] === '' || payload[k] === undefined) { payload[k] = null; }
     }
     await this.saveRecord(payload);
@@ -910,7 +1205,16 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
         }
       }
 
-      // 4) Contactos de emergencia (la lista completa; el back sincroniza)
+      // 4) Las otras sucursales donde puede marcar (la lista completa)
+      try {
+        await this.guardarSucursalesMarcacion();
+      } catch (e) {
+        console.error('Error al guardar las sucursales de marcación:', e);
+        this._toastr.warning('El empleado se guardó, pero las otras sucursales donde puede marcar no. Vuelva a abrirlo e inténtelo de nuevo.',
+                             'Sucursales', { timeOut: 8000, closeButton: true });
+      }
+
+      // 5) Contactos de emergencia (la lista completa; el back sincroniza)
       try {
         await this.guardarContactos();
       } catch (e) {

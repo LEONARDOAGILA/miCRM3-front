@@ -14,7 +14,10 @@ export interface SucursalModel {
   id: number;
   codigo: string;
   nombre: string;
+  /** La que devuelve Google al buscar o al pulsar el mapa */
   direccion?: string | null;
+  /** La escrita a mano, con referencias. Google nunca la toca. */
+  direccion_completa?: string | null;
   telefono?: string | null;
   email?: string | null;
 

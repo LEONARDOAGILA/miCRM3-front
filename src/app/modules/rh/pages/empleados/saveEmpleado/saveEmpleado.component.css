@@ -9,7 +9,11 @@
      sumaban ~44px de separación: el formulario ocupaba el doble de alto. */
   --su-gap: 1.25rem;
 
-  --su-field-h: 45px;               /* alto real de un campo */
+  /* EL ALTO REAL DE UN CAMPO, medido: 58px, no los 45 de la clase h-45px.
+     La etiqueta flotante añade lo suyo. De esto depende que el botón de la
+     lupa quede a ras del campo y no un dedo más bajo. Es el mismo valor
+     que usa saveProducto (--sp-field-h). */
+  --su-field-h: calc(3.5rem + 2px);
 }
 
 .form-card__body {
@@ -345,6 +349,59 @@
   background-color: var(--bs-secondary-bg, #e9ecef);
 }
 
+/* Quitar lo elegido: en rojo al pasar, como en saveProducto */
+.btn-lookup--quitar:hover,
+.btn-lookup--quitar:focus {
+  background-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger, #dc3545);
+}
+
+/* La × sólo está cuando hay algo que quitar (la plantilla la condiciona al
+   valor), igual que en saveProducto: un botón que no hace nada no se enseña.
+   Por eso el último redondeo lo toma la pieza que quede al final —la lupa o
+   la × —, que es lo que resuelven las reglas de más abajo. */
+
+/* ---------- LAS PIEZAS, PEGADAS ----------
+   Es el estándar de saveProducto (el campo de la marca): la plantilla las
+   pone sin hueco (g-0) y aquí se comparte el borde entre piezas (margen de
+   -1px) y se redondean sólo los extremos. A la vista es UN campo, no tres o
+   cuatro cosas sueltas.
+
+   Va en su propia clase y no en `.campo-lookup` a secas porque esta
+   pantalla usa esa clase también como envoltorio de filas que NO son un
+   trío con lupa —las dos fechas, los combos—, y ahí pegar las piezas y
+   quitarles las esquinas sería estropearlas.
+
+   Al enfocar o pasar por encima, la pieza sube de capa para que se le vea
+   el borde entero y no medio tapado por la de al lado. */
+:host ::ng-deep .campo-lookup--pegado .form-control,
+.campo-lookup--pegado .btn-lookup {
+  border-radius: 0;
+}
+
+.campo-lookup--pegado .row > * + * {
+  margin-left: -1px;
+}
+
+:host ::ng-deep .campo-lookup--pegado .row > *:first-child .form-control {
+  border-top-left-radius: .375rem;
+  border-bottom-left-radius: .375rem;
+}
+
+/* El último es un botón mientras se edita y el nombre cuando sólo se ve */
+:host ::ng-deep .campo-lookup--pegado .row > *:last-child .form-control,
+.campo-lookup--pegado .row > *:last-child .btn-lookup {
+  border-top-right-radius: .375rem;
+  border-bottom-right-radius: .375rem;
+}
+
+:host ::ng-deep .campo-lookup--pegado .form-control:focus,
+.campo-lookup--pegado .btn-lookup:hover,
+.campo-lookup--pegado .btn-lookup:focus {
+  position: relative;
+  z-index: 2;
+}
+
 /* ============================================================
    IMAGEN EN PANTALLA COMPLETA
    ============================================================ */
@@ -519,12 +576,9 @@
   .avatar-actions .btn {
     min-width: 0;
   }
-  .btn-lookup {
-    height: 58px !important;
-  }
-  .campo-lookup .btn-lookup {
-    height: 42px;
-  }
+  /* Aquí había dos reglas que peleaban entre sí por el alto de la lupa
+     (58px !important y 42px). El alto lo pone ya --su-field-h, que es el
+     del campo, así que en móvil tampoco hay nada que corregir. */
 }
 
 @media (max-width: 400px) {
@@ -914,4 +968,52 @@
   margin-top: .3rem;
   font-size: 10.5px;
   color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ============================================================
+   OTRAS SUCURSALES DONDE PUEDE MARCAR
+   ============================================================
+   Misma caja que la de contactos, un poco más baja: aquí son dos o tres
+   líneas, no una lista de familiares. */
+.sucursales-grid {
+  height: 180px;
+  min-height: 140px;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+/* Sólo la columna «Por qué» se escribe */
+:host ::ng-deep .sucursales-grid .ag-cell[col-id='observacion'] {
+  cursor: text;
+}
+
+/* La columna PERÍMETRO: lo mismo que en el listado de sucursales. Sin él se
+   puede marcar desde cualquier lugar, así que no se deja en gris.
+   `::ng-deep` porque las celdas las dibuja ag-Grid fuera del componente. */
+:host ::ng-deep .suc-perim {
+  display: inline-block;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .suc-perim--si {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .12);
+  color: var(--bs-success-text-emphasis, #0f5132);
+}
+
+:host ::ng-deep .suc-perim--no {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .18);
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+/* Una sucursal que se desactivó o se fue a la papelera: la línea sigue, pero
+   apagada, para que se vea que esa autorización ya no sirve. */
+:host ::ng-deep .sucursales-grid .ag-row.fila-inactiva {
+  opacity: .55;
+  text-decoration: line-through;
 }

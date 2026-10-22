@@ -28,14 +28,47 @@ export class EmpleadoService {
   }
 
   //   ******   LISTADO CON PAGINACIÓN   ******  //
-  allEmpleados(page: number = 1, perPage: number = 10, search: string = ''): Observable<any> {
+  allEmpleados(page: number = 1, perPage: number = 10, search: string = '',
+               filtros: any = null): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
     if (search) {
       params = params.set('search', search);
     }
+
+    // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+    // servidor, sobre todos los empleados: la rejilla sólo tiene la página.
+    if (filtros && Object.keys(filtros).length) {
+      params = params.set('filtros', JSON.stringify(filtros));
+    }
+
     return this._http.get<any>(this.URL_SERVICIOS + 'allEmpleados', { params, observe: 'response' });
+  }
+
+  // ================================================================
+  // PAPELERA DE RECICLAJE
+  // ================================================================
+  //
+  // `deleteEmpleado` es un borrado lógico: el empleado sale del listado y de
+  // los selectores, pero su ficha y su historial siguen ahí. Desde aquí se
+  // saca o se borra de verdad.
+
+  papelera(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'papelera');
+  }
+
+  restaurarEmpleados(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'restaurar', { ids });
+  }
+
+  eliminarDefinitivo(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'eliminarDefinitivo', { ids });
+  }
+
+  /** OJO: no lleva ids, vacía la papelera ENTERA. */
+  vaciarPapelera(): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera');
   }
 
   //   ******   LISTADO SIMPLE (selector / jefe)   ******  //
@@ -95,6 +128,17 @@ export class EmpleadoService {
   /** Manda la lista completa: el back inserta, actualiza y elimina lo que falte. */
   guardarContactos(empleadoId: any, contactos: any[]): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'guardarContactos/' + empleadoId, { contactos });
+  }
+
+  //   ******   DÓNDE MÁS PUEDE MARCAR   ******  //
+  // Las OTRAS sucursales donde se le acepta la marcación, además de la suya.
+  // Se mandan TODAS juntas y el servidor sincroniza, igual que los contactos.
+  listSucursalesMarcacion(empleadoId: any): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'listSucursalesMarcacion/' + empleadoId);
+  }
+
+  guardarSucursalesMarcacion(empleadoId: any, sucursales: any[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'guardarSucursalesMarcacion/' + empleadoId, { sucursales });
   }
 
   //   ******   AGREGAR FOTO   ******  //

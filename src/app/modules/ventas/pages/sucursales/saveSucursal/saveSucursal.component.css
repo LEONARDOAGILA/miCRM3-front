@@ -418,6 +418,48 @@
   object-fit: cover;
 }
 
+/* ---------- Ampliar ----------
+   El marco entero es pulsable y abre el visor (ampliar, girar, arrastrar),
+   el mismo de saveCliente. Una captura del mapa a tamaño de sello no sirve
+   para comprobar si el perímetro cubre el local. */
+.suc-img__ampliar {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.suc-img__lupa {
+  position: absolute;
+  right: .35rem;
+  bottom: .35rem;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+
+  border-radius: .25rem;
+  background-color: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: .7rem;
+
+  /* Se insinúa siempre —en una pantalla táctil no hay «pasar por encima»—
+     y se enciende del todo al apuntarla. */
+  opacity: .65;
+  transition: opacity .12s ease;
+}
+
+.suc-img__ampliar:hover .suc-img__lupa,
+.suc-img__ampliar:focus-visible .suc-img__lupa {
+  opacity: 1;
+}
+
 .suc-img__pie {
   display: flex;
   align-items: center;

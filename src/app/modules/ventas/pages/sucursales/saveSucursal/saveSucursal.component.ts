@@ -2,7 +2,7 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgZone, OnDe
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
@@ -12,11 +12,13 @@ import { ModalHeaderComponent } from '../../../../../components/modal/modal-head
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
 import { PanelModule } from '../../../../../components/panel/panel.module';
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoTextoAreaComponent } from '../../../../../components/campos/campoTextoArea/campoTextoArea.component';
 import { CampoEmailComponent } from '../../../../../components/campos/campoEmail/campoEmail.component';
 import { CampoTelefonoComponent } from '../../../../../components/campos/campoTelefono/campoTelefono.component';
 import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.component';
+import { ImagenVisor, VisorImagenesComponent } from '../../../../../components/visorImagenes/visorImagenes.component';
 import { GoogleMapsLoaderService } from '../../../../../service/google-maps-loader.service';
 import { LugaresGoogleService, SugerenciaLugar } from '../../../../../service/lugares-google.service';
 import { LoadingService } from '../../../../../service/loading.service';
@@ -49,8 +51,9 @@ import { SucursalService, PuntoSucursal } from '../../../services/sucursal.servi
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
     ModalHeaderComponent, ModalFooterComponent, PanelModule,
-    CampoTextoComponent, CampoEmailComponent, CampoTelefonoComponent,
-    CampoNumeroEnteroComponent, CheckboxComponent, AvisoComponent,
+    CampoTextoComponent, CampoTextoAreaComponent, CampoEmailComponent,
+    CampoTelefonoComponent, CampoNumeroEnteroComponent, CheckboxComponent,
+    AvisoComponent,
   ],
   templateUrl: './saveSucursal.component.html',
   styleUrls: ['./saveSucursal.component.css'],
@@ -132,6 +135,12 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Descarta las respuestas que llegan tarde, después de otra más nueva. */
   private ultimaBusqueda = 0;
   private geocoder: any = null;
+  /** La librería de Places, para resolver el negocio que se pulse en el mapa. */
+  private places: any = null;
+  /** El oyente del clic en el mapa que coloca la puerta. */
+  private oyenteClicPunto: any = null;
+  /** true mientras se le pregunta a Google qué hay en el punto pulsado. */
+  public resolviendoPunto = false;
   /** El alfiler de la dirección encontrada. No es el perímetro. */
   private marcaDireccion: any = null;
 
@@ -139,6 +148,8 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     public modal: NgbActiveModal,
+    /** Para abrir el visor ENCIMA de este modal, sin cerrarlo. */
+    private modalService: NgbModal,
     private fb: FormBuilder,
     private zone: NgZone,
     private _toastr: ToastrService,
@@ -185,7 +196,8 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
       // `geocoding` resuelve lo que se escribe entero sin elegir sugerencia.
       // No se pide `drawing`: su DrawingManager está retirado desde la 3.65 y
       // aquí se dibuja a mano.
-      this._lugares.usar(await this.gm.importLibrary('places'));
+      this.places = await this.gm.importLibrary('places');
+      this._lugares.usar(this.places);
       await this.gm.importLibrary('geocoding');
 
       this.zone.run(() => {
@@ -202,6 +214,8 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.timerBusqueda);
+    this.oyenteClicPunto?.remove?.();
+    this.oyenteClicPunto = null;
     this.soltarOyente();
     this.limpiarTrazo();
     this.figura?.setMap(null);
@@ -223,6 +237,9 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
       codigo:            [{ value: '', disabled: bloqueado }, [Validators.required, Validators.minLength(2), Validators.maxLength(20)]],
       nombre:            [{ value: '', disabled: bloqueado }, [Validators.required, Validators.minLength(3), Validators.maxLength(150)]],
       direccion:         [{ value: '', disabled: bloqueado }, [Validators.maxLength(250)]],
+      // La de las referencias, escrita a mano: el buscador de Google NUNCA la
+      // pisa, sólo escribe en `direccion`.
+      direccion_completa: [{ value: '', disabled: bloqueado }, [Validators.maxLength(500)]],
       telefono:          [{ value: '', disabled: bloqueado }, [Validators.maxLength(50)]],
       email:             [{ value: '', disabled: bloqueado }, [Validators.email, Validators.maxLength(150)]],
       color:             [{ value: this.colores[0], disabled: bloqueado }],
@@ -252,6 +269,7 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
         codigo:            (s.codigo ?? '') + (this.accion === 'clon' ? '-2' : ''),
         nombre:            (s.nombre ?? '') + (this.accion === 'clon' ? ' (copia)' : ''),
         direccion:         s.direccion ?? '',
+        direccion_completa: s.direccion_completa ?? '',
         telefono:          s.telefono ?? '',
         email:             s.email ?? '',
         color:             s.color ?? this.colores[0],
@@ -300,6 +318,16 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.estadoApi = 'listo';
+
+    // PULSAR EL MAPA PONE LA PUERTA. Este oyente vive mientras el modal esté
+    // abierto; cuando se está dibujando, el del dibujo manda y éste se aparta
+    // (ver alPulsarElMapa). Va antes que los de dibujo a propósito: Google
+    // llama a los oyentes en el orden en que se registraron, así que éste
+    // puede decidir primero si le toca o no.
+    if (!this.esView) {
+      this.oyenteClicPunto = this.mapa.addListener('click',
+        (e: any) => this.zone.run(() => this.alPulsarElMapa(e)));
+    }
 
     // El perímetro guardado se pinta ya editable: entrar a modificar y poder
     // arrastrar una esquina es lo que se espera de esta pantalla.
@@ -526,7 +554,7 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
     // Cuenca»): es una referencia de malla, no una dirección, y en el listado
     // no le dice nada a nadie. Pasa con parques y sitios sin portal. En ese
     // caso se respeta lo que escribió la persona y sólo se mueve el mapa.
-    if (/^[A-Z0-9]{4,8}\+[A-Z0-9]{2,3}\b/i.test(texto)) { return; }
+    if (this.esPlusCode(texto)) { return; }
 
     this.ctrlDireccion.setValue(texto.slice(0, 250));
     this.ctrlDireccion.markAsDirty();
@@ -572,11 +600,138 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     if (!this.esView) {
+      // Al soltarlo se vuelve a preguntar la dirección: mover la puerta media
+      // cuadra puede cambiar la calle, y dejar la de antes sería mentir.
       this.marcaDireccion.addListener('dragend', (e: any) => this.zone.run(() => {
         this.punto = { lat: e.latLng.lat(), lng: e.latLng.lng() };
         this.prueba = null;
+        this.resolverDireccion(this.punto.lat, this.punto.lng);
       }));
     }
+  }
+
+  /**
+   * Pulsar el mapa pone la puerta ahí y trae su dirección.
+   *
+   * MIENTRAS SE DIBUJA, EL CLIC NO ES PARA ESTO: pone una esquina del área o
+   * el centro del círculo, y de eso se encarga el oyente del dibujo. Se
+   * reconoce por `oyenteMapa`, que sólo existe mientras se dibuja.
+   */
+  private alPulsarElMapa(e: any): void {
+    // Sin esto, pulsar un negocio abre el globo de Google encima del mapa.
+    // `stop` sólo viene cuando se pulsó un sitio con ficha (IconMouseEvent).
+    e?.stop?.();
+
+    if (this.esView || this.oyenteMapa) { return; }
+    if (!e?.latLng) { return; }
+
+    // Al pulsar un negocio, Google NO da el píxel sino las coordenadas de ese
+    // sitio: pulsar la tienda deja la puerta en la tienda, que es lo que se
+    // quiere.
+    const lat = e.latLng.lat();
+    const lng = e.latLng.lng();
+
+    this.ponerPunto(lat, lng, 'La puerta de la sucursal');
+    this.resolverDireccion(lat, lng, e.placeId);
+  }
+
+  /**
+   * Qué hay en ese punto, para escribirlo en DIRECCIÓN.
+   *
+   * Si se pulsó un negocio con ficha, se le piden sus datos a Places —así sale
+   * «Supermaxi Don Bosco» y no «Av. de las Américas 123»—. Si se pulsó un
+   * punto cualquiera, se geocodifica al revés.
+   */
+  private async resolverDireccion(lat: number, lng: number, placeId?: string): Promise<void> {
+    this.resolviendoPunto = true;
+    try {
+      let nombre = '';        // el negocio que se pulsó, si se pulsó uno
+      let calle = '';         // la dirección de verdad
+
+      if (placeId && this.places?.Place) {
+        const p = new this.places.Place({ id: placeId });
+        await p.fetchFields({ fields: ['displayName', 'formattedAddress'] });
+        nombre = String(p.displayName ?? '').trim();
+
+        // OJO: la dirección de un sitio sin portal —un parque, una cancha—
+        // viene como «plus code» («32Q6+C63, Cuenca»). Eso no es una
+        // dirección, así que se deja para que la rellene el geocodificador.
+        const suya = this.limpiarDireccion(p.formattedAddress ?? '');
+        if (suya && !this.esPlusCode(suya)) { calle = suya; }
+      }
+
+      // Sin calle todavía (no se pulsó un negocio, o el suyo era un plus
+      // code): se pregunta al revés por las coordenadas.
+      if (!calle && this.geocoder) {
+        const { results } = await this.geocoder.geocode({ location: { lat, lng } });
+        calle = this.primeraDireccionUtil(results ?? []);
+      }
+
+      const texto = this.componerDireccion(nombre, calle);
+      this.zone.run(() => {
+        if (texto) { this.escribirDireccion(texto); } else { this.avisarSinDireccion(); }
+      });
+
+    } catch (e) {
+      // Que no se sepa la dirección no invalida el punto: las coordenadas y
+      // el enlace ya están puestos, que es lo que se guarda. Pasa en descampado
+      // y en vías sin nombre, donde Google sólo devuelve «plus codes».
+      console.error('No se pudo resolver la dirección del punto:', e);
+      this.zone.run(() => this.avisarSinDireccion());
+    } finally {
+      this.zone.run(() => this.resolviendoPunto = false);
+    }
+  }
+
+  /**
+   * La primera respuesta del geocodificador que sea una dirección de verdad.
+   *
+   * Vienen de la más concreta a la más general, y las primeras suelen ser
+   * «plus codes» (4X3W+26J) cuando se pulsa en medio de una manzana. Se salta
+   * esas y se coge la primera con nombre de calle; si no hay ninguna, se
+   * devuelve vacío y el campo se queda como estaba.
+   */
+  private primeraDireccionUtil(resultados: any[]): string {
+    for (const r of resultados) {
+      const texto = this.limpiarDireccion(r?.formatted_address);
+      if (texto.length > 3 && !this.esPlusCode(texto)) { return texto; }
+    }
+    return '';
+  }
+
+  /** «4X3W+26J, Cuenca»: una referencia de malla, no una dirección. */
+  private esPlusCode(texto: string): boolean {
+    return /^[A-Z0-9]{4,8}\+[A-Z0-9]{2,3}\b/i.test(texto);
+  }
+
+  /**
+   * «Supermaxi Don Bosco, Av. de las Américas 12-34».
+   *
+   * El nombre del sitio delante de la calle: quien después lea la ficha
+   * reconoce antes el local que el portal. Si la calle ya empieza por ese
+   * nombre no se repite.
+   */
+  private componerDireccion(nombre: string, calle: string): string {
+    const n = (nombre || '').trim();
+    const c = (calle || '').trim();
+    if (!n) { return c; }
+    if (!c) { return n; }
+    return c.toLowerCase().startsWith(n.toLowerCase()) ? c : `${n}, ${c}`;
+  }
+
+  /**
+   * Google no supo decir qué hay en ese punto.
+   *
+   * SE AVISA en lugar de callar: el alfiler ya se movió y el campo se quedó
+   * con la dirección del punto ANTERIOR, así que sin este aviso se guardaría
+   * una dirección que no corresponde a las coordenadas.
+   */
+  private avisarSinDireccion(): void {
+    this._toastr.info(
+      this.ctrlDireccion.value
+        ? 'No hay dirección para ese punto: la de arriba es la de antes, corríjala a mano'
+        : 'No hay dirección para ese punto: escríbala a mano',
+      'Sucursales', { timeOut: 6000 });
   }
 
   /** El alfiler de la dirección encontrada, y el mapa encuadrado en ella. */
@@ -1020,6 +1175,33 @@ export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get hayImagenes(): boolean { return !!this.fotoVista || !!this.mapaVista; }
+
+  /**
+   * Ver las imágenes en grande: ampliar, girar y arrastrar.
+   *
+   * El mismo visor de saveCliente (components/visorImagenes), y no una
+   * pestaña nueva: una captura del mapa a tamaño de sello no sirve para
+   * comprobar si el perímetro cubre el local.
+   *
+   * Se le pasan LAS DOS, así que desde una se llega a la otra con las flechas.
+   */
+  verImagen(cual: 'foto' | 'mapa'): void {
+    const imagenes: ImagenVisor[] = [];
+    if (this.fotoVista) {
+      imagenes.push({ url: this.fotoVista, titulo: 'Foto del local', nombre: 'sucursal-local.jpg' });
+    }
+    if (this.mapaVista) {
+      imagenes.push({ url: this.mapaVista, titulo: 'Mapa con el perímetro', nombre: 'sucursal-mapa.png' });
+    }
+    if (!imagenes.length) { return; }
+
+    const ref = this.modalService.open(VisorImagenesComponent, {
+      size: 'xl', centered: true, backdrop: true, keyboard: true, windowClass: 'visor-modal',
+    });
+    ref.componentInstance.imagenes = imagenes;
+    // Si sólo hay una, la que toca es la 0
+    ref.componentInstance.indice = cual === 'mapa' && imagenes.length > 1 ? 1 : 0;
+  }
 
   /**
    * Sube lo que esté esperando y quita lo que se haya marcado.

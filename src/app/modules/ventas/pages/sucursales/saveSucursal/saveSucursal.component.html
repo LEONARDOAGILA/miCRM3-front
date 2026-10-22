@@ -150,7 +150,12 @@
                         <span class="suc-punto__valor">{{ textoCoordenadas }}</span>
                       } @else {
                         <span class="suc-punto__hint">
-                          Sin punto propio: se guardará el centro del perímetro
+                          Pulse el mapa para poner la puerta, o se guardará el centro del perímetro
+                        </span>
+                      }
+                      @if (resolviendoPunto) {
+                        <span class="suc-punto__hint">
+                          <i class="fa fa-spinner fa-spin"></i> buscando la dirección…
                         </span>
                       }
                     </div>
@@ -181,6 +186,27 @@
                       }
                     </div>
                   </div>
+                </div>
+
+                <!-- DIRECCIÓN COMPLETA: la que se escribe a mano.
+                     Va debajo de la de Google y NADIE la sobrescribe: ni el
+                     buscador ni el clic en el mapa escriben aquí. Es la que
+                     de verdad sirve para llegar. -->
+                <div class="col-12">
+                  <app-campoTextoArea
+                    [control]="form.controls['direccion_completa']"
+                    label="DIRECCIÓN COMPLETA / REFERENCIAS"
+                    placeholder="Frente al parque, junto a la farmacia, edificio azul, segundo piso…"
+                    [maxLength]="500"
+                    [alto]="80">
+                  </app-campoTextoArea>
+                  @if (!esView) {
+                    <p class="campo-hint suc-direccion__hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Escríbala usted: Google no la toca. Es la que lee quien
+                      tiene que llegar al local.
+                    </p>
+                  }
                 </div>
 
                 <!-- Teléfono -->
@@ -445,8 +471,15 @@
               @if (!esView) {
                 <p class="suc-pie">
                   <i class="fa-solid fa-circle-info"></i>
-                  Dibujada el área, arrastre las esquinas para corregirla, y el
-                  alfiler rojo hasta la puerta. Se guarda tal como quede aquí.
+                  @if (dibujando) {
+                    Pulse en el mapa cada esquina del área y después «Cerrar área».
+                  } @else {
+                    <span>
+                      <b>Pulse el mapa</b> para poner la puerta —el alfiler rojo— y
+                      traer su dirección; arrástrelo para afinarla. Dibujada el
+                      área, arrastre sus esquinas para corregirla.
+                    </span>
+                  }
                 </p>
               }
             </div>
@@ -478,9 +511,14 @@
                 <!-- La foto del local -->
                 <div class="col-12 col-sm-6">
                   <div class="suc-img">
+                    <!-- Es un botón, no un enlace: abre el visor, no otra pestaña -->
                     <div class="suc-img__marco" [class.is-vacio]="!fotoVista">
                       @if (fotoVista) {
-                        <img [src]="fotoVista" alt="Foto de la sucursal" class="suc-img__img" />
+                        <button type="button" class="suc-img__ampliar"
+                                title="Ver la foto en grande" (click)="verImagen('foto')">
+                          <img [src]="fotoVista" alt="Foto de la sucursal" class="suc-img__img" />
+                          <span class="suc-img__lupa"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
+                        </button>
                       } @else {
                         <i class="fa-solid fa-shop"></i>
                       }
@@ -516,7 +554,11 @@
                   <div class="suc-img">
                     <div class="suc-img__marco" [class.is-vacio]="!mapaVista">
                       @if (mapaVista) {
-                        <img [src]="mapaVista" alt="Captura del mapa" class="suc-img__img" />
+                        <button type="button" class="suc-img__ampliar"
+                                title="Ver la captura en grande" (click)="verImagen('mapa')">
+                          <img [src]="mapaVista" alt="Captura del mapa" class="suc-img__img" />
+                          <span class="suc-img__lupa"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
+                        </button>
                       } @else {
                         <i class="fa-solid fa-map-location-dot"></i>
                       }

@@ -41,6 +41,15 @@ export interface EmpleadoModel {
   departamento_nombre?: string;
   jefe_id?: number | null;
   jefe_nombre?: string | null;
+
+  /**
+   * La sucursal donde trabaja (ventas.sucursales).
+   *
+   * Vacía = sin sucursal, y entonces esa persona puede marcar asistencia
+   * desde cualquier lugar; con sucursal, sólo dentro de su perímetro.
+   */
+  sucursal_id?: number | null;
+  sucursal_nombre?: string | null;
   /** AAAA-MM-DD */
   fecha_ingreso: string;
   fecha_salida?: string | null;

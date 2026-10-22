@@ -327,14 +327,15 @@
                 <div class="form-card__body">
 
                   <!-- Cargo (ID + nombre + lupa, como el perfil en saveUser) -->
-                  <div class="campo campo-lookup">
-                    <div class="row g-2 flex-nowrap">
+                  <div class="campo campo-lookup campo-lookup--pegado">
+                    <div class="row g-0 flex-nowrap">
                       <div class="col-4">
                         <app-campoNumeroEntero
                           [control]="form.controls['cargo_id']"
                           label="ID Cargo"
                           placeholder="ID"
                           [maxLength]="10"
+                          [limpiable]="false"
                           (blur)="cargarCargoPorId()">
                         </app-campoNumeroEntero>
                       </div>
@@ -351,19 +352,28 @@
                             <i class="fa fa-search"></i>
                           </button>
                         </div>
+                        @if (form.controls['cargo_id'].value) {
+                          <div class="col-auto">
+                            <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                    (click)="limpiarCargo()" title="Quitar el cargo">
+                              <i class="fa fa-times"></i>
+                            </button>
+                          </div>
+                        }
                       }
                     </div>
                   </div>
 
                   <!-- Departamento -->
-                  <div class="campo campo-lookup">
-                    <div class="row g-2 flex-nowrap">
+                  <div class="campo campo-lookup campo-lookup--pegado">
+                    <div class="row g-0 flex-nowrap">
                       <div class="col-4">
                         <app-campoNumeroEntero
                           [control]="form.controls['departamento_id']"
                           label="ID Depto."
                           placeholder="ID"
                           [maxLength]="10"
+                          [limpiable]="false"
                           (blur)="cargarDepartamentoPorId()">
                         </app-campoNumeroEntero>
                       </div>
@@ -380,19 +390,28 @@
                             <i class="fa fa-search"></i>
                           </button>
                         </div>
+                        @if (form.controls['departamento_id'].value) {
+                          <div class="col-auto">
+                            <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                    (click)="limpiarDepartamento()" title="Quitar el departamento">
+                              <i class="fa fa-times"></i>
+                            </button>
+                          </div>
+                        }
                       }
                     </div>
                   </div>
 
                   <!-- Jefe directo (opcional) -->
-                  <div class="campo campo-lookup">
-                    <div class="row g-2 flex-nowrap">
+                  <div class="campo campo-lookup campo-lookup--pegado">
+                    <div class="row g-0 flex-nowrap">
                       <div class="col-4">
                         <app-campoNumeroEntero
                           [control]="form.controls['jefe_id']"
                           label="ID Jefe"
                           placeholder="ID"
                           [maxLength]="10"
+                          [limpiable]="false"
                           (blur)="cargarJefePorId()">
                         </app-campoNumeroEntero>
                       </div>
@@ -409,6 +428,55 @@
                             <i class="fa fa-search"></i>
                           </button>
                         </div>
+                        @if (form.controls['jefe_id'].value) {
+                          <div class="col-auto">
+                            <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                    (click)="limpiarJefe()" title="Quitar el jefe">
+                              <i class="fa fa-times"></i>
+                            </button>
+                          </div>
+                        }
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Sucursal (ID + nombre + lupa, como el cargo).
+                       No es un dato más: de él depende desde dónde puede
+                       marcar asistencia esta persona. Sin sucursal, desde
+                       cualquier lugar. -->
+                  <div class="campo campo-lookup campo-lookup--pegado">
+                    <div class="row g-0 flex-nowrap">
+                      <div class="col-4">
+                        <app-campoNumeroEntero
+                          [control]="form.controls['sucursal_id']"
+                          label="ID Sucursal"
+                          placeholder="ID"
+                          [maxLength]="10"
+                          [limpiable]="false"
+                          (blur)="cargarSucursalPorId()">
+                        </app-campoNumeroEntero>
+                      </div>
+                      <div class="col">
+                        <app-campoTexto
+                          [control]="sucursalNombreControl"
+                          label="Sucursal (opcional)"
+                          placeholder="Sin sucursal asignada">
+                        </app-campoTexto>
+                      </div>
+                      @if (!esView) {
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-lookup" (click)="abrirModalSucursales()" title="Buscar sucursal">
+                            <i class="fa fa-search"></i>
+                          </button>
+                        </div>
+                        @if (form.controls['sucursal_id'].value) {
+                          <div class="col-auto">
+                            <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                    (click)="limpiarSucursal()" title="Quitar la sucursal">
+                              <i class="fa fa-times"></i>
+                            </button>
+                          </div>
+                        }
                       }
                     </div>
                   </div>
@@ -545,6 +613,81 @@
             </panel>
           </div>
 
+          <!-- -------- Dónde más puede marcar --------
+               La sucursal de «Datos laborales» dice dónde trabaja; aquí van
+               las OTRAS donde también se le acepta la marcación: el recorrido
+               de un cobrador, los locales que visita una jefatura. Basta con
+               estar dentro del perímetro de una de ellas. -->
+          <div class="col-12">
+            <panel
+              headerClass="bg-gray-800"
+              title="Otras sucursales donde puede marcar"
+              noButton="true"
+              noBody="true"
+              panelClass="mb-3"
+              icono="map"
+              fondoGris="true">
+
+              <ng-container header>
+                @if (!esView) {
+                  <div class="contactos-toolbar">
+                    <button type="button" class="btn btn-sm btn-primary"
+                            (click)="agregarSucursalMarcacion()"
+                            title="Buscar otra sucursal donde esta persona pueda marcar">
+                      <i class="fa fa-plus me-1"></i>Agregar sucursal
+                    </button>
+                  </div>
+                }
+              </ng-container>
+
+              <ng-container outsideBody>
+                <div class="form-card__body">
+                  <div class="sucursales-grid">
+                    <ag-grid-angular
+                      [rowData]="sucursalesMarcacion"
+                      [columnDefs]="columnDefsSucursales"
+                      [defaultColDef]="_appAgGridService.defaultColDef"
+                      [rowHeight]="36"
+                      [headerHeight]="_appAgGridService.headerHeight"
+                      [localeText]="_appAgGridService.localeText"
+                      [rowClassRules]="rowClassRulesSucursales"
+                      [getRowId]="getRowIdSucursal"
+                      [rowSelection]="'single'"
+                      [pagination]="false"
+                      [animateRows]="true"
+                      [singleClickEdit]="true"
+                      [stopEditingWhenCellsLoseFocus]="true"
+                      [suppressRowClickSelection]="true"
+                      [tooltipShowDelay]="400"
+                      [overlayNoRowsTemplate]="esView
+                        ? '<span>Sólo marca en su sucursal.</span>'
+                        : '<span>Sólo marca en su sucursal. Usa <b>Agregar sucursal</b> si además pasa por otras.</span>'"
+                      class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+                      [navigateToNextCell]="navegarConTeclado"
+                      (gridReady)="onGridSucursalesReady($event)"
+                      (cellClicked)="onCellSucursalClicked($event)">
+                    </ag-grid-angular>
+                  </div>
+
+                  @if (!esView) {
+                    <!-- El texto va en un <span>: .contactos-leyenda es un
+                         flex, y sin envolverlo cada <strong> sería un hijo
+                         suelto y la frase se partiría en columnas. -->
+                    <div class="contactos-leyenda">
+                      <i class="fa-solid fa-circle-info"></i>
+                      <span>
+                        Podrá marcar dentro del perímetro de <strong>cualquiera</strong> de
+                        estas sucursales o de la suya. Si alguna <strong>no tiene
+                        perímetro</strong>, podrá marcar desde cualquier lugar. Se
+                        guardan junto con el empleado.
+                      </span>
+                    </div>
+                  }
+                </div>
+              </ng-container>
+            </panel>
+          </div>
+
           <!-- -------- Contactos de emergencia (grilla editable, estilo permisos) -------- -->
           <div class="col-12">
             <panel
@@ -598,10 +741,14 @@
                   </div>
 
                   @if (!esView) {
+                    <!-- Mismo envoltorio que la leyenda de arriba: sin él los
+                         <strong> se repartían como columnas del flex. -->
                     <div class="contactos-leyenda">
                       <i class="fa-solid fa-hand-pointer"></i>
-                      Haz clic en una celda para escribir. <strong>Nombres, parentesco y teléfono</strong> son obligatorios (las celdas en rojo faltan).
-                      La columna <strong>#</strong> es el orden en que se debe llamar. Se guardan junto con el empleado.
+                      <span>
+                        Haz clic en una celda para escribir. <strong>Nombres, parentesco y teléfono</strong> son obligatorios (las celdas en rojo faltan).
+                        La columna <strong>#</strong> es el orden en que se debe llamar. Se guardan junto con el empleado.
+                      </span>
                     </div>
                   }
                 </div>
