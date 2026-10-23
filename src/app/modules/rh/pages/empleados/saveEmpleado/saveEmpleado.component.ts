@@ -21,7 +21,9 @@ import { ListCargosComponent } from '../../cargos/listCargos/listCargos.componen
 import { ListDepartamentosComponent } from '../../departamentos/listDepartamentos/listDepartamentos.component';
 import { ListEmpleadosComponent } from '../listEmpleados/listEmpleados.component';
 import { ListSucursalComponent } from '../../../../ventas/pages/sucursales/listSucursal/listSucursal.component';
+import { ListHorariosEmpleadosComponent } from '../../horarios-empleados/listHorariosEmpleados/listHorariosEmpleados.component';
 import { SucursalService } from '../../../../ventas/services/sucursal.service';
+import { HorarioEmpleadoService } from '../../../services/horarioEmpleado.service';
 import {
   SeleccionarUbicacionComponent, UbicacionElegida,
 } from '../../../../../components/ubicacion-google-maps/seleccionarUbicacion.component';
@@ -70,6 +72,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
   public departamentoNombreControl = new FormControl({ value: '', disabled: true });
   public jefeNombreControl = new FormControl({ value: '', disabled: true });
   public sucursalNombreControl = new FormControl({ value: '', disabled: true });
+  public horarioNombreControl = new FormControl({ value: '', disabled: true });
 
   public tiposIdentificacion = TIPOS_IDENTIFICACION;
   public generos = GENEROS;
@@ -120,6 +123,8 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     private _departamentoService: DepartamentoService,
     /** Para traer el nombre de la sucursal cuando se escribe su id a mano. */
     private _sucursalService: SucursalService,
+    /** Lo mismo para el horario de trabajo. */
+    private _horarioEmpleadoService: HorarioEmpleadoService,
     public _appAgGridService: AppAgGridService,
   ) {}
 
@@ -609,6 +614,10 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
       cargo_id:              [{ value: null, disabled: d }, [Validators.required]],
       departamento_id:       [{ value: null, disabled: d }, [Validators.required]],
       jefe_id:               [{ value: null, disabled: d }],
+      // A qué hora se le espera. Vacío = sin horario, y entonces marca sin
+      // que nadie le mida el atraso.
+      horario_id:            [{ value: null, disabled: d }],
+
       // Dónde trabaja. Vacío = sin sucursal, y entonces puede marcar
       // asistencia desde cualquier lugar.
       sucursal_id:           [{ value: null, disabled: d }],
@@ -809,6 +818,81 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     this.sucursalNombreControl.setValue('');
   }
 
+  // ================================================================
+  // EL HORARIO DE TRABAJO (id + nombre + lupa)
+  // ================================================================
+  //
+  // El mismo trío que la sucursal, y por la misma razón: tampoco es un dato
+  // más de la ficha. La sucursal dice DESDE DÓNDE puede marcar; el horario
+  // dice A QUÉ HORA se le espera, y es con lo que se le miden los atrasos.
+  // Sin horario marca igual, pero nadie le cuenta los minutos.
+
+  async cargarHorarioPorId(): Promise<void> {
+    const id = this.form.get('horario_id')?.value;
+    if (!id) { this.horarioNombreControl.setValue(''); return; }
+
+    try {
+      this._loadingService.setLoading(true);
+      const res: any = await firstValueFrom(this._horarioEmpleadoService.getHorario(id));
+
+      if (res?.status === 'success' && res.data) {
+        this.horarioNombreControl.setValue(res.data.nombre ?? '');
+
+        // Uno en la papelera no vale: el selector no lo ofrece y el servidor
+        // lo rechaza, así que mejor cortarlo aquí que al guardar.
+        if (res.data.deleted_at) {
+          this.limpiarHorario();
+          this._toastr.warning('Ese horario está en la papelera de reciclaje',
+                               'Horario no disponible', { timeOut: 4000 });
+          return;
+        }
+        if (res.data.activo === false) {
+          this.limpiarHorario();
+          this._toastr.warning(
+            `«${res.data.nombre}» está inactivo: actívelo desde Horarios para poder usarlo`,
+            'Horario no disponible', { timeOut: 4000 });
+        }
+      } else {
+        this.limpiarHorario();
+        this._toastr.warning('Horario no encontrado');
+      }
+    } catch (error) {
+      console.error('Error al cargar el horario:', error);
+      this.limpiarHorario();
+    } finally {
+      this._loadingService.setLoading(false);
+    }
+  }
+
+  abrirModalHorarios(): void {
+    if (this.isdisabled) { return; }
+
+    const modalRef = this.modalService.open(ListHorariosEmpleadosComponent, { size: 'lg', centered: true, backdrop: 'static' });
+    modalRef.componentInstance.horarioSeleccionadoId = this.form.get('horario_id')?.value;
+    modalRef.componentInstance.ayuda = 'Haz clic sobre el horario de trabajo de esta persona. Con él se le miden los atrasos de sus marcaciones.';
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(this.hastaQueCierre(modalRef)))
+      .subscribe((horario: any) => {
+        this.form.patchValue({ horario_id: horario.id });
+        this.horarioNombreControl.setValue(horario.nombre ?? '');
+
+        // Lo que de verdad cambia al elegirlo: a partir de cuántos minutos se
+        // le cuenta atraso.
+        const tolerancia = Number(horario.tolerancia_min ?? 0);
+        this._toastr.info(
+          tolerancia > 0
+            ? `Se le contará atraso pasados ${tolerancia} min de la hora de cada jornada`
+            : 'Sin tolerancia: cualquier minuto después de la hora cuenta como atraso',
+          `Horario «${horario.nombre}»`, { timeOut: 5000 });
+      });
+  }
+
+  /** Sin horario: se vacían los dos campos a la vez. */
+  limpiarHorario(): void {
+    this.form.patchValue({ horario_id: null });
+    this.horarioNombreControl.setValue('');
+  }
+
   async cargarJefePorId() {
     const id = this.form.get('jefe_id')?.value;
     if (!id) { this.jefeNombreControl.setValue(''); return; }
@@ -893,6 +977,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
         departamento_id:       m.departamento_id,
         jefe_id:               m.jefe_id ?? null,
         sucursal_id:           m.sucursal_id ?? null,
+        horario_id:            m.horario_id ?? null,
         fecha_ingreso:         m.fecha_ingreso ?? this.hoyIso(),
         fecha_salida:          m.fecha_salida ?? '',
         estado:                m.estado || 'ACTIVO',
@@ -918,6 +1003,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
       this.departamentoNombreControl.setValue(m.departamento_nombre || '');
       this.jefeNombreControl.setValue(m.jefe_nombre || '');
       this.sucursalNombreControl.setValue(m.sucursal_nombre || '');
+      this.horarioNombreControl.setValue(m.horario_nombre || '');
 
       // Contactos de emergencia del empleado
       try {
@@ -1161,7 +1247,7 @@ export class SaveEmpleadoComponent implements OnInit, OnDestroy {
     const payload = this.form.getRawValue();
     delete payload.foto;   // la foto va aparte (addImagen)
     payload.salario = (payload.salario === '' || payload.salario === null || payload.salario === undefined) ? null : Number(payload.salario);
-    for (const k of ['email_personal', 'telefono', 'celular', 'fecha_nacimiento', 'fecha_salida', 'direccion', 'genero', 'jefe_id', 'sucursal_id']) {
+    for (const k of ['email_personal', 'telefono', 'celular', 'fecha_nacimiento', 'fecha_salida', 'direccion', 'genero', 'jefe_id', 'sucursal_id', 'horario_id']) {
       if (payload[k] === '' || payload[k] === undefined) { payload[k] = null; }
     }
     await this.saveRecord(payload);

@@ -38,6 +38,14 @@ import { AllCargosComponent, ButtonAccionCargo } from './pages/cargos/allCargos/
 import { SaveCargoComponent } from './pages/cargos/saveCargo/saveCargo.component';
 import { DeleteCargoComponent } from './pages/cargos/deleteCargo/deleteCargo.component';
 import { ListCargosComponent } from './pages/cargos/listCargos/listCargos.component';
+import { PapeleraCargosComponent } from './pages/cargos/papeleraCargos/papeleraCargos.component';
+
+// Horarios de trabajo del personal (hasta 4 jornadas por día)
+import { AllHorariosEmpleadosComponent, ButtonAccionHorarioEmpleado } from './pages/horarios-empleados/allHorariosEmpleados/allHorariosEmpleados.component';
+import { SaveHorarioEmpleadoComponent } from './pages/horarios-empleados/saveHorarioEmpleado/saveHorarioEmpleado.component';
+import { DeleteHorarioEmpleadoComponent } from './pages/horarios-empleados/deleteHorarioEmpleado/deleteHorarioEmpleado.component';
+import { ListHorariosEmpleadosComponent } from './pages/horarios-empleados/listHorariosEmpleados/listHorariosEmpleados.component';
+import { PapeleraHorariosEmpleadosComponent } from './pages/horarios-empleados/papeleraHorariosEmpleados/papeleraHorariosEmpleados.component';
 import { AllDepartamentosComponent, ButtonAccionDepartamento } from './pages/departamentos/allDepartamentos/allDepartamentos.component';
 import { SaveDepartamentoComponent } from './pages/departamentos/saveDepartamento/saveDepartamento.component';
 import { DeleteDepartamentoComponent } from './pages/departamentos/deleteDepartamento/deleteDepartamento.component';
@@ -64,7 +72,15 @@ import { CampoEmailComponent } from '../../components/campos/campoEmail/campoEma
     SaveCargoComponent,
     DeleteCargoComponent,
     ListCargosComponent,
+    PapeleraCargosComponent,
     ButtonAccionCargo,
+
+    AllHorariosEmpleadosComponent,
+    SaveHorarioEmpleadoComponent,
+    DeleteHorarioEmpleadoComponent,
+    ListHorariosEmpleadosComponent,
+    PapeleraHorariosEmpleadosComponent,
+    ButtonAccionHorarioEmpleado,
 
     AllDepartamentosComponent,
     SaveDepartamentoComponent,

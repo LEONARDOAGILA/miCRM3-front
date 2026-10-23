@@ -29,9 +29,14 @@
         <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
       <div>
-        <h6 class="eliminar-aviso__titulo">¿Está seguro que desea eliminar este cargo?</h6>
+        <h6 class="eliminar-aviso__titulo">¿Enviar este cargo a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): el cargo va a la
+             papelera, deja de salir en el listado y de poder elegirse en la
+             ficha de un empleado, y desde allí se restaura. -->
         <p class="eliminar-aviso__texto" id="eliminarCargoDescripcion">
-          Esta acción no se puede deshacer. Su historial de auditoría se conserva.
+          Dejará de aparecer en el listado y no se podrá elegir en la ficha de un empleado,
+          pero <b>no se borra</b>: queda en la papelera, desde donde puede restaurarse tal
+          como estaba. Su historial de auditoría se conserva.
           @if (numEmpleados > 0) {
             <br><b>Tiene {{ numEmpleados }} {{ numEmpleados === 1 ? 'empleado asignado' : 'empleados asignados' }}:</b>
             el sistema no permitirá eliminarlo; desactívelo en su lugar.
@@ -87,7 +92,8 @@
     <p class="eliminar-nota">
       <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
       Si el cargo ya no se usa pero tiene historial, desactívelo desde
-      <b>Modificar cargo</b> en lugar de eliminarlo.
+      <b>Modificar cargo</b> en lugar de enviarlo a la papelera: así sigue a la vista
+      de quien consulte las fichas antiguas.
     </p>
 
   </div>
@@ -103,7 +109,7 @@
             class="btn btn-danger"
             [disabled]="isLoading"
             (click)="deleteCargo()">
-      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
     </button>
   </div>
 

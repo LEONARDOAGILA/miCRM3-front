@@ -1,0 +1,130 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarHorarioTitulo"
+     aria-describedby="eliminarHorarioDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarHorarioTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <!-- Advertencia -->
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Enviar este horario a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): el horario va a la
+             papelera con sus jornadas, deja de salir en el listado y de
+             poder elegirse, y desde allí se restaura tal cual. -->
+        <p class="eliminar-aviso__texto" id="eliminarHorarioDescripcion">
+          Dejará de aparecer en el listado y no se podrá asignar a nadie, pero
+          <b>no se borra</b>: queda en la papelera <b>con sus {{ numJornadas }} jornada{{ numJornadas === 1 ? '' : 's' }}</b>,
+          desde donde puede restaurarse tal como estaba. Su historial de auditoría se conserva.
+          @if (numEmpleados > 0) {
+            <br><b>Lo tienen {{ numEmpleados }} empleado{{ numEmpleados === 1 ? '' : 's' }}:</b>
+            el sistema no permitirá eliminarlo; desactívelo en su lugar o cámbieles el horario primero.
+          }
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-clock fa-fw me-1" aria-hidden="true"></i>Horario
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.nombre }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-calendar-week fa-fw me-1" aria-hidden="true"></i>Días con jornada
+        </span>
+        <span class="eliminar-datos__valor">{{ numDias }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-layer-group fa-fw me-1" aria-hidden="true"></i>Jornadas
+        </span>
+        <span class="eliminar-datos__valor">{{ numJornadas }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-users fa-fw me-1" aria-hidden="true"></i>Empleados con este horario
+        </span>
+        <span class="eliminar-datos__valor" [class.text-danger]="numEmpleados > 0">{{ numEmpleados }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-stopwatch fa-fw me-1" aria-hidden="true"></i>Tolerancia
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.tolerancia_min ?? 0 }} min</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
+        </span>
+        <span class="badge fs-10px"
+              [ngClass]="registro_selected?.activo ? 'bg-teal' : 'bg-danger'">
+          {{ registro_selected?.activo ? 'ACTIVO' : 'INACTIVO' }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si el horario ya no se usa pero quiere conservarlo a la vista, <b>desactívelo</b> desde la
+      casilla del listado en lugar de enviarlo a la papelera: así no se puede asignar, pero
+      sigue saliendo.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="deleteHorario()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
+    </button>
+  </div>
+
+</div>

@@ -481,6 +481,45 @@
                     </div>
                   </div>
 
+                  <!-- Horario de trabajo (ID + nombre + lupa, como la
+                       sucursal). Con él se le miden los atrasos de sus
+                       marcaciones; sin horario, nadie se los cuenta. -->
+                  <div class="campo campo-lookup campo-lookup--pegado">
+                    <div class="row g-0 flex-nowrap">
+                      <div class="col-4">
+                        <app-campoNumeroEntero
+                          [control]="form.controls['horario_id']"
+                          label="ID Horario"
+                          placeholder="ID"
+                          [maxLength]="10"
+                          [limpiable]="false"
+                          (blur)="cargarHorarioPorId()">
+                        </app-campoNumeroEntero>
+                      </div>
+                      <div class="col">
+                        <app-campoTexto
+                          [control]="horarioNombreControl"
+                          label="Horario de trabajo (opcional)"
+                          placeholder="Sin horario asignado">
+                        </app-campoTexto>
+                      </div>
+                      @if (!esView) {
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-lookup" (click)="abrirModalHorarios()" title="Buscar horario">
+                            <i class="fa fa-search"></i>
+                          </button>
+                        </div>
+                        @if (form.controls['horario_id'].value) {
+                          <div class="col-auto">
+                            <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                    (click)="limpiarHorario()" title="Quitar el horario">
+                              <i class="fa fa-times"></i>
+                            </button>
+                          </div>
+                        }
+                      }
+                    </div>
+                  </div>
                   <div class="campo campo-lookup">
                     <div class="row g-2 flex-nowrap">
                       <div class="col-6">

@@ -187,7 +187,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     nombres: 'texto', apellidos: 'texto', nombre_completo: 'texto',
     email: 'texto', celular: 'texto', telefono: 'texto',
     cargo_nombre: 'texto', departamento_nombre: 'texto',
-    sucursal_nombre: 'texto', jefe_nombre: 'texto',
+    sucursal_nombre: 'texto', horario_nombre: 'texto', jefe_nombre: 'texto',
     estado: 'texto', tipo_contrato: 'texto',
     created_by: 'texto', updated_by: 'texto',
     // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
@@ -329,6 +329,21 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
           ? `<span class="emp-sucursal">${params.value}</span>`
           : `<span class="emp-sucursal emp-sucursal--no" title="Puede marcar desde cualquier lugar">
                <i class="fa fa-earth-americas"></i> Sin sucursal</span>`,
+      },
+      {
+        // A QUÉ HORA SE LE ESPERA. Junto a la sucursal son las dos cosas que
+        // deciden si una marcación vale y si llegó tarde: sin horario, nadie
+        // le cuenta los minutos.
+        headerName: 'Horario',
+        field: 'horario_nombre',
+        headerTooltip: 'Sin horario, al empleado no se le miden los atrasos',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 150,
+        maxWidth: 240,
+        cellRenderer: (params: any) => params.value
+          ? `<span class="emp-sucursal">${params.value}</span>`
+          : `<span class="emp-sucursal emp-sucursal--no" title="No se le miden los atrasos">
+               <i class="fa fa-clock"></i> Sin horario</span>`,
       },
       {
         headerName: 'Correo',

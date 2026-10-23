@@ -12,6 +12,7 @@ import { AllEmpleadosComponent } from './pages/empleados/allEmpleados/allEmplead
 import { AllMarcacionesComponent } from './pages/marcaciones/allMarcaciones/allMarcaciones.component';
 import { KioscoMarcacionComponent } from './pages/marcaciones/kiosco/kioscoMarcacion.component';
 import { RegistroMarcacionesComponent } from './pages/marcaciones/registro-marcaciones/registroMarcaciones.component';
+import { AllHorariosEmpleadosComponent } from './pages/horarios-empleados/allHorariosEmpleados/allHorariosEmpleados.component';
 
 const routes: Routes = [
 {
@@ -23,6 +24,9 @@ const routes: Routes = [
         { path: 'allDepartamentos', component: AllDepartamentosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'allEmpleados', component: AllEmpleadosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'allMarcaciones', component: AllMarcacionesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        // Los horarios de trabajo del personal: con ellos se miden los
+        // atrasos de las marcaciones.
+        { path: 'allHorariosEmpleados', component: AllHorariosEmpleadosComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'kioscoMarcacion', component: KioscoMarcacionComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         // El empleado marca desde su propio celular. El programa/menú
         // 'registroMarcaciones' hay que crearlo en seguridad.accesos o la

@@ -50,6 +50,19 @@ export interface EmpleadoModel {
    */
   sucursal_id?: number | null;
   sucursal_nombre?: string | null;
+
+  /**
+   * El horario de trabajo con el que se le miden los atrasos
+   * (rh.horarios_empleados).
+   *
+   * Vacío = sin horario, y entonces marca igual pero nadie le cuenta los
+   * minutos; con horario, cada marcación se compara con la jornada que le
+   * tocaba y su tolerancia.
+   */
+  horario_id?: number | null;
+  horario_nombre?: string | null;
+  /** Los minutos de gracia de ese horario (sólo en la ficha). */
+  horario_tolerancia_min?: number | null;
   /** AAAA-MM-DD */
   fecha_ingreso: string;
   fecha_salida?: string | null;

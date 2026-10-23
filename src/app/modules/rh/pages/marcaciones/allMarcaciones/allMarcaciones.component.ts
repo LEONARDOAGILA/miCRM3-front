@@ -143,10 +143,71 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
   // GRILLA
   // ================================================================
 
+  /**
+   * La celda de «Atraso».
+   *
+   * Se pinta aquí y no con un componente por celda porque no hace nada:
+   * sólo se mira. El título lleva el detalle —la jornada y los minutos sin
+   * descontar— para no gastar tres columnas en ello.
+   */
+  private celdaAtraso(p: any): string {
+    const estado = p.data?.atraso_estado as string | null;
+    if (!estado) {
+      // Una salida: salir tarde no es llegar tarde
+      return '<span class="mar-atraso mar-atraso--nada" title="Las salidas no se miden">—</span>';
+    }
+
+    const minutos = Number(p.value ?? 0);
+    const diferencia = Number(p.data?.diferencia_min ?? 0);
+    const jornada = p.data?.jornada;
+    const esperada = p.data?.hora_esperada;
+    const tolerancia = Number(p.data?.tolerancia_min ?? 0);
+
+    switch (estado) {
+      case 'SIN HORARIO':
+        return '<span class="mar-atraso mar-atraso--sin" title="Este empleado no tiene horario asignado: '
+             + 'póngaselo en su ficha para medirle los atrasos">Sin horario</span>';
+      case 'SIN JORNADA':
+        return '<span class="mar-atraso mar-atraso--sin" title="Ese día su horario no tiene jornada">'
+             + '<i class="fa fa-calendar-xmark"></i> No trabaja</span>';
+      case 'A TIEMPO':
+        return `<span class="mar-atraso mar-atraso--bien" title="Jornada ${jornada}, entraba a las ${esperada}">`
+             + '<i class="fa fa-check"></i> A tiempo</span>';
+      case 'EN TOLERANCIA':
+        return `<span class="mar-atraso mar-atraso--justo" title="Entraba a las ${esperada}; llegó ${diferencia} min `
+             + `después, dentro de los ${tolerancia} min de gracia">+${diferencia} min · en gracia</span>`;
+      default:
+        return `<span class="mar-atraso mar-atraso--mal" title="Jornada ${jornada}, entraba a las ${esperada}; `
+             + `llegó ${diferencia} min después y su horario perdona ${tolerancia}">`
+             + `<i class="fa fa-triangle-exclamation"></i> ${minutos} min</span>`;
+    }
+  }
+
   initializeGrid(): void {
     this.columnDefs = [
       { headerName: 'Fecha', field: 'fecha', minWidth: 110, maxWidth: 120, cellStyle: { textAlign: 'center' } },
       { headerName: 'Hora',  field: 'hora',  minWidth: 100, maxWidth: 110, cellStyle: { textAlign: 'center' } },
+      {
+        // A QUÉ HORA LE TOCABA. Sale de la jornada del horario del empleado;
+        // vacío cuando es una salida o cuando no tiene horario.
+        headerName: 'Esperada', field: 'hora_esperada',
+        headerTooltip: 'La hora de la jornada que le tocaba, según su horario de trabajo',
+        minWidth: 100, maxWidth: 110, cellStyle: { textAlign: 'center' },
+        valueFormatter: (p: any) => p.value ?? '—',
+      },
+      {
+        // CUÁNTOS MINUTOS SE PASÓ, ya descontada la tolerancia de su horario.
+        //
+        // Lo que se pinta no es sólo el número: el estado es lo que se lee de
+        // un vistazo, y hay cuatro que no son «llegó tarde» y conviene no
+        // confundir — la salida (que no se mide), quien no tiene horario,
+        // el día que no trabaja, y quien entró dentro de la gracia.
+        headerName: 'Atraso', field: 'atraso_min',
+        headerTooltip: 'Minutos de atraso de la entrada, descontada la tolerancia del horario. '
+                     + 'Las salidas no se miden',
+        minWidth: 130, maxWidth: 160, cellStyle: { textAlign: 'center' },
+        cellRenderer: (p: any) => this.celdaAtraso(p),
+      },
       {
         headerName: 'Empleado', field: 'empleado', minWidth: 170, maxWidth: 320, cellStyle: { textAlign: 'left' },
         cellRenderer: (p: any) => {
