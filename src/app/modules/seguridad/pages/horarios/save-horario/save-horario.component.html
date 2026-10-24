@@ -1,8 +1,8 @@
 <!-- ===================== SPINNER ===================== -->
-<ng-container *ngIf="(isLoading$ | async)">
+@if (isLoading$ | async) {
   <div class="loader1" role="status" aria-label="Cargando"></div>
   <div class="overlay1" aria-hidden="true"></div>
-</ng-container>
+}
 
 <!-- ===================== CABECERA ===================== -->
 <app-modal-header
@@ -24,54 +24,63 @@
       icono="clock"
       fondoGris="true">
 
-      <!-- El slot [header] del panel deja meter contenido junto al título -->
-      <div header class="panel-acciones" *ngIf="isdisabled">
-        <span class="chip chip-muted">
-          <i class="fa-solid fa-eye"></i> Solo lectura
-        </span>
+      <div header class="panel-acciones">
+        @if (isdisabled) {
+          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+        }
       </div>
 
       <ng-container outsideBody>
-      <div class="form-card__body">
-        <div class="row g-3 align-items-start">
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
 
-          <div class="col-12 col-md-7">
-            <app-campoTexto
-              [control]="form.controls['nombre']"
-              label="NOMBRE"
-              placeholder="NOMBRE"
-              [maxLength]="255"
-              [trimEspacios]="true"
-              [mayusculas]="true">
-            </app-campoTexto>
-          </div>
-
-          <div class="col-12 col-md-5">
-            <div class="estado-horario" [class.is-on]="form.controls['activo'].value">
-              <span class="estado-horario__icon"><i class="fa-solid fa-power-off"></i></span>
-              <div class="estado-horario__text">
-                <span class="estado-horario__label">Estado</span>
-                <span class="estado-horario__hint">
-                  {{ form.controls['activo'].value ? 'Horario disponible' : 'Horario deshabilitado' }}
-                </span>
-              </div>
-              <app-checkbox class="estado-horario__switch"
-                [control]="form.controls['activo']"
-                [label]="form.controls['activo'].value ? 'Activo' : 'Inactivo'"
-                [id]="'ck-activo'">
-              </app-checkbox>
+            <div class="col-12 col-md-7">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="NOMBRE"
+                placeholder="HORARIO DE OFICINA"
+                [maxLength]="100"
+                [trimEspacios]="true"
+                [mayusculas]="true">
+              </app-campoTexto>
             </div>
-          </div>
 
+            <div class="col-12 col-md-5">
+              <div class="estado-horario" [class.is-on]="form.controls['activo'].value">
+                <span class="estado-horario__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-horario__text">
+                  <span class="estado-horario__label">Estado</span>
+                  <span class="estado-horario__hint">
+                    {{ form.controls['activo'].value ? 'Horario disponible' : 'Horario deshabilitado' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-horario__switch"
+                  [control]="form.controls['activo']"
+                  [label]="form.controls['activo'].value ? 'Activo' : 'Inactivo'"
+                  [id]="'ck-activo'">
+                </app-checkbox>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <app-campoTexto
+                [control]="form.controls['descripcion']"
+                label="DESCRIPCIÓN"
+                placeholder="Para qué sirve este horario y a quién se le pone"
+                [maxLength]="250"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+          </div>
         </div>
-      </div>
       </ng-container>
     </panel>
 
-    <!-- ---------- Días y horarios ---------- -->
+    <!-- ---------- Días y jornadas ---------- -->
     <panel
       headerClass="bg-gray-800"
-      title="Días y horarios"
+      title="Días y jornadas"
       noButton="true"
       noBody="true"
       panelClass="mb-0"
@@ -79,127 +88,219 @@
       fondoGris="true">
 
       <div header class="panel-acciones">
-        <span class="chip" [ngClass]="dhorario.length >= 7 ? 'chip-muted' : 'chip-info'">
-          {{ dhorario.length }} de 7 días
+        <span class="chip chip-info">{{ totalJornadas }} jornada{{ totalJornadas === 1 ? '' : 's' }}</span>
+        <span class="chip" [ngClass]="dias.length >= 7 ? 'chip-muted' : 'chip-info'">
+          {{ dias.length }} de 7 días
         </span>
+        <span class="chip chip-muted">{{ horasSemana }} h/semana</span>
 
-        <button
-          *ngIf="!isdisabled"
-          type="button"
-          class="btn btn-sm btn-primary"
-          [disabled]="dhorario.length >= 7"
-          [title]="dhorario.length >= 7 ? 'Ya están configurados los 7 días de la semana' : 'Agregar un día al horario'"
-          (click)="addHorarioItem()">
-          <i class="fa fa-plus"></i> Agregar día
-        </button>
+        @if (!isdisabled) {
+          <button type="button"
+                  class="btn btn-sm btn-primary"
+                  [disabled]="dias.length >= 7"
+                  [title]="dias.length >= 7 ? 'Ya están los 7 días de la semana' : 'Agregar un día al horario'"
+                  (click)="agregarDia()">
+            <i class="fa fa-plus"></i> Agregar día
+          </button>
+        }
       </div>
 
       <ng-container outsideBody>
-      <div formArrayName="dhorario">
+        <div formArrayName="dias">
 
-      <!-- Lista de días -->
-      <div class="tabla-dias" *ngIf="dhorario.length > 0; else sinDias">
-        <table class="dias-table">
+          @if (dias.length > 0) {
+            <div class="tabla-dias">
 
-          <thead>
-            <tr>
-              <th class="col-dia">Día</th>
-              <th class="col-hora">Hora inicio</th>
-              <th class="col-hora">Hora fin</th>
-              <th class="col-estado">Estado</th>
-              <th class="col-acciones" *ngIf="!isdisabled"></th>
-            </tr>
-          </thead>
+              <!-- `track diaCtrl` (identidad), NO $index: al reordenar los días o
+                   sustituir sus jornadas, con $index el nodo se queda con el control
+                   viejo y el campo enseña la hora anterior. -->
+              @for (diaCtrl of dias.controls; track diaCtrl; let i = $index) {
+                <div class="dia-fila" [formGroupName]="i"
+                     [class.fila-invalida]="diaCtrl.invalid && diaCtrl.touched"
+                     [class.fila-duplicada]="esDiaDuplicado(i)"
+                     [class.fila-apagada]="diaCtrl.get('activo')?.value === false">
 
-          <tbody>
-            <tr *ngFor="let item of dhorario.controls; let i = index" [formGroupName]="i"
-                [class.fila-invalida]="item.invalid && item.touched"
-                [class.fila-duplicada]="esDiaDuplicado(i)">
+                  <!-- Cabecera de la fila: el día y lo que se hace con él -->
+                  <div class="dia-cabecera">
+                    <select class="form-select form-select-sm dia-select" formControlName="dia"
+                            [class.is-invalid]="esDiaDuplicado(i)">
+                      @for (d of diasSemana; track d.id) {
+                        <option [ngValue]="d.id">{{ d.nombre }}</option>
+                      }
+                    </select>
 
-              <td class="col-dia" data-label="Día">
-                <select class="form-select form-select-sm" formControlName="dia"
-                        [class.is-invalid]="item.get('dia')?.invalid && item.get('dia')?.touched">
-                  <option *ngFor="let dia of diasSemana" [ngValue]="dia.id">{{ dia.nombre }}</option>
-                </select>
-                <small class="campo-error" *ngIf="item.get('dia')?.invalid && item.get('dia')?.touched">
-                  El día es requerido
-                </small>
-                <small class="campo-error" *ngIf="esDiaDuplicado(i)">
-                  Día repetido
-                </small>
-              </td>
+                    <div class="form-check form-switch dia-switch">
+                      <input type="checkbox" formControlName="activo" class="form-check-input" role="switch"
+                             id="dia-activo-{{i}}">
+                      <label class="form-check-label" for="dia-activo-{{i}}">
+                        {{ diaCtrl.get('activo')?.value ? 'Se trabaja' : 'No se trabaja' }}
+                      </label>
+                    </div>
 
-              <td class="col-hora" data-label="Hora inicio">
-                <input type="time" class="form-control form-control-sm" formControlName="hora_inicio"
-                       [class.is-invalid]="item.get('hora_inicio')?.invalid && item.get('hora_inicio')?.touched">
-                <small class="campo-error" *ngIf="item.get('hora_inicio')?.invalid && item.get('hora_inicio')?.touched">
-                  Requerida
-                </small>
-              </td>
+                    <span class="dia-resumen">
+                      {{ jornadasDe(i).length }} de {{ maxJornadas }} jornadas
+                    </span>
 
-              <td class="col-hora" data-label="Hora fin">
-                <input type="time" class="form-control form-control-sm" formControlName="hora_fin"
-                       [class.is-invalid]="(item.get('hora_fin')?.invalid && item.get('hora_fin')?.touched) || item.hasError('horaInvalida')">
-                <small class="campo-error" *ngIf="item.get('hora_fin')?.invalid && item.get('hora_fin')?.touched">
-                  Requerida
-                </small>
-                <small class="campo-error" *ngIf="item.hasError('horaInvalida')">
-                  Debe ser posterior a la hora de inicio
-                </small>
-              </td>
+                    @if (!isdisabled) {
+                      <div class="dia-acciones">
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                [disabled]="jornadasDe(i).length >= maxJornadas"
+                                [title]="jornadasDe(i).length >= maxJornadas
+                                          ? 'Cada día admite hasta ' + maxJornadas + ' jornadas'
+                                          : 'Agregar otra jornada a este día'"
+                                (click)="agregarJornada(i)">
+                          <i class="fa fa-plus"></i> Jornada
+                        </button>
 
-              <td class="col-estado" data-label="Estado">
-                <div class="form-check form-switch dia-switch">
-                  <input type="checkbox" formControlName="activo" class="form-check-input" role="switch"
-                         id="activo-{{i}}">
-                  <label class="form-check-label" for="activo-{{i}}">
-                    {{ item.get('activo')?.value ? 'Activo' : 'Inactivo' }}
-                  </label>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                [disabled]="dias.length <= 1"
+                                title="Poner estas mismas jornadas en los demás días de la lista"
+                                (click)="copiarADemasDias(i)">
+                          <i class="fa fa-copy"></i>
+                          <span class="d-none d-md-inline"> Copiar a los demás</span>
+                        </button>
+
+                        <button class="btn-quitar" type="button" (click)="quitarDia(i)"
+                                title="Quitar este día" [disabled]="dias.length <= 1">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Las jornadas del día -->
+                  <div class="jornadas" formArrayName="jornadas">
+                    @for (jorCtrl of jornadasDe(i).controls; track jorCtrl; let j = $index) {
+                      <div class="jornada" [formGroupName]="j"
+                           [class.jornada-invalida]="jorCtrl.invalid && jorCtrl.touched">
+
+                        <span class="jornada-num" [title]="'Jornada ' + (j + 1)">J{{ j + 1 }}</span>
+
+                        <input type="time" class="form-control form-control-sm" formControlName="hora_inicio"
+                               aria-label="Hora de inicio"
+                               [class.is-invalid]="jorCtrl.get('hora_inicio')?.invalid && jorCtrl.get('hora_inicio')?.touched">
+
+                        <span class="jornada-sep"><i class="fa fa-arrow-right-long"></i></span>
+
+                        <input type="time" class="form-control form-control-sm" formControlName="hora_fin"
+                               aria-label="Hora de fin"
+                               [class.is-invalid]="(jorCtrl.get('hora_fin')?.invalid && jorCtrl.get('hora_fin')?.touched) || jorCtrl.hasError('horaIgual')">
+
+                        <span class="jornada-dura">{{ duracion(i, j) }}</span>
+
+                        <!-- Cruzar la medianoche no es un error: es el turno de noche -->
+                        @if (cruzaMedianoche(i, j)) {
+                          <span class="chip chip-noche" title="Esta jornada termina al día siguiente">
+                            <i class="fa fa-moon"></i> +1 día
+                          </span>
+                        }
+
+                        @if (jorCtrl.hasError('horaIgual')) {
+                          <small class="campo-error">Empieza y termina a la misma hora</small>
+                        }
+
+                        @if (!isdisabled) {
+                          <button class="btn-quitar" type="button" (click)="quitarJornada(i, j)"
+                                  title="Quitar esta jornada" [disabled]="jornadasDe(i).length <= 1">
+                            <i class="fa fa-xmark"></i>
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    @if (jornadasDe(i).hasError('jornadasSolapadas')) {
+                      <div class="aviso aviso--danger">
+                        <i class="fa fa-triangle-exclamation"></i>
+                        Las jornadas de este día se pisan entre ellas.
+                      </div>
+                    }
+                  </div>
+
                 </div>
-              </td>
+              }
 
-              <td class="col-acciones" *ngIf="!isdisabled" data-label="">
-                <button class="btn-quitar" type="button" (click)="removeHorarioItem(i)"
-                        title="Quitar día" [disabled]="dhorario.length <= 1">
-                  <i class="fa fa-trash"></i>
+            </div>
+          } @else {
+            <div class="dias-vacio">
+              <i class="fa-regular fa-calendar-xmark"></i>
+              <p>Todavía no hay días en este horario</p>
+              @if (!isdisabled) {
+                <button type="button" class="btn btn-sm btn-primary" (click)="agregarDia()">
+                  <i class="fa fa-plus"></i> Agregar el primer día
                 </button>
-              </td>
+              }
+            </div>
+          }
 
-            </tr>
-          </tbody>
+          <!-- Avisos del conjunto -->
+          @if (dias.errors?.['diasDuplicados']) {
+            <div class="aviso aviso--danger">
+              <i class="fa fa-triangle-exclamation"></i>
+              No se puede repetir el mismo día de la semana.
+            </div>
+          }
 
-        </table>
-      </div>
+          <p class="dias-ayuda">
+            <i class="fa fa-circle-info me-1"></i>
+            Cada día admite hasta <b>{{ maxJornadas }} jornadas</b> (mañana y tarde, turnos partidos).
+            Si la hora de fin es menor que la de inicio, la jornada <b>termina al día siguiente</b>
+            <i class="fa fa-moon mx-1"></i> y sirve para el turno de noche.
+          </p>
 
-      <!-- Estado vacío -->
-      <ng-template #sinDias>
-        <div class="dias-vacio">
-          <i class="fa-regular fa-calendar-xmark"></i>
-          <p>Todavía no hay días agregados a este horario</p>
-          <button type="button" class="btn btn-sm btn-primary" *ngIf="!isdisabled" (click)="addHorarioItem()">
-            <i class="fa fa-plus"></i> Agregar el primer día
-          </button>
         </div>
-      </ng-template>
-
-      <!-- Avisos -->
-      <div class="dias-avisos" *ngIf="dhorario.errors?.diasDuplicados || (dhorario.invalid && dhorario.touched)">
-
-        <div class="aviso aviso--danger" *ngIf="dhorario.errors?.diasDuplicados">
-          <i class="fa fa-triangle-exclamation"></i>
-          No se puede repetir el mismo día de la semana.
-        </div>
-
-        <div class="aviso aviso--warning" *ngIf="dhorario.invalid && dhorario.touched && !dhorario.errors?.diasDuplicados">
-          <i class="fa fa-circle-info"></i>
-          Revise las filas marcadas: falta completar alguna hora o el rango no es válido.
-        </div>
-
-      </div>
-
-      </div>
       </ng-container>
     </panel>
+
+    <!-- ---------- Probar el acceso ----------
+         Para lo que existe este horario: ver si a tal día y hora se podría
+         entrar al sistema. Se mide sobre lo GUARDADO, así que no sale
+         mientras el horario es nuevo. -->
+    @if (puedeProbar) {
+      <panel
+        headerClass="bg-gray-800"
+        title="Probar el acceso"
+        noButton="true"
+        noBody="true"
+        panelClass="mt-3 mb-0"
+        icono="clock"
+        fondoGris="true">
+
+        <ng-container outsideBody>
+          <div class="form-card__body">
+            <div class="prueba-barra">
+              <input type="datetime-local" class="form-control form-control-sm prueba-fecha"
+                     [(ngModel)]="pruebaFecha" [ngModelOptions]="{ standalone: true }"
+                     aria-label="Fecha y hora que se quiere probar">
+              <button type="button" class="btn btn-sm btn-primary"
+                      [disabled]="probando || !pruebaFecha"
+                      (click)="probar()">
+                <i class="fa fa-door-open"></i> Probar
+              </button>
+              <small class="prueba-ayuda">
+                Con una fecha y hora, dice si con este horario se podría entrar al sistema.
+                Se mide sobre lo <b>ya guardado</b>.
+              </small>
+            </div>
+
+            @if (prueba) {
+              <div class="prueba-resultado" [ngClass]="colorPrueba">
+                <div class="prueba-estado">
+                  <i class="fa" [ngClass]="prueba.permitido ? 'fa-circle-check' : 'fa-ban'"></i>
+                  {{ prueba.permitido ? 'ENTRA' : 'NO ENTRA' }}
+                </div>
+                <div class="prueba-detalle">
+                  @if (prueba.permitido) {
+                    Dentro de la jornada {{ prueba.jornada }}, de {{ prueba.desde }} a {{ prueba.hasta }}.
+                  } @else {
+                    {{ prueba.mensaje }}
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </ng-container>
+      </panel>
+    }
 
   </form>
 </div>

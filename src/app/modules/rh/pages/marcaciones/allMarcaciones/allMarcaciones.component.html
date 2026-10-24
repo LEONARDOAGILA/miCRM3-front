@@ -1,10 +1,12 @@
 <!-- ============================================================
-     LISTADO DE MARCACIONES
+     MARCACIONES
        1. Miga de pan
        2. <panel>
-          2a. Filtros (fechas, atajos, empleado, tipo, origen) y barra
-          2b. Resumen de horas (plegable)
-          2c. Grilla + paginación
+          2a. Filtros (fechas, atajos, empleado, tipo, origen)
+              Son de LAS DOS pestañas, por eso van fuera de ellas.
+          2b. Pestañas
+              · Marcaciones      barra + grilla + paginación
+              · Horas trabajadas el resumen por empleado y día
      ============================================================ -->
 
 <ol class="breadcrumb lista-breadcrumb">
@@ -82,35 +84,49 @@
               </select>
             </label>
           </div>
-        </div>
 
-        <!-- ---------- BARRA ---------- -->
-        <div class="row g-2 m-2 align-items-center lista-barra">
-          <!-- Buscador con su botón de quitar filtros dentro: los dos van
-               siempre juntos, así que viven juntos. El botón se enciende en rojo
-               y le sale la × al icono sólo cuando hay algo que quitar. -->
-          <div class="col pe-1">
+          <!-- El buscador, con su botón de quitar filtros dentro. Está aquí
+               arriba y no dentro de una pestaña porque sirve para las dos: lo
+               que se escriba filtra tanto las marcaciones como las horas, y el
+               botón limpia las cabeceras de LAS DOS rejillas. -->
+          <div class="mar-filtros__grupo mar-filtros__grupo--buscador">
             <app-campoBusquedaPaginacion
               [id]="'filter-text-box'"
               [placeholder]="'Buscar empleado u observación'"
               [iconClass]="'fa fa-search fa-lg'"
               [containerClass]="'w-100'"
               [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
               (buscar)="onFilterTextBoxChanged($event)"
               (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
           </div>
+        </div>
 
+        <!-- ---------- 2b. PESTAÑAS ----------
+             Las dos vistas de lo mismo. El marcado de cada pestaña —el <li>,
+             el role, el aria-selected, el icono, la insignia— lo pone
+             app-tab-panel; aquí sólo se dice cuáles hay, y eso vive en el
+             TypeScript porque los contadores cambian con los datos.
+             `conPanel` dibuja la caja de debajo, que es lo que hace que la
+             pestaña abierta se lea como abierta SOBRE su contenido. -->
+        <app-tab-panel
+          [pestanas]="pestanas"
+          [activa]="vista"
+          [conPanel]="true"
+          (cambiada)="cambiarVista($any($event))">
+
+        <!-- ===== MARCACIONES ===== -->
+        @if (vista === 'marcaciones') {
+
+        <!-- ---------- BARRA DE ACCIONES ----------
+             Sólo lo que se hace sobre las marcaciones; el buscador está
+             arriba, con los filtros que valen para las dos pestañas. -->
+        <div class="row g-2 m-2 align-items-center lista-barra justify-content-end">
           <div class="col-auto ps-0">
             <button type="button" class="btn btn-success lista-barra__btn" title="Abrir el kiosco de marcación facial" (click)="irAlKiosco()">
               <i class="fa fa-camera"></i>
-            </button>
-          </div>
-
-          <div class="col-auto">
-            <button type="button" class="btn lista-barra__btn" [ngClass]="verResumen ? 'btn-info' : 'btn-white'"
-                    title="Ver las horas trabajadas por empleado y día" (click)="alternarResumen()">
-              <i class="fa fa-clock"></i>
             </button>
           </div>
 
@@ -135,56 +151,6 @@
           }
         </div>
 
-        <!-- ---------- 2b. RESUMEN DE HORAS ---------- -->
-        @if (verResumen) {
-          <div class="mar-resumen">
-            <div class="mar-resumen__cabecera">
-              <span><i class="fa fa-clock me-1"></i> Horas trabajadas</span>
-              @if (totalesResumen) {
-                <span class="mar-resumen__totales">
-                  <b>{{ totalesResumen.empleados }}</b> empleado(s) ·
-                  <b>{{ totalesResumen.dias }}</b> día(s) ·
-                  <b>{{ totalesResumen.horas }}</b> horas
-                </span>
-              }
-            </div>
-
-            @if (resumen.length) {
-              <div class="table-responsive mar-resumen__tabla">
-                <table class="table table-sm mb-0">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th><th>Empleado</th><th>Departamento</th>
-                      <th class="text-center">Entrada</th><th class="text-center">Salida</th>
-                      <th class="text-center">Marcaciones</th><th class="text-center">Horas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (r of resumen; track r.empleado_id + r.fecha) {
-                      <tr [class.table-warning]="r.incompleto">
-                        <td>{{ r.fecha }}</td>
-                        <td>{{ r.empleado }}</td>
-                        <td>{{ r.departamento || '—' }}</td>
-                        <td class="text-center">{{ r.primera_entrada || '—' }}</td>
-                        <td class="text-center">{{ r.ultima_salida || '—' }}</td>
-                        <td class="text-center">{{ r.marcaciones }}</td>
-                        <td class="text-center"><b>{{ r.horas_texto }}</b></td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-              <p class="mar-resumen__nota">
-                <i class="fa fa-circle-info"></i> Las horas suman cada entrada con su salida siguiente;
-                en ámbar, los días con marcaciones incompletas.
-              </p>
-            } @else {
-              <div class="mar-resumen__vacio">Sin datos en el rango elegido.</div>
-            }
-          </div>
-        }
-
-        <!-- ---------- 2c. GRILLA ---------- -->
         <!-- tooltipShowDelay: sin él, el tooltip de «Dónde» (el error que
              declaró el GPS) no llega a enseñarse nunca. -->
         <ag-grid-angular
@@ -204,6 +170,7 @@
           [tooltipShowDelay]="400"
           [navigateToNextCell]="navegarConTeclado"
           (gridReady)="onGridReady($event)"
+          (filterChanged)="onFiltroColumna()"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>
 
@@ -229,8 +196,86 @@
 
           <div class="pagination-info small text-muted">
             Mostrando <b>{{ desdeRegistro }}</b> – <b>{{ hastaRegistro }}</b> de <b>{{ totalRegistros }}</b> marcaciones
+            @if (hayFiltro) { <span class="lista-filtrado">(filtrado)</span> }
           </div>
         </div>
+        }
+
+        <!-- ===== HORAS TRABAJADAS ===== -->
+        @if (vista === 'horas') {
+          <div class="mar-resumen">
+            <div class="mar-resumen__cabecera">
+              <span><i class="fa fa-clock me-1"></i> Horas trabajadas</span>
+              @if (totalesResumen) {
+                <!-- Los totales son de TODO lo que cumple el filtro, no de la
+                     página: unos totales por página cambiarían al pasar de
+                     hoja y no servirían para nada. -->
+                <span class="mar-resumen__totales">
+                  <b>{{ totalesResumen.empleados }}</b> empleado(s) ·
+                  <b>{{ totalesResumen.dias }}</b> día(s) ·
+                  <b>{{ totalesResumen.horas }}</b> horas
+                </span>
+              }
+            </div>
+
+            <ag-grid-angular
+              class="ag-theme-alpine ag-grid-transparente p-2 mar-grilla-resumen"
+              [rowData]="resumen"
+              [columnDefs]="columnDefsResumen"
+              [enableCellTextSelection]="true"
+              [defaultColDef]="_appAgGridService.defaultColDef"
+              [rowHeight]="_appAgGridService.rowHeight"
+              [headerHeight]="_appAgGridService.headerHeight"
+              [localeText]="_appAgGridService.localeText"
+              [rowSelection]="'single'"
+              [pagination]="false"
+              [animateRows]="true"
+              [overlayNoRowsTemplate]="'<span>Sin datos en el rango elegido</span>'"
+              [tooltipShowDelay]="400"
+              [navigateToNextCell]="navegarResumen"
+              (gridReady)="onGridResumenReady($event)"
+              (filterChanged)="onFiltroResumen()">
+            </ag-grid-angular>
+
+            <p class="mar-resumen__nota">
+              <i class="fa fa-circle-info"></i> Las horas suman cada entrada con su salida siguiente;
+              el aviso <i class="fa fa-triangle-exclamation"></i> marca los días con marcaciones incompletas.
+            </p>
+
+            <!-- ---------- PAGINACIÓN DE LAS HORAS ----------
+                 La suya, no la del listado: son dos consultas distintas. -->
+            <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+              <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+                <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                        (click)="primeraResumen()" [disabled]="paginaResumen === 1">
+                  <i class="fa fa-angle-double-left"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                        (click)="anteriorResumen()" [disabled]="paginaResumen === 1">
+                  <i class="fa fa-chevron-left"></i>
+                </button>
+                <span class="btn btn-sm btn-white pagination-page-badge disabled">
+                  Página <b>{{ paginaResumen }}</b> de <b>{{ ultimaPaginaResumen }}</b>
+                </span>
+                <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                        (click)="siguienteResumen()" [disabled]="paginaResumen === ultimaPaginaResumen">
+                  <i class="fa fa-chevron-right"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-white" title="Última página"
+                        (click)="ultimaResumen()" [disabled]="paginaResumen === ultimaPaginaResumen">
+                  <i class="fa fa-angle-double-right"></i>
+                </button>
+              </div>
+
+              <div class="pagination-info small text-muted">
+                Mostrando <b>{{ desdeResumen }}</b> – <b>{{ hastaResumen }}</b> de <b>{{ totalResumen }}</b> días
+                @if (hayFiltro) { <span class="lista-filtrado">(filtrado)</span> }
+              </div>
+            </div>
+          </div>
+        }
+
+        </app-tab-panel>
 
       </div>
     </div>

@@ -31,7 +31,8 @@ export class MarcacionService {
 
   //   ******   MARCACIONES   ******  //
 
-  allMarcaciones(page = 1, perPage = 15, search = '', filtros: FiltrosMarcacion = {}): Observable<any> {
+  allMarcaciones(page = 1, perPage = 15, search = '', filtros: FiltrosMarcacion = {},
+                 filtrosColumna: any = null): Observable<any> {
     let params = new HttpParams().set('page', String(page)).set('per_page', String(perPage));
     if (search) { params = params.set('search', search); }
     if (filtros.desde) { params = params.set('desde', filtros.desde); }
@@ -39,6 +40,11 @@ export class MarcacionService {
     if (filtros.empleado_id) { params = params.set('empleado_id', String(filtros.empleado_id)); }
     if (filtros.tipo) { params = params.set('tipo', filtros.tipo); }
     if (filtros.origen) { params = params.set('origen', filtros.origen); }
+    // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+    // SERVIDOR: la pantalla pagina, así que la rejilla sólo tiene la página.
+    if (filtrosColumna && Object.keys(filtrosColumna).length) {
+      params = params.set('filtros', JSON.stringify(filtrosColumna));
+    }
     return this._http.get<any>(this.URL + 'allMarcaciones', { params, observe: 'response' });
   }
 
@@ -104,11 +110,23 @@ export class MarcacionService {
   }
 
   /** Horas trabajadas por empleado y día. */
-  resumen(desde?: string | null, hasta?: string | null, empleadoId?: number | null): Observable<any> {
-    let params = new HttpParams();
+  /**
+   * Horas trabajadas por empleado y día, paginadas.
+   *
+   * Los totales vienen aparte y son de TODO lo que cumple el filtro, no de la
+   * página: puestos en la cabecera, unos totales de la página cambiarían al
+   * pasar de hoja.
+   */
+  resumen(page = 1, perPage = 15, search = '', desde?: string | null, hasta?: string | null,
+          empleadoId?: number | null, filtrosColumna: any = null): Observable<any> {
+    let params = new HttpParams().set('page', String(page)).set('per_page', String(perPage));
+    if (search) { params = params.set('search', search); }
     if (desde) { params = params.set('desde', desde); }
     if (hasta) { params = params.set('hasta', hasta); }
     if (empleadoId) { params = params.set('empleado_id', String(empleadoId)); }
+    if (filtrosColumna && Object.keys(filtrosColumna).length) {
+      params = params.set('filtros', JSON.stringify(filtrosColumna));
+    }
     return this._http.get(this.URL + 'resumen', { params });
   }
 

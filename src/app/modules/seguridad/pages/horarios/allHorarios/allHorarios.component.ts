@@ -417,7 +417,8 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
    */
   private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
     id: 'numero',
-    nombre: 'texto',
+    num_dias: 'numero', num_jornadas: 'numero', num_usuarios: 'numero',
+    nombre: 'texto', descripcion: 'texto',
     // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
     created_at: 'texto', updated_at: 'texto',
   };
@@ -480,9 +481,65 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
       {
         headerName: 'Nombre',
         field: 'nombre',
+        cellStyle: { textAlign: 'left', fontWeight: '600' },
+        minWidth: 180,
+        maxWidth: 400,
+      },
+      {
+        // El cuadro de la semana: una casilla por día, encendida si ese día
+        // tiene franjas. Es lo que se quiere saber de un vistazo —quién puede
+        // entrar en sábado— sin abrir la ficha.
+        //
+        // El `field` es `num_dias` y no `jornadas` para que la caja de filtro
+        // busque por número de días; el dibujo no cambia, porque el renderer
+        // lee las franjas de params.data.
+        headerName: 'Semana',
+        field: 'num_dias',
+        headerTooltip: 'Los días con acceso; el número pequeño es cuántas franjas tiene ese día. '
+                     + 'Se puede filtrar por cuántos días se abre',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 210,
+        maxWidth: 230,
+        sortable: false,
+        cellRenderer: (params: any) => this.cuadroSemana(params),
+      },
+      {
+        headerName: 'Jornadas',
+        field: 'num_jornadas',
+        headerTooltip: 'Franjas de acceso en toda la semana (hasta 4 por día)',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 100,
+        maxWidth: 110,
+      },
+      {
+        headerName: 'Horas/semana',
+        field: 'horas_semana',
+        headerTooltip: 'Cuántas horas a la semana está abierto el acceso',
+        cellStyle: { textAlign: 'right' },
+        minWidth: 120,
+        maxWidth: 130,
+        valueFormatter: (params: any) => this.formatoHoras(params.value),
+      },
+      {
+        headerName: 'Usuarios',
+        field: 'num_usuarios',
+        headerTooltip: 'Usuarios que tienen este horario; con gente no se puede eliminar',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 100,
+        maxWidth: 110,
+        cellRenderer: (params: any) => {
+          const n = Number(params.value ?? 0);
+          return n
+            ? `<span class="badge bg-secondary bg-opacity-25 text-body fs-10px"><i class="fa fa-user me-1"></i>${n}</span>`
+            : '<span class="text-muted fs-10px">0</span>';
+        },
+      },
+      {
+        headerName: 'Descripción',
+        field: 'descripcion',
         cellStyle: { textAlign: 'left' },
-        minWidth: 150,
-        maxWidth: 1500,
+        minWidth: 200,
+        maxWidth: 600,
       },
       {
         headerName: 'Creado',
@@ -519,6 +576,40 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
         }
       },
     ]);
+  }
+
+  /** 40 → "40 h"; 37.5 → "37,5 h". Vacío si no hay nada que mostrar. */
+  formatoHoras(valor: any): string {
+    if (valor === null || valor === undefined || valor === '') { return ''; }
+    const n = Number(valor);
+    if (isNaN(n)) { return String(valor); }
+    return n.toLocaleString('es-EC', { maximumFractionDigits: 2 }) + ' h';
+  }
+
+  /**
+   * El cuadro de la semana de una fila: L M X J V S D.
+   *
+   * El día con franjas sale encendido y con cuántas tiene; el que no,
+   * apagado. Se pinta aquí y no con un componente por celda porque no hace
+   * nada: sólo se mira.
+   */
+  private cuadroSemana(params: any): string {
+    const jornadas = (params.data?.jornadas ?? []) as any[];
+    const letras = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+    const nombres = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    return '<span class="semana">' + letras.map((letra, i) => {
+      const delDia = jornadas.filter(j => j.dia === i + 1 && j.activo !== false);
+      if (!delDia.length) {
+        return `<span class="semana-dia semana-dia--libre" title="${nombres[i]}: sin acceso">${letra}</span>`;
+      }
+      const horas = delDia
+        .sort((a, b) => (a.jornada ?? 0) - (b.jornada ?? 0))
+        .map(j => `${j.hora_inicio}-${j.hora_fin}`)
+        .join(' · ');
+      const cuantas = delDia.length > 1 ? `<sup>${delDia.length}</sup>` : '';
+      return `<span class="semana-dia semana-dia--trabaja" title="${nombres[i]}: ${horas}">${letra}${cuantas}</span>`;
+    }).join('') + '</span>';
   }
 
   onGridReady(params: GridReadyEvent): void {

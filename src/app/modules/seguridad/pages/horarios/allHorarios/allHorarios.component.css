@@ -71,3 +71,50 @@
   border-color: var(--bs-border-color, #334155);
   color: var(--bs-body-color, #e2e8f0);
 }
+
+/* ============================================================
+   EL CUADRO DE LA SEMANA (columna «Semana»)
+   Siete casillas, una por día: encendida si ese día tiene franjas.
+   ::ng-deep porque las pinta un cellRenderer de ag-Grid, fuera de la
+   encapsulación del componente.
+   ============================================================ */
+:host ::ng-deep .semana {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+
+:host ::ng-deep .semana-dia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: default;
+}
+
+/* El día con acceso: en el color del tema */
+:host ::ng-deep .semana-dia--trabaja {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* El día cerrado: apagado, pero se sigue viendo qué día es */
+:host ::ng-deep .semana-dia--libre {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .7;
+}
+
+/* El numerito de cuántas franjas tiene ese día */
+:host ::ng-deep .semana-dia sup {
+  font-size: 7px;
+  margin-left: 1px;
+  top: -.4em;
+}

@@ -23,7 +23,8 @@ import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/
 import { CampoNumeroEnteroComponent } from '../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../components/campos/checkbox/checkbox.component';
 import { CampoBusquedaComponent } from '../../components/campos/campoBusqueda/campoBusqueda.component';
-import { CampoBusquedaPaginacionComponent } from "../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component";
+import { CampoBusquedaPaginacionComponent } from '../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { TabPanelComponent } from '../../components/campos/tabPanel/tabPanel.component';
 import { ComboComponent } from '../../components/campos/combo/combo.component';
 
 import { HomeComponent } from './pages/home/home.component';
@@ -125,6 +126,7 @@ import { CampoEmailComponent } from '../../components/campos/campoEmail/campoEma
     CheckboxComponent,
     CampoBusquedaComponent,
     CampoBusquedaPaginacionComponent,
+    TabPanelComponent,
     ModalArrastrableDirective,
     ComboComponent,
     ActionButtonsModule,

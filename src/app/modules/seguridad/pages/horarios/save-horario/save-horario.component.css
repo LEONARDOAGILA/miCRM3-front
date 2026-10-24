@@ -1,6 +1,5 @@
 /* ============================================================
-   SAVE HORARIO - Estilos del modal
-   Mismo lenguaje visual que los modales de usuario y perfil.
+   NUEVO / MODIFICAR HORARIO DE TRABAJO (modal)
    Colores tomados de las variables de Bootstrap / Color Admin,
    por lo que funcionan igual en tema claro y oscuro.
    ============================================================ */
@@ -182,67 +181,6 @@
   overflow-x: auto;
 }
 
-.dias-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .8125rem;
-}
-
-.dias-table thead th {
-  padding: .5rem .75rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  font-size: .625rem;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  text-align: left;
-  color: var(--bs-secondary-color, #6c757d);
-  white-space: nowrap;
-}
-
-.dias-table tbody td {
-  padding: .5rem .75rem;
-  border-bottom: 1px solid var(--bs-border-color, #eceef0);
-  vertical-align: top;
-}
-
-.dias-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.dias-table tbody tr {
-  transition: background-color .15s ease;
-}
-
-.dias-table tbody tr:hover {
-  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .03);
-}
-
-/* Anchos de columna */
-.col-dia      { width: 26%; min-width: 130px; }
-.col-hora     { width: 20%; min-width: 120px; }
-.col-estado   { width: 20%; min-width: 120px; }
-.col-acciones { width: 56px; text-align: center; }
-
-/* Filas con problemas */
-.dias-table tbody tr.fila-invalida td:first-child {
-  box-shadow: inset 3px 0 0 var(--bs-warning, #ffc107);
-}
-
-.dias-table tbody tr.fila-duplicada td:first-child {
-  box-shadow: inset 3px 0 0 var(--bs-danger, #dc3545);
-}
-
-.dias-table tbody tr.fila-invalida,
-.dias-table tbody tr.fila-duplicada {
-  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .06);
-}
-
-.dias-table tbody tr.fila-duplicada {
-  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .06);
-}
-
 .campo-error {
   display: block;
   margin-top: .2rem;
@@ -365,91 +303,227 @@
 }
 
 /* ============================================================
-   RESPONSIVE: en móvil cada fila se convierte en una ficha
+
+/* ============================================================
+   UNA FICHA POR DÍA
+   No es una tabla: cada día lleva DENTRO hasta cuatro jornadas, y eso en
+   una fila de tabla no entra sin que el ancho baile de una fila a otra.
+   ============================================================ */
+.dia-fila {
+  margin: 0 .75rem .625rem;
+  padding: .5rem .625rem .625rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid rgba(var(--bs-app-theme-rgb, 0, 172, 172), .55);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.dia-fila:first-child { margin-top: .625rem; }
+
+/* El día que no se trabaja sigue a la vista, pero apagado */
+.dia-fila.fila-apagada {
+  border-left-color: var(--bs-border-color, #dee2e6);
+  opacity: .65;
+}
+
+.dia-fila.fila-invalida  { border-left-color: var(--bs-warning, #ffc107); }
+.dia-fila.fila-duplicada {
+  border-left-color: var(--bs-danger, #dc3545);
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .05);
+}
+
+/* ---------- Cabecera de la ficha: el día y sus botones ---------- */
+.dia-cabecera {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+.dia-select {
+  width: auto;
+  min-width: 130px;
+  font-weight: 600;
+}
+
+.dia-resumen {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Los botones, siempre al final de la cabecera */
+.dia-acciones {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  margin-left: auto;
+}
+
+.dia-acciones .btn {
+  --bs-btn-padding-y: .15rem;
+  --bs-btn-padding-x: .5rem;
+  --bs-btn-font-size: .6875rem;
+}
+
+/* ---------- Las jornadas del día ---------- */
+.jornadas {
+  display: flex;
+  flex-direction: column;
+  gap: .375rem;
+}
+
+.jornada {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+
+  padding: .3rem .4rem;
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .035);
+}
+
+.jornada.jornada-invalida {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .12);
+}
+
+/* El número de jornada: J1, J2… Es la posición, no un campo que se escriba */
+.jornada-num {
+  flex: 0 0 auto;
+  width: 26px;
+  text-align: center;
+
+  font-size: .6875rem;
+  font-weight: 700;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.jornada input[type="time"] {
+  width: auto;
+  min-width: 110px;
+  flex: 0 1 auto;
+}
+
+.jornada-sep {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .625rem;
+}
+
+.jornada-dura {
+  min-width: 56px;
+  font-size: .6875rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* La jornada que cruza la medianoche: se avisa, no se marca como error */
+.chip-noche {
+  background-color: rgba(var(--bs-indigo-rgb, 102, 16, 242), .12);
+  color: var(--bs-indigo, #6610f2);
+}
+
+.jornada .btn-quitar { margin-left: auto; }
+
+.jornada .campo-error {
+  flex: 1 1 100%;
+  margin-left: 30px;
+}
+
+/* La ayuda bajo un campo (la tolerancia) */
+.campo-ayuda {
+  display: block;
+  margin-top: .2rem;
+  font-size: .6875rem;
+  line-height: 1.3;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-ayuda i { color: var(--bs-app-theme, #00acac); }
+
+.dias-ayuda {
+  margin: .5rem .75rem 0;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.dias-ayuda i { color: var(--bs-app-theme, #00acac); }
+
+.aviso { margin: .5rem .75rem 0; }
+
+/* ============================================================
+   PROBAR EL ATRASO
+   ============================================================ */
+.prueba-barra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.prueba-fecha {
+  width: auto;
+  min-width: 210px;
+}
+
+.prueba-ayuda {
+  flex: 1 1 260px;
+  font-size: .6875rem;
+  line-height: 1.3;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.prueba-resultado {
+  margin-top: .625rem;
+  padding: .5rem .75rem;
+  border-radius: .5rem;
+  border-left: 3px solid currentColor;
+}
+
+.prueba-estado {
+  font-size: .8125rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.prueba-estado i { margin-right: .35rem; }
+
+.prueba-detalle {
+  margin-top: .15rem;
+  font-size: .75rem;
+  color: var(--bs-body-color, #212529);
+}
+
+.prueba--bien  { background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .1);  color: var(--bs-success-text-emphasis, #0a3622); }
+.prueba--justo { background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .15); color: var(--bs-warning-text-emphasis, #997404); }
+.prueba--mal   { background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .1);   color: var(--bs-danger-text-emphasis, #b02a37); }
+.prueba--nada  { background-color: rgba(108, 117, 125, .12);                      color: var(--bs-secondary-color, #6c757d); }
+
+/* ============================================================
+   RESPONSIVE: en móvil, cada jornada en su propia línea
    ============================================================ */
 @media (max-width: 767.98px) {
+  .horario-modal-body { padding: .75rem; }
 
-  .horario-modal-body {
-    padding: .75rem;
-  }
+  .dia-fila { margin: 0 .25rem .625rem; }
 
-  .dias-table thead {
-    display: none;
-  }
-
-  .dias-table,
-  .dias-table tbody,
-  .dias-table tr,
-  .dias-table td {
-    display: block;
+  .dia-acciones {
     width: 100%;
+    margin-left: 0;
   }
 
-  .dias-table tbody tr {
-    position: relative;
-    margin: .625rem .75rem;
-    padding: .5rem .25rem;
-    border: 1px solid var(--bs-border-color, #dee2e6);
-    border-radius: .5rem;
-  }
+  .dia-acciones .btn { flex: 1 1 0; }
 
-  .dias-table tbody td {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    border-bottom: none;
-    padding: .3rem .625rem;
-  }
+  .jornada input[type="time"] { flex: 1 1 0; min-width: 0; }
 
-  .dias-table tbody td::before {
-    content: attr(data-label);
-    flex: 0 0 88px;
-    font-size: .6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--bs-secondary-color, #6c757d);
-  }
+  .jornada-dura { width: 100%; margin-left: 30px; }
 
-  .dias-table tbody td > .form-select,
-  .dias-table tbody td > .form-control {
-    flex: 1 1 auto;
-  }
-
-  .dias-table tbody td.col-acciones {
-    position: absolute;
-    top: .35rem;
-    right: .35rem;
-    width: auto;
-    padding: 0;
-  }
-
-  .dias-table tbody td.col-acciones::before {
-    content: none;
-  }
-
-  /* Los mensajes de error se colocan bajo el campo, no en línea */
-  .dias-table tbody td {
-    flex-wrap: wrap;
-  }
-
-  .campo-error {
-    flex: 1 1 100%;
-    margin-left: 88px;
-  }
-
-  .dias-table tbody tr.fila-invalida td:first-child,
-  .dias-table tbody tr.fila-duplicada td:first-child {
-    box-shadow: none;
-  }
-
-  .dias-table tbody tr.fila-invalida { border-left: 3px solid var(--bs-warning, #ffc107); }
-  .dias-table tbody tr.fila-duplicada { border-left: 3px solid var(--bs-danger, #dc3545); }
+  .prueba-fecha { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .estado-horario,
-  .btn-quitar,
-  .dias-table tbody tr {
-    transition: none;
-  }
+  .dia-fila { transition: none; }
 }

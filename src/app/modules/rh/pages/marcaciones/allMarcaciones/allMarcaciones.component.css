@@ -327,3 +327,48 @@
   color: var(--bs-secondary-color, #6c757d);
   opacity: .6;
 }
+/* ============================================================
+   LA REJILLA DE HORAS TRABAJADAS
+   ============================================================ */
+.mar-grilla-resumen {
+  width: 100%;
+  /* Un valor de arranque: ajustarAlturaGridResumen() lo recalcula en cuanto
+     la rejilla está lista y en cada resize. */
+  height: 420px;
+}
+
+/* El aviso del día incompleto, delante del nombre. Antes se teñía la fila
+   entera de ámbar y no se leía nada. */
+:host ::ng-deep .mar-incompleto {
+  margin-right: .35rem;
+  color: var(--bs-warning, #f59c1a);
+  cursor: default;
+}
+
+/* Las horas del día */
+:host ::ng-deep .mar-horas {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cero horas: o no se emparejó nada, o el turno cruzó la medianoche */
+:host ::ng-deep .mar-horas--cero {
+  font-weight: 500;
+  color: var(--bs-secondary-color, #6c757d);
+  cursor: default;
+}
+
+/* El buscador, en su propia línea dentro de los filtros compartidos: ocupa
+   todo el ancho, que es lo que tenía cuando vivía en la barra. */
+.mar-filtros__grupo--buscador {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+/* El componente del buscador es un elemento en línea: sin esto se queda del
+   ancho de su contenido y el campo sale cortado. */
+.mar-filtros__grupo--buscador app-campoBusquedaPaginacion {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
