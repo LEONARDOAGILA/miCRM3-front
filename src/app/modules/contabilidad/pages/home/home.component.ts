@@ -53,6 +53,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       color: 'bg-indigo',
       descripcion: 'El árbol de cuentas contables, sin tope de niveles: código, tipo, naturaleza y qué cuentas reciben asientos',
     },
+    {
+      url: 'contabilidad/allCuentasCategorias',
+      label: 'CUENTAS POR CATEGORÍA',
+      icon: 'fa-sliders',
+      color: 'bg-teal',
+      descripcion: 'Con qué cuentas se asienta cada categoría de productos: inventario, ingreso, costo, devoluciones y descuentos',
+    },
   ];
 
   constructor(

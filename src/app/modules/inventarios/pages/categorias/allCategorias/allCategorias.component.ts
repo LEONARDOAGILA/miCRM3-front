@@ -1001,6 +1001,15 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     let padreId: number | null;
     let antesDe: number | null;
     if (d.zona === 'dentro') {
+      // Soltar DENTRO de una que admite productos la convertiría en madre, y
+      // eso no se puede: sus productos se quedarían colgando de una rama. Se
+      // dice aquí en lugar de dejar que viaje y vuelva con un 409.
+      if (d.data.es_transaccion) {
+        this._toastr.info(
+          `«${d.data.nombre}» admite productos: quítale «admite productos» en su ficha y entonces podrás meterle categorías dentro`,
+          'Esa categoría no admite subcategorías', { timeOut: 6000 });
+        return;
+      }
       padreId = d.data.id;
       antesDe = null;                                  // al final de sus hijas
     } else {
@@ -1164,6 +1173,14 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       this._toastr.warning('El árbol admite hasta cuatro niveles y ésta ya está en el último', 'Nueva subcategoría');
       return;
     }
+    // UNA CATEGORÍA QUE ADMITE PRODUCTOS NO ADMITE SUBCATEGORÍAS: los
+    // productos cuelgan de las hojas. El servidor lo rechaza igual (P0021).
+    if (sobre.es_transaccion) {
+      this._toastr.info(
+        `«${sobre.nombre}» admite productos: quítale «admite productos» en su ficha y entonces podrás colgarle subcategorías`,
+        'Esa categoría no admite subcategorías', { timeOut: 6000 });
+      return;
+    }
     const modalRef = this.abrirModalCategoria(0, 'add', sobre);
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => this.allCategorias());
   }
@@ -1277,17 +1294,22 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     // El último nivel no admite nada dentro: el árbol llega hasta el 3
     const esUltimoNivel = Number(fila?.nivel ?? 0) >= 3;
     const tieneHijos    = Number(fila?.num_hijos ?? 0) > 0;
+    // Y una que admite productos tampoco: los productos van en las hojas
+    const admiteProductos = fila?.es_transaccion === true;
 
     return [
       {
-        id: 'sub', texto: 'Nuevo subcategoría aquí', icono: 'fa-folder-plus',
+        id: 'sub', texto: 'Nueva subcategoría aquí', icono: 'fa-folder-plus',
         visible: puedeCrear,
-        deshabilitada: esUltimoNivel,
-        ayuda: esUltimoNivel ? 'Éste es el último nivel: no admite nada dentro'
-                             : 'Crear un categoría dentro de éste',
+        deshabilitada: esUltimoNivel || admiteProductos,
+        ayuda: esUltimoNivel
+                 ? 'Éste es el último nivel: no admite nada dentro'
+                 : (admiteProductos
+                     ? 'Admite productos: quítale «admite productos» en su ficha para poder colgarle subcategorías'
+                     : 'Crear una categoría dentro de ésta'),
       },
       {
-        id: 'raiz', texto: 'Nuevo categoría de primer nivel', icono: 'fa-plus',
+        id: 'raiz', texto: 'Nueva categoría de primer nivel', icono: 'fa-plus',
         visible: puedeCrear,
       },
       {
@@ -1311,7 +1333,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
         separadorAntes: true, visible: puedeAuditar,
-        ayuda: 'Quién tocó este categoría y cuándo',
+        ayuda: 'Quién tocó esta categoría y cuándo',
       },
       {
         id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
@@ -1379,8 +1401,11 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
                         ? 'Nueva subcategoría - Desactivado'
                         : (params.data?.nivel >= 3
                             ? 'Nueva subcategoría - ya está en el último nivel'
-                            : 'Nueva subcategoría dentro de ésta')"
-              [disabled]="parent.accesoModel?.crear !== true || params.data?.nivel >= 3"
+                            : (params.data?.es_transaccion
+                                ? 'Admite productos: quítale «admite productos» en su ficha para poder colgarle subcategorías'
+                                : 'Nueva subcategoría dentro de ésta'))"
+              [disabled]="parent.accesoModel?.crear !== true || params.data?.nivel >= 3
+                          || params.data?.es_transaccion"
               (click)="parent.addSubcategoria(params.data)">
         <i class="fa fa-diagram-project"></i>
       </button>

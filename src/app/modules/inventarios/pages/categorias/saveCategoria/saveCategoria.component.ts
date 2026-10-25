@@ -111,6 +111,11 @@ export class SaveCategoriaComponent implements OnInit, OnDestroy {
     switch (this.accion) {
       case 'add':
         this.titulo = this.padre ? 'Nueva Subcategoría' : 'Nueva Categoría';
+        // Una categoría RAÍZ nace agrupando: encabeza una línea y de ésas
+        // cuelgan categorías, no productos. Además, una que admite productos
+        // no admite subcategorías, así que dejarla marcada obligaría a
+        // volver a entrar en su ficha para desmarcarla antes de la primera.
+        if (!this.padre) { this.ctrlEsTransaccion.setValue(false); }
         break;
       case 'edit':
         this.titulo = 'Modificar Categoría';
@@ -169,6 +174,14 @@ export class SaveCategoriaComponent implements OnInit, OnDestroy {
       // rechaza al guardar (fn_categorias_modificar lo corta con P0021).
       // Se apaga aquí para no ofrecer algo que va a fallar.
       if (this.accion === 'edit' && this.numProductos > 0) {
+        this.ctrlEsTransaccion.disable();
+      }
+
+      // Y CON SUBCATEGORÍAS NO SE PUEDE MARCAR: los productos cuelgan de las
+      // hojas, y tenerlos aquí dejaría productos y subcategorías colgando de
+      // lo mismo. El servidor lo corta igual.
+      if (this.accion === 'edit' && this.numHijos > 0) {
+        this.ctrlEsTransaccion.setValue(false);
         this.ctrlEsTransaccion.disable();
       }
     } catch (error) {

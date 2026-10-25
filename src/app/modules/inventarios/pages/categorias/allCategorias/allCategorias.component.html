@@ -75,10 +75,12 @@
           <div class="col-auto ps-0">
             <button type="button"
                     class="inactivo btn btn-info lista-barra__btn"
-                    [title]="selectedRow
-                              ? 'Nueva subcategoría dentro de «' + selectedRow.nombre + '»'
-                              : 'Elige primero una categoría en la lista'"
-                    [disabled]="accesoModel?.crear === false || !selectedRow"
+                    [title]="!selectedRow
+                              ? 'Elige primero una categoría en la lista'
+                              : (selectedRow.es_transaccion
+                                  ? '«' + selectedRow.nombre + '» admite productos: quítale «admite productos» en su ficha para poder colgarle subcategorías'
+                                  : 'Nueva subcategoría dentro de «' + selectedRow.nombre + '»')"
+                    [disabled]="accesoModel?.crear === false || !selectedRow || selectedRow.es_transaccion === true"
                     (click)="addSubcategoria()">
               <i class="fa fa-diagram-project"></i>
             </button>
@@ -156,7 +158,8 @@
             <p class="cat-ayuda-dnd small text-muted mb-0">
               <i class="fa fa-hand-pointer me-1"></i>
               Arrastra una fila desde <b>⋮⋮</b>: suéltala en el <b>borde superior o inferior</b> de otra
-              para cambiar el orden, o <b>en el centro</b> para meterla dentro (máximo 4 niveles).
+              para cambiar el orden, o <b>en el centro</b> para meterla dentro (máximo 4 niveles, y
+              las que <b>admiten productos</b> no admiten subcategorías).
               Con <b>+</b> y <b>−</b> se abren y cierran las ramas.
             </p>
           }

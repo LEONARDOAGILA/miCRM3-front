@@ -155,11 +155,17 @@
                   No se puede quitar: ya tiene {{ numProductos }}
                   {{ numProductos === 1 ? 'producto' : 'productos' }}. Muévalos antes a otra categoría.
                 </p>
-              } @else if (numHijos > 0 && ctrlEsTransaccion.value) {
+              } @else if (!esNuevo && numHijos > 0) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-lock"></i>
+                  No se puede marcar: tiene {{ numHijos }}
+                  {{ numHijos === 1 ? 'subcategoría' : 'subcategorías' }} y los productos van en ellas.
+                </p>
+              } @else if (ctrlEsTransaccion.value) {
                 <p class="campo-hint">
                   <i class="fa-solid fa-circle-info"></i>
-                  Tiene subcategorías: lo habitual es que agrupe y que los productos
-                  cuelguen de las de abajo.
+                  Mientras admita productos <b>no se le podrán colgar subcategorías</b>:
+                  los productos van en las hojas del árbol.
                 </p>
               }
             </div>

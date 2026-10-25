@@ -224,9 +224,10 @@ export class AllPlanCuentasComponent implements OnInit, OnDestroy {
         minWidth: 210,
         maxWidth: 320,
         sortable: false,
-        // AQUÍ VIVE EL ÁRBOL: sangría por `nivel`, el asa de plegar y el
-        // código. Es la columna por la que se lee un plan de cuentas.
-        cellRenderer: (params: any) => this.celdaCodigo(params),
+        // EL ÁRBOL: sangría por `nivel`, el asa de plegar y el código. En un
+        // plan de cuentas la jerarquía la lleva el código —1.1.01.02 cuelga
+        // de 1.1.01—, así que ésta es la columna por la que se lee.
+        cellRenderer: (params: any) => this.celdaArbol(params),
         // Y los botones de contraer y desplegar todo, en su cabecera
         headerComponentParams: this.cabeceraArbol(),
       },
@@ -236,18 +237,18 @@ export class AllPlanCuentasComponent implements OnInit, OnDestroy {
         floatingFilter: true,
         cellClass: this.claseNivel,
         cellStyle: this.izquierda,
-        // Ancha: los nombres contables son largos («(-) Depreciación
-        // acumulada propiedades, planta y equipo»)
-        minWidth: 300,
+        // Ancha: aquí la sangría llega al quinto nivel y los nombres
+        // contables son largos («(-) Depreciación acumulada propiedades,
+        // planta y equipo»)
+        minWidth: 340,
         maxWidth: 520,
         sortable: false,
-        // SIN SANGRÍA: la jerarquía la enseña el código, a la izquierda, y
-        // aquí todos los nombres empiezan a la misma altura, que es como se
-        // leen de un vistazo. El color por nivel sigue estando.
-        //
-        // Sin cellRenderer propio: ag-Grid pinta el texto y lo escapa, que es
-        // justo lo que hacía a mano el de antes.
-        //
+        // EL ÁRBOL TAMBIÉN AQUÍ: la misma celda que en «Código». Se pliega
+        // desde las dos columnas porque según lo que se esté leyendo —un
+        // código o un nombre— el dedo está en una o en la otra, y cruzar la
+        // fila para abrir una rama se nota.
+        cellRenderer: (params: any) => this.celdaArbol(params),
+        headerComponentParams: this.cabeceraArbol(),
         // Arrastrar la fila (asa ⋮⋮) para moverla a otra rama o cambiar su
         // orden: mismo esquema que allMenus. Sólo con permiso de editar.
         dndSource: this.accesoModel?.editar === true,
@@ -427,13 +428,17 @@ export class AllPlanCuentasComponent implements OnInit, OnDestroy {
   private static readonly CLAVE_PLEGADAS = 'cont.planCuentas.plegadas';
 
   /**
-   * La celda de «Código»: sangría + asa + código.
+   * La celda del árbol: sangría por nivel, asa de plegar y el texto.
    *
-   * ES LA COLUMNA DEL ÁRBOL. En un plan de cuentas la jerarquía la lleva el
-   * código —1.1.01.02 cuelga de 1.1.01—, así que la sangría y el asa van
-   * aquí y no en el nombre: el ojo baja por los códigos.
+   * LA PINTAN LAS DOS COLUMNAS DE LA IZQUIERDA, código y cuenta, cada una con
+   * lo suyo (`params.value`). El árbol se abre y se cierra desde las dos
+   * porque según lo que se esté leyendo —un código o un nombre— el dedo está
+   * en una o en la otra, y cruzar la fila para plegar una rama se nota.
+   *
+   * El asa lleva `data-accion="plegar"` y quien la atiende es onCellClicked,
+   * que mira el origen del clic: da igual de qué columna venga.
    */
-  private celdaCodigo(params: any): string {
+  private celdaArbol(params: any): string {
     const d = params.data;
     const nivel = Math.max(0, Number(d?.nivel ?? 0));
     const hijos = Number(d?.num_hijos ?? 0);
@@ -451,8 +456,8 @@ export class AllPlanCuentasComponent implements OnInit, OnDestroy {
          </button>`
       : `<span class="cta-asa cta-asa--hueco"></span>`;
 
-    // El código ESCAPADO: lo escribe un usuario y acaba dentro de una cadena
-    // de HTML, así que sin esto un `<` en el código rompe la celda.
+    // ESCAPADO: lo escribe un usuario y acaba dentro de una cadena de HTML,
+    // así que sin esto un `<` en el código o en el nombre rompe la celda.
     const texto = String(params.value ?? '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
