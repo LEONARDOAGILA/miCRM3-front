@@ -23,6 +23,11 @@ import {
 // le aparecen sus gestiones en la agenda. La ficha de recursos humanos no entra
 // al sistema, por eso dejo de servir aqui.
 import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/listUsuariosGrupos/listUsuariosGrupos.component';
+import { ListGrupoClienteComponent } from '../grupos/listGrupoCliente/listGrupoCliente.component';
+import { GrupoClienteService } from '../../../services/grupoCliente.service';
+import { AppRegistroCivilService, PersonaRegistroCivil } from '../../../../../service/app-registroCivil.service';
+import { AppNombrePersonaService } from '../../../../../service/app-nombrePersona.service';
+import { AppSriService, ContribuyenteSri } from '../../../../../service/app-sri.service';
 import {
   SeleccionarUbicacionComponent, UbicacionElegida,
 } from '../../../../../components/ubicacion-google-maps/seleccionarUbicacion.component';
@@ -67,8 +72,67 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
 
   public clienteModel: ClienteModel | null = null;
 
+  /**
+   * El nombre completo tal como va a quedar guardado.
+   *
+   * ES UNA COLUMNA GENERADA (ventas.clientes.nombre_completo): no se manda ni
+   * se puede escribir, la calcula la base. Está aquí —bloqueado— porque es lo
+   * que se ve en las listas, en las búsquedas y en la agenda, y conviene
+   * saber cómo va a salir antes de guardar.
+   */
+  public nombreCompletoControl = new FormControl({ value: '', disabled: true });
+
+  /**
+   * En qué va la consulta de la cédula al Registro Civil.
+   *
+   * ES UNA AYUDA Y NADA MÁS: la fuente es una página de terceros que tarda
+   * unos diez segundos la primera vez y se puede caer. Por eso esto es un
+   * estado para contarlo debajo del campo, no algo que bloquee la ficha; el
+   * usuario puede escribir los nombres mientras se consulta, y si lo hace,
+   * lo suyo manda.
+   */
+  public registroCivil: {
+    estado: 'quieto' | 'consultando' | 'encontrado' | 'sin-datos';
+    mensaje: string;
+    persona: PersonaRegistroCivil | null;
+  } = { estado: 'quieto', mensaje: '', persona: null };
+
+  /**
+   * En qué va la consulta del RUC al SRI.
+   *
+   * El hermano de `registroCivil`, para cuando el cliente es una empresa:
+   * ahí no hay cédula que consultar y la razón social la da el SRI.
+   */
+  public sri: {
+    estado: 'quieto' | 'consultando' | 'encontrado' | 'sin-datos';
+    mensaje: string;
+    contribuyente: ContribuyenteSri | null;
+  } = { estado: 'quieto', mensaje: '', contribuyente: null };
+
+  /**
+   * La última identificación por la que se preguntó.
+   *
+   * Es lo que distingue «cambió la cédula» de «salió del campo sin tocarlo».
+   * Lo primero reescribe los nombres; lo segundo no toca nada, para no
+   * deshacer lo que el usuario haya corregido a mano.
+   */
+  private ultimaConsultada = '';
+
   // Control independiente (sólo lectura) con el nombre del vendedor elegido
   public vendedorNombreControl = new FormControl({ value: '', disabled: true });
+
+  // El grupo comercial: la ruta completa («Mayoristas > Cadenas»), que es lo
+  // que identifica a un grupo fuera del árbol.
+  public grupoNombreControl = new FormControl({ value: '', disabled: true });
+
+  /**
+   * Lo que daría el grupo elegido en cada condición, ya resuelto por el
+   * servidor (lo suyo o lo que hereda de más arriba).
+   *
+   * Es sólo una pista y el botón de «usar las del grupo»: lo que se guarda
+   * son los cuatro campos del cliente, que siguen mandando.
+   */
+  public condicionesGrupo: any = null;
 
   public tiposCliente = TIPOS_CLIENTE;
   public tiposIdentificacion = TIPOS_IDENTIFICACION;
@@ -117,6 +181,10 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
     private _seguridadService: SeguridadService,
     private _clienteService: ClienteService,
     private _userService: UserService,
+    private _grupoClienteService: GrupoClienteService,
+    private _registroCivil: AppRegistroCivilService,
+    private _nombres: AppNombrePersonaService,
+    private _sri: AppSriService,
     public _appAgGridService: AppAgGridService,
   ) {}
 
@@ -366,14 +434,37 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
     this.initializeForm();
     this.initializeGridContactos();
 
+    // EL NOMBRE COMPLETO SE REHACE AL TECLEAR, para ver cómo va a quedar
+    // antes de guardar. Se escucha el formulario ENTERO y no sólo los cinco
+    // campos de los que sale: rehacerlo es concatenar dos cadenas —no se
+    // nota— y así no depende de que esos controles sigan llamándose igual ni
+    // de que nadie los sustituya por el camino.
+    this.form.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.refrescarNombreCompleto());
+    this.refrescarNombreCompleto();
+
+    // Empresa manda documento: RUC y bloqueado (ver ajustarTipoIdentificacion)
+    this.form.get('tipo_cliente')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.ajustarTipoIdentificacion());
+    this.ajustarTipoIdentificacion();
+
     switch (this.accion) {
       case 'add':
         this.titulo = 'Nuevo Cliente';
+        // Un cliente nuevo nace en el grupo predeterminado, con sus
+        // condiciones: es justo lo que evita tener que elegirlas una a una.
+        await this.ponerGrupoPredeterminado(true);
         break;
       case 'edit':
         this.titulo = 'Modificar Cliente';
         this.clienteId = this.registro_selected.id;
         await this.findByIdCliente(this.registro_selected.id);
+        // Los clientes de antes no tenían grupo y ahora es obligatorio: se
+        // les propone el predeterminado SIN tocarles las condiciones, que son
+        // suyas. Si no vale, se cambia con la lupa.
+        await this.ponerGrupoPredeterminado(false);
         break;
       case 'clon':
         this.titulo = 'Clonar Cliente';
@@ -381,6 +472,7 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
         this.esNuevo = true;
         this.clienteId = this.registro_selected.id;
         await this.findByIdCliente(this.registro_selected.id);
+        await this.ponerGrupoPredeterminado(false);
         break;
       case 'view':
         this.titulo = 'Ver Cliente';
@@ -426,6 +518,10 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
       genero:                [{ value: null, disabled: d }],
       direccion:             [{ value: '', disabled: d }, [Validators.maxLength(1000)]],
       vendedor_id:           [{ value: null, disabled: d }],
+      // De qué grupo comercial se copiaron (o se copiarán) las condiciones.
+      // OBLIGATORIO: la ficha lo trae puesto —el predeterminado— y aun así
+      // se exige, porque alguien puede quitarlo con la ×.
+      grupo_cliente_id:      [{ value: null, disabled: d }, [Validators.required]],
       forma_pago:            [{ value: 'EFECTIVO', disabled: d }, [Validators.required]],
       limite_credito:        [{ value: 0, disabled: d }, [Validators.min(0), Validators.max(9999999999)]],
       dias_credito:          [{ value: 0, disabled: d }, [Validators.min(0), Validators.max(365)]],
@@ -501,6 +597,275 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
   // VENDEDOR (como el jefe directo en saveEmpleado)
   // ================================================================
 
+  /**
+   * Lo mismo que hace la columna generada de la base:
+   *
+   *   EMPRESA  → razón social, y si no la hay, nombre comercial
+   *   PERSONA  → apellidos y después nombres
+   *
+   * Si se cambia la expresión en PostgreSQL hay que cambiarla aquí: el campo
+   * dejaría de enseñar lo que de verdad se guarda, que es justo para lo que
+   * está.
+   */
+  private refrescarNombreCompleto(): void {
+    const v = this.form?.getRawValue?.() ?? {};
+    const limpio = (x: any) => String(x ?? '').trim();
+
+    const completo = v.tipo_cliente === 'EMPRESA'
+      ? (limpio(v.razon_social) || limpio(v.nombre_comercial))
+      : `${limpio(v.apellidos)} ${limpio(v.nombres)}`.trim();
+
+    this.nombreCompletoControl.setValue(completo);
+  }
+
+  // ================================================================
+  // LOS NOMBRES, DESDE EL REGISTRO CIVIL
+  // ================================================================
+  //
+  // Al salir del campo de identificación se pregunta quién es el titular de
+  // esa cédula y se rellenan apellidos y nombres, que es donde más se
+  // equivoca quien digita. Lo que NO hace:
+  //
+  //   · no se lanza en cada tecla —son unos diez segundos por cédula nueva—;
+  //   · no bloquea el formulario;
+  //   · no pisa lo que ya hubiera escrito: en ese caso lo ofrece;
+  //   · no chilla si la página de terceros no contesta.
+
+  /**
+   * Se salió del campo de identificación.
+   *
+   * MANDA EL DOCUMENTO, no el tipo de cliente: con RUC se pregunta al SRI
+   * —que da el nombre y además estado, régimen y contabilidad— y con cédula
+   * al Registro Civil, que es quien los tiene. El pasaporte no está en
+   * ninguno de los dos.
+   *
+   * Eso incluye a la persona natural con RUC, que antes iba al Registro
+   * Civil por no ser empresa y se perdía todo lo tributario.
+   */
+  alSalirDeIdentificacion(): void {
+    switch (String(this.form.get('tipo_identificacion')?.value ?? '')) {
+      case 'RUC': this.consultarSri(); break;
+      // El pasaporte no está en ningún registro, y lo que hubiera en
+      // pantalla era de otro documento: se limpia
+      case 'PAS':
+        this.sri = { estado: 'quieto', mensaje: '', contribuyente: null };
+        this.registroCivil = { estado: 'quieto', mensaje: '', persona: null };
+        break;
+      default:    this.consultarRegistroCivil(); break;
+    }
+  }
+
+  /**
+   * Una EMPRESA se identifica con RUC, y con nada más.
+   *
+   * El combo se pone en RUC y se bloquea: ni cédula ni pasaporte tienen
+   * sentido ahí, y dejarlo abierto sólo sirve para que alguien elija mal y
+   * la consulta al SRI no salga.
+   */
+  private ajustarTipoIdentificacion(): void {
+    const ctrl = this.form?.get('tipo_identificacion');
+    if (!ctrl || this.esView) { return; }
+
+    if (this.esEmpresa) {
+      if (ctrl.value !== 'RUC') { ctrl.setValue('RUC'); }
+      ctrl.disable({ emitEvent: false });
+    } else if (ctrl.disabled) {
+      ctrl.enable({ emitEvent: false });
+    }
+  }
+
+  /**
+   * La razón social de un RUC, del SRI.
+   *
+   * Mismas reglas que la consulta de cédulas: no sale si el número no vale,
+   * no se repite si no cambió, y lo que encuentra SE ESCRIBE —cambiar el RUC
+   * es decir «esta empresa es otra»—.
+   */
+  async consultarSri(forzar = false): Promise<void> {
+    if (this.esView) { return; }
+    if (String(this.form.get('tipo_identificacion')?.value ?? '') !== 'RUC') { return; }
+
+    // Con RUC manda el SRI: lo que dijera el Registro Civil es de otro
+    // documento y dejarlo ahí sería enseñar dos nombres a la vez.
+    this.registroCivil = { estado: 'quieto', mensaje: '', persona: null };
+
+    const control = this.form.get('numero_identificacion');
+    const ruc = String(control?.value ?? '').trim();
+
+    if (!ruc || control?.invalid) {
+      this.sri = { estado: 'quieto', mensaje: '', contribuyente: null };
+      return;
+    }
+    if (!forzar && this.ultimaConsultada === ruc) { return; }
+
+    if (forzar) { this._sri.olvidar(ruc); }
+    this.ultimaConsultada = ruc;
+
+    this.sri = { estado: 'consultando', mensaje: 'Consultando el SRI…', contribuyente: null };
+
+    const r = await firstValueFrom(this._sri.consultarRuc(ruc));
+
+    // Mientras se consultaba pudieron cambiar el RUC o cerrar el modal
+    if (this.destruido) { return; }
+    if (String(this.form.get('numero_identificacion')?.value ?? '').trim() !== ruc) { return; }
+
+    if (!r.encontrado || !r.contribuyente) {
+      this.sri = {
+        estado: 'sin-datos',
+        mensaje: r.motivo === 'NO_ENCONTRADO'
+          ? 'El SRI no tiene ese RUC: revisa la razón social a mano'
+          : (r.mensaje ?? 'No se pudo consultar el SRI'),
+        contribuyente: null,
+      };
+      return;
+    }
+
+    this.sri = {
+      estado: 'encontrado',
+      mensaje: r.contribuyente.razon_social,
+      contribuyente: r.contribuyente,
+    };
+
+    this.escribirLoQueDijoElSri(r.contribuyente);
+  }
+
+  /**
+   * Pone en la ficha lo que trajo el SRI, según qué campos tenga delante.
+   *
+   * Una EMPRESA tiene razón social; una PERSONA con RUC tiene apellidos y
+   * nombres, y de ésos el SRI manda el nombre de una pieza —el servidor lo
+   * parte—. Si no vino partido (una sociedad, o un nombre que no se pudo
+   * separar), no se toca nada: mejor vacío que mal repartido.
+   */
+  private escribirLoQueDijoElSri(c: ContribuyenteSri): void {
+    if (this.esEmpresa) {
+      this.form.patchValue({ razon_social: c.razon_social });
+      return;
+    }
+    if (c.apellidos || c.nombres) {
+      this.form.patchValue({ apellidos: c.apellidos ?? '', nombres: c.nombres ?? '' });
+    }
+  }
+
+  /** Lo que hay que mirar antes de facturarle: estado y banderas del SRI. */
+  public get avisoSri(): string {
+    const c = this.sri.contribuyente;
+    if (!c) { return ''; }
+
+    const partes: string[] = [];
+    // Sin estado no hay nada que avisar: el dato vino del respaldo
+    if (c.estado && !c.activo) {
+      partes.push(`Está ${c.estado.toLocaleLowerCase('es-EC')}` +
+                  (c.motivo_suspension ? ` (${c.motivo_suspension.toLocaleLowerCase('es-EC')})` : ''));
+    }
+    if (c.fantasma) { partes.push('el SRI lo tiene como contribuyente fantasma'); }
+    if (c.transacciones_inexistentes) { partes.push('con transacciones inexistentes'); }
+    return partes.join(' · ');
+  }
+
+  async consultarRegistroCivil(forzar = false): Promise<void> {
+    if (this.esView) { return; }
+
+    const control = this.form.get('numero_identificacion');
+    const identificacion = String(control?.value ?? '').trim();
+
+    // Con RUC se pregunta al SRI, y el pasaporte no está en ningún registro:
+    // aquí sólo se atiende la cédula (ver alSalirDeIdentificacion)
+    if (!identificacion || String(this.form.get('tipo_identificacion')?.value ?? '') !== 'CC') {
+      this.registroCivil = { estado: 'quieto', mensaje: '', persona: null };
+      return;
+    }
+
+    // Lo mismo al revés: con cédula, lo del SRI era de otro documento
+    this.sri = { estado: 'quieto', mensaje: '', contribuyente: null };
+
+    // NO SE CONSULTA SI EL NÚMERO NO VALE. Quien lo decide es el propio
+    // campo (app-campoIdentificacion), que ya sabe si se pidió cédula, RUC o
+    // pasaporte; preguntárselo evita dos validaciones que pueden no coincidir
+    // y evita salir a internet mientras todavía están tecleando.
+    if (control?.invalid) {
+      this.registroCivil = { estado: 'quieto', mensaje: '', persona: null };
+      return;
+    }
+
+    // Y el pasaporte no se busca: el Registro Civil consulta por cédula
+    if (String(this.form.get('tipo_identificacion')?.value ?? '') === 'PAS') {
+      this.registroCivil = { estado: 'quieto', mensaje: '', persona: null };
+      return;
+    }
+    // SALIÓ DEL CAMPO SIN TOCARLO: ni se pregunta ni se toca nada. Si no, al
+    // pasar por el campo se desharía lo que hubiera corregido a mano.
+    if (!forzar && this.ultimaConsultada === identificacion) { return; }
+
+    if (forzar) { this._registroCivil.olvidar(identificacion); }
+    this.ultimaConsultada = identificacion;
+
+    this.registroCivil = {
+      estado: 'consultando',
+      mensaje: 'Consultando el Registro Civil…',
+      persona: null,
+    };
+
+    const r = await firstValueFrom(this._registroCivil.consultarCedula(identificacion));
+
+    // Mientras se consultaba pudieron cambiar la cédula o cerrar el modal
+    if (this.destruido) { return; }
+    if (String(this.form.get('numero_identificacion')?.value ?? '').trim() !== identificacion) { return; }
+
+    if (!r.encontrado || !r.persona) {
+      this.registroCivil = {
+        estado: 'sin-datos',
+        mensaje: r.motivo === 'NO_ENCONTRADO'
+          ? 'El Registro Civil no tiene esa cédula: revisa los nombres a mano'
+          : (r.mensaje ?? 'No se pudo consultar el Registro Civil'),
+        persona: null,
+      };
+      return;
+    }
+
+    const persona = r.persona;
+
+    this.registroCivil = {
+      estado: 'encontrado',
+      mensaje: persona.nombre_completo,
+      persona,
+    };
+
+    // SE ESCRIBEN, NO SE OFRECEN. Cambiar el número de identificación es
+    // decir «este cliente es otro»: dejar los nombres del anterior a la
+    // espera de que alguien pulse un enlace es la forma de acabar con dos
+    // personas mezcladas en la misma ficha.
+    this.usarNombresDelRegistroCivil();
+  }
+
+  /** Pone en la ficha los apellidos y nombres que devolvió el Registro Civil. */
+  usarNombresDelRegistroCivil(): void {
+    const p = this.registroCivil.persona;
+    if (!p || this.esView) { return; }
+
+    this.form.patchValue({ apellidos: p.apellidos, nombres: p.nombres });
+  }
+
+  /**
+   * Mueve el corte entre apellidos y nombres una palabra.
+   *
+   * El Registro Civil devuelve un solo texto: con «PEREZ GUAMAN GUILLERMO»
+   * no hay forma de saber si son dos apellidos y un nombre o al revés. En
+   * vez de pedir que se reescriban los dos campos, se mueve el corte.
+   */
+  moverCorteNombre(hacia: 'apellidos' | 'nombres'): void {
+    if (this.esView) { return; }
+
+    const apellidos = String(this.form.get('apellidos')?.value ?? '');
+    const nombres   = String(this.form.get('nombres')?.value ?? '');
+
+    const movido = hacia === 'apellidos'
+      ? this._nombres.aApellidos(apellidos, nombres)
+      : this._nombres.aNombres(apellidos, nombres);
+
+    this.form.patchValue({ apellidos: movido.apellidos, nombres: movido.nombres });
+  }
+
   /** Escribir el ID y salir del campo también resuelve el vendedor. */
   async cargarVendedorPorId() {
     const id = this.form.get('vendedor_id')?.value;
@@ -543,6 +908,124 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
   }
 
   // ================================================================
+  // GRUPO COMERCIAL (el árbol de ventas.grupos_clientes)
+  // ================================================================
+  //
+  // El grupo NO se aplica por detrás: de él se COPIAN las cuatro condiciones
+  // —forma de pago, cupo, días y descuento— en los campos del cliente, que
+  // son los que mandan al facturar. Así, cambiar un grupo no mueve en
+  // silencio las condiciones de los clientes que ya lo tenían.
+
+  abrirModalGrupos() {
+    if (this.isdisabled) return;
+    const modalRef = this.modalService.open(ListGrupoClienteComponent, { size: 'xl', centered: true, backdrop: 'static' });
+    modalRef.componentInstance.grupoSeleccionadoId = this.form.get('grupo_cliente_id')?.value;
+    modalRef.componentInstance.seleccionado
+      .pipe(takeUntil(this.hastaQueCierre(modalRef)))
+      .subscribe((grupo: any) => {
+        this.form.patchValue({ grupo_cliente_id: grupo.id });
+        this.grupoNombreControl.setValue(grupo.ruta || grupo.nombre || '');
+        this.condicionesGrupo = grupo.condiciones ?? null;
+        this.copiarCondicionesDelGrupo(true);
+      });
+  }
+
+  /**
+   * Pone el grupo predeterminado si la ficha no trae ninguno.
+   *
+   * `conCondiciones` sólo es true al crear: ahí no hay nada que pisar y el
+   * grupo es lo que rellena forma de pago, cupo, días y descuento. En una
+   * ficha que ya existe, el grupo se propone pero sus condiciones se quedan
+   * como estaban.
+   *
+   * Si no hay ninguno marcado como predeterminado, no pasa nada: el campo se
+   * queda vacío y el usuario lo elige con la lupa, que para eso sigue ahí.
+   */
+  private async ponerGrupoPredeterminado(conCondiciones: boolean): Promise<void> {
+    if (this.esView) { return; }
+    if (this.form.get('grupo_cliente_id')?.value) { return; }   // ya trae uno
+
+    try {
+      const res: any = await firstValueFrom(this._grupoClienteService.listGruposClientes(true));
+      if (res?.status !== 'success') { return; }
+
+      const predeterminado = (res.data ?? []).find((g: any) => g?.predeterminado === true);
+      if (!predeterminado) { return; }
+
+      this.form.patchValue({ grupo_cliente_id: predeterminado.id });
+      this.grupoNombreControl.setValue(predeterminado.ruta || predeterminado.nombre || '');
+      this.condicionesGrupo = predeterminado.condiciones ?? null;
+
+      if (conCondiciones) { this.copiarCondicionesDelGrupo(false); }
+    } catch (error) {
+      // Sin grupos o sin red: el campo se queda vacío y se elige a mano
+      console.error('No se pudo leer el grupo predeterminado:', error);
+    }
+  }
+
+  limpiarGrupo() {
+    if (this.isdisabled) return;
+    this.form.patchValue({ grupo_cliente_id: null });
+    this.grupoNombreControl.setValue('');
+    this.condicionesGrupo = null;
+    // Las condiciones que ya estaban escritas se quedan: son del cliente
+  }
+
+  /** Lo que daría el grupo en una condición, o null si nadie la puso. */
+  public delGrupo(campo: string): any {
+    const c = this.condicionesGrupo?.[campo];
+    return c?.efectivo ?? null;
+  }
+
+  /** Para la pista: «Cadenas» pone CREDITO, 20.000,00, 45 días y 12 %. */
+  public get resumenGrupo(): string {
+    if (!this.condicionesGrupo) { return ''; }
+    const num = (v: any) => Number(v).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const partes: string[] = [];
+    if (this.delGrupo('forma_pago') != null)     { partes.push(String(this.delGrupo('forma_pago'))); }
+    if (this.delGrupo('limite_credito') != null) { partes.push('cupo ' + num(this.delGrupo('limite_credito'))); }
+    if (this.delGrupo('dias_credito') != null)   { partes.push(this.delGrupo('dias_credito') + ' días'); }
+    if (this.delGrupo('descuento') != null)      { partes.push(num(this.delGrupo('descuento')) + ' % de descuento'); }
+    return partes.join(' · ');
+  }
+
+  /** ¿Lo que hay escrito es distinto de lo que da el grupo? */
+  public get difiereDelGrupo(): boolean {
+    if (!this.condicionesGrupo) { return false; }
+    const mismo = (campo: string) => {
+      const g = this.delGrupo(campo);
+      if (g == null) { return true; }                 // el grupo no dice nada
+      const v = this.form.get(campo)?.value;
+      return campo === 'forma_pago' ? String(v ?? '') === String(g) : Number(v ?? 0) === Number(g);
+    };
+    return !['forma_pago', 'limite_credito', 'dias_credito', 'descuento'].every(mismo);
+  }
+
+  /**
+   * Copia en los cuatro campos lo que da el grupo.
+   *
+   * Lo que el grupo deja sin decir no se toca: ahí no hay nada que copiar y
+   * poner un cero sería inventarse una condición.
+   */
+  public copiarCondicionesDelGrupo(avisar = false): void {
+    if (this.isdisabled || !this.condicionesGrupo) { return; }
+
+    const valores: any = {};
+    for (const campo of ['forma_pago', 'limite_credito', 'dias_credito', 'descuento']) {
+      const v = this.delGrupo(campo);
+      if (v != null) { valores[campo] = campo === 'forma_pago' ? String(v) : Number(v); }
+    }
+    if (!Object.keys(valores).length) { return; }
+
+    this.form.patchValue(valores);
+    if (avisar) {
+      this._toastr.info(
+        'Se copiaron las condiciones del grupo en la ficha. Desde aquí son del cliente: puedes cambiarlas.',
+        'Condiciones del grupo', { timeOut: 5000 });
+    }
+  }
+
+  // ================================================================
   // CARGA DEL REGISTRO
   // ================================================================
 
@@ -577,6 +1060,7 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
         genero:                m.genero ?? null,
         direccion:             m.direccion ?? '',
         vendedor_id:           m.vendedor_id ?? null,
+        grupo_cliente_id:      m.grupo_cliente_id ?? null,
         forma_pago:            m.forma_pago || 'EFECTIVO',
         limite_credito:        m.limite_credito != null ? Number(m.limite_credito) : 0,
         dias_credito:          m.dias_credito != null ? Number(m.dias_credito) : 0,
@@ -600,6 +1084,25 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
       this.refrescarFotos();
 
       this.vendedorNombreControl.setValue(m.vendedor_nombre || '');
+
+      // Lo que se guardó del SRI la última vez que se consultó. No se vuelve
+      // a preguntar al abrir: es un dato con fecha, y preguntar por cada
+      // ficha que se abre es gastar por gastar. El botón «volver a
+      // consultar» está ahí para cuando haga falta.
+      const sriGuardado = (m as any).sri;
+      if (sriGuardado?.ruc) {
+        this.sri = {
+          estado: 'encontrado',
+          mensaje: sriGuardado.razon_social ?? '',
+          contribuyente: sriGuardado as ContribuyenteSri,
+        };
+        this.ultimaConsultada = String(m.numero_identificacion ?? '').trim();
+      }
+
+      // El grupo, tal como está guardado: NO se copian sus condiciones aquí
+      // —las del cliente son las que valen— y sólo se enseñan como pista.
+      this.grupoNombreControl.setValue(m.grupo_ruta || m.grupo_nombre || '');
+      this.condicionesGrupo = m.grupo_condiciones ?? null;
 
       // Personas de contacto del cliente
       try {
@@ -900,6 +1403,21 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
         } catch (e) {
           console.error('Error al guardar la ubicación:', e);
           this._toastr.warning('El cliente se guardó, pero la dirección del mapa no. Vuelva a abrirlo e inténtelo de nuevo.', 'Dirección', { timeOut: 8000, closeButton: true });
+        }
+      }
+
+      // 3 bis) Lo que dijo el SRI de su RUC, si se consultó en esta ficha.
+      // Lo que vino por el respaldo (el SRI caído) NO se guarda: tiene el
+      // nombre y el resto en blanco, y en la base parecería que el SRI
+      // contestó eso.
+      if (this.sri.contribuyente && !this.sri.contribuyente.degradado) {
+        try {
+          await firstValueFrom(this._clienteService.guardarSri(this.clienteId, this.sri.contribuyente));
+        } catch (e) {
+          // El cliente ya quedó guardado: esto es un dato de apoyo
+          console.error('Error al guardar los datos del SRI:', e);
+          this._toastr.warning('El cliente se guardó, pero los datos del SRI no. Vuelva a abrirlo y consulte otra vez.',
+                               'SRI', { timeOut: 8000, closeButton: true });
         }
       }
 

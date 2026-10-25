@@ -8,6 +8,7 @@ import { AccessResolver } from '../../core/resolvers/access.resolver';
 import { HomeComponent } from './pages/home/home.component';
 import { AllPlanCuentasComponent } from './pages/plan-de-cuentas/allPlanCuentas/allPlanCuentas.component';
 import { AllCuentasCategoriasComponent } from './pages/cuentas-categorias/allCuentasCategorias/allCuentasCategorias.component';
+import { AllCuentasClientesComponent } from './pages/cuentas-clientes/allCuentasClientes/allCuentasClientes.component';
 
 // ============================================================================
 // EL `path` TIENE QUE COINCIDIR CON LA URL DEL MENÚ (seguridad.menus.url).
@@ -25,6 +26,11 @@ const routes: Routes = [
       // Qué cuenta usa cada categoría de productos. El componente es
       // standalone: no hace falta declararlo en el módulo.
       { path: 'allCuentasCategorias', component: AllCuentasCategoriasComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
+
+      // El programa/menú 'allCuentasClientes' está en seguridad.menus con la
+      // url 'contabilidad/allCuentasClientes': el acceso sale del segundo
+      // tramo (-> ALLCUENTASCLIENTES), así que el path se llama igual.
+      { path: 'allCuentasClientes', component: AllCuentasClientesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
 
       // El menú apunta a 'contabilidad/home-contabilidad' (así está en
       // seguridad.menus): sin esta ruta el módulo entero caería en el 404 al

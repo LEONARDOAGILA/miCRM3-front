@@ -31,6 +31,7 @@ import { TabPanelComponent } from "../../components/campos/tabPanel/tabPanel.com
 import { MenuContextualComponent } from "../../components/menuContextual/menuContextual.component";
 import { CampoNgxEditorComponent } from '../../components/campos/campoNgxEditor/campoNgxEditor.component';
 import { ComboComponent } from '../../components/campos/combo/combo.component';
+import { CampoIconoComponent } from '../../components/campos/campoIcono/campoIcono.component';
 
 import { HomeComponent } from './pages/home/home.component';
 
@@ -39,6 +40,14 @@ import { SaveClienteComponent } from './pages/clientes/saveCliente/saveCliente.c
 import { DeleteClienteComponent } from './pages/clientes/deleteCliente/deleteCliente.component';
 import { ListClientesComponent } from './pages/clientes/listClientes/listClientes.component';
 import { PapeleraClientesComponent } from './pages/clientes/papeleraClientes/papeleraClientes.component';
+
+// Grupos de clientes (árbol): las condiciones comerciales que heredan los
+// clientes del grupo. Mismo esquema que las categorías de inventarios.
+import { AllGruposClientesComponent, ButtonAccionGrupoCliente } from './pages/clientes/grupos/allGruposClientes/allGruposClientes.component';
+import { SaveGrupoClienteComponent } from './pages/clientes/grupos/saveGrupoCliente/saveGrupoCliente.component';
+import { DeleteGrupoClienteComponent } from './pages/clientes/grupos/deleteGrupoCliente/deleteGrupoCliente.component';
+import { PapeleraGruposClientesComponent } from './pages/clientes/grupos/papeleraGruposClientes/papeleraGruposClientes.component';
+import { ListGrupoClienteComponent } from './pages/clientes/grupos/listGrupoCliente/listGrupoCliente.component';
 
 // Gestión de clientes: llamadas hechas, programadas y reasignación de cartera
 import { GestionClientesComponent } from './pages/gestion-clientes/gestionClientes.component';
@@ -69,6 +78,13 @@ import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCli
     ListClientesComponent,
     PapeleraClientesComponent,
     ButtonAccionCliente,
+
+    AllGruposClientesComponent,
+    ButtonAccionGrupoCliente,
+    SaveGrupoClienteComponent,
+    DeleteGrupoClienteComponent,
+    PapeleraGruposClientesComponent,
+    ListGrupoClienteComponent,
 
     GestionClientesComponent,
     SaveGestionComponent,
@@ -108,6 +124,7 @@ import { ReasignarClienteComponent } from './pages/gestion-clientes/reasignarCli
     CampoNgxEditorComponent,   // «Qué se habló»: el editor con formato
     ModalArrastrableDirective,
     ComboComponent,
+    CampoIconoComponent,   // el icono del grupo, con su selector
     ActionButtonsModule,
     ModalFooterComponent,
     ModalHeaderComponent,

@@ -45,6 +45,30 @@ export interface ClienteModel {
   /** Empleado que lo atiende (rh.empleados) */
   vendedor_id?: number | null;
   vendedor_nombre?: string | null;
+
+  /* ---- EL GRUPO COMERCIAL (ventas.grupos_clientes) ----
+     De él se COPIAN las cuatro condiciones de abajo al elegirlo en la ficha;
+     lo que manda al facturar son las del cliente. `grupo_condiciones` son
+     las del grupo ya resueltas —las suyas o las que hereda— y sólo sirven de
+     pista y para el botón de «usar las del grupo». */
+  /**
+   * Lo que el SRI dijo del RUC la última vez que se consultó.
+   *
+   * Es una FOTO CON FECHA (`consultado_at`), no la verdad de hoy: el estado
+   * de un RUC cambia. Sólo existe en los clientes con RUC consultado.
+   */
+  sri?: Record<string, any> | null;
+
+  grupo_cliente_id?: number | null;  grupo_nombre?: string | null;
+  /** «Mayoristas > Cadenas»: es lo que identifica al grupo fuera del árbol */
+  grupo_ruta?: string | null;
+  grupo_activo?: boolean | null;
+  grupo_condiciones?: Record<string, {
+    propio?: string | number | null;
+    efectivo?: string | number | null;
+    origen_id?: number | null;
+    origen_etiqueta?: string | null;
+  }> | null;
   /** EFECTIVO, TRANSFERENCIA, TARJETA, CHEQUE, CREDITO */
   forma_pago: string;
   limite_credito?: number | null;

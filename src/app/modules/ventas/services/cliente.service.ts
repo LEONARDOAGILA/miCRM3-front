@@ -148,9 +148,19 @@ export class ClienteService {
   //   ******   UBICACIÓN (la dirección que trae el mapa)   ******  //
 
   /** Los diez campos que devuelve el mapa, en una sola llamada. */
-  guardarUbicacion(clienteId: number, datos: any): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'guardarUbicacion/' + clienteId, datos);
+  /**
+   * Lo que dijo el SRI del RUC de este cliente.
+   *
+   * Va aparte de editCliente, como los contactos y la ubicación: no son
+   * datos que el usuario escriba —vienen tal cual del SRI— y necesitan el
+   * id del cliente, que al crear no existe hasta después de guardar.
+   */
+  guardarSri(clienteId: number, sri: any): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'guardarSri/' + clienteId, { sri });
   }
+
+  guardarUbicacion(clienteId: number, datos: any): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'guardarUbicacion/' + clienteId, datos);  }
 
   /** Una de las dos capturas: la vista del mapa o la de la calle. */
   addFotoUbicacion(data: FormData): Observable<any> {

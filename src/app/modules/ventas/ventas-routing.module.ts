@@ -7,6 +7,7 @@ import { ErrorPage } from '../../pages/error/error';
 
 import { HomeComponent } from './pages/home/home.component';
 import { AllClientesComponent } from './pages/clientes/allClientes/allClientes.component';
+import { AllGruposClientesComponent } from './pages/clientes/grupos/allGruposClientes/allGruposClientes.component';
 import { GestionClientesComponent } from './pages/gestion-clientes/gestionClientes.component';
 import { CatalogoGestionComponent } from './pages/catalogo-gestion/catalogoGestion.component';
 import { AsignacionClienteMasivaComponent } from './pages/gestion-clientes/asignacionClienteMasiva/asignacionClienteMasiva.component';
@@ -21,6 +22,11 @@ const routes: Routes = [
         { path: '', redirectTo: 'home-ventas', pathMatch: 'full' },
 
         { path: 'allClientes', component: AllClientesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+
+        // El programa/menú 'allGruposClientes' está en seguridad.menus con la
+        // url 'ventas/allGruposClientes': el acceso sale del segundo tramo
+        // (-> ALLGRUPOSCLIENTES), así que el path tiene que llamarse igual.
+        { path: 'allGruposClientes', component: AllGruposClientesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'gestionClientes', component: GestionClientesComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
         { path: 'catalogoGestion', component: CatalogoGestionComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 

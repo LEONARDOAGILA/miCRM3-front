@@ -1,0 +1,116 @@
+<!-- ============================================================
+     LAS CUENTAS CONTABLES DE UNA GRUPO (modal)
+
+     Un campo por concepto. Dejar uno en blanco no es un error: es «la que
+     diga el grupo de arriba», y debajo se dice cuál sería.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="'Cuentas contables · ' + (donde || titulo)"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body cuentas-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <p class="cuentas-ayuda">
+      <i class="fa-solid fa-circle-info"></i>
+      Con estas cuentas se asentará lo que pase con los clientes de este grupo.
+      <b>Lo que dejes en blanco se hereda</b> del grupo de arriba, y al final de la
+      configuración por omisión; debajo de cada campo se dice cuál sería. Si aquí un
+      concepto <b>no existe</b> —un grupo al que nunca se le fía—, elige <b>«No aplica»</b>:
+      se queda sin cuenta y deja de heredarse.
+    </p>
+
+    <panel
+      headerClass="bg-gray-800"
+      title="Cuentas del cliente"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="sitemap"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        @if (soloLectura) {
+          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+        }
+        @if (cuantasPropias > 0) {
+          <span class="chip chip-info" title="Cuentas puestas en este grupo; el resto se heredan">
+            <i class="fa-solid fa-thumbtack"></i>
+            {{ cuantasPropias }} {{ cuantasPropias === 1 ? 'propia' : 'propias' }}
+          </span>
+        } @else {
+          <span class="chip chip-muted" title="Todas se heredan">
+            <i class="fa-solid fa-link"></i> Todas heredadas
+          </span>
+        }
+      </div>
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          @for (c of conceptos; track c.concepto) {
+            <div class="cuenta-fila"
+                 [class.es-propia]="esPropia(c) && !esNoAplica(c)"
+                 [class.es-no-aplica]="esNoAplica(c) || heredaNoAplica(c)">
+              <div class="cuenta-fila__campo">
+                <app-combo
+                  [formControlName]="c.concepto"
+                  [items]="itemsPorConcepto[c.concepto]"
+                  [label]="c.nombre"
+                  bindLabel="etiqueta"
+                  bindValue="id">
+                </app-combo>
+              </div>
+
+              <p class="campo-hint">
+                @if (esNoAplica(c)) {
+                  <i class="fa-solid fa-ban"></i>
+                  Aquí este concepto <b>no existe</b>: no se asienta y <b>no se hereda nada</b>.
+                  Si lo vacías con la <b>×</b>, se usará <b>{{ heredada(c) }}</b>.
+                } @else if (esPropia(c)) {
+                  <i class="fa-solid fa-thumbtack"></i>
+                  Puesta en este grupo. Si la vacías con la <b>×</b>, se usará
+                  <b>{{ heredada(c) }}</b>.
+                } @else if (heredaNoAplica(c)) {
+                  <i class="fa-solid fa-ban"></i>
+                  {{ heredada(c) }}: no se asienta este concepto.
+                } @else {
+                  <i class="fa-solid fa-link"></i>
+                  {{ heredada(c) }}
+                }
+              </p>
+
+              @if (c.descripcion) {
+                <p class="campo-hint campo-hint--suave">
+                  <i class="fa-solid fa-circle-info"></i> {{ c.descripcion }}
+                </p>
+              }
+            </div>
+          }
+
+          @if (!conceptos.length) {
+            <p class="text-muted mb-0">No hay conceptos contables configurables.</p>
+          }
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!soloLectura"
+  [textoCerrar]="soloLectura ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

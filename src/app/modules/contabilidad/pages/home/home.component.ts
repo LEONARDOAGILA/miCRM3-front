@@ -60,6 +60,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       color: 'bg-teal',
       descripcion: 'Con qué cuentas se asienta cada categoría de productos: inventario, ingreso, costo, devoluciones y descuentos',
     },
+    {
+      url: 'contabilidad/allCuentasClientes',
+      label: 'CUENTAS POR CLIENTE',
+      icon: 'fa-file-invoice-dollar',
+      color: 'bg-blue',
+      descripcion: 'Con qué cuentas se asienta cada grupo de clientes: cuenta por cobrar, anticipos, intereses por mora e incobrables',
+    },
   ];
 
   constructor(

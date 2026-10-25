@@ -1,0 +1,144 @@
+<!-- ============================================================
+     CUENTAS POR CLIENTE
+
+     El árbol de grupos de clientes con una columna por concepto contable.
+     De aquí sale la cuenta donde queda la deuda al facturar a crédito, y la
+     hereda cada cliente del grupo.
+
+     Lo que un grupo no tiene puesto lo HEREDA del de arriba, y al final de
+     la configuración por omisión: por eso los códigos heredados salen
+     apagados y los propios en negro.
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Contabilidad</a></li>
+  <li class="breadcrumb-item active">Cuentas por Cliente</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       (panelReloaded)="cargar()"
+       (panelExpanded)="ajustarTamanoGrid()"
+       [closeRoute]="'/contabilidad'"
+       icono="sitemap">
+
+  <div class="content-container1 lista-contenido">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <div class="content2">
+      <div class="example-wrapper">
+
+        <!-- ---------- 2a. BARRA DE HERRAMIENTAS ---------- -->
+        <div class="row g-2 m-2 align-items-center lista-barra">
+
+          <div class="col pe-1">
+            <app-campoBusquedaPaginacion
+              [id]="'filter-text-box'"
+              [placeholder]="'Buscar grupo o cuenta'"
+              [iconClass]="'fa fa-search fa-lg'"
+              [containerClass]="'w-100'"
+              [valorInicial]="searchTerm"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiado)="alLimpiarBusqueda()">
+            </app-campoBusquedaPaginacion>
+          </div>
+
+          <!-- Configurar el grupo marcado -->
+          <div class="col-auto ps-0">
+            <button type="button"
+                    class="inactivo btn btn-primary lista-barra__btn"
+                    [title]="selectedRow
+                              ? 'Configurar las cuentas de «' + selectedRow.nombre + '»'
+                              : 'Elige primero un grupo en la lista'"
+                    [disabled]="!selectedRow"
+                    (click)="configurar()">
+              <i class="fa fa-sliders"></i>
+            </button>
+          </div>
+
+          <!-- Las de por omisión: es por donde se empieza -->
+          <div class="col-auto ps-0">
+            <button type="button"
+                    class="btn btn-info lista-barra__btn"
+                    title="Cuentas por omisión: las que usa todo lo que no tenga nada puesto"
+                    (click)="configurarGlobal()">
+              <i class="fa fa-globe"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ---------- 2b. LA REJILLA ---------- -->
+        <div class="cta-grilla-wrap"
+             (contextmenu)="onContextMenuGrilla($event)"
+             (click)="alClicarCabecera($event)">
+          <ag-grid-angular
+            class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
+            [rowData]="filasVisibles"
+            [columnDefs]="columnDefs"
+            [enableCellTextSelection]="true"
+            [defaultColDef]="_appAgGridService.defaultColDef"
+            [sideBar]="_appAgGridService.sideBar"
+            [rowHeight]="_appAgGridService.rowHeight"
+            [headerHeight]="_appAgGridService.headerHeight"
+            [localeText]="_appAgGridService.localeText"
+            [rowSelection]="'single'"
+            [pagination]="false"
+            [animateRows]="true"
+            [cacheQuickFilter]="true"
+            [navigateToNextCell]="navegarConTeclado"
+            [overlayNoRowsTemplate]="'<span>No hay grupos de clientes todavía. Créalos en Ventas › Grupos de Clientes</span>'"
+            (gridReady)="onGridReady($event)"
+            (cellClicked)="onCellClicked($event)">
+          </ag-grid-angular>
+        </div>
+
+        <!-- ---------- 2c. PIE ---------- -->
+        <div class="d-flex justify-content-between align-items-center flex-wrap mt-2 px-2 gap-2">
+
+          <p class="cc-ayuda small text-muted mb-0">
+            <i class="fa fa-circle-info me-1"></i>
+            Los códigos <b>en negro</b> están puestos en ese grupo; los <span class="cc-cuenta cc-cuenta--heredada">apagados</span>
+            se heredan del de arriba o de las de por omisión (<i class="fa fa-globe mx-1"></i>);
+            <span class="cc-na">n/a</span> es que ahí ese concepto no existe. Con <b>+</b> y <b>−</b>
+            se abren y cierran las ramas.
+          </p>
+
+          <div class="pagination-info small text-muted ms-auto">
+            @if (filasVisibles.length < totalRegistros) {
+              <b>{{ filasVisibles.length }}</b> de
+            }
+            <b>{{ totalRegistros }}</b> {{ totalRegistros === 1 ? 'grupo' : 'grupos' }}
+            @if (conPropias > 0) {
+              · <b>{{ conPropias }}</b> con cuentas propias
+            }
+            @if (sinResolver > 0) {
+              <span class="cc-faltan" title="Grupos con algún concepto sin cuenta y sin marcar como «no aplica»">
+                · <i class="fa fa-triangle-exclamation"></i> {{ sinResolver }} sin resolver
+              </span>
+            }
+            @if (hayPlegadas && !searchTerm) {
+              <span class="cta-plegadas" title="Hay ramas contraídas">
+                · <i class="fa fa-minus-square"></i> {{ plegadasCuantas }} contraída{{ plegadasCuantas === 1 ? '' : 's' }}
+              </span>
+            }
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</panel>
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO ================= -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

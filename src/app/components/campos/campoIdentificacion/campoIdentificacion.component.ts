@@ -69,6 +69,11 @@ function revisarCedula(texto: string): FalloIdentificacion | null {
   if (!ValidacionCedulaRucService.esTercerDigitoCedulaValido(Number(texto.charAt(2)))) {
     return { clave: 'tercerDigito', mensaje: 'El tercer dígito no corresponde a una cédula (debe ir de 0 a 6).' };
   }
+  // Antes que el verificador: en 2222222222 el verificador SÍ cuadra, y decir
+  // «el último dígito no coincide» mandaría a revisar lo que está bien.
+  if (!ValidacionCedulaRucService.noEsSecuenciaRepetida(texto)) {
+    return { clave: 'repetida', mensaje: 'Esa cédula no existe: son diez dígitos iguales.' };
+  }
   if (!ValidacionCedulaRucService.esCedulaValida(texto)) {
     return { clave: 'verificador', mensaje: 'El último dígito no coincide: revisa el número.' };
   }
@@ -92,6 +97,9 @@ function revisarRuc(texto: string): FalloIdentificacion | null {
   }
   if (!ValidacionCedulaRucService.esCodigoEstablecimientoValido(texto)) {
     return { clave: 'establecimiento', mensaje: 'Los tres últimos dígitos son el establecimiento: 001 o mayor.' };
+  }
+  if (!ValidacionCedulaRucService.noEsSecuenciaRepetida(texto)) {
+    return { clave: 'repetida', mensaje: 'Ese RUC no existe: la cédula de delante son diez dígitos iguales.' };
   }
   if (!ValidacionCedulaRucService.esRucValido(texto)) {
     return { clave: 'verificador', mensaje: 'El RUC no es válido: revisa el número.' };
@@ -176,6 +184,14 @@ export class CampoIdentificacionComponent implements OnInit, OnChanges, OnDestro
   @Input() mostrarPista: boolean = true;
 
   @Output() valueChange = new EventEmitter<string>();
+
+  /**
+   * Al salir del campo, con el número ya normalizado.
+   *
+   * Para lo que no se puede hacer en cada tecla: ir a buscar al titular de
+   * la cédula, por ejemplo. Quien no lo escuche no nota nada.
+   */
+  @Output() blur = new EventEmitter<string>();
 
   private validador: ValidatorFn | null = null;
   private suscripcion: Subscription | null = null;
@@ -319,6 +335,11 @@ export class CampoIdentificacionComponent implements OnInit, OnChanges, OnDestro
       this.control.setValue(limpio, { emitEvent: false });
     }
     this.valueChange.emit(limpio);
+  }
+
+  /** Salió del campo: se avisa con lo que quedó escrito. */
+  onBlur(): void {
+    this.blur.emit(this.normalizar(String(this.control?.value ?? '')));
   }
 
   /** Quita lo que ese documento no admite y corta por el largo máximo. */

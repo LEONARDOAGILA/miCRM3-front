@@ -73,7 +73,8 @@ export interface ConceptoConfigurado extends ConceptoContable {
 export interface CuentasConfig {
   ambito: AmbitoContable;
   ambito_id: number | null;
-  donde?: { etiqueta?: string; ruta?: string; es_transaccion?: boolean; nivel?: number } | null;
+  donde?: { etiqueta?: string; ruta?: string; es_transaccion?: boolean; nivel?: number;
+            num_clientes?: number } | null;
   conceptos: ConceptoConfigurado[];
 }
 
@@ -90,6 +91,29 @@ export interface CategoriaCuentas {
   num_hijos?: number;
   num_productos?: number;
   /** Cuántas cuentas tiene puestas ella misma (las demás las hereda) */
+  propias: number;
+  /** concepto → la cuenta que usa, venga de donde venga */
+  cuentas: Record<string, CuentaElegida | null>;
+}
+
+/**
+ * Una fila del árbol de GRUPOS DE CLIENTES con sus cuentas ya resueltas.
+ *
+ * Es la hermana de CategoriaCuentas: el mismo árbol, con los conceptos del
+ * cliente —cuenta por cobrar, anticipos, mora, incobrables— y sin el «admite
+ * productos», que aquí no existe: un cliente puede colgar de cualquier nodo.
+ */
+export interface GrupoCuentas {
+  id: number;
+  padre_id?: number | null;
+  orden: number;
+  nivel: number;
+  nombre: string;
+  activo: boolean;
+  num_hijos?: number;
+  /** Clientes que usan este grupo */
+  num_clientes?: number;
+  /** Cuántas cuentas tiene puestas él mismo (las demás las hereda) */
   propias: number;
   /** concepto → la cuenta que usa, venga de donde venga */
   cuentas: Record<string, CuentaElegida | null>;

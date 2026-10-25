@@ -16,6 +16,7 @@
         [attr.data-lpignore]="'true'"
         [attr.data-form-type]="'other'"
         (input)="onInputChange($event.target.value)"
+        (blur)="onBlur()"
         [ngClass]="{
           'is-invalid': mostrarError,
           'is-valid': mostrarValido

@@ -37,6 +37,13 @@ export class CuentaConfigService {
     });
   }
 
+  //   ******   EL ÁRBOL DE GRUPOS DE CLIENTES CON SUS CUENTAS   ******  //
+  grupos(soloActivos: boolean = false): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'grupos', {
+      params: new HttpParams().set('activos', soloActivos ? '1' : '0'),
+    });
+  }
+
   //   ******   LA FICHA: lo propio y lo efectivo   ******  //
   obtener(ambito: AmbitoContable, id?: number | null): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'obtener/' + ambito + (id != null ? '/' + id : ''));

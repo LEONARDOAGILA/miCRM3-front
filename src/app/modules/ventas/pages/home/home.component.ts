@@ -50,6 +50,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       descripcion: 'Ficha del cliente: identificación, contactos, dirección en el mapa y condiciones de crédito'
     },
     {
+      url: 'ventas/allGruposClientes',
+      label: 'GRUPOS DE CLIENTES',
+      icon: 'fa-sitemap',
+      color: 'bg-indigo',
+      descripcion: 'Árbol de grupos comerciales: forma de pago, cupo, días de crédito y descuento que heredan sus clientes'
+    },
+    {
       url: 'ventas/gestionClientes',
       label: 'GESTIÓN DE CLIENTES',
       icon: 'fa-headset',

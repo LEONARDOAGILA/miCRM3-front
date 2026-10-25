@@ -1,0 +1,283 @@
+<!-- ============================================================
+     GUARDAR GRUPO (modal)
+
+     Igual que saveCargo, con una diferencia: el PADRE no se elige aquí.
+     Al crear llega decidido desde la rejilla y al modificar no se toca;
+     mover una rama se hace arrastrando, que es donde se ve dónde cae.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body grupo-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- ---------- Dónde va ---------- -->
+    <div class="grp-ubicacion">
+      <i class="fa-solid fa-sitemap grp-ubicacion__icono"></i>
+      <div>
+        <span class="grp-ubicacion__label">Cuelga de</span>
+        <span class="grp-ubicacion__valor">{{ dondeVa }}</span>
+      </div>
+      <span class="chip chip-muted ms-auto" title="Profundidad en el árbol (0 a 3)">
+        Nivel {{ nivelResultante }}
+      </span>
+    </div>
+
+    @if (accion === 'edit') {
+      <p class="campo-hint mb-3">
+        <i class="fa-solid fa-circle-info"></i>
+        Para cambiarlo de rama, arrástralo en la lista: ahí se ve dónde va a caer.
+      </p>
+    }
+
+    <!-- ---------- Datos del grupo ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos del grupo"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="sitemap"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        @if (esView) {
+          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+        }
+        @if (!esNuevo && numHijos > 0) {
+          <span class="chip chip-info" title="Subgrupos directos">
+            <i class="fa-solid fa-diagram-project"></i> {{ numHijos }} {{ numHijos === 1 ? 'subgrupo' : 'subgrupos' }}
+          </span>
+        }
+        @if (!esNuevo && numClientes > 0) {
+          <span class="chip chip-info" title="Clientes que usan este grupo; con clientes dentro no se puede eliminar">
+            <i class="fa-solid fa-user-group"></i> {{ numClientes }} {{ numClientes === 1 ? 'cliente' : 'clientes' }}
+          </span>
+        }
+      </div>
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <!-- Nombre -->
+            <div class="col-12 col-md-7">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="NOMBRE DEL GRUPO"
+                placeholder="Mayoristas, Cadenas, Corporativos…"
+                [maxLength]="100"
+                [minLength]="2"
+                [trimEspacios]="true">
+              </app-campoTexto>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                No se puede repetir entre los grupos de la misma rama; en otra rama sí.
+              </p>
+            </div>
+
+            <!-- Estado -->
+            <div class="col-12 col-md-5">
+              <div class="estado-grupo" [class.is-on]="ctrlActivo.value">
+                <span class="estado-grupo__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-grupo__text">
+                  <span class="estado-grupo__label">Estado</span>
+                  <span class="estado-grupo__hint">
+                    {{ ctrlActivo.value ? 'Se ofrece en la ficha del cliente' : 'No se ofrece en la ficha del cliente' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-grupo__switch"
+                  [control]="ctrlActivo"
+                  [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
+                  [id]="'ck-grupo-activo'">
+                </app-checkbox>
+              </div>
+              @if (!esNuevo && numHijos > 0) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  Desactivarlo no desactiva sus {{ numHijos }} subgrupos.
+                </p>
+              }
+            </div>
+
+            <!-- Icono -->
+            <div class="col-12 col-md-6">
+              <label class="form-label grp-etiqueta">ICONO</label>
+              <!-- No lleva [disabled]: el control ya va deshabilitado desde el
+                   FormGroup cuando es solo lectura, y junto a formControlName
+                   Angular avisa por consola de que no se use. -->
+              <app-campoIcono
+                formControlName="icono"
+                placeholder="fa-snowflake">
+              </app-campoIcono>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                Opcional. Ayuda a reconocer la rama de un vistazo en la lista.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Las cuatro condiciones comerciales ----------
+         ES LO QUE DE VERDAD APORTA EL GRUPO. Las cuatro se dejan en blanco
+         para heredar del grupo de arriba, y debajo de cada una se dice qué
+         saldría si se deja así: sin eso, nadie sabe qué está heredando.
+         Un 0 escrito a mano es un 0 de verdad («sin descuento»), que no es
+         lo mismo que dejarlo en blanco. -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Condiciones comerciales"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="dollar"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        <span class="chip chip-muted" title="Lo que se deje vacío lo pone el grupo de arriba">
+          <i class="fa-solid fa-turn-up"></i> Vacío = lo hereda
+        </span>
+      </div>
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <!-- Forma de pago -->
+            <div class="col-12 col-md-6">
+              <app-combo
+                formControlName="forma_pago"
+                [items]="formasPago"
+                [label]="'Forma de pago'"
+                bindLabel="name"
+                bindValue="id">
+              </app-combo>
+              @if (!form.controls['forma_pago'].value && heredado['forma_pago']) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-turn-up"></i>
+                  Heredará <b>{{ heredado['forma_pago'].valor }}</b> ({{ heredado['forma_pago'].de }}).
+                </p>
+              } @else if (!form.controls['forma_pago'].value) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Vacía: la pone el grupo de arriba, y si nadie la pone, ninguna.
+                </p>
+              }
+            </div>
+
+            <!-- Días de crédito -->
+            <div class="col-12 col-md-6">
+              <app-campoNumeroEntero
+                [control]="form.controls['dias_credito']"
+                label="DÍAS DE CRÉDITO"
+                placeholder="En blanco para heredar"
+                [maxLength]="4">
+              </app-campoNumeroEntero>
+              @if (form.controls['dias_credito'].value === '' && heredado['dias_credito']) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-turn-up"></i>
+                  Heredará <b>{{ heredado['dias_credito'].valor }}</b> ({{ heredado['dias_credito'].de }}).
+                </p>
+              }
+            </div>
+
+            <!-- Cupo de crédito -->
+            <div class="col-12 col-md-6">
+              <app-campoTexto
+                [control]="form.controls['limite_credito']"
+                label="CUPO DE CRÉDITO"
+                placeholder="En blanco para heredar"
+                type="number"
+                [maxLength]="12"
+                icono="fa-dollar-sign">
+              </app-campoTexto>
+              @if (form.controls['limite_credito'].value === '' && heredado['limite_credito']) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-turn-up"></i>
+                  Heredará <b>{{ heredado['limite_credito'].valor }}</b> ({{ heredado['limite_credito'].de }}).
+                </p>
+              }
+            </div>
+
+            <!-- Descuento -->
+            <div class="col-12 col-md-6">
+              <app-campoTexto
+                [control]="form.controls['descuento']"
+                label="DESCUENTO (%)"
+                placeholder="En blanco para heredar"
+                type="number"
+                [maxLength]="6"
+                icono="fa-percent">
+              </app-campoTexto>
+              @if (form.controls['descuento'].value === '' && heredado['descuento']) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-turn-up"></i>
+                  Heredará <b>{{ heredado['descuento'].valor }} %</b> ({{ heredado['descuento'].de }}).
+                </p>
+              } @else if (form.controls['descuento'].value === 0 || form.controls['descuento'].value === '0') {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Un 0 es «sin descuento», que no es lo mismo que dejarlo en blanco.
+                </p>
+              }
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Descripción ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Descripción"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="editar"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <app-campoTextoArea
+            [control]="form.controls['descripcion']"
+            label="DESCRIPCIÓN"
+            placeholder="Qué entra en este grupo y qué no (opcional)"
+            [maxLength]="2000"
+            [alto]="110">
+          </app-campoTextoArea>
+
+          @if (!esNuevo && grupoModel) {
+            <div class="grupo-meta">
+              <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ grupoModel.created_at }} por <b>{{ grupoModel.created_by || '—' }}</b></span>
+              <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ grupoModel.updated_at }} por <b>{{ grupoModel.updated_by || '—' }}</b></span>
+            </div>
+          }
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

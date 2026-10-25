@@ -271,10 +271,128 @@
                           [control]="form.controls['numero_identificacion']"
                           [tipoControl]="ctrlTipoIdentificacion"
                           label="Nº identificación"
-                          [maxLength]="20">
+                          [maxLength]="20"
+                          (blur)="alSalirDeIdentificacion()">
                         </app-campoIdentificacion>
                       </div>
                     </div>
+
+                    <!-- LO QUE DICE EL SRI, siempre que el documento sea un
+                         RUC —también el de una persona natural—. El nombre ya
+                         está puesto abajo; aquí se avisa de lo que no se ve en
+                         él: si el RUC está suspendido o marcado como fantasma. -->
+                    @if (sri.estado !== 'quieto') {
+                      @if (sri.estado === 'consultando') {
+                        <p class="campo-hint">
+                          <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                          {{ sri.mensaje }}
+                        </p>
+                      } @else if (sri.estado === 'sin-datos') {
+                        <p class="campo-hint">
+                          <i class="fa-solid fa-circle-info"></i>
+                          {{ sri.mensaje }}
+                          <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                  (click)="consultarSri(true)">
+                            reintentar
+                          </button>
+                        </p>
+                      } @else {
+                        <p class="campo-hint">
+                          <i class="fa-solid fa-building-columns"></i>
+                          @if (sri.contribuyente?.degradado) {
+                            Registro Civil: <b>{{ sri.mensaje }}</b>
+                          } @else {
+                            SRI: <b>{{ sri.mensaje }}</b>
+                          }
+                          @if (sri.contribuyente?.tipo_contribuyente) {
+                            · {{ sri.contribuyente.tipo_contribuyente }}
+                          }
+                          @if (sri.contribuyente?.regimen) {
+                            · {{ sri.contribuyente.regimen }}
+                          }
+                        </p>
+                        @if (sri.contribuyente?.degradado) {
+                          <p class="campo-hint">
+                            <i class="fa-solid fa-circle-info"></i>
+                            El SRI no contestó: esto es sólo el nombre, sin estado ni régimen, y
+                            <b>no se guardará</b>.
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                    (click)="consultarSri(true)">
+                              volver a intentarlo
+                            </button>
+                          </p>
+                        }
+                        @if (avisoSri) {
+                          <p class="campo-hint text-danger">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            {{ avisoSri }}
+                          </p>
+                        }
+                        <!-- El SRI manda el nombre de una pieza: si el corte
+                             entre apellidos y nombres quedó dudoso, se dice y
+                             se deja moverlo, igual que con la cédula. -->
+                        @if (!esEmpresa && sri.contribuyente?.nombre_aviso) {
+                          <p class="campo-hint text-warning-emphasis">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            {{ sri.contribuyente.nombre_aviso }}
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                    title="La última palabra de los apellidos pasa a los nombres"
+                                    (click)="moverCorteNombre('nombres')">
+                              ← a nombres
+                            </button>
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                    title="La primera palabra de los nombres pasa a los apellidos"
+                                    (click)="moverCorteNombre('apellidos')">
+                              a apellidos →
+                            </button>
+                          </p>
+                        }
+                      }
+                    }
+
+                    <!-- LO QUE DICE EL REGISTRO CIVIL (sólo con cédula). Es
+                         una ayuda: si no contesta o no encuentra la cédula,
+                         aquí se dice y los nombres se escriben a mano. -->
+                    @if (registroCivil.estado !== 'quieto') {
+                      @if (registroCivil.estado === 'consultando') {
+                        <p class="campo-hint">
+                          <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                          {{ registroCivil.mensaje }}
+                        </p>
+                      } @else if (registroCivil.estado === 'sin-datos') {
+                        <p class="campo-hint">
+                          <i class="fa-solid fa-circle-info"></i>
+                          {{ registroCivil.mensaje }}
+                          <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                  (click)="consultarRegistroCivil(true)">
+                            reintentar
+                          </button>
+                        </p>
+                      } @else {
+                        <!-- Los nombres ya están puestos abajo: esto sólo dice
+                             de dónde salieron. -->
+                        <p class="campo-hint">
+                          <i class="fa-solid fa-id-card"></i>
+                          Registro Civil: <b>{{ registroCivil.mensaje }}</b>
+                        </p>
+                        @if (registroCivil.persona && !registroCivil.persona.seguro) {
+                          <p class="campo-hint text-warning-emphasis">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            {{ registroCivil.persona.aviso }}
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                    title="La última palabra de los apellidos pasa a los nombres"
+                                    (click)="moverCorteNombre('nombres')">
+                              ← a nombres
+                            </button>
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                    title="La primera palabra de los nombres pasa a los apellidos"
+                                    (click)="moverCorteNombre('apellidos')">
+                              a apellidos →
+                            </button>
+                          </p>
+                        }
+                      }
+                    }
                   </div>
 
                   @if (esEmpresa) {
@@ -297,6 +415,18 @@
                         [trimEspacios]="true">
                       </app-campoTexto>
                     </div>
+
+                    <!-- Lo calcula la base (columna generada): aquí se ve, no
+                         se escribe. Es el nombre con el que el cliente sale
+                         en las listas y en las búsquedas. -->
+                    <div class="campo">
+                      <app-campoTexto
+                        [control]="nombreCompletoControl"
+                        label="Nombre completo (lo calcula el sistema)"
+                        placeholder="Sale de la razón social">
+                      </app-campoTexto>
+                    </div>
+
                   } @else {
                     <div class="campo">
                       <app-campoTexto
@@ -315,6 +445,17 @@
                         placeholder="Nombres"
                         [maxLength]="100"
                         [trimEspacios]="true">
+                      </app-campoTexto>
+                    </div>
+
+                    <!-- Lo calcula la base (columna generada): aquí se ve, no
+                         se escribe. Primero los apellidos, que es como se
+                         busca y como se ordenan las listas. -->
+                    <div class="campo">
+                      <app-campoTexto
+                        [control]="nombreCompletoControl"
+                        label="Nombre completo (lo calcula el sistema)"
+                        placeholder="Apellidos y después nombres">
                       </app-campoTexto>
                     </div>
 
@@ -340,6 +481,100 @@
                       </div>
                     </div>
                   }
+
+                  <!-- LO QUE DICE EL SRI DE ESTE RUC. Vale para empresas
+                       y para personas naturales con RUC: el régimen y «lleva
+                       contabilidad» son los que se imprimen en la factura
+                       electrónica, y el estado dice si se le puede facturar.
+                       Por eso está fuera del bloque de las empresas.
+                       (comentario original):
+                         No son campos: vienen del SRI y se guardan con el
+                         cliente tal cual. El régimen y «obligado a llevar
+                         contabilidad» son los que se imprimen en la factura
+                         electrónica; el estado es lo que dice si se le puede
+                         facturar. Lleva la fecha porque es una foto: el
+                         estado de un RUC cambia. -->
+                    @if (sri.contribuyente && !sri.contribuyente.degradado) {
+                      <div class="campo sri-ficha">
+                        <div class="sri-ficha__titulo">
+                          <i class="fa-solid fa-building-columns"></i>
+                          <span>Datos del SRI</span>
+                          @if (sri.contribuyente.estado) {
+                            <span class="chip"
+                                  [class.chip-info]="sri.contribuyente.activo"
+                                  [class.chip-muted]="!sri.contribuyente.activo">
+                              {{ sri.contribuyente.estado }}
+                            </span>
+                          }
+                          @if (!esView) {
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-auto align-baseline"
+                                    title="Volver a preguntarle al SRI"
+                                    (click)="consultarSri(true)">
+                              volver a consultar
+                            </button>
+                          }
+                        </div>
+
+                        <dl class="sri-ficha__datos">
+                          @if (sri.contribuyente.tipo_contribuyente) {
+                            <dt>Tipo</dt><dd>{{ sri.contribuyente.tipo_contribuyente }}</dd>
+                          }
+                          @if (sri.contribuyente.regimen) {
+                            <dt>Régimen</dt>
+                            <dd>
+                              {{ sri.contribuyente.regimen }}
+                              @if (sri.contribuyente.categoria) { · {{ sri.contribuyente.categoria }} }
+                            </dd>
+                          }
+                          @if (sri.contribuyente.actividad) {
+                            <dt>Actividad</dt><dd>{{ sri.contribuyente.actividad }}</dd>
+                          }
+                          @if (sri.contribuyente.representante_nombre) {
+                            <dt>Representante</dt>
+                            <dd>
+                              {{ sri.contribuyente.representante_nombre }}
+                              @if (sri.contribuyente.representante_identificacion) {
+                                ({{ sri.contribuyente.representante_identificacion }})
+                              }
+                            </dd>
+                          }
+                          @if (sri.contribuyente.fecha_inicio) {
+                            <dt>Inicio de actividades</dt><dd>{{ sri.contribuyente.fecha_inicio }}</dd>
+                          }
+                          @if (sri.contribuyente.fecha_cese) {
+                            <dt>Cese</dt><dd>{{ sri.contribuyente.fecha_cese }}</dd>
+                          }
+                        </dl>
+
+                        <div class="sri-ficha__banderas">
+                          @if (sri.contribuyente.obligado_contabilidad) {
+                            <span class="chip chip-info" title="Lo lleva la factura electrónica">
+                              <i class="fa-solid fa-book"></i> Lleva contabilidad
+                            </span>
+                          }
+                          @if (sri.contribuyente.agente_retencion) {
+                            <span class="chip chip-info"><i class="fa-solid fa-scissors"></i> Agente de retención</span>
+                          }
+                          @if (sri.contribuyente.contribuyente_especial) {
+                            <span class="chip chip-info"><i class="fa-solid fa-star"></i> Contribuyente especial</span>
+                          }
+                          @if (sri.contribuyente.fantasma) {
+                            <span class="chip chip-peligro"><i class="fa-solid fa-ghost"></i> Contribuyente fantasma</span>
+                          }
+                          @if (sri.contribuyente.transacciones_inexistentes) {
+                            <span class="chip chip-peligro"><i class="fa-solid fa-triangle-exclamation"></i> Transacciones inexistentes</span>
+                          }
+                        </div>
+
+                        @if (sri.contribuyente.consultado_at) {
+                          <p class="campo-hint mb-0">
+                            <i class="fa-regular fa-clock"></i>
+                            Consultado el {{ sri.contribuyente.consultado_at }}
+                            @if (sri.contribuyente.consultado_por) { por {{ sri.contribuyente.consultado_por }} }
+                          </p>
+                        }
+                      </div>
+                    }
 
                 </div>
               </ng-container>
@@ -387,6 +622,55 @@
                         </div>
                       }
                     </div>
+                  </div>
+
+                  <!-- GRUPO COMERCIAL. De él se copian las cuatro
+                       condiciones de abajo; lo que queda guardado son los
+                       campos del cliente, no el grupo. -->
+                  <div class="campo campo-lookup">
+                    <div class="row g-2 flex-nowrap">
+                      <div class="col">
+                        <app-campoTexto
+                          [control]="grupoNombreControl"
+                          label="Grupo comercial"
+                          placeholder="Elígelo con la lupa">
+                        </app-campoTexto>
+                      </div>
+                      @if (!esView) {
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-lookup" (click)="abrirModalGrupos()" title="Buscar grupo de clientes">
+                            <i class="fa fa-sitemap"></i>
+                          </button>
+                        </div>
+                        @if (grupoNombreControl.value) {
+                          <div class="col-auto">
+                            <button type="button" class="btn btn-lookup" (click)="limpiarGrupo()" title="Quitar el grupo">
+                              <i class="fa fa-times"></i>
+                            </button>
+                          </div>
+                        }
+                      }
+                    </div>
+
+                    @if (!form.controls['grupo_cliente_id'].value) {
+                      <p class="campo-hint text-danger">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        El grupo es <b>obligatorio</b>: elígelo con la lupa.
+                      </p>
+                    }
+
+                    @if (condicionesGrupo) {
+                      <p class="campo-hint">
+                        <i class="fa-solid fa-turn-up"></i>
+                        El grupo pone: <b>{{ resumenGrupo }}</b>.
+                        @if (difiereDelGrupo && !esView) {
+                          <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                  (click)="copiarCondicionesDelGrupo(true)">
+                            usar las del grupo
+                          </button>
+                        }
+                      </p>
+                    }
                   </div>
 
                   <div class="campo campo-lookup">
