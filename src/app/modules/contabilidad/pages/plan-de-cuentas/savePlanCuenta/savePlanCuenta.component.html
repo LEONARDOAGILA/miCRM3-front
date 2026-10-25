@@ -1,0 +1,290 @@
+<!-- ============================================================
+     GUARDAR CUENTA CONTABLE (modal)
+
+     Igual que saveCategoria, con lo que una cuenta tiene y una categoría no:
+     el CÓDIGO —que se propone solo—, el TIPO —que se hereda de la rama— y la
+     NATURALEZA —que viene del tipo pero se puede cambiar, porque las cuentas
+     de valuación van al revés—.
+
+     El PADRE no se elige aquí: al crear llega decidido desde la rejilla y al
+     modificar no se toca; mover una rama se hace arrastrando, que es donde se
+     ve dónde cae.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body cuenta-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- ---------- Dónde va ---------- -->
+    <div class="cta-ubicacion">
+      <i class="fa-solid fa-sitemap cta-ubicacion__icono"></i>
+      <div>
+        <span class="cta-ubicacion__label">Cuelga de</span>
+        <span class="cta-ubicacion__valor">{{ dondeVa }}</span>
+      </div>
+
+      <!-- El tipo de la rama, cuando no se puede elegir: se dice aquí, junto
+           al padre del que viene, y no como un campo apagado más abajo. -->
+      @if (tipoHeredado) {
+        <span class="cta-tipo-heredado" title="El tipo es el de la rama y no se cambia en una subcuenta">
+          <i class="fa-solid fa-link"></i> {{ tipoHeredado }}
+        </span>
+      }
+
+      <span class="chip chip-muted ms-auto" title="Profundidad en el árbol; el plan de cuentas no tiene tope de niveles">
+        Nivel {{ nivelResultante }}
+      </span>
+    </div>
+
+    @if (accion === 'edit') {
+      <p class="campo-hint mb-3">
+        <i class="fa-solid fa-circle-info"></i>
+        Para cambiarla de rama, arrástrala en la lista: ahí se ve dónde va a caer.
+      </p>
+    }
+
+    <!-- ---------- Datos de la cuenta ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos de la cuenta"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="sitemap"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        @if (esView) {
+          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+        }
+        @if (!esNuevo && numHijos > 0) {
+          <span class="chip chip-info" title="Subcuentas directas">
+            <i class="fa-solid fa-diagram-project"></i> {{ numHijos }} {{ numHijos === 1 ? 'subcuenta' : 'subcuentas' }}
+          </span>
+        }
+        @if (ctrlEsMovimiento.value) {
+          <span class="chip chip-info" title="Recibe asientos">
+            <i class="fa-solid fa-pen-to-square"></i> De movimiento
+          </span>
+        } @else {
+          <span class="chip chip-muted" title="Sólo agrupa: los asientos van en sus subcuentas">
+            <i class="fa-solid fa-layer-group"></i> De grupo
+          </span>
+        }
+      </div>
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <!-- Código -->
+            <div class="col-12 col-md-4">
+              <div class="campo-codigo">
+                <app-campoTexto
+                  [control]="form.controls['codigo']"
+                  label="CÓDIGO"
+                  placeholder="1.1.01.001"
+                  [maxLength]="30"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+              </div>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                @if (esNuevo) {
+                  Propuesto a partir del padre y de la última hermana. Único en todo el plan.
+                } @else {
+                  Único en todo el plan; cambiarlo no mueve la cuenta de sitio.
+                }
+              </p>
+            </div>
+
+            <!-- Nombre -->
+            <div class="col-12 col-md-8">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="NOMBRE DE LA CUENTA"
+                placeholder="Caja general, Bancos, Sueldos por pagar…"
+                [maxLength]="150"
+                [minLength]="2"
+                [trimEspacios]="true">
+              </app-campoTexto>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                No se puede repetir entre las cuentas de la misma rama; en otra rama sí.
+              </p>
+            </div>
+
+            <!-- Tipo: sólo se elige en una cuenta raíz -->
+            <div class="col-12 col-md-6">
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="tipo"
+                  [items]="tipos"
+                  [label]="'TIPO DE CUENTA'"
+                  bindLabel="etiqueta"
+                  bindValue="valor"
+                  [required]="true">
+                </app-combo>
+              </div>
+              <p class="campo-hint">
+                @if (puedeElegirTipo) {
+                  <i class="fa-solid fa-circle-info"></i>
+                  Decide en qué informe sale: activo, pasivo y patrimonio al balance;
+                  ingresos, costos y gastos al estado de resultados.
+                  @if (!esNuevo && numHijos > 0) {
+                    Al cambiarlo, baja también a sus {{ numHijos }}
+                    {{ numHijos === 1 ? 'subcuenta' : 'subcuentas' }}.
+                  }
+                } @else {
+                  <i class="fa-solid fa-lock"></i>
+                  Es el tipo de la rama. Para cambiarlo, hágalo en la cuenta de primer
+                  nivel: desde ahí baja a todas sus subcuentas.
+                }
+              </p>
+            </div>
+
+            <!-- Naturaleza: viene del tipo, pero se puede cambiar -->
+            <div class="col-12 col-md-6">
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="naturaleza"
+                  [items]="naturalezas"
+                  [label]="'NATURALEZA'"
+                  bindLabel="etiqueta"
+                  bindValue="valor"
+                  [required]="true">
+                </app-combo>
+              </div>
+              <p class="campo-hint">
+                @if (naturalezaAlRevesDelTipo) {
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  Al revés de lo habitual en una cuenta de {{ etiquetaTipo }}. Es lo correcto
+                  en una cuenta de valuación —«(-) Depreciación acumulada», «(-) Provisión
+                  cuentas incobrables»—, que resta de su grupo.
+                } @else {
+                  <i class="fa-solid fa-circle-info"></i>
+                  De qué lado aumenta. Viene propuesta por el tipo; cámbiela en las
+                  cuentas de valuación, que restan de su grupo y van al revés.
+                }
+              </p>
+            </div>
+
+            <!-- Estado -->
+            <div class="col-12 col-md-6">
+              <div class="estado-cuenta" [class.is-on]="ctrlActivo.value">
+                <span class="estado-cuenta__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-cuenta__text">
+                  <span class="estado-cuenta__label">Estado</span>
+                  <span class="estado-cuenta__hint">
+                    {{ ctrlActivo.value ? 'Se ofrece al registrar un asiento' : 'No se ofrece al registrar un asiento' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-cuenta__switch"
+                  [control]="ctrlActivo"
+                  [label]="ctrlActivo.value ? 'Activa' : 'Inactiva'"
+                  [id]="'ck-cuenta-activo'">
+                </app-checkbox>
+              </div>
+              @if (!esNuevo && numHijos > 0) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  Desactivarla no desactiva sus {{ numHijos }}
+                  {{ numHijos === 1 ? 'subcuenta' : 'subcuentas' }}.
+                </p>
+              }
+            </div>
+
+            <!-- Recibe asientos (es_movimiento).
+                 Las de arriba del árbol agrupan: el saldo está en las hojas y
+                 contarlo también en la madre lo duplicaría. Con esto apagado
+                 la cuenta sigue en el plan pero no sale en el selector de
+                 cuentas de un asiento. -->
+            <div class="col-12 col-md-6">
+              <div class="estado-cuenta" [class.is-on]="ctrlEsMovimiento.value">
+                <span class="estado-cuenta__icon"><i class="fa-solid fa-pen-to-square"></i></span>
+                <div class="estado-cuenta__text">
+                  <span class="estado-cuenta__label">Recibe asientos</span>
+                  <span class="estado-cuenta__hint">
+                    {{ ctrlEsMovimiento.value
+                        ? 'Se puede elegir al registrar un asiento'
+                        : 'Sólo agrupa: el saldo sale de sus subcuentas' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-cuenta__switch"
+                  [control]="ctrlEsMovimiento"
+                  [label]="ctrlEsMovimiento.value ? 'Sí' : 'No'"
+                  [id]="'ck-cuenta-movimiento'">
+                </app-checkbox>
+              </div>
+              @if (!esNuevo && numHijos > 0) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-lock"></i>
+                  No se puede marcar: tiene {{ numHijos }}
+                  {{ numHijos === 1 ? 'subcuenta' : 'subcuentas' }} y los asientos van en ellas.
+                </p>
+              } @else if (ctrlEsMovimiento.value) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Mientras reciba asientos <b>no se le podrán colgar subcuentas</b>: su saldo es suyo.
+                  Si va a ser una cuenta de grupo, quítalo aquí.
+                </p>
+              }
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Descripción ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Descripción"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="editar"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <app-campoTextoArea
+            [control]="form.controls['descripcion']"
+            label="DESCRIPCIÓN"
+            placeholder="Qué se registra en esta cuenta y qué no (opcional)"
+            [maxLength]="2000"
+            [alto]="110">
+          </app-campoTextoArea>
+
+          @if (!esNuevo && planCuentaModel) {
+            <div class="cuenta-meta">
+              <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ planCuentaModel.created_at }} por <b>{{ planCuentaModel.created_by || '—' }}</b></span>
+              <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ planCuentaModel.updated_at }} por <b>{{ planCuentaModel.updated_by || '—' }}</b></span>
+            </div>
+          }
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

@@ -527,3 +527,19 @@
 @media (prefers-reduced-motion: reduce) {
   .dia-fila { transition: none; }
 }
+
+/* ============================================================
+   LOS CHIPS DE LA CABECERA DEL PANEL
+   La cabecera es `bg-gray-800`: oscura en los DOS temas. Por eso sus
+   colores no pueden salir de las variables del tema —en claro son gris y
+   azul oscuros y se pierden sobre ese fondo—, y van fijos claros.
+   ============================================================ */
+.panel-acciones .chip-muted {
+  background-color: rgba(255, 255, 255, .16);
+  color: rgba(255, 255, 255, .88);
+}
+
+.panel-acciones .chip-info {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .38);
+  color: #fff;
+}

@@ -1,0 +1,194 @@
+<!-- ============================================================
+     ÁRBOL DE CUENTAS
+
+     Estructura:
+       1. Miga de pan
+       2. <panel> del tema con imprimir / Excel / CSV / recargar / expandir
+          2a. Barra: buscador, nueva, nueva subcuenta, auditoría
+          2b. Rejilla ag-Grid (el árbol entero, sin paginar)
+          2c. Pie con el total y la ayuda del arrastre
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Contabilidad</a></li>
+  <li class="breadcrumb-item active">Plan de Cuentas</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       [ButtonPrint]="accesoModel?.reporte === true"
+       [ButtonExportExcel]="accesoModel?.reporte === true"
+       [ButtonExportCsv]="accesoModel?.reporte === true"
+       (panelReloaded)="allPlanCuentas()"
+       (panelExpanded)="ajustarTamanoGrid()"
+       (panelPrinted)="printPdf()"
+       (panelExportExceled)="exportExcel()"
+       (panelExportCsved)="exportCsv()"
+       [closeRoute]="'/contabilidad'"
+       icono="sitemap">
+
+  <div class="content-container1 lista-contenido">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <div class="content2">
+      <div class="example-wrapper">
+
+        <!-- ---------- 2a. BARRA DE HERRAMIENTAS ---------- -->
+        <div class="row g-2 m-2 align-items-center lista-barra">
+
+          <!-- El buscador filtra en el navegador (quickFilter): son pocas
+               filas y no hace falta volver al servidor. -->
+          <div class="col pe-1">
+            <app-campoBusquedaPaginacion
+              [id]="'filter-text-box'"
+              [placeholder]="'Buscar por código, cuenta o descripción'"
+              [iconClass]="'fa fa-search fa-lg'"
+              [containerClass]="'w-100'"
+              [valorInicial]="searchTerm"
+              [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiado)="alLimpiarBusqueda()"
+              (limpiarFiltros)="clearAllFilters()">
+            </app-campoBusquedaPaginacion>
+          </div>
+
+          <!-- Nueva cuenta raíz -->
+          <div class="col-auto ps-0">
+            <button type="button"
+                    class="inactivo btn btn-primary lista-barra__btn"
+                    title="Nueva cuenta de primer nivel"
+                    [disabled]="accesoModel?.crear === false"
+                    (click)="addPlanCuenta()">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+
+          <!-- Nueva subcuenta de la fila marcada -->
+          <div class="col-auto ps-0">
+            <button type="button"
+                    class="inactivo btn btn-info lista-barra__btn"
+                    [title]="!selectedRow
+                              ? 'Elige primero una cuenta en la lista'
+                              : (selectedRow.es_movimiento
+                                  ? '«' + selectedRow.nombre + '» recibe asientos: quítale «recibe asientos» en su ficha para poder colgarle subcuentas'
+                                  : 'Nueva subcuenta dentro de «' + selectedRow.nombre + '»')"
+                    [disabled]="accesoModel?.crear === false || !selectedRow || selectedRow.es_movimiento === true"
+                    (click)="addSubcuenta()">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+
+          <!-- Contraer / desplegar todo vive en la cabecera de la columna
+               «Cuenta» del ag-grid (ver cabeceraArbol). -->
+
+          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
+          @if (accesoModel?.papelera === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-outline-secondary lista-barra__btn"
+                      title="Papelera de reciclaje de cuentas"
+                      (click)="abrirPapelera()">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          }
+
+          <!-- Auditoría de la fila seleccionada -->
+          @if (accesoModel?.auditar === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-warning lista-barra__btn position-relative"
+                      title="Ver historial de auditoría del registro seleccionado"
+                      [disabled]="!selectedRow"
+                      (click)="auditoria()">
+                <i class="fa fa-user-secret"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
+                  <i class="fa fa-search"></i>
+                </span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- ---------- 2b. LA REJILLA ----------
+             Arrastrar y soltar: el asa ⋮⋮ de la columna Cuenta inicia el
+             arrastre; aquí se resuelve dónde se suelta (tercio superior o
+             inferior = antes/después, centro = dentro). -->
+        <div class="cta-grilla-wrap"
+             (contextmenu)="onContextMenuGrilla($event)"
+             (click)="alClicarCabecera($event)"
+             (dragover)="onDragOverGrilla($event)"
+             (dragleave)="onDragLeaveGrilla($event)"
+             (drop)="onDropGrilla($event)">
+          <ag-grid-angular
+            class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
+            [rowData]="filasVisibles"
+            [columnDefs]="columnDefs"
+            [enableCellTextSelection]="true"
+            [defaultColDef]="_appAgGridService.defaultColDef"
+            [sideBar]="_appAgGridService.sideBar"
+            [rowHeight]="_appAgGridService.rowHeight"
+            [headerHeight]="_appAgGridService.headerHeight"
+            [localeText]="_appAgGridService.localeText"
+            [rowSelection]="'single'"
+            [pagination]="false"
+            [animateRows]="true"
+            [cacheQuickFilter]="true"
+            [navigateToNextCell]="navegarConTeclado"
+            [rowClassRules]="rowClassRules"
+            [overlayNoRowsTemplate]="'<span>Todavía no hay cuentas. Crea la primera con el botón +</span>'"
+            (gridReady)="onGridReady($event)"
+            (filterChanged)="onFiltroColumna()"
+            (cellClicked)="onCellClicked($event)">
+          </ag-grid-angular>
+        </div>
+
+        <!-- ---------- 2c. PIE ---------- -->
+        <div class="d-flex justify-content-between align-items-center flex-wrap mt-2 px-2 gap-2">
+
+          @if (accesoModel?.editar === true) {
+            <p class="cta-ayuda-dnd small text-muted mb-0">
+              <i class="fa fa-hand-pointer me-1"></i>
+              Arrastra una fila desde <b>⋮⋮</b>: suéltala en el <b>borde superior o inferior</b> de otra
+              para cambiar el orden, o <b>en el centro</b> para meterla dentro. <b>No hay tope de
+              niveles</b>; al cambiarla de rama <b>se renumera</b> —el código dice de dónde cuelga—, y el
+              tipo no se cambia arrastrando: eso se hace en su ficha.
+              Con <b>+</b> y <b>−</b> se abren y cierran las ramas.
+            </p>
+          }
+
+          <div class="pagination-info small text-muted ms-auto">
+            @if (filasVisibles.length < totalRegistros) {
+              <b>{{ filasVisibles.length }}</b> de
+            }
+            <b>{{ totalRegistros }}</b> {{ totalRegistros === 1 ? 'cuenta' : 'cuentas' }} en el árbol
+            @if (hayPlegadas && !searchTerm) {
+              <span class="cta-plegadas" title="Hay ramas contraídas">
+                · <i class="fa fa-minus-square"></i> {{ plegadasCuantas }} contraída{{ plegadasCuantas === 1 ? '' : 's' }}
+              </span>
+            }
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</panel>
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO =================
+     Las mismas acciones que la columna ACCIONES, sin tener que llegar al
+     final de la fila ni desplegar la columna cuando está plegada. -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

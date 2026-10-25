@@ -23,6 +23,7 @@ const routes: Routes = [
   { path: 'rh', loadChildren: () => import('./modules/rh/rh.module').then( m => m.RhModule)},
   { path: 'ventas', loadChildren: () => import('./modules/ventas/ventas.module').then( m => m.VentasModule)},
   { path: 'inventarios', loadChildren: () => import('./modules/inventarios/inventario.module').then( m => m.InventarioModule)},
+  { path: 'contabilidad', loadChildren: () => import('./modules/contabilidad/contabilidad.module').then( m => m.ContabilidadModule)},
   { path: 'reportes', loadChildren: () => import('./modules/reportes/reportes.module').then( m => m.ReportesModule)},
   
   //{ path: '', redirectTo: '/home', pathMatch: 'full' },  
