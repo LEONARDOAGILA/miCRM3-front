@@ -14,6 +14,8 @@ import { AsignacionClienteMasivaComponent } from './pages/gestion-clientes/asign
 import { AllZonasComponent } from './pages/zonas/allZonas/allZonas.component';
 import { AllSucursalesComponent } from './pages/sucursales/allSucursales/allSucursales.component';
 import { RutaCobradorComponent } from './pages/ruta-cobrador/rutaCobrador.component';
+import { AllProformasComponent } from './pages/proformas/allProformas/allProformas.component';
+import { AllPuntosVentaComponent } from './pages/puntos-venta/allPuntosVenta/allPuntosVenta.component';
 
 const routes: Routes = [
 {
@@ -46,6 +48,17 @@ const routes: Routes = [
         // o esta ruta cae en el 404 aunque el componente esté bien: el programa
         // sale del segundo tramo de la url (ventas/rutaCobrador -> RUTACOBRADOR).
         { path: 'rutaCobrador', component: RutaCobradorComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+
+        // El programa/menú «allProformas» está en seguridad.menus con la url
+        // «ventas/allProformas»: el acceso sale del segundo tramo
+        // (-> ALLPROFORMAS), así que el path tiene que llamarse igual.
+        { path: 'allProformas', component: AllProformasComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
+        // El programa/menú «allPuntosVenta» está en seguridad.menus con la
+        // url «ventas/allPuntosVenta»: el acceso sale del segundo tramo
+        // (-> ALLPUNTOSVENTA), así que el path tiene que llamarse igual.
+        // Los accesos se copiaron del plan de cuentas: las cajas las crean
+        // los contadores.
+        { path: 'allPuntosVenta', component: AllPuntosVentaComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver }},
 
         { path: 'home-ventas', component: HomeComponent, data: { title: 'Ventas' }, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
         { path: '**', component: ErrorPage },

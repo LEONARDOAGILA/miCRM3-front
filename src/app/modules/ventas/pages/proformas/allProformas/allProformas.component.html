@@ -1,0 +1,217 @@
+<!-- ============================================================
+     LISTADO DE PROFORMAS
+
+     Estructura:
+       1. Miga de pan
+       2. <panel> del tema con los botones de imprimir / Excel / CSV /
+          recargar / expandir en su cabecera
+          2a. Los botones de estado: lo primero que se mira al entrar
+          2b. Barra de herramientas: buscador, nueva, papelera, auditoría
+          2c. Rejilla ag-Grid (paginación en servidor)
+          2d. Controles de paginación
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Ventas</a></li>
+  <li class="breadcrumb-item active">Proformas</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       [ButtonPrint]="accesoModel?.reporte === true"
+       [ButtonExportExcel]="accesoModel?.reporte === true"
+       [ButtonExportCsv]="accesoModel?.reporte === true"
+       (panelReloaded)="allProformas(paginaActual); cargarResumen()"
+       (panelExpanded)="ajustarTamanoGrid()"
+       (panelPrinted)="printPdf()"
+       (panelExportExceled)="exportExcel()"
+       (panelExportCsved)="exportCsv()"
+       [closeRoute]="'/ventas'"
+       icono="dollar">
+
+  <div class="content-container1 lista-contenido">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <div class="content2">
+      <div class="example-wrapper">
+
+        <!-- ---------- 2a. LOS BOTONES DE ESTADO ----------
+             Lo que un vendedor mira al entrar: qué tiene enviado sin
+             respuesta y qué se le está venciendo. Cada uno filtra el listado
+             y trae su cuenta; pulsándolo otra vez se quita el filtro. -->
+        @if (resumen) {
+          <div class="pf-estados">
+            <button type="button" class="pf-estado" [class.is-on]="estadoFiltro === null"
+                    title="Ver todas" (click)="filtrarPorEstado(null)">
+              <span class="pf-estado__cuenta">{{ resumen.total }}</span>
+              <span class="pf-estado__texto">Todas</span>
+            </button>
+
+            @for (e of estados; track e.id) {
+              @if (cuantasEn(e.id) > 0 || estadoFiltro === e.id) {
+                <button type="button" class="pf-estado"
+                        [class.is-on]="estadoFiltro === e.id"
+                        [title]="e.ayuda"
+                        (click)="filtrarPorEstado(e.id)">
+                  <span class="pf-estado__cuenta">{{ cuantasEn(e.id) }}</span>
+                  <span class="pf-estado__texto">
+                    <i class="fa-solid {{ e.icono }}"></i> {{ e.name }}
+                  </span>
+                </button>
+              }
+            }
+
+            <!-- Las dos que piden una llamada hoy: pasadas de fecha y las que
+                 se vencen esta semana. No son estados, son avisos. -->
+            @if (resumen.vencidas > 0) {
+              <span class="pf-estado pf-estado--aviso" title="Enviadas que ya pasaron de su fecha de validez">
+                <span class="pf-estado__cuenta">{{ resumen.vencidas }}</span>
+                <span class="pf-estado__texto"><i class="fa-solid fa-hourglass-end"></i> pasadas de fecha</span>
+              </span>
+            }
+            @if (resumen.por_vencer > 0) {
+              <span class="pf-estado pf-estado--ojo" title="Se vencen en los próximos siete días: todavía sirve llamar">
+                <span class="pf-estado__cuenta">{{ resumen.por_vencer }}</span>
+                <span class="pf-estado__texto"><i class="fa-solid fa-bell"></i> se vencen esta semana</span>
+              </span>
+            }
+
+            <span class="pf-estados__importe ms-auto">
+              <small>Importe total</small>
+              <b>{{ formatoMoneda(resumen.importe) }}</b>
+            </span>
+          </div>
+        }
+
+        <!-- ---------- 2b. BARRA DE HERRAMIENTAS ---------- -->
+        <div class="row g-2 m-2 align-items-center lista-barra">
+
+          <div class="col pe-1">
+            <app-campoBusquedaPaginacion
+              [id]="'filter-text-box'"
+              [placeholder]="'Buscar por número, cliente o por un producto de dentro'"
+              [iconClass]="'fa fa-search fa-lg'"
+              [containerClass]="'w-100'"
+              [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiarFiltros)="clearAllFilters()">
+            </app-campoBusquedaPaginacion>
+          </div>
+
+          <!-- Nueva proforma -->
+          <div class="col-auto ps-0">
+            <button type="button"
+                    class="inactivo btn btn-primary lista-barra__btn"
+                    title="Hacer una proforma"
+                    [disabled]="accesoModel?.crear === false"
+                    (click)="addProforma()">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+
+          <!-- Papelera de reciclaje: sólo con el acceso «papelera» -->
+          @if (accesoModel?.papelera === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-outline-secondary lista-barra__btn"
+                      title="Papelera de reciclaje de proformas"
+                      (click)="abrirPapelera()">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          }
+
+          <!-- Auditoría de la fila marcada -->
+          @if (accesoModel?.auditar === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-warning lista-barra__btn position-relative"
+                      title="Ver historial de auditoría del registro seleccionado"
+                      [disabled]="!selectedRow"
+                      (click)="auditoria()">
+                <i class="fa fa-user-secret"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
+                  <i class="fa fa-search"></i>
+                </span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- ---------- 2c. REJILLA ----------
+             El clic derecho se escucha en el contenedor: el evento
+             `cellContextMenu` de ag-Grid no llega (comprobado). -->
+        <div (contextmenu)="onContextMenuGrilla($event)">
+        <ag-grid-angular
+          class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
+          [rowData]="proformaModel"
+          [columnDefs]="columnDefs"
+          [enableCellTextSelection]="true"
+          [defaultColDef]="_appAgGridService.defaultColDef"
+          [sideBar]="_appAgGridService.sideBar"
+          [rowHeight]="_appAgGridService.rowHeight"
+          [headerHeight]="_appAgGridService.headerHeight"
+          [localeText]="_appAgGridService.localeText"
+          [rowSelection]="'single'"
+          [rowClassRules]="rowClassRules"
+          [pagination]="false"
+          [animateRows]="true"
+          [navigateToNextCell]="navegarConTeclado"
+          (gridReady)="onGridReady($event)"
+          (filterChanged)="onFiltroColumna()"
+          (cellClicked)="onCellClicked($event)">
+        </ag-grid-angular>
+        </div>
+
+        <!-- ---------- 2d. PAGINACIÓN ---------- -->
+        <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+
+          <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+            <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                    (click)="firstPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-angle-double-left"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                    (click)="prevPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-chevron-left"></i>
+            </button>
+            <span class="btn btn-sm btn-white pagination-page-badge disabled">
+              Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+            </span>
+            <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                    (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-chevron-right"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Última página"
+                    (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-angle-double-right"></i>
+            </button>
+          </div>
+
+          <div class="pagination-info small text-muted">
+            Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> proformas
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</panel>
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO =================
+     Las mismas acciones que la columna ACCIONES, sin tener que llegar al
+     final de la fila ni desplegar la columna cuando está plegada. -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

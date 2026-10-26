@@ -1,0 +1,119 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarProformaTitulo"
+     aria-describedby="eliminarProformaDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarProformaTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Enviar esta proforma a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico (deleted_at / deleted_by): sale del listado y de
+             los contadores, pero puede volver desde la papelera. -->
+        <p class="eliminar-aviso__texto" id="eliminarProformaDescripcion">
+          Dejará de aparecer en el listado y en los contadores, pero <b>no se borra</b>:
+          queda en la papelera, desde donde puede restaurarse con sus líneas.
+          @if (esAprobada) {
+            <br><b>Está aprobada:</b> el sistema no permitirá eliminarla. Si la operación
+            no va, <b>anúlela</b> en su lugar: así queda constancia de que existió y de
+            que se dio de baja.
+          }
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del documento -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>Número
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.numero }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-user-tie fa-fw me-1" aria-hidden="true"></i>Cliente
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.cliente_nombre || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-calendar fa-fw me-1" aria-hidden="true"></i>Fecha
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.fecha || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-list fa-fw me-1" aria-hidden="true"></i>Líneas
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.lineas ?? '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-dollar-sign fa-fw me-1" aria-hidden="true"></i>Total
+        </span>
+        <span class="eliminar-datos__valor">{{ importe }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
+        </span>
+        <span class="badge fs-10px {{ claseEstado(registro_selected?.estado) }}">
+          {{ etiquetaEstado(registro_selected?.estado) }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si la oferta ya no va pero quiere dejar constancia de que se hizo,
+      <b>anúlela</b> en lugar de eliminarla: las anuladas se siguen viendo en el listado.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="deleteProforma()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
+    </button>
+  </div>
+
+</div>

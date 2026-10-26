@@ -25,6 +25,7 @@
 .panel-icono-sitemap .panel-icono::before { content: '\f0e8'; }  /* fa-sitemap (categorias) */
 .panel-icono-truck .panel-icono::before { content: '\f0d1'; }    /* fa-truck (despacho) */
 .panel-icono-dollar .panel-icono::before { content: '\f155'; }   /* fa-dollar-sign (precios) */
+.panel-icono-tienda .panel-icono::before { content: '\f54e'; }   /* fa-store (sucursales, puntos de venta) */
 .panel-icono-images .panel-icono::before { content: '\f302'; }   /* fa-images (galeria) */
 .panel-icono-briefcase .panel-icono::before { content: '\f0b1'; } /* fa-briefcase */
 .panel-icono-clave .panel-icono::before { content: '\f084'; }   /* fa-key */

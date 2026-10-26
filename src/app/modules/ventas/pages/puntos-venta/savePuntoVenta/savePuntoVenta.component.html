@@ -1,0 +1,255 @@
+<!-- ============================================================
+     PUNTO DE VENTA (modal)
+
+     Dos partes, y las dos en la misma ventana a propósito:
+       1. La caja: qué número tiene, cómo se llama
+       2. SUS CUENTAS: con qué asienta lo que cobra
+
+     Separarlas sería garantizar que la mitad de las cajas se queden sin
+     cuentas: se crea la caja, se cierra la ventana y nadie vuelve.
+
+     Y EN DOS COLUMNAS: los datos de la caja son cuatro campos y las cuentas
+     son diez desplegables. Uno debajo del otro dejaba media ventana en
+     blanco a la derecha y las cuentas fuera de la pantalla.
+
+     Arriba, cruzando las dos columnas, lo que vale para toda la ficha: de
+     qué sucursal es (no se elige aquí) y si está abierta.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body pv-body">
+
+  <!-- ---------- LO QUE VALE PARA TODA LA FICHA ----------
+       DE QUÉ SUCURSAL ES: se enseña, no se elige. La tienda se escoge en el
+       listado antes de añadir, y cambiarla desde aquí le cambiaría a la caja
+       el número, el código y las cuentas que hereda sin que se vea venir. -->
+  <div class="pv-cabecera">
+
+    <div class="pv-sucursal">
+      <span class="pv-sucursal__icon"><i class="fa-solid fa-store"></i></span>
+      <div class="pv-sucursal__text">
+        <span class="pv-sucursal__label">Sucursal</span>
+        <span class="pv-sucursal__valor">{{ sucursalEtiqueta || '—' }}</span>
+      </div>
+      <span class="chip chip-muted ms-auto">
+        <i class="fa-solid fa-lock"></i> No se cambia desde aquí
+      </span>
+    </div>
+
+    <div class="pv-estado" [class.is-on]="ctrlActivo.value">
+      <span class="pv-estado__icon"><i class="fa-solid fa-power-off"></i></span>
+      <div class="pv-estado__text">
+        <span class="pv-estado__label">Estado</span>
+        <span class="pv-estado__hint">
+          {{ ctrlActivo.value ? 'Se puede usar para vender' : 'Cerrada: no se ofrece al facturar' }}
+        </span>
+      </div>
+      <app-checkbox class="pv-estado__switch"
+        [control]="ctrlActivo"
+        [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
+        [id]="'ck-pv-activo'">
+      </app-checkbox>
+    </div>
+
+  </div>
+
+  <!-- ---------- LAS DOS COLUMNAS ----------
+       Cada una es un panel, con la rejilla de Bootstrap y el `h-100` de
+       saveCliente / saveEmpleado / saveUser: así los dos paneles acaban a la
+       misma altura aunque uno lleve cuatro campos y el otro diez cuentas. -->
+  <div class="row g-3">
+
+    <!-- ========== 1. LA CAJA ========== -->
+    <div class="col-lg-5">
+      <form [formGroup]="form" class="form-validate h-100" novalidate>
+        <panel
+          headerClass="bg-gray-800"
+          title="Datos del punto de venta"
+          noButton="true"
+          noBody="true"
+          panelClass="h-100 mb-0"
+          icono="tienda"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (esView) {
+              <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+              <div class="pv-campos">
+
+                <!-- EL NÚMERO MANDA: el código se compone con él -->
+                <app-campoNumeroEntero
+                  [control]="form.controls['numero']"
+                  label="NÚMERO"
+                  placeholder="1"
+                  [maxLength]="3">
+                </app-campoNumeroEntero>
+
+                <!-- EL CÓDIGO NO SE TECLEA, SE COMPONE: código de la sucursal
+                     más el número de la caja (la 501 de la 01 es «01-501»).
+                     Por eso está apagado: lo que se cambia es el número. -->
+                <app-campoTexto
+                  [control]="form.controls['codigo']"
+                  label="CÓDIGO"
+                  [maxLength]="20"
+                  [limpiable]="false">
+                </app-campoTexto>
+
+                <div class="pv-campos__ancho">
+                  <app-campoTexto
+                    [control]="form.controls['nombre']"
+                    label="NOMBRE"
+                    placeholder="Caja 1, Mostrador, Farmacia…"
+                    [maxLength]="100"
+                    [minLength]="2"
+                    [trimEspacios]="true">
+                  </app-campoTexto>
+                </div>
+
+                <div class="pv-campos__ancho">
+                  <app-campoTextoArea
+                    [control]="form.controls['descripcion']"
+                    label="DESCRIPCIÓN"
+                    placeholder="Dónde está, quién la atiende… (opcional)"
+                    [maxLength]="2000"
+                    [alto]="150">
+                  </app-campoTextoArea>
+                </div>
+
+              </div>
+            </div>
+          </ng-container>
+        </panel>
+      </form>
+    </div>
+
+    <!-- ========== 2. LAS CUENTAS ========== -->
+    <div class="col-lg-7">
+      <form [formGroup]="formCuentas" class="h-100" novalidate>
+        <panel
+          headerClass="bg-gray-800"
+          title="Cuentas contables de la caja"
+          noButton="true"
+          noBody="true"
+          panelClass="h-100 mb-0"
+          icono="dollar"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (cuantasPropias > 0) {
+              <span class="chip chip-info" title="Cuentas puestas en esta caja; el resto se heredan">
+                <i class="fa-solid fa-thumbtack"></i>
+                {{ cuantasPropias }} {{ cuantasPropias === 1 ? 'propia' : 'propias' }}
+              </span>
+            } @else {
+              <span class="chip chip-muted" title="Todas se heredan de la sucursal o de la configuración general">
+                <i class="fa-solid fa-link"></i> Todas heredadas
+              </span>
+            }
+            @if (cuantasSinResolver > 0) {
+              <span class="chip chip-peligro"
+                    title="Conceptos sin cuenta y sin marcar como «no aplica»: esos asientos no se podrán hacer">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                {{ cuantasSinResolver }} sin resolver
+              </span>
+            } @else if (conceptos.length) {
+              <span class="chip chip-ok"><i class="fa-solid fa-check"></i> Todo resuelto</span>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <p class="campo-hint campo-hint--intro">
+                <i class="fa-solid fa-link"></i>
+                Lo que se deje <b>en blanco se hereda</b>: primero de la sucursal y después de la
+                configuración general. En la práctica sólo la <b>caja de efectivo</b> es propia de
+                cada punto.
+              </p>
+
+              @for (c of conceptos; track c.concepto) {
+                <div class="cuenta-fila"
+                     [class.es-propia]="esPropia(c) && !esNoAplica(c)"
+                     [class.es-no-aplica]="esNoAplica(c) || heredaNoAplica(c)">
+
+                  <div class="cuenta-fila__campo">
+                    <app-combo
+                      [formControlName]="c.concepto"
+                      [items]="itemsPorConcepto[c.concepto]"
+                      [label]="c.nombre"
+                      bindLabel="etiqueta"
+                      bindValue="id">
+                    </app-combo>
+                    @if (!esView) {
+                      <button type="button" class="btn btn-nueva-cuenta"
+                              title="Crear una cuenta nueva en el plan y usarla aquí"
+                              (click)="nuevaCuenta(c)">
+                        <i class="fa-solid fa-plus"></i>
+                      </button>
+                    }
+                  </div>
+
+                  <p class="campo-hint">
+                    @if (esNoAplica(c)) {
+                      <i class="fa-solid fa-ban"></i>
+                      Aquí este concepto <b>no existe</b>: no se asienta y <b>no se hereda nada</b>.
+                      Si lo vacías con la <b>×</b>, se usará <b>{{ heredada(c) }}</b>.
+                    } @else if (esPropia(c)) {
+                      <i class="fa-solid fa-thumbtack"></i>
+                      Puesta en esta caja. Si la vacías con la <b>×</b>, se usará <b>{{ heredada(c) }}</b>.
+                    } @else if (heredaNoAplica(c)) {
+                      <i class="fa-solid fa-ban"></i>
+                      {{ heredada(c) }}: no se asienta este concepto.
+                    } @else {
+                      <i class="fa-solid fa-link"></i>
+                      {{ heredada(c) }}
+                    }
+                  </p>
+
+                  @if (ayuda[c.concepto]) {
+                    <p class="campo-hint campo-hint--suave">
+                      <i class="fa-solid fa-circle-info"></i> {{ ayuda[c.concepto] }}
+                    </p>
+                  }
+                </div>
+              }
+
+              @if (!conceptos.length) {
+                <p class="text-muted mb-0">
+                  Elige primero la sucursal para ver las cuentas que va a usar esta caja.
+                </p>
+              }
+            </div>
+          </ng-container>
+        </panel>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [cargando]="guardando"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  [textoGuardar]="esNuevo ? 'Crear punto de venta' : 'Guardar'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

@@ -1,0 +1,115 @@
+<!-- ============================================================
+     PAPELERA DE RECICLAJE DE PUNTOS DE VENTA
+
+     Las cajas «eliminadas» (borrado lógico). Lo propio de aquí son las
+     CUENTAS: mientras están en la papelera se conservan, así que al
+     restaurarlas vuelven con todo puesto; al borrarlas definitivamente se
+     van con ellas.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div appModalArrastrable class="modal-header">
+  <h4 class="modal-title">
+    <i class="fa fa-trash-can me-2 text-primary"></i>Papelera de reciclaje de puntos de venta
+  </h4>
+  <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+</div>
+
+<div class="modal-body papelera-body">
+
+  <div class="papelera-barra">
+    <div class="papelera-resumen">
+      @if (items.length) {
+        <b>{{ items.length }}</b> {{ items.length === 1 ? 'punto de venta' : 'puntos de venta' }} en la papelera
+      } @else {
+        La papelera está vacía
+      }
+    </div>
+
+    @if (lote.length) {
+      <span class="papelera-seleccion text-truncate">
+        <i class="fa fa-fw" [ngClass]="lote.length > 1 ? 'fa-layer-group' : 'fa-cash-register'"></i>
+        {{ lote.length > 1 ? lote.length + ' seleccionados' : lote[0].nombre }}
+      </span>
+    }
+  </div>
+
+  <p class="papelera-ayuda">
+    <i class="fa fa-circle-info me-1"></i>
+    Una caja en la papelera no sale en el listado ni se puede elegir al facturar, pero
+    <b>sus cuentas se conservan</b>: al restaurarla vuelve con todo configurado. Sólo se
+    pierden si se elimina definitivamente.
+  </p>
+
+  <div class="papelera-grilla-wrap">
+    <ag-grid-angular
+      class="ag-theme-alpine ag-grid-transparente papelera-grilla"
+      [rowData]="items"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="_appAgGridService.defaultColDef"
+      [localeText]="_appAgGridService.localeText"
+      [rowHeight]="35"
+      [headerHeight]="35"
+      [rowSelection]="'multiple'"
+      [rowMultiSelectWithClick]="false"
+      [suppressRowClickSelection]="false"
+      [pagination]="false"
+      [overlayNoRowsTemplate]="'<span>No hay puntos de venta en la papelera</span>'"
+      [navigateToNextCell]="navegarConTeclado"
+      (gridReady)="onGridReady($event)"
+      (cellClicked)="onCellClicked($event)">
+    </ag-grid-angular>
+  </div>
+
+</div>
+
+<div class="modal-footer papelera-pie">
+  @if (puedeVaciar) {
+    <button type="button" class="btn btn-danger papelera-pie__vaciar"
+            [disabled]="!items.length"
+            title="Borrar para siempre todos los puntos de venta de la papelera, con sus cuentas"
+            (click)="vaciar()">
+      <i class="fa fa-broom me-1"></i>
+      <span class="d-none d-sm-inline">Vaciar papelera</span>
+    </button>
+  }
+
+  <div class="papelera-pie__derecha">
+    @if (puedeAuditar) {
+      <button type="button" class="btn btn-warning position-relative"
+              [disabled]="!auditable"
+              [title]="auditable ? 'Ver el historial de «' + auditable.nombre + '»' : 'Seleccione un solo punto de venta'"
+              (click)="auditoria()">
+        <i class="fa fa-user-secret me-1"></i>
+        <span class="d-none d-sm-inline">Auditoría</span>
+      </button>
+    }
+    <button type="button" class="btn btn-success"
+            [disabled]="!lote.length"
+            [title]="!lote.length
+                      ? 'Seleccione un punto de venta'
+                      : 'Restaurar ' + (lote.length > 1 ? lote.length + ' puntos de venta' : '«' + lote[0].nombre + '»')"
+            (click)="restaurar()">
+      <i class="fa fa-rotate-left me-1"></i>
+      <span class="d-none d-sm-inline">Restaurar</span>
+    </button>
+    @if (puedeVaciar) {
+      <button type="button" class="btn btn-outline-danger"
+              [disabled]="!lote.length"
+              [title]="cuentasDelLote
+                        ? 'Borrar para siempre lo seleccionado y sus ' + cuentasDelLote + ' cuentas'
+                        : 'Borrar para siempre lo seleccionado'"
+              (click)="eliminarDefinitivo()">
+        <i class="fa fa-trash me-1"></i>
+        <span class="d-none d-sm-inline">Eliminar definitivamente</span>
+      </button>
+    }
+    <button type="button" class="btn btn-default" (click)="modal.dismiss()">
+      <i class="fa fa-times me-1"></i> Cerrar
+    </button>
+  </div>
+</div>

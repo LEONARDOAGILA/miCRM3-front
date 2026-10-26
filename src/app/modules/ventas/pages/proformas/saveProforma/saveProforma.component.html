@@ -1,0 +1,461 @@
+<!-- ============================================================
+     LA PROFORMA (modal)
+
+     DOS COLUMNAS, con un divisor que se arrastra:
+
+       IZQUIERDA          DERECHA
+       · a quién          · qué se cotiza (la rejilla, a toda altura)
+       · con qué condiciones
+       · qué se le dice
+       · cuánto
+
+     Antes iba todo en vertical y la rejilla quedaba en medio, con los
+     totales fuera de la vista: había que subir y bajar para ver el efecto
+     de lo que se acababa de escribir. Así se ve todo a la vez, y quien
+     quiera más sitio para las líneas se lo quita a la izquierda.
+     ============================================================ -->
+
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body proforma-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <div class="pf-dos-columnas"
+         [class.is-redimensionando]="redimensionando"
+         [style.--pf-ancho-izq.px]="anchoIzquierda">
+
+      <!-- ============================================================
+           COLUMNA IZQUIERDA: a quién, con qué, qué se le dice, cuánto
+           ============================================================ -->
+      <div class="pf-col pf-col--izq">
+
+        <!-- Lo que se desplaza. Los totales se quedan fuera, pegados abajo:
+             son lo que se mira mientras se escriben las líneas, y tenerlos
+             que ir a buscar con la rueda del ratón es justo lo que no se
+             quiere. -->
+        <div class="pf-col__scroll">
+
+        <!-- ---------- Lo que ya es: número y estado ---------- -->
+        @if (proforma && accion !== 'clon') {
+          <div class="pf-cinta">
+            <span class="pf-cinta__numero"><i class="fa-solid fa-hashtag"></i> {{ proforma.numero }}</span>
+            <span class="badge {{ claseEstado(proforma.estado) }} fs-10px">
+              {{ etiquetaEstado(proforma.estado) }}
+            </span>
+            @if (proforma.vencida) {
+              <span class="badge bg-warning fs-10px" title="Se pasó de los días de validez">
+                <i class="fa-solid fa-hourglass-end"></i> vencida
+              </span>
+            }
+            @if (!proforma.puede_editarse && !esView) {
+              <span class="pf-cinta__aviso">
+                <i class="fa-solid fa-lock"></i>
+                Ya no se puede cambiar: duplícala para hacer una nueva.
+              </span>
+            }
+          </div>
+        }
+
+        <!-- ---------- 1. A QUIÉN ---------- -->
+        <panel
+          headerClass="bg-gray-800"
+          title="Cliente"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-3"
+          icono="usuarios"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (esView) {
+              <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+            } @else if (cliente?.grupo_nombre) {
+              <span class="chip chip-info" title="De aquí salen las condiciones de venta">
+                <i class="fa-solid fa-sitemap"></i> {{ cliente.grupo_nombre }}
+              </span>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <!-- EL SELECTOR, como el del cargo en la ficha del empleado:
+                   se escribe a la izquierda, el nombre al lado bloqueado, y
+                   la lupa para buscarlo. Lo que se teclea aquí es la CÉDULA
+                   O EL RUC —que es lo que el vendedor tiene delante—, no el
+                   id.
+
+                   (focusout) y no (blur): blur no burbujea, así que en el
+                   elemento de app-campoTexto no llegaría nunca; focusout sí.
+                   Y Enter busca sin esperar a salir del campo, que es el
+                   gesto natural al teclear una cédula. -->
+              <div class="campo campo-lookup campo-lookup--pegado">
+                <div class="row g-0 flex-nowrap">
+                  <div class="col-5">
+                    <app-campoTexto
+                      [control]="identificacionControl"
+                      label="CÉDULA / RUC"
+                      placeholder="Nº de identificación"
+                      [maxLength]="20"
+                      [limpiable]="false"
+                      [trimEspacios]="true"
+                      (focusout)="buscarClientePorIdentificacion()"
+                      (keyup.enter)="buscarClientePorIdentificacion()">
+                    </app-campoTexto>
+                  </div>
+                  <div class="col">
+                    <app-campoTexto
+                      [control]="clienteNombreControl"
+                      label="Cliente"
+                      placeholder="Se completa al buscar">
+                    </app-campoTexto>
+                  </div>
+                  @if (!esView) {
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-lookup" (click)="abrirModalClientes()" title="Buscar cliente">
+                        <i class="fa fa-search"></i>
+                      </button>
+                    </div>
+                    @if (form.controls['cliente_id'].value) {
+                      <div class="col-auto">
+                        <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                (click)="limpiarCliente()" title="Quitar el cliente">
+                          <i class="fa fa-times"></i>
+                        </button>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+
+              @if (!cliente) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Escribe la cédula o el RUC y pulsa <b>Enter</b>, o búscalo con la lupa.
+                  De él salen las condiciones de venta.
+                </p>
+              } @else {
+                <!-- Lo demás del cliente: se ve, no se escribe. Corregirle la
+                     dirección desde aquí sería tocar su ficha sin decirlo. -->
+                <dl class="pf-cliente__datos">
+                  <!-- El nombre otra vez: en la caja de arriba se corta
+                       cuando la columna está estrecha, y a quién se le
+                       cotiza no puede quedar a medias -->
+                  <dt>Cliente</dt><dd><b>{{ cliente.nombre }}</b></dd>
+                  @if (cliente.direccion) { <dt>Dirección</dt><dd>{{ cliente.direccion }}</dd> }
+                  @if (cliente.telefono)  { <dt>Teléfono</dt><dd>{{ cliente.telefono }}</dd> }
+                  @if (cliente.email)     { <dt>Correo</dt><dd>{{ cliente.email }}</dd> }
+                  @if (cliente.vendedor_nombre) { <dt>Vendedor</dt><dd>{{ cliente.vendedor_nombre }}</dd> }
+                </dl>
+
+                <!-- Lo que conviene ver ANTES de cotizar, no después -->
+                @for (aviso of avisosCliente; track aviso) {
+                  <p class="campo-hint text-danger mb-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i> {{ aviso }}
+                  </p>
+                }
+              }
+            </div>
+          </ng-container>
+        </panel>
+
+        <!-- ---------- 2. CON QUÉ CONDICIONES ---------- -->
+        <panel
+          headerClass="bg-gray-800"
+          title="Condiciones de la oferta"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-3"
+          icono="dollar"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            <span class="chip chip-muted" title="Lo que se guarda es lo que se ofertó, aunque luego al cliente le cambien las condiciones">
+              <i class="fa-solid fa-camera"></i> Se guardan con el documento
+            </span>
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+              <!-- Rejilla de campos que se adapta al ANCHO DE LA COLUMNA, no
+                   al de la ventana: las clases col-md-* de Bootstrap miran la
+                   ventana, y aquí la columna se arrastra y puede quedar en
+                   320px con la ventana a 1900. -->
+              <div class="pf-campos">
+
+                <div>
+                  <label class="form-label pf-etiqueta">FECHA</label>
+                  <input type="date" class="form-control" formControlName="fecha">
+                </div>
+
+                <div>
+                  <app-campoNumeroEntero
+                    [control]="form.controls['validez_dias']"
+                    label="DÍAS DE VALIDEZ"
+                    placeholder="15"
+                    [maxLength]="3">
+                  </app-campoNumeroEntero>
+                  @if (fechaVence) {
+                    <p class="campo-hint">
+                      <i class="fa-regular fa-calendar-xmark"></i>
+                      Vale hasta el <b>{{ fechaVence }}</b>.
+                    </p>
+                  }
+                </div>
+
+                <div>
+                  <app-combo
+                    formControlName="forma_pago"
+                    [items]="formasPago"
+                    [label]="'Forma de pago'"
+                    bindLabel="name"
+                    bindValue="id">
+                  </app-combo>
+                  @if (origenCondiciones['forma_pago']) {
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-turn-up"></i> {{ origenCondiciones['forma_pago'] }}
+                    </p>
+                  }
+                </div>
+
+                <div>
+                  <app-campoNumeroEntero
+                    [control]="form.controls['dias_credito']"
+                    label="DÍAS DE CRÉDITO"
+                    placeholder="0"
+                    [maxLength]="4">
+                  </app-campoNumeroEntero>
+                  @if (origenCondiciones['dias_credito']) {
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-turn-up"></i> {{ origenCondiciones['dias_credito'] }}
+                    </p>
+                  }
+                </div>
+
+                <!-- Descuento propuesto para todas las líneas -->
+                <div class="pf-campos__ancho">
+                  <label class="form-label pf-etiqueta">DESCUENTO PARA TODAS LAS LÍNEAS (%)</label>
+                  <div class="input-group">
+                    <input type="text" class="form-control" formControlName="descuento_porcentaje"
+                           placeholder="0" inputmode="decimal">
+                    <button type="button" class="btn btn-outline-secondary"
+                            [disabled]="esView"
+                            title="Poner este descuento en todas las líneas"
+                            (click)="aplicarDescuentoGeneral()">
+                      <i class="fa-solid fa-arrows-down-to-line"></i> Aplicar
+                    </button>
+                  </div>
+                  @if (origenCondiciones['descuento']) {
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-turn-up"></i> {{ origenCondiciones['descuento'] }}
+                    </p>
+                  } @else {
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Cada línea puede llevar otro: se cambia en su celda.
+                    </p>
+                  }
+                </div>
+
+                @if (sucursales.length) {
+                  <div class="pf-campos__ancho">
+                    <app-combo
+                      formControlName="sucursal_id"
+                      [items]="sucursales"
+                      [label]="'Sucursal'"
+                      bindLabel="name"
+                      bindValue="id">
+                    </app-combo>
+                  </div>
+                }
+
+              </div>
+            </div>
+          </ng-container>
+        </panel>
+
+        <!-- ---------- 3. QUÉ SE LE DICE ---------- -->
+        <panel
+          headerClass="bg-gray-800"
+          title="Observaciones y condiciones"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-3"
+          icono="editar"
+          fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+              <app-campoTextoArea
+                [control]="form.controls['observaciones']"
+                label="OBSERVACIONES"
+                placeholder="Plazos de entrega, garantías, lo que se habló… (opcional)"
+                [maxLength]="4000"
+                [alto]="80">
+              </app-campoTextoArea>
+
+              <app-campoTextoArea
+                [control]="form.controls['condiciones']"
+                label="CONDICIONES QUE SE IMPRIMEN"
+                placeholder="Validez de los precios, forma de pago, etc."
+                [maxLength]="4000"
+                [alto]="80">
+              </app-campoTextoArea>
+            </div>
+          </ng-container>
+        </panel>
+
+        </div><!-- /pf-col__scroll -->
+
+        <!-- ---------- 4. CUÁNTO (pegado abajo, siempre a la vista) ---------- -->
+        <div class="pf-totales">
+          <div class="pf-totales__fila">
+            <span>Subtotal</span>
+            <b>{{ numero(totales.subtotal) }}</b>
+          </div>
+          @if (totales.descuento_total > 0) {
+            <div class="pf-totales__fila pf-totales__fila--resta">
+              <span>Descuento</span>
+              <b>− {{ numero(totales.descuento_total) }}</b>
+            </div>
+          }
+          <div class="pf-totales__fila">
+            <span>Gravado con IVA</span>
+            <b>{{ numero(totales.subtotal_gravado) }}</b>
+          </div>
+          @if (totales.subtotal_exento > 0) {
+            <div class="pf-totales__fila">
+              <span>Sin IVA (tarifa 0 %)</span>
+              <b>{{ numero(totales.subtotal_exento) }}</b>
+            </div>
+          }
+
+          <!-- El IVA por tarifa: es lo que se imprime al pie, y con dos
+               tarifas distintas en la misma proforma un solo renglón de IVA
+               no dice de dónde sale -->
+          @for (t of totales.desglose; track t.porcentaje) {
+            @if (t.porcentaje > 0) {
+              <div class="pf-totales__fila pf-totales__fila--iva">
+                <span>IVA {{ numero(t.porcentaje, 0) }} % <small>sobre {{ numero(t.base) }}</small></span>
+                <b>{{ numero(t.valor) }}</b>
+              </div>
+            }
+          }
+
+          <div class="pf-totales__fila pf-totales__fila--total">
+            <span>TOTAL</span>
+            <b>$ {{ numero(totales.total) }}</b>
+          </div>
+
+          @if (problema && !esView) {
+            <p class="pf-totales__problema">
+              <i class="fa-solid fa-triangle-exclamation"></i> {{ problema }}
+            </p>
+          }
+        </div>
+
+      </div>
+
+      <!-- ============================================================
+           EL DIVISOR (el mismo que el del administrador de archivos)
+           ============================================================ -->
+      <div class="pf-divisor"
+           role="separator"
+           aria-orientation="vertical"
+           [attr.aria-valuenow]="anchoIzquierda"
+           title="Arrastra para repartir el espacio (doble clic: ancho por defecto)"
+           (pointerdown)="iniciarRedimension($event)"
+           (dblclick)="anchoIzquierda = ANCHO_IZQ_DEFECTO; guardarAnchoIzquierda(); ajustarAltoRejilla()">
+      </div>
+
+      <!-- ============================================================
+           COLUMNA DERECHA: lo que se cotiza
+           ============================================================ -->
+      <div class="pf-col pf-col--der">
+        <panel
+          headerClass="bg-gray-800"
+          title="Detalle"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-0 pf-panel-detalle"
+          icono="lista"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            <span class="chip chip-muted">
+              {{ lineasReales.length }} {{ lineasReales.length === 1 ? 'línea' : 'líneas' }}
+            </span>
+            @if (!esView) {
+              <button type="button" class="btn btn-sm btn-outline-light"
+                      title="Añadir una línea para escribirla a mano (un servicio, un flete…)"
+                      (click)="anadirLinea()">
+                <i class="fa fa-plus"></i> Línea libre
+              </button>
+              <button type="button" class="btn btn-sm btn-primary"
+                      title="Buscar en el listado de productos"
+                      (click)="buscarProducto(lineas[lineas.length - 1])">
+                <i class="fa fa-search"></i> Buscar producto
+              </button>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body pf-detalle">
+
+              @if (!esView) {
+                <p class="campo-hint mb-2">
+                  <i class="fa-solid fa-keyboard"></i>
+                  Escribe el <b>código</b> en la última fila y pulsa <b>Enter</b>: la línea se
+                  completa con la descripción, la unidad, el precio y el IVA del producto, y el
+                  cursor salta a la cantidad. Si el código no existe se abre el listado.
+                </p>
+              }
+
+              <ag-grid-angular
+                class="ag-theme-alpine ag-grid-transparente pf-grilla"
+                [rowData]="lineas"
+                [columnDefs]="columnDefs"
+                [defaultColDef]="defaultColDef"
+                [rowHeight]="_appAgGridService.rowHeight"
+                [headerHeight]="_appAgGridService.headerHeight"
+                [localeText]="_appAgGridService.localeText"
+                [enableCellTextSelection]="false"
+                [stopEditingWhenCellsLoseFocus]="true"
+                [suppressRowClickSelection]="true"
+                [animateRows]="false"
+                (gridReady)="onGridReady($event)"
+                (cellValueChanged)="onCellValueChanged($event)"
+                (cellClicked)="onCellClicked($event)"
+                (cellKeyDown)="onCellKeyDown($event)">
+              </ag-grid-angular>
+
+            </div>
+          </ng-container>
+        </panel>
+      </div>
+
+    </div>
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [cargando]="guardando"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  [textoGuardar]="esNuevo ? 'Crear proforma' : 'Guardar'"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="guardar()">
+</app-modal-footer>

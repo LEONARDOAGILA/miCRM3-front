@@ -255,6 +255,19 @@ body {
   background: transparent;
 }
 
+/* ============================================================
+   LA PROFORMA (ventas/proformas/saveProforma)
+   Se abre con NgbModal y va en DOS COLUMNAS: a la izquierda el
+   cliente y las condiciones, a la derecha la rejilla de líneas.
+   Con el ancho de un modal-xl (1140px) la rejilla se queda sin
+   sitio y hay que desplazarla para ver el total de cada línea,
+   que es justo lo que se mira. De ahí que este modal sea más
+   ancho que los demás.
+   ============================================================ */
+.proforma-modal .modal-dialog {
+  max-width: min(1600px, 96vw);
+}
+
 /* ================================================================
    NÚMEROS QUE NINGUNA EXTENSIÓN DEBE TOCAR
    ================================================================

@@ -15,7 +15,8 @@ export type ValorCuenta = number | null | 'NO_APLICA';
 export const NO_APLICA = 'NO_APLICA';
 
 export type AmbitoContable =
-  'CATEGORIA' | 'PRODUCTO' | 'GRUPO_CLIENTE' | 'CLIENTE' | 'SUCURSAL' | 'IMPUESTO' | 'FORMA_PAGO' | 'GLOBAL';
+  'CATEGORIA' | 'PRODUCTO' | 'GRUPO_CLIENTE' | 'CLIENTE' | 'SUCURSAL' | 'PUNTO_VENTA'
+  | 'IMPUESTO' | 'FORMA_PAGO' | 'GLOBAL';
 
 /** Un concepto: qué cuenta se pide y de qué tipo puede ser. */
 export interface ConceptoContable {

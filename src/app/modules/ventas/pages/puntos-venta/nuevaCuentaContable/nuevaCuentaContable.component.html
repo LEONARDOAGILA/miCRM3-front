@@ -1,0 +1,99 @@
+<div class="modal-content border-0 shadow-lg">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header">
+    <h5 class="modal-title">
+      <i class="fa-solid fa-file-circle-plus fa-fw me-1"></i>
+      Nueva cuenta contable
+    </h5>
+    <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    @if (conceptoNombre) {
+      <p class="nc-para">
+        Se va a usar en <b>{{ conceptoNombre }}</b>.
+        @if (tiposPermitidos?.length) {
+          Sólo se puede colgar de una rama de
+          <b>{{ tiposPermitidos.join(' o ') | lowercase }}</b>.
+        }
+      </p>
+    }
+
+    <form [formGroup]="form" novalidate>
+
+      <!-- De qué rama cuelga: de ahí salen el tipo y el código -->
+      <div class="campo">
+        <app-combo
+          formControlName="padre_id"
+          [items]="padres"
+          [label]="'Cuelga de'"
+          bindLabel="etiqueta"
+          bindValue="id">
+        </app-combo>
+        @if (!padres.length && !cargando) {
+          <p class="campo-hint text-danger">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            No hay ninguna cuenta de grupo de ese tipo en el plan. Créala primero en
+            <b>Contabilidad › Plan de Cuentas</b>.
+          </p>
+        } @else {
+          <p class="campo-hint">
+            <i class="fa-solid fa-circle-info"></i>
+            Sólo salen cuentas de grupo: las que agrupan, no las que reciben asientos.
+          </p>
+        }
+      </div>
+
+      <!-- Lo que se deduce de la rama -->
+      @if (tipo) {
+        <div class="nc-deducido">
+          <span><i class="fa-solid fa-wand-magic-sparkles"></i> De la rama se toma:</span>
+          <span class="chip chip-info">{{ etiquetaTipo }}</span>
+          <span class="chip chip-muted">{{ naturaleza | titlecase }}</span>
+          <span class="chip chip-muted" title="Se crea para recibir asientos">De movimiento</span>
+        </div>
+      }
+
+      <div class="row g-2">
+        <div class="col-5">
+          <app-campoTexto
+            [control]="form.controls['codigo']"
+            label="CÓDIGO"
+            placeholder="1.1.01.01.03"
+            [maxLength]="30">
+          </app-campoTexto>
+        </div>
+        <div class="col">
+          <app-campoTexto
+            [control]="form.controls['nombre']"
+            label="NOMBRE"
+            placeholder="Caja punto de venta 2"
+            [maxLength]="150"
+            [minLength]="2"
+            [trimEspacios]="true">
+          </app-campoTexto>
+        </div>
+      </div>
+
+      <p class="campo-hint">
+        <i class="fa-solid fa-circle-info"></i>
+        El código es el siguiente libre dentro de esa rama. Se puede cambiar, pero casi nunca hace falta.
+      </p>
+
+    </form>
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">
+      <i class="fa fa-times fa-fw me-1"></i>Cancelar
+    </button>
+    <button type="button" class="btn btn-primary" [disabled]="!puedeGuardar" (click)="guardar()">
+      <i class="fa fa-save fa-fw me-1"></i>Crear y usarla
+    </button>
+  </div>
+
+</div>

@@ -1,0 +1,112 @@
+<!-- ============================================================
+     PAPELERA DE RECICLAJE DE PROFORMAS (modal)
+     Las proformas «eliminadas» (borrado lógico). Marca una o varias y
+     restáuralas o bórralas de verdad; o vacía la papelera entera.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div appModalArrastrable class="modal-header">
+  <h4 class="modal-title">
+    <i class="fa fa-trash-can me-2 text-primary"></i>Papelera de reciclaje de proformas
+  </h4>
+  <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+</div>
+
+<div class="modal-body papelera-body">
+
+  <div class="papelera-barra">
+    <div class="papelera-resumen">
+      @if (items.length) {
+        <b>{{ items.length }}</b> {{ items.length === 1 ? 'proforma' : 'proformas' }} en la papelera
+      } @else {
+        La papelera está vacía
+      }
+    </div>
+
+    @if (lote.length) {
+      <span class="papelera-seleccion text-truncate">
+        <i class="fa fa-fw" [ngClass]="lote.length > 1 ? 'fa-layer-group' : 'fa-file-invoice-dollar'"></i>
+        {{ lote.length > 1 ? lote.length + ' seleccionadas' : lote[0].numero }}
+      </span>
+    }
+  </div>
+
+  <p class="papelera-ayuda">
+    <i class="fa fa-circle-info me-1"></i>
+    Una proforma en la papelera no sale en el listado ni cuenta en los totales, pero
+    <b>no se ha borrado</b>: al restaurarla vuelve con todas sus líneas y en el mismo
+    estado en que estaba. Las líneas van siempre con el documento.
+  </p>
+
+  <div class="papelera-grilla-wrap">
+    <ag-grid-angular
+      class="ag-theme-alpine ag-grid-transparente papelera-grilla"
+      [rowData]="items"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="_appAgGridService.defaultColDef"
+      [localeText]="_appAgGridService.localeText"
+      [rowHeight]="35"
+      [headerHeight]="35"
+      [rowSelection]="'multiple'"
+      [rowMultiSelectWithClick]="false"
+      [suppressRowClickSelection]="false"
+      [pagination]="false"
+      [overlayNoRowsTemplate]="'<span>No hay proformas en la papelera</span>'"
+      [navigateToNextCell]="navegarConTeclado"
+      (gridReady)="onGridReady($event)"
+      (cellClicked)="onCellClicked($event)">
+    </ag-grid-angular>
+  </div>
+
+</div>
+
+<div class="modal-footer papelera-pie">
+  <!-- Vaciar pide el permiso «vaciar»: sin él se entra a la papelera y se
+       restaura, pero no se borra de verdad -->
+  @if (puedeVaciar) {
+    <button type="button" class="btn btn-danger papelera-pie__vaciar"
+            [disabled]="!items.length"
+            title="Borrar para siempre todas las proformas de la papelera"
+            (click)="vaciar()">
+      <i class="fa fa-broom me-1"></i>
+      <span class="d-none d-sm-inline">Vaciar papelera</span>
+    </button>
+  }
+
+  <div class="papelera-pie__derecha">
+    @if (puedeAuditar) {
+      <button type="button" class="btn btn-warning position-relative"
+              [disabled]="!auditable"
+              [title]="auditable ? 'Ver el historial de «' + auditable.numero + '»' : 'Seleccione una sola proforma'"
+              (click)="auditoria()">
+        <i class="fa fa-user-secret me-1"></i>
+        <span class="d-none d-sm-inline">Auditoría</span>
+      </button>
+    }
+    <button type="button" class="btn btn-success"
+            [disabled]="!lote.length"
+            [title]="!lote.length
+                      ? 'Seleccione una proforma'
+                      : 'Restaurar ' + (lote.length > 1 ? lote.length + ' proformas' : '«' + lote[0].numero + '»')"
+            (click)="restaurar()">
+      <i class="fa fa-rotate-left me-1"></i>
+      <span class="d-none d-sm-inline">Restaurar</span>
+    </button>
+    @if (puedeVaciar) {
+      <button type="button" class="btn btn-outline-danger"
+              [disabled]="!lote.length"
+              title="Borrar para siempre lo seleccionado"
+              (click)="eliminarDefinitivo()">
+        <i class="fa fa-trash me-1"></i>
+        <span class="d-none d-sm-inline">Eliminar definitivamente</span>
+      </button>
+    }
+    <button type="button" class="btn btn-default" (click)="modal.dismiss()">
+      <i class="fa fa-times me-1"></i> Cerrar
+    </button>
+  </div>
+</div>

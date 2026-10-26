@@ -1,0 +1,514 @@
+/* ============================================================
+   LA PROFORMA (modal)
+   ============================================================ */
+
+.proforma-body {
+  /* El cuerpo NO se desplaza: lo hace cada columna por su cuenta. Así la
+     cabecera y el pie —donde está Guardar— no se van nunca de la vista, y
+     se puede escribir en la rejilla mirando los totales. */
+  padding: .75rem;
+  overflow: hidden;
+}
+
+/* ============================================================
+   LAS DOS COLUMNAS
+   ============================================================
+   Izquierda: a quién, con qué condiciones, qué se le dice y cuánto.
+   Derecha: la rejilla de líneas, a toda la altura que haya.
+
+   El ancho de la izquierda es una variable que pone la plantilla
+   (--pf-ancho-izq) y que mueve el divisor; se recuerda por navegador. */
+.pf-dos-columnas {
+  display: flex;
+  align-items: stretch;
+  height: calc(100vh - 12rem);
+  min-height: 380px;
+}
+
+.pf-col {
+  min-width: 0;        /* sin esto, el contenido ancho estira la columna */
+}
+
+/* La izquierda es a su vez una columna: lo que se desplaza arriba y los
+   totales pegados abajo, siempre a la vista. */
+.pf-col--izq {
+  flex: 0 0 var(--pf-ancho-izq, 430px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-right: .75rem;
+}
+
+.pf-col__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: .35rem;
+}
+
+.pf-col--der {
+  flex: 1 1 auto;
+  padding-left: .75rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* El panel del detalle ocupa toda la columna: la rejilla se mide sola
+   (ajustarAltoRejilla) y llega hasta el pie del modal. */
+.pf-col--der ::ng-deep .pf-panel-detalle {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------- El divisor ----------
+   Calcado del administrador de archivos, que a su vez copia a VS Code: en
+   reposo es una línea con un asa de tres puntos; la zona de agarre es más
+   ancha de lo que se ve, y al pasar el ratón (con retardo) o al arrastrar se
+   vuelve una barra del color del tema. */
+.pf-divisor {
+  position: relative;
+  flex: 0 0 10px;
+  box-sizing: border-box;
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+  cursor: col-resize;
+  touch-action: none;          /* que el dedo no haga scroll al arrastrar */
+  z-index: 2;
+}
+
+.pf-divisor::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background-color: transparent;
+  transition: background-color .1s ease .25s;
+}
+
+/* El asa: tres puntos verticales en el centro, muy tenues */
+.pf-divisor::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 15px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background-image: radial-gradient(circle, rgba(var(--bs-body-color-rgb, 33, 37, 41), .45) 1.1px, transparent 1.4px);
+  background-size: 3px 5px;
+  background-repeat: repeat-y;
+  background-position: center;
+  transition: opacity .1s ease .25s;
+  pointer-events: none;
+}
+
+.pf-divisor:hover::before,
+.pf-dos-columnas.is-redimensionando .pf-divisor::before {
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.pf-dos-columnas.is-redimensionando .pf-divisor::before {
+  transition-delay: 0s;
+}
+
+.pf-divisor:hover::after,
+.pf-dos-columnas.is-redimensionando .pf-divisor::after {
+  opacity: 0;
+}
+
+/* Mientras se arrastra: el cursor manda en todo y no se selecciona texto */
+.pf-dos-columnas.is-redimensionando,
+.pf-dos-columnas.is-redimensionando * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* ---------- Los campos de la izquierda ----------
+   Rejilla que se reparte por el ANCHO DE LA COLUMNA, no por el de la
+   ventana. Las clases col-md-* de Bootstrap miran la ventana, y aquí la
+   columna se arrastra: con la ventana a 1900 y la columna en 320 habrían
+   salido cuatro campos de ochenta píxeles. */
+.pf-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: .75rem;
+  align-items: start;
+}
+
+.pf-campos__ancho {
+  grid-column: 1 / -1;
+}
+
+.pf-etiqueta {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+  margin-bottom: .25rem;
+}
+
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .25rem;
+}
+
+/* ---------- Contenido en la cabecera del panel ----------
+   <panel> expone un slot [header] junto al título. OJO: esa cabecera lleva
+   bg-gray-800, o sea fondo oscuro EN LOS DOS TEMAS, así que lo que se ponga
+   aquí NO puede usar las variables del tema para el color del texto: en tema
+   claro --bs-secondary-color es gris oscuro y sobre el fondo oscuro no se lee
+   nada. De ahí los colores escritos a mano de aquí abajo. */
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+.panel-acciones .btn {
+  font-size: .75rem;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.panel-acciones .chip {
+  background-color: rgba(255, 255, 255, .14);
+  color: rgba(255, 255, 255, .85);
+}
+
+.panel-acciones .chip-info {
+  background-color: rgba(255, 255, 255, .2);
+  color: #fff;
+}
+
+/* ============================================================
+   CHIPS (en el cuerpo, donde sí manda el tema)
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip-muted { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-info  { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+
+/* ============================================================
+   LA CINTA DE ARRIBA: número, estado y quién la hizo
+   ============================================================ */
+.pf-cinta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  margin-bottom: .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.pf-cinta__numero {
+  font-weight: 700;
+  font-size: .9rem;
+  letter-spacing: .02em;
+}
+
+.pf-cinta__aviso {
+  font-size: .75rem;
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+.pf-cinta__meta {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ============================================================
+   EL CLIENTE: EL CAMPO CON BÚSQUEDA (cédula + nombre + lupa)
+   ============================================================
+   Es el mismo estándar que el cargo en la ficha del empleado y la marca en
+   la del producto, copiado tal cual para que se vea y se use igual. Lo único
+   distinto es qué se teclea a la izquierda: aquí la cédula o el RUC, porque
+   en un documento de venta nadie se sabe el id interno del cliente. */
+:host ::ng-deep app-campoTexto,
+:host ::ng-deep app-campoTextoArea,
+:host ::ng-deep app-campoNumeroEntero,
+:host ::ng-deep app-combo {
+  display: block;
+}
+
+/* El alto de un campo flotante del tema, que es lo que tiene que medir la
+   lupa para quedar a ras de las cajas */
+:host {
+  --su-field-h: calc(3.5rem + 2px);
+}
+
+.campo-lookup .row {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.btn-lookup {
+  width: 42px;
+  height: var(--su-field-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #ced4da);
+  border-radius: .375rem;
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  color: var(--bs-body-color, #212529);
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+  flex-shrink: 0;
+}
+
+.btn-lookup:hover,
+.btn-lookup:focus {
+  background-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  color: #fff;
+}
+
+:host ::ng-deep .campo-lookup .form-control:disabled,
+:host ::ng-deep .campo-lookup .form-control[readonly] {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+}
+
+/* Quitar el cliente: en rojo al pasar */
+.btn-lookup--quitar:hover,
+.btn-lookup--quitar:focus {
+  background-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger, #dc3545);
+}
+
+/* ---------- LAS PIEZAS, PEGADAS ----------
+   La plantilla las pone sin hueco (g-0) y aquí se comparte el borde entre
+   piezas (margen de -1px) y se redondean sólo los extremos. A la vista es UN
+   campo, no tres cosas sueltas. Al enfocar o pasar por encima, la pieza sube
+   de capa para que se le vea el borde entero. */
+:host ::ng-deep .campo-lookup--pegado .form-control,
+.campo-lookup--pegado .btn-lookup {
+  border-radius: 0;
+}
+
+.campo-lookup--pegado .row > * + * {
+  margin-left: -1px;
+}
+
+:host ::ng-deep .campo-lookup--pegado .row > *:first-child .form-control {
+  border-top-left-radius: .375rem;
+  border-bottom-left-radius: .375rem;
+}
+
+/* El último es un botón mientras se edita y el nombre cuando sólo se ve */
+:host ::ng-deep .campo-lookup--pegado .row > *:last-child .form-control,
+.campo-lookup--pegado .row > *:last-child .btn-lookup {
+  border-top-right-radius: .375rem;
+  border-bottom-right-radius: .375rem;
+}
+
+:host ::ng-deep .campo-lookup--pegado .form-control:focus,
+.campo-lookup--pegado .btn-lookup:hover,
+.campo-lookup--pegado .btn-lookup:focus {
+  position: relative;
+  z-index: 2;
+}
+
+/* Dos columnas, como se lee una ficha: etiqueta y valor. No son campos —no
+   se escriben aquí— y poner cajas de texto invitaría a corregir la dirección
+   del cliente desde la proforma, que no es el sitio. */
+.pf-cliente__datos {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .1rem .6rem;
+  margin: 0;
+  font-size: .8rem;
+}
+
+.pf-cliente__datos dt { font-weight: 500; opacity: .7; white-space: nowrap; }
+.pf-cliente__datos dd { margin: 0; }
+
+/* Pegada al campo de búsqueda, no suelta debajo */
+.pf-cliente__datos { margin-top: .4rem; }
+
+/* ============================================================
+   LA REJILLA DE LÍNEAS
+   ============================================================ */
+/* El cuerpo del panel del detalle también estira, para que la rejilla pueda
+   llegar hasta abajo */
+.pf-col--der ::ng-deep .pf-panel-detalle > *,
+.pf-detalle {
+  min-height: 0;
+}
+
+.pf-detalle {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  padding-bottom: .75rem;
+}
+
+.pf-grilla {
+  width: 100%;
+  /* Un alto de arranque: el de verdad lo mide ajustarAltoRejilla() con el
+     sitio que haya hasta el pie del modal. */
+  height: 320px;
+}
+
+/* El código es lo que se teclea: se marca como lo que es, un campo de
+   entrada, para que se vea dónde hay que escribir. */
+.pf-grilla ::ng-deep .celda-codigo {
+  font-family: var(--bs-font-monospace, monospace);
+  font-weight: 600;
+}
+
+/* La última fila, la que espera un código */
+.pf-grilla ::ng-deep .linea-vacia {
+  color: var(--bs-secondary-color, #6c757d);
+  font-style: italic;
+  opacity: .7;
+}
+
+/* Marca de «esto lo escribió alguien a mano, no sale del catálogo» */
+.pf-grilla ::ng-deep .linea-libre {
+  margin-left: .35rem;
+  font-size: .7rem;
+  opacity: .5;
+}
+
+.pf-grilla ::ng-deep .celda-acciones {
+  display: inline-flex;
+  gap: .25rem;
+}
+
+.pf-grilla ::ng-deep .btn-celda {
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .25rem;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .7rem;
+  line-height: 1;
+}
+
+.pf-grilla ::ng-deep .btn-celda:hover {
+  border-color: var(--bs-primary, #0d6efd);
+  color: var(--bs-primary, #0d6efd);
+}
+
+.pf-grilla ::ng-deep .btn-celda--peligro:hover {
+  border-color: var(--bs-danger, #dc3545);
+  color: var(--bs-danger, #dc3545);
+}
+
+/* ============================================================
+   LOS TOTALES
+   ============================================================ */
+.pf-totales {
+  flex: 0 0 auto;
+  margin-top: .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  padding: .6rem .875rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.pf-totales__fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: .2rem 0;
+  font-size: .85rem;
+}
+
+.pf-totales__fila span { color: var(--bs-secondary-color, #6c757d); }
+.pf-totales__fila small { opacity: .7; font-size: .7rem; }
+
+.pf-totales__fila--resta b { color: var(--bs-danger-text-emphasis, #b02a37); }
+.pf-totales__fila--iva span { padding-left: .5rem; }
+
+.pf-totales__fila--total {
+  margin-top: .4rem;
+  padding-top: .5rem;
+  border-top: 2px solid var(--bs-border-color, #dee2e6);
+  font-size: 1.05rem;
+}
+
+.pf-totales__fila--total span { font-weight: 700; color: var(--bs-component-color, #212529); }
+.pf-totales__fila--total b { font-weight: 700; }
+
+/* Lo que falta para poder guardar, dicho donde se mira el total: es ahí
+   donde uno busca por qué no le deja. */
+.pf-totales__problema {
+  margin: .5rem 0 0;
+  font-size: .75rem;
+  color: var(--bs-danger-text-emphasis, #b02a37);
+}
+
+/* ============================================================
+   MÓVIL
+   ============================================================ */
+/* ============================================================
+   PANTALLAS ESTRECHAS
+   ============================================================
+   Por debajo de 992px las dos columnas no caben una al lado de otra: se
+   apilan —primero a quién y con qué, después las líneas— y el divisor
+   desaparece, porque no hay nada que repartir. */
+@media (max-width: 991.98px) {
+  .pf-dos-columnas {
+    flex-direction: column;
+    height: auto;
+    max-height: calc(100vh - 12rem);
+    overflow-y: auto;
+  }
+
+  .pf-col--izq {
+    flex: 0 0 auto;
+    display: block;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  /* Apilado no hay nada que fijar: se desplaza el conjunto */
+  .pf-col__scroll {
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .pf-col--der {
+    padding-left: 0;
+    padding-top: .75rem;
+    overflow: visible;
+  }
+
+  .pf-divisor { display: none; }
+
+  .proforma-body { overflow-y: auto; }
+}
+
+@media (max-width: 575.98px) {
+  .pf-grilla { height: 260px; }
+  .panel-acciones { flex-wrap: wrap; }
+}
