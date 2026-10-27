@@ -4,13 +4,16 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
 
 import { MenuService } from "../../../services/menu.service";
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 
 @Component({
   selector: 'app-deleteMenu',
   templateUrl: './deleteMenu.component.html',
   styleUrls: ['./deleteMenu.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteMenuComponent implements OnInit {
 

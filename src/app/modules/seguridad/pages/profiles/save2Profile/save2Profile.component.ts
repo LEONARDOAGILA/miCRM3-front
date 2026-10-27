@@ -1,9 +1,9 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { firstValueFrom, } from 'rxjs';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
-import { AgGridAngular } from 'ag-grid-angular';
+import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 import { CellClickedEvent, GridApi,  GridReadyEvent } from 'ag-grid-community';
 
 
@@ -18,6 +18,14 @@ import { LoadingService } from '../../../../../service/loading.service';
 import { PerfilModel } from "../../../interfaces/perfilModel";
 import { MenuModel } from "../../../interfaces/menuModel";
 import { AccesoModel } from "../../../../seguridad/interfaces/accesoModel";
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
+import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
 
 
 
@@ -25,7 +33,12 @@ import { AccesoModel } from "../../../../seguridad/interfaces/accesoModel";
   selector: 'app-save2Profile',
   templateUrl: './save2Profile.component.html',
   styleUrls: ['./save2Profile.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, AgGridModule, PanelComponent,
+    ModalHeaderComponent, ModalFooterComponent, CampoTextoComponent,
+    CampoNumeroEnteroComponent, CheckboxComponent, CampoBusquedaComponent,
+  ],
 })
 export class Save2ProfileComponent implements OnInit  {
   

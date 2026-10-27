@@ -8,6 +8,9 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Modal de selección de usuario (mismo esquema que listHorarios).
@@ -27,7 +30,11 @@ import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
   selector: 'app-listUsers',
   templateUrl: './listUsers.component.html',
   styleUrls: ['./listUsers.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, ModalArrastrableDirective,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class ListUsersComponent implements OnInit {
 

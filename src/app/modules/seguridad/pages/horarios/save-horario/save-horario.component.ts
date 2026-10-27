@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { AbstractControl, FormArray, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormBuilder, FormGroup, ValidationErrors, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
@@ -11,6 +11,12 @@ import { ChorarioModel } from '../../../interfaces/chorarioModel';
 // Los días y el tope de franjas viven con el detalle, que es a quien
 // describen; ChorarioModel es sólo la cabecera.
 import { DhorarioModel, DIAS_SEMANA, MAX_JORNADAS_POR_DIA } from '../../../interfaces/dhorarioModel';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 /**
  * Alta / edición de un horario de ACCESO AL CRM (seguridad.chorarios).
@@ -42,7 +48,12 @@ import { DhorarioModel, DIAS_SEMANA, MAX_JORNADAS_POR_DIA } from '../../../inter
   selector: 'app-save-horario',
   templateUrl: './save-horario.component.html',
   styleUrls: ['./save-horario.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule, PanelComponent,
+    ModalHeaderComponent, ModalFooterComponent, CampoTextoComponent,
+    CheckboxComponent,
+  ],
 })
 export class SaveHorarioComponent implements OnInit {
 

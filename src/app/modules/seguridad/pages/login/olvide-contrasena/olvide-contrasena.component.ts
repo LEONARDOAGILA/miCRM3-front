@@ -3,19 +3,26 @@ import {
   FormBuilder, 
   FormGroup, 
   FormControl, 
-  Validators 
-} from '@angular/forms';
+  Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { LoadingService } from '../../../../../service/loading.service';
 import { UserService } from '../../../services/user.service';
+import { CommonModule } from '@angular/common';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoClaveComponent } from '../../../../../components/campos/campoClave/campoClave.component';
 
 @Component({
   selector: 'app-olvide-contrasena',
   templateUrl: './olvide-contrasena.component.html',
   styleUrls: ['./olvide-contrasena.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, ModalHeaderComponent,
+    CampoTextoComponent, CampoClaveComponent,
+  ],
 })
 export class OlvideContrasenaComponent {
   @Output() passwordChanged = new EventEmitter<void>();

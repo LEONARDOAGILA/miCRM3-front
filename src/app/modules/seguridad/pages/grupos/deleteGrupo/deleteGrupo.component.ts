@@ -6,13 +6,16 @@ import { ToastrService } from 'ngx-toastr';
 
 import { GrupoService } from '../../../services/grupo.service';
 import { GrupoModel } from '../../../interfaces/grupoModel';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /** Confirmación de borrado de un grupo (mismo esquema que deleteUser). */
 @Component({
   selector: 'app-deleteGrupo',
   templateUrl: './deleteGrupo.component.html',
   styleUrls: ['./deleteGrupo.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteGrupoComponent implements OnDestroy {
 

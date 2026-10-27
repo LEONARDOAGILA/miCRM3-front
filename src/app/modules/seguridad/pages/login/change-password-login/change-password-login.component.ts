@@ -3,19 +3,27 @@ import {
   FormBuilder, 
   FormGroup, 
   FormControl, 
-  Validators
-} from '@angular/forms';
+  Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { LoadingService } from '../../../../../service/loading.service';
 import { UserService } from '../../../services/user.service';
+import { CommonModule } from '@angular/common';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoEmailComponent } from '../../../../../components/campos/campoEmail/campoEmail.component';
+import { CampoClaveComponent } from '../../../../../components/campos/campoClave/campoClave.component';
 
 @Component({
   selector: 'app-change-password-login',
   templateUrl: './change-password-login.component.html',
   styleUrls: ['./change-password-login.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, ModalHeaderComponent,
+    CampoTextoComponent, CampoEmailComponent, CampoClaveComponent,
+  ],
 })
 export class ChangePasswordLoginComponent implements OnInit {
   @Input() registro_selected: any = {};

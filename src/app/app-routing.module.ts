@@ -18,7 +18,8 @@ const routes: Routes = [
 
   //{ path: 'auth', loadChildren: () => import('./modules/auth222/auth.module').then( m => m.AuthModule)},
   { path: 'demo', loadChildren: () => import('./modules/demo/demo.module').then( m => m.DemoModule)},
-  { path: 'seguridad', loadChildren: () => import('./modules/seguridad/seguridad.module').then( m => m.SeguridadModule)},
+  // Sin NgModule: sus pantallas son standalone y loadChildren carga el array
+  { path: 'seguridad', loadChildren: () => import('./modules/seguridad/seguridad.routes').then( m => m.SEGURIDAD_ROUTES)},
   // Sin NgModule: sus pantallas son standalone y loadChildren carga el array
   { path: 'rh', loadChildren: () => import('./modules/rh/rh.routes').then( m => m.RH_ROUTES)},
   // Sin NgModule: sus pantallas son standalone y loadChildren carga el array

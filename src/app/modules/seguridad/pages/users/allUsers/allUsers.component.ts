@@ -5,7 +5,7 @@ import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -31,6 +31,9 @@ import { PapeleraUsuariosComponent } from '../../grupos/papeleraUsuarios/papeler
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 /**
  * Listado de usuarios.
@@ -55,7 +58,11 @@ import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
   selector: 'app-allUsers',
   templateUrl: './allUsers.component.html',
   styleUrls: ['./allUsers.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class AllUsersComponent implements OnInit, OnDestroy {
 
@@ -1121,7 +1128,8 @@ export class AllUsersComponent implements OnInit, OnDestroy {
 // refresh() devolviendo true la reutiliza al hacer scroll en vez de recrearla.
 @Component({
   selector: 'app-button-accion-user',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"

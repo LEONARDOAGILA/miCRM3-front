@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { Observable, Subject, firstValueFrom, from, merge, of } from 'rxjs';
@@ -14,6 +14,15 @@ import { GrupoModel, TIPOS_ACCESO } from '../../../interfaces/grupoModel';
 import { ListProfileComponent } from '../../profiles/listProfile/listProfile.component';
 import { ListHorariosComponent } from '../../horarios/listHorarios/listHorarios.component';
 import { ListGruposComponent } from '../listGrupos/listGrupos.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoTextoAreaComponent } from '../../../../../components/campos/campoTextoArea/campoTextoArea.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 /**
  * Alta / modificación / vista de un grupo de usuarios.
@@ -30,7 +39,12 @@ import { ListGruposComponent } from '../listGrupos/listGrupos.component';
   selector: 'app-saveGrupo',
   templateUrl: './saveGrupo.component.html',
   styleUrls: ['./saveGrupo.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
+    ModalFooterComponent, ComboComponent, CampoTextoComponent,
+    CampoTextoAreaComponent, CampoNumeroEnteroComponent, CheckboxComponent,
+  ],
 })
 export class SaveGrupoComponent implements OnInit, OnDestroy {
 

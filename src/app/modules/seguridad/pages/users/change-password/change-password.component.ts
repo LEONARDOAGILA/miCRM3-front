@@ -3,8 +3,7 @@ import {
   FormBuilder,
   FormGroup,
   FormControl,
-  Validators
-} from '@angular/forms';
+  Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -13,12 +12,24 @@ import { LoadingService } from '../../../../../service/loading.service';
 import { GeneradorClaveService } from '../../../../../service/generador-clave.service';
 import { UserService } from '../../../services/user.service';
 import { TipoUsuarioDeUsuario } from '../../../interfaces/tipoUsuarioModel';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { CampoEmailComponent } from '../../../../../components/campos/campoEmail/campoEmail.component';
+import { CampoClaveComponent } from '../../../../../components/campos/campoClave/campoClave.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 @Component({
   selector: 'app-change-password',
   templateUrl: './change-password.component.html',
   styleUrls: ['./change-password.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
+    ModalFooterComponent, CampoEmailComponent, CampoClaveComponent,
+    CheckboxComponent,
+  ],
 })
 export class ChangePasswordComponent implements OnInit, OnDestroy {
   @Input() registro_selected: any = {};

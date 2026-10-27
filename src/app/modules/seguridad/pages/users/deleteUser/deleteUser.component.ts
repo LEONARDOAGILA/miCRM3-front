@@ -5,12 +5,15 @@ import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { UserService } from "../../../../seguridad/services/user.service";
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 @Component({
   selector: 'app-deleteUser',
   templateUrl: './deleteUser.component.html',
   styleUrls: ['./deleteUser.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteUserComponent implements OnInit, OnDestroy {
 

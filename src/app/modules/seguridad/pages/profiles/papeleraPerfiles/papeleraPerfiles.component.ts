@@ -9,6 +9,9 @@ import { ProfileService } from '../../../services/profile.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 
 /**
  * Papelera de reciclaje de perfiles (modal), la misma de usuarios y clientes.
@@ -28,7 +31,8 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
   selector: 'app-papeleraPerfiles',
   templateUrl: './papeleraPerfiles.component.html',
   styleUrls: ['./papeleraPerfiles.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
 })
 export class PapeleraPerfilesComponent implements OnInit, OnDestroy {
 

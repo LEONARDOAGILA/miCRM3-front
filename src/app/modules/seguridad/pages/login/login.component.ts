@@ -19,13 +19,17 @@ import { UserModel } from "../../interfaces/userModel";
 import { AppComponent } from "../../../../app.component";
 import { ChangePasswordLoginComponent } from '../login/change-password-login/change-password-login.component';
 import { OlvideContrasenaComponent } from './olvide-contrasena/olvide-contrasena.component';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
+import { DirectiveModule } from '../../../../core/directives/directive.module';
 
 
 @Component({
   selector: "app-login",
   templateUrl: "./login.component.html",
   styleUrls: ["./login.component.css"],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, DirectiveModule],
 })
 
 

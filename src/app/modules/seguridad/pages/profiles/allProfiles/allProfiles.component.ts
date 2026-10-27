@@ -4,7 +4,7 @@ import { Subject, firstValueFrom } from 'rxjs';
 import { CellClickedEvent, GridApi,  GridReadyEvent, RowNode } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AgGridAngular } from 'ag-grid-angular';
+import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 
 ///   SERVICIOS    ///
 import { SeguridadService } from '../../../services/seguridad.service';
@@ -27,6 +27,9 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
 import { PapeleraPerfilesComponent } from '../papeleraPerfiles/papeleraPerfiles.component';
 import { AppDescargaService, PeticionDescarga, AccionDescarga }
   from '../../../../../service/app-descarga.service';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 
 
@@ -34,7 +37,11 @@ import { AppDescargaService, PeticionDescarga, AccionDescarga }
   selector: 'app-allProfiles',
   templateUrl: './allProfiles.component.html',
   styleUrls: ['./allProfiles.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class AllProfilesComponent implements OnInit, OnDestroy{
 
@@ -1049,7 +1056,8 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 // saber que la cabecera también responde.
 @Component({
   selector: 'app-button-accion',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (AllProfilesComponent.accionesPlegadas) {
       <button type="button"

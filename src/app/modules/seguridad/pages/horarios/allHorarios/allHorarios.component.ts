@@ -3,7 +3,7 @@ import { Subject, firstValueFrom } from 'rxjs';
 import { GridApi, GridReadyEvent, CellClickedEvent, RowNode } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AgGridAngular } from 'ag-grid-angular';
+import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 
 //   ******   SERVICIOS   ******  //
@@ -27,12 +27,19 @@ import { DeleteHorarioComponent } from '../delete-horario/delete-horario.compone
 import { PapeleraHorariosComponent } from '../papeleraHorarios/papeleraHorarios.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 @Component({
   selector: 'app-allHorarios',
   templateUrl: './allHorarios.component.html',
   styleUrls: ['./allHorarios.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class AllHorariosComponent implements OnInit, OnDestroy {
 
@@ -985,7 +992,8 @@ addHorario() {
 // ****** COMPONENTE QUE CONTIENE LOS BOTONES DEL AG GRID ****** //
 @Component({
   selector: 'app-button-accion-horario',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (AllHorariosComponent.accionesPlegadas) {
       <button type="button"

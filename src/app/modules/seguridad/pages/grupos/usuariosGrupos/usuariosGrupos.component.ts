@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
@@ -19,7 +19,7 @@ import { AppSettings } from '../../../../../service/app-settings.service';
 import { UserModel } from '../../../interfaces/userModel';
 import { GrupoModel } from '../../../interfaces/grupoModel';
 import { AccesoModel } from '../../../interfaces/accesoModel';
-import { FileTreeNode } from '../../../../../components/file-tree-node/file-tree-node.component';
+import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
 import { buscarNodo, construirArbolGrupos, filtrarArbol, recorrer } from '../arbolGrupos';
 
 ///   COMPONENTES    ///
@@ -33,6 +33,11 @@ import { PapeleraUsuariosComponent } from '../papeleraUsuarios/papeleraUsuarios.
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { NgScrollbarModule } from 'ngx-scrollbar';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 /** Ids de los dos nodos virtuales del árbol (no son grupos de la tabla). */
 const NODO_TODOS = -1;
@@ -58,7 +63,11 @@ const NODO_SIN_GRUPO = 0;
   selector: 'app-usuariosGrupos',
   templateUrl: './usuariosGrupos.component.html',
   styleUrls: ['./usuariosGrupos.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, AgGridModule, NgScrollbarModule, PanelComponent,
+    FileTreeNodeComponent, CampoBusquedaPaginacionComponent,
+  ],
   host: {
     'class': 'd-flex flex-column flex-1 h-100'
   }
@@ -994,7 +1003,8 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
 // ================================================================
 @Component({
   selector: 'app-button-accion-usuario-grupo',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button" class="btn btn-sm btn-outline-primary acciones-desplegar"

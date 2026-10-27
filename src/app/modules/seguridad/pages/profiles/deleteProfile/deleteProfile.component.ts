@@ -4,6 +4,8 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
 
 import { ProfileService } from "../../../services/profile.service";
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 
 
@@ -11,7 +13,8 @@ import { ProfileService } from "../../../services/profile.service";
   selector: 'app-deleteProfile',
   templateUrl: './deleteProfile.component.html',
   styleUrls: ['./deleteProfile.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteProfileComponent implements OnInit, OnDestroy {
 

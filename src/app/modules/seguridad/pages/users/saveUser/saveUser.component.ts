@@ -1,7 +1,7 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, OnDestroy, ViewChild } from '@angular/core';
 import { firstValueFrom, from, merge, of, Observable, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
@@ -23,12 +23,29 @@ import { ListProfileComponent } from '../../profiles/listProfile/listProfile.com
 import { ListHorariosComponent } from '../../horarios/listHorarios/listHorarios.component';
 import { ListGruposComponent } from '../../grupos/listGrupos/listGrupos.component';
 import { GrupoModel } from '../../../interfaces/grupoModel';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoTelefonoComponent } from '../../../../../components/campos/campoTelefono/campoTelefono.component';
+import { CampoEmailComponent } from '../../../../../components/campos/campoEmail/campoEmail.component';
+import { CampoClaveComponent } from '../../../../../components/campos/campoClave/campoClave.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 @Component({
   selector: 'app-saveUser',
   templateUrl: './saveUser.component.html',
   styleUrls: ['./saveUser.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
+    ModalFooterComponent, ComboComponent, CampoTextoComponent,
+    CampoTelefonoComponent, CampoEmailComponent, CampoClaveComponent,
+    CampoNumeroEnteroComponent, CheckboxComponent,
+  ],
 })
 export class SaveUserComponent implements OnInit, OnDestroy {
   @Input() registro_selected: any = {};

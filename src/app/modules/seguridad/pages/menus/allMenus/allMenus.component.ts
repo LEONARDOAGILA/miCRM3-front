@@ -4,7 +4,7 @@ import { CellClickedEvent, GridApi,  GridReadyEvent } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LoadingBarService } from '@ngx-loading-bar/core';
-import { AgGridAngular } from 'ag-grid-angular';
+import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { MenuService } from "../../../services/menu.service";
@@ -26,13 +26,21 @@ import { ToastrService } from 'ngx-toastr';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { AppDescargaService, PeticionDescarga, AccionDescarga }
   from '../../../../../service/app-descarga.service';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 
 @Component({
   selector: 'app-allMenus',
   templateUrl: './allMenus.component.html',
   styleUrls: ['./allMenus.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CampoBusquedaComponent,
+  ],
 })
 export class AllMenusComponent implements OnInit, OnDestroy{
 
@@ -1240,7 +1248,8 @@ export class AllMenusComponent implements OnInit, OnDestroy{
 // COMPONENTE QUE CONTIENE EL BOTON
 @Component({
   selector: 'app-button-accion',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (AllMenusComponent.accionesPlegadas) {
       <button type="button"
