@@ -20,9 +20,9 @@ import { ContactoEmergencia, EmpleadoModel, ESTADOS_EMPLEADO, GENEROS, PARENTESC
 import { ListCargosComponent } from '../../cargos/listCargos/listCargos.component';
 import { ListDepartamentosComponent } from '../../departamentos/listDepartamentos/listDepartamentos.component';
 import { ListEmpleadosComponent } from '../listEmpleados/listEmpleados.component';
-import { ListSucursalComponent } from '../../../../ventas/pages/sucursales/listSucursal/listSucursal.component';
+import { ListSucursalComponent } from '../../../../core/pages/sucursales/listSucursal/listSucursal.component';
 import { ListHorariosEmpleadosComponent } from '../../horarios-empleados/listHorariosEmpleados/listHorariosEmpleados.component';
-import { SucursalService } from '../../../../ventas/services/sucursal.service';
+import { SucursalService } from '../../../../core/services/sucursal.service';
 import { HorarioEmpleadoService } from '../../../services/horarioEmpleado.service';
 import {
   SeleccionarUbicacionComponent, UbicacionElegida,

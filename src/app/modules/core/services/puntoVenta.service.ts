@@ -24,7 +24,7 @@ export class PuntoVentaService {
   constructor(
     private _http: HttpClient,
   ) {
-    this.URL_SERVICIOS = environment.URL_SERVICIOS + 'ventas/puntoVenta/';
+    this.URL_SERVICIOS = environment.URL_SERVICIOS + 'core/puntoVenta/';
   }
 
   //   ******   TODAS, AGRUPADAS POR SUCURSAL   ******  //

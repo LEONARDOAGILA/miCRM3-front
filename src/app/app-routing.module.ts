@@ -22,6 +22,11 @@ const routes: Routes = [
   { path: 'seguridad', loadChildren: () => import('./modules/seguridad/seguridad.module').then( m => m.SeguridadModule)},
   { path: 'rh', loadChildren: () => import('./modules/rh/rh.module').then( m => m.RhModule)},
   { path: 'ventas', loadChildren: () => import('./modules/ventas/ventas.module').then( m => m.VentasModule)},
+  // La estructura de la empresa: sucursales y puntos de venta. No está en
+  // ventas porque de ella cuelgan también rh, inventarios y contabilidad.
+  // Sin NgModule: sus pantallas son standalone y loadChildren carga el array
+  // de rutas tal cual, igual de perezoso y sin un módulo que no declara nada.
+  { path: 'core', loadChildren: () => import('./modules/core/core.routes').then( m => m.CORE_ROUTES)},
   { path: 'inventarios', loadChildren: () => import('./modules/inventarios/inventario.module').then( m => m.InventarioModule)},
   { path: 'contabilidad', loadChildren: () => import('./modules/contabilidad/contabilidad.module').then( m => m.ContabilidadModule)},
   { path: 'reportes', loadChildren: () => import('./modules/reportes/reportes.module').then( m => m.ReportesModule)},

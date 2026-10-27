@@ -80,7 +80,7 @@ export class SucursalService {
   constructor(
     private _http: HttpClient,
   ) {
-    this.URL_SERVICIOS = environment.URL_SERVICIOS + 'ventas/sucursal/';
+    this.URL_SERVICIOS = environment.URL_SERVICIOS + 'core/sucursal/';
   }
 
   //   ******   LISTADO CON PAGINACIÓN   ******  //

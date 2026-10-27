@@ -23,7 +23,7 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import { LoadingService } from '../../../../../service/loading.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { ProformaService } from '../../../services/proforma.service';
-import { SucursalService } from '../../../services/sucursal.service';
+import { SucursalService } from '../../../../core/services/sucursal.service';
 import { ListClientesComponent } from '../../clientes/listClientes/listClientes.component';
 import { ListProductosComponent } from '../listProductos/listProductos.component';
 

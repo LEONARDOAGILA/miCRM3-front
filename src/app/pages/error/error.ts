@@ -1,14 +1,23 @@
 import { Component, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import Swal from 'sweetalert2';
 
 import { AppSettings } from '../../service/app-settings.service';
 import { SeguridadService } from '../../modules/seguridad/services/seguridad.service';
 import { InactivityService } from '../../modules/seguridad/services/InactivityService';
 
+/**
+ * STANDALONE: la usan las rutas de los módulos que ya no tienen NgModule
+ * (modules/core/core.routes.ts). Cuando `loadChildren` devuelve un array de
+ * rutas en vez de un módulo, Angular exige que TODOS los componentes de esas
+ * rutas sean standalone (NG04014), y ésta es la del `**` de cada módulo.
+ */
 @Component({
 	selector: 'error',
   templateUrl: './error.html',
-  standalone: false
+  standalone: true,
+  imports: [CommonModule, RouterModule],
 })
 
 export class ErrorPage implements OnDestroy {

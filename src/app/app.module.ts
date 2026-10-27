@@ -47,10 +47,10 @@ registerLocaleData(localeEs, 'es');
     TopMenuComponent,
     FloatSubMenuComponent,
     ThemePanelComponent,
-
-    ErrorPage
   ],
   imports: [
+    // Standalone: la usan también las rutas sin NgModule (modules/core)
+    ErrorPage,
     AppRoutingModule,
     BrowserAnimationsModule,
     BrowserModule,
