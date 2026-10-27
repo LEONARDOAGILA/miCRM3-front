@@ -4,7 +4,7 @@ import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -29,6 +29,10 @@ import { PapeleraCategoriasComponent } from '../papeleraCategorias/papeleraCateg
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 /**
  * Árbol de categorías (inventarios.categorias).
@@ -53,7 +57,11 @@ import { CampoBusquedaComponent } from '../../../../../components/campos/campoBu
   selector: 'app-allCategorias',
   templateUrl: './allCategorias.component.html',
   styleUrls: ['./allCategorias.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, PanelComponent,
+    CampoBusquedaPaginacionComponent, MenuContextualComponent,
+  ],
 })
 export class AllCategoriasComponent implements OnInit, OnDestroy {
 
@@ -1384,7 +1392,8 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
 // la forma natural de ir construyendo el árbol: desde la rama donde va.
 @Component({
   selector: 'app-button-accion-categoria',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"

@@ -10,6 +10,9 @@ import { HorarioEmpleadoModel } from '../../../interfaces/horarioEmpleadoModel';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 
 /**
  * Papelera de reciclaje de horarios (modal), la misma de marcas y departamentos.
@@ -26,7 +29,8 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
   selector: 'app-papeleraHorariosEmpleados',
   templateUrl: './papeleraHorariosEmpleados.component.html',
   styleUrls: ['./papeleraHorariosEmpleados.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
 })
 export class PapeleraHorariosEmpleadosComponent implements OnInit, OnDestroy {
 

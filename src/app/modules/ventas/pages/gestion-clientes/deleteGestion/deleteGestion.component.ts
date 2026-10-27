@@ -6,6 +6,8 @@ import { ToastrService } from 'ngx-toastr';
 
 import { GestionService } from '../../../services/gestion.service';
 import { GestionModel } from '../../../interfaces/gestionModel';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de una gestión (mismo esquema que deleteCliente).
@@ -22,7 +24,8 @@ import { GestionModel } from '../../../interfaces/gestionModel';
   selector: 'app-deleteGestion',
   templateUrl: './deleteGestion.component.html',
   styleUrls: ['./deleteGestion.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteGestionComponent implements OnDestroy {
 

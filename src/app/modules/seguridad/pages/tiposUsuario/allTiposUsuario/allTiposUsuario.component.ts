@@ -22,7 +22,7 @@ import { AppDescargaService, PeticionDescarga, AccionDescarga }
   from '../../../../../service/app-descarga.service';
 
 //   ******   COMPONENTES   ******  //
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { SaveTipoUsuarioComponent } from '../saveTipoUsuario/saveTipoUsuario.component';
@@ -43,7 +43,7 @@ import { DeleteTipoUsuarioComponent } from '../deleteTipoUsuario/deleteTipoUsuar
 @Component({
   selector: 'app-allTiposUsuario',
   standalone: true,
-  imports: [CommonModule, AgGridModule, PanelModule, CampoBusquedaPaginacionComponent],
+  imports: [CommonModule, AgGridModule, PanelComponent, CampoBusquedaPaginacionComponent],
   templateUrl: './allTiposUsuario.component.html',
   styleUrls: ['./allTiposUsuario.component.css'],
 })

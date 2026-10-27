@@ -5,6 +5,8 @@ import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { CategoriaService } from '../../../services/categoria.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de un categoria (mismo esquema que deleteUser).
@@ -15,7 +17,8 @@ import { CategoriaService } from '../../../services/categoria.service';
   selector: 'app-deleteCategoria',
   templateUrl: './deleteCategoria.component.html',
   styleUrls: ['./deleteCategoria.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteCategoriaComponent implements OnInit, OnDestroy {
 

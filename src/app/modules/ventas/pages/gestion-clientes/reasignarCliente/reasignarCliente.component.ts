@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { Observable, Subject, firstValueFrom, from, merge, of } from 'rxjs';
@@ -14,6 +14,14 @@ import { ROLES_RESPONSABLE, RolResponsable } from '../../../interfaces/gestionMo
 // entrar al sistema para que el cliente le aparezca en su agenda. La ficha de
 // recursos humanos se quedó en su módulo.
 import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/listUsuariosGrupos/listUsuariosGrupos.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoTextoAreaComponent } from '../../../../../components/campos/campoTextoArea/campoTextoArea.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 /**
  * Pasar el cliente a otro vendedor (ventas.fn_clientes_reasignar).
@@ -27,7 +35,12 @@ import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/
   selector: 'app-reasignarCliente',
   templateUrl: './reasignarCliente.component.html',
   styleUrls: ['./reasignarCliente.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
+    ModalFooterComponent, CampoTextoComponent, CampoTextoAreaComponent,
+    CampoNumeroEnteroComponent, CheckboxComponent,
+  ],
 })
 export class ReasignarClienteComponent implements OnInit, OnDestroy {
 

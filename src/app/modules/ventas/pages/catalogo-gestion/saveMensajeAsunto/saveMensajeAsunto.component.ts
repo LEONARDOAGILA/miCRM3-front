@@ -11,7 +11,7 @@ import {
   GRUPOS_HUECOS, aplicarHuecos, datosDeHuecos,
 } from '../../../interfaces/huecosPlantilla';
 import { imprimirNota } from '../../../interfaces/notaDocumento';
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoNgxEditorComponent } from '../../../../../components/campos/campoNgxEditor/campoNgxEditor.component';
 import { HuecosPlantillaComponent } from '../../../../../components/campos/huecosPlantilla/huecosPlantilla.component';
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
@@ -34,7 +34,7 @@ import { ModalFooterComponent } from '../../../../../components/modal/modal-foot
   selector: 'app-saveMensajeAsunto',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, PanelModule,
+    CommonModule, FormsModule, PanelComponent,
     CampoNgxEditorComponent, HuecosPlantillaComponent, ModalFooterComponent,
   ],
   templateUrl: './saveMensajeAsunto.component.html',

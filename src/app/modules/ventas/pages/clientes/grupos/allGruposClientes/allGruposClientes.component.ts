@@ -4,7 +4,7 @@ import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -29,6 +29,10 @@ import { PapeleraGruposClientesComponent } from '../papeleraGruposClientes/papel
 import { AuditoriaModalComponent } from '../../../../../../components/auditoria-modal/auditoria-modal.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaComponent } from '../../../../../../components/campos/campoBusqueda/campoBusqueda.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../../components/panel/panel.component';
+import { CampoBusquedaPaginacionComponent } from '../../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { ActionButtonsComponent } from '../../../../../../components/botones/action-buttons/action-buttons.component';
 
 /**
  * Árbol de grupos de clientes (ventas.grupos_clientes).
@@ -59,7 +63,11 @@ import { CampoBusquedaComponent } from '../../../../../../components/campos/camp
   selector: 'app-allGruposClientes',
   templateUrl: './allGruposClientes.component.html',
   styleUrls: ['./allGruposClientes.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class AllGruposClientesComponent implements OnInit, OnDestroy {
 
@@ -1563,7 +1571,8 @@ export class AllGruposClientesComponent implements OnInit, OnDestroy {
 // la forma natural de ir construyendo el árbol: desde la rama donde va.
 @Component({
   selector: 'app-button-accion-grupo-cliente',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"

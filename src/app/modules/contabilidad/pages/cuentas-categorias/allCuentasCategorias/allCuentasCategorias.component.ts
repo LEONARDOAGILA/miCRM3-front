@@ -8,7 +8,7 @@ import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 
@@ -42,7 +42,7 @@ import { SaveCuentasCategoriaComponent } from '../saveCuentasCategoria/saveCuent
 @Component({
   selector: 'app-allCuentasCategorias',
   standalone: true,
-  imports: [CommonModule, PanelModule, AgGridModule, CampoBusquedaPaginacionComponent, MenuContextualComponent],
+  imports: [CommonModule, PanelComponent, AgGridModule, CampoBusquedaPaginacionComponent, MenuContextualComponent],
   templateUrl: './allCuentasCategorias.component.html',
   styleUrls: ['./allCuentasCategorias.component.css'],
 })

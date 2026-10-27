@@ -5,6 +5,8 @@ import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { ClienteService } from '../../../services/cliente.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de un cliente (mismo esquema que deleteUser).
@@ -17,7 +19,8 @@ import { ClienteService } from '../../../services/cliente.service';
   selector: 'app-deleteCliente',
   templateUrl: './deleteCliente.component.html',
   styleUrls: ['./deleteCliente.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteClienteComponent implements OnInit, OnDestroy {
 

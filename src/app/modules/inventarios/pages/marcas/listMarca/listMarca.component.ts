@@ -8,6 +8,9 @@ import { MarcaService } from '../../../services/marca.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Modal de selección de marca (lo abre saveProducto para el campo «Marca»).
@@ -35,7 +38,11 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-listMarca',
   templateUrl: './listMarca.component.html',
   styleUrls: ['./listMarca.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, ModalArrastrableDirective,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class ListMarcaComponent implements OnInit {
 

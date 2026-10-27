@@ -19,9 +19,14 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { SaveCaracteristicaComponent } from '../saveCaracteristica/saveCaracteristica.component';
 import { DeleteCaracteristicaComponent } from '../deleteCaracteristica/deleteCaracteristica.component';
 import { CategoriaService } from '../../../services/categoria.service';
-import { FileTreeNode } from '../../../../../components/file-tree-node/file-tree-node.component';
+import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
 import { buscarNodo, filtrarArbol, recorrer } from '../../../../seguridad/pages/grupos/arbolGrupos';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { NgScrollbarModule } from 'ngx-scrollbar';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 
 /**
  * LISTADO DE CARACTERÍSTICAS (la plantilla de cada categoría).
@@ -42,7 +47,11 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-allCaracteristicas',
   templateUrl: './allCaracteristicas.component.html',
   styleUrls: ['./allCaracteristicas.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, AgGridModule, NgScrollbarModule, PanelComponent,
+    CampoBusquedaPaginacionComponent, FileTreeNodeComponent,
+  ],
 })
 export class AllCaracteristicasComponent implements OnInit, OnDestroy {
 

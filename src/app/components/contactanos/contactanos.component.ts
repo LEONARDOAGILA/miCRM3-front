@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 
-import { PanelModule } from '../panel/panel.module';
+import { PanelComponent } from '../panel/panel.component';
 import { CampoTextoComponent } from '../campos/campoTexto/campoTexto.component';
 import { CampoEmailComponent } from '../campos/campoEmail/campoEmail.component';
 import { CampoTelefonoComponent } from '../campos/campoTelefono/campoTelefono.component';
@@ -39,7 +39,7 @@ export interface CanalContacto {
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    PanelModule,
+    PanelComponent,
     CampoTextoComponent,
     CampoEmailComponent,
     CampoTelefonoComponent,

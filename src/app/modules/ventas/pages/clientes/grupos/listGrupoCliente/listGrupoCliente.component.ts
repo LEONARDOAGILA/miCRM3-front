@@ -9,6 +9,9 @@ import { GrupoClienteService } from '../../../../services/grupoCliente.service';
 import { AppAgGridService } from '../../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalArrastrableDirective } from '../../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Modal de selección de grupo (lo abre saveCliente para el campo
@@ -45,7 +48,11 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../../components/c
   selector: 'app-listGrupoCliente',
   templateUrl: './listGrupoCliente.component.html',
   styleUrls: ['./listGrupoCliente.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, ModalArrastrableDirective,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class ListGrupoClienteComponent implements OnInit {
 

@@ -5,6 +5,8 @@ import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { HorarioEmpleadoService } from '../../../services/horarioEmpleado.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de un horario de trabajo (mismo esquema que
@@ -17,7 +19,8 @@ import { HorarioEmpleadoService } from '../../../services/horarioEmpleado.servic
   selector: 'app-deleteHorarioEmpleado',
   templateUrl: './deleteHorarioEmpleado.component.html',
   styleUrls: ['./deleteHorarioEmpleado.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteHorarioEmpleadoComponent implements OnInit, OnDestroy {
 

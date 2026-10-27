@@ -8,13 +8,13 @@ import { LoadingBarModule } from '@ngx-loading-bar/core';
 import { AgGridModule } from 'ag-grid-angular';
 
 import { DirectiveModule } from "../../core/directives/directive.module";
-import { PanelModule } from '../../components/panel/panel.module';
+import { PanelComponent } from '../../components/panel/panel.component';
 
 
 import { ModalFooterComponent } from '../../components/modal/modal-footer/modal-footer.component';
 import { ModalHeaderComponent } from '../../components/modal/modal-header/modal-header.component';
 import { ModalArrastrableDirective } from '../../components/modal/modal-arrastrable.directive';
-import { ActionButtonsModule } from '../../components/botones/action-buttons/action-buttons.module';
+import { ActionButtonsComponent } from '../../components/botones/action-buttons/action-buttons.component';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
 
@@ -123,7 +123,7 @@ import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/
     LoadingBarModule,
     
     FormsModule,
-    PanelModule,
+    PanelComponent,
     ReactiveFormsModule,
     
     AgGridModule,
@@ -144,7 +144,7 @@ import { CampoTextoAreaComponent } from '../../components/campos/campoTextoArea/
     MenuContextualComponent,
     ModalArrastrableDirective,
     ComboComponent,
-    ActionButtonsModule,
+    ActionButtonsComponent,
     ModalFooterComponent,
     ModalHeaderComponent,
     FileTreeNodeComponent,

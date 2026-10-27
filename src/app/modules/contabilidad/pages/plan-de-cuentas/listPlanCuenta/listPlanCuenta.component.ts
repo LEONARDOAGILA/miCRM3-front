@@ -9,6 +9,9 @@ import { PlanCuentaService } from '../../../services/planCuenta.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Modal de selección de cuenta contable.
@@ -44,7 +47,11 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-listPlanCuenta',
   templateUrl: './listPlanCuenta.component.html',
   styleUrls: ['./listPlanCuenta.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, ModalArrastrableDirective,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class ListPlanCuentaComponent implements OnInit {
 

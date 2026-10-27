@@ -24,8 +24,8 @@ import { AppDescargaService, PeticionDescarga, AccionDescarga }
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 
 ///   COMPONENTES    ///
-import { PanelModule } from '../../../../../components/panel/panel.module';
-import { ActionButtonsModule } from '../../../../../components/botones/action-buttons/action-buttons.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
@@ -52,7 +52,7 @@ import { PapeleraSucursalesComponent } from '../papeleraSucursales/papeleraSucur
   selector: 'app-allSucursales',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, PanelModule,
+    CommonModule, FormsModule, AgGridModule, PanelComponent,
     CampoBusquedaPaginacionComponent, MenuContextualComponent,
   ],
   templateUrl: './allSucursales.component.html',
@@ -992,7 +992,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'app-button-accion-sucursal',
   standalone: true,
-  imports: [ActionButtonsModule],
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent?.accionesPlegadas) {
       <button type="button"

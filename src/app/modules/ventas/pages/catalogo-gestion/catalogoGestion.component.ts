@@ -7,7 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { PanelModule } from '../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../components/panel/panel.component';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import { CatalogoGestionService } from '../../services/catalogoGestion.service';
 import { TipoGestion, AsuntoGestion, iconoDelTipo } from '../../interfaces/catalogoGestion';
@@ -34,7 +34,7 @@ import { SaveMensajeAsuntoComponent } from './saveMensajeAsunto/saveMensajeAsunt
 @Component({
   selector: 'app-catalogoGestion',
   standalone: true,
-  imports: [CommonModule, FormsModule, PanelModule, CampoIconoComponent, AvisoComponent],
+  imports: [CommonModule, FormsModule, PanelComponent, CampoIconoComponent, AvisoComponent],
   templateUrl: './catalogoGestion.component.html',
   styleUrls: ['./catalogoGestion.component.css'],
 })

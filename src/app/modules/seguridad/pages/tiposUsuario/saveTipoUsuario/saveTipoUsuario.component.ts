@@ -14,7 +14,7 @@ import { TipoUsuarioService } from '../../../services/tipoUsuario.service';
 import { TipoUsuarioModel } from '../../../interfaces/tipoUsuarioModel';
 
 //   ******   COMPONENTES   ******  //
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
@@ -35,7 +35,7 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
   selector: 'app-saveTipoUsuario',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, PanelModule,
+    CommonModule, ReactiveFormsModule, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent,
     CampoTextoComponent, CampoTextoAreaComponent, CampoNumeroEnteroComponent, CheckboxComponent,
   ],

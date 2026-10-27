@@ -7,6 +7,9 @@ import { ClienteService } from '../../../services/cliente.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Modal de selección de cliente (mismo esquema que listUsers / listHorarios):
@@ -22,7 +25,11 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-listClientes',
   templateUrl: './listClientes.component.html',
   styleUrls: ['./listClientes.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, ModalArrastrableDirective,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class ListClientesComponent implements OnInit {
 

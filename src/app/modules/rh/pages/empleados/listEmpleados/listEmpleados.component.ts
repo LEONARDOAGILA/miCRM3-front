@@ -7,6 +7,9 @@ import { EmpleadoService } from '../../../services/empleado.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Modal de selección de empleado (mismo esquema que listUsers / listHorarios):
@@ -22,7 +25,11 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-listEmpleados',
   templateUrl: './listEmpleados.component.html',
   styleUrls: ['./listEmpleados.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, ModalArrastrableDirective,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class ListEmpleadosComponent implements OnInit {
 

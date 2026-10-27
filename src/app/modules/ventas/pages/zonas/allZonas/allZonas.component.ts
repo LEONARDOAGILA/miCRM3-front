@@ -9,8 +9,8 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
-import { ActionButtonsModule } from '../../../../../components/botones/action-buttons/action-buttons.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.component';
 import { AsignacionClienteMasivaComponent } from '../../gestion-clientes/asignacionClienteMasiva/asignacionClienteMasiva.component';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
@@ -72,7 +72,7 @@ const RADIO_INICIAL = 1000;
 @Component({
   selector: 'app-allZonas',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, PanelModule, AvisoComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, PanelComponent, AvisoComponent],
   templateUrl: './allZonas.component.html',
   styleUrls: ['./allZonas.component.css'],
 })
@@ -1590,7 +1590,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
 @Component({
   selector: 'app-button-accion-zona',
   standalone: true,
-  imports: [ActionButtonsModule],
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent?.accionesPlegadas) {
       <button type="button"

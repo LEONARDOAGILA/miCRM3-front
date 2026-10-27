@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { NgFor } from '@angular/common';
 import { NgScrollbarModule } from 'ngx-scrollbar';
-import { PanelModule } from '../../panel/panel.module';
+import { PanelComponent } from '../../panel/panel.component';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { TrendModule } from 'ngx-trend';
 import { AppVariablesService } from '../../../service/app-variables.service';
@@ -21,7 +21,7 @@ import { AppVariablesService } from '../../../service/app-variables.service';
   imports: [
     NgFor,               // *ngFor de la lista de tareas
     NgScrollbarModule,   // <ng-scrollbar>
-    PanelModule,         // <panel>
+    PanelComponent,         // <panel>
     NgxChartsModule,     // <ngx-charts-line-chart>, <ngx-charts-pie-chart>
     TrendModule          // <ngx-trend>
   ]

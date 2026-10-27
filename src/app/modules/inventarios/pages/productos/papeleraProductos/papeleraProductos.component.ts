@@ -10,6 +10,9 @@ import { ProductoModel } from '../../../interfaces/productoModel';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 
 /**
  * Papelera de reciclaje de productos (modal), calcada de la de clientes.
@@ -26,7 +29,8 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
   selector: 'app-papeleraProductos',
   templateUrl: './papeleraProductos.component.html',
   styleUrls: ['./papeleraProductos.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
 })
 export class PapeleraProductosComponent implements OnInit, OnDestroy {
 

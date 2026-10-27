@@ -5,7 +5,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom } from 'rxjs';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
 import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
@@ -42,7 +42,7 @@ import { PlanCuentaModel } from '../../../interfaces/planCuentaModel';
 @Component({
   selector: 'app-saveCuentasCategoria',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, PanelModule, ModalHeaderComponent, ModalFooterComponent, ComboComponent],
+  imports: [CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent, ModalFooterComponent, ComboComponent],
   templateUrl: './saveCuentasCategoria.component.html',
   styleUrls: ['./saveCuentasCategoria.component.css'],
 })

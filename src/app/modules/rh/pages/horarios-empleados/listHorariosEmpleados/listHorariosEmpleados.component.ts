@@ -7,6 +7,9 @@ import { HorarioEmpleadoService } from '../../../services/horarioEmpleado.servic
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Modal de selección de horario de trabajo (rh.horarios_empleados).
@@ -28,7 +31,11 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-listHorariosEmpleados',
   templateUrl: './listHorariosEmpleados.component.html',
   styleUrls: ['./listHorariosEmpleados.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, ModalArrastrableDirective,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class ListHorariosEmpleadosComponent implements OnInit {
 

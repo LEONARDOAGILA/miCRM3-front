@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -8,6 +8,13 @@ import { CaracteristicaService } from '../../../services/caracteristica.service'
 import { CategoriaService } from '../../../services/categoria.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ListCategoriaComponent } from '../../categorias/listCategoria/listCategoria.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 /**
  * Alta / modificación de una característica de la plantilla.
@@ -26,7 +33,12 @@ import { ListCategoriaComponent } from '../../categorias/listCategoria/listCateg
   selector: 'app-saveCaracteristica',
   templateUrl: './saveCaracteristica.component.html',
   styleUrls: ['./saveCaracteristica.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
+    ModalFooterComponent, CampoTextoComponent, CampoNumeroEnteroComponent,
+    CheckboxComponent,
+  ],
 })
 export class SaveCaracteristicaComponent implements OnInit {
 

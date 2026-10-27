@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -10,6 +10,9 @@ import { UbicacionDispositivoService } from '../../../services/ubicacionDisposit
 import { MarcacionModel, RostroEmpleado } from '../../../interfaces/marcacionModel';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { AjustesKioscoComponent, AjustesDelKiosco } from './ajustesKiosco/ajustesKiosco.component';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 
 /** Lo que se ve de cada rostro en el fotograma actual. */
 interface RostroEnPantalla {
@@ -40,7 +43,8 @@ interface RostroEnPantalla {
   selector: 'app-kiosco-marcacion',
   templateUrl: './kioscoMarcacion.component.html',
   styleUrls: ['./kioscoMarcacion.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, PanelComponent],
 })
 export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
 

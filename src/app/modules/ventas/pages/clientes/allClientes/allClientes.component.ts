@@ -5,7 +5,7 @@ import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams, RowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -29,6 +29,9 @@ import { DeleteClienteComponent } from '../deleteCliente/deleteCliente.component
 import { PapeleraClientesComponent } from '../papeleraClientes/papeleraClientes.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 /**
  * Listado de clientes (ventas.clientes).
@@ -45,7 +48,11 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-allClientes',
   templateUrl: './allClientes.component.html',
   styleUrls: ['./allClientes.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class AllClientesComponent implements OnInit, OnDestroy {
 
@@ -1028,7 +1035,8 @@ export class AllClientesComponent implements OnInit, OnDestroy {
 // Simple delegador: toda la lógica de modales vive en AllClientesComponent.
 @Component({
   selector: 'app-button-accion-cliente',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"

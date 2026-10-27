@@ -10,7 +10,7 @@ import { environment } from '../../../../../../environments/environment';
 
 import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
 import { CampoTextoAreaComponent } from '../../../../../components/campos/campoTextoArea/campoTextoArea.component';
 import { CampoEmailComponent } from '../../../../../components/campos/campoEmail/campoEmail.component';
@@ -50,7 +50,7 @@ import { SucursalService, PuntoSucursal } from '../../../services/sucursal.servi
   standalone: true,
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
-    ModalHeaderComponent, ModalFooterComponent, PanelModule,
+    ModalHeaderComponent, ModalFooterComponent, PanelComponent,
     CampoTextoComponent, CampoTextoAreaComponent, CampoEmailComponent,
     CampoTelefonoComponent, CampoNumeroEnteroComponent, CheckboxComponent,
     AvisoComponent,

@@ -5,6 +5,8 @@ import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { CargoService } from '../../../services/cargo.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de un cargo (mismo esquema que deleteUser).
@@ -15,7 +17,8 @@ import { CargoService } from '../../../services/cargo.service';
   selector: 'app-deleteCargo',
   templateUrl: './deleteCargo.component.html',
   styleUrls: ['./deleteCargo.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteCargoComponent implements OnInit, OnDestroy {
 

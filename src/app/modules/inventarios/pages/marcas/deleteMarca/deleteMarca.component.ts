@@ -5,6 +5,8 @@ import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { MarcaService } from '../../../services/marca.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de un marca (mismo esquema que deleteUser).
@@ -15,7 +17,8 @@ import { MarcaService } from '../../../services/marca.service';
   selector: 'app-deleteMarca',
   templateUrl: './deleteMarca.component.html',
   styleUrls: ['./deleteMarca.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteMarcaComponent implements OnInit, OnDestroy {
 

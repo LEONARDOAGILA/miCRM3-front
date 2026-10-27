@@ -6,7 +6,7 @@ import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
 import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
@@ -54,7 +54,7 @@ type AccionPuntoVenta = 'add' | 'edit' | 'clon' | 'view';
   selector: 'app-savePuntoVenta',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, PanelModule,
+    CommonModule, ReactiveFormsModule, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent,
     ComboComponent, CampoTextoComponent, CampoTextoAreaComponent,
     CampoNumeroEnteroComponent, CheckboxComponent,

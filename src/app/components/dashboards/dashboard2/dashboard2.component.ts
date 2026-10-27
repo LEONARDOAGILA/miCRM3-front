@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { startOfDay, endOfDay, subDays, addDays, endOfMonth, isSameDay, isSameMonth, addHours } from 'date-fns';
 import { NgScrollbarModule } from 'ngx-scrollbar';
-import { PanelModule } from '../../panel/panel.module';
+import { PanelComponent } from '../../panel/panel.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import {
   CalendarModule,
@@ -31,7 +31,7 @@ import 'jsvectormap/dist/maps/world.js';
   standalone: true,
   imports: [
     NgScrollbarModule,   // <ng-scrollbar>
-    PanelModule,         // <panel>
+    PanelComponent,         // <panel>
     NgApexchartsModule,  // <apx-chart>
     CalendarModule       // <mwl-calendar-month-view>
   ],

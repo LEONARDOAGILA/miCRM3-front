@@ -12,8 +12,8 @@ import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams, RowNode } from 'ag-grid-community';
 
 ///   COMPONENTES COMUNES    ///
-import { PanelModule } from '../../../../../components/panel/panel.module';
-import { ActionButtonsModule } from '../../../../../components/botones/action-buttons/action-buttons.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { CampoBusquedaPaginacionComponent }
   from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { MenuContextualComponent, OpcionContextual }
@@ -65,7 +65,7 @@ import { PapeleraPuntosVentaComponent } from '../papeleraPuntosVenta/papeleraPun
   selector: 'app-allPuntosVenta',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, PanelModule, ActionButtonsModule,
+    CommonModule, FormsModule, AgGridModule, PanelComponent,
     CampoBusquedaPaginacionComponent, MenuContextualComponent,
   ],
   templateUrl: './allPuntosVenta.component.html',
@@ -993,7 +993,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'app-button-accion-punto-venta',
   standalone: true,
-  imports: [CommonModule, ActionButtonsModule],
+  imports: [CommonModule, ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"

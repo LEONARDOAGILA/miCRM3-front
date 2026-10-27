@@ -7,8 +7,8 @@ import {
 } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { SeguridadService } from '../../modules/seguridad/services/seguridad.service';
-import { CompanyModel } from '../../modules/config/interfaces/companyModel';
-import { CompanyService } from '../../modules/config/services/company.service';
+import { CompanyModel } from '../../modules/core/interfaces/companyModel';
+import { CompanyService } from '../../modules/core/services/company.service';
 
 
 

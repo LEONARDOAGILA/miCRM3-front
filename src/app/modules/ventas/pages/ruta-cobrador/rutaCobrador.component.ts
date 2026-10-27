@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
-import { PanelModule } from '../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../components/panel/panel.component';
 import { AvisoComponent } from '../../../../components/campos/aviso/aviso.component';
 import { GoogleMapsLoaderService } from '../../../../service/google-maps-loader.service';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
@@ -45,7 +45,7 @@ import {
 @Component({
   selector: 'app-ruta-cobrador',
   standalone: true,
-  imports: [CommonModule, FormsModule, PanelModule, AvisoComponent],
+  imports: [CommonModule, FormsModule, PanelComponent, AvisoComponent],
   templateUrl: './rutaCobrador.component.html',
   styleUrls: ['./rutaCobrador.component.css'],
 })

@@ -4,7 +4,7 @@ import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
 
@@ -30,6 +30,10 @@ import { PapeleraPlanCuentasComponent } from '../papeleraPlanCuentas/papeleraPla
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 /**
  * El plan de cuentas (contabilidad.plan_cuentas).
@@ -59,7 +63,11 @@ import { CampoBusquedaComponent } from '../../../../../components/campos/campoBu
   selector: 'app-allPlanCuentas',
   templateUrl: './allPlanCuentas.component.html',
   styleUrls: ['./allPlanCuentas.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, PanelComponent,
+    CampoBusquedaPaginacionComponent, MenuContextualComponent,
+  ],
 })
 export class AllPlanCuentasComponent implements OnInit, OnDestroy {
 
@@ -1448,7 +1456,8 @@ export class AllPlanCuentasComponent implements OnInit, OnDestroy {
 // cuelga, y con el código ya propuesto.
 @Component({
   selector: 'app-button-accion-cuenta',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"

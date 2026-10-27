@@ -10,6 +10,9 @@ import { GrupoClienteModel } from '../../../../interfaces/grupoClienteModel';
 import { AppAgGridService } from '../../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../../service/loading.service';
 import { AuditoriaModalComponent } from '../../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalHeaderComponent } from '../../../../../../components/modal/modal-header/modal-header.component';
 
 /**
  * Papelera de reciclaje de grupos (modal), como la de clientes.
@@ -26,7 +29,8 @@ import { AuditoriaModalComponent } from '../../../../../../components/auditoria-
   selector: 'app-papeleraGruposClientes',
   templateUrl: './papeleraGruposClientes.component.html',
   styleUrls: ['./papeleraGruposClientes.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
 })
 export class PapeleraGruposClientesComponent implements OnInit, OnDestroy {
 

@@ -1,7 +1,7 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { firstValueFrom, from, merge, of, Observable, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CellClickedEvent, CellValueChangedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
@@ -32,6 +32,19 @@ import {
   SeleccionarUbicacionComponent, UbicacionElegida,
 } from '../../../../../components/ubicacion-google-maps/seleccionarUbicacion.component';
 import { ImagenVisor, VisorImagenesComponent } from '../../../../../components/visorImagenes/visorImagenes.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoTextoAreaComponent } from '../../../../../components/campos/campoTextoArea/campoTextoArea.component';
+import { CampoIdentificacionComponent } from '../../../../../components/campos/campoIdentificacion/campoIdentificacion.component';
+import { CampoTelefonoComponent } from '../../../../../components/campos/campoTelefono/campoTelefono.component';
+import { CampoEmailComponent } from '../../../../../components/campos/campoEmail/campoEmail.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 type AccionCliente = 'add' | 'edit' | 'clon' | 'view';
 
@@ -52,7 +65,14 @@ type AccionCliente = 'add' | 'edit' | 'clon' | 'view';
   selector: 'app-saveCliente',
   templateUrl: './saveCliente.component.html',
   styleUrls: ['./saveCliente.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, AgGridModule, PanelComponent,
+    ModalHeaderComponent, ModalFooterComponent, ComboComponent,
+    CampoTextoComponent, CampoTextoAreaComponent, CampoIdentificacionComponent,
+    CampoTelefonoComponent, CampoEmailComponent, CampoNumeroEnteroComponent,
+    CheckboxComponent,
+  ],
 })
 export class SaveClienteComponent implements OnInit, OnDestroy {
   @Input() registro_selected: any = {};

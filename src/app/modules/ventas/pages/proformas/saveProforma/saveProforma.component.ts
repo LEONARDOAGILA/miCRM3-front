@@ -10,7 +10,7 @@ import { Subject, firstValueFrom } from 'rxjs';
 import { AgGridModule } from 'ag-grid-angular';
 import { CellValueChangedEvent, GridApi, GridReadyEvent, CellKeyDownEvent } from 'ag-grid-community';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
 import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
@@ -61,7 +61,7 @@ type AccionProforma = 'add' | 'edit' | 'clon' | 'view';
   selector: 'app-saveProforma',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, AgGridModule, PanelModule,
+    CommonModule, ReactiveFormsModule, AgGridModule, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, ModalArrastrableDirective,
     ComboComponent, CampoTextoComponent, CampoTextoAreaComponent, CampoNumeroEnteroComponent,
   ],

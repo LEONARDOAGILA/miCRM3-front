@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { AbstractControl, FormArray, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormBuilder, FormGroup, ValidationErrors, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
@@ -9,6 +9,13 @@ import { LoadingService } from '../../../../../service/loading.service';
 import { HorarioEmpleadoService } from '../../../services/horarioEmpleado.service';
 import { DIAS_SEMANA, EvaluacionAtrasoModel, HorarioEmpleadoModel, JornadaModel, MAX_JORNADAS_POR_DIA }
   from '../../../interfaces/horarioEmpleadoModel';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 /**
  * Alta / edición de un horario de trabajo (rh.horarios_empleados).
@@ -34,7 +41,12 @@ import { DIAS_SEMANA, EvaluacionAtrasoModel, HorarioEmpleadoModel, JornadaModel,
   selector: 'app-saveHorarioEmpleado',
   templateUrl: './saveHorarioEmpleado.component.html',
   styleUrls: ['./saveHorarioEmpleado.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule, PanelComponent,
+    ModalHeaderComponent, ModalFooterComponent, CampoTextoComponent,
+    CampoNumeroEnteroComponent, CheckboxComponent,
+  ],
 })
 export class SaveHorarioEmpleadoComponent implements OnInit {
 

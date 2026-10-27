@@ -21,7 +21,7 @@ import { ThemePanelComponent }             from './components/theme-panel/theme-
 
 // Component Module
 import { NgScrollbarModule, provideScrollbarOptions } from 'ngx-scrollbar';
-import { PanelModule } from './components/panel/panel.module';
+import { PanelComponent } from './components/panel/panel.component';
 import { ToastrModule } from 'ngx-toastr';
 import { LoadingBarModule } from '@ngx-loading-bar/core';
 import { provideHighlightOptions, HighlightAuto }  from 'ngx-highlightjs';
@@ -60,7 +60,7 @@ registerLocaleData(localeEs, 'es');
     // HomePage es standalone: va en imports, no en declarations
     HomePage,
 
-    PanelModule,
+    PanelComponent,
     ToastrModule.forRoot(), // ToastrModule added
     LoadingBarModule,
     HighlightAuto,

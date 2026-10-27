@@ -5,7 +5,7 @@ import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
-import { LOCALE_CONFIG, LocaleService, DefaultLocaleConfig } from 'ngx-daterangepicker-material';
+import { LOCALE_CONFIG, LocaleService, DefaultLocaleConfig, NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
 import moment from 'moment';
 import Swal from 'sweetalert2';
 
@@ -60,7 +60,12 @@ import { DeleteGestionComponent } from './deleteGestion/deleteGestion.component'
 import { DeleteNotaClienteComponent } from './deleteNotaCliente/deleteNotaCliente.component';
 import { DeleteArchivoClienteComponent } from './deleteArchivoCliente/deleteArchivoCliente.component';
 
-import { PestanaTab } from '../../../../components/campos/tabPanel/tabPanel.component';
+import { PestanaTab, TabPanelComponent } from '../../../../components/campos/tabPanel/tabPanel.component';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { PanelComponent } from '../../../../components/panel/panel.component';
+import { CampoBusquedaPaginacionComponent } from '../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
 type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'archivos' | 'notas';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
@@ -92,7 +97,12 @@ export interface DiaDeAgenda {
   selector: 'app-gestion-clientes',
   templateUrl: './gestionClientes.component.html',
   styleUrls: ['./gestionClientes.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, AgGridModule, NgxDaterangepickerMd,
+    PanelComponent, TabPanelComponent, ResumenVentasComponent,
+    CampoBusquedaPaginacionComponent,
+  ],
   providers: [
     // El mismo par que saveBoletin e historialAcciones: en la aplicación no
     // hay NgxDaterangepickerMd.forRoot(), así que cada pantalla que use el

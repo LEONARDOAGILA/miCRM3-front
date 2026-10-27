@@ -5,6 +5,8 @@ import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { GrupoClienteService } from '../../../../services/grupoCliente.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de un grupo (mismo esquema que deleteUser).
@@ -15,7 +17,8 @@ import { GrupoClienteService } from '../../../../services/grupoCliente.service';
   selector: 'app-deleteGrupoCliente',
   templateUrl: './deleteGrupoCliente.component.html',
   styleUrls: ['./deleteGrupoCliente.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteGrupoClienteComponent implements OnInit, OnDestroy {
 

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { Observable, Subject, firstValueFrom, from, merge, of } from 'rxjs';
@@ -10,6 +10,13 @@ import { MarcacionService } from '../../../services/marcacion.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { MarcacionModel, ORIGENES_MARCACION, TIPOS_MARCACION } from '../../../interfaces/marcacionModel';
 import { ListEmpleadosComponent } from '../../empleados/listEmpleados/listEmpleados.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoTextoAreaComponent } from '../../../../../components/campos/campoTextoArea/campoTextoArea.component';
 
 /**
  * Alta manual, corrección o vista de una marcación.
@@ -22,7 +29,12 @@ import { ListEmpleadosComponent } from '../../empleados/listEmpleados/listEmplea
   selector: 'app-saveMarcacion',
   templateUrl: './saveMarcacion.component.html',
   styleUrls: ['./saveMarcacion.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
+    ModalFooterComponent, ComboComponent, CampoTextoComponent,
+    CampoTextoAreaComponent,
+  ],
 })
 export class SaveMarcacionComponent implements OnInit, OnDestroy {
 

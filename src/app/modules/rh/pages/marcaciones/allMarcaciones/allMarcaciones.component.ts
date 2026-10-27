@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
@@ -26,9 +26,13 @@ import { DeleteMarcacionComponent } from '../deleteMarcacion/deleteMarcacion.com
 import { ListEmpleadosComponent } from '../../empleados/listEmpleados/listEmpleados.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
-import { PestanaTab } from '../../../../../components/campos/tabPanel/tabPanel.component';
+import { PestanaTab, TabPanelComponent } from '../../../../../components/campos/tabPanel/tabPanel.component';
 import { AppDescargaService, PeticionDescarga, AccionDescarga }
   from '../../../../../service/app-descarga.service';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 /**
  * Marcaciones (entradas y salidas), en dos pestañas.
@@ -49,7 +53,11 @@ import { AppDescargaService, PeticionDescarga, AccionDescarga }
   selector: 'app-allMarcaciones',
   templateUrl: './allMarcaciones.component.html',
   styleUrls: ['./allMarcaciones.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, AgGridModule, PanelComponent, TabPanelComponent,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class AllMarcacionesComponent implements OnInit, OnDestroy {
 
@@ -898,7 +906,8 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
 // ================================================================
 @Component({
   selector: 'app-button-accion-marcacion',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button" class="btn btn-sm btn-outline-primary acciones-desplegar" title="Mostrar los botones" (click)="parent.toggleActionsColumn()">

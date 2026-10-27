@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
@@ -21,6 +21,15 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import {
   GestionModel, PRIORIDADES_GESTION, RESULTADOS_GESTION, nombreDe,
 } from '../../../interfaces/gestionModel';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoNgxEditorComponent } from '../../../../../components/campos/campoNgxEditor/campoNgxEditor.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 /**
  * Cerrar una gestión programada: se marca realizada con su resultado y, en la
@@ -41,7 +50,12 @@ import {
   selector: 'app-cerrarGestion',
   templateUrl: './cerrarGestion.component.html',
   styleUrls: ['./cerrarGestion.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
+    ModalFooterComponent, ComboComponent, CampoTextoComponent,
+    CampoNgxEditorComponent, CampoNumeroEnteroComponent, CheckboxComponent,
+  ],
 })
 export class CerrarGestionComponent implements OnInit, OnDestroy {
 

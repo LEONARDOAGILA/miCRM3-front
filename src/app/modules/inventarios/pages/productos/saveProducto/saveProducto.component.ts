@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellValueChangedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { ToastrService } from 'ngx-toastr';
@@ -22,6 +22,16 @@ import {
   ProductoModel, ImagenProductoModel,
   UNIDADES_PRODUCTO, GARANTIAS_MESES,
 } from '../../../interfaces/productoModel';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoNgxEditorComponent } from '../../../../../components/campos/campoNgxEditor/campoNgxEditor.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 /** Acciones con las que se abre el modal desde allProductos. */
 type AccionProducto = 'add' | 'edit' | 'clon' | 'view';
@@ -45,7 +55,13 @@ type AccionProducto = 'add' | 'edit' | 'clon' | 'view';
   selector: 'app-saveProducto',
   templateUrl: './saveProducto.component.html',
   styleUrls: ['./saveProducto.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, AgGridModule, PanelComponent,
+    ModalHeaderComponent, ModalFooterComponent, ComboComponent,
+    CampoTextoComponent, CampoNgxEditorComponent, CampoNumeroEnteroComponent,
+    CheckboxComponent,
+  ],
 })
 export class SaveProductoComponent implements OnInit, OnDestroy {
 

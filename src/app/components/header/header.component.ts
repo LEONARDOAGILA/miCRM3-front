@@ -11,11 +11,11 @@ import { UserService } from '../../modules/seguridad/services/user.service';
 import { SeguridadService } from '../../modules/seguridad/services/seguridad.service';
 import { Notificaciones } from '../../core/shared/notificaciones';
 import { InactivityService } from '../../modules/seguridad/services/InactivityService';
-import { BoletinPushService } from '../../modules/config/services/boletinPush.service';
-import { CampanaService } from '../../modules/config/services/campana.service';
-import { AvisoCampanaService } from '../../modules/config/services/avisoCampana.service';
-import { MisNotificacionesComponent } from '../../modules/config/pages/notificaciones/misNotificaciones/misNotificaciones.component';
-import { destinoDeNotificacion, ESTILOS_NOTIFICACION, NotificacionModel, TipoNotificacion } from '../../modules/config/interfaces/notificacionModel';
+import { BoletinPushService } from '../../modules/core/services/boletinPush.service';
+import { CampanaService } from '../../modules/core/services/campana.service';
+import { AvisoCampanaService } from '../../modules/core/services/avisoCampana.service';
+import { MisNotificacionesComponent } from '../../modules/core/pages/notificaciones/misNotificaciones/misNotificaciones.component';
+import { destinoDeNotificacion, ESTILOS_NOTIFICACION, NotificacionModel, TipoNotificacion } from '../../modules/core/interfaces/notificacionModel';
 import { PresenciaService } from '../../modules/seguridad/services/presencia.service';
 import { RecordatorioGestionesService } from '../../modules/ventas/services/recordatorioGestiones.service';
 import {

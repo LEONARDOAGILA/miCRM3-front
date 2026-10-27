@@ -3,7 +3,7 @@ import { AsyncPipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 
-import { PanelModule } from '../../components/panel/panel.module';
+import { PanelComponent } from '../../components/panel/panel.component';
 import { HomeComponent } from './pages/home/home.component';
 
 import { DemoRoutingModule } from './demo-routing.module';
@@ -101,7 +101,7 @@ import { WebsocketRecivedComponent } from './pages/websocket-recived/websocket-r
     AsyncPipe,
     CommonModule,
     DemoRoutingModule,
-    PanelModule,
+    PanelComponent,
     FormsModule,
     NgScrollbarModule,
     NgSelectModule,

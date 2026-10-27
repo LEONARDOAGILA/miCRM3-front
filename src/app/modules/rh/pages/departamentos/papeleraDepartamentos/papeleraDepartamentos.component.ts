@@ -10,6 +10,9 @@ import { DepartamentoModel } from '../../../interfaces/departamentoModel';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 
 /**
  * Papelera de reciclaje de departamentos (modal), como la de empleados.
@@ -26,7 +29,8 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
   selector: 'app-papeleraDepartamentos',
   templateUrl: './papeleraDepartamentos.component.html',
   styleUrls: ['./papeleraDepartamentos.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
 })
 export class PapeleraDepartamentosComponent implements OnInit, OnDestroy {
 

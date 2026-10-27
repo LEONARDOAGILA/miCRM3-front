@@ -10,6 +10,9 @@ import { CargoModel } from '../../../interfaces/cargoModel';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 
 /**
  * Papelera de reciclaje de cargos (modal), la misma de marcas y departamentos.
@@ -26,7 +29,8 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
   selector: 'app-papeleraCargos',
   templateUrl: './papeleraCargos.component.html',
   styleUrls: ['./papeleraCargos.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
 })
 export class PapeleraCargosComponent implements OnInit, OnDestroy {
 

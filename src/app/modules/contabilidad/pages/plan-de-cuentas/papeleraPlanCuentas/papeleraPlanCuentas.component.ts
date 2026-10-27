@@ -10,6 +10,9 @@ import { PlanCuentaModel } from '../../../interfaces/planCuentaModel';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 
 /**
  * Papelera de reciclaje de cuentas (modal), como la de productos.
@@ -30,7 +33,8 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
   selector: 'app-papeleraPlanCuentas',
   templateUrl: './papeleraPlanCuentas.component.html',
   styleUrls: ['./papeleraPlanCuentas.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
 })
 export class PapeleraPlanCuentasComponent implements OnInit, OnDestroy {
 

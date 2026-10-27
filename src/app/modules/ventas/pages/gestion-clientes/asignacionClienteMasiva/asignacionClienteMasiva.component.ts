@@ -18,7 +18,7 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { ROLES_RESPONSABLE, RolResponsable } from '../../../interfaces/gestionModel';
 
 //   ******   COMPONENTES   ******  //
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.component';
 // El mismo selector que usa la reasignación de uno en uno: usuarios con su
@@ -78,7 +78,7 @@ type Paso = 'elegir' | 'resultado';
     CommonModule,
     FormsModule,
     AgGridModule,
-    PanelModule,
+    PanelComponent,
     CampoBusquedaPaginacionComponent,
     AvisoComponent,
   ],

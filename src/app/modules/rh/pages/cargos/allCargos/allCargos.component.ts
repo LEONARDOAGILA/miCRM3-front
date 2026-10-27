@@ -4,7 +4,7 @@ import { catchError, takeUntil } from 'rxjs/operators';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -29,6 +29,9 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { PapeleraCargosComponent } from '../papeleraCargos/papeleraCargos.component';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 
 /**
  * Listado de cargos (rh.cargos).
@@ -45,7 +48,11 @@ import { PapeleraCargosComponent } from '../papeleraCargos/papeleraCargos.compon
   selector: 'app-allCargos',
   templateUrl: './allCargos.component.html',
   styleUrls: ['./allCargos.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class AllCargosComponent implements OnInit, OnDestroy {
 
@@ -915,7 +922,8 @@ export class AllCargosComponent implements OnInit, OnDestroy {
 // Simple delegador: toda la lógica de modales vive en AllCargosComponent.
 @Component({
   selector: 'app-button-accion-cargo',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"

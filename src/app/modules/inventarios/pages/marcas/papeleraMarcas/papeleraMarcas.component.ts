@@ -10,6 +10,9 @@ import { MarcaModel } from '../../../interfaces/marcaModel';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 
 /**
  * Papelera de reciclaje de marcas (modal), la misma de productos y clientes.
@@ -26,7 +29,8 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
   selector: 'app-papeleraMarcas',
   templateUrl: './papeleraMarcas.component.html',
   styleUrls: ['./papeleraMarcas.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
 })
 export class PapeleraMarcasComponent implements OnInit, OnDestroy {
 

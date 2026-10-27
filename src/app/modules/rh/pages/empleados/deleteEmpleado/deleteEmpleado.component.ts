@@ -5,6 +5,8 @@ import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { EmpleadoService } from '../../../services/empleado.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de un empleado (mismo esquema que deleteUser).
@@ -15,7 +17,8 @@ import { EmpleadoService } from '../../../services/empleado.service';
   selector: 'app-deleteEmpleado',
   templateUrl: './deleteEmpleado.component.html',
   styleUrls: ['./deleteEmpleado.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteEmpleadoComponent implements OnInit, OnDestroy {
 

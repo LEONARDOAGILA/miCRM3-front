@@ -19,7 +19,7 @@ import {
 } from '../../../interfaces/huecosPlantilla';
 import { firstValueFrom } from 'rxjs';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { HuecosPlantillaComponent } from '../../../../../components/campos/huecosPlantilla/huecosPlantilla.component';
 import { NotaClienteService } from '../../../services/notaCliente.service';
 import { COLORES_NOTA, ColorNota, NotaCliente, tinteDeNota, conTokenLaImagen, conTokenLasImagenes, sinTokenLasImagenes } from '../../../interfaces/notaCliente';
@@ -57,7 +57,7 @@ export type PestanaCinta = 'archivo' | 'inicio' | 'insertar' | 'tabla';
 @Component({
   selector: 'app-saveNota',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgxEditorModule, PanelModule, HuecosPlantillaComponent],
+  imports: [CommonModule, FormsModule, NgxEditorModule, PanelComponent, HuecosPlantillaComponent],
   templateUrl: './saveNota.component.html',
   styleUrls: ['./saveNota.component.css'],
 })

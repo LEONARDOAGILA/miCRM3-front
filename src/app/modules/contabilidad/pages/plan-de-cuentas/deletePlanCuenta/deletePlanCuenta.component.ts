@@ -5,6 +5,8 @@ import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { PlanCuentaService } from '../../../services/planCuenta.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de una cuenta (mismo esquema que deleteUser).
@@ -15,7 +17,8 @@ import { PlanCuentaService } from '../../../services/planCuenta.service';
   selector: 'app-deletePlanCuenta',
   templateUrl: './deletePlanCuenta.component.html',
   styleUrls: ['./deletePlanCuenta.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeletePlanCuentaComponent implements OnInit, OnDestroy {
 

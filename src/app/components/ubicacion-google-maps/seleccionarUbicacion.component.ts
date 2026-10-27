@@ -4,7 +4,6 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
 import { PanelComponent } from '../panel/panel.component';
-import { PanelModule } from '../panel/panel.module';
 import { CapturaMapa, LugarGm, UbicacionGoogleMapsComponent } from './ubicacion-google-maps.component';
 
 /** Lo que devuelve el modal: la dirección desmenuzada y sus dos fotos. */
@@ -43,7 +42,7 @@ export interface UbicacionElegida {
 @Component({
   selector: 'app-seleccionar-ubicacion',
   standalone: true,
-  imports: [CommonModule, PanelModule, UbicacionGoogleMapsComponent],
+  imports: [CommonModule, PanelComponent, UbicacionGoogleMapsComponent],
   templateUrl: './seleccionarUbicacion.component.html',
   styleUrls: ['./seleccionarUbicacion.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
