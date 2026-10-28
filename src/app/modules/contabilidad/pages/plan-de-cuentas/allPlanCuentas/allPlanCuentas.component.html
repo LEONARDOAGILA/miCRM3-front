@@ -170,7 +170,7 @@
               <b>{{ filasVisibles.length }}</b> de
             }
             <b>{{ totalRegistros }}</b> {{ totalRegistros === 1 ? 'cuenta' : 'cuentas' }} en el árbol
-            @if (hayPlegadas && !searchTerm) {
+            @if (hayPlegadas) {
               <span class="cta-plegadas" title="Hay ramas contraídas">
                 · <i class="fa fa-minus-square"></i> {{ plegadasCuantas }} contraída{{ plegadasCuantas === 1 ? '' : 's' }}
               </span>

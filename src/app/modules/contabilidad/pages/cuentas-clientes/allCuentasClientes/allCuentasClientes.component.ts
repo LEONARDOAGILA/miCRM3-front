@@ -70,6 +70,16 @@ export class AllCuentasClientesComponent implements OnInit, OnDestroy {
   public searchTerm = '';
 
   private readonly plegadas = new Set<number>();
+
+  /**
+   * El plegado que había ANTES de buscar.
+   *
+   * Buscar abre el árbol entero para que ninguna coincidencia se quede
+   * escondida, pero eso no puede costarle al usuario el árbol que tenía
+   * montado: se aparta aquí y vuelve al quitar el filtro. Lo que se pliegue
+   * CON EL FILTRO PUESTO es del filtro y se descarta con él.
+   */
+  private plegadasFueraDeFiltro = new Set<number>();
   private static readonly CLAVE_PLEGADAS = 'cont.cuentasClientes.plegadas';
 
   private readonly unsubscribe$ = new Subject<void>();
@@ -379,9 +389,61 @@ export class AllCuentasClientesComponent implements OnInit, OnDestroy {
     this.recalcularVisibles();
   }
 
+  /**
+   * Aparta o devuelve el plegado cuando el filtro se enciende o se apaga.
+   *
+   * Al EMPEZAR a filtrar se abre el árbol entero, porque una coincidencia
+   * dentro de una rama cerrada no saldría y parecería que el filtro no la
+   * encuentra. Al quitar el filtro vuelve el árbol que había.
+   *
+   * Lo que ya NO se hace es desactivar el plegado mientras se filtra: con el
+   * filtro puesto, el +/- sigue plegando y desplegando.
+   *
+   * Devuelve true si cambió algo, o sea si hay que repintar.
+   */
+  private plegadoAlCambiarElFiltro(habiaFiltro: boolean): boolean {
+    const hayFiltro = !!this.searchTerm;
+    if (habiaFiltro === hayFiltro) { return false; }
+
+    if (hayFiltro) {
+      this.plegadasFueraDeFiltro = new Set(this.plegadas);
+      this.plegadas.clear();
+    } else {
+      this.plegadas.clear();
+      this.plegadasFueraDeFiltro.forEach(id => this.plegadas.add(id));
+      this.plegadasFueraDeFiltro.clear();
+    }
+    return true;
+  }
+
+  /**
+   * Los ids que quedan después del filtro, o sea lo que el usuario tiene
+   * delante. `filasVisibles` no sirve para esto: es lo que se le da a la
+   * rejilla ANTES de que ella aplique el filtro.
+   */
+  private idsALaVista(): number[] {
+    const ids: number[] = [];
+    this.gridApi?.forEachNodeAfterFilter((n: any) => {
+      const id = Number(n?.data?.id ?? 0);
+      if (id) { ids.push(id); }
+    });
+    return ids;
+  }
+
+  /**
+   * Cierra todas las ramas.
+   *
+   * Con el filtro puesto se cierra sólo lo que SE ESTÁ VIENDO. Si se plegara
+   * también lo que el filtro esconde, el árbol se quedaría en las raíces,
+   * que casi nunca son las que coinciden, y la rejilla saldría vacía después
+   * de pulsar un botón que no promete eso.
+   */
   contraerTodo(): void {
+    const aLaVista = this.searchTerm ? new Set(this.idsALaVista()) : null;
     this.plegadas.clear();
-    this.grupos.forEach(c => { if (Number(c.num_hijos ?? 0) > 0) { this.plegadas.add(c.id); } });
+    this.grupos.forEach(c => {
+      if (Number(c.num_hijos ?? 0) > 0 && (!aLaVista || aLaVista.has(c.id))) { this.plegadas.add(c.id); }
+    });
     this.guardarPlegadas();
     this.recalcularVisibles();
   }
@@ -394,7 +456,6 @@ export class AllCuentasClientesComponent implements OnInit, OnDestroy {
 
   get hayPlegadas(): boolean { return this.plegadas.size > 0; }
   get plegadasCuantas(): number { return this.plegadas.size; }
-  get plegadoDesactivado(): boolean { return !!this.searchTerm; }
 
   /** Clic en la cabecera: los botones los pinta ag-Grid, no Angular. */
   alClicarCabecera(ev: MouseEvent): void {
@@ -408,14 +469,13 @@ export class AllCuentasClientesComponent implements OnInit, OnDestroy {
   private actualizarBotonesArbol(): void {
     this.host?.nativeElement?.querySelectorAll?.('[data-arbol]')
       .forEach((b: any) => {
-        b.disabled = b.dataset['arbol'] === 'contraer'
-          ? this.plegadoDesactivado
-          : (this.plegadoDesactivado || !this.hayPlegadas);
+        // Contraer siempre vale; desplegar sólo si hay algo cerrado.
+        b.disabled = b.dataset['arbol'] !== 'contraer' && !this.hayPlegadas;
       });
   }
 
   private recalcularVisibles(): void {
-    if (this.searchTerm || this.plegadas.size === 0) {
+    if (this.plegadas.size === 0) {
       this.filasVisibles = [...this.grupos];
     } else {
       const padres = new Map<number, number | null>();
@@ -436,11 +496,16 @@ export class AllCuentasClientesComponent implements OnInit, OnDestroy {
   private limpiarPlegadas(): void {
     const existen = new Set(this.grupos.map(c => c.id));
     [...this.plegadas].forEach(id => { if (!existen.has(id)) { this.plegadas.delete(id); } });
+    [...this.plegadasFueraDeFiltro].forEach(id => { if (!existen.has(id)) { this.plegadasFueraDeFiltro.delete(id); } });
   }
 
   private guardarPlegadas(): void {
     try {
-      localStorage.setItem(AllCuentasClientesComponent.CLAVE_PLEGADAS, JSON.stringify([...this.plegadas]));
+      // Mientras se filtra, lo que se recuerda es el árbol de ANTES: lo que
+      // se pliegue con el filtro puesto se descarta al quitarlo, así que
+      // guardarlo dejaría el árbol cerrado en la siguiente visita.
+      const aGuardar = this.searchTerm ? this.plegadasFueraDeFiltro : this.plegadas;
+      localStorage.setItem(AllCuentasClientesComponent.CLAVE_PLEGADAS, JSON.stringify([...aGuardar]));
     } catch {
       // Ventana privada o almacenamiento bloqueado: se pierde al salir y ya
     }
@@ -464,14 +529,16 @@ export class AllCuentasClientesComponent implements OnInit, OnDestroy {
   // ================================================================
 
   onFilterTextBoxChanged(term?: string): void {
-    const antes = !!this.searchTerm;
+    const habiaFiltro = !!this.searchTerm;
     if (term !== undefined) { this.searchTerm = term; }
-    if (antes !== !!this.searchTerm) { this.recalcularVisibles(); }
+    if (this.plegadoAlCambiarElFiltro(habiaFiltro)) { this.recalcularVisibles(); }
     this.gridApi?.setQuickFilter(this.searchTerm);
   }
 
   alLimpiarBusqueda(): void {
+    const habiaFiltro = !!this.searchTerm;
     this.searchTerm = '';
+    this.plegadoAlCambiarElFiltro(habiaFiltro);   // vuelve el árbol que había
     this.recalcularVisibles();
     this.gridApi?.setQuickFilter('');
   }

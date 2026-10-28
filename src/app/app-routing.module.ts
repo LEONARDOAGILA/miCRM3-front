@@ -7,6 +7,7 @@ import { HomePage } from './pages/home/home';
 
 // Error
 import { ErrorPage } from './pages/error/error';
+import { AccessDenyComponent } from './pages/access-deny/access-deny.component';
 import { AuthGuard } from './core/guards/auth.guard';
 import { AccessResolver } from "./core/resolvers/access.resolver";
 import { MiobservableComponent } from './modules/demo/pages/observables/observable/miobservable.component';
@@ -40,6 +41,12 @@ const routes: Routes = [
   { path: '', component: HomePage, canActivate: [AuthGuard], resolve: { profile: AccessResolver }  },  
   { path: 'home', component: HomePage, data: { title: 'Home page'}, canActivate: [AuthGuard], resolve: { profile: AccessResolver } },
   { path: 'listo', component: MiobservableComponent, data: { title: 'Home page'}},
+
+  // AccessResolver (core/resolvers/access.resolver.ts) manda aquí cuando el
+  // perfil no tiene el acceso a la pantalla. La ruta no existía: /access-deny
+  // caía en el '**' de abajo y se enseñaba el 404, o sea «no existe» cuando lo
+  // que pasaba de verdad era «no tienes permiso».
+  { path: 'access-deny', component: AccessDenyComponent, data: { title: 'Acceso denegado'} },
 
   { path: '**', component: ErrorPage, data: { title: '404 Error'} },
 

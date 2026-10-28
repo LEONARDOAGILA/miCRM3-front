@@ -498,14 +498,27 @@ export class AllMenusComponent implements OnInit, OnDestroy{
 
     onFilterTextBoxChanged() {
       const texto = (document.getElementById('filter-text-box') as HTMLInputElement)?.value ?? '';
-      const antes = !!this.searchTerm;
+      const buscabaAntes = !!this.searchTerm;
       this.searchTerm = texto;
+      const buscaAhora = !!this.searchTerm;
 
-      // Al empezar o dejar de buscar cambia QUÉ filas se pintan: con texto
-      // escrito se abre todo (si no, una coincidencia dentro de una rama
-      // cerrada no saldría y parecería que el buscador no la encuentra) y al
-      // limpiarlo vuelven a cerrarse las ramas plegadas.
-      if (antes !== !!this.searchTerm) { this.recalcularVisibles(); }
+      // Al EMPEZAR a buscar se abre el árbol entero, porque una coincidencia
+      // dentro de una rama cerrada no saldría y parecería que el buscador no
+      // la encuentra. Lo que estaba plegado se aparta y vuelve al limpiar el
+      // buscador, para no costarle al usuario el árbol que tenía montado.
+      //
+      // Lo que ya NO se hace es ignorar el plegado mientras se busca: con el
+      // filtro puesto, el +/- sigue plegando y desplegando como siempre.
+      if (!buscabaAntes && buscaAhora) {
+        this.plegadosFueraDeBusqueda = new Set(this.plegados);
+        this.plegados.clear();
+        this.recalcularVisibles();
+      } else if (buscabaAntes && !buscaAhora) {
+        this.plegados.clear();
+        this.plegadosFueraDeBusqueda.forEach(id => this.plegados.add(id));
+        this.plegadosFueraDeBusqueda.clear();
+        this.recalcularVisibles();
+      }
 
       this.gridApi?.setQuickFilter(this.searchTerm);
     }
@@ -601,6 +614,16 @@ export class AllMenusComponent implements OnInit, OnDestroy{
     /** Los ids de los menús plegados (sus descendientes no se pintan). */
     private readonly plegados = new Set<number>();
 
+    /**
+     * El plegado que había ANTES de escribir en el buscador.
+     *
+     * Buscar abre el árbol entero para que ninguna coincidencia se quede
+     * escondida, pero eso no puede costarle al usuario el árbol que tenía
+     * montado: se aparta aquí y vuelve al limpiar el buscador. Lo que se
+     * pliegue DURANTE la búsqueda es de la búsqueda y se descarta con ella.
+     */
+    private plegadosFueraDeBusqueda = new Set<number>();
+
     /** Lo que de verdad recibe la rejilla: el árbol menos las ramas cerradas. */
     public filasVisibles: MenuModel[] = [];
 
@@ -612,7 +635,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
      */
     private hijosPorId = new Map<number, number>();
 
-    /** Lo escrito en el buscador: con texto, el plegado se ignora. */
+    /** Lo escrito en el buscador. El plegado se respeta igual con texto. */
     public searchTerm = '';
 
     /** Dónde se recuerda el estado entre visitas. */
@@ -683,9 +706,8 @@ export class AllMenusComponent implements OnInit, OnDestroy{
     private actualizarBotonesArbol(): void {
       const botones = this.host?.nativeElement?.querySelectorAll?.('[data-arbol]');
       botones?.forEach((b: HTMLButtonElement) => {
-        b.disabled = b.dataset['arbol'] === 'contraer'
-          ? !!this.searchTerm                          // buscando se ve todo
-          : (!!this.searchTerm || !this.hayPlegados);  // nada que desplegar
+        // Contraer siempre vale; desplegar sólo si hay algo cerrado.
+        b.disabled = b.dataset['arbol'] !== 'contraer' && !this.hayPlegados;
       });
     }
 
@@ -716,10 +738,18 @@ export class AllMenusComponent implements OnInit, OnDestroy{
       this.recalcularVisibles();
     }
 
-    /** Cierra todas las ramas: sólo quedan los menús raíz. */
+    /**
+     * Cierra todas las ramas: sólo quedan los menús raíz.
+     *
+     * Con el buscador escrito se cierra sólo lo que SE ESTÁ VIENDO. Si se
+     * plegara también lo que el filtro esconde, el árbol se quedaría en los
+     * menús raíz, que casi nunca son los que coinciden, y la rejilla saldría
+     * vacía después de pulsar un botón que no promete eso.
+     */
     contraerTodo(): void {
       this.plegados.clear();
-      this.hijosPorId.forEach((cuantos, id) => { if (cuantos > 0) { this.plegados.add(id); } });
+      const candidatos = this.searchTerm ? this.idsALaVista() : [...this.hijosPorId.keys()];
+      candidatos.forEach(id => { if ((this.hijosPorId.get(id) ?? 0) > 0) { this.plegados.add(id); } });
       this.guardarPlegados();
       this.recalcularVisibles();
     }
@@ -729,6 +759,20 @@ export class AllMenusComponent implements OnInit, OnDestroy{
       this.plegados.clear();
       this.guardarPlegados();
       this.recalcularVisibles();
+    }
+
+    /**
+     * Los ids que quedan después del filtro de texto, o sea lo que el usuario
+     * tiene delante. `filasVisibles` no sirve para esto: es lo que se le da a
+     * la rejilla ANTES de que ella aplique el buscador.
+     */
+    private idsALaVista(): number[] {
+      const ids: number[] = [];
+      this.gridApi?.forEachNodeAfterFilter((n: any) => {
+        const id = Number(n?.data?.id ?? 0);
+        if (id) { ids.push(id); }
+      });
+      return ids;
     }
 
     /** Para encender o apagar el botón de la barra. */
@@ -763,7 +807,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
      * por los antepasados en vez de mirar únicamente `padre_id`.
      */
     private recalcularVisibles(): void {
-      if (this.searchTerm || this.plegados.size === 0) {
+      if (this.plegados.size === 0) {
         this.filasVisibles = [...this.menuModel];
       } else {
         // Un mapa id → padre para no recorrer el array por cada antepasado
@@ -792,11 +836,16 @@ export class AllMenusComponent implements OnInit, OnDestroy{
     private limpiarPlegados(): void {
       const existen = new Set(this.menuModel.map((m: any) => Number(m.id)));
       [...this.plegados].forEach(id => { if (!existen.has(id)) { this.plegados.delete(id); } });
+      [...this.plegadosFueraDeBusqueda].forEach(id => { if (!existen.has(id)) { this.plegadosFueraDeBusqueda.delete(id); } });
     }
 
     private guardarPlegados(): void {
       try {
-        localStorage.setItem(AllMenusComponent.CLAVE_PLEGADOS, JSON.stringify([...this.plegados]));
+        // Mientras se busca, lo que se recuerda es el árbol de ANTES de buscar:
+        // lo que se pliegue con el filtro puesto se descarta al quitarlo, así
+        // que guardarlo dejaría el árbol cerrado en la siguiente visita.
+        const aGuardar = this.searchTerm ? this.plegadosFueraDeBusqueda : this.plegados;
+        localStorage.setItem(AllMenusComponent.CLAVE_PLEGADOS, JSON.stringify([...aGuardar]));
       } catch {
         // Ventana privada o almacenamiento bloqueado: se pierde al salir y ya
       }

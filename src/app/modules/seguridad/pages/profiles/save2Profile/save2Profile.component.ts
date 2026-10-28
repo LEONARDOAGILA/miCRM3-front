@@ -145,14 +145,34 @@ export class Save2ProfileComponent implements OnInit  {
   /** Los ids de los menús plegados (sus descendientes no se pintan). */
   private readonly plegados = new Set<number>();
 
+  /**
+   * El plegado que había ANTES de empezar a buscar.
+   *
+   * Buscar abre el árbol entero para que ninguna coincidencia se quede
+   * escondida, pero eso no puede costarle al usuario el árbol que tenía
+   * montado: se aparta aquí y vuelve al limpiar el buscador. Lo que se
+   * pliegue DURANTE la búsqueda es de la búsqueda y se descarta con ella.
+   */
+  private plegadosFueraDeBusqueda = new Set<number>();
+
   /** Lo que de verdad recibe la rejilla: el árbol menos las ramas cerradas. */
   public filasArbol: any[] = [];
 
   /** Cuántos hijos tiene cada menú, contados una vez al cargar. */
   private hijosPorId = new Map<number, number>();
 
-  /** Lo escrito en el buscador: con texto, el plegado se ignora. */
+  /** Lo escrito en el buscador. El plegado se respeta igual con texto. */
   public searchTerm = '';
+
+  /**
+   * Qué menús deja pasar el buscador, o null si no hay nada escrito.
+   *
+   * Es lo que usa `filasVisibles()`, y por tanto lo que marcan los atajos y
+   * las casillas de cabecera. Se calcula con el árbol ENTERO puesto (ver
+   * `recalcularIdsDelFiltro`) para que plegar una rama no deje fuera menús
+   * que sí coinciden.
+   */
+  private idsDelFiltro: Set<number> | null = null;
 
   /** Dónde se recuerda el estado entre visitas. */
   private static readonly CLAVE_PLEGADOS = 'seg.perfilAccesos.plegados';
@@ -196,10 +216,60 @@ export class Save2ProfileComponent implements OnInit  {
     this.recalcularVisibles();
   }
 
-  /** Cierra todas las ramas: sólo quedan los menús raíz. */
+  /**
+   * Aparta o devuelve el plegado cuando el buscador se enciende o se apaga.
+   *
+   * Al EMPEZAR a buscar se abre el árbol entero, porque una coincidencia
+   * dentro de una rama cerrada no saldría y parecería que el buscador no la
+   * encuentra. Al limpiarlo vuelve el árbol que había.
+   *
+   * Lo que ya NO se hace es desactivar el plegado mientras se busca: con el
+   * buscador puesto, el +/- sigue plegando y desplegando.
+   *
+   * Devuelve true si cambió algo, o sea si hay que repintar.
+   */
+  private plegadoAlCambiarElFiltro(habiaFiltro: boolean): boolean {
+    const hayFiltro = !!this.searchTerm;
+    if (habiaFiltro === hayFiltro) { return false; }
+
+    if (hayFiltro) {
+      this.plegadosFueraDeBusqueda = new Set(this.plegados);
+      this.plegados.clear();
+    } else {
+      this.plegados.clear();
+      this.plegadosFueraDeBusqueda.forEach(id => this.plegados.add(id));
+      this.plegadosFueraDeBusqueda.clear();
+    }
+    return true;
+  }
+
+  /**
+   * Los ids que quedan a la vista: lo que deja el buscador Y no cuelga de
+   * una rama cerrada. Para `contraerTodo`, que cierra lo que se está viendo.
+   */
+  private idsALaVista(): number[] {
+    const ids: number[] = [];
+    this.gridApi?.forEachNodeAfterFilter((n: any) => {
+      const id = Number(n?.data?.menu?.id ?? 0);
+      if (id) { ids.push(id); }
+    });
+    return ids;
+  }
+
+  /**
+   * Cierra todas las ramas: sólo quedan los menús raíz.
+   *
+   * Con el buscador puesto se cierra sólo lo que SE ESTÁ VIENDO. Si se
+   * plegara también lo que el buscador esconde, el árbol se quedaría en los
+   * menús raíz, que casi nunca son los que coinciden, y la rejilla saldría
+   * vacía después de pulsar un botón que no promete eso.
+   */
   contraerTodo(): void {
+    const aLaVista = this.searchTerm ? new Set(this.idsALaVista()) : null;
     this.plegados.clear();
-    this.hijosPorId.forEach((cuantos, id) => { if (cuantos > 0) { this.plegados.add(id); } });
+    this.hijosPorId.forEach((cuantos, id) => {
+      if (cuantos > 0 && (!aLaVista || aLaVista.has(id))) { this.plegados.add(id); }
+    });
     this.guardarPlegados();
     this.recalcularVisibles();
   }
@@ -245,7 +315,11 @@ export class Save2ProfileComponent implements OnInit  {
   private recalcularVisibles(): void {
     const filas: any[] = this.profile?.acceso ?? [];
 
-    if (this.searchTerm || this.plegados.size === 0) {
+    // ANTES de esconder nada: lo que deja pasar el buscador se cuenta con el
+    // árbol entero, porque es lo que marcan los atajos y las cabeceras.
+    this.recalcularIdsDelFiltro();
+
+    if (this.plegados.size === 0) {
       this.filasArbol = [...filas];
     } else {
       // Un mapa id → padre para no recorrer el array por cada antepasado
@@ -265,15 +339,47 @@ export class Save2ProfileComponent implements OnInit  {
     this.actualizarBotonesArbol();
   }
 
+  /**
+   * Qué menús deja pasar el buscador, preguntado con el ÁRBOL ENTERO puesto.
+   *
+   * El filtro lo aplica la rejilla, y la rejilla sólo tiene las filas
+   * desplegadas: preguntándole con una rama cerrada, los menús escondidos
+   * que coinciden no saldrían y «Marcar todo» los dejaría fuera sin que se
+   * note. Así que cuando hay algo plegado se le dan todas las filas un
+   * instante, se le pregunta —responde en el mismo tick, medido— y quien
+   * llama (`recalcularVisibles`) le devuelve acto seguido las que tocan.
+   */
+  private recalcularIdsDelFiltro(): void {
+    if (!this.searchTerm) { this.idsDelFiltro = null; return; }
+
+    // Se le dan todas SIEMPRE, no sólo cuando hay algo plegado: al desplegar
+    // la última rama el conjunto ya está a cero pero la rejilla todavía tiene
+    // el reducido de antes, y preguntarle ahí devolvería menos de los que
+    // coinciden.
+    this.gridApi?.setRowData(this.profile?.acceso ?? []);
+
+    const ids = new Set<number>();
+    this.gridApi?.forEachNodeAfterFilter((n: any) => {
+      const id = Number(n?.data?.menu?.id ?? 0);
+      if (id) { ids.add(id); }
+    });
+    this.idsDelFiltro = ids;
+  }
+
   /** Quita del estado los menús que ya no existen. */
   private limpiarPlegados(): void {
     const existen = new Set((this.profile?.acceso ?? []).map((f: any) => Number(f?.menu?.id)));
     [...this.plegados].forEach(id => { if (!existen.has(id)) { this.plegados.delete(id); } });
+    [...this.plegadosFueraDeBusqueda].forEach(id => { if (!existen.has(id)) { this.plegadosFueraDeBusqueda.delete(id); } });
   }
 
   private guardarPlegados(): void {
     try {
-      localStorage.setItem(Save2ProfileComponent.CLAVE_PLEGADOS, JSON.stringify([...this.plegados]));
+      // Mientras se busca, lo que se recuerda es el árbol de ANTES: lo que se
+      // pliegue con el buscador puesto se descarta al limpiarlo, así que
+      // guardarlo dejaría el árbol cerrado en la siguiente visita.
+      const aGuardar = this.searchTerm ? this.plegadosFueraDeBusqueda : this.plegados;
+      localStorage.setItem(Save2ProfileComponent.CLAVE_PLEGADOS, JSON.stringify([...aGuardar]));
     } catch {
       // Ventana privada o almacenamiento bloqueado: se pierde al salir y ya
     }
@@ -329,9 +435,8 @@ export class Save2ProfileComponent implements OnInit  {
   private actualizarBotonesArbol(): void {
     const botones = this.host?.nativeElement?.querySelectorAll?.('[data-arbol]');
     botones?.forEach((b: HTMLButtonElement) => {
-      b.disabled = b.dataset['arbol'] === 'contraer'
-        ? !!this.searchTerm                          // buscando se ve todo
-        : (!!this.searchTerm || !this.hayPlegados);  // nada que desplegar
+      // Contraer siempre vale; desplegar sólo si hay algo cerrado.
+      b.disabled = b.dataset['arbol'] !== 'contraer' && !this.hayPlegados;
     });
   }
 
@@ -342,13 +447,19 @@ export class Save2ProfileComponent implements OnInit  {
    * cerradas: si no, «Marcar todo» dejaría fuera lo escondido sin que se
    * note, y la casilla de la cabecera se vería marcada con menús sin marcar
    * debajo. Lo plegado es una forma de mirar; el filtro sí es una elección.
+   *
+   * Se filtra el MODELO con `idsDelFiltro` en vez de recorrer los nodos de la
+   * rejilla: los nodos son sólo las filas desplegadas, así que en cuanto el
+   * +/- funciona con el buscador puesto, preguntarle a la rejilla deja fuera
+   * los menús que coinciden pero están dentro de una rama cerrada.
    */
   private filasVisibles(): any[] {
-    if (!this.filtroActivo) { return this.profile?.acceso ?? []; }
+    const filas: any[] = this.profile?.acceso ?? [];
+    if (!this.idsDelFiltro) { return filas; }
 
-    const filas: any[] = [];
-    this.gridApi?.forEachNodeAfterFilter(n => { if (n.data) { filas.push(n.data); } });
-    return filas.length ? filas : (this.profile?.acceso ?? []);
+    const pasan = this.idsDelFiltro;
+    const coinciden = filas.filter((f: any) => pasan.has(Number(f?.menu?.id ?? 0)));
+    return coinciden.length ? coinciden : filas;
   }
 
   /** Pone un permiso en una fila y lo refleja en el FormArray (sin propagar). */
@@ -818,12 +929,17 @@ export class Save2ProfileComponent implements OnInit  {
 
         // Al empezar o dejar de buscar cambia QUÉ filas se pintan: con texto
         // escrito se abre el árbol entero (si no, una coincidencia dentro de
-        // una rama cerrada no saldría) y al limpiarlo vuelve a cerrarse.
-        const antes = !!this.searchTerm;
+        // una rama cerrada no saldría) y al limpiarlo vuelve a cerrarse. Lo
+        // que ya NO se hace es desactivar el plegado mientras se busca.
+        const habiaFiltro = !!this.searchTerm;
         this.searchTerm = filterText;
-        if (antes !== !!this.searchTerm) { this.recalcularVisibles(); }
+        this.plegadoAlCambiarElFiltro(habiaFiltro);
 
+        // El orden importa: el filtro va PRIMERO, porque recalcularVisibles()
+        // le pregunta a la rejilla qué deja pasar y necesita el filtro nuevo
+        // ya puesto.
         this.gridApi.setQuickFilter(filterText);
+        this.recalcularVisibles();
         setTimeout(() => this.actualizarCabeceras());   // las casillas de cabecera miran las filas visibles
       }    
     }

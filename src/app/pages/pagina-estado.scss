@@ -1,0 +1,310 @@
+/*
+ * Aspecto común de las dos pantallas de estado: el 404 (pages/error) y el
+ * «acceso denegado» (pages/access-deny). Está en un solo fichero porque las
+ * dos tienen que verse iguales; cada componente la carga por `styleUrls`, así
+ * que Angular la compila con el ámbito de cada uno y no se escapa nada al
+ * resto de la aplicación.
+ *
+ * POR QUÉ NO SE REUTILIZAN .error / .error-code DEL TEMA
+ * (scss/default/pages/_error.scss): aquéllas parten la pantalla en dos
+ * mitades —el número arriba y un panel abajo— y ese panel es `$gray-800`
+ * TAMBIÉN en el tema claro, con el texto en blanco encima. Es el mismo error
+ * de siempre: un bloque oscuro fijo dentro de una aplicación que tiene dos
+ * temas. Con nombres nuevos no hay nada contra lo que pelear y el tema se
+ * queda intacto, que es de la plantilla y lo usa también modules/demo.
+ *
+ * EL COLOR SALE TODO DE LAS VARIABLES DE BOOTSTRAP (--bs-component-bg,
+ * --bs-secondary-color, --bs-border-color...), que es justo lo que redefine
+ * `data-bs-theme="dark"` en <html> (app.component.ts). Así el claro y el
+ * oscuro salen solos y no hay dos juegos de reglas que mantener.
+ *
+ * El acento lo pone cada página en --acento / --acento-rgb: verde de la
+ * aplicación para el 404, naranja de aviso para el acceso denegado.
+ */
+
+.pagina-estado {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 60vh;
+	padding: 2rem 1rem;
+}
+
+/*
+ * El 404 se pinta con appEmpty = true, es decir, sin cabecera ni menú: ahí sí
+ * tiene toda la ventana para él. El de acceso denegado va dentro del armazón
+ * normal, así que se queda con el 60vh de arriba y no empuja el pie.
+ */
+.pagina-estado--pantalla {
+	min-height: 100vh;
+	min-height: 100dvh;
+}
+
+.pagina-estado__caja {
+	--acento: var(--bs-app-theme);
+	--acento-rgb: var(--bs-app-theme-rgb);
+
+	position: relative;
+	overflow: hidden;
+	width: 100%;
+	max-width: 560px;
+	padding: 2.75rem 1.75rem 2.25rem;
+	text-align: center;
+	color: var(--bs-component-color);
+	background-color: var(--bs-component-bg);
+	border: 1px solid var(--bs-component-border-color);
+	border-radius: 12px;
+	box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, .14);
+	animation: pagina-estado-entra .35s ease-out both;
+}
+
+.pagina-estado--aviso .pagina-estado__caja {
+	--acento: var(--bs-warning);
+	--acento-rgb: var(--bs-warning-rgb);
+}
+
+/* Filete de color arriba: lo único que distingue de un vistazo las dos páginas. */
+.pagina-estado__caja::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background-color: var(--acento);
+}
+
+/*
+ * El número grande de marca de agua. Va detrás de todo y con muy poca opacidad:
+ * da carácter sin pelearse con el texto, que era el problema del 404 de 200px.
+ */
+.pagina-estado__marca {
+	position: absolute;
+	top: 1.1rem;
+	left: 0;
+	right: 0;
+	text-align: center;
+	font-size: 12rem;
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: -.05em;
+	color: rgba(var(--acento-rgb), .06);
+	pointer-events: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.pagina-estado__icono {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 76px;
+	height: 76px;
+	margin: 0 auto 1.25rem;
+	font-size: 1.9rem;
+	color: var(--acento);
+	background-color: rgba(var(--acento-rgb), .12);
+	border-radius: 50%;
+	box-shadow: 0 0 0 8px rgba(var(--acento-rgb), .06);
+}
+
+.pagina-estado__codigo {
+	position: relative;
+	display: inline-block;
+	margin-bottom: .85rem;
+	padding: .2rem .75rem;
+	font-size: .75rem;
+	font-weight: 600;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	color: var(--acento);
+	background-color: rgba(var(--acento-rgb), .12);
+	border-radius: 999px;
+}
+
+.pagina-estado__titulo {
+	position: relative;
+	margin: 0 0 .65rem;
+	font-size: 1.5rem;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.pagina-estado__texto {
+	position: relative;
+	max-width: 44ch;
+	margin: 0 auto 1.5rem;
+	font-size: .95rem;
+	line-height: 1.6;
+	color: var(--bs-secondary-color);
+}
+
+/*
+ * La dirección que falló. No es decoración: es lo primero que pregunta quien
+ * atiende el aviso, y copiada de aquí no hay que fiarse de lo que recuerde
+ * el usuario.
+ */
+.pagina-estado__ruta {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 100%;
+	margin: 0 auto 1.75rem;
+	padding: .55rem .85rem;
+	font-family: var(--bs-font-monospace);
+	font-size: .8rem;
+	color: var(--bs-secondary-color);
+	background-color: var(--bs-body-bg);
+	border: 1px solid var(--bs-border-color);
+	border-radius: 8px;
+}
+
+.pagina-estado__ruta i {
+	flex-shrink: 0;
+	margin-right: .5rem;
+	opacity: .65;
+}
+
+.pagina-estado__ruta span {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/*
+ * Los márgenes negativos hacen de `gap`: Safari no lo soporta en flex hasta
+ * la 14.1 y el suelo del paquete es iOS 14 (ver .browserslistrc).
+ */
+.pagina-estado__acciones {
+	position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	margin: -.3rem;
+}
+
+.pagina-estado__acciones > * {
+	margin: .3rem;
+}
+
+/*
+ * LOS BOTONES.
+ *
+ * Los de la aplicación salen de 34 px de alto y 12 px de letra. En estas dos
+ * páginas el botón ES la pantalla —no hay nada más que hacer— y además el
+ * suelo del paquete es un iPhone 7 (ver .browserslistrc), donde 34 px es un
+ * blanco pequeño para el dedo; la recomendación son 44. Se agrandan sólo aquí
+ * dentro, acotado a .pagina-estado__acciones, para no tocar el botón que usa
+ * el resto de la aplicación.
+ *
+ * El ancho mínimo es para que las tres acciones del 404 salgan iguales en vez
+ * de a tres anchos distintos, y para que la única del 401 no quede diminuta.
+ */
+.pagina-estado__acciones .btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 150px;
+	min-height: 44px;
+	padding: .6rem 1.35rem;
+	font-size: .875rem;
+	font-weight: 600;
+	border-radius: 8px;
+	transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease;
+}
+
+.pagina-estado__acciones .btn i {
+	margin-right: .5rem;
+	opacity: .9;
+}
+
+.pagina-estado__acciones .btn:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 .35rem .75rem rgba(0, 0, 0, .16);
+}
+
+.pagina-estado__acciones .btn:active {
+	transform: translateY(0);
+	box-shadow: none;
+}
+
+/*
+ * El anillo del foco. El de Bootstrap es --bs-focus-ring-color, un azul fijo
+ * que es el mismo en los dos temas y que aquí no pega con nada; éste usa el
+ * acento de cada página. El `outline` transparente no es adorno: en el modo
+ * de contraste forzado de Windows las sombras se pierden y el contorno no.
+ */
+.pagina-estado__acciones .btn:focus,
+.pagina-estado__acciones .btn:focus-visible {
+	outline: 2px solid transparent;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 .2rem rgba(var(--acento-rgb), .45);
+}
+
+/*
+ * El botón secundario NO puede ser .btn-outline-secondary: ese coge su color
+ * de --bs-secondary, un gris medio que es el mismo en los dos temas, y sobre
+ * la caja oscura se queda en un contraste de poco más de 2:1. Éste coge el
+ * color del texto de la caja, que sí cambia con el tema.
+ */
+.pagina-estado__boton-secundario {
+	color: var(--bs-component-color);
+	background-color: transparent;
+	border: 1px solid var(--bs-border-color);
+}
+
+.pagina-estado__boton-secundario:hover,
+.pagina-estado__boton-secundario:focus {
+	color: var(--bs-component-color);
+	background-color: var(--bs-secondary-bg);
+	border-color: var(--bs-border-color);
+}
+
+/*
+ * Lo mismo con el de cerrar sesión: .btn-outline-danger pinta el texto con
+ * --bs-danger (#ff5b57), igual en los dos temas, y se queda en 3,05 sobre el
+ * blanco. Las variables «subtle»/«emphasis» de Bootstrap 5.3 sí cambian con
+ * el tema y están pensadas justo para esto.
+ */
+.pagina-estado__boton-peligro {
+	color: var(--bs-danger-text-emphasis);
+	background-color: var(--bs-danger-bg-subtle);
+	border: 1px solid var(--bs-danger-border-subtle);
+}
+
+.pagina-estado__boton-peligro:hover,
+.pagina-estado__boton-peligro:focus {
+	color: var(--bs-danger-text-emphasis);
+	background-color: var(--bs-danger-bg-subtle);
+	border-color: var(--bs-danger);
+}
+
+@keyframes pagina-estado-entra {
+	from { opacity: 0; transform: translateY(12px); }
+	to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pagina-estado__caja { animation: none; }
+}
+
+@media (max-width: 575.98px) {
+	.pagina-estado {
+		padding: 1.5rem 1rem;
+	}
+	.pagina-estado__caja {
+		padding: 2.25rem 1.25rem 1.75rem;
+	}
+	.pagina-estado__marca {
+		font-size: 8rem;
+	}
+	.pagina-estado__titulo {
+		font-size: 1.25rem;
+	}
+	/* En el móvil los botones apilados se aciertan mejor que en fila apretada. */
+	.pagina-estado__acciones > * {
+		width: 100%;
+	}
+}

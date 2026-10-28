@@ -172,7 +172,7 @@
                 · <i class="fa fa-star"></i> {{ nombrePredeterminado }}
               </span>
             }
-            @if (hayPlegadas && !searchTerm) {
+            @if (hayPlegadas) {
               <span class="grp-plegadas" title="Hay ramas contraídas">
                 · <i class="fa fa-minus-square"></i> {{ plegadasCuantas }} contraída{{ plegadasCuantas === 1 ? '' : 's' }}
               </span>

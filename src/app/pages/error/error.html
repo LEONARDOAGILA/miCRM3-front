@@ -1,25 +1,47 @@
 <!-- BEGIN error -->
-<div class="error">
-	<div class="error-code">404</div>
-	<div class="error-content">
-		<div class="error-message">No pudimos encontrarlo....</div>
-		<div class="error-desc mb-4">
-			La página que buscas no existe, o no tienes acceso a ella.... <br />
-			Si no es asi, consulta con el administrador.
+<div class="pagina-estado pagina-estado--pantalla">
+	<div class="pagina-estado__caja">
+		<div class="pagina-estado__marca" aria-hidden="true">404</div>
+
+		<div class="pagina-estado__icono">
+			<i class="fa fa-compass" aria-hidden="true"></i>
 		</div>
-		<div class="d-flex flex-wrap justify-content-center gap-2">
-			<a routerLink="/" class="btn btn-success px-3">
-				<i class="fa fa-home fa-fw me-1" aria-hidden="true"></i> Volver al Inicio
+
+		<div class="pagina-estado__codigo">Error 404</div>
+
+		<h1 class="pagina-estado__titulo">No pudimos encontrar esta página</h1>
+
+		<p class="pagina-estado__texto">
+			La dirección no existe o no tienes acceso a ella. Si creías que sí,
+			consulta con el administrador.
+		</p>
+
+		<!-- La dirección que no se pudo abrir, tal cual: es lo primero que
+		     pregunta quien atiende el aviso. -->
+		@if (rutaPedida) {
+			<div class="pagina-estado__ruta">
+				<i class="fa fa-link" aria-hidden="true"></i>
+				<span [title]="rutaPedida">{{ rutaPedida }}</span>
+			</div>
+		}
+
+		<div class="pagina-estado__acciones">
+			<a routerLink="/" class="btn btn-success">
+				<i class="fa fa-home fa-fw" aria-hidden="true"></i> Volver al inicio
 			</a>
 
-			<!-- La página de error se pinta con appEmpty = true (sin header ni menú),
-			     así que sin este botón el usuario no tenía forma de cerrar sesión. -->
-			<button type="button"
-					class="btn btn-danger px-3"
-					*ngIf="haySesion"
-					(click)="fun_salir()">
-				<i class="fa fa-sign-out fa-fw me-1" aria-hidden="true"></i> Cerrar Sesión
+			<button type="button" class="btn pagina-estado__boton-secundario" (click)="volver()">
+				<i class="fa fa-arrow-left fa-fw" aria-hidden="true"></i> Atrás
 			</button>
+
+			<!-- La página de error se pinta con appEmpty = true (sin cabecera ni
+			     menú), así que sin este botón el usuario no tenía forma de cerrar
+			     sesión. -->
+			@if (haySesion) {
+				<button type="button" class="btn pagina-estado__boton-peligro" (click)="fun_salir()">
+					<i class="fa fa-sign-out fa-fw" aria-hidden="true"></i> Cerrar sesión
+				</button>
+			}
 		</div>
 	</div>
 </div>

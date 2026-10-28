@@ -72,6 +72,16 @@ export class ListCategoriaComponent implements OnInit {
   /** Las ramas cerradas. Es de este modal: no se recuerda al cerrarlo. */
   private readonly plegadas = new Set<number>();
 
+  /**
+   * El plegado que había ANTES de buscar.
+   *
+   * Buscar abre el árbol entero para que ninguna coincidencia se quede
+   * escondida, pero eso no puede costarle al usuario el árbol que tenía
+   * montado: se aparta aquí y vuelve al quitar el filtro. Lo que se pliegue
+   * CON EL FILTRO PUESTO es del filtro y se descarta con él.
+   */
+  private plegadasFueraDeFiltro = new Set<number>();
+
   /** La categoría ya asignada, y las inactivas, van con su clase. */
   public rowClassRules = {
     'fila-actual': (p: RowClassParams) =>
@@ -107,8 +117,6 @@ export class ListCategoriaComponent implements OnInit {
   /** Para encender o apagar los botones de plegar. */
   public get hayPlegadas(): boolean { return this.plegadas.size > 0; }
 
-  /** Buscando se ve el árbol entero: plegar no pintaría nada. */
-  public get plegadoDesactivado(): boolean { return !!this.searchTerm; }
 
   // ================================================================
   // AG-GRID
@@ -180,8 +188,7 @@ export class ListCategoriaComponent implements OnInit {
 
     const sangria = `<span class="cat-sangria" style="width:${nivel * 16}px"></span>`;
 
-    // Buscando no se pliega nada, así que tampoco se enseña el asa
-    const asa = (hijos > 0 && !this.plegadoDesactivado)
+    const asa = (hijos > 0)
       ? `<button type="button" class="cat-asa" data-accion="plegar"
                  title="${this.plegadas.has(d.id) ? 'Desplegar' : 'Contraer'} esta rama"
                  aria-label="${this.plegadas.has(d.id) ? 'Desplegar' : 'Contraer'}">
@@ -265,16 +272,50 @@ export class ListCategoriaComponent implements OnInit {
     this.recalcularVisibles();
   }
 
-  /** Cierra todas las ramas que tienen hijas. */
+  /**
+   * Aparta o devuelve el plegado cuando el filtro se enciende o se apaga.
+   *
+   * Al EMPEZAR a filtrar se abre el árbol entero, porque una coincidencia
+   * dentro de una rama cerrada no saldría y parecería que el filtro no la
+   * encuentra. Al quitar el filtro vuelve el árbol que había.
+   *
+   * Lo que ya NO se hace es desactivar el plegado mientras se filtra: con el
+   * filtro puesto, el +/- sigue plegando y desplegando.
+   *
+   * Devuelve true si cambió algo, o sea si hay que repintar.
+   */
+  private plegadoAlCambiarElFiltro(habiaFiltro: boolean): boolean {
+    const hayFiltro = !!this.searchTerm;
+    if (habiaFiltro === hayFiltro) { return false; }
+
+    if (hayFiltro) {
+      this.plegadasFueraDeFiltro = new Set(this.plegadas);
+      this.plegadas.clear();
+    } else {
+      this.plegadas.clear();
+      this.plegadasFueraDeFiltro.forEach(id => this.plegadas.add(id));
+      this.plegadasFueraDeFiltro.clear();
+    }
+    return true;
+  }
+
+  /**
+   * Cierra todas las ramas que tienen hijas.
+   *
+   * Buscando se cierra sólo lo que SE ESTÁ VIENDO: `filasVisibles` ya es lo
+   * que hay en pantalla. Cerrarlo todo dejaría las raíces, que casi nunca
+   * son las que coinciden, y la lista saldría vacía.
+   */
   contraerTodo(): void {
-    if (this.plegadoDesactivado) { return; }
+    const aLaVista = this.searchTerm ? new Set(this.filasVisibles.map(c => c.id)) : null;
     this.plegadas.clear();
-    this.arbol.forEach(c => { if (Number(c.num_hijos ?? 0) > 0) { this.plegadas.add(c.id); } });
+    this.arbol.forEach(c => {
+      if (Number(c.num_hijos ?? 0) > 0 && (!aLaVista || aLaVista.has(c.id))) { this.plegadas.add(c.id); }
+    });
     this.recalcularVisibles();
   }
 
   desplegarTodo(): void {
-    if (this.plegadoDesactivado) { return; }
     this.plegadas.clear();
     this.recalcularVisibles();
   }
@@ -291,41 +332,52 @@ export class ListCategoriaComponent implements OnInit {
     const padres = new Map<number, number | null>();
     this.arbol.forEach(c => padres.set(c.id, c.padre_id ?? null));
 
+    // 1. El filtro: qué ids deja pasar (null = no hay nada escrito).
+    let marcadas: Set<number> | null = null;
     if (this.searchTerm) {
       const aguja = this.sinTildes(this.searchTerm);
+      const pasan = new Set<number>();
 
       // Las que coinciden por nombre o por ruta
-      const marcadas = new Set<number>();
       this.arbol.forEach(c => {
         const texto = this.sinTildes(`${c.nombre ?? ''} ${c.ruta ?? ''}`);
-        if (texto.includes(aguja)) { marcadas.add(c.id); }
+        if (texto.includes(aguja)) { pasan.add(c.id); }
       });
 
       // ...y sus antepasadas, para que la rama se entienda
-      [...marcadas].forEach(id => {
+      [...pasan].forEach(id => {
         let p = padres.get(id) ?? null;
         const vistos = new Set<number>([id]);   // por si llegara un ciclo
         while (p != null && !vistos.has(p)) {
           vistos.add(p);
-          marcadas.add(p);
+          pasan.add(p);
           p = padres.get(p) ?? null;
         }
       });
 
-      this.filasVisibles = this.arbol.filter(c => marcadas.has(c.id));
-    } else if (this.plegadas.size === 0) {
+      marcadas = pasan;
+    }
+
+    // 2. El plegado, ENCIMA del filtro: una fila se ve si la deja pasar el
+    // filtro y no cuelga de una rama cerrada. Antes buscar desactivaba el
+    // plegado, y con algo escrito el +/- no hacía nada.
+    const cuelgaDeUnaRamaCerrada = (id: number): boolean => {
+      let p = padres.get(id) ?? null;
+      const vistos = new Set<number>([id]);
+      while (p != null && !vistos.has(p)) {
+        if (this.plegadas.has(p)) { return true; }
+        vistos.add(p);
+        p = padres.get(p) ?? null;
+      }
+      return false;
+    };
+
+    if (!marcadas && this.plegadas.size === 0) {
       this.filasVisibles = [...this.arbol];
     } else {
-      this.filasVisibles = this.arbol.filter(c => {
-        let p = padres.get(c.id) ?? null;
-        const vistos = new Set<number>([c.id]);
-        while (p != null && !vistos.has(p)) {
-          if (this.plegadas.has(p)) { return false; }
-          vistos.add(p);
-          p = padres.get(p) ?? null;
-        }
-        return true;
-      });
+      const pasaElFiltro = marcadas;
+      this.filasVisibles = this.arbol.filter(c =>
+        (!pasaElFiltro || pasaElFiltro.has(c.id)) && !cuelgaDeUnaRamaCerrada(c.id));
     }
 
     this.gridApi?.setRowData(this.filasVisibles);
@@ -364,7 +416,9 @@ export class ListCategoriaComponent implements OnInit {
   // ================================================================
 
   onSearch(term?: string): void {
+    const habiaFiltro = !!this.searchTerm;
     this.searchTerm = (term ?? '').trim();
+    this.plegadoAlCambiarElFiltro(habiaFiltro);
     this.recalcularVisibles();
   }
 
@@ -372,6 +426,7 @@ export class ListCategoriaComponent implements OnInit {
     if (!this.searchTerm) { return; }
     this.searchTerm = '';
     this.campoBusquedaPaginacion?.reset();   // también se vacía la caja
+    this.plegadoAlCambiarElFiltro(true);     // vuelve el árbol que había
     this.recalcularVisibles();
   }
 }
