@@ -9,6 +9,7 @@ import { AllMarcasComponent } from './pages/marcas/allMarcas/allMarcas.component
 import { AllCategoriasComponent } from './pages/categorias/allCategorias/allCategorias.component';
 import { AllProductosComponent } from './pages/productos/allProductos/allProductos.component';
 import { AllCaracteristicasComponent } from './pages/caracteristicas/allCaracteristicas/allCaracteristicas.component';
+import { AllCaracteristicasNombresComponent } from './pages/caracteristicasNombres/allCaracteristicasNombres/allCaracteristicasNombres.component';
 
 // ============================================================================
 // SIN NgModule A PROPÓSITO: las 21 clases del módulo son standalone, así que un
@@ -42,6 +43,8 @@ export const INVENTARIO_ROUTES: Routes = [
       { path: 'allProductos',  component: AllProductosComponent,  canActivate: [AuthGuard], resolve: { access: AccessResolver } },
       // La plantilla de caracteristicas de cada categoria
       { path: 'allCaracteristicas', component: AllCaracteristicasComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
+      // El diccionario del que salen los nombres de esas caracteristicas
+      { path: 'allCaracteristicasNombres', component: AllCaracteristicasNombresComponent, canActivate: [AuthGuard], resolve: { access: AccessResolver } },
 
       // El menu apunta a 'inventarios/home-inventarios' (asi esta en
       // seguridad.menus) y esa ruta no existia: el modulo entero caia en el

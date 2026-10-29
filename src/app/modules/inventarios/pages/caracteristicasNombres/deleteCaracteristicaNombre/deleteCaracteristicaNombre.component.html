@@ -1,0 +1,133 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarNombreTitulo"
+     aria-describedby="eliminarNombreDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarNombreTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        @if (enUso) {
+          <h6 class="eliminar-aviso__titulo">Este nombre está en uso</h6>
+          <!-- El servidor se niega igual (P0021). Decirlo aquí ahorra el error. -->
+          <p class="eliminar-aviso__texto" id="eliminarNombreDescripcion">
+            No se puede enviar a la papelera mientras alguien lo use: las categorías que lo
+            piden se quedarían enseñando un nombre borrado.
+            @if (numCategorias > 0) {
+              <br><b>{{ numCategorias }} {{ numCategorias === 1 ? 'categoría lo pide' : 'categorías lo piden' }}</b>:
+              quítelo de ahí primero.
+            }
+            @if (numProductos > 0) {
+              <br><b>{{ numProductos }} {{ numProductos === 1 ? 'producto lo tiene' : 'productos lo tienen' }} relleno.</b>
+            }
+          </p>
+        } @else {
+          <h6 class="eliminar-aviso__titulo">¿Enviar este nombre a la papelera?</h6>
+          <!-- Borrado lógico (deleted_at / deleted_by): deja de poderse
+               escoger, y desde la papelera se restaura. -->
+          <p class="eliminar-aviso__texto" id="eliminarNombreDescripcion">
+            Dejará de poder escogerse al definir características, pero
+            <b>no se borra</b>: queda en la papelera, desde donde puede restaurarse.
+          </p>
+        }
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>ID
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.id }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-font fa-fw me-1" aria-hidden="true"></i>Nombre
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.etiqueta || registro_selected?.nombre || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-shapes fa-fw me-1" aria-hidden="true"></i>Tipo de dato
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.tipo_nombre || registro_selected?.tipo || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-sitemap fa-fw me-1" aria-hidden="true"></i>Categorías que lo piden
+        </span>
+        <span class="eliminar-datos__valor">{{ numCategorias }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-box fa-fw me-1" aria-hidden="true"></i>Productos con valor
+        </span>
+        <span class="eliminar-datos__valor">{{ numProductos }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
+        </span>
+        <span class="badge fs-10px"
+              [ngClass]="registro_selected?.activo ? 'bg-teal' : 'bg-danger'">
+          {{ registro_selected?.activo ? 'ACTIVO' : 'INACTIVO' }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si sólo quiere que deje de ofrecerse en el combo pero conservarlo donde ya está puesto,
+      <b>desactívelo</b> en lugar de enviarlo a la papelera.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    @if (!enUso) {
+      <button type="button"
+              class="btn btn-danger"
+              [disabled]="isLoading"
+              (click)="deleteCaracteristicaNombre()">
+        <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
+      </button>
+    }
+  </div>
+
+</div>

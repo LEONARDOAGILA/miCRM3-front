@@ -482,12 +482,21 @@
               {{ caracteristicasRellenas }} / {{ caracteristicas.length }}
             </span>
           }
+          <!-- Las obligatorias que faltan, donde se ve antes de pulsar Guardar -->
+          @if (obligatoriasVacias.length) {
+            <span class="chip chip-danger"
+                  [title]="'Sin esto no se puede guardar: ' + obligatoriasVacias.length + ' obligatoria(s) vacía(s)'">
+              <i class="fa-solid fa-asterisk"></i>
+              {{ obligatoriasVacias.length }}
+              {{ obligatoriasVacias.length === 1 ? 'obligatoria vacía' : 'obligatorias vacías' }}
+            </span>
+          }
           <!-- Para algo que sólo tiene ESTE producto. Lo que se repita en
                todos los de su categoría va en Inventarios → Características,
                que entonces se pide solo. -->
           @if (!esView) {
             <button type="button" class="btn btn-sm btn-primary"
-                    title="Añadir una característica sólo para este producto"
+                    title="Añadir una característica sólo para este producto. El nombre se escoge del diccionario"
                     (click)="agregarCaracteristica()">
               <i class="fa fa-plus me-1"></i>Agregar
             </button>
@@ -554,9 +563,14 @@
                 <p class="campo-hint carac-leyenda">
                   <i class="fa-solid fa-hand-pointer"></i>
                   <span>
-                    Haz clic en la columna <b>Valor</b> y escribe; lo que se deje vacío no se guarda.
+                    Haz clic en la columna <b>Valor</b>; lo que se deje vacío no se guarda.
+                    Cada fila se rellena <b>como dice su tipo</b>: las de número sólo admiten cifras
+                    —con su unidad al lado— y las de lista se escogen de un desplegable.
+                    Las marcadas con <b class="carac-obligatoria">*</b> son <b>obligatorias</b>:
+                    sin ellas no se guarda el producto.
                     Los nombres salen de la lista de la categoría, que se mantiene en
-                    <b>Inventarios → Características</b>.
+                    <b>Inventarios → Características</b>, y el tipo y la unidad, de
+                    <b>Nombres de característica</b>.
                   </span>
                   <button type="button" class="btn btn-link btn-sm carac-leyenda__limpiar"
                           (click)="limpiarCaracteristicas()">

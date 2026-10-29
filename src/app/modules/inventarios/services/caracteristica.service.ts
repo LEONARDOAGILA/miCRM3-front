@@ -80,6 +80,20 @@ export class CaracteristicaService {
                            activo === undefined ? {} : { activo });
   }
 
+  //   ******   REQUERIDA / OPCIONAL   ******  //
+  /**
+   * La misma palanca que `activo`, pero para otra pregunta: aquélla dice si
+   * se pide, ésta si el producto se puede guardar sin ella.
+   *
+   * Sin `requerido` alterna; con él, lo deja como se diga. El mensaje que
+   * contesta el servidor avisa de cuántos productos de esa categoría la
+   * tienen vacía, que son los que dejarán de poder guardarse.
+   */
+  requeridoCaracteristica(id: any, requerido?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'requeridoCaracteristica/' + id,
+                           requerido === undefined ? {} : { requerido });
+  }
+
   //   ******   CAMBIAR EL ORDEN   ******  //
   /**
    * Los ids EN EL ORDEN NUEVO, al arrastrar las filas de la rejilla.

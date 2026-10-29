@@ -127,8 +127,10 @@
   vertical-align: middle;
 }
 
-en saveUser esa variable dice 45px y por eso allí el botón queda algo
-   más bajo que el campo. */
+/* EL TRÍO id + ruta + lupa.
+   Las filas se alinean arriba para que la lupa quede a la altura del campo y
+   no de su zona de mensajes: en saveUser esa variable dice 45px y por eso
+   allí el botón queda algo más bajo que el campo. */
 .campo-lookup .row {
   align-items: flex-start;
   flex-wrap: nowrap;
@@ -263,4 +265,10 @@ en saveUser esa variable dice 45px y por eso allí el botón queda algo
    cabecera del panel, la cinta y el aire de la hoja. */
 :host ::ng-deep .panel.panel-expand .prod-descripcion .cne__fondo {
   --cne-alto: calc(100vh - 220px) !important;
+}
+
+/* El aviso de «esto tiene consecuencias»: amarillo, no rojo. No es un error,
+   es algo que conviene saber antes de marcar la palanca. */
+.campo-hint--aviso {
+  color: var(--bs-warning-text-emphasis, #997404);
 }

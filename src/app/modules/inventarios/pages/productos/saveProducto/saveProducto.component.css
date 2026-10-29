@@ -70,6 +70,7 @@
 
 .chip-muted { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
 .chip-info  { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+.chip-danger{ background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);  color: var(--bs-danger-text-emphasis, #b02a37); }
 
 /* ============================================================
 /* ============================================================
@@ -685,6 +686,36 @@
   background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .05);
 }
 
+/* TODA la columna del valor a la izquierda, numeros incluidos.
+   Estuvieron un rato a la derecha, que es lo correcto en una columna de
+   cifras COMPARABLES (precios, cantidades). Aqui no lo son: cada fila es una
+   magnitud distinta —litros, gramos, pulgadas— y no hay nada que comparar
+   hacia abajo, asi que lo unico que hacia la alineacion mixta era que la
+   lista se viera desordenada. Se queda el tabular-nums, que ese si ayuda a
+   leer cifras. */
+:host ::ng-deep .carac-grid .ag-cell.celda-numero {
+  font-variant-numeric: tabular-nums;
+}
+
+/* La unidad: una chapita pequena al lado del numero. La variable del tema y
+   no un hex, que si no se queda ilegible en uno de los dos temas. */
+:host ::ng-deep .carac-unidad {
+  display: inline-block;
+  padding: 0 .35rem;
+  border: 1px solid var(--bs-border-color, rgba(0, 0, 0, .15));
+  border-radius: .7rem;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--bs-component-color, inherit);
+  opacity: .85;
+}
+
+/* Sin unidad, el icono del tipo (lista o si/no) o un guion. */
+:host ::ng-deep .carac-tipo {
+  color: var(--bs-secondary-color, #adb5bd);
+  font-size: 10.5px;
+}
+
 /* Lo que el producto tiene relleno y ya no esta en la lista de su categoria:
    se marca, porque si se vacia desaparece para siempre. */
 :host ::ng-deep .carac-grid .ag-row.fila-fuera-plantilla .celda-nombre-caracteristica {
@@ -797,4 +828,21 @@
   border: 1px solid var(--bs-app-theme, #00acac);
   border-radius: 4px;
   font-size: .75rem;
+}
+
+/* El asterisco de lo obligatorio, al lado del nombre. */
+:host ::ng-deep .carac-obligatoria {
+  color: var(--bs-danger, #dc3545);
+  font-weight: 700;
+  margin-left: .15rem;
+}
+
+/* La fila obligatoria que sigue vacia: es la que no va a dejar guardar, asi
+   que se ve sin tener que intentarlo. */
+:host ::ng-deep .carac-grid .ag-row.fila-requerida-vacia {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .06);
+}
+
+:host ::ng-deep .carac-grid .ag-row.fila-requerida-vacia .celda-vacia {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
 }

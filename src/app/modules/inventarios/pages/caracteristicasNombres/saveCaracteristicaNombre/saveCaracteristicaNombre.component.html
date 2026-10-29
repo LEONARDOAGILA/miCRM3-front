@@ -1,0 +1,172 @@
+<!-- ============================================================
+     ALTA / MODIFICACIÓN DE UN NOMBRE DEL DICCIONARIO
+
+     El nombre se escribe UNA vez para toda la empresa y las categorías lo
+     escogen de un combo. Aquí van su unidad —aparte del nombre— y su tipo de
+     dato, que es lo que permite que la ficha del producto pinte el campo que
+     toca en vez de una caja de texto para todo.
+     ============================================================ -->
+
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.dismiss()">
+</app-modal-header>
+
+<div class="modal-body">
+  <form [formGroup]="form" novalidate>
+
+    <panel
+      headerClass="bg-gray-800"
+      title="El nombre"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="font"
+      fondoGris="true">
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <!-- Nombre -->
+            <div class="col-12">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="NOMBRE"
+                placeholder="Peso, Alto, Potencia, Color…"
+                [maxLength]="100"
+                [minLength]="2"
+                [trimEspacios]="true">
+              </app-campoTexto>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                Sin la unidad dentro: «Potencia», no «Potencia (W)». La unidad va en su campo.
+              </p>
+              @if (nombreConParentesis) {
+                <p class="campo-hint campo-hint--aviso">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  Este nombre acaba en un paréntesis. Si lo que hay dentro es una unidad,
+                  póngala en el campo de abajo y quítela de aquí; si son opciones, van en cada
+                  categoría.
+                </p>
+              }
+              @if (accion === 'edit' && numCategorias > 0) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  {{ numCategorias }} {{ numCategorias === 1 ? 'categoría lo pide' : 'categorías lo piden' }}:
+                  al cambiarle el nombre se renombra <b>en todas</b> de una vez. Lo que los productos
+                  ya tengan relleno conserva el nombre con el que se rellenó.
+                </p>
+              }
+            </div>
+
+            <!-- Tipo de dato -->
+            <div class="col-12 col-md-6">
+              <div class="campo-combo">
+                <app-combo
+                  formControlName="tipo"
+                  [items]="tipos"
+                  [label]="'Tipo de dato'"
+                  [required]="true"
+                  bindLabel="name"
+                  bindValue="id">
+                </app-combo>
+              </div>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                @switch (form.controls['tipo'].value) {
+                  @case ('NUMERO') { Sólo cifras: es el que logística puede sumar, ordenar y comparar. }
+                  @case ('SI_NO')  { Lo tiene o no lo tiene. }
+                  @case ('LISTA')  { Se escoge de unas opciones, y <b>las opciones las define cada categoría</b>. }
+                  @default         { Cualquier texto. Si lo que se va a escribir es un número, mejor «Número». }
+                }
+              </p>
+            </div>
+
+            <!-- Unidad: sólo para los numéricos -->
+            <div class="col-12 col-md-6">
+              @if (esNumero) {
+                <app-campoTexto
+                  [control]="form.controls['unidad']"
+                  label="UNIDAD"
+                  placeholder="W, kg, litros, pulgadas…"
+                  [maxLength]="20"
+                  [trimEspacios]="true">
+                </app-campoTexto>
+                <div class="unidad-sugeridas">
+                  @for (u of unidades; track u.id) {
+                    <button type="button"
+                            class="unidad-chip"
+                            [class.is-on]="form.controls['unidad'].value === u.id"
+                            [disabled]="esView"
+                            [title]="u.name"
+                            (click)="ponerUnidad(u.id)">{{ u.id }}</button>
+                  }
+                </div>
+              } @else {
+                <p class="campo-hint campo-hint--hueco">
+                  <i class="fa-solid fa-circle-info"></i>
+                  La unidad sólo se pide en los de tipo «Número»: un «Color» en kg no significa nada.
+                </p>
+              }
+            </div>
+
+            <!-- Descripción -->
+            <div class="col-12">
+              <app-campoTextoArea
+                [control]="form.controls['descripcion']"
+                label="DESCRIPCIÓN"
+                placeholder="Para qué es, cómo se mide, qué poner si hay duda…"
+                [maxLength]="1000"
+                [alto]="80">
+              </app-campoTextoArea>
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                Opcional, pero es donde se deja escrito el criterio para que dos personas midan igual.
+              </p>
+            </div>
+
+            <!-- Estado -->
+            <div class="col-12">
+              <div class="estado-caracteristica" [class.is-on]="ctrlActivo.value">
+                <span class="estado-caracteristica__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-caracteristica__text">
+                  <span class="estado-caracteristica__label">Estado</span>
+                  <span class="estado-caracteristica__hint">
+                    {{ ctrlActivo.value
+                        ? 'Se puede escoger al definir características'
+                        : 'No se ofrece en el combo: donde ya está puesto se queda' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-caracteristica__switch"
+                  [control]="ctrlActivo"
+                  [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
+                  [id]="'ck-nombre-activo'">
+                </app-checkbox>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+  </form>
+</div>
+
+<!-- OJO con `isDisabled`: NO deshabilita, decide si sale el botón de guardar
+     (así se llama en las 13 pantallas que usan el pie). Por eso va `!esView`:
+     viendo no hay nada que guardar. Lo de bloquear mientras se guarda es
+     `cargando`. -->
+<app-modal-footer
+  [isDisabled]="!esView"
+  [cargando]="guardando"
+  [textoCerrar]="esView ? 'Cerrar' : 'Salir'"
+  (onClose)="modal.dismiss()"
+  (onSubmit)="onSubmitForm()">
+</app-modal-footer>
