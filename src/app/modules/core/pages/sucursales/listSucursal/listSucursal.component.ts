@@ -11,6 +11,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Modal de selección de sucursal (lo abre saveEmpleado para «Sucursal»).
@@ -33,7 +34,7 @@ import { ModalArrastrableDirective } from '../../../../../components/modal/modal
 @Component({
   selector: 'app-listSucursal',
   standalone: true,
-  imports: [CommonModule, AgGridModule, CampoBusquedaPaginacionComponent, ModalArrastrableDirective],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, CampoBusquedaPaginacionComponent, ModalArrastrableDirective],
   templateUrl: './listSucursal.component.html',
   styleUrls: ['./listSucursal.component.css'],
 })

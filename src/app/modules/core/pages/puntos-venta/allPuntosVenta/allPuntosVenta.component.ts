@@ -38,6 +38,7 @@ import { PuntoVentaModel } from '../../../interfaces/puntoVentaModel';
 import { SavePuntoVentaComponent } from '../savePuntoVenta/savePuntoVenta.component';
 import { DeletePuntoVentaComponent } from '../deletePuntoVenta/deletePuntoVenta.component';
 import { PapeleraPuntosVentaComponent } from '../papeleraPuntosVenta/papeleraPuntosVenta.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Las cajas de cada sucursal, EN DOS COLUMNAS: las tiendas a la izquierda y
@@ -65,7 +66,7 @@ import { PapeleraPuntosVentaComponent } from '../papeleraPuntosVenta/papeleraPun
   selector: 'app-allPuntosVenta',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, PanelComponent,
+    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     CampoBusquedaPaginacionComponent, MenuContextualComponent,
   ],
   templateUrl: './allPuntosVenta.component.html',

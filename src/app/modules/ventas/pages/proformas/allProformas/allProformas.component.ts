@@ -42,6 +42,7 @@ import { SaveProformaComponent } from '../saveProforma/saveProforma.component';
 import { DeleteProformaComponent } from '../deleteProforma/deleteProforma.component';
 import { EstadoProformaComponent } from '../estadoProforma/estadoProforma.component';
 import { PapeleraProformasComponent } from '../papeleraProformas/papeleraProformas.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Listado de proformas (ventas.proformas).
@@ -67,7 +68,7 @@ import { PapeleraProformasComponent } from '../papeleraProformas/papeleraProform
   selector: 'app-allProformas',
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, PanelComponent,
+    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     CampoBusquedaPaginacionComponent, MenuContextualComponent,
   ],
   templateUrl: './allProformas.component.html',

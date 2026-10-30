@@ -30,6 +30,7 @@ import { AppDescargaService, PeticionDescarga, AccionDescarga }
 import { CommonModule } from '@angular/common';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 
 
@@ -39,7 +40,7 @@ import { ActionButtonsComponent } from '../../../../../components/botones/action
   styleUrls: ['./allProfiles.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent, MenuContextualComponent,
     CampoBusquedaPaginacionComponent,
   ],
 })

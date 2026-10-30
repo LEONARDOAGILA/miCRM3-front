@@ -12,6 +12,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Papelera de reciclaje de sucursales (modal), la misma de marcas y clientes.
@@ -27,7 +28,7 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 @Component({
   selector: 'app-papeleraSucursales',
   standalone: true,
-  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
   templateUrl: './papeleraSucursales.component.html',
   styleUrls: ['./papeleraSucursales.component.css'],
 })

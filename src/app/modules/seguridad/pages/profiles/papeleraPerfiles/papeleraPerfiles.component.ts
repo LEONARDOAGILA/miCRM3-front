@@ -12,6 +12,7 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 import { CommonModule } from '@angular/common';
 import { AgGridModule } from 'ag-grid-angular';
 import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Papelera de reciclaje de perfiles (modal), la misma de usuarios y clientes.
@@ -32,7 +33,7 @@ import { ModalHeaderComponent } from '../../../../../components/modal/modal-head
   templateUrl: './papeleraPerfiles.component.html',
   styleUrls: ['./papeleraPerfiles.component.css'],
   standalone: true,
-  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
 })
 export class PapeleraPerfilesComponent implements OnInit, OnDestroy {
 

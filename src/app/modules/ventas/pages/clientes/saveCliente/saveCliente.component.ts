@@ -45,6 +45,7 @@ import { CampoTelefonoComponent } from '../../../../../components/campos/campoTe
 import { CampoEmailComponent } from '../../../../../components/campos/campoEmail/campoEmail.component';
 import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 type AccionCliente = 'add' | 'edit' | 'clon' | 'view';
 
@@ -67,7 +68,7 @@ type AccionCliente = 'add' | 'edit' | 'clon' | 'view';
   styleUrls: ['./saveCliente.component.css'],
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, AgGridModule, PanelComponent,
+    CommonModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, ComboComponent,
     CampoTextoComponent, CampoTextoAreaComponent, CampoIdentificacionComponent,
     CampoTelefonoComponent, CampoEmailComponent, CampoNumeroEnteroComponent,

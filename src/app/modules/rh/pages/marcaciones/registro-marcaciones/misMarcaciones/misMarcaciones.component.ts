@@ -10,6 +10,7 @@ import { ModalHeaderComponent } from '../../../../../../components/modal/modal-h
 import { AppAgGridService } from '../../../../../../service/app-agGrid.service';
 import { MarcacionService } from '../../../../services/marcacion.service';
 import { MarcacionModel } from '../../../../interfaces/marcacionModel';
+import { FilasEstirablesDirective } from '../../../../../../core/directives/filasEstirables.directive';
 
 /**
  * MIS MARCACIONES (modal).
@@ -25,7 +26,7 @@ import { MarcacionModel } from '../../../../interfaces/marcacionModel';
 @Component({
   selector: 'app-mis-marcaciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, ModalHeaderComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
   templateUrl: './misMarcaciones.component.html',
   styleUrls: ['./misMarcaciones.component.css'],
 })

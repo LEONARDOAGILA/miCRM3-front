@@ -18,6 +18,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** Extremo de un rango del picker (dayjs o moment: sólo se usa .format()). */
 interface FechaLike { format(patron: string): string; }
@@ -54,7 +55,7 @@ interface Accion {
 @Component({
   selector: 'app-historial-acciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, PanelComponent, CampoBusquedaComponent, NgxDaterangepickerMd],
+  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaComponent, NgxDaterangepickerMd],
   providers: [
     // Igual que en auditoria-modal: el picker no alcanza los providers de
     // NgxDaterangepickerMd.forRoot() desde un standalone abierto por NgbModal.

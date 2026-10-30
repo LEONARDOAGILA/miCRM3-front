@@ -29,6 +29,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Listado de boletines.
@@ -46,7 +47,7 @@ import { PanelComponent } from '../../../../../components/panel/panel.component'
   templateUrl: './allBoletines.component.html',
   styleUrls: ['./allBoletines.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, PanelComponent, CampoBusquedaPaginacionComponent, MenuContextualComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaPaginacionComponent, MenuContextualComponent],
 })
 export class AllBoletinesComponent implements OnInit, OnDestroy {
 

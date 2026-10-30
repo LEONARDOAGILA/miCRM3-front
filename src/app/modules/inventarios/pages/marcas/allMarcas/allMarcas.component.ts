@@ -32,6 +32,7 @@ import { AppDescargaService, PeticionDescarga, AccionDescarga }
 import { CommonModule } from '@angular/common';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Listado de marcas (inventarios.marcas).
@@ -50,7 +51,7 @@ import { ActionButtonsComponent } from '../../../../../components/botones/action
   styleUrls: ['./allMarcas.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, PanelComponent,
+    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     CampoBusquedaPaginacionComponent, MenuContextualComponent,
   ],
 })

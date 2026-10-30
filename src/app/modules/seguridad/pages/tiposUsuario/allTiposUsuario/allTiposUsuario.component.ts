@@ -27,6 +27,7 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { SaveTipoUsuarioComponent } from '../saveTipoUsuario/saveTipoUsuario.component';
 import { DeleteTipoUsuarioComponent } from '../deleteTipoUsuario/deleteTipoUsuario.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Tipos de usuario: la clase de cada usuario —del sistema, de la página web,
@@ -43,7 +44,7 @@ import { DeleteTipoUsuarioComponent } from '../deleteTipoUsuario/deleteTipoUsuar
 @Component({
   selector: 'app-allTiposUsuario',
   standalone: true,
-  imports: [CommonModule, AgGridModule, PanelComponent, CampoBusquedaPaginacionComponent],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaPaginacionComponent],
   templateUrl: './allTiposUsuario.component.html',
   styleUrls: ['./allTiposUsuario.component.css'],
 })

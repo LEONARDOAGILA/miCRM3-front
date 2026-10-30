@@ -32,6 +32,7 @@ import { PanelComponent } from '../../../../../components/panel/panel.component'
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
 import { FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
 import { NgScrollbarModule } from 'ngx-scrollbar';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Nodo del árbol tal como lo devuelve config/archivo/getArchivoTree: la fila
@@ -101,7 +102,7 @@ const PERMISO_TOTAL: PermisoEfectivo = {
   templateUrl: './file-manager.component.html',
   styleUrls: ['./file-manager.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AgGridModule, PanelComponent, CampoBusquedaComponent, FileTreeNodeComponent, NgScrollbarModule],
+  imports: [CommonModule, FormsModule, RouterModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaComponent, FileTreeNodeComponent, NgScrollbarModule],
   host: {
     'class': 'd-flex flex-column flex-1 h-100'
   }

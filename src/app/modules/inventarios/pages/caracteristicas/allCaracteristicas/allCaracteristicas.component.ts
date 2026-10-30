@@ -27,6 +27,7 @@ import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * LISTADO DE CARACTERÍSTICAS (la plantilla de cada categoría).
@@ -49,7 +50,7 @@ import { PanelComponent } from '../../../../../components/panel/panel.component'
   styleUrls: ['./allCaracteristicas.component.css'],
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, NgScrollbarModule, PanelComponent,
+    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, NgScrollbarModule, PanelComponent,
     CampoBusquedaPaginacionComponent, FileTreeNodeComponent,
   ],
 })

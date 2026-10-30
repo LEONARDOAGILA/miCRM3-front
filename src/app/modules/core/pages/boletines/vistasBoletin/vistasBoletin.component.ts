@@ -12,6 +12,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** Estado de cada destinatario en la lista. */
 type Estado = '' | 'VISTO' | 'PENDIENTE' | 'OCULTO';
@@ -31,7 +32,7 @@ type Estado = '' | 'VISTO' | 'PENDIENTE' | 'OCULTO';
 @Component({
   selector: 'app-vistasBoletin',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, PanelComponent, CampoBusquedaComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaComponent],
   templateUrl: './vistasBoletin.component.html',
   styleUrls: ['./vistasBoletin.component.css'],
 })

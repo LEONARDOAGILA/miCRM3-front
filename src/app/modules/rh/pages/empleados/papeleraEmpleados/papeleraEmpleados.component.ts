@@ -13,6 +13,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Papelera de reciclaje de empleados (modal), la misma de clientes y marcas.
@@ -33,7 +34,7 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 @Component({
   selector: 'app-papeleraEmpleados',
   standalone: true,
-  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
   templateUrl: './papeleraEmpleados.component.html',
   styleUrls: ['./papeleraEmpleados.component.css'],
 })

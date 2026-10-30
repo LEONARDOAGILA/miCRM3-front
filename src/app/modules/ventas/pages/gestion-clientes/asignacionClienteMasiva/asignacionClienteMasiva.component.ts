@@ -27,6 +27,7 @@ import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.com
 import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/listUsuariosGrupos/listUsuariosGrupos.component';
 import { ConfirmarRepartoComponent } from './confirmarReparto/confirmarReparto.component';
 import { nombreDeUsuario } from '../../../../seguridad/services/user.service';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** Un destino del reparto: a quién van los clientes. */
 interface Destino {
@@ -77,7 +78,7 @@ type Paso = 'elegir' | 'resultado';
   imports: [
     CommonModule,
     FormsModule,
-    AgGridModule,
+    AgGridModule, FilasEstirablesDirective,
     PanelComponent,
     CampoBusquedaPaginacionComponent,
     AvisoComponent,

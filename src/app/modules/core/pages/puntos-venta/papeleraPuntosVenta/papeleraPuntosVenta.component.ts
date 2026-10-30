@@ -12,6 +12,7 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { PuntoVentaService } from '../../../services/puntoVenta.service';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Papelera de reciclaje de puntos de venta.
@@ -28,7 +29,7 @@ import { PuntoVentaService } from '../../../services/puntoVenta.service';
 @Component({
   selector: 'app-papeleraPuntosVenta',
   standalone: true,
-  imports: [CommonModule, AgGridModule, ModalArrastrableDirective],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective],
   templateUrl: './papeleraPuntosVenta.component.html',
   styleUrls: ['./papeleraPuntosVenta.component.css'],
 })

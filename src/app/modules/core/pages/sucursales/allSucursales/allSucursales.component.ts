@@ -32,6 +32,7 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 import { SaveSucursalComponent } from '../saveSucursal/saveSucursal.component';
 import { DeleteSucursalComponent } from '../deleteSucursal/deleteSucursal.component';
 import { PapeleraSucursalesComponent } from '../papeleraSucursales/papeleraSucursales.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Listado de sucursales (ventas.sucursales).
@@ -52,7 +53,7 @@ import { PapeleraSucursalesComponent } from '../papeleraSucursales/papeleraSucur
   selector: 'app-allSucursales',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, PanelComponent,
+    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     CampoBusquedaPaginacionComponent, MenuContextualComponent,
   ],
   templateUrl: './allSucursales.component.html',

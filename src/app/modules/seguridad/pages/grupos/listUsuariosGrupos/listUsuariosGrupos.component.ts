@@ -14,6 +14,7 @@ import { FileTreeNodeComponent, FileTreeNode } from '../../../../../components/f
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 import { buscarNodo, construirArbolGrupos, filtrarArbol, recorrer } from '../arbolGrupos';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** El nodo «Todos», que no es un grupo de la tabla. */
 const NODO_TODOS = -1;
@@ -39,7 +40,7 @@ const NODO_TODOS = -1;
 @Component({
   selector: 'app-listUsuariosGrupos',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, FileTreeNodeComponent,
+  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, FileTreeNodeComponent,
     CampoBusquedaPaginacionComponent, ModalArrastrableDirective],
   templateUrl: './listUsuariosGrupos.component.html',
   styleUrls: ['./listUsuariosGrupos.component.css'],

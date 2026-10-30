@@ -66,6 +66,7 @@ import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { PanelComponent } from '../../../../components/panel/panel.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { FilasEstirablesDirective } from '../../../../core/directives/filasEstirables.directive';
 
 type Pestana = 'historial' | 'pendientes' | 'contactos' | 'cartera' | 'whatsapp' | 'archivos' | 'notas';
 /** Las dos mitades de la pantalla: mi agenda, o el cliente que estoy trabajando. */
@@ -99,7 +100,7 @@ export interface DiaDeAgenda {
   styleUrls: ['./gestionClientes.component.css'],
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, NgxDaterangepickerMd,
+    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, NgxDaterangepickerMd,
     PanelComponent, TabPanelComponent, ResumenVentasComponent,
     CampoBusquedaPaginacionComponent,
   ],

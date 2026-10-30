@@ -12,6 +12,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** Situación de cada destinatario en la lista. */
 type Estado = '' | 'LEIDA' | 'PENDIENTE' | 'QUITADA';
@@ -29,7 +30,7 @@ type Estado = '' | 'LEIDA' | 'PENDIENTE' | 'QUITADA';
 @Component({
   selector: 'app-destinatariosNotificacion',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, PanelComponent, CampoBusquedaComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaComponent],
   templateUrl: './destinatariosNotificacion.component.html',
   styleUrls: ['./destinatariosNotificacion.component.css'],
 })

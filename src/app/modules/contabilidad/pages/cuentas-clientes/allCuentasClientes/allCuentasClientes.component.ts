@@ -19,6 +19,7 @@ import { CuentaConfigService } from '../../../services/cuentaConfig.service';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { GrupoCuentas, ConceptoContable } from '../../../interfaces/cuentaConfigModel';
 import { SaveCuentasClienteComponent } from '../saveCuentasCliente/saveCuentasCliente.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Qué cuenta contable usa cada grupo de clientes.
@@ -45,7 +46,7 @@ import { SaveCuentasClienteComponent } from '../saveCuentasCliente/saveCuentasCl
 @Component({
   selector: 'app-allCuentasClientes',
   standalone: true,
-  imports: [CommonModule, PanelComponent, AgGridModule, CampoBusquedaPaginacionComponent, MenuContextualComponent],
+  imports: [CommonModule, PanelComponent, AgGridModule, FilasEstirablesDirective, CampoBusquedaPaginacionComponent, MenuContextualComponent],
   templateUrl: './allCuentasClientes.component.html',
   styleUrls: ['./allCuentasClientes.component.css'],
 })

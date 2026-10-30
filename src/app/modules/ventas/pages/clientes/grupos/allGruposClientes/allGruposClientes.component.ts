@@ -33,6 +33,7 @@ import { CommonModule } from '@angular/common';
 import { PanelComponent } from '../../../../../../components/panel/panel.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { ActionButtonsComponent } from '../../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Árbol de grupos de clientes (ventas.grupos_clientes).
@@ -65,7 +66,7 @@ import { ActionButtonsComponent } from '../../../../../../components/botones/act
   styleUrls: ['./allGruposClientes.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent, MenuContextualComponent,
     CampoBusquedaPaginacionComponent,
   ],
 })

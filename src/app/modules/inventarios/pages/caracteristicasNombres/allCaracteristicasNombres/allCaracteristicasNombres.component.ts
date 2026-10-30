@@ -32,6 +32,7 @@ import { AppDescargaService, PeticionDescarga, AccionDescarga }
 import { CommonModule } from '@angular/common';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * EL DICCIONARIO DE NOMBRES DE CARACTERÍSTICA
@@ -58,7 +59,7 @@ import { ActionButtonsComponent } from '../../../../../components/botones/action
   styleUrls: ['./allCaracteristicasNombres.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, PanelComponent,
+    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     CampoBusquedaPaginacionComponent, MenuContextualComponent,
   ],
 })

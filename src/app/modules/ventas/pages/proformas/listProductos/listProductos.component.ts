@@ -12,6 +12,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ProformaService } from '../../../services/proforma.service';
 import { ProductoParaLinea } from '../../../interfaces/proformaModel';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * El listado de productos, para cotizar (modal).
@@ -35,7 +36,7 @@ import { ProductoParaLinea } from '../../../interfaces/proformaModel';
 @Component({
   selector: 'app-listProductos',
   standalone: true,
-  imports: [CommonModule, AgGridModule, ModalArrastrableDirective, CampoBusquedaPaginacionComponent],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective, CampoBusquedaPaginacionComponent],
   templateUrl: './listProductos.component.html',
   styleUrls: ['./listProductos.component.css'],
 })

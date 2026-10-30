@@ -28,6 +28,7 @@ import { ListClientesComponent } from '../../clientes/listClientes/listClientes.
 import { ListProductosComponent } from '../listProductos/listProductos.component';
 
 import { FORMAS_PAGO } from '../../../interfaces/clienteModel';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 import {
   CondicionesDeCliente, LineaProformaModel, ProformaModel,
   calcularLinea, calcularTotales, claseEstado, etiquetaEstado,
@@ -61,7 +62,7 @@ type AccionProforma = 'add' | 'edit' | 'clon' | 'view';
   selector: 'app-saveProforma',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, AgGridModule, PanelComponent,
+    CommonModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, ModalArrastrableDirective,
     ComboComponent, CampoTextoComponent, CampoTextoAreaComponent, CampoNumeroEnteroComponent,
   ],

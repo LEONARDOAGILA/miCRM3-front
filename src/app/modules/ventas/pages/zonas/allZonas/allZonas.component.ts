@@ -19,6 +19,7 @@ import { LugaresGoogleService, SugerenciaLugar } from '../../../../../service/lu
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { ZonaService } from '../../../services/zona.service';
 import { ClienteDeZona, ClienteUbicado, PuntoZona, TipoZona, ZonaModel } from '../../../interfaces/zonaModel';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** Lo que se está editando en el formulario de la derecha. */
 interface Borrador {
@@ -72,7 +73,7 @@ const RADIO_INICIAL = 1000;
 @Component({
   selector: 'app-allZonas',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, PanelComponent, AvisoComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, AvisoComponent],
   templateUrl: './allZonas.component.html',
   styleUrls: ['./allZonas.component.css'],
 })

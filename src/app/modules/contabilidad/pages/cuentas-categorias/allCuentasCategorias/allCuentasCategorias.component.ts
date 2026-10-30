@@ -19,6 +19,7 @@ import { CuentaConfigService } from '../../../services/cuentaConfig.service';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { CategoriaCuentas, ConceptoContable } from '../../../interfaces/cuentaConfigModel';
 import { SaveCuentasCategoriaComponent } from '../saveCuentasCategoria/saveCuentasCategoria.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Qué cuenta contable usa cada categoría de productos.
@@ -42,7 +43,7 @@ import { SaveCuentasCategoriaComponent } from '../saveCuentasCategoria/saveCuent
 @Component({
   selector: 'app-allCuentasCategorias',
   standalone: true,
-  imports: [CommonModule, PanelComponent, AgGridModule, CampoBusquedaPaginacionComponent, MenuContextualComponent],
+  imports: [CommonModule, PanelComponent, AgGridModule, FilasEstirablesDirective, CampoBusquedaPaginacionComponent, MenuContextualComponent],
   templateUrl: './allCuentasCategorias.component.html',
   styleUrls: ['./allCuentasCategorias.component.css'],
 })

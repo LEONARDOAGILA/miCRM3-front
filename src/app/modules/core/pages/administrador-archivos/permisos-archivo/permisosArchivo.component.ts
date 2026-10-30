@@ -21,6 +21,7 @@ import { ListGruposComponent } from '../../../../seguridad/pages/grupos/listGrup
 import { UserService } from '../../../../seguridad/services/user.service';
 import { GrupoModel } from '../../../../seguridad/interfaces/grupoModel';
 import { FechaCellEditorComponent } from '../../../../../components/campos/fechaCellEditor/fechaCellEditor.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** Banderas que se conceden; mismo orden que en el back (PermisoArchivo::BANDERAS). */
 export const BANDERAS_PERMISO = [
@@ -75,7 +76,7 @@ export interface FilaPermiso {
 @Component({
   selector: 'app-permisos-archivo',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, PanelComponent, ModalHeaderComponent, ModalFooterComponent, CampoBusquedaComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, ModalHeaderComponent, ModalFooterComponent, CampoBusquedaComponent],
   templateUrl: './permisosArchivo.component.html',
   styleUrls: ['./permisosArchivo.component.css'],
 })

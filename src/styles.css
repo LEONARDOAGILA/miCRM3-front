@@ -374,3 +374,61 @@ body {
   text-decoration: line-through;
   opacity: .75;
 }
+
+/* ============================================================================
+   ESTIRAR LAS FILAS DE UN ag-Grid (FilasEstirablesDirective)
+   ============================================================================
+   La directiva vive en core/directives/filasEstirables.directive.ts y marca
+   la rejilla con estas clases. El CSS va AQUI y no en cada componente porque
+   la directiva no esta encapsulada en ninguno: lo pinta para las 74 rejillas
+   de la aplicacion. */
+
+/* El cursor avisa de que ahi se puede agarrar, igual que en las columnas.
+   Con !important porque ag-Grid pone el suyo en cada celda. */
+ag-grid-angular.filas-en-el-borde,
+ag-grid-angular.filas-en-el-borde .ag-row,
+ag-grid-angular.filas-en-el-borde .ag-cell,
+ag-grid-angular.filas-estirando,
+ag-grid-angular.filas-estirando .ag-row,
+ag-grid-angular.filas-estirando .ag-cell {
+  cursor: row-resize !important;
+}
+
+/* Mientras se estira, sin seleccion de texto: arrastrar sobre las celdas
+   seleccionaria su contenido y el gesto se siente roto. */
+ag-grid-angular.filas-estirando,
+ag-grid-angular.filas-estirando .ag-row,
+ag-grid-angular.filas-estirando .ag-cell {
+  user-select: none;
+}
+
+/* La raya del borde que se esta moviendo. */
+ag-grid-angular.filas-estirando .ag-row {
+  border-bottom: 1px solid var(--bs-app-theme, #00acac);
+}
+
+/* PARA QUE ESTIRAR SIRVA DE ALGO: en una fila estirada el texto se parte en
+   varias lineas en vez de cortarse con puntos suspensivos. Sin esto, una fila
+   mas alta solo ensena mas hueco en blanco.
+   Solo en las estiradas: a la altura normal, partir el texto lo dejaria
+   cortado por la mitad, que es peor que los puntos suspensivos. */
+.ag-row.fila-estirada .ag-cell {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: clip;
+  word-break: break-word;
+  line-height: 1.35;
+  /* Arriba y no en medio: con varias lineas, centrado se lee peor */
+  align-items: flex-start;
+  padding-top: 5px;
+}
+
+/* Las columnas que no llevan texto se quedan centradas: botones, casillas,
+   asas de arrastrar y chapitas. */
+.ag-row.fila-estirada .ag-cell:is([col-id='actions'], [col-id='acciones'],
+                                  [col-id='activo'], [col-id='isactive'],
+                                  [col-id='arrastrar'], [col-id='unidad'],
+                                  [col-id='requerido'], [col-id='foto'], [col-id='logo']) {
+  align-items: center;
+  padding-top: 0;
+}

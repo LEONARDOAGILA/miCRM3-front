@@ -34,6 +34,7 @@ import { CampoTextoComponent } from '../../../../../components/campos/campoTexto
 import { CampoNgxEditorComponent } from '../../../../../components/campos/campoNgxEditor/campoNgxEditor.component';
 import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** Acciones con las que se abre el modal desde allProductos. */
 type AccionProducto = 'add' | 'edit' | 'clon' | 'view';
@@ -59,7 +60,7 @@ type AccionProducto = 'add' | 'edit' | 'clon' | 'view';
   styleUrls: ['./saveProducto.component.css'],
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, AgGridModule, PanelComponent,
+    CommonModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, ComboComponent,
     CampoTextoComponent, CampoNgxEditorComponent, CampoNumeroEnteroComponent,
     CheckboxComponent,
@@ -176,6 +177,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     'fila-requerida-vacia': (p: RowClassParams) =>
       (p.data as any)?.requerido === true && !String((p.data as any)?.valor ?? '').trim(),
   };
+
 
   /** El contador de claves de fila. */
   private claveCaracteristica = 0;
@@ -956,6 +958,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     this.gridCaracteristicas = params.api;
     this._appAgGridService.ajustarTamanoGrid(this.gridCaracteristicas);
   }
+
 
   /**
    * Se escribió en una celda.

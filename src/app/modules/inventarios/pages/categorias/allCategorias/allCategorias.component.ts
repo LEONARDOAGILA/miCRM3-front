@@ -33,6 +33,7 @@ import { CommonModule } from '@angular/common';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Árbol de categorías (inventarios.categorias).
@@ -59,7 +60,7 @@ import { ActionButtonsComponent } from '../../../../../components/botones/action
   styleUrls: ['./allCategorias.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, PanelComponent,
+    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     CampoBusquedaPaginacionComponent, MenuContextualComponent,
   ],
 })

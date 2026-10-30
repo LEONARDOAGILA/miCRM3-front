@@ -10,6 +10,7 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
 import { CommonModule } from '@angular/common';
 import { AgGridModule } from 'ag-grid-angular';
 import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Modal de selección de horario de trabajo (rh.horarios_empleados).
@@ -33,7 +34,7 @@ import { ModalArrastrableDirective } from '../../../../../components/modal/modal
   styleUrls: ['./listHorariosEmpleados.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, ModalArrastrableDirective,
+    CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective,
     CampoBusquedaPaginacionComponent,
   ],
 })

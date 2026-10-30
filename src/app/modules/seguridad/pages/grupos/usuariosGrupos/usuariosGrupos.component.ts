@@ -38,6 +38,7 @@ import { FormsModule } from '@angular/forms';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** Ids de los dos nodos virtuales del árbol (no son grupos de la tabla). */
 const NODO_TODOS = -1;
@@ -65,7 +66,7 @@ const NODO_SIN_GRUPO = 0;
   styleUrls: ['./usuariosGrupos.component.css'],
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, NgScrollbarModule, PanelComponent,
+    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, NgScrollbarModule, PanelComponent,
     FileTreeNodeComponent, CampoBusquedaPaginacionComponent,
   ],
   host: {

@@ -30,6 +30,7 @@ import { CommonModule } from '@angular/common';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 
 @Component({
@@ -38,7 +39,7 @@ import { ActionButtonsComponent } from '../../../../../components/botones/action
   styleUrls: ['./allMenus.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, PanelComponent, MenuContextualComponent,
+    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent, MenuContextualComponent,
     CampoBusquedaComponent,
   ],
 })

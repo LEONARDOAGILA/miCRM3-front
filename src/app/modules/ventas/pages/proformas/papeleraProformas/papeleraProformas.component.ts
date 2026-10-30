@@ -13,6 +13,7 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { ProformaService } from '../../../services/proforma.service';
 import { claseEstado, etiquetaEstado } from '../../../interfaces/proformaModel';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Papelera de reciclaje de proformas (modal), como la de clientes.
@@ -27,7 +28,7 @@ import { claseEstado, etiquetaEstado } from '../../../interfaces/proformaModel';
 @Component({
   selector: 'app-papeleraProformas',
   standalone: true,
-  imports: [CommonModule, AgGridModule, ModalArrastrableDirective],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective],
   templateUrl: './papeleraProformas.component.html',
   styleUrls: ['./papeleraProformas.component.css'],
 })

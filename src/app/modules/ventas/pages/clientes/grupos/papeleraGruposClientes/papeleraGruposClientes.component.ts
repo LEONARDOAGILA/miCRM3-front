@@ -13,6 +13,7 @@ import { AuditoriaModalComponent } from '../../../../../../components/auditoria-
 import { CommonModule } from '@angular/common';
 import { AgGridModule } from 'ag-grid-angular';
 import { ModalHeaderComponent } from '../../../../../../components/modal/modal-header/modal-header.component';
+import { FilasEstirablesDirective } from '../../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Papelera de reciclaje de grupos (modal), como la de clientes.
@@ -30,7 +31,7 @@ import { ModalHeaderComponent } from '../../../../../../components/modal/modal-h
   templateUrl: './papeleraGruposClientes.component.html',
   styleUrls: ['./papeleraGruposClientes.component.css'],
   standalone: true,
-  imports: [CommonModule, AgGridModule, ModalHeaderComponent],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
 })
 export class PapeleraGruposClientesComponent implements OnInit, OnDestroy {
 

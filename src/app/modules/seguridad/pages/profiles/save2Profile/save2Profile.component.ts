@@ -26,6 +26,7 @@ import { CampoTextoComponent } from '../../../../../components/campos/campoTexto
 import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 
 
@@ -35,7 +36,7 @@ import { CampoBusquedaComponent } from '../../../../../components/campos/campoBu
   styleUrls: ['./save2Profile.component.css'],
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, AgGridModule, PanelComponent,
+    CommonModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, CampoTextoComponent,
     CampoNumeroEnteroComponent, CheckboxComponent, CampoBusquedaComponent,
   ],
