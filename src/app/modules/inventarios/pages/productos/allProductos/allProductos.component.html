@@ -163,18 +163,24 @@
           </app-campoBusquedaPaginacion>
         </div>
 
-        <!-- Filtro por marca. «Ver sólo las Samsung» es la consulta de
-             todos los días; la categoría ya la pone el árbol. -->
-        <div class="col-6 col-lg-auto ps-0">
-          <select class="form-select form-select-sm prod-filtro"
-                  title="Filtrar por marca"
-                  [(ngModel)]="marcaFiltro"
-                  (ngModelChange)="onFiltroCambiado()">
-            <option [ngValue]="null">Todas las marcas</option>
-            @for (m of marcas; track m.id) {
-              <option [ngValue]="m.id">{{ m.nombre }}</option>
-            }
-          </select>
+        <!-- Filtro por marca, de VARIAS a la vez: «ver las Samsung y las LG»
+             es una pregunta normal en un catálogo, y de una en una hay que
+             mirar dos veces y sumar a mano. Vacío = todas.
+             closeOnSelect en false: se eligen varias de una pasada, sin que
+             la lista se cierre tras cada clic. -->
+        <div class="col-12 col-lg-auto ps-0">
+          <ng-select class="prod-filtro-marcas"
+                     [items]="marcas"
+                     bindLabel="nombre"
+                     bindValue="id"
+                     [multiple]="true"
+                     [closeOnSelect]="false"
+                     [clearable]="true"
+                     placeholder="Todas las marcas"
+                     title="Filtrar por una o varias marcas"
+                     [(ngModel)]="marcaFiltro"
+                     (change)="onFiltroCambiado()">
+          </ng-select>
         </div>
 
         <!-- Nuevo producto. Con una categoría elegida, nace en ella; y si

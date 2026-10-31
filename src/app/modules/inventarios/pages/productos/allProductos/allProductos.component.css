@@ -159,7 +159,32 @@
   opacity: .8;
 }
 
+/* El selector de marcas. Crece con lo elegido pero con tope: sin él, elegir
+   seis marcas empuja los botones de la derecha fuera de la barra. Pasado el
+   tope la lista de elegidas se desplaza dentro del propio selector. */
+.prod-filtro-marcas {
+  min-width: 190px;
+  max-width: 340px;
+}
+
+.prod-filtro-marcas ::ng-deep .ng-select-container {
+  min-height: 31px;
+  font-size: .8125rem;
+}
+
+.prod-filtro-marcas ::ng-deep .ng-value-container {
+  padding-top: 0;
+  max-height: 58px;
+  overflow-y: auto;
+}
+
 @media (max-width: 991.98px) {
+  .prod-filtro-marcas {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+
   .prod-filtro {
     min-width: 0;
     max-width: none;

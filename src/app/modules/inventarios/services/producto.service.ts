@@ -27,13 +27,14 @@ export class ProductoService {
 
   //   ******   LISTADO CON PAGINACIÓN   ******  //
   allProductos(page: number = 1, perPage: number = 10, search: string = '',
-               marcaId: number | null = null, categoriaId: number | null = null,
+               marcaIds: number[] = [], categoriaId: number | null = null,
                filtros: any = null): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
     if (search)      { params = params.set('search', search); }
-    if (marcaId)     { params = params.set('marca_id', String(marcaId)); }
+    // Las marcas van separadas por comas; vacío es «todas» y no se manda
+    if (marcaIds?.length) { params = params.set('marca_ids', marcaIds.join(',')); }
     if (categoriaId) { params = params.set('categoria_id', String(categoriaId)); }
 
     // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el

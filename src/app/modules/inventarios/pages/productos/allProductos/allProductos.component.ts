@@ -35,6 +35,7 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
 import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
 import { buscarNodo, filtrarArbol, recorrer } from '../../../../seguridad/pages/grupos/arbolGrupos';
 import { NgScrollbarModule } from 'ngx-scrollbar';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { FormsModule } from '@angular/forms';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
@@ -75,7 +76,8 @@ import { CommonModule } from '@angular/common';
     CampoBusquedaPaginacionComponent,
     MenuContextualComponent,
     FileTreeNodeComponent,
-    NgScrollbarModule
+    NgScrollbarModule,
+    NgSelectModule
 ],
 })
 export class AllProductosComponent implements OnInit, OnDestroy {
@@ -100,9 +102,17 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   public ultimaPagina: number = 1;
 
   // ---------- Filtros ----------
-  /** Las marcas, para el combo de la barra. */
+  /** Las marcas, para el selector de la barra. */
   public marcas: any[] = [];
-  public marcaFiltro: number | null = null;
+  /**
+   * Las marcas elegidas. Lista y no un solo id: «ver las Samsung Y las LG»
+   * es una pregunta normal en un catálogo, y de una en una hay que mirar dos
+   * veces y sumar a mano. Vacía = todas.
+   *
+   * Es un CAMPO y no un getter: ng-select pierde la selección si el array
+   * que recibe es nuevo en cada ciclo de detección de cambios.
+   */
+  public marcaFiltro: number[] = [];
 
   // ---------- EL ÁRBOL DE CATEGORÍAS ----------
   // Calcado de allCaracteristicas, que a su vez lo sacó de usuariosGrupos.
@@ -946,9 +956,9 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.allProductos(1);
   }
 
-  /** Si hay algo que quitar: lo de arriba, los combos o un filtro de columna. */
+  /** Si hay algo que quitar: lo de arriba, los filtros o uno de columna. */
   get hayFiltro(): boolean {
-    return !!this.searchTerm || this.marcaFiltro !== null || this.categoriaFiltro !== null
+    return !!this.searchTerm || this.marcaFiltro.length > 0 || this.categoriaFiltro !== null
         || this.cuantasColumnasFiltradas > 0;
   }
 
@@ -1020,7 +1030,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.limpiando = true;
     this.campoBusquedaPaginacion?.reset();
     this.searchTerm = '';
-    this.marcaFiltro = null;
+    this.marcaFiltro = [];
     // La categoría ya no es un combo: se vuelve al nodo «Todas» del árbol
     this.seleccionId = this.NODO_TODAS;
     this.categoriaFiltroRuta = '';
@@ -1087,8 +1097,9 @@ export class AllProductosComponent implements OnInit, OnDestroy {
       filtrosColumna: this.filtrosColumna,
       columnDefs: this.columnDefs,
       filtrosExtra: [
-        ...(this.marcaFiltro
-            ? [`Marca: ${this.marcas.find(m => m.id === this.marcaFiltro)?.nombre ?? this.marcaFiltro}`]
+        ...(this.marcaFiltro.length
+            ? [`Marca${this.marcaFiltro.length > 1 ? 's' : ''}: ` +
+               this.marcaFiltro.map(id => this.marcas.find(m => m.id === id)?.nombre ?? id).join(', ')]
             : []),
         ...(this.categoriaFiltro
             ? [`Categoría: ${this.categoriaFiltroRuta || this.categoriaFiltro}`]
