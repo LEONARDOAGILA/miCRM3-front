@@ -36,6 +36,7 @@ import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/f
 import { buscarNodo, filtrarArbol, recorrer } from '../../../../seguridad/pages/grupos/arbolGrupos';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { ComboMultiSeleccionComponent } from '../../../../../components/campos/combo-multi-seleccion/combo-multi-seleccion.component';
 
 import { FormsModule } from '@angular/forms';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
@@ -77,7 +78,8 @@ import { CommonModule } from '@angular/common';
     MenuContextualComponent,
     FileTreeNodeComponent,
     NgScrollbarModule,
-    NgSelectModule
+    NgSelectModule,
+    ComboMultiSeleccionComponent
 ],
 })
 export class AllProductosComponent implements OnInit, OnDestroy {
@@ -137,9 +139,38 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   /** La ruta de la elegida, para la cabecera y para el modal de alta. */
   public categoriaFiltroRuta = '';
 
-  /** Lo que de verdad se le manda al servidor (null = todas). */
-  public get categoriaFiltro(): number | null {
-    return this.seleccionId === this.NODO_TODAS ? null : this.seleccionId;
+  /**
+   * Las categorías elegidas. Vacía = todas.
+   *
+   * EL ÁRBOL Y EL PANEL SON EL MISMO FILTRO, con dos mandos: pulsar una rama
+   * en el árbol mete esa, y el combo del panel deja elegir varias. Si fueran
+   * dos filtros distintos habría que explicar cuál gana.
+   */
+  public categoriaFiltro: number[] = [];
+
+  /** Las categorías en lista plana, con su ruta, para el combo del panel. */
+  public categoriasPlanas: { id: number; ruta: string }[] = [];
+
+  // ---------- LOS DOS RANGOS ----------
+  public precioMin: number | null = null;
+  public precioMax: number | null = null;
+  public costoMin: number | null = null;
+  public costoMax: number | null = null;
+
+  // ---------- QUÉ ESTÁ PLEGADO ----------
+  public lateralPlegado = false;
+  public filtrosPlegados = false;
+  public readonly ANCHO_FILTROS_DEFECTO = 260;
+  private readonly CLAVE_ANCHO_FILTROS = 'miCRM3.allProductos.anchoFiltros';
+  public anchoFiltros = this.leerAnchoFiltros();
+  public redimensionandoFiltros = false;
+
+  /** Cuántos filtros hay puestos, para avisar con el panel plegado. */
+  get cuantosFiltros(): number {
+    return (this.marcaFiltro.length ? 1 : 0)
+         + (this.categoriaFiltro.length ? 1 : 0)
+         + (this.precioMin !== null || this.precioMax !== null ? 1 : 0)
+         + (this.costoMin !== null || this.costoMax !== null ? 1 : 0);
   }
 
   /**
@@ -713,6 +744,9 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         if (p.categoria_id == null) { continue; }
         cuantos.set(p.categoria_id, (cuantos.get(p.categoria_id) ?? 0) + 1);
       }
+      // Para el combo del panel: planas y con la RUTA, que fuera del árbol
+      // «Accesorios» a secas no dice de qué.
+      this.categoriasPlanas = this.categorias.map((c: any) => ({ id: c.id, ruta: c.ruta || c.nombre }));
       this.construirArbol(cuantos);
     } catch (error) {
       // El AuthInterceptor ya enseña el error HTTP
@@ -836,9 +870,78 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     const cat = this.categorias.find(x => x.id === id);
     this.categoriaFiltroRuta = cat ? (cat.ruta || cat.nombre) : '';
 
+    // El árbol escribe en la MISMA lista que el combo del panel
+    this.categoriaFiltro = id === this.NODO_TODAS ? [] : [id];
+
     this.selectedRow = null;
     this.paginaActual = 1;
     this.allProductos(1);
+  }
+
+  /**
+   * Cambió el combo de categorías del panel.
+   *
+   * Se refleja en el árbol para que los dos digan lo mismo: con una sola, se
+   * marca esa rama; con ninguna o con varias, no hay UNA rama que marcar, así
+   * que se vuelve a «Todas» en el árbol y manda la lista.
+   */
+  onCategoriasPanelCambiadas(): void {
+    const ids = this.categoriaFiltro ?? [];
+    if (ids.length === 1) {
+      const id = ids[0];
+      this.seleccionId = id;
+      recorrer(this.originalNodes, n => n.isSelected = n.id === id);
+      recorrer(this.nodes, n => n.isSelected = n.id === id);
+      const cat = this.categorias.find(x => x.id === id);
+      this.categoriaFiltroRuta = cat ? (cat.ruta || cat.nombre) : '';
+    } else {
+      this.seleccionId = this.NODO_TODAS;
+      recorrer(this.originalNodes, n => n.isSelected = n.id === this.NODO_TODAS);
+      recorrer(this.nodes, n => n.isSelected = n.id === this.NODO_TODAS);
+      this.categoriaFiltroRuta = ids.length > 1 ? ids.length + ' categorías' : '';
+    }
+    this.onFiltroCambiado();
+  }
+
+  /** Plegar y desplegar las dos columnas. */
+  alternarLateral(): void { this.lateralPlegado = !this.lateralPlegado; this.programar(() => this.ajustarTamanoGrid(), 60); }
+  alternarFiltros(): void { this.filtrosPlegados = !this.filtrosPlegados; this.programar(() => this.ajustarTamanoGrid(), 60); }
+
+  /** El divisor del panel de filtros, igual que el del árbol pero al revés. */
+  iniciarRedimensionFiltros(ev: PointerEvent): void {
+    if (ev.button !== 0) { return; }
+    ev.preventDefault();
+    const divisor = ev.currentTarget as HTMLElement;
+    const xInicial = ev.clientX;
+    const anchoInicial = this.anchoFiltros;
+    this.redimensionandoFiltros = true;
+    divisor.setPointerCapture(ev.pointerId);
+
+    const mover = (e: PointerEvent) => {
+      // Al revés que el del árbol: este panel está a la DERECHA, así que
+      // arrastrar hacia la izquierda lo hace MÁS ancho.
+      const nuevo = anchoInicial - (e.clientX - xInicial);
+      this.anchoFiltros = Math.min(480, Math.max(200, Math.round(nuevo)));
+    };
+    const soltar = (e: PointerEvent) => {
+      divisor.removeEventListener('pointermove', mover);
+      divisor.removeEventListener('pointerup', soltar);
+      divisor.removeEventListener('pointercancel', soltar);
+      divisor.releasePointerCapture(e.pointerId);
+      this.redimensionandoFiltros = false;
+      try { localStorage.setItem(this.CLAVE_ANCHO_FILTROS, String(this.anchoFiltros)); } catch { /* bloqueado */ }
+      this.ajustarTamanoGrid();
+    };
+    divisor.addEventListener('pointermove', mover);
+    divisor.addEventListener('pointerup', soltar);
+    divisor.addEventListener('pointercancel', soltar);
+  }
+
+  private leerAnchoFiltros(): number {
+    try {
+      const g = Number(localStorage.getItem('miCRM3.allProductos.anchoFiltros'));
+      return Number.isFinite(g) && g >= 200 && g <= 480 ? g : 260;
+    } catch { return 260; }
   }
 
   onNodeToggle(node: FileTreeNode): void {
@@ -921,7 +1024,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
       const res = await firstValueFrom(
         this._productoService.allProductos(page, this.registrosPorPagina, this.searchTerm,
                                            this.marcaFiltro, this.categoriaFiltro,
-                                           this.filtrosColumna)
+                                           this.filtrosColumna, this.rangos)
       ) as any;
 
       if (res.body?.status !== 'success') {
@@ -950,7 +1053,13 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Cambió uno de los dos combos: siempre a la página 1. */
+  /** Los cuatro extremos, tal como los quiere el servicio. */
+  private get rangos() {
+    return { precio_min: this.precioMin, precio_max: this.precioMax,
+             costo_min: this.costoMin,  costo_max: this.costoMax };
+  }
+
+  /** Cambió un filtro del panel: siempre a la página 1. */
   onFiltroCambiado(): void {
     this.paginaActual = 1;
     this.allProductos(1);
@@ -958,8 +1067,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
 
   /** Si hay algo que quitar: lo de arriba, los filtros o uno de columna. */
   get hayFiltro(): boolean {
-    return !!this.searchTerm || this.marcaFiltro.length > 0 || this.categoriaFiltro !== null
-        || this.cuantasColumnasFiltradas > 0;
+    return !!this.searchTerm || this.cuantosFiltros > 0 || this.cuantasColumnasFiltradas > 0;
   }
 
   /** Trae TODO lo que cumple el filtro actual, para exportar. */
@@ -970,7 +1078,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
       const res = await firstValueFrom(
         this._productoService.allProductos(1, this.totalRegistros, this.searchTerm,
                                            this.marcaFiltro, this.categoriaFiltro,
-                                           this.filtrosColumna)
+                                           this.filtrosColumna, this.rangos)
       ) as any;
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
@@ -1031,7 +1139,9 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.campoBusquedaPaginacion?.reset();
     this.searchTerm = '';
     this.marcaFiltro = [];
-    // La categoría ya no es un combo: se vuelve al nodo «Todas» del árbol
+    this.categoriaFiltro = [];
+    this.precioMin = this.precioMax = this.costoMin = this.costoMax = null;
+    // Y el árbol vuelve a «Todas»
     this.seleccionId = this.NODO_TODAS;
     this.categoriaFiltroRuta = '';
     recorrer(this.originalNodes, n => n.isSelected = n.id === this.NODO_TODAS);
@@ -1101,9 +1211,14 @@ export class AllProductosComponent implements OnInit, OnDestroy {
             ? [`Marca${this.marcaFiltro.length > 1 ? 's' : ''}: ` +
                this.marcaFiltro.map(id => this.marcas.find(m => m.id === id)?.nombre ?? id).join(', ')]
             : []),
-        ...(this.categoriaFiltro
-            ? [`Categoría: ${this.categoriaFiltroRuta || this.categoriaFiltro}`]
+        ...(this.categoriaFiltro.length
+            ? [`Categoría${this.categoriaFiltro.length > 1 ? 's' : ''}: ` +
+               this.categoriaFiltro.map(id => this.categoriasPlanas.find(c => c.id === id)?.ruta ?? id).join(', ')]
             : []),
+        ...(this.precioMin !== null || this.precioMax !== null
+            ? [`Precio: ${this.precioMin ?? '—'} a ${this.precioMax ?? '—'}`] : []),
+        ...(this.costoMin !== null || this.costoMax !== null
+            ? [`Costo: ${this.costoMin ?? '—'} a ${this.costoMax ?? '—'}`] : []),
       ],
       traerTodo: () => this.obtenerTodosParaExportar(),
     };

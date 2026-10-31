@@ -1,0 +1,84 @@
+/* ============================================================
+   COMBO DE SELECCIÓN MÚLTIPLE
+   ============================================================
+   Dos modos: el normal, para un formulario, y `compacto`, para una barra
+   de herramientas o un panel de filtros. Los colores salen todos de
+   variables de Bootstrap, así que acompaña al tema y al modo oscuro. */
+
+.cms {
+  display: block;
+  min-width: 0;          /* para que pueda encoger dentro de un flex */
+}
+
+.cms__etiqueta {
+  display: block;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Modo compacto ---------- */
+.cms--compacto ::ng-deep .ng-select-container {
+  min-height: 31px;
+  font-size: .8125rem;
+}
+
+.cms--compacto ::ng-deep .ng-value-container {
+  padding-top: 0;
+  /* Dos filas de chapas como mucho; pasadas, se desplaza aquí dentro en
+     vez de estirar la barra hacia abajo. */
+  max-height: 58px;
+  overflow-y: auto;
+}
+
+/* ---------- La chapa del resumen «+N» ---------- */
+.cms__resumen {
+  font-weight: 600;
+  cursor: default;
+}
+
+.cms__resumen ::ng-deep .ng-value-label,
+.cms__resumen .ng-value-label {
+  padding-left: 5px;
+}
+
+/* ---------- Que siga al tema ----------
+   El tema por defecto de ng-select trae blancos y grises fijos; sin esto,
+   en modo oscuro el desplegable sale blanco sobre la pantalla oscura. */
+.cms ::ng-deep .ng-select-container {
+  background-color: var(--bs-body-bg, #fff);
+  border-color: var(--bs-border-color, #dee2e6);
+  color: var(--bs-body-color, #212529);
+}
+
+.cms ::ng-deep .ng-dropdown-panel {
+  background-color: var(--bs-body-bg, #fff);
+  border-color: var(--bs-border-color, #dee2e6);
+}
+
+.cms ::ng-deep .ng-dropdown-panel .ng-option {
+  background-color: transparent;
+  color: var(--bs-body-color, #212529);
+}
+
+.cms ::ng-deep .ng-dropdown-panel .ng-option.ng-option-marked {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.cms ::ng-deep .ng-dropdown-panel .ng-option.ng-option-selected {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .14);
+  font-weight: 600;
+}
+
+.cms ::ng-deep .ng-value {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .14);
+  color: var(--bs-body-color, #212529);
+  border-radius: .25rem;
+}
+
+.cms ::ng-deep .ng-placeholder {
+  color: var(--bs-secondary-color, #6c757d);
+}

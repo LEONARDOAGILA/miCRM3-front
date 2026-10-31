@@ -46,8 +46,9 @@
 
   <div class="file-manager h-100 prod"
        [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled, 'is-redimensionando': redimensionando }"
-       [style.--bs-file-manager-sidebar-width]="anchoLateral + 'px'"
-       [style.--bs-file-manager-mobile-sidebar-margin]="(-anchoLateral) + 'px'">
+       [style.--bs-file-manager-sidebar-width]="(lateralPlegado ? 34 : anchoLateral) + 'px'"
+       [style.--bs-file-manager-mobile-sidebar-margin]="(-(lateralPlegado ? 34 : anchoLateral)) + 'px'"
+       [style.--prod-ancho-filtros]="(filtrosPlegados ? 34 : anchoFiltros) + 'px'">
 
     <!-- .file-manager es flex en COLUMNA (el tema); la fila de verdad es
          .file-manager-container. Sin él, el árbol y la rejilla se apilan
@@ -55,7 +56,20 @@
     <div class="file-manager-container">
 
     <!-- ---------- 2a. LATERAL: EL ÁRBOL ---------- -->
-    <div class="file-manager-sidebar prod-lateral">
+    <div class="file-manager-sidebar prod-lateral" [class.is-plegado]="lateralPlegado">
+
+      <!-- PLEGADO: una tira vertical con el nombre, como en la referencia.
+           Lleva la cuenta de categorías para que no parezca que no hay nada. -->
+      @if (lateralPlegado) {
+        <button type="button" class="prod-tira" (click)="alternarLateral()"
+                title="Mostrar las categorías">
+          <i class="fa fa-angles-right prod-tira__flecha"></i>
+          <span class="prod-tira__texto">Categorías</span>
+          @if (categoriaFiltro.length) {
+            <span class="prod-tira__chapa">{{ categoriaFiltro.length }}</span>
+          }
+        </button>
+      } @else {
 
       <div class="file-manager-sidebar-mobile-toggler">
         <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Categorías">
@@ -74,6 +88,9 @@
           </button>
           <button type="button" class="btn btn-xs btn-white" title="Todos los productos" (click)="seleccionar(NODO_TODAS)">
             <i class="fa fa-list-check"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Plegar la columna" (click)="alternarLateral()">
+            <i class="fa fa-angles-left"></i>
           </button>
         </div>
       </div>
@@ -116,10 +133,12 @@
           <i class="fa fa-hand-pointer"></i>
         </span>
       </div>
+      }
     </div>
 
     <!-- ---------- 2b. DIVISOR ARRASTRABLE ---------- -->
     <div class="prod-divisor"
+         [class.is-inerte]="lateralPlegado"
          role="separator"
          aria-orientation="vertical"
          title="Arrastra para cambiar el ancho del árbol (doble clic: ancho por defecto)"
@@ -163,25 +182,9 @@
           </app-campoBusquedaPaginacion>
         </div>
 
-        <!-- Filtro por marca, de VARIAS a la vez: «ver las Samsung y las LG»
-             es una pregunta normal en un catálogo, y de una en una hay que
-             mirar dos veces y sumar a mano. Vacío = todas.
-             closeOnSelect en false: se eligen varias de una pasada, sin que
-             la lista se cierre tras cada clic. -->
-        <div class="col-12 col-lg-auto ps-0">
-          <ng-select class="prod-filtro-marcas"
-                     [items]="marcas"
-                     bindLabel="nombre"
-                     bindValue="id"
-                     [multiple]="true"
-                     [closeOnSelect]="false"
-                     [clearable]="true"
-                     placeholder="Todas las marcas"
-                     title="Filtrar por una o varias marcas"
-                     [(ngModel)]="marcaFiltro"
-                     (change)="onFiltroCambiado()">
-          </ng-select>
-        </div>
+        <!-- Los filtros (marcas, categorías y los dos rangos) ya no están
+             aquí: se fueron al panel de la derecha, que se pliega. La barra
+             se queda con lo que se usa a cada rato. -->
 
         <!-- Nuevo producto. Con una categoría elegida, nace en ella; y si
              esa categoría sólo AGRUPA, no se puede crear ahí.
@@ -288,6 +291,115 @@
         </div>
 
       </div>
+    </div>
+
+    <!-- ---------- 2d. DIVISOR DEL PANEL DE FILTROS ---------- -->
+    <div class="prod-divisor prod-divisor--filtros"
+         [class.is-inerte]="filtrosPlegados"
+         role="separator"
+         aria-orientation="vertical"
+         title="Arrastra para cambiar el ancho de los filtros"
+         (pointerdown)="iniciarRedimensionFiltros($event)"
+         (dblclick)="anchoFiltros = ANCHO_FILTROS_DEFECTO; ajustarTamanoGrid()">
+    </div>
+
+    <!-- ---------- 2e. PANEL DE FILTROS ----------
+         Misma idea que la columna de la izquierda: se pliega a una tira con
+         su nombre. Plegado enseña CUÁNTOS filtros hay puestos; si no, se
+         quedaría filtrando sin que se vea por qué. -->
+    <div class="prod-filtros" [class.is-plegado]="filtrosPlegados">
+
+      @if (filtrosPlegados) {
+        <button type="button" class="prod-tira" (click)="alternarFiltros()"
+                title="Mostrar los filtros">
+          <i class="fa fa-angles-left prod-tira__flecha"></i>
+          <span class="prod-tira__texto">Filtros</span>
+          @if (cuantosFiltros) {
+            <span class="prod-tira__chapa">{{ cuantosFiltros }}</span>
+          }
+        </button>
+      } @else {
+
+      <div class="prod-filtros__cabecera">
+        <span class="prod-filtros__titulo">
+          <i class="fa fa-filter me-1"></i> Filtros
+          @if (cuantosFiltros) { <span class="prod-filtros__cuantos">{{ cuantosFiltros }}</span> }
+        </span>
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-xs btn-white" title="Quitar todos los filtros"
+                  [disabled]="!hayFiltro" (click)="clearAllFilters()">
+            <i class="fa fa-filter-circle-xmark"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Plegar el panel" (click)="alternarFiltros()">
+            <i class="fa fa-angles-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <ng-scrollbar class="prod-filtros__cuerpo">
+        <div class="prod-filtros__lista">
+
+          <div class="prod-filtro-grupo">
+            <label class="prod-filtro-grupo__titulo">Marcas</label>
+            <app-combo-multi-seleccion
+              [items]="marcas"
+              bindLabel="nombre"
+              bindValue="id"
+              placeholder="Todas"
+              ayuda="Filtrar por una o varias marcas"
+              [compacto]="true"
+              [(ngModel)]="marcaFiltro"
+              (ngModelChange)="onFiltroCambiado()">
+            </app-combo-multi-seleccion>
+          </div>
+
+          <!-- Las mismas categorías que el árbol: es UN filtro con dos
+               mandos. Aquí se eligen varias; allí se navega por ramas. -->
+          <div class="prod-filtro-grupo">
+            <label class="prod-filtro-grupo__titulo">Categorías</label>
+            <app-combo-multi-seleccion
+              [items]="categoriasPlanas"
+              bindLabel="ruta"
+              bindValue="id"
+              placeholder="Todas"
+              ayuda="Filtrar por varias categorías. Cada una incluye lo que cuelga de ella"
+              [compacto]="true"
+              [(ngModel)]="categoriaFiltro"
+              (ngModelChange)="onCategoriasPanelCambiadas()">
+            </app-combo-multi-seleccion>
+          </div>
+
+          <div class="prod-filtro-grupo">
+            <label class="prod-filtro-grupo__titulo">Precio</label>
+            <div class="prod-rango">
+              <input type="number" class="form-control form-control-sm" placeholder="Desde"
+                     [(ngModel)]="precioMin" (change)="onFiltroCambiado()">
+              <span class="prod-rango__sep">–</span>
+              <input type="number" class="form-control form-control-sm" placeholder="Hasta"
+                     [(ngModel)]="precioMax" (change)="onFiltroCambiado()">
+            </div>
+          </div>
+
+          <div class="prod-filtro-grupo">
+            <label class="prod-filtro-grupo__titulo">Costo</label>
+            <div class="prod-rango">
+              <input type="number" class="form-control form-control-sm" placeholder="Desde"
+                     [(ngModel)]="costoMin" (change)="onFiltroCambiado()">
+              <span class="prod-rango__sep">–</span>
+              <input type="number" class="form-control form-control-sm" placeholder="Hasta"
+                     [(ngModel)]="costoMax" (change)="onFiltroCambiado()">
+            </div>
+          </div>
+
+          <p class="prod-filtros__pista">
+            <i class="fa-solid fa-circle-info"></i>
+            Un rango vale con un solo extremo: «desde 100» trae todo lo que
+            cueste eso o más.
+          </p>
+
+        </div>
+      </ng-scrollbar>
+      }
     </div>
 
     </div>
