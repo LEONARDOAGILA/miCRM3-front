@@ -73,6 +73,16 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
   /** Registro a editar / clonar / ver, o 0 al crear. */
   @Input() registro_selected: any = {};
   @Input() accion: AccionProducto = 'add';
+  /**
+   * La categoría de la que se parte al crear desde el árbol de allProductos.
+   *
+   * Cuando viene, el producto nace en ella Y EL CAMPO SE BLOQUEA: se está
+   * trabajando esa rama, no eligiendo categoría. Para crear en otra, se
+   * elige otra rama en el listado.
+   */
+  @Input() categoriaId: number | null = null;
+  /** Su ruta, sólo para explicarlo en la pista de debajo del campo. */
+  @Input() categoriaRuta = '';
   @Output() registrosE: EventEmitter<any> = new EventEmitter();
 
   /** La pestaña abierta. */
@@ -269,6 +279,11 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
   // ================================================================
 
   get esView(): boolean { return this.accion === 'view'; }
+
+  /** La categoría viene impuesta por el árbol del listado y no se toca. */
+  get categoriaBloqueada(): boolean {
+    return this.accion === 'add' && this.categoriaId != null;
+  }
   get esNuevo(): boolean { return this.accion === 'add' || this.accion === 'clon'; }
   get ctrlActivo(): FormControl { return this.form.controls['activo'] as FormControl; }
   /** El editor se ata con [formControl], que es lo que entiende: es un
@@ -323,6 +338,16 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     switch (this.accion) {
       case 'add':
         this.titulo = 'Nuevo Producto';
+        if (this.categoriaId != null) {
+          // Se hereda del árbol. Se pasa por cargarCategoriaPorId para que
+          // ponga la ruta y, de paso, compruebe que no esté en la papelera.
+          this.form.patchValue({ categoria_id: this.categoriaId });
+          await this.cargarCategoriaPorId();
+          // Bloqueada DESPUÉS de cargarla: deshabilitada no se podría leer
+          // el valor desde el formulario. Al guardar no se pierde, porque el
+          // envío usa getRawValue().
+          this.form.get('categoria_id')?.disable();
+        }
         break;
       case 'edit':
         this.titulo = 'Modificar Producto';

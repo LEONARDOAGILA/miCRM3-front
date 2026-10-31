@@ -182,7 +182,10 @@
                               placeholder="Sin categoría">
                             </app-campoTexto>
                           </div>
-                          @if (!esView) {
+                          <!-- Con la categoría heredada del árbol no hay nada
+                               que buscar ni que quitar: se quitan los dos
+                               botones en vez de dejarlos sin efecto. -->
+                          @if (!esView && !categoriaBloqueada) {
                             <div class="col-auto">
                               <button type="button" class="btn btn-lookup"
                                       (click)="abrirModalCategorias()" title="Buscar categoría">
@@ -198,7 +201,21 @@
                               </div>
                             }
                           }
+                          @if (categoriaBloqueada) {
+                            <div class="col-auto d-flex align-items-center">
+                              <i class="fa fa-lock prod-categoria__candado"
+                                 title="Viene de la categoría elegida en el listado"></i>
+                            </div>
+                          }
                         </div>
+
+                        @if (categoriaBloqueada) {
+                          <p class="campo-hint mb-0">
+                            <i class="fa-solid fa-circle-info"></i>
+                            Nace en «{{ categoriaRuta || 'la categoría elegida' }}», que es la rama
+                            abierta en el listado. Para crearlo en otra, ciérralo y elige esa rama.
+                          </p>
+                        }
                       </div>
                     </div>
 

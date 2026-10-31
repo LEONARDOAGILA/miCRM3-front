@@ -1,17 +1,22 @@
 <!-- ============================================================
-     CATÁLOGO DE PRODUCTOS
+     CATÁLOGO DE PRODUCTOS: ÁRBOL A LA IZQUIERDA, REJILLA A LA DERECHA
 
-     Estructura:
+     Misma estructura que Características (que a su vez la sacó de Usuarios
+     y grupos, y ésa del administrador de archivos):
        1. Miga de pan
-       2. <panel> del tema con imprimir / Excel / CSV / recargar / expandir
-          2a. Barra: buscador, filtro de marca, filtro de categoría, nuevo,
-              auditoría
-          2b. Rejilla ag-Grid (paginación en servidor)
-          2c. Controles de paginación
+       2. <panel> a toda la altura, con imprimir / Excel / CSV / recargar
+          2a. Lateral: el árbol de categorías, con su buscador
+          2b. Divisor arrastrable (doble clic: ancho por defecto)
+          2c. Contenido: ruta de la categoría, barra y rejilla
+
+     Antes la categoría se elegía en un combo plano con la ruta entera
+     («Tecnología > Computadores > Portátiles»). Se trabaja categoría por
+     categoría, así que el árbol se queda a la vista; el combo se fue para
+     no tener dos mandos haciendo lo mismo.
      ============================================================ -->
 
 <!-- ================= 1. MIGA DE PAN ================= -->
-<ol class="breadcrumb lista-breadcrumb">
+<ol class="breadcrumb lista-breadcrumb prod-breadcrumb">
   <li class="breadcrumb-item"><a (click)="fun_home();">Inventarios</a></li>
   <li class="breadcrumb-item active">Productos</li>
 </ol>
@@ -23,112 +28,201 @@
        [ButtonPrint]="accesoModel?.reporte === true"
        [ButtonExportExcel]="accesoModel?.reporte === true"
        [ButtonExportCsv]="accesoModel?.reporte === true"
-       (panelReloaded)="allProductos(paginaActual)"
+       (panelReloaded)="cargarArbol(); allProductos(paginaActual)"
        (panelExpanded)="ajustarTamanoGrid()"
        (panelPrinted)="printPdf()"
        (panelExportExceled)="exportExcel()"
        (panelExportCsved)="exportCsv()"
        [closeRoute]="'/inventarios'"
-       icono="box">
+       icono="box"
+       class="flex-1 d-flex flex-column overflow-hidden"
+       bodyClass="p-0 flex-1 overflow-hidden"
+       panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
 
-  <div class="content-container1 lista-contenido">
-    @if (isLoading$ | async) {
-      <div class="loader1"></div>
-      <div class="overlay1"></div>
-    }
+  @if (isLoading$ | async) {
+    <div class="loader1"></div>
+    <div class="overlay1"></div>
+  }
 
-    <div class="content2">
-      <div class="example-wrapper">
+  <div class="file-manager h-100 prod"
+       [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled, 'is-redimensionando': redimensionando }"
+       [style.--bs-file-manager-sidebar-width]="anchoLateral + 'px'"
+       [style.--bs-file-manager-mobile-sidebar-margin]="(-anchoLateral) + 'px'">
 
-        <!-- ---------- 2a. BARRA DE HERRAMIENTAS ---------- -->
-        <div class="row g-2 m-2 align-items-center lista-barra">
+    <!-- .file-manager es flex en COLUMNA (el tema); la fila de verdad es
+         .file-manager-container. Sin él, el árbol y la rejilla se apilan
+         uno encima del otro a todo lo ancho. -->
+    <div class="file-manager-container">
 
-          <!-- Buscador con su botón de quitar filtros dentro -->
-          <div class="col-12 col-lg pe-1">
-            <app-campoBusquedaPaginacion
-              [id]="'filter-text-box'"
-              [placeholder]="'Buscar por código, nombre, modelo, marca…'"
-              [iconClass]="'fa fa-search fa-lg'"
-              [containerClass]="'w-100'"
-              [conLimpiarFiltros]="true"
-              [hayFiltro]="hayFiltro"
-              [columnasFiltradas]="cuantasColumnasFiltradas"
-              (buscar)="onFilterTextBoxChanged($event)"
-              (limpiarFiltros)="clearAllFilters()">
-            </app-campoBusquedaPaginacion>
+    <!-- ---------- 2a. LATERAL: EL ÁRBOL ---------- -->
+    <div class="file-manager-sidebar prod-lateral">
+
+      <div class="file-manager-sidebar-mobile-toggler">
+        <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Categorías">
+          <i class="fa" [ngClass]="mobileSidebarToggled ? 'fa-chevron-left' : 'fa-sitemap'"></i>
+        </button>
+      </div>
+
+      <div class="prod-lateral__cabecera">
+        <span class="prod-lateral__titulo"><i class="fa fa-sitemap me-1"></i> Categorías</span>
+        <div class="btn-group prod-lateral__acciones" role="group" aria-label="Árbol">
+          <button type="button" class="btn btn-xs btn-white" title="Expandir todo" (click)="expandirTodo()">
+            <i class="fa fa-angles-down"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Contraer todo" (click)="contraerTodo()">
+            <i class="fa fa-angles-up"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Todos los productos" (click)="seleccionar(NODO_TODAS)">
+            <i class="fa fa-list-check"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="prod-lateral__buscador">
+        <i class="fa fa-search prod-lateral__lupa"></i>
+        <input type="text" class="form-control form-control-sm" placeholder="Buscar categoría…"
+               [(ngModel)]="searchQuery" (input)="filterNodes()">
+        @if (searchQuery) {
+          <button type="button" class="prod-lateral__limpiar" title="Limpiar" (click)="limpiarBusquedaArbol()">&times;</button>
+        }
+      </div>
+
+      <div class="prod-lateral__arbol position-relative">
+        @if (recargandoArbol) {
+          <div class="loader1" role="status" aria-label="Recargando"></div>
+          <div class="overlay1" aria-hidden="true"></div>
+        }
+        <ng-scrollbar class="h-100">
+          <div class="prod-arbol">
+            @for (node of nodes; track node.id) {
+              <app-file-tree-node
+                [node]="node"
+                [isSelected]="node.isSelected"
+                (nodeSelected)="onNodeSelect($event)"
+                (nodeToggled)="onNodeToggle($event)">
+              </app-file-tree-node>
+            } @empty {
+              <div class="prod-arbol__vacio">
+                <i class="fa fa-search"></i>
+                <span>Nada coincide con «{{ searchQuery }}»</span>
+              </div>
+            }
           </div>
+        </ng-scrollbar>
+      </div>
 
-          <!-- Filtro por marca. «Ver sólo las Samsung» es la consulta de
-               todos los días y con el buscador de texto es adivinar. -->
-          <div class="col-6 col-lg-auto ps-0">
-            <select class="form-select form-select-sm prod-filtro"
-                    title="Filtrar por marca"
-                    [(ngModel)]="marcaFiltro"
-                    (ngModelChange)="onFiltroCambiado()">
-              <option [ngValue]="null">Todas las marcas</option>
-              @for (m of marcas; track m.id) {
-                <option [ngValue]="m.id">{{ m.nombre }}</option>
-              }
-            </select>
-          </div>
+      <div class="file-manager-sidebar-footer prod-lateral__pie">
+        <span class="prod-lateral__ayuda" title="La chapita de cada categoría dice cuántos productos cuelgan de esa rama">
+          <i class="fa fa-hand-pointer"></i>
+        </span>
+      </div>
+    </div>
 
-          <!-- Filtro por categoría: baja POR LA RAMA, así que elegir
-               «Línea Blanca» trae también lo que cuelga de ella. -->
-          <div class="col-6 col-lg-auto ps-0">
-            <select class="form-select form-select-sm prod-filtro prod-filtro--ancho"
-                    title="Filtrar por categoría (incluye sus subcategorías)"
-                    [(ngModel)]="categoriaFiltro"
-                    (ngModelChange)="onFiltroCambiado()">
-              <option [ngValue]="null">Todas las categorías</option>
-              @for (c of categorias; track c.id) {
-                <option [ngValue]="c.id">{{ c.name }}</option>
-              }
-            </select>
-          </div>
+    <!-- ---------- 2b. DIVISOR ARRASTRABLE ---------- -->
+    <div class="prod-divisor"
+         role="separator"
+         aria-orientation="vertical"
+         title="Arrastra para cambiar el ancho del árbol (doble clic: ancho por defecto)"
+         (pointerdown)="iniciarRedimension($event)"
+         (dblclick)="anchoLateral = ANCHO_LATERAL_DEFECTO; guardarAnchoLateral(); ajustarTamanoGrid()">
+    </div>
 
-          <!-- Nuevo producto -->
-          <div class="col-auto ps-0">
-            <button type="button"
-                    class="inactivo btn btn-primary lista-barra__btn"
-                    title="Agregar producto"
-                    [disabled]="accesoModel?.crear === false"
-                    (click)="addProducto()">
-              <i class="fa fa-plus"></i>
-            </button>
-          </div>
+    <!-- ---------- 2c. CONTENIDO ---------- -->
+    <div class="file-manager-content prod-contenido">
 
-          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
-          @if (accesoModel?.papelera === true) {
-            <div class="col-auto">
-              <button type="button"
-                      class="btn btn-outline-secondary lista-barra__btn"
-                      title="Papelera de reciclaje de productos"
-                      (click)="abrirPapelera()">
-                <i class="fa fa-trash-can"></i>
-              </button>
-            </div>
+      <!-- Dónde estoy -->
+      <div class="prod-ubicacion">
+        <nav class="prod-ruta" aria-label="Categoría">
+          <button type="button" class="prod-ruta__tramo"
+                  [class.is-actual]="seleccionId === NODO_TODAS"
+                  (click)="seleccionar(NODO_TODAS)">
+            <i class="fa fa-list-check"></i> Todas
+          </button>
+          @if (categoriaFiltroRuta) {
+            <span class="prod-ruta__sep">/</span>
+            <span class="prod-ruta__tramo is-actual" [title]="categoriaFiltroRuta">{{ categoriaFiltroRuta }}</span>
           }
+        </nav>
+      </div>
 
-          <!-- Auditoría de la fila seleccionada -->
-          @if (accesoModel?.auditar === true) {
-            <div class="col-auto">
-              <button type="button"
-                      class="btn btn-warning lista-barra__btn position-relative"
-                      title="Ver historial de auditoría del registro seleccionado"
-                      [disabled]="!selectedRow"
-                      (click)="auditoria()">
-                <i class="fa fa-user-secret"></i>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
-                  <i class="fa fa-search"></i>
-                </span>
-              </button>
-            </div>
-          }
+      <!-- ---------- BARRA DE HERRAMIENTAS ---------- -->
+      <div class="row g-2 m-2 align-items-center lista-barra">
+
+        <!-- Buscador con su botón de quitar filtros dentro -->
+        <div class="col-12 col-lg pe-1">
+          <app-campoBusquedaPaginacion
+            [id]="'filter-text-box'"
+            [placeholder]="'Buscar por código, nombre, modelo, marca…'"
+            [iconClass]="'fa fa-search fa-lg'"
+            [containerClass]="'w-100'"
+            [conLimpiarFiltros]="true"
+            [hayFiltro]="hayFiltro"
+            [columnasFiltradas]="cuantasColumnasFiltradas"
+            (buscar)="onFilterTextBoxChanged($event)"
+            (limpiarFiltros)="clearAllFilters()">
+          </app-campoBusquedaPaginacion>
         </div>
 
-        <!-- ---------- 2b. REJILLA ---------- -->
+        <!-- Filtro por marca. «Ver sólo las Samsung» es la consulta de
+             todos los días; la categoría ya la pone el árbol. -->
+        <div class="col-6 col-lg-auto ps-0">
+          <select class="form-select form-select-sm prod-filtro"
+                  title="Filtrar por marca"
+                  [(ngModel)]="marcaFiltro"
+                  (ngModelChange)="onFiltroCambiado()">
+            <option [ngValue]="null">Todas las marcas</option>
+            @for (m of marcas; track m.id) {
+              <option [ngValue]="m.id">{{ m.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Nuevo producto. Con una categoría elegida, nace en ella. -->
+        <div class="col-auto ps-0">
+          <button type="button"
+                  class="inactivo btn btn-primary lista-barra__btn"
+                  [title]="categoriaFiltro
+                            ? 'Agregar un producto a «' + categoriaFiltroRuta + '»'
+                            : 'Agregar producto'"
+                  [disabled]="accesoModel?.crear === false"
+                  (click)="addProducto()">
+            <i class="fa fa-plus"></i>
+          </button>
+        </div>
+
+        <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
+        @if (accesoModel?.papelera === true) {
+          <div class="col-auto">
+            <button type="button"
+                    class="btn btn-outline-secondary lista-barra__btn"
+                    title="Papelera de reciclaje de productos"
+                    (click)="abrirPapelera()">
+              <i class="fa fa-trash-can"></i>
+            </button>
+          </div>
+        }
+
+        <!-- Auditoría de la fila seleccionada -->
+        @if (accesoModel?.auditar === true) {
+          <div class="col-auto">
+            <button type="button"
+                    class="btn btn-warning lista-barra__btn position-relative"
+                    title="Ver historial de auditoría del registro seleccionado"
+                    [disabled]="!selectedRow"
+                    (click)="auditoria()">
+              <i class="fa fa-user-secret"></i>
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
+                <i class="fa fa-search"></i>
+              </span>
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- ---------- REJILLA ---------- -->
+      <div class="prod-grilla-caja">
         <ag-grid-angular
-          class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
+          class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla prod-grilla"
           [rowData]="productoModel"
           [columnDefs]="columnDefs"
           [enableCellTextSelection]="true"
@@ -149,40 +243,41 @@
           (filterChanged)="onFiltroColumna()"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>
+      </div>
 
-        <!-- ---------- 2c. PAGINACIÓN ---------- -->
-        <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+      <!-- ---------- PAGINACIÓN ---------- -->
+      <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap px-2 prod-paginacion">
 
-          <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
-            <button type="button" class="btn btn-sm btn-white" title="Primera página"
-                    (click)="firstPage()" [disabled]="paginaActual === 1">
-              <i class="fa fa-angle-double-left"></i>
-            </button>
-            <button type="button" class="btn btn-sm btn-white" title="Página anterior"
-                    (click)="prevPage()" [disabled]="paginaActual === 1">
-              <i class="fa fa-chevron-left"></i>
-            </button>
-            <span class="btn btn-sm btn-white pagination-page-badge disabled">
-              Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
-            </span>
-            <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
-                    (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
-              <i class="fa fa-chevron-right"></i>
-            </button>
-            <button type="button" class="btn btn-sm btn-white" title="Última página"
-                    (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
-              <i class="fa fa-angle-double-right"></i>
-            </button>
-          </div>
+        <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+          <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                  (click)="firstPage()" [disabled]="paginaActual === 1">
+            <i class="fa fa-angle-double-left"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                  (click)="prevPage()" [disabled]="paginaActual === 1">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <span class="btn btn-sm btn-white pagination-page-badge disabled">
+            Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+          </span>
+          <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                  (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-white" title="Última página"
+                  (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
+            <i class="fa fa-angle-double-right"></i>
+          </button>
+        </div>
 
-          <div class="pagination-info small text-muted">
-            Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> productos
-            @if (hayFiltro) { <span class="prod-filtrado">(filtrado)</span> }
-          </div>
-
+        <div class="pagination-info small text-muted">
+          Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> productos
+          @if (hayFiltro) { <span class="prod-filtrado">(filtrado)</span> }
         </div>
 
       </div>
+    </div>
+
     </div>
   </div>
 

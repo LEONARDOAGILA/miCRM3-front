@@ -32,6 +32,9 @@ import { PapeleraProductosComponent } from '../papeleraProductos/papeleraProduct
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
+import { buscarNodo, filtrarArbol, recorrer } from '../../../../seguridad/pages/grupos/arbolGrupos';
+import { NgScrollbarModule } from 'ngx-scrollbar';
 
 import { FormsModule } from '@angular/forms';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
@@ -70,7 +73,9 @@ import { CommonModule } from '@angular/common';
     FilasEstirablesDirective,
     PanelComponent,
     CampoBusquedaPaginacionComponent,
-    MenuContextualComponent
+    MenuContextualComponent,
+    FileTreeNodeComponent,
+    NgScrollbarModule
 ],
 })
 export class AllProductosComponent implements OnInit, OnDestroy {
@@ -95,11 +100,46 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   public ultimaPagina: number = 1;
 
   // ---------- Filtros ----------
-  /** Marcas y categorías para los dos combos de la barra. */
+  /** Las marcas, para el combo de la barra. */
   public marcas: any[] = [];
-  public categorias: any[] = [];
   public marcaFiltro: number | null = null;
-  public categoriaFiltro: number | null = null;
+
+  // ---------- EL ÁRBOL DE CATEGORÍAS ----------
+  // Calcado de allCaracteristicas, que a su vez lo sacó de usuariosGrupos.
+  // La categoría ya no se elige en un combo plano: se trabaja categoría por
+  // categoría, así que el árbol se queda a la vista.
+
+  /** Lo que se pinta (puede venir filtrado por el buscador del árbol). */
+  public nodes: FileTreeNode[] = [];
+  /** El árbol entero, sin filtrar: es el que guarda el estado. */
+  private originalNodes: FileTreeNode[] = [];
+  /** Las categorías tal como las manda el servidor (planas, con ruta). */
+  private categorias: any[] = [];
+  /** Las ramas abiertas. */
+  private readonly abiertos = new Set<number>();
+  public searchQuery = '';
+  public recargandoArbol = false;
+
+  /** El nodo de «todas»: la rejilla sin filtrar por categoría. */
+  public readonly NODO_TODAS = 0;
+  /** Qué categoría se está mirando; 0 = todas. */
+  public seleccionId: number = this.NODO_TODAS;
+  /** La ruta de la elegida, para la cabecera y para el modal de alta. */
+  public categoriaFiltroRuta = '';
+
+  /** Lo que de verdad se le manda al servidor (null = todas). */
+  public get categoriaFiltro(): number | null {
+    return this.seleccionId === this.NODO_TODAS ? null : this.seleccionId;
+  }
+
+  // ---------- El divisor, igual que en allCaracteristicas ----------
+  public mobileSidebarToggled = false;
+  public readonly ANCHO_LATERAL_DEFECTO = 280;
+  private readonly ANCHO_LATERAL_MIN = 180;
+  private readonly ANCHO_LATERAL_MAX = 640;
+  private readonly CLAVE_ANCHO_LATERAL = 'miCRM3.allProductos.anchoLateral';
+  public anchoLateral = this.leerAnchoLateral();
+  public redimensionando = false;
 
   // ---------- ag-Grid ----------
   public gridApi!: GridApi;
@@ -157,6 +197,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.allProductos();
     this.initializeGrid();
     this.cargarFiltros();
+    this.cargarArbol();
   }
 
   ngOnDestroy(): void {
@@ -600,21 +641,239 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   /** Las marcas y el árbol de categorías para los dos combos de la barra. */
   private async cargarFiltros(): Promise<void> {
     try {
-      const [marcas, categorias]: any[] = await Promise.all([
-        firstValueFrom(this._marcaService.listMarcas(true)),
-        firstValueFrom(this._categoriaService.listCategorias(true)),
-      ]);
+      const marcas: any = await firstValueFrom(this._marcaService.listMarcas(true));
       this.marcas = marcas?.data ?? [];
-      // En el combo se enseña la RUTA, no el nombre: fuera del árbol,
-      // «Accesorios» a secas no dice de qué
-      this.categorias = (categorias?.data ?? []).map((c: any) => ({
-        id: c.id,
-        name: c.ruta || c.nombre,
-      }));
     } catch (error) {
-      // Sin combos la pantalla sigue sirviendo: se busca por texto
-      console.error('Error al cargar los filtros:', error);
+      // Sin el combo la pantalla sigue sirviendo: se busca por texto
+      console.error('Error al cargar las marcas:', error);
     }
+  }
+
+  // ================================================================
+  // EL ÁRBOL DE CATEGORÍAS
+  // ================================================================
+
+  /**
+   * Trae el árbol entero y cuántos productos tiene cada rama.
+   *
+   * Son dos llamadas y no una por categoría: con 28 categorías serían 28
+   * viajes para pintar unos contadores. El recuento se hace aquí porque el
+   * servidor no tiene un endpoint que lo dé; si algún día el catálogo
+   * crece mucho, esto es lo primero que habrá que mover a la base.
+   */
+  async cargarArbol(): Promise<void> {
+    try {
+      this.recargandoArbol = true;
+
+      const [arbol, todos]: any[] = await Promise.all([
+        firstValueFrom(this._categoriaService.allCategorias(false)),
+        firstValueFrom(this._productoService.listProductos(false)),
+      ]);
+
+      this.categorias = arbol?.body?.data ?? [];
+
+      const cuantos = new Map<number, number>();
+      for (const p of (todos?.data ?? [])) {
+        if (p.categoria_id == null) { continue; }
+        cuantos.set(p.categoria_id, (cuantos.get(p.categoria_id) ?? 0) + 1);
+      }
+      this.construirArbol(cuantos);
+    } catch (error) {
+      // El AuthInterceptor ya enseña el error HTTP
+      console.error('Error al cargar el árbol de categorías:', error);
+      this.categorias = [];
+      this.construirArbol(new Map());
+    } finally {
+      this.recargandoArbol = false;
+    }
+  }
+
+  /**
+   * Lo de cada categoría SUBIDO por su rama: lo propio más lo de todo lo
+   * que le cuelga. Es lo que se pinta en la chapita.
+   *
+   * Un nodo que sólo agrupa («Línea Blanca») no tiene productos suyos, y
+   * con la cuenta propia saldría siempre un 0 que hace creer que por ahí
+   * no hay nada.
+   */
+  private sumarALosPadres(cuantos: Map<number, number>): Map<number, number> {
+    const padres = new Map<number, number | null>();
+    for (const c of this.categorias) { padres.set(c.id, c.padre_id ?? null); }
+
+    const totales = new Map<number, number>();
+    for (const c of this.categorias) { totales.set(c.id, cuantos.get(c.id) ?? 0); }
+
+    for (const c of this.categorias) {
+      const propios = cuantos.get(c.id) ?? 0;
+      if (!propios) { continue; }
+
+      // El `vistos` es por si los datos trajeran un ciclo (una categoría
+      // que acabe siendo su propia abuela): subir sin fin colgaría la
+      // pantalla.
+      const vistos = new Set<number>([c.id]);
+      let p = padres.get(c.id) ?? null;
+      while (p !== null && !vistos.has(p)) {
+        vistos.add(p);
+        totales.set(p, (totales.get(p) ?? 0) + propios);
+        p = padres.get(p) ?? null;
+      }
+    }
+    return totales;
+  }
+
+  /** Lista plana (padre antes que hijo) -> árbol, con «Todas» por encima. */
+  private construirArbol(cuantos: Map<number, number>): void {
+    const nodos = new Map<number, FileTreeNode>();
+    const raices: FileTreeNode[] = [];
+    const totales = this.sumarALosPadres(cuantos);
+
+    for (const c of this.categorias) {
+      const propios = cuantos.get(c.id) ?? 0;
+      const rama = totales.get(c.id) ?? 0;
+      const enHijas = rama - propios;
+
+      nodos.set(c.id, {
+        id: c.id,
+        nombre: c.nombre,
+        tipo: 0,
+        escarpeta: true,
+        // Las que sólo agrupan llevan otro icono: ahí no cuelgan productos
+        icono: c.es_transaccion === false ? 'fa fa-layer-group' : 'fa fa-box',
+        color: c.activo === false ? 'var(--bs-secondary-color, #6c757d)' : undefined,
+        badge: rama,
+        titulo: [c.ruta,
+                 enHijas > 0
+                   ? `${rama} en la rama: ${propios} suyo(s) y ${enHijas} en sus subcategorías`
+                   : `${propios} producto(s)`,
+                 c.activo === false ? '(inactiva)' : ''].filter(Boolean).join(' — '),
+        isOpen: this.abiertos.has(c.id),
+        isSelected: this.seleccionId === c.id,
+      });
+    }
+
+    for (const c of this.categorias) {
+      const n = nodos.get(c.id)!;
+      const padre = c.padre_id ? nodos.get(c.padre_id) : undefined;
+      if (padre) { (padre.children ??= []).push(n); } else { raices.push(n); }
+    }
+
+    const todas: FileTreeNode = {
+      id: this.NODO_TODAS,
+      nombre: 'Todas las categorías',
+      tipo: 0,
+      escarpeta: true,
+      icono: 'fa fa-list-check',
+      color: 'var(--bs-app-theme, #00acac)',
+      badge: [...cuantos.values()].reduce((a, b) => a + b, 0),
+      titulo: 'Todos los productos, de cualquier categoría',
+      isOpen: this.abiertos.has(this.NODO_TODAS) || this.abiertos.size === 0,
+      isSelected: this.seleccionId === this.NODO_TODAS,
+      children: raices.length ? raices : undefined,
+    };
+
+    this.originalNodes = [todas];
+    this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
+  }
+
+  /** Se pulsó una rama: la rejilla pasa a enseñar lo suyo. */
+  onNodeSelect(node: FileTreeNode): void {
+    this.seleccionar(node.id);
+    this.mobileSidebarToggled = false;
+  }
+
+  seleccionar(id: number): void {
+    this.seleccionId = id;
+    recorrer(this.originalNodes, n => n.isSelected = n.id === id);
+    recorrer(this.nodes, n => n.isSelected = n.id === id);
+
+    // Se abre el camino hasta ella, para que se vea dónde está
+    let c = this.categorias.find(x => x.id === id);
+    while (c) {
+      this.abiertos.add(c.id);
+      c = c.padre_id ? this.categorias.find(x => x.id === c.padre_id) : null;
+    }
+    this.abiertos.add(this.NODO_TODAS);
+    const real = buscarNodo(this.originalNodes, id);
+    if (real?.children) { real.isOpen = true; }
+
+    const cat = this.categorias.find(x => x.id === id);
+    this.categoriaFiltroRuta = cat ? (cat.ruta || cat.nombre) : '';
+
+    this.selectedRow = null;
+    this.paginaActual = 1;
+    this.allProductos(1);
+  }
+
+  onNodeToggle(node: FileTreeNode): void {
+    if (node.isOpen) { this.abiertos.add(node.id); } else { this.abiertos.delete(node.id); }
+    const real = buscarNodo(this.originalNodes, node.id);
+    if (real) { real.isOpen = node.isOpen; }
+  }
+
+  expandirTodo(): void {
+    recorrer(this.originalNodes, n => { if (n.children) { n.isOpen = true; this.abiertos.add(n.id); } });
+    this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
+  }
+
+  contraerTodo(): void {
+    recorrer(this.originalNodes, n => { n.isOpen = false; });
+    this.abiertos.clear();
+    // «Todas» se queda abierta: si no, el árbol desaparece entero
+    const todas = buscarNodo(this.originalNodes, this.NODO_TODAS);
+    if (todas) { todas.isOpen = true; this.abiertos.add(this.NODO_TODAS); }
+    this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
+  }
+
+  filterNodes(): void { this.nodes = filtrarArbol(this.originalNodes, this.searchQuery); }
+
+  limpiarBusquedaArbol(): void { this.searchQuery = ''; this.filterNodes(); }
+
+  toggleMobileSidebar(): void { this.mobileSidebarToggled = !this.mobileSidebarToggled; }
+
+  /**
+   * Arrastrar el divisor cambia el ancho del árbol.
+   *
+   * Con captura del puntero: si no, al mover deprisa el ratón se sale del
+   * divisor y el arrastre se queda a medias.
+   */
+  iniciarRedimension(ev: PointerEvent): void {
+    if (ev.button !== 0) { return; }
+    ev.preventDefault();
+    const divisor = ev.currentTarget as HTMLElement;
+    const xInicial = ev.clientX;
+    const anchoInicial = this.anchoLateral;
+    this.redimensionando = true;
+    divisor.setPointerCapture(ev.pointerId);
+
+    const mover = (e: PointerEvent) => {
+      const nuevo = anchoInicial + (e.clientX - xInicial);
+      this.anchoLateral = Math.min(this.ANCHO_LATERAL_MAX,
+                                   Math.max(this.ANCHO_LATERAL_MIN, Math.round(nuevo)));
+    };
+    const soltar = (e: PointerEvent) => {
+      divisor.removeEventListener('pointermove', mover);
+      divisor.removeEventListener('pointerup', soltar);
+      divisor.removeEventListener('pointercancel', soltar);
+      divisor.releasePointerCapture(e.pointerId);
+      this.redimensionando = false;
+      this.guardarAnchoLateral();
+      this.ajustarTamanoGrid();
+    };
+    divisor.addEventListener('pointermove', mover);
+    divisor.addEventListener('pointerup', soltar);
+    divisor.addEventListener('pointercancel', soltar);
+  }
+
+  guardarAnchoLateral(): void {
+    try { localStorage.setItem(this.CLAVE_ANCHO_LATERAL, String(this.anchoLateral)); }
+    catch { /* ventana privada o almacenamiento bloqueado */ }
+  }
+
+  private leerAnchoLateral(): number {
+    try {
+      const guardado = Number(localStorage.getItem('miCRM3.allProductos.anchoLateral'));
+      return Number.isFinite(guardado) && guardado >= 180 && guardado <= 640 ? guardado : 280;
+    } catch { return 280; }
   }
 
   /** Pide una página al servidor y la vuelca en la rejilla. */
@@ -735,7 +994,11 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.campoBusquedaPaginacion?.reset();
     this.searchTerm = '';
     this.marcaFiltro = null;
-    this.categoriaFiltro = null;
+    // La categoría ya no es un combo: se vuelve al nodo «Todas» del árbol
+    this.seleccionId = this.NODO_TODAS;
+    this.categoriaFiltroRuta = '';
+    recorrer(this.originalNodes, n => n.isSelected = n.id === this.NODO_TODAS);
+    recorrer(this.nodes, n => n.isSelected = n.id === this.NODO_TODAS);
     this.filtrosColumna = {};
     if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
 
@@ -801,7 +1064,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
             ? [`Marca: ${this.marcas.find(m => m.id === this.marcaFiltro)?.nombre ?? this.marcaFiltro}`]
             : []),
         ...(this.categoriaFiltro
-            ? [`Categoría: ${this.categorias.find(c => c.id === this.categoriaFiltro)?.name ?? this.categoriaFiltro}`]
+            ? [`Categoría: ${this.categoriaFiltroRuta || this.categoriaFiltro}`]
             : []),
       ],
       traerTodo: () => this.obtenerTodosParaExportar(),
@@ -859,6 +1122,10 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     });
     modalRef.componentInstance.registro_selected = registro;
     modalRef.componentInstance.accion = accion;
+    // Si hay una categoría elegida en el árbol, el producto nuevo nace en
+    // ella y con ella BLOQUEADA: se está trabajando esa rama.
+    modalRef.componentInstance.categoriaId = this.categoriaFiltro;
+    modalRef.componentInstance.categoriaRuta = this.categoriaFiltroRuta;
     return modalRef;
   }
 

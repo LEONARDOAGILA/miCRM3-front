@@ -874,3 +874,10 @@
 :host ::ng-deep .carac-grid .ag-row.fila-requerida-vacia .celda-vacia {
   background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .08);
 }
+
+/* El candado de la categoría heredada del árbol del listado. */
+.prod-categoria__candado {
+  padding: 0 .5rem;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
