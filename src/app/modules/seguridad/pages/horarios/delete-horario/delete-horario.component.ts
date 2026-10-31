@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
@@ -11,6 +11,7 @@ import { ModalArrastrableDirective } from '../../../../../components/modal/modal
   templateUrl: './delete-horario.component.html',
   styleUrls: ['./delete-horario.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteHorarioComponent implements OnInit, OnDestroy {

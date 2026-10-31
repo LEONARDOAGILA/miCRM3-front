@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Output, EventEmitter, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { AppVariablesService } from '../../service/app-variables.service';
 import { AppSettings } from '../../service/app-settings.service';
 
@@ -7,6 +7,7 @@ declare var bootstrap: any;
 @Component({
   selector: 'theme-panel',
   templateUrl: './theme-panel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 

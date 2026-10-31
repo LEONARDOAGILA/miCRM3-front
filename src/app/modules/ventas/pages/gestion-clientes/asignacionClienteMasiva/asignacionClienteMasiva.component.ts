@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, Optional, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, Optional, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -84,6 +84,7 @@ type Paso = 'elegir' | 'resultado';
     AvisoComponent,
   ],
   templateUrl: './asignacionClienteMasiva.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./asignacionClienteMasiva.component.css'],
 })
 export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {

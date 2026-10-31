@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -60,6 +60,7 @@ type AccionPuntoVenta = 'add' | 'edit' | 'clon' | 'view';
     CampoNumeroEnteroComponent, CheckboxComponent,
   ],
   templateUrl: './savePuntoVenta.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./savePuntoVenta.component.css'],
 })
 export class SavePuntoVentaComponent implements OnInit, OnDestroy {

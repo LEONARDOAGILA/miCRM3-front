@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -32,6 +32,7 @@ import {
   standalone: true,
   imports: [CommonModule, FormsModule, ModalArrastrableDirective],
   templateUrl: './estadoProforma.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./estadoProforma.component.css'],
 })
 export class EstadoProformaComponent implements OnInit {

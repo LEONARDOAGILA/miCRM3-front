@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellValueChangedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
@@ -60,6 +60,7 @@ type AccionProducto = 'add' | 'edit' | 'clon' | 'view';
   templateUrl: './saveProducto.component.html',
   styleUrls: ['./saveProducto.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, ComboComponent,
@@ -576,7 +577,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     this.categoriaNombreControl.setValue('');
     // Sin categoría no hay plantilla que rellenar
     this.caracteristicas = [];
-    this.gridCaracteristicas?.setRowData([]);
+    this.gridCaracteristicas?.setGridOption('rowData', []);
   }
 
   // ================================================================
@@ -681,7 +682,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         valores_lista: Array.isArray(k.valores_lista) ? k.valores_lista : null,
         requerido: k.requerido === true,
       }));
-      this.gridCaracteristicas?.setRowData(this.caracteristicas);
+      this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
     } catch (error) {
       // El AuthInterceptor ya enseña el error HTTP. Sin plantilla se puede
       // guardar igual: las características son opcionales.
@@ -709,7 +710,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         valores_lista: Array.isArray(c.valores_lista) ? c.valores_lista : null,
         requerido: c.requerido === true,
       }));
-      this.gridCaracteristicas?.setRowData(this.caracteristicas);
+      this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
     } catch (error) {
       console.error('Error al cargar las características del producto:', error);
       this.caracteristicas = [];
@@ -788,7 +789,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         rowDrag: !this.esView,
         hide: this.esView,
         minWidth: 34, maxWidth: 34,
-        sortable: false, filter: false, resizable: false, suppressMenu: true, editable: false,
+        sortable: false, filter: false, resizable: false, suppressHeaderMenuButton: true, editable: false,
         cellClass: 'celda-asa',
         headerTooltip: 'Arrastre una fila para cambiarla de sitio',
       },
@@ -853,7 +854,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         headerName: 'Unidad',
         field: 'unidad',
         editable: false,
-        sortable: false, filter: false, resizable: false, suppressMenu: true,
+        sortable: false, filter: false, resizable: false, suppressHeaderMenuButton: true,
         minWidth: 86, maxWidth: 110,
         cellStyle: { textAlign: 'center' },
         headerTooltip: 'Con qué se mide. Se define en Inventarios → Nombres de característica',
@@ -878,7 +879,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       field: 'acciones',
       pinned: 'right',
       minWidth: 112, maxWidth: 112,
-      sortable: false, filter: false, resizable: false, suppressMenu: true, editable: false,
+      sortable: false, filter: false, resizable: false, suppressHeaderMenuButton: true, editable: false,
       cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
       // HTML suelto con data-accion, como en el árbol de categorías: son
       // botones sin estado y así no hay un componente por fila.
@@ -1075,7 +1076,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         this._toastr.warning(`«${fila.nombre}» ya está en la lista de este producto`,
                              'Característica repetida', { timeOut: 4000 });
         fila.nombre = '';
-        this.gridCaracteristicas?.setRowData(this.caracteristicas);
+        this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
       }
     }
   }
@@ -1126,7 +1127,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       nueva: true,
       clave: ++this.claveCaracteristica,
     }];
-    this.gridCaracteristicas?.setRowData(this.caracteristicas);
+    this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
 
     // El cursor en el nombre de la fila nueva, que es lo que toca escribir.
     // Hace falta esperar a que ag-Grid pinte la fila: sin el respiro,
@@ -1177,7 +1178,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     copia.forEach((c, n) => { c.orden = n + 1; });
 
     this.caracteristicas = copia;
-    this.gridCaracteristicas?.setRowData(this.caracteristicas);
+    this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
   }
 
   /**
@@ -1200,13 +1201,13 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       // vaciaba y en pantalla seguia el texto de antes (medido).
       this.caracteristicas = this.caracteristicas.map(c =>
         c === fila ? { ...c, valor: '' } : c);
-      this.gridCaracteristicas?.setRowData(this.caracteristicas);
+      this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
       return;
     }
 
     this.caracteristicas = this.caracteristicas.filter(c => c !== fila);
     this.caracteristicas.forEach((c, n) => { c.orden = n + 1; });
-    this.gridCaracteristicas?.setRowData(this.caracteristicas);
+    this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
   }
 
   /** Vacía la columna de valores de un tirón (no toca la plantilla). */
@@ -1214,7 +1215,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     if (this.esView || !this.hayCaracteristicas) { return; }
     // Filas nuevas, por lo mismo que en quitarCaracteristica
     this.caracteristicas = this.caracteristicas.map(c => ({ ...c, valor: '' }));
-    this.gridCaracteristicas?.setRowData(this.caracteristicas);
+    this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
   }
 
   //   ******   CARGA EL REGISTRO   ******  //

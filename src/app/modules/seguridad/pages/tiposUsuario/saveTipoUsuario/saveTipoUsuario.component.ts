@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormGroup, FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -40,6 +40,7 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
     CampoTextoComponent, CampoTextoAreaComponent, CampoNumeroEnteroComponent, CheckboxComponent,
   ],
   templateUrl: './saveTipoUsuario.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./saveTipoUsuario.component.css'],
 })
 export class SaveTipoUsuarioComponent implements OnInit {

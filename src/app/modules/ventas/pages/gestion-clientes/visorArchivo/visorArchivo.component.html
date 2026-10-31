@@ -76,7 +76,7 @@
     }
 
     @if (esImagen) {
-      <img #lamina class="visor__lamina" [src]="url" [alt]="actual?.nombre"
+      <img #lamina class="visor__lamina" [src]="url" [alt]="$safeNavigationMigration(actual?.nombre)"
            [style.transform]="transformacion" draggable="false" />
 
     } @else if (esVideo) {

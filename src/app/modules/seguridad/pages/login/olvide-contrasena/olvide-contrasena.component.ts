@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, ChangeDetectionStrategy } from '@angular/core';
 import { 
   FormBuilder, 
   FormGroup, 
@@ -19,6 +19,7 @@ import { CampoClaveComponent } from '../../../../../components/campos/campoClave
   templateUrl: './olvide-contrasena.component.html',
   styleUrls: ['./olvide-contrasena.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, ModalHeaderComponent,
     CampoTextoComponent, CampoClaveComponent,

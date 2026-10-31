@@ -1,6 +1,6 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom,  Subject, takeUntil } from 'rxjs';
-import { CellClickedEvent, GridApi,  GridReadyEvent } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LoadingBarService } from '@ngx-loading-bar/core';
@@ -39,6 +39,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './allMenus.component.html',
   styleUrls: ['./allMenus.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     AgGridModule,
@@ -297,7 +298,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
           pinned: 'right',
           minWidth: 100,
           maxWidth: 100,
-          suppressMenu: true,
+          suppressHeaderMenuButton: true,
           sortable: false,
           resizable: false,
           suppressSizeToFit: false,
@@ -448,7 +449,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
           actionsCol.maxWidth = isCollapsed ? 100 : 50;
         }
         
-        this.gridApi.setColumnDefs(columnDefs);
+        this.gridApi.setGridOption('columnDefs', columnDefs);
         this.gridApi.sizeColumnsToFit();
         
         // Asegurar redimensionado en móviles
@@ -526,7 +527,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
         this.recalcularVisibles();
       }
 
-      this.gridApi?.setQuickFilter(this.searchTerm);
+      this.gridApi?.setGridOption('quickFilterText', this.searchTerm);
     }
 
     //   ******   IMPRESION   ******  //
@@ -829,7 +830,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
           return true;
         });
       }
-      this.gridApi?.setRowData(this.filasVisibles);
+      this.gridApi?.setGridOption('rowData', this.filasVisibles);
       this.actualizarBotonesArbol();
     }
 
@@ -1327,6 +1328,7 @@ export class AllMenusComponent implements OnInit, OnDestroy{
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

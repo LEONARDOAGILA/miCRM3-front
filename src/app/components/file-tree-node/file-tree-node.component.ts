@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 
 
 export interface FileTreeNode {
@@ -37,6 +37,7 @@ export interface NodoDragEvent {
   templateUrl: './file-tree-node.component.html',
   styleUrls: ['./file-tree-node.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [],
 })
 export class FileTreeNodeComponent {

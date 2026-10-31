@@ -1,6 +1,7 @@
 import {
   AfterViewInit, Component, ElementRef, EventEmitter, HostListener,
   Input, OnDestroy, OnInit, Output, inject,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -67,6 +68,7 @@ type AccionProforma = 'add' | 'edit' | 'clon' | 'view';
     ComboComponent, CampoTextoComponent, CampoTextoAreaComponent, CampoNumeroEnteroComponent,
   ],
   templateUrl: './saveProforma.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./saveProforma.component.css'],
 })
 export class SaveProformaComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -129,7 +131,7 @@ export class SaveProformaComponent implements OnInit, AfterViewInit, OnDestroy {
     singleClickEdit: true,
     resizable: true,
     sortable: false,
-    suppressMenu: true,
+    suppressHeaderMenuButton: true,
     suppressMovable: true,
   };
 
@@ -388,7 +390,7 @@ export class SaveProformaComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.lineas = (p.detalle ?? []).map(l => ({ ...l }));
       if (!this.esView) { this.lineas.push(this.filaEnBlanco()); }
-      this.gridApi?.setRowData(this.lineas);
+      this.gridApi?.setGridOption('rowData', this.lineas);
 
       if (this.esView) {
         this.form.disable({ emitEvent: false });
@@ -694,7 +696,7 @@ export class SaveProformaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onGridReady(e: GridReadyEvent): void {
     this.gridApi = e.api;
-    this.gridApi.setRowData(this.lineas);
+    this.gridApi.setGridOption('rowData', this.lineas);
     this.ajustarAltoRejilla();
   }
 
@@ -809,7 +811,7 @@ export class SaveProformaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.lineas.splice(this.lineas.length - 1, 0, nueva);
       }
       if (productos.length > 1) {
-        this.gridApi?.setRowData(this.lineas);
+        this.gridApi?.setGridOption('rowData', this.lineas);
       }
     });
   }
@@ -884,7 +886,7 @@ export class SaveProformaComponent implements OnInit, AfterViewInit, OnDestroy {
     // a mano es lo que va a acabar guardándose de todos modos.
     nueva.unidad = 'UNIDAD';
     this.lineas.splice(this.lineas.length - 1, 0, nueva);
-    this.gridApi?.setRowData(this.lineas);
+    this.gridApi?.setGridOption('rowData', this.lineas);
     const i = this.lineas.indexOf(nueva);
     setTimeout(() => this.gridApi?.startEditingCell({ rowIndex: i, colKey: 'descripcion' }), 0);
   }

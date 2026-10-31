@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
@@ -38,6 +38,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   standalone: true,
   imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective, CampoBusquedaPaginacionComponent],
   templateUrl: './listProductos.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./listProductos.component.css'],
 })
 export class ListProductosComponent implements OnInit {
@@ -108,7 +109,7 @@ export class ListProductosComponent implements OnInit {
       ...(this.permiteVarios ? [{
         headerName: '', field: 'marca_elegido',
         width: 44, minWidth: 44, maxWidth: 44,
-        sortable: false, resizable: false, suppressMenu: true,
+        sortable: false, resizable: false, suppressHeaderMenuButton: true,
         cellStyle: { textAlign: 'center' },
         cellRenderer: (p: any) => this.elegidos.has(p.data?.producto_id)
           ? '<i class="fa-solid fa-square-check text-primary"></i>'
@@ -155,7 +156,7 @@ export class ListProductosComponent implements OnInit {
       {
         headerName: 'Añadir', field: 'elegir',
         pinned: 'right', minWidth: 70, maxWidth: 70,
-        sortable: false, resizable: false, suppressMenu: true,
+        sortable: false, resizable: false, suppressHeaderMenuButton: true,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: () => '<span class="lista-ir" title="Añadir a la proforma"><i class="fas fa-plus"></i></span>',
       },
@@ -171,7 +172,7 @@ export class ListProductosComponent implements OnInit {
 
   onGridReady(e: GridReadyEvent): void {
     this.gridApi = e.api;
-    this.gridApi.setRowData(this.rowData);
+    this.gridApi.setGridOption('rowData', this.rowData);
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
   }
 
@@ -243,7 +244,7 @@ export class ListProductosComponent implements OnInit {
         this.ultimaPagina = meta.last_page;
       }
 
-      this.gridApi?.setRowData(this.rowData);
+      this.gridApi?.setGridOption('rowData', this.rowData);
 
     } catch (e) {
       // El AuthInterceptor ya enseñó el error HTTP

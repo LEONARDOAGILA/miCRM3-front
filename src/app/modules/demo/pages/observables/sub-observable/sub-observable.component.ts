@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Observable } from 'rxjs/internal/Observable';
 import { MidataService } from '../../../services/midata.service';
 
@@ -6,6 +6,7 @@ import { MidataService } from '../../../services/midata.service';
   selector: 'app-sub-observable',
   templateUrl: './sub-observable.component.html',
   styleUrls: ['./sub-observable.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class SubObservableComponent implements OnInit {

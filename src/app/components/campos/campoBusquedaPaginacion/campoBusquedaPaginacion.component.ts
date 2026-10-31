@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, Output, EventEmitter, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /**
@@ -19,6 +19,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './campoBusquedaPaginacion.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./campoBusquedaPaginacion.component.css'],
 })
 export class CampoBusquedaPaginacionComponent {

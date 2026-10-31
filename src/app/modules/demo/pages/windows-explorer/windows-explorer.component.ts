@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 interface FileSystemItem {
   id: string;
@@ -13,6 +13,7 @@ interface FileSystemItem {
   selector: 'app-windows-explorer',
   templateUrl: './windows-explorer.component.html',
   styleUrls: ['./windows-explorer.component.css'],
+   changeDetection: ChangeDetectionStrategy.Eager,
    standalone: false,
 })
 export class WindowsExplorerComponent implements OnInit {

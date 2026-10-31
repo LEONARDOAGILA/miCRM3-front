@@ -1,7 +1,7 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
@@ -52,6 +52,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './allEmpleados.component.html',
   styleUrls: ['./allEmpleados.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     AgGridModule,
@@ -446,7 +447,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllEmpleadosComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllEmpleadosComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -537,7 +538,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -610,7 +611,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
    * registro que hoy no cumpliría alguna regla —cargado antes de que
    * existiera— no se podría desactivar hasta arreglarle todo lo demás.
    */
-  cambiarActivo(fila: EmpleadoModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: EmpleadoModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -659,7 +660,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
         this.empleadoModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.empleadoModel);
+        this.gridApi?.setGridOption('rowData', this.empleadoModel);
         return;
       }
 
@@ -672,7 +673,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) this.gridApi.setRowData(this.empleadoModel);
+      if (this.gridApi) this.gridApi.setGridOption('rowData', this.empleadoModel);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar empleados:', error);
@@ -875,7 +876,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.empleadoModel = [nuevo, ...this.empleadoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.empleadoModel);
+      this.gridApi?.setGridOption('rowData', this.empleadoModel);
     });
   }
 
@@ -885,7 +886,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.empleadoModel = [nuevo, ...this.empleadoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.empleadoModel);
+      this.gridApi?.setGridOption('rowData', this.empleadoModel);
     });
   }
 
@@ -1129,6 +1130,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-fila {
       display: flex;

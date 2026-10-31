@@ -94,7 +94,7 @@
               </div>
               <div class="form-check form-switch estado-miswitch__switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="ck-publico"
-                       [checked]="archivo?.publico"
+                       [checked]="$safeNavigationMigration(archivo?.publico)"
                        [disabled]="!puedeAdministrar || guardandoPublico"
                        (change)="cambiarPublico($any($event.target).checked)">
                 <label class="form-check-label" for="ck-publico">{{ archivo?.publico ? 'Público' : 'Restringido' }}</label>

@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -78,6 +78,7 @@ export interface FilaPermiso {
   standalone: true,
   imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, ModalHeaderComponent, ModalFooterComponent, CampoBusquedaComponent],
   templateUrl: './permisosArchivo.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./permisosArchivo.component.css'],
 })
 export class PermisosArchivoComponent implements OnInit, OnDestroy {
@@ -254,7 +255,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       maxWidth: 104,
       sortable: false,
       filter: false,
-      suppressMenu: true,
+      suppressHeaderMenuButton: true,
       cellRenderer: (params: any) => this.checkboxCellRenderer(params),
       headerComponentParams: this.cabeceraConCasilla(id),
     });
@@ -289,7 +290,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
         field: 'todos',
         headerTooltip: 'Marcar / desmarcar todos los permisos del usuario',
         cellStyle: { textAlign: 'center' },
-        minWidth: 90, maxWidth: 90, sortable: false, filter: false, suppressMenu: true,
+        minWidth: 90, maxWidth: 90, sortable: false, filter: false, suppressHeaderMenuButton: true,
         cellRenderer: (params: any) => this.checkboxTodosRenderer(params),
         headerComponentParams: this.cabeceraConCasilla('todos'),
       },
@@ -359,7 +360,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: this.ANCHO_ACCIONES_ABIERTA,
         maxWidth: this.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         filter: false,
         resizable: false,
@@ -408,7 +409,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
   }
 
   onFilterTextBoxChanged(): void {
-    this.gridApi?.setQuickFilter((document.getElementById('filter-text-box-permisos') as HTMLInputElement)?.value ?? '');
+    this.gridApi?.setGridOption('quickFilterText', (document.getElementById('filter-text-box-permisos') as HTMLInputElement)?.value ?? '');
     setTimeout(() => this.actualizarCabeceras());
   }
 
@@ -422,7 +423,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     actionsCol.minWidth = ancho;
     actionsCol.maxWidth = ancho;
     actionsCol.headerComponentParams = { template: this.plantillaCabeceraAcciones(this.accionesPlegadas) };
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.refreshHeader();
     this.gridApi.refreshCells({ force: true, columns: ['actions'] });
   }
@@ -560,7 +561,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
       const directos: FilaPermiso[] = (res.data.directos ?? []).map((f: FilaPermiso) => this.conOriginal(f));
       const heredados: FilaPermiso[] = res.data.heredados ?? [];
       this.filas = [...directos, ...heredados];
-      this.gridApi?.setRowData(this.filas);
+      this.gridApi?.setGridOption('rowData', this.filas);
     } catch (e) {
       console.error('Error al cargar permisos:', e);
     } finally {
@@ -751,7 +752,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
         this.agregarFila(u, true);
         anadidos++;
       }
-      this.gridApi?.setRowData(this.filas);
+      this.gridApi?.setGridOption('rowData', this.filas);
       const detalle = [yaEstaban ? `${yaEstaban} ya estaba(n)` : '', inactivos ? `${inactivos} inactivo(s) omitido(s)` : ''].filter(Boolean).join(', ');
       if (!usuarios.length) {
         this._toastr.info(`El grupo «${g.nombre}» no tiene usuarios${conSubgrupos ? ' (ni sus subgrupos)' : ''}`, 'Permisos');
@@ -779,7 +780,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     };
     this.filas = [fila, ...this.filas];
     if (silencioso) { return; }   // en lote: la grilla y el aviso los pone quien llama
-    this.gridApi?.setRowData(this.filas);
+    this.gridApi?.setGridOption('rowData', this.filas);
     // Lo dice su grupo, no users.type_user: el gestor nació antes de que
     // hubiera grupos y se quedó mirando el campo viejo
     if (u.es_administrador === true) {
@@ -791,7 +792,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
   ajustarAqui(h: FilaPermiso): void {
     const fila: FilaPermiso = { ...h, origen: 'DIRECTO', desde: null, nueva: true };
     this.filas = [fila, ...this.filas.filter(x => x.user_id !== h.user_id)];
-    this.gridApi?.setRowData(this.filas);
+    this.gridApi?.setGridOption('rowData', this.filas);
   }
 
   // ---------- Edición ----------
@@ -858,7 +859,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
 
     // Las nuevas (sin guardar) se descartan sin ir al back
     this.filas = this.filas.filter(f => !(f.nueva && lote.includes(f)));
-    this.gridApi?.setRowData(this.filas);
+    this.gridApi?.setGridOption('rowData', this.filas);
 
     let quitados = 0;
     try {
@@ -891,7 +892,7 @@ export class PermisosArchivoComponent implements OnInit, OnDestroy {
     if (!this.puedeAdministrar) { return; }
     if (f.nueva) {
       this.filas = this.filas.filter(x => x !== f);
-      this.gridApi?.setRowData(this.filas);
+      this.gridApi?.setGridOption('rowData', this.filas);
       return;
     }
     const { isConfirmed } = await Swal.fire({

@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ExcelService } from '../../services/excel.service';
 
 @Component({
   selector: 'app-exportexcel',
   templateUrl: './exportexcel.component.html',
   styleUrls: ['./exportexcel.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class ExportexcelComponent implements OnInit {

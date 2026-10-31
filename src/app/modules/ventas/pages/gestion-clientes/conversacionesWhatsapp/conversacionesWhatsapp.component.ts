@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -31,6 +31,7 @@ interface ConversacionSuelta {
   templateUrl: './conversacionesWhatsapp.component.html',
   styleUrls: ['./conversacionesWhatsapp.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ModalHeaderComponent],
 })
 export class ConversacionesWhatsappComponent implements OnInit {

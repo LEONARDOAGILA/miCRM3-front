@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
@@ -25,6 +25,7 @@ import { ModalArrastrableDirective } from '../../../../../components/modal/modal
   templateUrl: './deleteGestion.component.html',
   styleUrls: ['./deleteGestion.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteGestionComponent implements OnDestroy {

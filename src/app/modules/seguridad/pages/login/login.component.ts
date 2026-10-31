@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from "@angular/core";
 import { FormBuilder,  FormGroup } from "@angular/forms";
 import { Router } from "@angular/router";
 import { firstValueFrom, Subject, takeUntil} from "rxjs";
@@ -29,6 +29,7 @@ import { DirectiveModule } from '../../../../core/directives/directive.module';
   templateUrl: "./login.component.html",
   styleUrls: ["./login.component.css"],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ReactiveFormsModule, DirectiveModule],
 })
 

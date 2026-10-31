@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
@@ -20,6 +20,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './deleteFile.component.html',
   styleUrls: ['./deleteFile.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule],
 })
 export class DeleteFileComponent implements OnDestroy {

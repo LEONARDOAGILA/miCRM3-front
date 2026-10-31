@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -36,6 +36,7 @@ import { SaveMensajeAsuntoComponent } from './saveMensajeAsunto/saveMensajeAsunt
   standalone: true,
   imports: [CommonModule, FormsModule, PanelComponent, CampoIconoComponent, AvisoComponent],
   templateUrl: './catalogoGestion.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./catalogoGestion.component.css'],
 })
 export class CatalogoGestionComponent implements OnInit {

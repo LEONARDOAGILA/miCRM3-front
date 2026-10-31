@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { AgGridModule } from 'ag-grid-angular';
@@ -45,6 +45,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   standalone: true,
   imports: [CommonModule, PanelComponent, AgGridModule, FilasEstirablesDirective, CampoBusquedaPaginacionComponent, MenuContextualComponent],
   templateUrl: './allCuentasCategorias.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./allCuentasCategorias.component.css'],
 })
 export class AllCuentasCategoriasComponent implements OnInit, OnDestroy {
@@ -277,7 +278,7 @@ export class AllCuentasCategoriasComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: 90,
         maxWidth: 90,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
@@ -495,7 +496,7 @@ export class AllCuentasCategoriasComponent implements OnInit, OnDestroy {
         return true;
       });
     }
-    this.gridApi?.setRowData(this.filasVisibles);
+    this.gridApi?.setGridOption('rowData', this.filasVisibles);
     this.actualizarBotonesArbol();
   }
 
@@ -538,7 +539,7 @@ export class AllCuentasCategoriasComponent implements OnInit, OnDestroy {
     const habiaFiltro = !!this.searchTerm;
     if (term !== undefined) { this.searchTerm = term; }
     if (this.plegadoAlCambiarElFiltro(habiaFiltro)) { this.recalcularVisibles(); }
-    this.gridApi?.setQuickFilter(this.searchTerm);
+    this.gridApi?.setGridOption('quickFilterText', this.searchTerm);
   }
 
   alLimpiarBusqueda(): void {
@@ -546,7 +547,7 @@ export class AllCuentasCategoriasComponent implements OnInit, OnDestroy {
     this.searchTerm = '';
     this.plegadoAlCambiarElFiltro(habiaFiltro);   // vuelve el árbol que había
     this.recalcularVisibles();
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
   }
 
   // ================================================================

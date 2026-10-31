@@ -27,7 +27,7 @@
         <span class="d-none d-sm-inline ms-1">{{ descargando ? 'Descargando…' : 'Descargar' }}</span>
       </button>
     } @else {
-      <a class="btn btn-sm btn-white" [href]="registro_selected?.url" target="_blank" rel="noopener" title="Abrir en una pestaña nueva">
+      <a class="btn btn-sm btn-white" [href]="$safeNavigationMigration(registro_selected?.url)" target="_blank" rel="noopener" title="Abrir en una pestaña nueva">
         <i class="fa fa-arrow-up-right-from-square"></i>
         <span class="d-none d-sm-inline ms-1">Abrir en pestaña</span>
       </a>

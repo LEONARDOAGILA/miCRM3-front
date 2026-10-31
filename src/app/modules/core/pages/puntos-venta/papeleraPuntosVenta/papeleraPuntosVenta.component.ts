@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -31,6 +31,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   standalone: true,
   imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective],
   templateUrl: './papeleraPuntosVenta.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./papeleraPuntosVenta.component.css'],
 })
 export class PapeleraPuntosVentaComponent implements OnInit {
@@ -131,7 +132,7 @@ export class PapeleraPuntosVentaComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.gridApi.setRowData(this.items);
+    this.gridApi.setGridOption('rowData', this.items);
   }
 
   navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.seleccionado = fila);
@@ -150,7 +151,7 @@ export class PapeleraPuntosVentaComponent implements OnInit {
       const res: any = await firstValueFrom(this._puntoVentaService.papelera());
       this.items = res?.status === 'success' ? (res.data ?? []) : [];
       this.seleccionado = null;
-      this.gridApi?.setRowData(this.items);
+      this.gridApi?.setGridOption('rowData', this.items);
     } catch (error) {
       console.error('Error al cargar la papelera:', error);
       this.items = [];

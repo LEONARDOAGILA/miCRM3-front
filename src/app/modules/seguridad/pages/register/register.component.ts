@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
@@ -9,6 +9,7 @@ import { SeguridadService } from '../../services/seguridad.service';
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ReactiveFormsModule],
 })
 export class RegisterComponent {

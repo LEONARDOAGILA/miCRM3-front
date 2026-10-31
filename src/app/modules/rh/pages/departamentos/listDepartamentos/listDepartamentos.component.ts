@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { GridApi, GridReadyEvent, CellClickedEvent, CellKeyDownEvent, RowClassParams } from 'ag-grid-community';
@@ -27,6 +27,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   templateUrl: './listDepartamentos.component.html',
   styleUrls: ['./listDepartamentos.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective,
     CampoBusquedaPaginacionComponent,
@@ -141,7 +142,7 @@ export class ListDepartamentosComponent implements OnInit {
         sortable: false,
         resizable: false,
         filter: false,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         cellRenderer: (params: any) => this.estaExcluido(params.data)
           ? ''
           : `<span class="lista-ir" title="Elegir este departamento"><i class="fas fa-arrow-right"></i></span>`
@@ -189,7 +190,7 @@ export class ListDepartamentosComponent implements OnInit {
       }
 
       if (this.gridApi) {
-        this.gridApi.setRowData(this.rowData);
+        this.gridApi.setGridOption('rowData', this.rowData);
       }
     } catch (error) {
       console.error('Error al cargar departamentos:', error);

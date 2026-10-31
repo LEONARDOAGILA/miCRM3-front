@@ -1,5 +1,6 @@
 import {
   Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject,
+  ChangeDetectionStrategy
 } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
@@ -9,7 +10,7 @@ import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams, IRowNode } from 'ag-grid-community';
 
 ///   COMPONENTES COMUNES    ///
 import { PanelComponent } from '../../../../../components/panel/panel.component';
@@ -76,6 +77,7 @@ import { CommonModule } from '@angular/common';
     MenuContextualComponent
 ],
   templateUrl: './allPuntosVenta.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./allPuntosVenta.component.css'],
 })
 export class AllPuntosVentaComponent implements OnInit, OnDestroy {
@@ -610,7 +612,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllPuntosVentaComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllPuntosVentaComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true, sortable: false, resizable: false, filter: false,
+        suppressHeaderMenuButton: true, sortable: false, resizable: false, filter: false,
         headerComponentParams: {
           template: `
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
@@ -625,7 +627,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.columnApi = params.columnApi;
+    this.columnApi = params.api;
     this.programar(() => this.montarListenersCabecera(), 500);
     this.ajustarAltoColumnas();
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
@@ -693,7 +695,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
           </div>`,
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -737,7 +739,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
       // LA CASILLA NO DECIDE: la marca que acaba de poner el navegador es
       // sólo un acuse de recibo. Quien dice si la caja queda activa es el
       // servidor, y la celda se vuelve a dibujar con lo que conteste.
-      this.cambiarActivo(e.data, e.node as RowNode);
+      this.cambiarActivo(e.data, e.node as IRowNode);
     }
   }
 
@@ -751,7 +753,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
   }
 
   /** Abrir o cerrar la caja desde la casilla, sin abrir la ficha. */
-  cambiarActivo(punto: PuntoVentaModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(punto: PuntoVentaModel | null, nodo?: IRowNode | null): void {
     if (!punto) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -783,12 +785,12 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado de puntos de venta', 'Error');
         this.puntoVentaModel = [];
-        this.gridApi?.setRowData(this.puntoVentaModel);
+        this.gridApi?.setGridOption('rowData', this.puntoVentaModel);
         return;
       }
 
       this.puntoVentaModel = res.body?.data || [];
-      this.gridApi?.setRowData(this.puntoVentaModel);
+      this.gridApi?.setGridOption('rowData', this.puntoVentaModel);
 
     } catch (error) {
       // El AuthInterceptor ya enseñó el toast del error HTTP
@@ -815,7 +817,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
 
   onFilterTextBoxChanged(term?: string): void {
     if (term !== undefined) { this.searchTerm = term; }
-    this.gridApi?.setQuickFilter(this.searchTerm ?? '');
+    this.gridApi?.setGridOption('quickFilterText', this.searchTerm ?? '');
   }
 
   get hayFiltro(): boolean {
@@ -829,7 +831,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
   clearAllFilters(): void {
     this.searchTerm = '';
     this.campoBusqueda?.reset();
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
     this.gridApi?.setFilterModel(null);
   }
 
@@ -1024,6 +1026,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, NgZone, OnDestroy, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, NgZone, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Subject, takeUntil } from 'rxjs';
@@ -31,6 +31,7 @@ const AVATAR_POR_DEFECTO = '/assets/img/user/default.png';
 	selector: 'header',
 	templateUrl: './header.component.html',
 	styleUrls: ['./header.component.css'],
+	changeDetection: ChangeDetectionStrategy.Eager,
 	standalone: false,
 })
 export class HeaderComponent implements OnInit, OnDestroy {

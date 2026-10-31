@@ -1,5 +1,5 @@
 // image-handler.component.ts
-import { Component, EventEmitter, HostListener, Input, Output, forwardRef } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output, forwardRef, ChangeDetectionStrategy } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { ComprimirImagen } from '../../../service/comprimirImagen';
@@ -13,6 +13,7 @@ import { ComprimirImagen } from '../../../service/comprimirImagen';
   styleUrls: ['./image-handler.component.css'],
   standalone: true,
   imports: [], // <-- aquí está la solución
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

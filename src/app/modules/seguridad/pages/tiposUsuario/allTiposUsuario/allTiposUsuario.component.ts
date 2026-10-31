@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { GridApi, GridReadyEvent, CellClickedEvent } from 'ag-grid-community';
@@ -46,6 +46,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   standalone: true,
   imports: [CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaPaginacionComponent],
   templateUrl: './allTiposUsuario.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./allTiposUsuario.component.css'],
 })
 export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
@@ -129,7 +130,7 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) { this.gridApi.setRowData(this.tiposUsuario); }
+      if (this.gridApi) { this.gridApi.setGridOption('rowData', this.tiposUsuario); }
       this._loadingService.setLoading(false);
 
     } catch (error: any) {
@@ -261,7 +262,7 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: 120,
         maxWidth: 120,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         // Botones en HTML con data-accion y un único manejador en
@@ -353,7 +354,7 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
           this.tiposUsuario.unshift(guardado);
           this.totalRegistros++;
         }
-        this.gridApi?.setRowData(this.tiposUsuario);
+        this.gridApi?.setGridOption('rowData', this.tiposUsuario);
       } catch (error) {
         console.error('Error o cancelación al guardar:', error);
       }

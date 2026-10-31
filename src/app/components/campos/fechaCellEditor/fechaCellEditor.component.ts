@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ICellEditorAngularComp } from 'ag-grid-angular';
 import { ICellEditorParams } from 'ag-grid-community';
 
@@ -29,6 +29,7 @@ import { ICellEditorParams } from 'ag-grid-community';
            (keydown.enter)="cerrar()"
            (keydown.escape)="cancelar()" />
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     :host { display: block; width: 100%; height: 100%; }
     .fecha-cell-editor {

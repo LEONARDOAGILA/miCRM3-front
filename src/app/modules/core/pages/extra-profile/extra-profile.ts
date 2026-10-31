@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewEncapsulation, AfterViewInit, HostListener } from '@angular/core';
+import { Component, OnDestroy, ViewEncapsulation, AfterViewInit, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { AppSettings } from '../../../../service/app-settings.service';
 
 @Component({
@@ -6,6 +6,7 @@ import { AppSettings } from '../../../../service/app-settings.service';
   templateUrl: './extra-profile.html',
   encapsulation: ViewEncapsulation.None,
   styleUrls: [ './extra-profile.css' ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
 })
 

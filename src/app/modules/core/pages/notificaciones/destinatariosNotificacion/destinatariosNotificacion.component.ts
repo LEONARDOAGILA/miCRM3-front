@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -32,6 +32,7 @@ type Estado = '' | 'LEIDA' | 'PENDIENTE' | 'QUITADA';
   standalone: true,
   imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaComponent],
   templateUrl: './destinatariosNotificacion.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./destinatariosNotificacion.component.css'],
 })
 export class DestinatariosNotificacionComponent implements OnInit {
@@ -108,14 +109,14 @@ export class DestinatariosNotificacionComponent implements OnInit {
 
   limpiarFiltros(): void {
     this.filtro.estado = '';
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
     this.aplicarFiltro();
   }
 
   private aplicarFiltro(): void {
     const e = this.filtro.estado;
     this.filas = !e ? [...this.todos] : this.todos.filter(d => this.estadoDe(d) === e);
-    this.gridApi?.setRowData(this.filas);
+    this.gridApi?.setGridOption('rowData', this.filas);
   }
 
   /**
@@ -128,7 +129,7 @@ export class DestinatariosNotificacionComponent implements OnInit {
   }
 
   onFilterTextBoxChanged(texto: string): void {
-    this.gridApi?.setQuickFilter(texto ?? '');
+    this.gridApi?.setGridOption('quickFilterText', texto ?? '');
   }
 
   // ================================================================
@@ -174,7 +175,7 @@ export class DestinatariosNotificacionComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.gridApi.setRowData(this.filas);
+    this.gridApi.setGridOption('rowData', this.filas);
     this.ajustarTamanoGrid();
   }
 

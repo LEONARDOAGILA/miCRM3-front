@@ -1,7 +1,7 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
@@ -51,6 +51,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './allCargos.component.html',
   styleUrls: ['./allCargos.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     AgGridModule,
@@ -335,7 +336,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllCargosComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllCargosComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -425,7 +426,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -498,7 +499,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
    * registro que hoy no cumpliría alguna regla —cargado antes de que
    * existiera— no se podría desactivar hasta arreglarle todo lo demás.
    */
-  cambiarActivo(fila: CargoModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: CargoModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -547,7 +548,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
         this.cargoModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.cargoModel);
+        this.gridApi?.setGridOption('rowData', this.cargoModel);
         return;
       }
 
@@ -560,7 +561,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) this.gridApi.setRowData(this.cargoModel);
+      if (this.gridApi) this.gridApi.setGridOption('rowData', this.cargoModel);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar cargos:', error);
@@ -756,7 +757,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.cargoModel = [nuevo, ...this.cargoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.cargoModel);
+      this.gridApi?.setGridOption('rowData', this.cargoModel);
     });
   }
 
@@ -766,7 +767,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.cargoModel = [nuevo, ...this.cargoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.cargoModel);
+      this.gridApi?.setGridOption('rowData', this.cargoModel);
     });
   }
 
@@ -953,6 +954,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -41,6 +41,7 @@ import { PlanCuentaModel, TIPOS_CUENTA } from '../../../../contabilidad/interfac
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, ModalArrastrableDirective, ComboComponent, CampoTextoComponent],
   templateUrl: './nuevaCuentaContable.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./nuevaCuentaContable.component.css'],
 })
 export class NuevaCuentaContableComponent implements OnInit {

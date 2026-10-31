@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -46,6 +46,7 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
   templateUrl: './saveCaracteristica.component.html',
   styleUrls: ['./saveCaracteristica.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
     ModalFooterComponent, ComboComponent, CampoTextoComponent,

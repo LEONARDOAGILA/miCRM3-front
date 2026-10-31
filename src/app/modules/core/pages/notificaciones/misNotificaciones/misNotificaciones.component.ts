@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -25,6 +25,7 @@ import { PanelComponent } from '../../../../../components/panel/panel.component'
   standalone: true,
   imports: [CommonModule, PanelComponent],
   templateUrl: './misNotificaciones.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./misNotificaciones.component.css'],
 })
 export class MisNotificacionesComponent implements OnInit {

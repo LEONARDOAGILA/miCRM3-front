@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 
 /**
  * Campo de búsqueda de las grillas: la lupa a la izquierda y, en cuanto se
@@ -18,6 +18,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   standalone: true,
   templateUrl: './campoBusqueda.component.html',
   styleUrls: ['./campoBusqueda.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [],
 })
 export class CampoBusquedaComponent {

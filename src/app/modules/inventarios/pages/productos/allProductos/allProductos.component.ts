@@ -1,7 +1,7 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
@@ -62,6 +62,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './allProductos.component.html',
   styleUrls: ['./allProductos.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     FormsModule,
@@ -428,7 +429,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllProductosComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllProductosComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -517,7 +518,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -565,7 +566,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     });
   }
 
-  cambiarActivo(fila: ProductoModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: ProductoModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -632,7 +633,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         this.productoModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.productoModel);
+        this.gridApi?.setGridOption('rowData', this.productoModel);
         return;
       }
 
@@ -645,7 +646,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) { this.gridApi.setRowData(this.productoModel); }
+      if (this.gridApi) { this.gridApi.setGridOption('rowData', this.productoModel); }
     } catch (error) {
       console.error('Error al cargar productos:', error);
     } finally {
@@ -867,7 +868,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.productoModel = [nuevo, ...this.productoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.productoModel);
+      this.gridApi?.setGridOption('rowData', this.productoModel);
     });
   }
 
@@ -877,7 +878,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.productoModel = [nuevo, ...this.productoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.productoModel);
+      this.gridApi?.setGridOption('rowData', this.productoModel);
     });
   }
 
@@ -1115,6 +1116,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

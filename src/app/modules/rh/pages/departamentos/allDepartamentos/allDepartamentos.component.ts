@@ -1,7 +1,7 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
@@ -60,6 +60,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './allDepartamentos.component.html',
   styleUrls: ['./allDepartamentos.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     AgGridModule,
@@ -357,7 +358,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllDepartamentosComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllDepartamentosComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -589,7 +590,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     this.searchTerm = '';
     this.filtrosColumna = {};
     if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
 
     // La bandera se baja en la siguiente vuelta: ag-Grid avisa del cambio de
     // filtros DESPUÉS de esta línea (medido), y si se apagara aquí ese aviso
@@ -709,7 +710,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
         return true;
       });
     }
-    this.gridApi?.setRowData(this.filasVisibles);
+    this.gridApi?.setGridOption('rowData', this.filasVisibles);
     this.actualizarBotonesArbol();
   }
 
@@ -819,7 +820,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -872,7 +873,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     });
   }
 
-  cambiarActivo(fila: DepartamentoModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: DepartamentoModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -976,7 +977,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     // se quede escondida, y al quitarlo vuelve el árbol que había.
     if (this.plegadoAlCambiarElFiltro(habiaFiltro)) { this.recalcularVisibles(); }
 
-    this.gridApi?.setQuickFilter(this.searchTerm);
+    this.gridApi?.setGridOption('quickFilterText', this.searchTerm);
   }
 
   /**
@@ -991,7 +992,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     this.searchTerm = '';
     this.plegadoAlCambiarElFiltro(habiaFiltro);
     this.recalcularVisibles();      // vuelven a cerrarse las ramas plegados
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
   }
 
   // ================================================================
@@ -1473,6 +1474,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     :host {
       display: flex;

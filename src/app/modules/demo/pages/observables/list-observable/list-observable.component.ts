@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { catchError, EMPTY, empty, Observable } from 'rxjs';
 import { Midata, PokemonResults } from '../../../interfaces/midata';
 import { PokemonService } from '../../../services/pokemon.service';
@@ -9,6 +9,7 @@ import { PokemonService } from '../../../services/pokemon.service';
   selector: 'app-list-observable',
   templateUrl: './list-observable.component.html',
   styleUrls: ['./list-observable.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class ListObservableComponent implements OnInit {

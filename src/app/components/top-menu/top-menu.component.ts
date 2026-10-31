@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit } 		 from '@angular/core';
+import { Component, OnInit, AfterViewInit, ChangeDetectionStrategy } 		 from '@angular/core';
 import { AppMenuService } from '../../service/app-menus.service';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 
@@ -8,6 +8,7 @@ declare var slideToggle: any;
 @Component({
   selector: 'top-menu',
   templateUrl: './top-menu.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 

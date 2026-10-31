@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 
@@ -47,6 +47,7 @@ export interface CanalContacto {
     ComboComponent
   ],
   templateUrl: './contactanos.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./contactanos.component.scss']
 })
 export class ContactanosComponent {

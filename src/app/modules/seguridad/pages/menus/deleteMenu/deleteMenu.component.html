@@ -78,7 +78,7 @@
             <i class="fa fa-icons fa-fw me-1" aria-hidden="true"></i>Icono
           </span>
           <span class="eliminar-datos__valor">
-            <i [ngClass]="registro_selected?.icono" class="me-1" aria-hidden="true"></i>
+            <i [ngClass]="$safeNavigationMigration(registro_selected?.icono)" class="me-1" aria-hidden="true"></i>
             {{ registro_selected?.icono }}
           </span>
         </div>

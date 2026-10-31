@@ -1,6 +1,7 @@
 import {
   AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, TemplateRef, ViewChild,
   forwardRef,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -62,6 +63,7 @@ export type PestanaCampo = 'archivo' | 'inicio' | 'insertar' | 'tabla';
   imports: [CommonModule, FormsModule, NgxEditorModule, HuecosPlantillaComponent],
   templateUrl: './campoNgxEditor.component.html',
   styleUrls: ['./campoNgxEditor.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [{
     provide: NG_VALUE_ACCESSOR,
     useExisting: forwardRef(() => CampoNgxEditorComponent),

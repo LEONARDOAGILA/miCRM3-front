@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -51,6 +51,7 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
   templateUrl: './cerrarGestion.component.html',
   styleUrls: ['./cerrarGestion.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
     ModalFooterComponent, ComboComponent, CampoTextoComponent,

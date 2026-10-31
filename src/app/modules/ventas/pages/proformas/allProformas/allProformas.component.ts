@@ -1,5 +1,6 @@
 import {
   Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject,
+  ChangeDetectionStrategy
 } from '@angular/core';
 
 import { ActivatedRoute, Router } from '@angular/router';
@@ -77,6 +78,7 @@ import { CommonModule } from '@angular/common';
     MenuContextualComponent
 ],
   templateUrl: './allProformas.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./allProformas.component.css'],
 })
 export class AllProformasComponent implements OnInit, OnDestroy {
@@ -411,7 +413,7 @@ export class AllProformasComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllProformasComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllProformasComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true, sortable: false, resizable: false,
+        suppressHeaderMenuButton: true, sortable: false, resizable: false,
         headerComponentParams: {
           template: `
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px;" title="Ocultar los botones de acción">
@@ -501,7 +503,7 @@ export class AllProformasComponent implements OnInit, OnDestroy {
           </div>`,
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -554,7 +556,7 @@ export class AllProformasComponent implements OnInit, OnDestroy {
         this.proformaModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.proformaModel);
+        this.gridApi?.setGridOption('rowData', this.proformaModel);
         return;
       }
 
@@ -568,7 +570,7 @@ export class AllProformasComponent implements OnInit, OnDestroy {
         this.ultimaPagina = meta.last_page;
       }
 
-      this.gridApi?.setRowData(this.proformaModel);
+      this.gridApi?.setGridOption('rowData', this.proformaModel);
 
     } catch (error) {
       // El AuthInterceptor ya enseñó el toast del error HTTP
@@ -1034,6 +1036,7 @@ export class AllProformasComponent implements OnInit, OnDestroy {
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-fila {
       display: inline-flex;

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -41,6 +41,7 @@ import { ModalFooterComponent } from '../../../../../components/modal/modal-foot
     ModalFooterComponent
 ],
   templateUrl: './saveMensajeAsunto.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./saveMensajeAsunto.component.css'],
 })
 export class SaveMensajeAsuntoComponent implements OnInit {

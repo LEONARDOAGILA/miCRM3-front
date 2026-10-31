@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /** Con qué color se pinta el contador de una pestaña. */
@@ -66,6 +66,7 @@ export interface PestanaTab {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './tabPanel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./tabPanel.component.css'],
 })
 export class TabPanelComponent {

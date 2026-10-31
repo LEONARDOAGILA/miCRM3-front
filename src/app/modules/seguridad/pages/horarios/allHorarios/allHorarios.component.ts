@@ -1,6 +1,6 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom } from 'rxjs';
-import { GridApi, GridReadyEvent, CellClickedEvent, RowNode } from 'ag-grid-community';
+import { GridApi, GridReadyEvent, CellClickedEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
@@ -38,6 +38,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './allHorarios.component.html',
   styleUrls: ['./allHorarios.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     AgGridModule,
@@ -120,7 +121,7 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
         if (nuevoHorario && nuevoHorario.id) {
           // Agregar al principio del array y actualizar grid
           this.chorarioModel.unshift(nuevoHorario);
-          this.gridApi.setRowData(this.chorarioModel);
+          this.gridApi.setGridOption('rowData', this.chorarioModel);
         } else {
           console.error('Respuesta inválida en clonación:', nuevoHorario);
         }
@@ -317,7 +318,7 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
       
-      if (this.gridApi) this.gridApi.setRowData(this.chorarioModel);
+      if (this.gridApi) this.gridApi.setGridOption('rowData', this.chorarioModel);
       this._loadingService.setLoading(false);
       
     } catch (error: any) {
@@ -576,7 +577,7 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: 110,
         maxWidth: 110,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -697,7 +698,7 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
         actionsCol.maxWidth = isCollapsed ? 110 : 50;
       }
       
-      this.gridApi.setColumnDefs(columnDefs);
+      this.gridApi.setGridOption('columnDefs', columnDefs);
       this.gridApi.sizeColumnsToFit();
       
       setTimeout(() => {
@@ -790,7 +791,7 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
    * registro que hoy no cumpliría alguna regla —cargado antes de que
    * existiera— no se podría desactivar hasta arreglarle todo lo demás.
    */
-  cambiarActivo(fila: ChorarioModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: ChorarioModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -836,7 +837,7 @@ export class AllHorariosComponent implements OnInit, OnDestroy {
   //       try {
   //         const nuevoHorario = await firstValueFrom(modalRef.componentInstance.registrosE) as any;
   //         this.chorarioModel.unshift(nuevoHorario);
-  //         this.gridApi.setRowData(this.chorarioModel);
+  //         this.gridApi.setGridOption('rowData', this.chorarioModel);
   //       } catch (error) {
   //         console.error('Error o cancelación en creación:', error);
   //       }
@@ -862,7 +863,7 @@ addHorario() {
         
         // Agregar al principio del array y actualizar grid
         this.chorarioModel.unshift(nuevoHorario);
-        this.gridApi.setRowData(this.chorarioModel);
+        this.gridApi.setGridOption('rowData', this.chorarioModel);
       } catch (error) {
         console.error('Error o cancelación en creación:', error);
       }
@@ -1023,6 +1024,7 @@ addHorario() {
     </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -25,6 +25,7 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
   templateUrl: './change-password.component.html',
   styleUrls: ['./change-password.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
     ModalFooterComponent, CampoEmailComponent, CampoClaveComponent,

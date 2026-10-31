@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgZone, OnDestroy, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgZone, OnDestroy, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -31,6 +31,7 @@ import { EmpleadoService } from '../../../services/empleado.service';
   standalone: true,
   imports: [CommonModule, FormsModule, ModalHeaderComponent],
   templateUrl: './registrarRostro.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./registrarRostro.component.css'],
 })
 export class RegistrarRostroComponent implements AfterViewInit, OnDestroy {

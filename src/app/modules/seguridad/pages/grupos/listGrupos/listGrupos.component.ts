@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -25,6 +25,7 @@ import { ModalHeaderComponent } from '../../../../../components/modal/modal-head
   templateUrl: './listGrupos.component.html',
   styleUrls: ['./listGrupos.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [FormsModule, NgScrollbarModule, ModalHeaderComponent, FileTreeNodeComponent],
 })
 export class ListGruposComponent implements OnInit {

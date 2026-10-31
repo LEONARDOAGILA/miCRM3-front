@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
@@ -77,6 +77,7 @@ const RADIO_INICIAL = 1000;
   imports: [
     CommonModule,FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, AvisoComponent],
   templateUrl: './allZonas.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./allZonas.component.css'],
 })
 export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -528,7 +529,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
         pinned: 'right',
         minWidth: AllZonasComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllZonasComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         filter: false,
         resizable: false,
@@ -585,7 +586,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     // La cabecera se vuelve a dibujar, así que el oyente de antes se va con
     // ella y hay que ponerlo en la nueva.
     setTimeout(() => this.montarListenerCabecera(), 100);
@@ -613,7 +614,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.gridApi.setRowData(this.zonas);
+    this.gridApi.setGridOption('rowData', this.zonas);
     // Medio segundo: la cabecera no está en el DOM en el mismo momento en que
     // la rejilla avisa de que está lista.
     setTimeout(() => this.montarListenerCabecera(), 500);
@@ -1233,7 +1234,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       const id = elegirId ?? this.elegida?.id ?? null;
       this.elegida = id ? (this.zonas.find(z => z.id === id) ?? null) : null;
 
-      this.gridApi?.setRowData(this.zonas);
+      this.gridApi?.setGridOption('rowData', this.zonas);
       this.pintarZonas();
       if (this.elegida) { this.cargarClientes(this.elegida); } else { this.clientes = []; this.repintarPuntos(); }
     } catch (e) {
@@ -1605,7 +1606,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       </button>
     } @else {
       <app-action-buttons
-        [accesoModel]="parent?.accesoModel"
+        [accesoModel]="$safeNavigationMigration(parent?.accesoModel)"
         [buttonEdit]="true"
         [buttonDelete]="true"
         (edit)="parent?.editar(params.data)"
@@ -1613,6 +1614,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

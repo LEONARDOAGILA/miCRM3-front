@@ -1,4 +1,4 @@
-import { Component, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, Input, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -35,6 +35,7 @@ type Visor = 'iframe' | 'imagen' | 'video' | 'audio' | 'descarga';
   templateUrl: './modalReporteExterno.component.html',
   styleUrls: ['./modalReporteExterno.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule],
 })
 export class ModalReporteExternoComponent implements OnInit, OnDestroy {

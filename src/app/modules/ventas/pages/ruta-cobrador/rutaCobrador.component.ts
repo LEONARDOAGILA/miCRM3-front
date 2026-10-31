@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -47,6 +47,7 @@ import {
   standalone: true,
   imports: [FormsModule, PanelComponent, AvisoComponent],
   templateUrl: './rutaCobrador.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./rutaCobrador.component.css'],
 })
 export class RutaCobradorComponent implements OnInit, AfterViewInit, OnDestroy {

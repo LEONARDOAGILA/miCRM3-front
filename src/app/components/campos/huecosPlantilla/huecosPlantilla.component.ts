@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 
 
 import { GRUPOS_HUECOS, GrupoHuecos } from '../../../modules/ventas/interfaces/huecosPlantilla';
@@ -22,6 +22,7 @@ import { GRUPOS_HUECOS, GrupoHuecos } from '../../../modules/ventas/interfaces/h
   standalone: true,
   imports: [],
   templateUrl: './huecosPlantilla.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./huecosPlantilla.component.css'],
 })
 export class HuecosPlantillaComponent {

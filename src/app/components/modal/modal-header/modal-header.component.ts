@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
  // 👈 necesario para ngClass
 import { ModalArrastrableDirective } from '../modal-arrastrable.directive';
 
@@ -16,6 +16,7 @@ import { ModalArrastrableDirective } from '../modal-arrastrable.directive';
   templateUrl: './modal-header.component.html',
   styleUrls: ['./modal-header.component.css'],
   imports: [], // 👈 aquí lo importas
+  changeDetection: ChangeDetectionStrategy.Eager,
   hostDirectives: [ModalArrastrableDirective],
 })
 export class ModalHeaderComponent {

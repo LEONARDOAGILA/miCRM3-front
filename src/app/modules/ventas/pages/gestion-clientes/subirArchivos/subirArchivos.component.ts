@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpEventType } from '@angular/common/http';
@@ -38,6 +38,7 @@ import {
   standalone: true,
   imports: [CommonModule, FormsModule, ModalHeaderComponent],
   templateUrl: './subirArchivos.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./subirArchivos.component.css'],
 })
 export class SubirArchivosComponent implements OnDestroy {

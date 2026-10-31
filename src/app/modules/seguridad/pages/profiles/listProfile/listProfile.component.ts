@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, Output, EventEmitter, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { GridApi, GridReadyEvent, CellClickedEvent, CellKeyDownEvent, RowClassParams } from 'ag-grid-community';
@@ -34,6 +34,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   templateUrl: './listProfile.component.html',
   styleUrls: ['./listProfile.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective,
     CampoBusquedaPaginacionComponent,
@@ -140,7 +141,7 @@ export class ListProfileComponent implements OnInit {
         sortable: false,
         resizable: false,
         filter: false,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         cellRenderer: () =>
           `<span class="lista-ir" title="Elegir este perfil">
              <i class="fas fa-arrow-right"></i>
@@ -191,7 +192,7 @@ export class ListProfileComponent implements OnInit {
       }
 
       if (this.gridApi) {
-        this.gridApi.setRowData(this.rowData);
+        this.gridApi.setGridOption('rowData', this.rowData);
       }
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
@@ -199,7 +200,7 @@ export class ListProfileComponent implements OnInit {
       this.rowData = [];
       this.totalRegistros = 0;
       this.ultimaPagina = 1;
-      this.gridApi?.setRowData([]);
+      this.gridApi?.setGridOption('rowData', []);
     } finally {
       this._loadingService.setLoading(false);
     }

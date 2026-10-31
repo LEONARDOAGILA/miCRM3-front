@@ -1,10 +1,10 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -63,6 +63,7 @@ import { CommonModule } from '@angular/common';
     MenuContextualComponent
 ],
   templateUrl: './allSucursales.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./allSucursales.component.css'],
 })
 export class AllSucursalesComponent implements OnInit, OnDestroy {
@@ -378,7 +379,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllSucursalesComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllSucursalesComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -461,7 +462,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -517,7 +518,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
   }
 
   /** Activar o desactivar desde la casilla, sin abrir el formulario. */
-  cambiarActivo(fila: SucursalModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: SucursalModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -565,7 +566,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
         this.sucursalModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.sucursalModel);
+        this.gridApi?.setGridOption('rowData', this.sucursalModel);
         return;
       }
 
@@ -578,7 +579,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) { this.gridApi.setRowData(this.sucursalModel); }
+      if (this.gridApi) { this.gridApi.setGridOption('rowData', this.sucursalModel); }
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar sucursales:', error);
@@ -782,7 +783,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nueva: any) => {
       this.sucursalModel = [nueva, ...this.sucursalModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.sucursalModel);
+      this.gridApi?.setGridOption('rowData', this.sucursalModel);
     });
   }
 
@@ -792,7 +793,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nueva: any) => {
       this.sucursalModel = [nueva, ...this.sucursalModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.sucursalModel);
+      this.gridApi?.setGridOption('rowData', this.sucursalModel);
     });
   }
 
@@ -1011,7 +1012,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
       </button>
     } @else {
       <app-action-buttons
-        [accesoModel]="parent?.accesoModel"
+        [accesoModel]="$safeNavigationMigration(parent?.accesoModel)"
         [buttonView]="true"
         [buttonEdit]="true"
         [buttonClone]="true"
@@ -1023,6 +1024,7 @@ export class AllSucursalesComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

@@ -1,9 +1,10 @@
-import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { AppSettings } from '../../../../service/app-settings.service';
 
 @Component({
   selector: 'extra-settings-page',
   templateUrl: './extra-settings-page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
 })
 

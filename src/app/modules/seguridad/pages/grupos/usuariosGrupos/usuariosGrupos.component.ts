@@ -1,8 +1,8 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -76,6 +76,7 @@ const NODO_SIN_GRUPO = 0;
     FileTreeNodeComponent,
     CampoBusquedaPaginacionComponent
 ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     'class': 'd-flex flex-column flex-1 h-100'
   }
@@ -657,7 +658,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
         minWidth: UsuariosGruposComponent.ANCHO_ACCIONES_ABIERTA, maxWidth: UsuariosGruposComponent.ANCHO_ACCIONES_ABIERTA,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: ButtonAccionUsuarioGrupo,
-        suppressMenu: true, sortable: false, resizable: false,
+        suppressHeaderMenuButton: true, sortable: false, resizable: false,
         headerComponentParams: { template: this.plantillaCabeceraAcciones(false) },
       },
     ]);
@@ -678,7 +679,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    if (this.usuarios.length) { this.gridApi.setRowData(this.usuarios); }
+    if (this.usuarios.length) { this.gridApi.setGridOption('rowData', this.usuarios); }
     this.programar(() => this.montarListenersCabecera(), 500);
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
   }
@@ -705,7 +706,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
     actionsCol.minWidth = ancho;
     actionsCol.maxWidth = ancho;
     actionsCol.headerComponentParams = { template: this.plantillaCabeceraAcciones(this.accionesPlegadas) };
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => { this.gridApi.sizeColumnsToFit(); this.montarListenersCabecera(); }, 100);
   }
@@ -757,7 +758,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
    * registro que hoy no cumpliría alguna regla —cargado antes de que
    * existiera— no se podría desactivar hasta arreglarle todo lo demás.
    */
-  cambiarActivo(fila: UserModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: UserModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -804,7 +805,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
         this.usuarios = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.usuarios);
+        this.gridApi?.setGridOption('rowData', this.usuarios);
         return;
       }
       this.usuarios = res.body?.data?.data || [];
@@ -815,7 +816,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
         this.paginaActual = meta.current_page;
         this.ultimaPagina = meta.last_page;
       }
-      this.gridApi?.setRowData(this.usuarios);
+      this.gridApi?.setGridOption('rowData', this.usuarios);
       this.selectedRow = null;
     } catch (error) {
       console.error('Error al cargar usuarios:', error);
@@ -1035,6 +1036,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar { width: 28px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: .25rem; }
   `],

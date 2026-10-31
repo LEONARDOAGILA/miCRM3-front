@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -104,6 +104,7 @@ export interface DiaDeAgenda {
     PanelComponent, TabPanelComponent, ResumenVentasComponent,
     CampoBusquedaPaginacionComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     // El mismo par que saveBoletin e historialAcciones: en la aplicación no
     // hay NgxDaterangepickerMd.forRoot(), así que cada pantalla que use el
@@ -1020,7 +1021,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       // {
       //   // El número es texto, así que marcar es cosa de este botón
       //   headerName: '', field: 'acciones', pinned: 'right', minWidth: 46, maxWidth: 46,
-      //   sortable: false, filter: false, suppressMenu: true, resizable: false,
+      //   sortable: false, filter: false, suppressHeaderMenuButton: true, resizable: false,
       //   cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
       //   cellRenderer: (p: any) => p.data?.celular || p.data?.telefono
       //     ? `<span class="gestion-acciones"><button type="button" class="btn-icon btn-llamar" data-accion="llamar" title="Llamar"><i class="fa fa-phone"></i></button></span>`
@@ -1118,7 +1119,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     this.pendientes = [];
     this.gestiones = [];
     this.totalRegistros = 0;
-    this.gridApi?.setRowData([]);
+    this.gridApi?.setGridOption('rowData', []);
     this.gridApiClientes?.redrawRows();
 
     if (irALaAgenda) {
@@ -2045,7 +2046,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         sortable: false,
         resizable: false,
         filter: false,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: () => {
           if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
@@ -2107,7 +2108,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 214, maxWidth: 214,
         suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
-        sortable: false, filter: false, suppressMenu: true, resizable: false,
+        sortable: false, filter: false, suppressHeaderMenuButton: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: (p: any) => {
           if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
@@ -2179,7 +2180,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 140, maxWidth: 140,
         suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
-        sortable: false, filter: false, suppressMenu: true, resizable: false,
+        sortable: false, filter: false, suppressHeaderMenuButton: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         /**
          * Aquí no se borra un contacto: se desactiva. Un contacto borrado se
@@ -2248,7 +2249,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
       telefono_alterno: '', email: '', prioridad: this.contactos.length + 1, activo: true,
     };
     this.contactos = [...this.contactos, nuevo];
-    this.gridApiContactos?.setRowData(this.contactos);
+    this.gridApiContactos?.setGridOption('rowData', this.contactos);
     // Abrir la celda del nombre: así se escribe sin tener que buscar dónde
     setTimeout(() => {
       const idx = this.contactos.length - 1;
@@ -2289,7 +2290,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
     if (this.accesoModel?.editar === false || c?.id) { return; }
     this.contactos = this.contactos.filter(x => x !== c);
     this.contactos.forEach((x, i) => x.prioridad = i + 1);
-    this.gridApiContactos?.setRowData(this.contactos);
+    this.gridApiContactos?.setGridOption('rowData', this.contactos);
   }
 
   /** Lo que se le manda al servidor: la lista entera, que él sincroniza. */
@@ -2343,7 +2344,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   private ponerContactos(lista: ContactoCliente[]): void {
     this.contactos = (lista ?? []).map(c => ({ ...c, _clave: ++this.claveContacto } as any));
     this.contactosOriginal = JSON.stringify(this.normalizarContactos());
-    this.gridApiContactos?.setRowData(this.contactos);
+    this.gridApiContactos?.setGridOption('rowData', this.contactos);
   }
 
   /** Por qué vendedores ha pasado el cliente. */
@@ -2720,7 +2721,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         headerName: 'ACCIONES', field: 'acciones', pinned: 'right', minWidth: 178, maxWidth: 178,
         suppressMovable: true,
         headerComponentParams: this.cabeceraAcciones('ACCIONES'),
-        sortable: false, filter: false, suppressMenu: true, resizable: false,
+        sortable: false, filter: false, suppressHeaderMenuButton: true, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: (p: any) => {
           if (this.accionesPlegadas) { return this.botonDesplegarAcciones(); }
@@ -2747,7 +2748,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
-    this.gridApi.setRowData(this.gestiones);
+    this.gridApi.setGridOption('rowData', this.gestiones);
     this.replantearAltos();
   }
 
@@ -2789,7 +2790,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         this.paginaActual = meta.current_page;
         this.ultimaPagina = meta.last_page;
       }
-      this.gridApi?.setRowData(this.gestiones);
+      this.gridApi?.setGridOption('rowData', this.gestiones);
     } catch (error) {
       console.error('Error al cargar las gestiones:', error);
     }
@@ -3275,7 +3276,7 @@ export class GestionClientesComponent implements OnInit, OnDestroy {
         template: this.plantillaCabecera(col.rotuloAbierto, this.accionesPlegadas),
       };
 
-      g.api?.setColumnDefs(g.defs);
+      g.api?.setGridOption('columnDefs', g.defs);
       // Las celdas cambian de contenido, no sólo de ancho: con la columna
       // plegada enseñan el botón de devolverla
       g.api?.redrawRows();

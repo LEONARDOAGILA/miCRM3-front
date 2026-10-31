@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormControl, ReactiveFormsModule, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -160,6 +160,7 @@ export function validadorIdentificacion(tipo: TipoIdentificacion | (() => TipoId
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './campoIdentificacion.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./campoIdentificacion.component.css'],
 })
 export class CampoIdentificacionComponent implements OnInit, OnChanges, OnDestroy {

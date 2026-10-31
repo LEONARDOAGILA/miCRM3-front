@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -23,6 +23,7 @@ import { SucursalService } from '../../../services/sucursal.service';
   standalone: true,
   imports: [CommonModule, ModalArrastrableDirective],
   templateUrl: './deleteSucursal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./deleteSucursal.component.css'],
 })
 export class DeleteSucursalComponent implements OnDestroy {

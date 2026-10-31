@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, forwardRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, forwardRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -29,6 +29,7 @@ import { claseParaPintar, partesDeIcono } from './iconos-fa';
   imports: [CommonModule],
   templateUrl: './campoIcono.component.html',
   styleUrls: ['./campoIcono.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [{
     provide: NG_VALUE_ACCESSOR,
     useExisting: forwardRef(() => CampoIconoComponent),

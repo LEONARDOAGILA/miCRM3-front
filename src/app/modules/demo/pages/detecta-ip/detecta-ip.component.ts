@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Http } from '@capacitor-community/http';
 
@@ -6,6 +6,7 @@ import { Http } from '@capacitor-community/http';
   selector: 'app-detecta-ip',
   templateUrl: './detecta-ip.component.html',
   styleUrls: ['./detecta-ip.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone:false
 })
 export class DetectaIPComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
@@ -44,6 +44,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './allNotificaciones.component.html',
   styleUrls: ['./allNotificaciones.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaPaginacionComponent, MenuContextualComponent],
 })
@@ -244,7 +245,7 @@ export class AllNotificacionesComponent implements OnInit, OnDestroy {
         minWidth: AllNotificacionesComponent.ANCHO_ABIERTA, maxWidth: AllNotificacionesComponent.ANCHO_ABIERTA,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: ButtonAccionNotificacion,
-        suppressMenu: true, sortable: false, resizable: false,
+        suppressHeaderMenuButton: true, sortable: false, resizable: false,
         headerComponentParams: { template: this.plantillaCabecera(false) },
       },
     ]);
@@ -288,7 +289,7 @@ export class AllNotificacionesComponent implements OnInit, OnDestroy {
     col.minWidth = ancho;
     col.maxWidth = ancho;
     col.headerComponentParams = { template: this.plantillaCabecera(this.accionesPlegadas) };
-    this.gridApi.setColumnDefs(defs);
+    this.gridApi.setGridOption('columnDefs', defs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => { this.gridApi.sizeColumnsToFit(); this.montarListenersCabecera(); }, 100);
   }
@@ -588,6 +589,7 @@ export class AllNotificacionesComponent implements OnInit, OnDestroy {
       </span>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar { width: 28px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: .25rem; }
   `],

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { AppStateService } from '../../../../service/app-state.service';
@@ -37,6 +37,7 @@ interface ModuloCard {
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [RouterModule],
 })
 export class HomeComponent implements OnInit, OnDestroy {

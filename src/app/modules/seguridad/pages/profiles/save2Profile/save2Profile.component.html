@@ -145,7 +145,7 @@
                   </select>
 
                   <span class="visib__ayuda">
-                    {{ ayudaDel(form.get('visibilidad.' + d.clave)?.value, d.clave) }}
+                    {{ ayudaDel($safeNavigationMigration(form.get('visibilidad.' + d.clave)?.value), d.clave) }}
                   </span>
                 </div>
               </div>

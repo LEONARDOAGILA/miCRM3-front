@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { ECHO_PUSHER } from "../../../../config/config";
 import { Subject } from 'rxjs';
@@ -10,6 +10,7 @@ import { WebsocketNotificationService } from '../../../../service/websocket-noti
   selector: 'app-websocket-recived',
   templateUrl: './websocket-recived.component.html',
   styleUrls: ['./websocket-recived.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone:false
 })
 export class WebsocketRecivedComponent implements OnInit, OnDestroy {

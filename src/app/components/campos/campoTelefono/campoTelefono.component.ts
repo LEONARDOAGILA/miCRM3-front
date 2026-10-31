@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './campoTelefono.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./campoTelefono.component.css']
 })
 export class CampoTelefonoComponent implements OnInit {

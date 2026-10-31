@@ -1,4 +1,4 @@
-import { Component, Input, forwardRef } from '@angular/core';
+import { Component, Input, forwardRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NG_VALUE_ACCESSOR, ControlValueAccessor, NG_VALIDATORS, Validator, AbstractControl, ValidationErrors } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
   imports: [CommonModule, FormsModule, NgSelectModule],
   templateUrl: './combo.component.html',
   styleUrls: ['./combo.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

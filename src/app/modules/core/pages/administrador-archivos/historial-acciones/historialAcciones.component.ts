@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -63,6 +63,7 @@ interface Accion {
     { provide: LocaleService, useClass: LocaleService, deps: [LOCALE_CONFIG] },
   ],
   templateUrl: './historialAcciones.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./historialAcciones.component.css'],
 })
 export class HistorialAccionesComponent implements OnInit {
@@ -211,7 +212,7 @@ export class HistorialAccionesComponent implements OnInit {
 
   onFilterTextBoxChanged(): void {
     const input = document.getElementById('filter-text-box-historial') as HTMLInputElement | null;
-    this.gridApi?.setQuickFilter(input?.value ?? '');
+    this.gridApi?.setGridOption('quickFilterText', input?.value ?? '');
   }
 
   // ================================================================
@@ -234,7 +235,7 @@ export class HistorialAccionesComponent implements OnInit {
         this.filas = [];
         this.totales = { ejecutar: 0, descargar: 0 };
       }
-      this.gridApi?.setRowData(this.filas);
+      this.gridApi?.setGridOption('rowData', this.filas);
     } catch (e) {
       console.error('Error al cargar el historial:', e);   // el interceptor ya avisó
     } finally {
@@ -271,7 +272,7 @@ export class HistorialAccionesComponent implements OnInit {
     this.filtro = { accion: '', desde: '', hasta: '' };
     const input = document.getElementById('filter-text-box-historial') as HTMLInputElement | null;
     if (input) { input.value = ''; }
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
     this.cargar();
   }
 

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, Output, EventEmitter, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { GridApi, GridReadyEvent, CellClickedEvent, CellKeyDownEvent, RowClassParams } from 'ag-grid-community';
@@ -49,6 +49,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   templateUrl: './listPlanCuenta.component.html',
   styleUrls: ['./listPlanCuenta.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective,
     CampoBusquedaPaginacionComponent,
@@ -166,7 +167,7 @@ export class ListPlanCuentaComponent implements OnInit {
         headerName: 'Ir', field: 'seleccionar', pinned: 'right',
         minWidth: 60, maxWidth: 60,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        sortable: false, resizable: false, filter: false, suppressMenu: true,
+        sortable: false, resizable: false, filter: false, suppressHeaderMenuButton: true,
         cellRenderer: (p: any) => {
           if (p.data?.es_movimiento === false) {
             return `<span class="lista-ir lista-ir--agrupa" title="Sólo agrupa: elija una de las de dentro">
@@ -222,7 +223,7 @@ export class ListPlanCuentaComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.gridApi.setRowData(this.filasVisibles);
+    this.gridApi.setGridOption('rowData', this.filasVisibles);
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
   }
 
@@ -392,7 +393,7 @@ export class ListPlanCuentaComponent implements OnInit {
         (!pasaElFiltro || pasaElFiltro.has(c.id)) && !cuelgaDeUnaRamaCerrada(c.id));
     }
 
-    this.gridApi?.setRowData(this.filasVisibles);
+    this.gridApi?.setGridOption('rowData', this.filasVisibles);
   }
 
   /** Para que «cocción» se encuentre escribiendo «coccion». */
@@ -417,7 +418,7 @@ export class ListPlanCuentaComponent implements OnInit {
       console.error('Error al cargar las cuentas:', error);
       this.arbol = [];
       this.filasVisibles = [];
-      this.gridApi?.setRowData([]);
+      this.gridApi?.setGridOption('rowData', []);
     } finally {
       this._loadingService.setLoading(false);
     }

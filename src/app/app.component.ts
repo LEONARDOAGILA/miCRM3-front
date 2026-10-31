@@ -1,4 +1,4 @@
-import { Component, HostListener, Renderer2, OnInit } from '@angular/core';
+import { Component, HostListener, Renderer2, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { Router, NavigationStart } from '@angular/router';
 import { AppVariablesService } from './service/app-variables.service';
@@ -8,6 +8,7 @@ import { AppSettings } from './service/app-settings.service';
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 

@@ -85,8 +85,8 @@
         <span class="eliminar-datos__etiqueta">
           <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
         </span>
-        <span class="badge fs-10px {{ claseEstado(registro_selected?.estado) }}">
-          {{ etiquetaEstado(registro_selected?.estado) }}
+        <span class="badge fs-10px {{ claseEstado($safeNavigationMigration(registro_selected?.estado)) }}">
+          {{ etiquetaEstado($safeNavigationMigration(registro_selected?.estado)) }}
         </span>
       </div>
 

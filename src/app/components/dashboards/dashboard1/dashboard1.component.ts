@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 import { NgScrollbarModule } from 'ngx-scrollbar';
 import { PanelComponent } from '../../panel/panel.component';
@@ -18,6 +18,7 @@ import { AppVariablesService } from '../../../service/app-variables.service';
   templateUrl: './dashboard1.component.html',
   styleUrl: './dashboard1.component.scss',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     NgScrollbarModule,
     PanelComponent,

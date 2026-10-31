@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpEventType } from '@angular/common/http';
@@ -67,6 +67,7 @@ export interface FilaSubida {
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent, CampoTextoComponent],
   templateUrl: './saveFiles2.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./saveFiles2.component.css'],
 })
 export class SaveFiles2Component implements OnInit, OnDestroy {

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuditoriaService } from '../../service/auditoria.service';
@@ -44,6 +44,7 @@ interface FechaRango {
     { provide: LocaleService, useClass: LocaleService, deps: [LOCALE_CONFIG] },
   ],
   templateUrl: './auditoria-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./auditoria-modal.component.scss']
 })
 export class AuditoriaModalComponent implements OnInit {

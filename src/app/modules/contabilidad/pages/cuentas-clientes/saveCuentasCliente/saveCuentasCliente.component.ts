@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -48,6 +48,7 @@ import { PlanCuentaModel } from '../../../interfaces/planCuentaModel';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent, ModalFooterComponent, ComboComponent],
   templateUrl: './saveCuentasCliente.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./saveCuentasCliente.component.css'],
 })
 export class SaveCuentasClienteComponent implements OnInit, OnDestroy {

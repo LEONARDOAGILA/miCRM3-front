@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormGroup, ValidationErrors, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -42,6 +42,7 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
   templateUrl: './saveHorarioEmpleado.component.html',
   styleUrls: ['./saveHorarioEmpleado.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, CampoTextoComponent,

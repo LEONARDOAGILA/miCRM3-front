@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -60,6 +60,7 @@ interface ImagenEditor {
   styleUrls: ['./saveBoletin.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, PanelComponent, CampoTextoComponent, CampoTextoAreaComponent, CheckboxComponent, ModalHeaderComponent, ModalFooterComponent, NgxDaterangepickerMd],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     // Igual que en historialAcciones y auditoria-modal: abierto por NgbModal,
     // el picker no alcanza los providers de NgxDaterangepickerMd.forRoot().

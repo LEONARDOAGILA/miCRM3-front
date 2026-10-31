@@ -1,4 +1,4 @@
-import { Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -38,6 +38,7 @@ import { MisMarcacionesComponent } from './misMarcaciones/misMarcaciones.compone
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './registroMarcaciones.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./registroMarcaciones.component.css'],
 })
 export class RegistroMarcacionesComponent implements OnInit, OnDestroy {

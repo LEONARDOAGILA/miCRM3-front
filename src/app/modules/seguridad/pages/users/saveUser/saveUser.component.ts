@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, OnDestroy, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom, from, merge, of, Observable, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators, FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -40,6 +40,7 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
   templateUrl: './saveUser.component.html',
   styleUrls: ['./saveUser.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
     ModalFooterComponent, ComboComponent, CampoTextoComponent,

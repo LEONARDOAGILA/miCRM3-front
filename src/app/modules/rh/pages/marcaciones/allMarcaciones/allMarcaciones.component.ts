@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
@@ -56,6 +56,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './allMarcaciones.component.html',
   styleUrls: ['./allMarcaciones.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     FormsModule,
@@ -409,7 +410,7 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
         minWidth: AllMarcacionesComponent.ANCHO_ABIERTA, maxWidth: AllMarcacionesComponent.ANCHO_ABIERTA,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: ButtonAccionMarcacion,
-        suppressMenu: true, sortable: false, resizable: false,
+        suppressHeaderMenuButton: true, sortable: false, resizable: false,
         headerComponentParams: { template: this.plantillaCabecera(false) },
       },
     ]);
@@ -468,7 +469,7 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
     const ancho = this.accionesPlegadas ? AllMarcacionesComponent.ANCHO_PLEGADA : AllMarcacionesComponent.ANCHO_ABIERTA;
     col.minWidth = ancho; col.maxWidth = ancho;
     col.headerComponentParams = { template: this.plantillaCabecera(this.accionesPlegadas) };
-    this.gridApi.setColumnDefs(defs);
+    this.gridApi.setGridOption('columnDefs', defs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => { this.gridApi.sizeColumnsToFit(); this.montarListenersCabecera(); }, 100);
   }
@@ -550,7 +551,7 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado', 'Marcaciones');
         this.marcaciones = []; this.totalRegistros = 0; this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.marcaciones);
+        this.gridApi?.setGridOption('rowData', this.marcaciones);
         return;
       }
       this.marcaciones = res.body?.data?.data || [];
@@ -561,7 +562,7 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
         this.paginaActual = meta.current_page;
         this.ultimaPagina = meta.last_page;
       }
-      this.gridApi?.setRowData(this.marcaciones);
+      this.gridApi?.setGridOption('rowData', this.marcaciones);
       this.selectedRow = null;
 
       // Si las horas están a la vista, se rehacen con el mismo filtro
@@ -672,7 +673,7 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
           this.paginaResumen = meta.current_page;
           this.ultimaPaginaResumen = meta.last_page;
         }
-        this.gridApiResumen?.setRowData(this.resumen);
+        this.gridApiResumen?.setGridOption('rowData', this.resumen);
       }
     } catch (e) {
       console.error('Error al cargar el resumen:', e);
@@ -947,6 +948,7 @@ export class AllMarcacionesComponent implements OnInit, OnDestroy {
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar { width: 28px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: .25rem; }
     .acciones-fila { display: flex; align-items: center; justify-content: center; }

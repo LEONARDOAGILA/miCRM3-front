@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -36,6 +36,7 @@ import {
   standalone: true,
   imports: [PanelComponent],
   templateUrl: './verNota.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./verNota.component.css'],
 })
 export class VerNotaComponent {

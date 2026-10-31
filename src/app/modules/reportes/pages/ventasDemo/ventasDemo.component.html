@@ -170,7 +170,7 @@
         <span class="rep-chip rep-chip--fuerte">
           <i class="fa fa-coins"></i>
           {{ nombreMedida }} ({{ agregacion === 'SUM' ? 'total' : agregacion.toLowerCase() }}):
-          <b>{{ formatear(pivote?.gran_total) }}</b>
+          <b>{{ formatear($safeNavigationMigration(pivote?.gran_total)) }}</b>
         </span>
         <span class="rep-chip">
           {{ pivote?.meta?.cuantas_filas || 0 }} {{ nombreFilas | lowercase }}

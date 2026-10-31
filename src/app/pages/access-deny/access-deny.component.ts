@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 /**
@@ -17,6 +17,7 @@ import { RouterLink } from '@angular/router';
   styleUrls: ['../pagina-estado.scss'],
   standalone: true,
   // La plantilla no tiene condiciones ni bucles: sólo el enlace al inicio.
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [RouterLink],
 })
 export class AccessDenyComponent { }

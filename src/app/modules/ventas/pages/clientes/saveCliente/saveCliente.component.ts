@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom, from, merge, of, Observable, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -67,6 +67,7 @@ type AccionCliente = 'add' | 'edit' | 'clon' | 'view';
   templateUrl: './saveCliente.component.html',
   styleUrls: ['./saveCliente.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, ComboComponent,
@@ -286,7 +287,7 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
       {
         headerName: 'ACCIONES', field: 'actions', pinned: 'right',
         minWidth: this.ANCHO_ACCIONES_ABIERTA, maxWidth: this.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true, sortable: false, filter: false, resizable: false,
+        suppressHeaderMenuButton: true, sortable: false, filter: false, resizable: false,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         headerComponentParams: { template: this.plantillaCabeceraAcciones(false) },
         cellRenderer: () => this.botonesAccionContacto(),
@@ -327,7 +328,7 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
     actionsCol.minWidth = ancho;
     actionsCol.maxWidth = ancho;
     actionsCol.headerComponentParams = { template: this.plantillaCabeceraAcciones(this.accionesPlegadas) };
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.refreshHeader();
     this.gridApi.refreshCells({ force: true, columns: ['actions'] });
   }
@@ -379,7 +380,7 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
       prioridad: this.contactos.length + 1, activo: true,
     };
     this.contactos = [...this.contactos, nuevo];
-    this.gridApi?.setRowData(this.contactos);
+    this.gridApi?.setGridOption('rowData', this.contactos);
     setTimeout(() => {
       const idx = this.contactos.length - 1;
       this.gridApi?.ensureIndexVisible(idx);
@@ -391,7 +392,7 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
     if (this.esView) { return; }
     this.contactos = this.contactos.filter(x => x !== c);
     this.renumerarPrioridad();
-    this.gridApi?.setRowData(this.contactos);
+    this.gridApi?.setGridOption('rowData', this.contactos);
   }
 
   /** Lo mueve un puesto arriba en la prioridad (intercambia con el anterior). */
@@ -401,7 +402,7 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
     [this.contactos[i - 1], this.contactos[i]] = [this.contactos[i], this.contactos[i - 1]];
     this.contactos = [...this.contactos];
     this.renumerarPrioridad();
-    this.gridApi?.setRowData(this.contactos);
+    this.gridApi?.setGridOption('rowData', this.contactos);
   }
 
   private renumerarPrioridad(): void {
@@ -426,7 +427,7 @@ export class SaveClienteComponent implements OnInit, OnDestroy {
     // Al clonar se copian sin id: se crean para el cliente nuevo
     this.contactos = (lista ?? []).map((c: any) => ({ ...c, id: this.esClon ? null : c.id, _clave: ++this.claveContacto }));
     this.contactosOriginal = this.esClon ? '[]' : JSON.stringify(this.normalizarContactos());
-    this.gridApi?.setRowData(this.contactos);
+    this.gridApi?.setGridOption('rowData', this.contactos);
   }
 
   private async guardarContactos(): Promise<void> {

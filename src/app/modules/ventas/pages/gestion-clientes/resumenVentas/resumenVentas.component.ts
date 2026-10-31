@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { firstValueFrom } from 'rxjs';
@@ -27,6 +27,7 @@ import { TIPOS_GESTION, RESULTADOS_GESTION, nombreDe, iconoDeTipo } from '../../
   templateUrl: './resumenVentas.component.html',
   styleUrls: ['./resumenVentas.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,      // @if/@for no hacen falta, pero sí los pipes number y date
     NgxChartsModule,   // <ngx-charts-line-chart>, <ngx-charts-pie-chart>

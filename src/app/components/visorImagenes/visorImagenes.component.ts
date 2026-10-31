@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, Input, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
@@ -28,6 +28,7 @@ export interface ImagenVisor {
   standalone: true,
   imports: [],
   templateUrl: './visorImagenes.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./visorImagenes.component.css'],
 })
 export class VisorImagenesComponent implements OnInit {

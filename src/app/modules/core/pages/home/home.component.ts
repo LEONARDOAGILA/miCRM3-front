@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -30,6 +30,7 @@ interface ActivityItem {
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, RouterModule],
 })
 export class HomeComponent {

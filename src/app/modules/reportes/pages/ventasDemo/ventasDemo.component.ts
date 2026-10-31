@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -53,6 +53,7 @@ import { FilasEstirablesDirective } from '../../../../core/directives/filasEstir
   templateUrl: './ventasDemo.component.html',
   styleUrls: ['./ventasDemo.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, FormsModule, AgGridModule, NgSelectModule, NgApexchartsModule,
     PanelComponent, FilasEstirablesDirective,
@@ -232,7 +233,7 @@ export class VentasDemoComponent implements OnInit, OnDestroy {
         this.paginaDetalle = meta.current_page;
         this.ultimaPaginaDetalle = meta.last_page;
       }
-      this.gridDetalle?.setRowData(this.detalle);
+      this.gridDetalle?.setGridOption('rowData', this.detalle);
 
     } catch (error) {
       console.error('Error al cargar el detalle:', error);
@@ -339,7 +340,7 @@ export class VentasDemoComponent implements OnInit, OnDestroy {
     (this.pivote.columnas ?? []).forEach(c => { totales['c_' + c] = this.pivote!.totales?.[c] ?? null; });
     this.filaTotales = [totales];
 
-    this.gridApi?.setRowData(this.filasGrid);
+    this.gridApi?.setGridOption('rowData', this.filasGrid);
     this.gridApi?.setPinnedBottomRowData(this.filaTotales);
     this.ajustarGrid();
   }
@@ -352,7 +353,7 @@ export class VentasDemoComponent implements OnInit, OnDestroy {
 
   onGridDetalleReady(e: GridReadyEvent): void {
     this.gridDetalle = e.api;
-    this.gridDetalle.setRowData(this.detalle);
+    this.gridDetalle.setGridOption('rowData', this.detalle);
     this._appAgGridService.ajustarTamanoGrid(this.gridDetalle);
   }
 

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, Output, EventEmitter, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { GridApi, GridReadyEvent, CellClickedEvent, CellKeyDownEvent, RowClassParams } from 'ag-grid-community';
@@ -40,6 +40,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   templateUrl: './listMarca.component.html',
   styleUrls: ['./listMarca.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective,
     CampoBusquedaPaginacionComponent,
@@ -142,7 +143,7 @@ export class ListMarcaComponent implements OnInit {
         headerName: 'Ir', field: 'seleccionar', pinned: 'right',
         minWidth: 60, maxWidth: 60,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        sortable: false, resizable: false, filter: false, suppressMenu: true,
+        sortable: false, resizable: false, filter: false, suppressHeaderMenuButton: true,
         cellRenderer: (p: any) => p.data?.activo === false
           ? `<span class="lista-ir lista-ir--no" title="Marca inactiva: no se puede asignar">
                <i class="fas fa-ban"></i>
@@ -205,14 +206,14 @@ export class ListMarcaComponent implements OnInit {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      this.gridApi?.setRowData(this.rowData);
+      this.gridApi?.setGridOption('rowData', this.rowData);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar marcas:', error);
       this.rowData = [];
       this.totalRegistros = 0;
       this.ultimaPagina = 1;
-      this.gridApi?.setRowData([]);
+      this.gridApi?.setGridOption('rowData', []);
     } finally {
       this._loadingService.setLoading(false);
     }

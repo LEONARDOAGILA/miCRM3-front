@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { 
   FormBuilder, 
   FormGroup, 
@@ -20,6 +20,7 @@ import { CampoClaveComponent } from '../../../../../components/campos/campoClave
   templateUrl: './change-password-login.component.html',
   styleUrls: ['./change-password-login.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, ModalHeaderComponent,
     CampoTextoComponent, CampoEmailComponent, CampoClaveComponent,

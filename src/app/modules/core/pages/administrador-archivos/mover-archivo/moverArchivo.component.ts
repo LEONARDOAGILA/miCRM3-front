@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -52,6 +52,7 @@ interface CarpetaDestino {
   standalone: true,
   imports: [CommonModule, FormsModule, ModalHeaderComponent],
   templateUrl: './moverArchivo.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./moverArchivo.component.css'],
 })
 export class MoverArchivoComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellClickedEvent, ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
@@ -32,6 +32,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   templateUrl: './papeleraUsuarios.component.html',
   styleUrls: ['./papeleraUsuarios.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
 })
 export class PapeleraUsuariosComponent implements OnInit, OnDestroy {
@@ -177,7 +178,7 @@ export class PapeleraUsuariosComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.gridApi.setRowData(this.items);
+    this.gridApi.setGridOption('rowData', this.items);
   }
 
   navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.seleccionado = fila);
@@ -196,7 +197,7 @@ export class PapeleraUsuariosComponent implements OnInit, OnDestroy {
       const res = await firstValueFrom(this._userService.papelera()) as any;
       this.items = res?.status === 'success' ? (res.data ?? []) : [];
       this.seleccionado = null;
-      this.gridApi?.setRowData(this.items);
+      this.gridApi?.setGridOption('rowData', this.items);
     } catch (error) {
       console.error('Error al cargar la papelera:', error);
       this.items = [];

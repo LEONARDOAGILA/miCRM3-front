@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { HttpEventType } from '@angular/common/http';
 import { catchError, takeUntil } from 'rxjs/operators';
@@ -49,6 +49,7 @@ type ModoArchivo = 'link' | 'archivo';
   templateUrl: './saveFile.component.html',
   styleUrls: ['./saveFile.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, ReactiveFormsModule, PanelComponent, CampoTextoComponent, CampoNumeroEnteroComponent, DropzoneComponent, ModalHeaderComponent, ModalFooterComponent],
 })
 export class SaveFileComponent implements OnInit, OnDestroy {

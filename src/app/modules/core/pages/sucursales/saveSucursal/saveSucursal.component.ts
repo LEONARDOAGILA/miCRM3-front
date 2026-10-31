@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgZone, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -56,6 +56,7 @@ import { SucursalService, PuntoSucursal } from '../../../services/sucursal.servi
     AvisoComponent,
   ],
   templateUrl: './saveSucursal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./saveSucursal.component.css'],
 })
 export class SaveSucursalComponent implements OnInit, AfterViewInit, OnDestroy {

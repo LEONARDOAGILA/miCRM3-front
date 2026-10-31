@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /** Una opción del menú del botón derecho. */
@@ -52,6 +52,7 @@ export interface OpcionContextual {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './menuContextual.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./menuContextual.component.css'],
 })
 export class MenuContextualComponent {

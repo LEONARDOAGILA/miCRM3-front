@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -22,6 +22,7 @@ import { claseEstado, etiquetaEstado } from '../../../interfaces/proformaModel';
   standalone: true,
   imports: [ModalArrastrableDirective],
   templateUrl: './deleteProforma.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./deleteProforma.component.css'],
 })
 export class DeleteProformaComponent implements OnDestroy {

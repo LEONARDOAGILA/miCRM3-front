@@ -1,5 +1,5 @@
-import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CellClickedEvent, CellKeyDownEvent, ColDef, ColumnApi, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
+import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { CellClickedEvent, CellKeyDownEvent, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { ActivatedRoute } from '@angular/router';
@@ -103,6 +103,7 @@ const PERMISO_TOTAL: PermisoEfectivo = {
   styleUrls: ['./file-manager.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaComponent, FileTreeNodeComponent, NgScrollbarModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     'class': 'd-flex flex-column flex-1 h-100'
   }
@@ -159,7 +160,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   // ---------- ag-Grid ----------
   public gridApi!: GridApi;
-  private columnApi?: ColumnApi;
+  private columnApi?: GridApi;
   public columnDefs: ColDef[] = [];
   public rowClassRules = {
     'fila-inactiva': (p: RowClassParams) => p.data?.activo === false
@@ -775,7 +776,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
         Number(b.escarpeta) - Number(a.escarpeta) || (a.orden - b.orden) || a.nombre.localeCompare(b.nombre));
       this.numCarpetas = this.contenido.filter(n => n.escarpeta).length;
       this.numArchivos = this.contenido.length - this.numCarpetas;
-      this.gridApi?.setRowData(this.contenido);
+      this.gridApi?.setGridOption('rowData', this.contenido);
       this.gridApi?.deselectAll();
       return;
     }
@@ -803,7 +804,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(false);
     }
 
-    this.gridApi?.setRowData(this.contenido);
+    this.gridApi?.setGridOption('rowData', this.contenido);
     this.gridApi?.deselectAll();
   }
 
@@ -850,7 +851,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
         maxWidth: 44,
         cellRenderer: (p: any) => this.iconoHtml(p.data),
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         filter: false,
         resizable: false
@@ -935,7 +936,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
         cellRenderer: (p: any) => p.value === false
           ? '<span class="badge bg-danger fs-10px">NO</span>'
           : '<span class="badge bg-teal fs-10px">SÍ</span>',
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         filter: false
       },
       {
@@ -951,7 +952,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
             ? '<span class="badge bg-teal fs-10px" title="Sólo se ve dentro del sistema"><i class="fa fa-shield-halved me-1"></i>SÍ</span>'
             : '<span class="badge bg-secondary fs-10px" title="Se puede abrir fuera y descargar">NO</span>';
         },
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         filter: false
       },
       {
@@ -1005,8 +1006,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.columnApi = params.columnApi;
-    this.gridApi.setRowData(this.contenido);
+    this.columnApi = params.api;
+    this.gridApi.setGridOption('rowData', this.contenido);
     // Sin sizeColumnsToFit: las columnas tienen ancho fijo y, si no caben,
     // la grilla hace scroll horizontal (en vez de encoger las celdas).
   }
@@ -1101,7 +1102,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   /** Cada tecla filtra al instante sobre todas las columnas (nombre, descripción, tipo…). */
   filtrarGrilla(termino: string): void {
     this.filtroTexto = (termino ?? '').trim();
-    this.gridApi?.setQuickFilter(this.filtroTexto);   // la cuadrícula usa contenidoFiltrado
+    this.gridApi?.setGridOption('quickFilterText', this.filtroTexto);   // la cuadrícula usa contenidoFiltrado
   }
 
   /** Vacía el input y quita el quick filter y los filtros de columna. */
@@ -1109,7 +1110,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     const input = document.getElementById(this.idBuscador) as HTMLInputElement | null;
     if (input) { input.value = ''; }
     this.filtroTexto = '';
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
     this.gridApi?.setFilterModel(null);
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
 
@@ -21,6 +21,7 @@ import { InactivityService } from '../../modules/seguridad/services/InactivitySe
   standalone: true,
   // La plantilla sólo usa @if (sintaxis del compilador, no CommonModule) y
   // [routerLink]; nada más hace falta.
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [RouterLink],
 })
 

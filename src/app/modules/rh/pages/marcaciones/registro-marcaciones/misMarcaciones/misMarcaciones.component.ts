@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -28,6 +28,7 @@ import { FilasEstirablesDirective } from '../../../../../../core/directives/fila
   standalone: true,
   imports: [FormsModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
   templateUrl: './misMarcaciones.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./misMarcaciones.component.css'],
 })
 export class MisMarcacionesComponent implements OnInit {
@@ -170,7 +171,7 @@ export class MisMarcacionesComponent implements OnInit {
         this.paginaActual = meta.current_page;
         this.ultimaPagina = meta.last_page;
       }
-      this.gridApi?.setRowData(this.marcaciones);
+      this.gridApi?.setGridOption('rowData', this.marcaciones);
       // Al cambiar de rango hay que volver a repartir el ancho, o la última
       // columna se sale del borde en una pantalla estrecha.
       if (this.gridApi) { this._appAgGridService.ajustarTamanoGrid(this.gridApi); }
@@ -180,7 +181,7 @@ export class MisMarcacionesComponent implements OnInit {
       this.marcaciones = [];
       this.totalRegistros = 0;
       this.ultimaPagina = 1;
-      this.gridApi?.setRowData([]);
+      this.gridApi?.setGridOption('rowData', []);
     } finally {
       this.cargando = false;
     }

@@ -1,4 +1,4 @@
-import { Component, Input, forwardRef, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, forwardRef, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, Validator, AbstractControl, ValidationErrors, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -9,6 +9,7 @@ import { Subscription } from 'rxjs';
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './campoClave.component.html',
   styleUrls: ['./campoClave.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

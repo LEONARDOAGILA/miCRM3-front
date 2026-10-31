@@ -1,10 +1,10 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom, } from 'rxjs';
 import { FormArray, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
-import { CellClickedEvent, GridApi,  GridReadyEvent } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
 
 
 
@@ -35,6 +35,7 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   templateUrl: './save2Profile.component.html',
   styleUrls: ['./save2Profile.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, CampoTextoComponent,
@@ -336,7 +337,7 @@ export class Save2ProfileComponent implements OnInit  {
         return true;
       });
     }
-    this.gridApi?.setRowData(this.filasArbol);
+    this.gridApi?.setGridOption('rowData', this.filasArbol);
     this.actualizarBotonesArbol();
   }
 
@@ -357,7 +358,7 @@ export class Save2ProfileComponent implements OnInit  {
     // la última rama el conjunto ya está a cero pero la rejilla todavía tiene
     // el reducido de antes, y preguntarle ahí devolvería menos de los que
     // coinciden.
-    this.gridApi?.setRowData(this.profile?.acceso ?? []);
+    this.gridApi?.setGridOption('rowData', this.profile?.acceso ?? []);
 
     const ids = new Set<number>();
     this.gridApi?.forEachNodeAfterFilter((n: any) => {
@@ -827,7 +828,7 @@ export class Save2ProfileComponent implements OnInit  {
           minWidth: 80,
           maxWidth: 80,
           sortable: false,
-          suppressMenu: true,
+          suppressHeaderMenuButton: true,
           cellRenderer: (params: any) => this.checkboxTodosRenderer(params),
           headerComponentParams: this.cabeceraConCasilla('todos'),
         },
@@ -839,7 +840,7 @@ export class Save2ProfileComponent implements OnInit  {
           minWidth: 95,
           maxWidth: 95,
           sortable: false,
-          suppressMenu: true,
+          suppressHeaderMenuButton: true,
           cellRenderer: (params: any) => this.checkboxCellRenderer(params),
           headerComponentParams: this.cabeceraConCasilla('ejecutar'),
         },
@@ -861,7 +862,7 @@ export class Save2ProfileComponent implements OnInit  {
           minWidth: ancho,
           maxWidth: ancho,
           sortable: false,
-          suppressMenu: true,
+          suppressHeaderMenuButton: true,
           cellRenderer: (params: any) => this.checkboxCellRenderer(params),
           headerComponentParams: this.cabeceraConCasilla(field as string),
         })),
@@ -939,7 +940,7 @@ export class Save2ProfileComponent implements OnInit  {
         // El orden importa: el filtro va PRIMERO, porque recalcularVisibles()
         // le pregunta a la rejilla qué deja pasar y necesita el filtro nuevo
         // ya puesto.
-        this.gridApi.setQuickFilter(filterText);
+        this.gridApi.setGridOption('quickFilterText', filterText);
         this.recalcularVisibles();
         setTimeout(() => this.actualizarCabeceras());   // las casillas de cabecera miran las filas visibles
       }    

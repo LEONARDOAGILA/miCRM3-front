@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { ReferenciasDynamoService } from '../../services/referenciasDynamo.service';
 
@@ -7,6 +7,7 @@ import { ReferenciasDynamoService } from '../../services/referenciasDynamo.servi
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class HomeComponent implements OnInit, OnDestroy{

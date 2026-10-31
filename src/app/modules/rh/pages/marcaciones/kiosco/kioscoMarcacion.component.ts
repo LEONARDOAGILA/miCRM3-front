@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
@@ -44,6 +44,7 @@ interface RostroEnPantalla {
   templateUrl: './kioscoMarcacion.component.html',
   styleUrls: ['./kioscoMarcacion.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, FormsModule, RouterModule, PanelComponent],
 })
 export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {

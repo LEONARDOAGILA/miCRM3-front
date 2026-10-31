@@ -1,5 +1,5 @@
     
-import { Component, ViewChild, AfterViewInit, EventEmitter, Output, Input } from '@angular/core';
+import { Component, ViewChild, AfterViewInit, EventEmitter, Output, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
@@ -24,6 +24,7 @@ import { Router } from '@angular/router';
     'fondoGris'
   ],
   templateUrl: './panel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./panel.component.css'],
 })
 

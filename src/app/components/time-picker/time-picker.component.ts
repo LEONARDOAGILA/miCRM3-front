@@ -1,4 +1,4 @@
-import { Component, forwardRef, Input, ViewChild, ElementRef, OnDestroy, OnInit } from '@angular/core';
+import { Component, forwardRef, Input, ViewChild, ElementRef, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, AbstractControl, ValidationErrors, Validator } from '@angular/forms';
@@ -9,6 +9,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, AbstractControl
   styleUrls: ['./time-picker.component.scss'],
   standalone: true,
   imports: [FormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

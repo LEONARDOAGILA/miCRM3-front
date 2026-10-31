@@ -1,9 +1,10 @@
-import { Component, OnInit, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   selector: 'app-file',
   templateUrl: './file.component.html',
   styleUrls: ['./file.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class FileComponent implements OnInit {

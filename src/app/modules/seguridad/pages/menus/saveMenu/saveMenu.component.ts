@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom, from, merge, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -24,6 +24,7 @@ import { CampoNumeroEnteroComponent } from '../../../../../components/campos/cam
   templateUrl: './saveMenu.component.html',
   styleUrls: ['./saveMenu.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
     ModalFooterComponent, CampoTextoComponent, CampoNumeroEnteroComponent,

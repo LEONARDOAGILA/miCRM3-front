@@ -2,6 +2,7 @@ import { CommonModule, Location } from '@angular/common';
 import {
   AfterViewInit, Component, ElementRef, EventEmitter, HostListener,
   Input, NgZone, OnDestroy, Output, ViewChild,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -99,6 +100,7 @@ interface SugerenciaGm {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './ubicacion-google-maps.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./ubicacion-google-maps.component.css'],
 })
 export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -59,6 +59,7 @@ export type PestanaCinta = 'archivo' | 'inicio' | 'insertar' | 'tabla';
   standalone: true,
   imports: [FormsModule, NgxEditorModule, PanelComponent, HuecosPlantillaComponent],
   templateUrl: './saveNota.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./saveNota.component.css'],
 })
 export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {

@@ -1,5 +1,5 @@
 
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -42,6 +42,7 @@ interface Lamina {
   standalone: true,
   imports: [FormsModule],
   templateUrl: './verBoletines.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./verBoletines.component.css'],
 })
 export class VerBoletinesComponent implements OnInit, AfterViewInit, OnDestroy {

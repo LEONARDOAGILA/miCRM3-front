@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -41,6 +41,7 @@ import {
   standalone: true,
   imports: [FormsModule, PanelComponent, ModalFooterComponent],
   templateUrl: './importarConversacion.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./importarConversacion.component.css'],
 })
 export class ImportarConversacionComponent {

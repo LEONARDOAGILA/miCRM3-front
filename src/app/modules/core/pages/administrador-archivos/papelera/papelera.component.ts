@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellClickedEvent, ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
@@ -47,6 +47,7 @@ interface ItemPapelera {
   templateUrl: './papelera.component.html',
   styleUrls: ['./papelera.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
 })
 export class PapeleraComponent implements OnInit, OnDestroy {
@@ -189,7 +190,7 @@ export class PapeleraComponent implements OnInit, OnDestroy {
           return `<i class="${clase}" style="color:${color}"></i>`;
         },
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
-        suppressMenu: true, sortable: false, filter: false, resizable: false
+        suppressHeaderMenuButton: true, sortable: false, filter: false, resizable: false
       },
       { headerName: 'Nombre', field: 'nombre', width: 270, cellStyle: { textAlign: 'left' } },
       {
@@ -223,7 +224,7 @@ export class PapeleraComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.gridApi.setRowData(this.items);
+    this.gridApi.setGridOption('rowData', this.items);
     // Sin sizeColumnsToFit: columnas de ancho fijo; si no caben, scroll horizontal
   }
 
@@ -244,7 +245,7 @@ export class PapeleraComponent implements OnInit, OnDestroy {
       const res = await firstValueFrom(this._archivoService.papelera());
       this.items = res?.status === 'success' ? (res.data ?? []) : [];
       this.seleccionado = null;
-      this.gridApi?.setRowData(this.items);
+      this.gridApi?.setGridOption('rowData', this.items);
     } catch (error) {
       console.error('Error al cargar la papelera:', error);
       this.items = [];

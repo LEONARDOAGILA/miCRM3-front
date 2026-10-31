@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { startOfDay, endOfDay, subDays, addDays, endOfMonth, isSameDay, isSameMonth, addHours } from 'date-fns';
 import { AppVariablesService } from '../../../../service/app-variables.service';
 // @ts-ignore
@@ -9,6 +9,7 @@ import 'jsvectormap/dist/maps/world.js';
   selector: 'app-dashboard2',
   templateUrl: './dashboard2.component.html',
   styleUrls: ['./dashboard2.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class Dashboard2Component implements OnInit {
