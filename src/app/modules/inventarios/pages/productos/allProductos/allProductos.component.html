@@ -177,14 +177,20 @@
           </select>
         </div>
 
-        <!-- Nuevo producto. Con una categoría elegida, nace en ella. -->
-        <div class="col-auto ps-0">
+        <!-- Nuevo producto. Con una categoría elegida, nace en ella; y si
+             esa categoría sólo AGRUPA, no se puede crear ahí.
+             El title va también en el div: un <button disabled> no recibe
+             eventos de ratón, así que su propio title no se llega a ver y
+             el aviso se perdería justo cuando hace falta. -->
+        <div class="col-auto ps-0" [title]="motivoSinAlta">
           <button type="button"
                   class="inactivo btn btn-primary lista-barra__btn"
-                  [title]="categoriaFiltro
-                            ? 'Agregar un producto a «' + categoriaFiltroRuta + '»'
-                            : 'Agregar producto'"
-                  [disabled]="accesoModel?.crear === false"
+                  [title]="motivoSinAlta
+                            ? motivoSinAlta
+                            : (categoriaFiltro
+                                ? 'Agregar un producto a «' + categoriaFiltroRuta + '»'
+                                : 'Agregar producto')"
+                  [disabled]="accesoModel?.crear === false || !categoriaAdmiteProductos"
                   (click)="addProducto()">
             <i class="fa fa-plus"></i>
           </button>

@@ -132,6 +132,32 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     return this.seleccionId === this.NODO_TODAS ? null : this.seleccionId;
   }
 
+  /**
+   * Si de la rama abierta pueden colgar productos.
+   *
+   * Las categorías que sólo AGRUPAN (`es_transaccion` en false, las del
+   * icono de capas) son ramas del árbol, no sitios donde poner cosas:
+   * «Línea Blanca» agrupa, «Refrigeradoras» es donde van los productos.
+   * Con una de ésas abierta, el botón de nuevo producto se bloquea.
+   *
+   * Con «Todas» abierto devuelve true: ahí no hay rama impuesta y la
+   * categoría se elige dentro de la ficha.
+   */
+  public get categoriaAdmiteProductos(): boolean {
+    if (this.seleccionId === this.NODO_TODAS) { return true; }
+    const c = this.categorias.find(x => x.id === this.seleccionId);
+    return c ? c.es_transaccion !== false : true;
+  }
+
+  /** Por qué no se puede crear aquí, para decirlo en el botón. */
+  public get motivoSinAlta(): string {
+    if (this.accesoModel?.crear === false) { return 'No tienes permiso para crear productos'; }
+    if (!this.categoriaAdmiteProductos) {
+      return `«${this.categoriaFiltroRuta}» sólo agrupa: no admite productos. Elige una de sus subcategorías.`;
+    }
+    return '';
+  }
+
   // ---------- El divisor, igual que en allCaracteristicas ----------
   public mobileSidebarToggled = false;
   public readonly ANCHO_LATERAL_DEFECTO = 280;
@@ -745,6 +771,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
                  enHijas > 0
                    ? `${rama} en la rama: ${propios} suyo(s) y ${enHijas} en sus subcategorías`
                    : `${propios} producto(s)`,
+                 c.es_transaccion === false ? 'sólo agrupa: no admite productos' : '',
                  c.activo === false ? '(inactiva)' : ''].filter(Boolean).join(' — '),
         isOpen: this.abiertos.has(c.id),
         isSelected: this.seleccionId === c.id,
