@@ -22,11 +22,12 @@ import { DestinatariosNotificacionComponent } from '../destinatariosNotificacion
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Listado de notificaciones enviadas.
@@ -43,7 +44,8 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   templateUrl: './allNotificaciones.component.html',
   styleUrls: ['./allNotificaciones.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaPaginacionComponent, MenuContextualComponent],
+  imports: [
+    CommonModule,FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaPaginacionComponent, MenuContextualComponent],
 })
 export class AllNotificacionesComponent implements OnInit, OnDestroy {
 
@@ -564,7 +566,7 @@ export class AllNotificacionesComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'app-button-accion-notificacion',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button" class="btn btn-sm btn-outline-primary acciones-desplegar" title="Mostrar los botones" (click)="parent.toggleActionsColumn()">

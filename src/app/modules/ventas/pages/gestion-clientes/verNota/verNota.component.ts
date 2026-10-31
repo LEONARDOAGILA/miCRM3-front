@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
-import { CommonModule } from '@angular/common';
+
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
@@ -34,7 +34,7 @@ import {
 @Component({
   selector: 'app-verNota',
   standalone: true,
-  imports: [CommonModule, PanelComponent],
+  imports: [PanelComponent],
   templateUrl: './verNota.component.html',
   styleUrls: ['./verNota.component.css'],
 })

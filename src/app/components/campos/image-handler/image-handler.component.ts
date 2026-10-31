@@ -3,7 +3,7 @@ import { Component, EventEmitter, HostListener, Input, Output, forwardRef } from
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { ComprimirImagen } from '../../../service/comprimirImagen';
-import { CommonModule } from '@angular/common';
+
 
 
 
@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './image-handler.component.html',
   styleUrls: ['./image-handler.component.css'],
   standalone: true,
-  imports: [CommonModule], // <-- aquí está la solución
+  imports: [], // <-- aquí está la solución
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

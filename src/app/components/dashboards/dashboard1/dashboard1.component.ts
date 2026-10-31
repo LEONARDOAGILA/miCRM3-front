@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { NgFor } from '@angular/common';
+
 import { NgScrollbarModule } from 'ngx-scrollbar';
 import { PanelComponent } from '../../panel/panel.component';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
@@ -19,12 +19,11 @@ import { AppVariablesService } from '../../../service/app-variables.service';
   styleUrl: './dashboard1.component.scss',
   standalone: true,
   imports: [
-    NgFor,               // *ngFor de la lista de tareas
-    NgScrollbarModule,   // <ng-scrollbar>
-    PanelComponent,         // <panel>
-    NgxChartsModule,     // <ngx-charts-line-chart>, <ngx-charts-pie-chart>
-    TrendModule          // <ngx-trend>
-  ]
+    NgScrollbarModule,
+    PanelComponent,
+    NgxChartsModule,
+    TrendModule
+]
 })
 export class Dashboard1Component implements OnInit {
   appVariables = this.appVariablesService.getAppVariables();

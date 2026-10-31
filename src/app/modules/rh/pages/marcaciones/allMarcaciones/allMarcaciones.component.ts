@@ -29,11 +29,12 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
 import { PestanaTab, TabPanelComponent } from '../../../../../components/campos/tabPanel/tabPanel.component';
 import { AppDescargaService, PeticionDescarga, AccionDescarga }
   from '../../../../../service/app-descarga.service';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Marcaciones (entradas y salidas), en dos pestañas.
@@ -56,9 +57,14 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   styleUrls: ['./allMarcaciones.component.css'],
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, TabPanelComponent,
-    CampoBusquedaPaginacionComponent,
-  ],
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    TabPanelComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllMarcacionesComponent implements OnInit, OnDestroy {
 

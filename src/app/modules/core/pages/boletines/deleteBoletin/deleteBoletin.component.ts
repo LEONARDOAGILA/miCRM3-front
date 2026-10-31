@@ -6,7 +6,7 @@ import { ToastrService } from 'ngx-toastr';
 
 import { BoletinService } from '../../../services/boletin.service';
 import { BoletinModel } from '../../../interfaces/boletinModel';
-import { CommonModule } from '@angular/common';
+
 
 /**
  * Enviar un boletín a la papelera (borrado lógico: deleted_at / deleted_by).
@@ -17,7 +17,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './deleteBoletin.component.html',
   styleUrls: ['./deleteBoletin.component.css'],
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
 })
 export class DeleteBoletinComponent implements OnDestroy {
 

@@ -29,10 +29,11 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { PapeleraHorariosEmpleadosComponent } from '../papeleraHorariosEmpleados/papeleraHorariosEmpleados.component';
-import { CommonModule } from '@angular/common';
+
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Listado de horarios de trabajo del personal (rh.horarios_empleados).
@@ -51,9 +52,13 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   styleUrls: ['./allHorariosEmpleados.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent, MenuContextualComponent,
-    CampoBusquedaPaginacionComponent,
-  ],
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    MenuContextualComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllHorariosEmpleadosComponent implements OnInit, OnDestroy {
 

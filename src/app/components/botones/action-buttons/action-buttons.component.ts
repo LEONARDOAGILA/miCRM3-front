@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 /**
  * STANDALONE, como el panel: se importa el componente, y el
@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-action-buttons',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './action-buttons.component.html',
   styleUrls: ['./action-buttons.component.scss'],
 })

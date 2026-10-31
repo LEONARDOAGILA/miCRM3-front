@@ -1,24 +1,39 @@
 # Navegadores a los que tiene que llegar el paquete compilado.
 #
-# Sin este fichero Angular usa su lista interna, cuyo suelo es iOS >= 16, y
-# babel deja sin transpilar todo lo que esos navegadores ya entienden: entre
-# otras cosas, los campos estáticos de clase con los que Angular adjunta las
-# definiciones de componente (static #_ = this.ɵcmp = defineComponent({...})).
+# ESTE FICHERO NO ES UNA PROMESA DE SOPORTE: es la palanca con la que se
+# obliga a babel a transpilar una cosa concreta. Léelo entero antes de
+# "limpiarlo", que ya ha costado dos depuraciones.
 #
-# JavaScriptCore en iOS 15 (el último que tiene el iPhone 7) tiene un fallo
-# resolviendo variables del ámbito exterior desde esos inicializadores:
-# "ReferenceError: Can't find variable: _c11" al cargar ngx-charts.
+# EL PROBLEMA. Angular adjunta las definiciones de componente en campos
+# ESTÁTICOS de clase (`static ɵcmp = defineComponent({...})`), y el
+# JavaScriptCore de iOS 15 —el último que alcanza el iPhone 7— tiene un
+# fallo resolviendo variables del ámbito exterior desde esos
+# inicializadores: "ReferenceError: Can't find variable: _c11" al cargar
+# ngx-charts. Si babel los convierte en asignaciones corrientes después de
+# la clase (`Clase.ɵcmp = defineComponent({...})`), el fallo no se puede
+# producir.
 #
-# Bajando el suelo a iOS 14 —que NO soporta campos de clase— babel los
-# convierte en asignaciones corrientes después de la clase
-# (Clase.ɵcmp = defineComponent({...})) y el fallo no se puede producir.
-# iOS >= 15 no sirve: babel sabe que Safari 15 soporta los campos y no los toca.
+# LA PALANCA, HASTA ANGULAR 20: bajar el suelo a iOS 14. Babel sabe que
+# iOS <= 14.4 no soporta campos de clase y los transpila para todos.
 #
-# Las demás líneas son las mismas que trae Angular por defecto.
+# POR QUÉ CAMBIÓ EN ANGULAR 21: su optimizador (esbuild) ya no acepta un
+# suelo de iOS por debajo de 14.5 — "Transforming destructuring to the
+# configured target environment (ios14.0) is not supported yet" — y el
+# build falla entero. Pero el umbral de babel para los campos de clase es
+# justo iOS 14.5 y Safari 14.1: subir hasta donde esbuild exige es
+# quedarse sin transpilación, que es lo que no se puede perder.
+#
+# LA PALANCA NUEVA ES FIREFOX. Los umbrales de babel para los campos de
+# clase son: safari 14.1, ios 14.5 y **firefox 90**. A esbuild, en cambio,
+# el destructuring de Firefox le da igual en cualquier versión. Así que
+# Safari e iOS suben a lo mínimo que esbuild tolera, y es Firefox 89 el
+# que mantiene a babel transpilando los campos de clase PARA TODOS.
+#
+# Si algún día se sube Firefox a 90 o más, vuelve el fallo del iPhone 7.
 Chrome >= 107
 ChromeAndroid >= 107
 Edge >= 107
-Firefox >= 104
-FirefoxAndroid >= 104
-Safari >= 14
-iOS >= 14
+Firefox >= 89
+FirefoxAndroid >= 89
+Safari >= 14.1
+iOS >= 14.5

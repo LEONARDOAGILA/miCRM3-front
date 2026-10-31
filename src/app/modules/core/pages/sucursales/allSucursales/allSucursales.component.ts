@@ -1,5 +1,5 @@
 import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
@@ -33,6 +33,7 @@ import { SaveSucursalComponent } from '../saveSucursal/saveSucursal.component';
 import { DeleteSucursalComponent } from '../deleteSucursal/deleteSucursal.component';
 import { PapeleraSucursalesComponent } from '../papeleraSucursales/papeleraSucursales.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Listado de sucursales (ventas.sucursales).
@@ -53,9 +54,14 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   selector: 'app-allSucursales',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
-    CampoBusquedaPaginacionComponent, MenuContextualComponent,
-  ],
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    CampoBusquedaPaginacionComponent,
+    MenuContextualComponent
+],
   templateUrl: './allSucursales.component.html',
   styleUrls: ['./allSucursales.component.css'],
 })

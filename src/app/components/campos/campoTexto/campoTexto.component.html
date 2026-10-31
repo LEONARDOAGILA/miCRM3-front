@@ -1,5 +1,5 @@
 <!-- Se conserva el envoltorio .col-md: 11 pantallas colocan este componente
-     dentro de sus filas contando con que se comporte como columna. -->
+dentro de sus filas contando con que se comporte como columna. -->
 <div class="col-md">
   <div class="campo-texto" [class.campo-texto--con-icono]="icono">
 
@@ -22,61 +22,71 @@
           'is-invalid': control.invalid && (control.touched || control.dirty),
           'is-valid': control.valid && (control.touched || control.dirty)
         }"
-      />
+        />
 
-      <!-- py-0 centra la etiqueta flotante en el campo de 45px -->
-      <label [for]="label" class="d-flex align-items-center py-0 fs-13px">{{ label }}</label>
+        <!-- py-0 centra la etiqueta flotante en el campo de 45px -->
+        <label [for]="label" class="d-flex align-items-center py-0 fs-13px">{{ label }}</label>
 
-      <!-- Botón de limpiar: mismo signo × que usa el ng-select de app-combo.
-           Solo con valor y el campo habilitado, igual que en app-campoEmail. -->
-      <button type="button"
-              class="campo-texto__limpiar"
-              *ngIf="limpiable && control?.value && control?.enabled"
-              (click)="limpiar()"
-              tabindex="-1"
-              [attr.aria-label]="'Limpiar ' + (label || 'el campo')"
-              title="Limpiar">
-        <span class="campo-texto__limpiar-x" aria-hidden="true">&times;</span>
-      </button>
+        <!-- Botón de limpiar: mismo signo × que usa el ng-select de app-combo.
+        Solo con valor y el campo habilitado, igual que en app-campoEmail. -->
+        @if (limpiable && control?.value && control?.enabled) {
+          <button type="button"
+            class="campo-texto__limpiar"
+            (click)="limpiar()"
+            tabindex="-1"
+            [attr.aria-label]="'Limpiar ' + (label || 'el campo')"
+            title="Limpiar">
+            <span class="campo-texto__limpiar-x" aria-hidden="true">&times;</span>
+          </button>
+        }
 
-      <!-- Icono decorativo opcional. Se oculta cuando aparece la × para que
-           no se solapen en el mismo extremo del campo. -->
-      <i class="fa campo-texto__icono"
-         *ngIf="icono && !(limpiable && control?.value && control?.enabled)"
-         [ngClass]="icono"
-         aria-hidden="true"></i>
+        <!-- Icono decorativo opcional. Se oculta cuando aparece la × para que
+        no se solapen en el mismo extremo del campo. -->
+        @if (icono && !(limpiable && control?.value && control?.enabled)) {
+          <i class="fa campo-texto__icono"
+            [ngClass]="icono"
+          aria-hidden="true"></i>
+        }
+      </div>
+
+      <!-- Zona de mensajes.
+      Antes había aquí un <label class="col-form-label"> vacío que reservaba
+      espacio muerto, y varias pantallas lo tapaban con ::ng-deep. Ahora el
+      hueco lo reserva el CSS (min-height), así que el formulario no salta
+      cuando aparece el error. -->
+      <div class="campo-texto__mensajes">
+        @if (control.hasError('required') && (control.dirty || control.touched)) {
+          <small class="campo-texto__error"
+            >
+            <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+            Es requerido.
+          </small>
+        }
+
+        @if (control.hasError('noEspacios') && (control.dirty || control.touched)) {
+          <small class="campo-texto__error"
+            >
+            <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+            No puede contener solo espacios.
+          </small>
+        }
+
+        @if (control.hasError('minlength') && (control.dirty || control.touched)) {
+          <small class="campo-texto__error"
+            >
+            <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+            No puede ser menor a los {{ minLength }} caracteres.
+          </small>
+        }
+
+        @if (control.hasError('maxlength') && (control.dirty || control.touched)) {
+          <small class="campo-texto__error"
+            >
+            <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+            No puede exceder los {{ maxLength }} caracteres.
+          </small>
+        }
+      </div>
+
     </div>
-
-    <!-- Zona de mensajes.
-         Antes había aquí un <label class="col-form-label"> vacío que reservaba
-         espacio muerto, y varias pantallas lo tapaban con ::ng-deep. Ahora el
-         hueco lo reserva el CSS (min-height), así que el formulario no salta
-         cuando aparece el error. -->
-    <div class="campo-texto__mensajes">
-      <small class="campo-texto__error"
-             *ngIf="control.hasError('required') && (control.dirty || control.touched)">
-        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
-        Es requerido.
-      </small>
-
-      <small class="campo-texto__error"
-             *ngIf="control.hasError('noEspacios') && (control.dirty || control.touched)">
-        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
-        No puede contener solo espacios.
-      </small>
-
-      <small class="campo-texto__error"
-             *ngIf="control.hasError('minlength') && (control.dirty || control.touched)">
-        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
-        No puede ser menor a los {{ minLength }} caracteres.
-      </small>
-
-      <small class="campo-texto__error"
-             *ngIf="control.hasError('maxlength') && (control.dirty || control.touched)">
-        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
-        No puede exceder los {{ maxLength }} caracteres.
-      </small>
-    </div>
-
   </div>
-</div>

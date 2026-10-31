@@ -1,113 +1,125 @@
 <!-- BEGIN #header -->
 <div id="header" class="app-header" [attr.data-bs-theme]="this.appSettings.appHeaderInverse ? 'dark' : ''">
-<!-- BEGIN navbar-header -->
-<div class="navbar-header">
-  <!-- Botón de menú principal - MOVERLO PRIMERO -->
-  <button type="button" class="navbar-mobile-toggler" (click)="toggleAppSidebarMobile()" *ngIf="!this.appSettings.appSidebarNone">
-    <span class="icon-bar"></span>
-    <span class="icon-bar"></span>
-    <span class="icon-bar"></span>
-  </button>
-  
-  <!-- Los demás botones -->
-  <button type="button" class="navbar-mobile-toggler" *ngIf="this.appSidebarTwo" (click)="toggleAppSidebarEndMobile()">
-    <span class="icon-bar"></span>
-    <span class="icon-bar"></span>
-    <span class="icon-bar"></span>
-  </button>
-  <!-- routerLink, no href: con href el navegador recargaba la aplicación entera -->
-  <a routerLink="/" class="navbar-brand"><span class="navbar-logo"></span> <b class="me-2">IUNIX</b></a>
-	<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-12px navbar-logo">Versión 3.0</span>
+  <!-- BEGIN navbar-header -->
+  <div class="navbar-header">
+    <!-- Botón de menú principal - MOVERLO PRIMERO -->
+    @if (!this.appSettings.appSidebarNone) {
+      <button type="button" class="navbar-mobile-toggler" (click)="toggleAppSidebarMobile()">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    }
 
-  <button type="button" class="navbar-mobile-toggler" (click)="toggleAppTopMenuMobile()" *ngIf="this.appSettings.appTopMenu && !this.appSettings.appSidebarNone">
-    <span class="fa-stack fa-lg text-inverse">
-      <i class="far fa-square fa-stack-2x"></i>
-      <i class="fa fa-cog fa-stack-1x"></i>
-    </span>
-  </button>
-  <button type="button" class="navbar-mobile-toggler" (click)="toggleAppHeaderMegaMenuMobile()" *ngIf="this.appSettings.appHeaderMegaMenu">
-    <span class="fa-stack fa-lg text-inverse">
-      <i class="far fa-square fa-stack-2x"></i>
-      <i class="fa fa-cog fa-stack-1x"></i>
-    </span>
-  </button>
-  <button type="button" class="navbar-mobile-toggler" (click)="toggleAppTopMenuMobile()" *ngIf="this.appSettings.appTopMenu && this.appSettings.appSidebarNone">
-    <span class="icon-bar"></span>
-    <span class="icon-bar"></span>
-    <span class="icon-bar"></span>
-  </button>
-</div>
-<!-- END navbar-header -->
+    <!-- Los demás botones -->
+    @if (this.appSidebarTwo) {
+      <button type="button" class="navbar-mobile-toggler" (click)="toggleAppSidebarEndMobile()">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    }
+    <!-- routerLink, no href: con href el navegador recargaba la aplicación entera -->
+    <a routerLink="/" class="navbar-brand"><span class="navbar-logo"></span> <b class="me-2">IUNIX</b></a>
+    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-12px navbar-logo">Versión 3.0</span>
+
+    @if (this.appSettings.appTopMenu && !this.appSettings.appSidebarNone) {
+      <button type="button" class="navbar-mobile-toggler" (click)="toggleAppTopMenuMobile()">
+        <span class="fa-stack fa-lg text-inverse">
+          <i class="far fa-square fa-stack-2x"></i>
+          <i class="fa fa-cog fa-stack-1x"></i>
+        </span>
+      </button>
+    }
+    @if (this.appSettings.appHeaderMegaMenu) {
+      <button type="button" class="navbar-mobile-toggler" (click)="toggleAppHeaderMegaMenuMobile()">
+        <span class="fa-stack fa-lg text-inverse">
+          <i class="far fa-square fa-stack-2x"></i>
+          <i class="fa fa-cog fa-stack-1x"></i>
+        </span>
+      </button>
+    }
+    @if (this.appSettings.appTopMenu && this.appSettings.appSidebarNone) {
+      <button type="button" class="navbar-mobile-toggler" (click)="toggleAppTopMenuMobile()">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    }
+  </div>
+  <!-- END navbar-header -->
 
 
   <!-- BEGIN mega-menu -->
-  <div class="collapse d-md-block me-auto" *ngIf="this.appSettings.appHeaderMegaMenu" [ngClass]="{ 'd-block': (this.appSettings.appHeaderMegaMenu && this.appSettings.appHeaderMegaMenuMobileToggled) }">
-   <div class="navbar-nav">
-			<div class="navbar-item dropdown dropdown-lg">
-        <a href="javascript:;" class="navbar-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
-					<i class="fa fa-th-large fa-fw me-1"></i> 
-					<span class="d-lg-inline d-md-none">Mega</span>
-					<b class="caret ms-1"></b>
-				</a>
-        <div class="dropdown-menu dropdown-menu-lg">
-        	Content here
+  @if (this.appSettings.appHeaderMegaMenu) {
+    <div class="collapse d-md-block me-auto" [ngClass]="{ 'd-block': (this.appSettings.appHeaderMegaMenu && this.appSettings.appHeaderMegaMenuMobileToggled) }">
+      <div class="navbar-nav">
+        <div class="navbar-item dropdown dropdown-lg">
+          <a href="javascript:;" class="navbar-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+            <i class="fa fa-th-large fa-fw me-1"></i>
+            <span class="d-lg-inline d-md-none">Mega</span>
+            <b class="caret ms-1"></b>
+          </a>
+          <div class="dropdown-menu dropdown-menu-lg">
+            Content here
+          </div>
         </div>
-      </div>
-			<div class="navbar-item">
-				<a href="javascript:;" class="navbar-link d-flex align-items-center">
-					<i class="fa fa-gem fa-fw me-1"></i>
-					<span class="d-lg-inline d-md-none">Client</span>
-				</a>
-			</div>
-			<div class="navbar-item dropdown">
-        <a href="javascript:;" class="navbar-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
-          <i class="fa fa-database fa-fw me-1"></i> 
-          <span class="d-lg-inline d-md-none">New</span>
-          <b class="caret ms-1"></b>
-        </a>
-        <div class="dropdown-menu">
-          <a href="javascript:;" class="dropdown-item">Action</a>
-          <a href="javascript:;" class="dropdown-item">Another action</a>
-          <a href="javascript:;" class="dropdown-item">Something else here</a>
-          <div class="dropdown-divider"></div>
-          <a href="javascript:;" class="dropdown-item">Separated link</a>
-          <div class="dropdown-divider"></div>
-          <a href="javascript:;" class="dropdown-item">One more separated link</a>
+        <div class="navbar-item">
+          <a href="javascript:;" class="navbar-link d-flex align-items-center">
+            <i class="fa fa-gem fa-fw me-1"></i>
+            <span class="d-lg-inline d-md-none">Client</span>
+          </a>
+        </div>
+        <div class="navbar-item dropdown">
+          <a href="javascript:;" class="navbar-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+            <i class="fa fa-database fa-fw me-1"></i>
+            <span class="d-lg-inline d-md-none">New</span>
+            <b class="caret ms-1"></b>
+          </a>
+          <div class="dropdown-menu">
+            <a href="javascript:;" class="dropdown-item">Action</a>
+            <a href="javascript:;" class="dropdown-item">Another action</a>
+            <a href="javascript:;" class="dropdown-item">Something else here</a>
+            <div class="dropdown-divider"></div>
+            <a href="javascript:;" class="dropdown-item">Separated link</a>
+            <div class="dropdown-divider"></div>
+            <a href="javascript:;" class="dropdown-item">One more separated link</a>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  }
   <!-- END mega-menu -->
 
   <!-- BEGIN nav -->
   <div class="navbar-nav">
 
 
-<div class="navbar-item navbar-form">
-	<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-3">
+    <div class="navbar-item navbar-form">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-3">
 
-<div class="d-flex align-items-center me-3">
-  <h5 class="mb-0 fw-bold text-muted">
-    Empresa en Desarrollo
-  </h5>
-</div>
+        <div class="d-flex align-items-center me-3">
+          <h5 class="mb-0 fw-bold text-muted">
+            Empresa en Desarrollo
+          </h5>
+        </div>
 
-    <!-- d-none d-md-flex: la fecha y la hora sólo se ven a partir de 768px.
-	     En móvil las muestra el pie de la pantalla de inicio (d-md-none),
-	     así que aquí sobraban y le quitaban sitio a la barra. -->
-    <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
-			<div class="vr d-none d-md-block text-secondary"></div>
-			<div class="d-flex align-items-center gap-2">
-				<i class="fa fa-calendar text-primary"></i>
-				<span class="small text-dark">{{ today | date:'EEEE, dd/MM/yyyy' }}</span>
-				<i class="fa fa-clock text-warning ms-2"></i>
-				<span class="small fw-semibold text-dark">{{ today | date:'HH:mm' }}</span>
-			</div>
-		</div>
-    
-	</div>
+        <!-- d-none d-md-flex: la fecha y la hora sólo se ven a partir de 768px.
+        En móvil las muestra el pie de la pantalla de inicio (d-md-none),
+        así que aquí sobraban y le quitaban sitio a la barra. -->
+        <div class="d-none d-md-flex align-items-center gap-3 flex-wrap">
+          <div class="vr d-none d-md-block text-secondary"></div>
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa fa-calendar text-primary"></i>
+            <span class="small text-dark">{{ today | date:'EEEE, dd/MM/yyyy' }}</span>
+            <i class="fa fa-clock text-warning ms-2"></i>
+            <span class="small fw-semibold text-dark">{{ today | date:'HH:mm' }}</span>
+          </div>
+        </div>
 
-		</div>
+      </div>
+
+    </div>
 
 
     <!-- CAMPANA DE NOTIFICACIONES -->
@@ -115,15 +127,17 @@
 
       <!-- Abrirla es lo que la calla: mirar la campana ya es enterarse -->
       <a href="javascript:;" data-bs-toggle="dropdown" class="navbar-link dropdown-toggle icon campana-enlace"
-         [title]="noLeidas ? noLeidas + (noLeidas === 1 ? ' notificación sin leer' : ' notificaciones sin leer') : 'Notificaciones'"
-         (click)="alAbrirCampana()">
+        [title]="noLeidas ? noLeidas + (noLeidas === 1 ? ' notificación sin leer' : ' notificaciones sin leer') : 'Notificaciones'"
+        (click)="alAbrirCampana()">
         <!-- El contador cuelga del icono, no del enlace: si no, queda despegado -->
         <span class="campana-icono">
           <i class="fa fa-bell" [ngClass]="{'animar-campana': animarCampana}"></i>
 
-          <span *ngIf="noLeidas > 0" class="campana-badge" [class.es-muchas]="noLeidas > 9">
-            {{ noLeidas > 99 ? '99+' : noLeidas }}
-          </span>
+          @if (noLeidas > 0) {
+            <span class="campana-badge" [class.es-muchas]="noLeidas > 9">
+              {{ noLeidas > 99 ? '99+' : noLeidas }}
+            </span>
+          }
         </span>
       </a>
 
@@ -133,70 +147,84 @@
         <div class="campana-cabecera">
           <span class="campana-cabecera__titulo">
             Notificaciones
-            <span *ngIf="noLeidas > 0" class="campana-cabecera__cuenta">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
+            @if (noLeidas > 0) {
+              <span class="campana-cabecera__cuenta">{{ noLeidas > 99 ? '99+' : noLeidas }}</span>
+            }
           </span>
 
           <span class="campana-ajustes">
             <!-- Cómo avisa: apagados hasta que el usuario los enciende -->
             <button type="button" class="campana-ajuste" [class.is-on]="avisoSonido"
-                    [title]="avisoSonido ? 'Sonido al llegar: activado' : 'Sonido al llegar: desactivado'"
-                    [attr.aria-pressed]="avisoSonido"
-                    (click)="alternarSonido($event)">
+              [title]="avisoSonido ? 'Sonido al llegar: activado' : 'Sonido al llegar: desactivado'"
+              [attr.aria-pressed]="avisoSonido"
+              (click)="alternarSonido($event)">
               <i class="fa" [ngClass]="avisoSonido ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
             </button>
 
-            <button *ngIf="soportaAvisoEscritorio" type="button" class="campana-ajuste" [class.is-on]="avisoEscritorio"
-                    [title]="avisoEscritorio ? 'Avisos del navegador: activados' : 'Avisos del navegador: desactivados'"
-                    [attr.aria-pressed]="avisoEscritorio"
-                    (click)="alternarAvisoEscritorio($event)">
-              <i class="fa fa-desktop"></i>
-            </button>
+            @if (soportaAvisoEscritorio) {
+              <button type="button" class="campana-ajuste" [class.is-on]="avisoEscritorio"
+                [title]="avisoEscritorio ? 'Avisos del navegador: activados' : 'Avisos del navegador: desactivados'"
+                [attr.aria-pressed]="avisoEscritorio"
+                (click)="alternarAvisoEscritorio($event)">
+                <i class="fa fa-desktop"></i>
+              </button>
+            }
 
-            <span *ngIf="noLeidas > 0" class="campana-ajustes__sep" aria-hidden="true"></span>
+            @if (noLeidas > 0) {
+              <span class="campana-ajustes__sep" aria-hidden="true"></span>
+            }
 
-            <a *ngIf="noLeidas > 0" href="javascript:;" class="campana-marcar"
-               title="Marcar todas como leídas" (click)="marcarTodasLeidas($event)">
-              <i class="fa fa-check-double"></i>
-              <span class="campana-marcar__texto">Marcar leídas</span>
-            </a>
+            @if (noLeidas > 0) {
+              <a href="javascript:;" class="campana-marcar"
+                title="Marcar todas como leídas" (click)="marcarTodasLeidas($event)">
+                <i class="fa fa-check-double"></i>
+                <span class="campana-marcar__texto">Marcar leídas</span>
+              </a>
+            }
           </span>
         </div>
 
         <!-- ---------- Las últimas; el resto está en «Ver todas» ---------- -->
-        <div class="campana-lista" *ngIf="notificaciones.length; else sinNotif">
-          <a *ngFor="let n of notificaciones" href="javascript:;"
-             class="dropdown-item campana-item"
-             [class.es-nueva]="!n.leida"
-             [title]="n.mensaje || n.titulo"
-             (click)="abrirNotificacion(n, $event)">
-
-            <span class="campana-item__icono" [ngClass]="claseTipo(n)">
-              <i class="fa" [ngClass]="iconoDe(n)"></i>
-            </span>
-
-            <span class="campana-item__cuerpo">
-              <span class="campana-item__linea">
-                <span class="campana-item__titulo">{{ n.titulo }}</span>
-                <span class="campana-item__hora">{{ hace(n) }}</span>
-              </span>
-              <span class="campana-item__mensaje" *ngIf="n.mensaje">{{ n.mensaje }}</span>
-              <!-- El enlace se anuncia, y se distingue si sale del sistema -->
-              <span class="campana-item__enlace" *ngIf="n.url">
-                <i class="fa" [ngClass]="enlaceFuera(n) ? 'fa-arrow-up-right-from-square' : 'fa-arrow-right-long'"></i>{{ n.url_texto || (enlaceFuera(n) ? 'Abrir el enlace' : 'Abrir') }}
-              </span>
-            </span>
-
-            <span class="campana-item__punto" *ngIf="!n.leida" title="Sin leer"></span>
-          </a>
-        </div>
-
-        <ng-template #sinNotif>
+        @if (notificaciones.length) {
+          <div class="campana-lista">
+            @for (n of notificaciones; track n) {
+              <a href="javascript:;"
+                class="dropdown-item campana-item"
+                [class.es-nueva]="!n.leida"
+                [title]="n.mensaje || n.titulo"
+                (click)="abrirNotificacion(n, $event)">
+                <span class="campana-item__icono" [ngClass]="claseTipo(n)">
+                  <i class="fa" [ngClass]="iconoDe(n)"></i>
+                </span>
+                <span class="campana-item__cuerpo">
+                  <span class="campana-item__linea">
+                    <span class="campana-item__titulo">{{ n.titulo }}</span>
+                    <span class="campana-item__hora">{{ hace(n) }}</span>
+                  </span>
+                  @if (n.mensaje) {
+                    <span class="campana-item__mensaje">{{ n.mensaje }}</span>
+                  }
+                  <!-- El enlace se anuncia, y se distingue si sale del sistema -->
+                  @if (n.url) {
+                    <span class="campana-item__enlace">
+                      <i class="fa" [ngClass]="enlaceFuera(n) ? 'fa-arrow-up-right-from-square' : 'fa-arrow-right-long'"></i>{{ n.url_texto || (enlaceFuera(n) ? 'Abrir el enlace' : 'Abrir') }}
+                    </span>
+                  }
+                </span>
+                @if (!n.leida) {
+                  <span class="campana-item__punto" title="Sin leer"></span>
+                }
+              </a>
+            }
+          </div>
+        } @else {
           <div class="campana-vacio">
             <i class="fa fa-bell-slash"></i>
             <span class="campana-vacio__titulo">No tienes notificaciones</span>
             <span class="campana-vacio__ayuda">Aquí aparecerán los avisos que te envíen</span>
           </div>
-        </ng-template>
+        }
+
 
         <!-- ---------- Pie ---------- -->
         <a href="javascript:;" class="campana-pie" (click)="verNotificaciones($event)">
@@ -208,20 +236,22 @@
 
 
     <!-- USUARIOS Y AJUSTES -->
-    <div class="navbar-item dropdown" *ngIf="this.appSettings.appHeaderLanguageBar">
-      <a href="javascript:;" class="navbar-link dropdown-toggle" data-bs-toggle="dropdown">
-        <span class="fi fi-us" title="us"></span>
-				<span class="d-none d-sm-inline ms-1">EN</span> <b class="caret"></b>
-      </a>
-      <div class="dropdown-menu">
-        <a href="javascript:;" class="dropdown-item"><span class="fi fi-us me-2" title="us"></span> English</a>
-        <a href="javascript:;" class="dropdown-item"><span class="fi fi-cn me-2" title="cn"></span> Chinese</a>
-        <a href="javascript:;" class="dropdown-item"><span class="fi fi-jp me-2" title="jp"></span> Japanese</a>
-        <a href="javascript:;" class="dropdown-item"><span class="fi fi-be me-2" title="be"></span> Belgium</a>
-        <div class="dropdown-divider"></div>
-        <a href="javascript:;" class="dropdown-item text-center">more options</a>
+    @if (this.appSettings.appHeaderLanguageBar) {
+      <div class="navbar-item dropdown">
+        <a href="javascript:;" class="navbar-link dropdown-toggle" data-bs-toggle="dropdown">
+          <span class="fi fi-us" title="us"></span>
+          <span class="d-none d-sm-inline ms-1">EN</span> <b class="caret"></b>
+        </a>
+        <div class="dropdown-menu">
+          <a href="javascript:;" class="dropdown-item"><span class="fi fi-us me-2" title="us"></span> English</a>
+          <a href="javascript:;" class="dropdown-item"><span class="fi fi-cn me-2" title="cn"></span> Chinese</a>
+          <a href="javascript:;" class="dropdown-item"><span class="fi fi-jp me-2" title="jp"></span> Japanese</a>
+          <a href="javascript:;" class="dropdown-item"><span class="fi fi-be me-2" title="be"></span> Belgium</a>
+          <div class="dropdown-divider"></div>
+          <a href="javascript:;" class="dropdown-item text-center">more options</a>
+        </div>
       </div>
-    </div>
+    }
     <div class="navbar-item navbar-user dropdown">
       <a href="javascript:;" class="navbar-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
 
@@ -229,10 +259,14 @@
         <div class="navbar-user__foto" [title]="estadoActual.nombre + ' · ' + estadoActual.ayuda">
           <div class="image image-icon bg-gray-800 text-gray-600">
             <!-- (error): si la foto no está, se cambia por la de por defecto -->
-            <img *ngIf="imagenUsuario" [src]="imagenUsuario"
-                 [alt]="usuarioLogeado ? 'Foto de ' + usuarioLogeado.login_user : 'Foto del usuario'"
-                 (error)="alFallarLaFoto()" />
-            <i *ngIf="!imagenUsuario" class="fa fa-user"></i>
+            @if (imagenUsuario) {
+              <img [src]="imagenUsuario"
+                [alt]="usuarioLogeado ? 'Foto de ' + usuarioLogeado.login_user : 'Foto del usuario'"
+                (error)="alFallarLaFoto()" />
+            }
+            @if (!imagenUsuario) {
+              <i class="fa fa-user"></i>
+            }
           </div>
 
           <!-- El estado que publico, ya cruzado con el latido -->
@@ -241,77 +275,89 @@
           </span>
         </div>
 
-<div class="ms-2">
-  <span class="d-none d-md-inline">
-    <span class="d-none d-sm-inline" *ngIf="usuarioLogeado">{{usuarioLogeado.login_user}}</span>
-  </span>
-  <i class="fa fa-caret-down ms-1 fs-16px opacity-75"></i>
-</div>
+        <div class="ms-2">
+          <span class="d-none d-md-inline">
+            @if (usuarioLogeado) {
+              <span class="d-none d-sm-inline">{{usuarioLogeado.login_user}}</span>
+            }
+          </span>
+          <i class="fa fa-caret-down ms-1 fs-16px opacity-75"></i>
+        </div>
 
 
 
       </a>
       <!-- Menú del usuario: cabecera con foto y datos, opciones con iconos del
-           tema (fa-fw para que alineen), estado en línea como un solo item que
-           alterna, y salir en rojo. Sin emojis ni colores fijos. -->
+      tema (fa-fw para que alineen), estado en línea como un solo item que
+      alterna, y salir en rojo. Sin emojis ni colores fijos. -->
       <div class="dropdown-menu dropdown-menu-end me-1 usuario-menu">
 
         <!-- Cabecera: quién soy -->
-        <div class="usuario-menu__cabecera" *ngIf="usuarioLogeado">
-          <div class="usuario-menu__foto">
-            <img *ngIf="imagenUsuario" [src]="imagenUsuario" alt="" (error)="alFallarLaFoto()" />
-            <i *ngIf="!imagenUsuario" class="fa fa-user"></i>
-            <!-- La misma marca que en la barra, para que sea la misma pieza -->
-            <span class="marca-estado es-grande" [ngClass]="'es-' + (presencia?.efectivo || 'DESCONECTADO')"
-                  [title]="estadoActual.nombre">
-              <i class="fa" [ngClass]="estadoActual.icono" aria-hidden="true"></i>
-            </span>
-          </div>
-          <div class="usuario-menu__texto">
-            <div class="usuario-menu__nombre text-truncate">{{ usuarioLogeado.full_name || usuarioLogeado.login_user }}</div>
-            <div class="usuario-menu__detalle text-truncate">
-              {{ usuarioLogeado.login_user }}<ng-container *ngIf="usuarioLogeado.perfil?.nombre"> · {{ usuarioLogeado.perfil.nombre }}</ng-container>
+        @if (usuarioLogeado) {
+          <div class="usuario-menu__cabecera">
+            <div class="usuario-menu__foto">
+              @if (imagenUsuario) {
+                <img [src]="imagenUsuario" alt="" (error)="alFallarLaFoto()" />
+              }
+              @if (!imagenUsuario) {
+                <i class="fa fa-user"></i>
+              }
+              <!-- La misma marca que en la barra, para que sea la misma pieza -->
+              <span class="marca-estado es-grande" [ngClass]="'es-' + (presencia?.efectivo || 'DESCONECTADO')"
+                [title]="estadoActual.nombre">
+                <i class="fa" [ngClass]="estadoActual.icono" aria-hidden="true"></i>
+              </span>
             </div>
-            <div class="usuario-menu__detalle text-truncate" *ngIf="usuarioLogeado.email">{{ usuarioLogeado.email }}</div>
+            <div class="usuario-menu__texto">
+              <div class="usuario-menu__nombre text-truncate">{{ usuarioLogeado.full_name || usuarioLogeado.login_user }}</div>
+              <div class="usuario-menu__detalle text-truncate">
+                {{ usuarioLogeado.login_user }}@if (usuarioLogeado.perfil?.nombre) {
+                · {{ usuarioLogeado.perfil.nombre }}
+              }
+            </div>
+            @if (usuarioLogeado.email) {
+              <div class="usuario-menu__detalle text-truncate">{{ usuarioLogeado.email }}</div>
+            }
           </div>
         </div>
-        <div class="dropdown-divider"></div>
+      }
+      <div class="dropdown-divider"></div>
 
-        <a routerLink="/home" class="dropdown-item"><i class="fa fa-house fa-fw me-2 text-theme"></i>Inicio</a>
-        <a routerLink="core/extra-profile" class="dropdown-item"><i class="fa fa-id-card fa-fw me-2 text-theme"></i>Editar perfil</a>
-        <!-- Sin contador: el «2» venía de la plantilla y era siempre 2 -->
-        <a href="javascript:;" class="dropdown-item d-flex align-items-center">
-          <i class="fa fa-envelope fa-fw me-2 text-theme"></i>Bandeja de entrada
+      <a routerLink="/home" class="dropdown-item"><i class="fa fa-house fa-fw me-2 text-theme"></i>Inicio</a>
+      <a routerLink="core/extra-profile" class="dropdown-item"><i class="fa fa-id-card fa-fw me-2 text-theme"></i>Editar perfil</a>
+      <!-- Sin contador: el «2» venía de la plantilla y era siempre 2 -->
+      <a href="javascript:;" class="dropdown-item d-flex align-items-center">
+        <i class="fa fa-envelope fa-fw me-2 text-theme"></i>Bandeja de entrada
+      </a>
+      <a href="javascript:;" class="dropdown-item"><i class="fa fa-calendar-days fa-fw me-2 text-theme"></i>Calendario</a>
+      <a routerLink="core/extra-settings" class="dropdown-item"><i class="fa fa-gear fa-fw me-2 text-theme"></i>Ajustes</a>
+      <a routerLink="core/extra-search-results" class="dropdown-item"><i class="fa fa-circle-question fa-fw me-2 text-theme"></i>Ayuda</a>
+      <div class="dropdown-divider"></div>
+
+      <!-- ---------- Mi estado ----------
+      Cuatro opciones que se eligen; «Ausente» y «Desconectado» no
+      salen aquí porque los pone el sistema, no el usuario. -->
+      <div class="usuario-menu__rotulo">Mi estado</div>
+
+      @for (e of estadosElegibles; track e) {
+        <a href="javascript:;" class="dropdown-item cursor-pointer d-flex align-items-center usuario-menu__estado-item"
+          [class.is-elegido]="estadoElegido === e"
+          [title]="estiloDe(e).ayuda"
+          (click)="elegirEstado(e, $event)">
+          <i class="fa fa-fw me-2" [ngClass]="[estiloDe(e).icono, estiloDe(e).color]" aria-hidden="true"></i>
+          {{ estiloDe(e).nombre }}
+          @if (estadoElegido === e) {
+            <i class="fa fa-check ms-auto text-theme" aria-hidden="true"></i>
+          }
         </a>
-        <a href="javascript:;" class="dropdown-item"><i class="fa fa-calendar-days fa-fw me-2 text-theme"></i>Calendario</a>
-        <a routerLink="core/extra-settings" class="dropdown-item"><i class="fa fa-gear fa-fw me-2 text-theme"></i>Ajustes</a>
-        <a routerLink="core/extra-search-results" class="dropdown-item"><i class="fa fa-circle-question fa-fw me-2 text-theme"></i>Ayuda</a>
-        <div class="dropdown-divider"></div>
+      }
 
-        <!-- ---------- Mi estado ----------
-             Cuatro opciones que se eligen; «Ausente» y «Desconectado» no
-             salen aquí porque los pone el sistema, no el usuario. -->
-        <div class="usuario-menu__rotulo">Mi estado</div>
-
-        @for (e of estadosElegibles; track e) {
-          <a href="javascript:;" class="dropdown-item cursor-pointer d-flex align-items-center usuario-menu__estado-item"
-             [class.is-elegido]="estadoElegido === e"
-             [title]="estiloDe(e).ayuda"
-             (click)="elegirEstado(e, $event)">
-            <i class="fa fa-fw me-2" [ngClass]="[estiloDe(e).icono, estiloDe(e).color]" aria-hidden="true"></i>
-            {{ estiloDe(e).nombre }}
-            @if (estadoElegido === e) {
-              <i class="fa fa-check ms-auto text-theme" aria-hidden="true"></i>
-            }
-          </a>
-        }
-
-        <!-- Lo que ve el resto, cuando no coincide con lo elegido -->
-        @if (presencia && presencia.efectivo !== presencia.estado) {
-          <div class="usuario-menu__aviso">
-            <i class="fa fa-circle-info me-1"></i>
-            Los demás te ven como <b>{{ estadoActual.nombre }}</b>
-            @if (presencia.efectivo === 'AUSENTE') { · llevas un rato sin tocar nada }
+      <!-- Lo que ve el resto, cuando no coincide con lo elegido -->
+      @if (presencia && presencia.efectivo !== presencia.estado) {
+        <div class="usuario-menu__aviso">
+          <i class="fa fa-circle-info me-1"></i>
+          Los demás te ven como <b>{{ estadoActual.nombre }}</b>
+          @if (presencia.efectivo === 'AUSENTE') { · llevas un rato sin tocar nada }
           </div>
         }
 
@@ -323,12 +369,16 @@
 
 
 
-    <div class="navbar-divider d-none d-md-block" *ngIf="this.appSidebarTwo"></div>
-		<div class="navbar-item d-none d-md-block" *ngIf="this.appSidebarTwo">
-			<a href="javascript:;" (click)="toggleAppSidebarEnd()" class="navbar-link icon">
-				<i class="fa fa-th"></i>
-			</a>
-		</div>
+    @if (this.appSidebarTwo) {
+      <div class="navbar-divider d-none d-md-block"></div>
+    }
+    @if (this.appSidebarTwo) {
+      <div class="navbar-item d-none d-md-block">
+        <a href="javascript:;" (click)="toggleAppSidebarEnd()" class="navbar-link icon">
+          <i class="fa fa-th"></i>
+        </a>
+      </div>
+    }
   </div>
   <!-- END nav -->
 </div>

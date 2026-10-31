@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -34,9 +34,12 @@ import { ModalFooterComponent } from '../../../../../components/modal/modal-foot
   selector: 'app-saveMensajeAsunto',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, PanelComponent,
-    CampoNgxEditorComponent, HuecosPlantillaComponent, ModalFooterComponent,
-  ],
+    FormsModule,
+    PanelComponent,
+    CampoNgxEditorComponent,
+    HuecosPlantillaComponent,
+    ModalFooterComponent
+],
   templateUrl: './saveMensajeAsunto.component.html',
   styleUrls: ['./saveMensajeAsunto.component.css'],
 })

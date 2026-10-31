@@ -29,10 +29,11 @@ import { DeleteClienteComponent } from '../deleteCliente/deleteCliente.component
 import { PapeleraClientesComponent } from '../papeleraClientes/papeleraClientes.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
-import { CommonModule } from '@angular/common';
+
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Listado de clientes (ventas.clientes).
@@ -51,9 +52,13 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   styleUrls: ['./allClientes.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent, MenuContextualComponent,
-    CampoBusquedaPaginacionComponent,
-  ],
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    MenuContextualComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllClientesComponent implements OnInit, OnDestroy {
 

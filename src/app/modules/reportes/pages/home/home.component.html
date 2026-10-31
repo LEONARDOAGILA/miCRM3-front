@@ -16,18 +16,20 @@
 <div style="min-height: 100vh; background: url(/assets/img/cover/cover-scrum-board.png) no-repeat fixed; background-size: 360px; background-position: right bottom;">
 
 
-<div class="menu-container">   
+  <div class="menu-container">
     <div class="menu-grid">
-        <a *ngFor="let item of menuItems" 
-           [routerLink]="item.link" 
-           class="menu-button"
-           [style.background-color]="item.color">
-            <i [class]="item.icon" 
-               [style.color]="item.iconColor || '#FFFFFF'"></i>
-            <span [style.color]="item.iconColor || '#FFFFFF'">{{ item.label }}</span>
+      @for (item of menuItems; track item) {
+        <a
+          [routerLink]="item.link"
+          class="menu-button"
+          [style.background-color]="item.color">
+          <i [class]="item.icon"
+          [style.color]="item.iconColor || '#FFFFFF'"></i>
+          <span [style.color]="item.iconColor || '#FFFFFF'">{{ item.label }}</span>
         </a>
+      }
     </div>
-</div>
+  </div>
 
 
 </div>

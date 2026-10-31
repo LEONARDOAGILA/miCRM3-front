@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -57,7 +57,7 @@ export type PestanaCinta = 'archivo' | 'inicio' | 'insertar' | 'tabla';
 @Component({
   selector: 'app-saveNota',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgxEditorModule, PanelComponent, HuecosPlantillaComponent],
+  imports: [FormsModule, NgxEditorModule, PanelComponent, HuecosPlantillaComponent],
   templateUrl: './saveNota.component.html',
   styleUrls: ['./saveNota.component.css'],
 })

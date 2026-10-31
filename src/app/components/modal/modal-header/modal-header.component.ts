@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common'; // 👈 necesario para ngClass
+ // 👈 necesario para ngClass
 import { ModalArrastrableDirective } from '../modal-arrastrable.directive';
 
 /**
@@ -15,7 +15,7 @@ import { ModalArrastrableDirective } from '../modal-arrastrable.directive';
   standalone: true,
   templateUrl: './modal-header.component.html',
   styleUrls: ['./modal-header.component.css'],
-  imports: [CommonModule], // 👈 aquí lo importas
+  imports: [], // 👈 aquí lo importas
   hostDirectives: [ModalArrastrableDirective],
 })
 export class ModalHeaderComponent {

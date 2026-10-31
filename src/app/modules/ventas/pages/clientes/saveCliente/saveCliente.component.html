@@ -1,17 +1,17 @@
 <!-- ============================================================
-     GUARDAR CLIENTE (modal)
-     Mismo esquema que saveEmpleado: a la izquierda la foto (arrastrar,
-     galería, cámara, pegar, ampliar) y la dirección que trae Google Maps;
-     a la derecha los datos del cliente, las condiciones comerciales
-     (vendedor con selector, como el jefe en empleados), el contacto y la
-     grilla de personas de contacto.
-     ============================================================ -->
+GUARDAR CLIENTE (modal)
+Mismo esquema que saveEmpleado: a la izquierda la foto (arrastrar,
+galería, cámara, pegar, ampliar) y la dirección que trae Google Maps;
+a la derecha los datos del cliente, las condiciones comerciales
+(vendedor con selector, como el jefe en empleados), el contacto y la
+grilla de personas de contacto.
+============================================================ -->
 
 <!-- ===================== SPINNER ===================== -->
-<ng-container *ngIf="(isLoading$ | async)">
+@if ((isLoading$ | async)) {
   <div class="loader1" role="status" aria-label="Cargando"></div>
   <div class="overlay1" aria-hidden="true"></div>
-</ng-container>
+}
 
 <!-- ===================== CABECERA ===================== -->
 <app-modal-header [title]="titulo" (onClose)="activeModal.close('Close click')">
@@ -23,477 +23,486 @@
 
     <!-- ============ COLUMNA IZQUIERDA: AVATAR ============ -->
     <div class="col-lg-4">
-        <panel 
-          headerClass="bg-gray-800"
-          title="Foto del cliente" 
-          noButton="true" 
-          noBody="true"
-          panelClass="mb-3" 
-          icono="usuario" 
-          fondoGris="true">
-          
-          <ng-container outsideBody>
-            <div class="form-card__body">
+      <panel
+        headerClass="bg-gray-800"
+        title="Foto del cliente"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-3"
+        icono="usuario"
+        fondoGris="true">
+
+        <ng-container outsideBody>
+          <div class="form-card__body">
             <!-- ---------- Zona de imagen / drop ---------- -->
             <div class="avatar-dropzone"
-                [class.drag-over]="isDragOver"
-                [class.is-empty]="!imagen_previzualiza"
-                (drop)="onDrop($event)"
-                (dragover)="onDragOver($event)"
-                (dragleave)="onDragLeave($event)">
+              [class.drag-over]="isDragOver"
+              [class.is-empty]="!imagen_previzualiza"
+              (drop)="onDrop($event)"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)">
 
               <!-- Con imagen -->
-              <div class="avatar-preview" *ngIf="imagen_previzualiza">
-                <img [src]="imagen_previzualiza"
+              @if (imagen_previzualiza) {
+                <div class="avatar-preview">
+                  <img [src]="imagen_previzualiza"
                     alt="Foto del cliente"
                     (error)="handleImageError($event)"
                     (click)="openFullscreen()">
+                    <div class="avatar-preview__overlay">
+                      <button type="button" class="avatar-action" (click)="openFullscreen()" title="Ampliar imagen">
+                        <i class="fa-solid fa-magnifying-glass-plus"></i>
+                      </button>
+                      @if (!esView) {
+                        <button type="button" class="avatar-action" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
+                          <i class="fa-solid fa-paste"></i>
+                        </button>
+                        <button type="button" class="avatar-action avatar-action--danger" (click)="clearImage()" title="Quitar imagen">
+                          <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
 
-                <div class="avatar-preview__overlay">
-                  <button type="button" class="avatar-action" (click)="openFullscreen()" title="Ampliar imagen">
-                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                <!-- Sin imagen -->
+                @if (!imagen_previzualiza) {
+                  <div class="avatar-empty"
+                    [class.is-disabled]="esView"
+                    (click)="openGallery()">
+                    <span class="avatar-empty__icon">
+                      <i class="fa-solid" [ngClass]="esView ? 'fa-user-slash' : 'fa-cloud-arrow-up'"></i>
+                    </span>
+                    <p class="avatar-empty__title">{{ esView ? 'Sin imagen' : 'Seleccionar imagen' }}</p>
+                    @if (!esView) {
+                      <p class="avatar-empty__hint">
+                        Arrastra y suelta una imagen o haz clic para buscarla
+                      </p>
+                    }
+                    @if (!esView) {
+                      <p class="avatar-empty__hint">
+                        También puedes pegarla con <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- ---------- Acciones de imagen ---------- -->
+              @if (!esView) {
+                <div class="avatar-actions mt-2">
+                  <button type="button" class="btn btn-avatar btn-avatar-camera" (click)="openCamera()" title="Tomar foto">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>Cámara</span>
                   </button>
-                  <ng-container *ngIf="!esView">
-                    <button type="button" class="avatar-action" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
-                      <i class="fa-solid fa-paste"></i>
-                    </button>
-                    <button type="button" class="avatar-action avatar-action--danger" (click)="clearImage()" title="Quitar imagen">
-                      <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                  </ng-container>
+                  <button type="button" class="btn btn-avatar btn-avatar-gallery" (click)="openGallery()" title="Buscar en el dispositivo">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Galería</span>
+                  </button>
+                  <button type="button" class="btn btn-avatar btn-avatar-paste" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
+                    <i class="fa-solid fa-paste"></i>
+                    <span>Pegar</span>
+                  </button>
                 </div>
-              </div>
+              }
 
-              <!-- Sin imagen -->
-              <div class="avatar-empty" *ngIf="!imagen_previzualiza"
-                  [class.is-disabled]="esView"
-                  (click)="openGallery()">
-                <span class="avatar-empty__icon">
-                  <i class="fa-solid" [ngClass]="esView ? 'fa-user-slash' : 'fa-cloud-arrow-up'"></i>
-                </span>
-                <p class="avatar-empty__title">{{ esView ? 'Sin imagen' : 'Seleccionar imagen' }}</p>
-                <p class="avatar-empty__hint" *ngIf="!esView">
-                  Arrastra y suelta una imagen o haz clic para buscarla
-                </p>
-                <p class="avatar-empty__hint" *ngIf="!esView">
-                  También puedes pegarla con <kbd>Ctrl</kbd> + <kbd>V</kbd>
-                </p>
-              </div>
+
+
+
+              <!-- ---------- Inputs auxiliares ---------- -->
+              <input #galleryInput type="file" id="gallery-input" class="d-none" accept="image/*" (change)="processFile($event)">
+              <input #pasteInput id="paste-input" class="d-none" [formControl]="form.controls['foto']" (paste)="onPaste($event)">
             </div>
-
-            <!-- ---------- Acciones de imagen ---------- -->
-            <div class="avatar-actions mt-2" *ngIf="!esView">
-              <button type="button" class="btn btn-avatar btn-avatar-camera" (click)="openCamera()" title="Tomar foto">
-                <i class="fa-solid fa-camera"></i>
-                <span>Cámara</span>
-              </button>
-              <button type="button" class="btn btn-avatar btn-avatar-gallery" (click)="openGallery()" title="Buscar en el dispositivo">
-                <i class="fa-solid fa-image"></i>
-                <span>Galería</span>
-              </button>
-              <button type="button" class="btn btn-avatar btn-avatar-paste" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
-                <i class="fa-solid fa-paste"></i>
-                <span>Pegar</span>
-              </button>
-            </div>
-
-
-
-
-            <!-- ---------- Inputs auxiliares ---------- -->
-            <input #galleryInput type="file" id="gallery-input" class="d-none" accept="image/*" (change)="processFile($event)">
-            <input #pasteInput id="paste-input" class="d-none" [formControl]="form.controls['foto']" (paste)="onPaste($event)">
-          </div>
           </ng-container>
         </panel>
 
-  <!-- ---------- DIRECCIÓN ----------
-       Debajo de la foto: es contenido alto y estrecho, y esa columna
-       quedaba medio vacía. La dirección se busca en el mapa y de ahí
-       salen la división política, las coordenadas y las dos fotos. -->
-    <panel
-      headerClass="bg-gray-800"
-      title="Dirección"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-0"
-      icono="info"
-      fondoGris="true">
+        <!-- ---------- DIRECCIÓN ----------
+        Debajo de la foto: es contenido alto y estrecho, y esa columna
+        quedaba medio vacía. La dirección se busca en el mapa y de ahí
+        salen la división política, las coordenadas y las dos fotos. -->
+        <panel
+          headerClass="bg-gray-800"
+          title="Dirección"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-0"
+          icono="info"
+          fondoGris="true">
 
-      <ng-container outsideBody>
-        <div class="form-card__body">
+          <ng-container outsideBody>
+            <div class="form-card__body">
 
-          <div class="campo emp-direccion">
-            <app-campoTexto
-              [control]="form.controls['direccion']"
-              label="Dirección"
-              placeholder="Búscala en el mapa o escríbela"
-              [maxLength]="1000"
-              [trimEspacios]="true">
-            </app-campoTexto>
+              <div class="campo emp-direccion">
+                <app-campoTexto
+                  [control]="form.controls['direccion']"
+                  label="Dirección"
+                  placeholder="Búscala en el mapa o escríbela"
+                  [maxLength]="1000"
+                  [trimEspacios]="true">
+                </app-campoTexto>
 
-            <button type="button" class="btn btn-sm btn-primary emp-direccion__btn"
-                    title="Buscar la dirección en Google Maps"
-                    [disabled]="isdisabled"
-                    (click)="elegirDireccionEnElMapa()">
-              <i class="fa fa-map-location-dot me-1"></i>
-              <span>Buscar en el mapa</span>
-            </button>
-          </div>
-
-          @if (hayUbicacion) {
-            <div class="emp-ubicacion">
-
-              <!-- Lo que se guardará -->
-              <div class="emp-ubicacion__cabecera">
-                <span class="emp-ubicacion__titulo">
-                  <i class="fa fa-location-dot"></i>
-                  {{ resumenUbicacion.ubicacion || 'Dirección tomada del mapa' }}
-                </span>
-                <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar la dirección del mapa"
-                        [disabled]="isdisabled" (click)="quitarUbicacion()">
-                  <i class="fa fa-xmark"></i>
+                <button type="button" class="btn btn-sm btn-primary emp-direccion__btn"
+                  title="Buscar la dirección en Google Maps"
+                  [disabled]="isdisabled"
+                  (click)="elegirDireccionEnElMapa()">
+                  <i class="fa fa-map-location-dot me-1"></i>
+                  <span>Buscar en el mapa</span>
                 </button>
               </div>
 
-              @if (resumenUbicacion.division) {
-                <span class="emp-ubicacion__linea">{{ resumenUbicacion.division }}</span>
-              }
-              @if (resumenUbicacion.calles) {
-                <span class="emp-ubicacion__linea">{{ resumenUbicacion.calles }}</span>
-              }
+              @if (hayUbicacion) {
+                <div class="emp-ubicacion">
 
-              <!-- Coordenadas y enlace, que antes no se veían -->
-              @if (resumenUbicacion.coordenadas) {
-                <span class="emp-ubicacion__coords">
-                  <i class="fa fa-crosshairs"></i>{{ resumenUbicacion.coordenadas }}
-                </span>
-              }
-              @if (enlaceMapa) {
-                <a [href]="enlaceMapa" target="_blank" rel="noopener noreferrer" class="emp-ubicacion__enlace"
-                   [title]="enlaceMapa">
-                  <i class="fa fa-arrow-up-right-from-square"></i>Abrir en Google Maps
-                </a>
-              }
+                  <!-- Lo que se guardará -->
+                  <div class="emp-ubicacion__cabecera">
+                    <span class="emp-ubicacion__titulo">
+                      <i class="fa fa-location-dot"></i>
+                      {{ resumenUbicacion.ubicacion || 'Dirección tomada del mapa' }}
+                    </span>
+                    <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar la dirección del mapa"
+                      [disabled]="isdisabled" (click)="quitarUbicacion()">
+                      <i class="fa fa-xmark"></i>
+                    </button>
+                  </div>
 
-              <!-- Las dos capturas, antes de guardar -->
-              @if (urlFotoMapa || urlFotoCasa) {
-                <div class="emp-fotos">
-                  @if (urlFotoMapa) {
-                    <button type="button" class="emp-foto" title="Ver la vista del mapa" (click)="verFoto('mapa')">
-                      <img [src]="urlFotoMapa" alt="Vista del mapa" />
-                      <span class="emp-foto__pie"><i class="fa fa-map me-1"></i>Mapa</span>
-                    </button>
+                  @if (resumenUbicacion.division) {
+                    <span class="emp-ubicacion__linea">{{ resumenUbicacion.division }}</span>
                   }
-                  @if (urlFotoCasa) {
-                    <button type="button" class="emp-foto" title="Ver la vista de la calle" (click)="verFoto('casa')">
-                      <img [src]="urlFotoCasa" alt="Vista de la calle" />
-                      <span class="emp-foto__pie"><i class="fa fa-house me-1"></i>Fachada</span>
-                    </button>
+                  @if (resumenUbicacion.calles) {
+                    <span class="emp-ubicacion__linea">{{ resumenUbicacion.calles }}</span>
                   }
+
+                  <!-- Coordenadas y enlace, que antes no se veían -->
+                  @if (resumenUbicacion.coordenadas) {
+                    <span class="emp-ubicacion__coords">
+                      <i class="fa fa-crosshairs"></i>{{ resumenUbicacion.coordenadas }}
+                    </span>
+                  }
+                  @if (enlaceMapa) {
+                    <a [href]="enlaceMapa" target="_blank" rel="noopener noreferrer" class="emp-ubicacion__enlace"
+                      [title]="enlaceMapa">
+                      <i class="fa fa-arrow-up-right-from-square"></i>Abrir en Google Maps
+                    </a>
+                  }
+
+                  <!-- Las dos capturas, antes de guardar -->
+                  @if (urlFotoMapa || urlFotoCasa) {
+                    <div class="emp-fotos">
+                      @if (urlFotoMapa) {
+                        <button type="button" class="emp-foto" title="Ver la vista del mapa" (click)="verFoto('mapa')">
+                          <img [src]="urlFotoMapa" alt="Vista del mapa" />
+                          <span class="emp-foto__pie"><i class="fa fa-map me-1"></i>Mapa</span>
+                        </button>
+                      }
+                      @if (urlFotoCasa) {
+                        <button type="button" class="emp-foto" title="Ver la vista de la calle" (click)="verFoto('casa')">
+                          <img [src]="urlFotoCasa" alt="Vista de la calle" />
+                          <span class="emp-foto__pie"><i class="fa fa-house me-1"></i>Fachada</span>
+                        </button>
+                      }
+                    </div>
+                  } @else if (resumenUbicacion.coordenadas) {
+                    <span class="emp-fotos__vacio">
+                      <i class="fa fa-image"></i> Sin fotos del lugar
+                    </span>
+                  }
+
                 </div>
-              } @else if (resumenUbicacion.coordenadas) {
-                <span class="emp-fotos__vacio">
-                  <i class="fa fa-image"></i> Sin fotos del lugar
-                </span>
               }
 
             </div>
-          }
+          </ng-container>
+        </panel>
+      </div>
 
-        </div>
-      </ng-container>
-    </panel>
-    </div>
+      <!-- ============ COLUMNA DERECHA: FORMULARIO ============ -->
+      <div class="col-lg-8">
+        <form [formGroup]="form" class="user-details-form" autocomplete="off">
+          <div class="row g-3">
 
-    <!-- ============ COLUMNA DERECHA: FORMULARIO ============ -->
-    <div class="col-lg-8">
-      <form [formGroup]="form" class="user-details-form" autocomplete="off">
-        <div class="row g-3">
+            <!-- -------- Quién es el cliente -------- -->
+            <div class="col-md-6">
+              <panel
+                headerClass="bg-gray-800"
+                title="Datos del cliente"
+                noButton="true"
+                noBody="true"
+                panelClass="h-100 mb-3 mb-md-0"
+                icono="usuario"
+                fondoGris="true">
 
-          <!-- -------- Quién es el cliente -------- -->
-          <div class="col-md-6">
-            <panel
-              headerClass="bg-gray-800"
-              title="Datos del cliente"
-              noButton="true"
-              noBody="true"
-              panelClass="h-100 mb-3 mb-md-0"
-              icono="usuario"
-              fondoGris="true">
+                <ng-container outsideBody>
+                  <div class="form-card__body">
 
-              <ng-container outsideBody>
-                <div class="form-card__body">
-
-                  <!-- Estado activo / inactivo -->
-                  <div class="estado-miswitch" [class.is-on]="ctrlActivo.value">
-                    <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>
-                    <div class="estado-miswitch__text">
-                      <span class="estado-miswitch__label">Registro</span>
-                      <span class="estado-miswitch__hint">
-                        {{ ctrlActivo.value ? 'Cliente activo en el sistema' : 'Cliente dado de baja' }}
-                      </span>
-                    </div>
-                    <app-checkbox class="estado-miswitch__switch"
-                      [control]="ctrlActivo"
-                      [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
-                      [id]="'ck-cliente-activo'">
-                    </app-checkbox>
-                  </div>
-
-                  <!-- Persona o empresa: decide qué nombre se pide debajo -->
-                  <div class="campo campo-combo">
-                    <app-combo
-                      formControlName="tipo_cliente"
-                      [items]="tiposCliente"
-                      [label]="'Tipo de cliente'"
-                      bindLabel="name"
-                      bindValue="id">
-                    </app-combo>
-                  </div>
-
-                  <!-- Identificación -->
-                  <div class="campo campo-lookup">
-                    <div class="row g-2 flex-nowrap">
-                      <div class="col-5 campo-combo">
-                        <app-combo
-                          formControlName="tipo_identificacion"
-                          [items]="tiposIdentificacion"
-                          [label]="'Tipo'"
-                          bindLabel="name"
-                          bindValue="id">
-                        </app-combo>
+                    <!-- Estado activo / inactivo -->
+                    <div class="estado-miswitch" [class.is-on]="ctrlActivo.value">
+                      <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>
+                      <div class="estado-miswitch__text">
+                        <span class="estado-miswitch__label">Registro</span>
+                        <span class="estado-miswitch__hint">
+                          {{ ctrlActivo.value ? 'Cliente activo en el sistema' : 'Cliente dado de baja' }}
+                        </span>
                       </div>
-                      <div class="col">
-                        <!-- Valida cédula y RUC con el algoritmo del SRI según el tipo
-                             elegido al lado; el pasaporte pasa sin dígito verificador. -->
-                        <app-campoIdentificacion
-                          [control]="form.controls['numero_identificacion']"
-                          [tipoControl]="ctrlTipoIdentificacion"
-                          label="Nº identificación"
-                          [maxLength]="20"
-                          (blur)="alSalirDeIdentificacion()">
-                        </app-campoIdentificacion>
-                      </div>
+                      <app-checkbox class="estado-miswitch__switch"
+                        [control]="ctrlActivo"
+                        [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
+                        [id]="'ck-cliente-activo'">
+                      </app-checkbox>
                     </div>
 
-                    <!-- LO QUE DICE EL SRI, siempre que el documento sea un
-                         RUC —también el de una persona natural—. El nombre ya
-                         está puesto abajo; aquí se avisa de lo que no se ve en
-                         él: si el RUC está suspendido o marcado como fantasma. -->
-                    @if (sri.estado !== 'quieto') {
-                      @if (sri.estado === 'consultando') {
-                        <p class="campo-hint">
-                          <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                          {{ sri.mensaje }}
-                        </p>
-                      } @else if (sri.estado === 'sin-datos') {
-                        <p class="campo-hint">
-                          <i class="fa-solid fa-circle-info"></i>
-                          {{ sri.mensaje }}
-                          <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                                  (click)="consultarSri(true)">
-                            reintentar
-                          </button>
-                        </p>
-                      } @else {
-                        <p class="campo-hint">
-                          <i class="fa-solid fa-building-columns"></i>
-                          @if (sri.contribuyente?.degradado) {
-                            Registro Civil: <b>{{ sri.mensaje }}</b>
-                          } @else {
-                            SRI: <b>{{ sri.mensaje }}</b>
-                          }
-                          @if (sri.contribuyente?.tipo_contribuyente) {
-                            · {{ sri.contribuyente.tipo_contribuyente }}
-                          }
-                          @if (sri.contribuyente?.regimen) {
-                            · {{ sri.contribuyente.regimen }}
-                          }
-                        </p>
-                        @if (sri.contribuyente?.degradado) {
-                          <p class="campo-hint">
-                            <i class="fa-solid fa-circle-info"></i>
-                            El SRI no contestó: esto es sólo el nombre, sin estado ni régimen, y
-                            <b>no se guardará</b>.
-                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                                    (click)="consultarSri(true)">
-                              volver a intentarlo
-                            </button>
-                          </p>
-                        }
-                        @if (avisoSri) {
-                          <p class="campo-hint text-danger">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            {{ avisoSri }}
-                          </p>
-                        }
-                        <!-- El SRI manda el nombre de una pieza: si el corte
-                             entre apellidos y nombres quedó dudoso, se dice y
-                             se deja moverlo, igual que con la cédula. -->
-                        @if (!esEmpresa && sri.contribuyente?.nombre_aviso) {
-                          <p class="campo-hint text-warning-emphasis">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            {{ sri.contribuyente.nombre_aviso }}
-                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                                    title="La última palabra de los apellidos pasa a los nombres"
-                                    (click)="moverCorteNombre('nombres')">
-                              ← a nombres
-                            </button>
-                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                                    title="La primera palabra de los nombres pasa a los apellidos"
-                                    (click)="moverCorteNombre('apellidos')">
-                              a apellidos →
-                            </button>
-                          </p>
-                        }
-                      }
-                    }
-
-                    <!-- LO QUE DICE EL REGISTRO CIVIL (sólo con cédula). Es
-                         una ayuda: si no contesta o no encuentra la cédula,
-                         aquí se dice y los nombres se escriben a mano. -->
-                    @if (registroCivil.estado !== 'quieto') {
-                      @if (registroCivil.estado === 'consultando') {
-                        <p class="campo-hint">
-                          <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                          {{ registroCivil.mensaje }}
-                        </p>
-                      } @else if (registroCivil.estado === 'sin-datos') {
-                        <p class="campo-hint">
-                          <i class="fa-solid fa-circle-info"></i>
-                          {{ registroCivil.mensaje }}
-                          <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                                  (click)="consultarRegistroCivil(true)">
-                            reintentar
-                          </button>
-                        </p>
-                      } @else {
-                        <!-- Los nombres ya están puestos abajo: esto sólo dice
-                             de dónde salieron. -->
-                        <p class="campo-hint">
-                          <i class="fa-solid fa-id-card"></i>
-                          Registro Civil: <b>{{ registroCivil.mensaje }}</b>
-                        </p>
-                        @if (registroCivil.persona && !registroCivil.persona.seguro) {
-                          <p class="campo-hint text-warning-emphasis">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            {{ registroCivil.persona.aviso }}
-                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                                    title="La última palabra de los apellidos pasa a los nombres"
-                                    (click)="moverCorteNombre('nombres')">
-                              ← a nombres
-                            </button>
-                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                                    title="La primera palabra de los nombres pasa a los apellidos"
-                                    (click)="moverCorteNombre('apellidos')">
-                              a apellidos →
-                            </button>
-                          </p>
-                        }
-                      }
-                    }
-                  </div>
-
-                  @if (esEmpresa) {
-                    <div class="campo">
-                      <app-campoTexto
-                        [control]="form.controls['razon_social']"
-                        label="Razón social"
-                        placeholder="Como consta en el RUC"
-                        [maxLength]="200"
-                        [trimEspacios]="true">
-                      </app-campoTexto>
+                    <!-- Persona o empresa: decide qué nombre se pide debajo -->
+                    <div class="campo campo-combo">
+                      <app-combo
+                        formControlName="tipo_cliente"
+                        [items]="tiposCliente"
+                        [label]="'Tipo de cliente'"
+                        bindLabel="name"
+                        bindValue="id">
+                      </app-combo>
                     </div>
 
-                    <div class="campo">
-                      <app-campoTexto
-                        [control]="form.controls['nombre_comercial']"
-                        label="Nombre comercial (opcional)"
-                        placeholder="Con el que se lo conoce"
-                        [maxLength]="200"
-                        [trimEspacios]="true">
-                      </app-campoTexto>
-                    </div>
-
-                    <!-- Lo calcula la base (columna generada): aquí se ve, no
-                         se escribe. Es el nombre con el que el cliente sale
-                         en las listas y en las búsquedas. -->
-                    <div class="campo">
-                      <app-campoTexto
-                        [control]="nombreCompletoControl"
-                        label="Nombre completo (lo calcula el sistema)"
-                        placeholder="Sale de la razón social">
-                      </app-campoTexto>
-                    </div>
-
-                  } @else {
-                    <div class="campo">
-                      <app-campoTexto
-                        [control]="form.controls['apellidos']"
-                        label="Apellidos"
-                        placeholder="Apellidos"
-                        [maxLength]="100"
-                        [trimEspacios]="true">
-                      </app-campoTexto>
-                    </div>
-
-                    <div class="campo">
-                      <app-campoTexto
-                        [control]="form.controls['nombres']"
-                        label="Nombres"
-                        placeholder="Nombres"
-                        [maxLength]="100"
-                        [trimEspacios]="true">
-                      </app-campoTexto>
-                    </div>
-
-                    <!-- Lo calcula la base (columna generada): aquí se ve, no
-                         se escribe. Primero los apellidos, que es como se
-                         busca y como se ordenan las listas. -->
-                    <div class="campo">
-                      <app-campoTexto
-                        [control]="nombreCompletoControl"
-                        label="Nombre completo (lo calcula el sistema)"
-                        placeholder="Apellidos y después nombres">
-                      </app-campoTexto>
-                    </div>
-
+                    <!-- Identificación -->
                     <div class="campo campo-lookup">
                       <div class="row g-2 flex-nowrap">
-                        <div class="col-6">
-                          <app-campoTexto
-                            [control]="form.controls['fecha_nacimiento']"
-                            label="Nacimiento"
-                            placeholder="AAAA-MM-DD"
-                            type="date">
-                          </app-campoTexto>
-                        </div>
-                        <div class="col-6 campo-combo">
+                        <div class="col-5 campo-combo">
                           <app-combo
-                            formControlName="genero"
-                            [items]="generos"
-                            [label]="'Género'"
+                            formControlName="tipo_identificacion"
+                            [items]="tiposIdentificacion"
+                            [label]="'Tipo'"
                             bindLabel="name"
                             bindValue="id">
                           </app-combo>
                         </div>
+                        <div class="col">
+                          <!-- Valida cédula y RUC con el algoritmo del SRI según el tipo
+                          elegido al lado; el pasaporte pasa sin dígito verificador. -->
+                          <app-campoIdentificacion
+                            [control]="form.controls['numero_identificacion']"
+                            [tipoControl]="ctrlTipoIdentificacion"
+                            label="Nº identificación"
+                            [maxLength]="20"
+                            (blur)="alSalirDeIdentificacion()">
+                          </app-campoIdentificacion>
+                        </div>
                       </div>
-                    </div>
-                  }
 
-                  <!-- LO QUE DICE EL SRI DE ESTE RUC. Vale para empresas
-                       y para personas naturales con RUC: el régimen y «lleva
-                       contabilidad» son los que se imprimen en la factura
-                       electrónica, y el estado dice si se le puede facturar.
-                       Por eso está fuera del bloque de las empresas.
-                       (comentario original):
-                         No son campos: vienen del SRI y se guardan con el
-                         cliente tal cual. El régimen y «obligado a llevar
-                         contabilidad» son los que se imprimen en la factura
-                         electrónica; el estado es lo que dice si se le puede
-                         facturar. Lleva la fecha porque es una foto: el
-                         estado de un RUC cambia. -->
+                      <!-- LO QUE DICE EL SRI, siempre que el documento sea un
+                      RUC —también el de una persona natural—. El nombre ya
+                      está puesto abajo; aquí se avisa de lo que no se ve en
+                      él: si el RUC está suspendido o marcado como fantasma. -->
+                      @if (sri.estado !== 'quieto') {
+                        @if (sri.estado === 'consultando') {
+                          <p class="campo-hint">
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            {{ sri.mensaje }}
+                          </p>
+                        } @else if (sri.estado === 'sin-datos') {
+                          <p class="campo-hint">
+                            <i class="fa-solid fa-circle-info"></i>
+                            {{ sri.mensaje }}
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                              (click)="consultarSri(true)">
+                              reintentar
+                            </button>
+                          </p>
+                        } @else {
+                          <p class="campo-hint">
+                            <i class="fa-solid fa-building-columns"></i>
+                            @if (sri.contribuyente?.degradado) {
+                              Registro Civil: <b>{{ sri.mensaje }}</b>
+                            } @else {
+                              SRI: <b>{{ sri.mensaje }}</b>
+                            }
+                            @if (sri.contribuyente?.tipo_contribuyente) {
+                              · {{ sri.contribuyente.tipo_contribuyente }}
+                            }
+                            @if (sri.contribuyente?.regimen) {
+                              · {{ sri.contribuyente.regimen }}
+                            }
+                          </p>
+                          @if (sri.contribuyente?.degradado) {
+                            <p class="campo-hint">
+                              <i class="fa-solid fa-circle-info"></i>
+                              El SRI no contestó: esto es sólo el nombre, sin estado ni régimen, y
+                              <b>no se guardará</b>.
+                              <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                (click)="consultarSri(true)">
+                                volver a intentarlo
+                              </button>
+                            </p>
+                          }
+                          @if (avisoSri) {
+                            <p class="campo-hint text-danger">
+                              <i class="fa-solid fa-triangle-exclamation"></i>
+                              {{ avisoSri }}
+                            </p>
+                          }
+                          <!-- El SRI manda el nombre de una pieza: si el corte
+                          entre apellidos y nombres quedó dudoso, se dice y
+                          se deja moverlo, igual que con la cédula. -->
+                          @if (!esEmpresa && sri.contribuyente?.nombre_aviso) {
+                            <p class="campo-hint text-warning-emphasis">
+                              <i class="fa-solid fa-triangle-exclamation"></i>
+                              {{ sri.contribuyente.nombre_aviso }}
+                              <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                title="La última palabra de los apellidos pasa a los nombres"
+                                (click)="moverCorteNombre('nombres')">
+                                ← a nombres
+                              </button>
+                              <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                title="La primera palabra de los nombres pasa a los apellidos"
+                                (click)="moverCorteNombre('apellidos')">
+                                a apellidos →
+                              </button>
+                            </p>
+                          }
+                        }
+                      }
+
+                      <!-- LO QUE DICE EL REGISTRO CIVIL (sólo con cédula). Es
+                      una ayuda: si no contesta o no encuentra la cédula,
+                      aquí se dice y los nombres se escriben a mano. -->
+                      @if (registroCivil.estado !== 'quieto') {
+                        @if (registroCivil.estado === 'consultando') {
+                          <p class="campo-hint">
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            {{ registroCivil.mensaje }}
+                          </p>
+                        } @else if (registroCivil.estado === 'sin-datos') {
+                          <p class="campo-hint">
+                            <i class="fa-solid fa-circle-info"></i>
+                            {{ registroCivil.mensaje }}
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                              (click)="consultarRegistroCivil(true)">
+                              reintentar
+                            </button>
+                          </p>
+                        } @else {
+                          <!-- Los nombres ya están puestos abajo: esto sólo dice
+                          de dónde salieron. -->
+                          <p class="campo-hint">
+                            <i class="fa-solid fa-id-card"></i>
+                            Registro Civil: <b>{{ registroCivil.mensaje }}</b>
+                          </p>
+                          @if (registroCivil.persona && !registroCivil.persona.seguro) {
+                            <p class="campo-hint text-warning-emphasis">
+                              <i class="fa-solid fa-triangle-exclamation"></i>
+                              {{ registroCivil.persona.aviso }}
+                              <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                title="La última palabra de los apellidos pasa a los nombres"
+                                (click)="moverCorteNombre('nombres')">
+                                ← a nombres
+                              </button>
+                              <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                title="La primera palabra de los nombres pasa a los apellidos"
+                                (click)="moverCorteNombre('apellidos')">
+                                a apellidos →
+                              </button>
+                            </p>
+                          }
+                        }
+                      }
+                    </div>
+
+                    @if (esEmpresa) {
+                      <div class="campo">
+                        <app-campoTexto
+                          [control]="form.controls['razon_social']"
+                          label="Razón social"
+                          placeholder="Como consta en el RUC"
+                          [maxLength]="200"
+                          [trimEspacios]="true">
+                        </app-campoTexto>
+                      </div>
+
+                      <div class="campo">
+                        <app-campoTexto
+                          [control]="form.controls['nombre_comercial']"
+                          label="Nombre comercial (opcional)"
+                          placeholder="Con el que se lo conoce"
+                          [maxLength]="200"
+                          [trimEspacios]="true">
+                        </app-campoTexto>
+                      </div>
+
+                      <!-- Lo calcula la base (columna generada): aquí se ve, no
+                      se escribe. Es el nombre con el que el cliente sale
+                      en las listas y en las búsquedas. -->
+                      <div class="campo">
+                        <app-campoTexto
+                          [control]="nombreCompletoControl"
+                          label="Nombre completo (lo calcula el sistema)"
+                          placeholder="Sale de la razón social">
+                        </app-campoTexto>
+                      </div>
+
+                    } @else {
+                      <div class="campo">
+                        <app-campoTexto
+                          [control]="form.controls['apellidos']"
+                          label="Apellidos"
+                          placeholder="Apellidos"
+                          [maxLength]="100"
+                          [trimEspacios]="true">
+                        </app-campoTexto>
+                      </div>
+
+                      <div class="campo">
+                        <app-campoTexto
+                          [control]="form.controls['nombres']"
+                          label="Nombres"
+                          placeholder="Nombres"
+                          [maxLength]="100"
+                          [trimEspacios]="true">
+                        </app-campoTexto>
+                      </div>
+
+                      <!-- Lo calcula la base (columna generada): aquí se ve, no
+                      se escribe. Primero los apellidos, que es como se
+                      busca y como se ordenan las listas. -->
+                      <div class="campo">
+                        <app-campoTexto
+                          [control]="nombreCompletoControl"
+                          label="Nombre completo (lo calcula el sistema)"
+                          placeholder="Apellidos y después nombres">
+                        </app-campoTexto>
+                      </div>
+
+                      <div class="campo campo-lookup">
+                        <div class="row g-2 flex-nowrap">
+                          <div class="col-6">
+                            <app-campoTexto
+                              [control]="form.controls['fecha_nacimiento']"
+                              label="Nacimiento"
+                              placeholder="AAAA-MM-DD"
+                              type="date">
+                            </app-campoTexto>
+                          </div>
+                          <div class="col-6 campo-combo">
+                            <app-combo
+                              formControlName="genero"
+                              [items]="generos"
+                              [label]="'Género'"
+                              bindLabel="name"
+                              bindValue="id">
+                            </app-combo>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- LO QUE DICE EL SRI DE ESTE RUC. Vale para empresas
+                    y para personas naturales con RUC: el régimen y «lleva
+                    contabilidad» son los que se imprimen en la factura
+                    electrónica, y el estado dice si se le puede facturar.
+                    Por eso está fuera del bloque de las empresas.
+                    (comentario original):
+                    No son campos: vienen del SRI y se guardan con el
+                    cliente tal cual. El régimen y «obligado a llevar
+                    contabilidad» son los que se imprimen en la factura
+                    electrónica; el estado es lo que dice si se le puede
+                    facturar. Lleva la fecha porque es una foto: el
+                    estado de un RUC cambia. -->
                     @if (sri.contribuyente && !sri.contribuyente.degradado) {
                       <div class="campo sri-ficha">
                         <div class="sri-ficha__titulo">
@@ -501,15 +510,15 @@
                           <span>Datos del SRI</span>
                           @if (sri.contribuyente.estado) {
                             <span class="chip"
-                                  [class.chip-info]="sri.contribuyente.activo"
-                                  [class.chip-muted]="!sri.contribuyente.activo">
+                              [class.chip-info]="sri.contribuyente.activo"
+                              [class.chip-muted]="!sri.contribuyente.activo">
                               {{ sri.contribuyente.estado }}
                             </span>
                           }
                           @if (!esView) {
                             <button type="button" class="btn btn-link btn-sm p-0 ms-auto align-baseline"
-                                    title="Volver a preguntarle al SRI"
-                                    (click)="consultarSri(true)">
+                              title="Volver a preguntarle al SRI"
+                              (click)="consultarSri(true)">
                               volver a consultar
                             </button>
                           }
@@ -524,416 +533,420 @@
                             <dd>
                               {{ sri.contribuyente.regimen }}
                               @if (sri.contribuyente.categoria) { · {{ sri.contribuyente.categoria }} }
-                            </dd>
-                          }
-                          @if (sri.contribuyente.actividad) {
-                            <dt>Actividad</dt><dd>{{ sri.contribuyente.actividad }}</dd>
-                          }
-                          @if (sri.contribuyente.representante_nombre) {
-                            <dt>Representante</dt>
-                            <dd>
-                              {{ sri.contribuyente.representante_nombre }}
-                              @if (sri.contribuyente.representante_identificacion) {
-                                ({{ sri.contribuyente.representante_identificacion }})
-                              }
-                            </dd>
-                          }
-                          @if (sri.contribuyente.fecha_inicio) {
-                            <dt>Inicio de actividades</dt><dd>{{ sri.contribuyente.fecha_inicio }}</dd>
-                          }
-                          @if (sri.contribuyente.fecha_cese) {
-                            <dt>Cese</dt><dd>{{ sri.contribuyente.fecha_cese }}</dd>
-                          }
-                        </dl>
+                              </dd>
+                            }
+                            @if (sri.contribuyente.actividad) {
+                              <dt>Actividad</dt><dd>{{ sri.contribuyente.actividad }}</dd>
+                            }
+                            @if (sri.contribuyente.representante_nombre) {
+                              <dt>Representante</dt>
+                              <dd>
+                                {{ sri.contribuyente.representante_nombre }}
+                                @if (sri.contribuyente.representante_identificacion) {
+                                  ({{ sri.contribuyente.representante_identificacion }})
+                                }
+                              </dd>
+                            }
+                            @if (sri.contribuyente.fecha_inicio) {
+                              <dt>Inicio de actividades</dt><dd>{{ sri.contribuyente.fecha_inicio }}</dd>
+                            }
+                            @if (sri.contribuyente.fecha_cese) {
+                              <dt>Cese</dt><dd>{{ sri.contribuyente.fecha_cese }}</dd>
+                            }
+                          </dl>
 
-                        <div class="sri-ficha__banderas">
-                          @if (sri.contribuyente.obligado_contabilidad) {
-                            <span class="chip chip-info" title="Lo lleva la factura electrónica">
-                              <i class="fa-solid fa-book"></i> Lleva contabilidad
-                            </span>
-                          }
-                          @if (sri.contribuyente.agente_retencion) {
-                            <span class="chip chip-info"><i class="fa-solid fa-scissors"></i> Agente de retención</span>
-                          }
-                          @if (sri.contribuyente.contribuyente_especial) {
-                            <span class="chip chip-info"><i class="fa-solid fa-star"></i> Contribuyente especial</span>
-                          }
-                          @if (sri.contribuyente.fantasma) {
-                            <span class="chip chip-peligro"><i class="fa-solid fa-ghost"></i> Contribuyente fantasma</span>
-                          }
-                          @if (sri.contribuyente.transacciones_inexistentes) {
-                            <span class="chip chip-peligro"><i class="fa-solid fa-triangle-exclamation"></i> Transacciones inexistentes</span>
-                          }
-                        </div>
+                          <div class="sri-ficha__banderas">
+                            @if (sri.contribuyente.obligado_contabilidad) {
+                              <span class="chip chip-info" title="Lo lleva la factura electrónica">
+                                <i class="fa-solid fa-book"></i> Lleva contabilidad
+                              </span>
+                            }
+                            @if (sri.contribuyente.agente_retencion) {
+                              <span class="chip chip-info"><i class="fa-solid fa-scissors"></i> Agente de retención</span>
+                            }
+                            @if (sri.contribuyente.contribuyente_especial) {
+                              <span class="chip chip-info"><i class="fa-solid fa-star"></i> Contribuyente especial</span>
+                            }
+                            @if (sri.contribuyente.fantasma) {
+                              <span class="chip chip-peligro"><i class="fa-solid fa-ghost"></i> Contribuyente fantasma</span>
+                            }
+                            @if (sri.contribuyente.transacciones_inexistentes) {
+                              <span class="chip chip-peligro"><i class="fa-solid fa-triangle-exclamation"></i> Transacciones inexistentes</span>
+                            }
+                          </div>
 
-                        @if (sri.contribuyente.consultado_at) {
-                          <p class="campo-hint mb-0">
-                            <i class="fa-regular fa-clock"></i>
-                            Consultado el {{ sri.contribuyente.consultado_at }}
-                            @if (sri.contribuyente.consultado_por) { por {{ sri.contribuyente.consultado_por }} }
-                          </p>
-                        }
-                      </div>
-                    }
-
-                </div>
-              </ng-container>
-            </panel>
-          </div>
-
-          <!-- -------- Condiciones comerciales: vendedor con selector, crédito y estado -------- -->
-          <div class="col-md-6">
-            <panel
-              headerClass="bg-gray-800"
-              title="Datos comerciales"
-              noButton="true"
-              noBody="true"
-              panelClass="h-100 mb-3 mb-md-0"
-              icono="briefcase"
-              fondoGris="true">
-
-              <ng-container outsideBody>
-                <div class="form-card__body">
-
-                  <!-- Vendedor (ID + nombre + lupa, como el jefe en saveEmpleado) -->
-                  <div class="campo campo-lookup">
-                    <div class="row g-2 flex-nowrap">
-                      <div class="col-4">
-                        <app-campoNumeroEntero
-                          [control]="form.controls['vendedor_id']"
-                          label="ID Vendedor"
-                          placeholder="ID"
-                          [maxLength]="10"
-                          (blur)="cargarVendedorPorId()">
-                        </app-campoNumeroEntero>
-                      </div>
-                      <div class="col">
-                        <app-campoTexto
-                          [control]="vendedorNombreControl"
-                          label="Vendedor (opcional)"
-                          placeholder="Sin vendedor asignado">
-                        </app-campoTexto>
-                      </div>
-                      @if (!esView) {
-                        <div class="col-auto">
-                          <button type="button" class="btn btn-lookup" (click)="abrirModalVendedores()" title="Buscar vendedor">
-                            <i class="fa fa-search"></i>
-                          </button>
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  <!-- GRUPO COMERCIAL. De él se copian las cuatro
-                       condiciones de abajo; lo que queda guardado son los
-                       campos del cliente, no el grupo. -->
-                  <div class="campo campo-lookup">
-                    <div class="row g-2 flex-nowrap">
-                      <div class="col">
-                        <app-campoTexto
-                          [control]="grupoNombreControl"
-                          label="Grupo comercial"
-                          placeholder="Elígelo con la lupa">
-                        </app-campoTexto>
-                      </div>
-                      @if (!esView) {
-                        <div class="col-auto">
-                          <button type="button" class="btn btn-lookup" (click)="abrirModalGrupos()" title="Buscar grupo de clientes">
-                            <i class="fa fa-sitemap"></i>
-                          </button>
-                        </div>
-                        @if (grupoNombreControl.value) {
-                          <div class="col-auto">
-                            <button type="button" class="btn btn-lookup" (click)="limpiarGrupo()" title="Quitar el grupo">
-                              <i class="fa fa-times"></i>
-                            </button>
+                          @if (sri.contribuyente.consultado_at) {
+                            <p class="campo-hint mb-0">
+                              <i class="fa-regular fa-clock"></i>
+                              Consultado el {{ sri.contribuyente.consultado_at }}
+                              @if (sri.contribuyente.consultado_por) { por {{ sri.contribuyente.consultado_por }} }
+                              </p>
+                            }
                           </div>
                         }
-                      }
-                    </div>
 
-                    @if (!form.controls['grupo_cliente_id'].value) {
-                      <p class="campo-hint text-danger">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        El grupo es <b>obligatorio</b>: elígelo con la lupa.
-                      </p>
-                    }
+                      </div>
+                    </ng-container>
+                  </panel>
+                </div>
 
-                    @if (condicionesGrupo) {
-                      <p class="campo-hint">
-                        <i class="fa-solid fa-turn-up"></i>
-                        El grupo pone: <b>{{ resumenGrupo }}</b>.
-                        @if (difiereDelGrupo && !esView) {
-                          <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                <!-- -------- Condiciones comerciales: vendedor con selector, crédito y estado -------- -->
+                <div class="col-md-6">
+                  <panel
+                    headerClass="bg-gray-800"
+                    title="Datos comerciales"
+                    noButton="true"
+                    noBody="true"
+                    panelClass="h-100 mb-3 mb-md-0"
+                    icono="briefcase"
+                    fondoGris="true">
+
+                    <ng-container outsideBody>
+                      <div class="form-card__body">
+
+                        <!-- Vendedor (ID + nombre + lupa, como el jefe en saveEmpleado) -->
+                        <div class="campo campo-lookup">
+                          <div class="row g-2 flex-nowrap">
+                            <div class="col-4">
+                              <app-campoNumeroEntero
+                                [control]="form.controls['vendedor_id']"
+                                label="ID Vendedor"
+                                placeholder="ID"
+                                [maxLength]="10"
+                                (blur)="cargarVendedorPorId()">
+                              </app-campoNumeroEntero>
+                            </div>
+                            <div class="col">
+                              <app-campoTexto
+                                [control]="vendedorNombreControl"
+                                label="Vendedor (opcional)"
+                                placeholder="Sin vendedor asignado">
+                              </app-campoTexto>
+                            </div>
+                            @if (!esView) {
+                              <div class="col-auto">
+                                <button type="button" class="btn btn-lookup" (click)="abrirModalVendedores()" title="Buscar vendedor">
+                                  <i class="fa fa-search"></i>
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- GRUPO COMERCIAL. De él se copian las cuatro
+                        condiciones de abajo; lo que queda guardado son los
+                        campos del cliente, no el grupo. -->
+                        <div class="campo campo-lookup">
+                          <div class="row g-2 flex-nowrap">
+                            <div class="col">
+                              <app-campoTexto
+                                [control]="grupoNombreControl"
+                                label="Grupo comercial"
+                                placeholder="Elígelo con la lupa">
+                              </app-campoTexto>
+                            </div>
+                            @if (!esView) {
+                              <div class="col-auto">
+                                <button type="button" class="btn btn-lookup" (click)="abrirModalGrupos()" title="Buscar grupo de clientes">
+                                  <i class="fa fa-sitemap"></i>
+                                </button>
+                              </div>
+                              @if (grupoNombreControl.value) {
+                                <div class="col-auto">
+                                  <button type="button" class="btn btn-lookup" (click)="limpiarGrupo()" title="Quitar el grupo">
+                                    <i class="fa fa-times"></i>
+                                  </button>
+                                </div>
+                              }
+                            }
+                          </div>
+
+                          @if (!form.controls['grupo_cliente_id'].value) {
+                            <p class="campo-hint text-danger">
+                              <i class="fa-solid fa-triangle-exclamation"></i>
+                              El grupo es <b>obligatorio</b>: elígelo con la lupa.
+                            </p>
+                          }
+
+                          @if (condicionesGrupo) {
+                            <p class="campo-hint">
+                              <i class="fa-solid fa-turn-up"></i>
+                              El grupo pone: <b>{{ resumenGrupo }}</b>.
+                              @if (difiereDelGrupo && !esView) {
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
                                   (click)="copiarCondicionesDelGrupo(true)">
-                            usar las del grupo
+                                  usar las del grupo
+                                </button>
+                              }
+                            </p>
+                          }
+                        </div>
+
+                        <div class="campo campo-lookup">
+                          <div class="row g-2 flex-nowrap">
+                            <div class="col-6 campo-combo">
+                              <app-combo
+                                formControlName="forma_pago"
+                                [items]="formasPago"
+                                [label]="'Forma de pago'"
+                                bindLabel="name"
+                                bindValue="id">
+                              </app-combo>
+                            </div>
+                            <div class="col-6 campo-combo">
+                              <app-combo
+                                formControlName="estado"
+                                [items]="estados"
+                                [label]="'Situación'"
+                                bindLabel="name"
+                                bindValue="id">
+                              </app-combo>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="campo campo-lookup">
+                          <div class="row g-2 flex-nowrap">
+                            <div class="col-6">
+                              <app-campoTexto
+                                [control]="form.controls['limite_credito']"
+                                label="Cupo de crédito"
+                                placeholder="0.00"
+                                type="number"
+                                [maxLength]="12"
+                                icono="fa-dollar-sign">
+                              </app-campoTexto>
+                            </div>
+                            <div class="col-6">
+                              <app-campoNumeroEntero
+                                [control]="form.controls['dias_credito']"
+                                label="Días de crédito"
+                                placeholder="0"
+                                [maxLength]="3">
+                              </app-campoNumeroEntero>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="campo">
+                          <app-campoTexto
+                            [control]="form.controls['descuento']"
+                            label="Descuento habitual"
+                            placeholder="0.00"
+                            type="number"
+                            [maxLength]="6"
+                            icono="fa-percent">
+                          </app-campoTexto>
+                        </div>
+
+                        <div class="campo">
+                          <app-campoTextoArea
+                            [control]="form.controls['observaciones']"
+                            label="Observaciones"
+                            placeholder="Acuerdos, horarios de entrega, referencias…"
+                            [maxLength]="2000"
+                            [alto]="90">
+                          </app-campoTextoArea>
+                        </div>
+
+                      </div>
+                    </ng-container>
+                  </panel>
+                </div>
+
+                <!-- -------- Contacto -------- -->
+                <div class="col-12">
+                  <panel
+                    headerClass="bg-gray-800"
+                    title="Contacto"
+                    noButton="true"
+                    noBody="true"
+                    panelClass="mb-0"
+                    icono="phone"
+                    fondoGris="true">
+
+                    <ng-container outsideBody>
+                      <div class="form-card__body">
+                        <div class="row g-2">
+                          <div class="col-md-6">
+                            <div class="campo">
+                              <app-campoEmail
+                                [control]="form.controls['email']"
+                                label="Correo"
+                                placeholder="nombre@empresa.com"
+                                [maxLength]="150"
+                                [required]="false"
+                                [trimEspacios]="true"
+                                [sinEspacios]="true">
+                              </app-campoEmail>
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <div class="campo">
+                              <app-campoEmail
+                                [control]="form.controls['email_alterno']"
+                                label="Correo alterno (opcional)"
+                                placeholder="facturacion@empresa.com"
+                                [maxLength]="150"
+                                [required]="false"
+                                [trimEspacios]="true"
+                                [sinEspacios]="true">
+                              </app-campoEmail>
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <div class="campo">
+                              <app-campoTelefono
+                                [control]="form.controls['celular']"
+                                label="Celular"
+                                placeholder="Ej: 0987654321"
+                                [maxLength]="20"
+                                [required]="false"
+                                [pais]="'ecuador'"
+                                [tipoTelefono]="'celular'">
+                              </app-campoTelefono>
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <div class="campo">
+                              <app-campoTelefono
+                                [control]="form.controls['telefono']"
+                                label="Teléfono fijo"
+                                placeholder="Ej: 072345678"
+                                [maxLength]="20"
+                                [required]="false"
+                                [pais]="'ninguno'"
+                                [tipoTelefono]="'ambos'">
+                              </app-campoTelefono>
+                            </div>
+                          </div>
+                          <div class="col-12">
+                            <div class="campo">
+                              <app-campoTexto
+                                [control]="form.controls['sitio_web']"
+                                label="Sitio web (opcional)"
+                                placeholder="https://..."
+                                [maxLength]="200"
+                                [trimEspacios]="true"
+                                [noEspacios]="true"
+                                icono="fa-globe">
+                              </app-campoTexto>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </ng-container>
+                  </panel>
+                </div>
+
+                <!-- -------- Personas de contacto (grilla editable, estilo permisos) -------- -->
+                <div class="col-12">
+                  <panel
+                    headerClass="bg-gray-800"
+                    title="Personas de contacto"
+                    noButton="true"
+                    noBody="true"
+                    panelClass="mb-0"
+                    icono="phone"
+                    fondoGris="true">
+
+                    <ng-container header>
+                      @if (!esView) {
+                        <div class="contactos-toolbar">
+                          <button type="button" class="btn btn-sm btn-primary" (click)="agregarContacto()" title="Añadir una fila y escribir los datos del contacto">
+                            <i class="fa fa-plus me-1"></i>Agregar contacto
                           </button>
+                        </div>
+                      }
+                    </ng-container>
+
+                    <ng-container outsideBody>
+                      <div class="form-card__body">
+                        <!-- Las celdas se editan con un clic; Activo se alterna en la
+                        celda (onCellContactoClicked); ACCIONES plegable con clic
+                        en su cabecera (onHeaderContactosClicked). -->
+                        <div class="contactos-grid" (click)="onHeaderContactosClicked($event)">
+                          <ag-grid-angular
+                            [rowData]="contactos"
+                            [columnDefs]="columnDefsContactos"
+                            [defaultColDef]="_appAgGridService.defaultColDef"
+                            [rowHeight]="36"
+                            [headerHeight]="_appAgGridService.headerHeight"
+                            [localeText]="_appAgGridService.localeText"
+                            [rowClassRules]="rowClassRulesContactos"
+                            [getRowId]="getRowIdContacto"
+                            [rowSelection]="'single'"
+                            [pagination]="false"
+                            [animateRows]="true"
+                            [singleClickEdit]="true"
+                            [stopEditingWhenCellsLoseFocus]="true"
+                            [suppressRowClickSelection]="true"
+                            [overlayNoRowsTemplate]="esView ? '<span>Sin personas de contacto.</span>' : '<span>Sin contactos todavía. Usa <b>Agregar contacto</b> y escribe directamente en las celdas.</span>'"
+                            [context]="{ componentParent: this }"
+                            class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+                            [navigateToNextCell]="navegarConTeclado"
+                            (gridReady)="onGridContactosReady($event)"
+                            (cellClicked)="onCellContactoClicked($event)"
+                            (cellValueChanged)="onCellContactoChanged($event)">
+                          </ag-grid-angular>
+                        </div>
+
+                        @if (!esView) {
+                          <div class="contactos-leyenda">
+                            <i class="fa-solid fa-hand-pointer"></i>
+                            Haz clic en una celda para escribir. <strong>Nombres y teléfono</strong> son obligatorios (las celdas en rojo faltan).
+                            La columna <strong>#</strong> es el orden en que se debe llamar. Se guardan junto con el cliente.
+                          </div>
                         }
-                      </p>
-                    }
-                  </div>
-
-                  <div class="campo campo-lookup">
-                    <div class="row g-2 flex-nowrap">
-                      <div class="col-6 campo-combo">
-                        <app-combo
-                          formControlName="forma_pago"
-                          [items]="formasPago"
-                          [label]="'Forma de pago'"
-                          bindLabel="name"
-                          bindValue="id">
-                        </app-combo>
                       </div>
-                      <div class="col-6 campo-combo">
-                        <app-combo
-                          formControlName="estado"
-                          [items]="estados"
-                          [label]="'Situación'"
-                          bindLabel="name"
-                          bindValue="id">
-                        </app-combo>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="campo campo-lookup">
-                    <div class="row g-2 flex-nowrap">
-                      <div class="col-6">
-                        <app-campoTexto
-                          [control]="form.controls['limite_credito']"
-                          label="Cupo de crédito"
-                          placeholder="0.00"
-                          type="number"
-                          [maxLength]="12"
-                          icono="fa-dollar-sign">
-                        </app-campoTexto>
-                      </div>
-                      <div class="col-6">
-                        <app-campoNumeroEntero
-                          [control]="form.controls['dias_credito']"
-                          label="Días de crédito"
-                          placeholder="0"
-                          [maxLength]="3">
-                        </app-campoNumeroEntero>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="campo">
-                    <app-campoTexto
-                      [control]="form.controls['descuento']"
-                      label="Descuento habitual"
-                      placeholder="0.00"
-                      type="number"
-                      [maxLength]="6"
-                      icono="fa-percent">
-                    </app-campoTexto>
-                  </div>
-
-                  <div class="campo">
-                    <app-campoTextoArea
-                      [control]="form.controls['observaciones']"
-                      label="Observaciones"
-                      placeholder="Acuerdos, horarios de entrega, referencias…"
-                      [maxLength]="2000"
-                      [alto]="90">
-                    </app-campoTextoArea>
-                  </div>
-
+                    </ng-container>
+                  </panel>
                 </div>
-              </ng-container>
-            </panel>
-          </div>
 
-          <!-- -------- Contacto -------- -->
-          <div class="col-12">
-            <panel
-              headerClass="bg-gray-800"
-              title="Contacto"
-              noButton="true"
-              noBody="true"
-              panelClass="mb-0"
-              icono="phone"
-              fondoGris="true">
-
-              <ng-container outsideBody>
-                <div class="form-card__body">
-                  <div class="row g-2">
-                    <div class="col-md-6">
-                      <div class="campo">
-                        <app-campoEmail
-                          [control]="form.controls['email']"
-                          label="Correo"
-                          placeholder="nombre@empresa.com"
-                          [maxLength]="150"
-                          [required]="false"
-                          [trimEspacios]="true"
-                          [sinEspacios]="true">
-                        </app-campoEmail>
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="campo">
-                        <app-campoEmail
-                          [control]="form.controls['email_alterno']"
-                          label="Correo alterno (opcional)"
-                          placeholder="facturacion@empresa.com"
-                          [maxLength]="150"
-                          [required]="false"
-                          [trimEspacios]="true"
-                          [sinEspacios]="true">
-                        </app-campoEmail>
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="campo">
-                        <app-campoTelefono
-                          [control]="form.controls['celular']"
-                          label="Celular"
-                          placeholder="Ej: 0987654321"
-                          [maxLength]="20"
-                          [required]="false"
-                          [pais]="'ecuador'"
-                          [tipoTelefono]="'celular'">
-                        </app-campoTelefono>
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="campo">
-                        <app-campoTelefono
-                          [control]="form.controls['telefono']"
-                          label="Teléfono fijo"
-                          placeholder="Ej: 072345678"
-                          [maxLength]="20"
-                          [required]="false"
-                          [pais]="'ninguno'"
-                          [tipoTelefono]="'ambos'">
-                        </app-campoTelefono>
-                      </div>
-                    </div>
-                    <div class="col-12">
-                      <div class="campo">
-                        <app-campoTexto
-                          [control]="form.controls['sitio_web']"
-                          label="Sitio web (opcional)"
-                          placeholder="https://..."
-                          [maxLength]="200"
-                          [trimEspacios]="true"
-                          [noEspacios]="true"
-                          icono="fa-globe">
-                        </app-campoTexto>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </ng-container>
-            </panel>
-          </div>
-
-          <!-- -------- Personas de contacto (grilla editable, estilo permisos) -------- -->
-          <div class="col-12">
-            <panel
-              headerClass="bg-gray-800"
-              title="Personas de contacto"
-              noButton="true"
-              noBody="true"
-              panelClass="mb-0"
-              icono="phone"
-              fondoGris="true">
-
-              <ng-container header>
-                @if (!esView) {
-                  <div class="contactos-toolbar">
-                    <button type="button" class="btn btn-sm btn-primary" (click)="agregarContacto()" title="Añadir una fila y escribir los datos del contacto">
-                      <i class="fa fa-plus me-1"></i>Agregar contacto
-                    </button>
-                  </div>
-                }
-              </ng-container>
-
-              <ng-container outsideBody>
-                <div class="form-card__body">
-                  <!-- Las celdas se editan con un clic; Activo se alterna en la
-                       celda (onCellContactoClicked); ACCIONES plegable con clic
-                       en su cabecera (onHeaderContactosClicked). -->
-                  <div class="contactos-grid" (click)="onHeaderContactosClicked($event)">
-                    <ag-grid-angular
-                      [rowData]="contactos"
-                      [columnDefs]="columnDefsContactos"
-                      [defaultColDef]="_appAgGridService.defaultColDef"
-                      [rowHeight]="36"
-                      [headerHeight]="_appAgGridService.headerHeight"
-                      [localeText]="_appAgGridService.localeText"
-                      [rowClassRules]="rowClassRulesContactos"
-                      [getRowId]="getRowIdContacto"
-                      [rowSelection]="'single'"
-                      [pagination]="false"
-                      [animateRows]="true"
-                      [singleClickEdit]="true"
-                      [stopEditingWhenCellsLoseFocus]="true"
-                      [suppressRowClickSelection]="true"
-                      [overlayNoRowsTemplate]="esView ? '<span>Sin personas de contacto.</span>' : '<span>Sin contactos todavía. Usa <b>Agregar contacto</b> y escribe directamente en las celdas.</span>'"
-                      [context]="{ componentParent: this }"
-                      class="ag-theme-alpine ag-grid-transparente h-100 w-100"
-                      [navigateToNextCell]="navegarConTeclado"
-                      (gridReady)="onGridContactosReady($event)"
-                      (cellClicked)="onCellContactoClicked($event)"
-                      (cellValueChanged)="onCellContactoChanged($event)">
-                    </ag-grid-angular>
-                  </div>
-
-                  @if (!esView) {
-                    <div class="contactos-leyenda">
-                      <i class="fa-solid fa-hand-pointer"></i>
-                      Haz clic en una celda para escribir. <strong>Nombres y teléfono</strong> son obligatorios (las celdas en rojo faltan).
-                      La columna <strong>#</strong> es el orden en que se debe llamar. Se guardan junto con el cliente.
-                    </div>
-                  }
-                </div>
-              </ng-container>
-            </panel>
+              </div>
+            </form>
           </div>
 
         </div>
-      </form>
-    </div>
+      </div>
 
-  </div>
-</div>
+      <!-- ===================== PIE ===================== -->
+      <app-modal-footer [isDisabled]="!isdisabled" (onClose)="activeModal.close('Close click')" (onSubmit)="onSubmitForm($event)">
+      </app-modal-footer>
 
-<!-- ===================== PIE ===================== -->
-<app-modal-footer [isDisabled]="!isdisabled" (onClose)="activeModal.close('Close click')" (onSubmit)="onSubmitForm($event)">
-</app-modal-footer>
+      <!-- ===================== IMAGEN EN PANTALLA COMPLETA ===================== -->
+      @if (showFullscreenImage) {
+        <div class="fullscreen-overlay" (click)="closeFullscreen()">
+          <div class="fullscreen-box">
+            <img [src]="imagen_previzualiza" class="fullscreen-image" alt="Foto en pantalla completa">
+          </div>
+          <button type="button" class="btn-close-fullscreen" (click)="closeFullscreen()" title="Cerrar (Esc)">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      }
 
-<!-- ===================== IMAGEN EN PANTALLA COMPLETA ===================== -->
-<div class="fullscreen-overlay" *ngIf="showFullscreenImage" (click)="closeFullscreen()">
-  <div class="fullscreen-box">
-    <img [src]="imagen_previzualiza" class="fullscreen-image" alt="Foto en pantalla completa">
-  </div>
-  <button type="button" class="btn-close-fullscreen" (click)="closeFullscreen()" title="Cerrar (Esc)">
-    <i class="fa-solid fa-xmark"></i>
-  </button>
-</div>
-
-<!-- ===================== CÁMARA ===================== -->
-<div class="camera-modal-overlay" *ngIf="showCameraModal">
-  <div class="camera-container">
-    <div class="camera-preview">
-      <video #cameraPreview id="cameraPreview" autoplay playsinline></video>
-    </div>
-    <div class="camera-controls">
-      <button type="button" class="btn-switch-camera" (click)="switchCamera()" title="Cambiar cámara">
-        <i class="fa-solid fa-rotate"></i>
-      </button>
-      <button type="button" class="btn-capture" (click)="capturePhoto()" title="Tomar foto">
-        <i class="fa-solid fa-camera"></i>
-      </button>
-      <button type="button" class="btn-close-camera" (click)="closeCamera()" title="Cerrar cámara">
-        <i class="fa-solid fa-times"></i>
-      </button>
-    </div>
-  </div>
-  <div class="camera-status">
-    {{ cameraError || 'Cámara ' + (isUsingFrontCamera ? 'frontal' : 'trasera') + ' activa' }}
-  </div>
-</div>
+      <!-- ===================== CÁMARA ===================== -->
+      @if (showCameraModal) {
+        <div class="camera-modal-overlay">
+          <div class="camera-container">
+            <div class="camera-preview">
+              <video #cameraPreview id="cameraPreview" autoplay playsinline></video>
+            </div>
+            <div class="camera-controls">
+              <button type="button" class="btn-switch-camera" (click)="switchCamera()" title="Cambiar cámara">
+                <i class="fa-solid fa-rotate"></i>
+              </button>
+              <button type="button" class="btn-capture" (click)="capturePhoto()" title="Tomar foto">
+                <i class="fa-solid fa-camera"></i>
+              </button>
+              <button type="button" class="btn-close-camera" (click)="closeCamera()" title="Cerrar cámara">
+                <i class="fa-solid fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <div class="camera-status">
+            {{ cameraError || 'Cámara ' + (isUsingFrontCamera ? 'frontal' : 'trasera') + ' activa' }}
+          </div>
+        </div>
+      }

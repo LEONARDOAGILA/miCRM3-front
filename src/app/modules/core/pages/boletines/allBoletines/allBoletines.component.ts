@@ -25,11 +25,12 @@ import { PapeleraBoletinesComponent } from '../papeleraBoletines/papeleraBoletin
 import { VistasBoletinComponent } from '../vistasBoletin/vistasBoletin.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Listado de boletines.
@@ -47,7 +48,8 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   templateUrl: './allBoletines.component.html',
   styleUrls: ['./allBoletines.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaPaginacionComponent, MenuContextualComponent],
+  imports: [
+    CommonModule,FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaPaginacionComponent, MenuContextualComponent],
 })
 export class AllBoletinesComponent implements OnInit, OnDestroy {
 
@@ -729,7 +731,7 @@ export class AllBoletinesComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'app-button-accion-boletin',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button" class="btn btn-sm btn-outline-primary acciones-desplegar" title="Mostrar los botones" (click)="parent.toggleActionsColumn()">

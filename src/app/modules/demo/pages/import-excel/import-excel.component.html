@@ -13,10 +13,10 @@
   <div class="content-container1">
 
     <!--    INICIO SPINNER    -->
-    <ng-container *ngIf="(isLoading$ | async)">
+    @if ((isLoading$ | async)) {
       <div class="loader1"></div>
       <div class="overlay1"></div>
-    </ng-container>
+    }
     <!--    FIN SPINNER    -->
 
     <!-- Descargar plantilla -->
@@ -32,10 +32,12 @@
     </app-file>
 
     <!-- Información del archivo seleccionado -->
-    <div *ngIf="excelFile" class="alert alert-success mt-3">
-      <strong>Archivo seleccionado:</strong> {{ excelFile.name }}<br>
-      <strong>Tamaño:</strong> {{ (excelFile.size / 1024 / 1024).toFixed(2) }} MB
-    </div>
+    @if (excelFile) {
+      <div class="alert alert-success mt-3">
+        <strong>Archivo seleccionado:</strong> {{ excelFile.name }}<br>
+        <strong>Tamaño:</strong> {{ (excelFile.size / 1024 / 1024).toFixed(2) }} MB
+      </div>
+    }
 
     <div class="d-flex justify-content-end mt-2">
       <button type="button" class="btn btn-primary" [disabled]="isdisabled" (click)="saveRecord()">Guardar</button>

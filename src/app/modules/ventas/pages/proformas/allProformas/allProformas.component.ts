@@ -1,7 +1,7 @@
 import {
   Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -43,6 +43,7 @@ import { DeleteProformaComponent } from '../deleteProforma/deleteProforma.compon
 import { EstadoProformaComponent } from '../estadoProforma/estadoProforma.component';
 import { PapeleraProformasComponent } from '../papeleraProformas/papeleraProformas.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Listado de proformas (ventas.proformas).
@@ -68,9 +69,13 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   selector: 'app-allProformas',
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
-    CampoBusquedaPaginacionComponent, MenuContextualComponent,
-  ],
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    CampoBusquedaPaginacionComponent,
+    MenuContextualComponent
+],
   templateUrl: './allProformas.component.html',
   styleUrls: ['./allProformas.component.css'],
 })
@@ -987,7 +992,7 @@ export class AllProformasComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'app-button-accion-proforma',
   standalone: true,
-  imports: [CommonModule, ActionButtonsComponent],
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"

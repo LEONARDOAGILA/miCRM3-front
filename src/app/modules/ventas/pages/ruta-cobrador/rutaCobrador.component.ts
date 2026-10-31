@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -45,7 +45,7 @@ import {
 @Component({
   selector: 'app-ruta-cobrador',
   standalone: true,
-  imports: [CommonModule, FormsModule, PanelComponent, AvisoComponent],
+  imports: [FormsModule, PanelComponent, AvisoComponent],
   templateUrl: './rutaCobrador.component.html',
   styleUrls: ['./rutaCobrador.component.css'],
 })

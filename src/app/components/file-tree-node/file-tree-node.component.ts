@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export interface FileTreeNode {
   id: number;
@@ -37,7 +37,7 @@ export interface NodoDragEvent {
   templateUrl: './file-tree-node.component.html',
   styleUrls: ['./file-tree-node.component.css'],
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
 })
 export class FileTreeNodeComponent {
   @Input() node!: FileTreeNode;

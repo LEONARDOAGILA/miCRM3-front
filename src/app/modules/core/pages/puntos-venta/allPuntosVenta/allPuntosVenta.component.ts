@@ -1,7 +1,7 @@
 import {
   Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
@@ -39,6 +39,7 @@ import { SavePuntoVentaComponent } from '../savePuntoVenta/savePuntoVenta.compon
 import { DeletePuntoVentaComponent } from '../deletePuntoVenta/deletePuntoVenta.component';
 import { PapeleraPuntosVentaComponent } from '../papeleraPuntosVenta/papeleraPuntosVenta.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Las cajas de cada sucursal, EN DOS COLUMNAS: las tiendas a la izquierda y
@@ -66,9 +67,14 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   selector: 'app-allPuntosVenta',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
-    CampoBusquedaPaginacionComponent, MenuContextualComponent,
-  ],
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    CampoBusquedaPaginacionComponent,
+    MenuContextualComponent
+],
   templateUrl: './allPuntosVenta.component.html',
   styleUrls: ['./allPuntosVenta.component.css'],
 })
@@ -994,7 +1000,7 @@ export class AllPuntosVentaComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'app-button-accion-punto-venta',
   standalone: true,
-  imports: [CommonModule, ActionButtonsComponent],
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"

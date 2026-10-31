@@ -1,16 +1,16 @@
 <!-- ============================================================
-     GUARDAR EMPLEADO (modal)
-     Calcado de saveUser: columna izquierda con la foto (arrastrar, galería,
-     cámara, pegar, ampliar) y a la derecha los paneles de datos personales,
-     laborales (cargo / departamento / jefe con selector, como perfil y
-     horario en usuarios) y contacto.
-     ============================================================ -->
+GUARDAR EMPLEADO (modal)
+Calcado de saveUser: columna izquierda con la foto (arrastrar, galería,
+cámara, pegar, ampliar) y a la derecha los paneles de datos personales,
+laborales (cargo / departamento / jefe con selector, como perfil y
+horario en usuarios) y contacto.
+============================================================ -->
 
 <!-- ===================== SPINNER ===================== -->
-<ng-container *ngIf="(isLoading$ | async)">
+@if ((isLoading$ | async)) {
   <div class="loader1" role="status" aria-label="Cargando"></div>
   <div class="overlay1" aria-hidden="true"></div>
-</ng-container>
+}
 
 <!-- ===================== CABECERA ===================== -->
 <app-modal-header [title]="titulo" (onClose)="activeModal.close('Close click')">
@@ -22,79 +22,88 @@
 
     <!-- ============ COLUMNA IZQUIERDA: AVATAR ============ -->
     <div class="col-lg-4">
-        <panel 
-          headerClass="bg-gray-800"
-          title="Foto del empleado" 
-          noButton="true" 
-          noBody="true"
-          panelClass="mb-3" 
-          icono="usuario" 
-          fondoGris="true">
-          
-          <ng-container outsideBody>
-            <div class="form-card__body">
+      <panel
+        headerClass="bg-gray-800"
+        title="Foto del empleado"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-3"
+        icono="usuario"
+        fondoGris="true">
+
+        <ng-container outsideBody>
+          <div class="form-card__body">
             <!-- ---------- Zona de imagen / drop ---------- -->
             <div class="avatar-dropzone"
-                [class.drag-over]="isDragOver"
-                [class.is-empty]="!imagen_previzualiza"
-                (drop)="onDrop($event)"
-                (dragover)="onDragOver($event)"
-                (dragleave)="onDragLeave($event)">
+              [class.drag-over]="isDragOver"
+              [class.is-empty]="!imagen_previzualiza"
+              (drop)="onDrop($event)"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)">
 
               <!-- Con imagen -->
-              <div class="avatar-preview" *ngIf="imagen_previzualiza">
-                <img [src]="imagen_previzualiza"
+              @if (imagen_previzualiza) {
+                <div class="avatar-preview">
+                  <img [src]="imagen_previzualiza"
                     alt="Foto del empleado"
                     (error)="handleImageError($event)"
                     (click)="openFullscreen()">
-
-                <div class="avatar-preview__overlay">
-                  <button type="button" class="avatar-action" (click)="openFullscreen()" title="Ampliar imagen">
-                    <i class="fa-solid fa-magnifying-glass-plus"></i>
-                  </button>
-                  <ng-container *ngIf="!esView">
-                    <button type="button" class="avatar-action" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
-                      <i class="fa-solid fa-paste"></i>
+                  <div class="avatar-preview__overlay">
+                    <button type="button" class="avatar-action" (click)="openFullscreen()" title="Ampliar imagen">
+                      <i class="fa-solid fa-magnifying-glass-plus"></i>
                     </button>
-                    <button type="button" class="avatar-action avatar-action--danger" (click)="clearImage()" title="Quitar imagen">
-                      <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                  </ng-container>
+                    @if (!esView) {
+                      <button type="button" class="avatar-action" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
+                        <i class="fa-solid fa-paste"></i>
+                      </button>
+                      <button type="button" class="avatar-action avatar-action--danger" (click)="clearImage()" title="Quitar imagen">
+                        <i class="fa-solid fa-trash-can"></i>
+                      </button>
+                    }
+                  </div>
                 </div>
-              </div>
+              }
 
               <!-- Sin imagen -->
-              <div class="avatar-empty" *ngIf="!imagen_previzualiza"
+              @if (!imagen_previzualiza) {
+                <div class="avatar-empty"
                   [class.is-disabled]="esView"
                   (click)="openGallery()">
-                <span class="avatar-empty__icon">
-                  <i class="fa-solid" [ngClass]="esView ? 'fa-user-slash' : 'fa-cloud-arrow-up'"></i>
-                </span>
-                <p class="avatar-empty__title">{{ esView ? 'Sin imagen' : 'Seleccionar imagen' }}</p>
-                <p class="avatar-empty__hint" *ngIf="!esView">
-                  Arrastra y suelta una imagen o haz clic para buscarla
-                </p>
-                <p class="avatar-empty__hint" *ngIf="!esView">
-                  También puedes pegarla con <kbd>Ctrl</kbd> + <kbd>V</kbd>
-                </p>
-              </div>
+                  <span class="avatar-empty__icon">
+                    <i class="fa-solid" [ngClass]="esView ? 'fa-user-slash' : 'fa-cloud-arrow-up'"></i>
+                  </span>
+                  <p class="avatar-empty__title">{{ esView ? 'Sin imagen' : 'Seleccionar imagen' }}</p>
+                  @if (!esView) {
+                    <p class="avatar-empty__hint">
+                      Arrastra y suelta una imagen o haz clic para buscarla
+                    </p>
+                  }
+                  @if (!esView) {
+                    <p class="avatar-empty__hint">
+                      También puedes pegarla con <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                    </p>
+                  }
+                </div>
+              }
             </div>
 
             <!-- ---------- Acciones de imagen ---------- -->
-            <div class="avatar-actions mt-2" *ngIf="!esView">
-              <button type="button" class="btn btn-avatar btn-avatar-camera" (click)="openCamera()" title="Tomar foto">
-                <i class="fa-solid fa-camera"></i>
-                <span>Cámara</span>
-              </button>
-              <button type="button" class="btn btn-avatar btn-avatar-gallery" (click)="openGallery()" title="Buscar en el dispositivo">
-                <i class="fa-solid fa-image"></i>
-                <span>Galería</span>
-              </button>
-              <button type="button" class="btn btn-avatar btn-avatar-paste" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
-                <i class="fa-solid fa-paste"></i>
-                <span>Pegar</span>
-              </button>
-            </div>
+            @if (!esView) {
+              <div class="avatar-actions mt-2">
+                <button type="button" class="btn btn-avatar btn-avatar-camera" (click)="openCamera()" title="Tomar foto">
+                  <i class="fa-solid fa-camera"></i>
+                  <span>Cámara</span>
+                </button>
+                <button type="button" class="btn btn-avatar btn-avatar-gallery" (click)="openGallery()" title="Buscar en el dispositivo">
+                  <i class="fa-solid fa-image"></i>
+                  <span>Galería</span>
+                </button>
+                <button type="button" class="btn btn-avatar btn-avatar-paste" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
+                  <i class="fa-solid fa-paste"></i>
+                  <span>Pegar</span>
+                </button>
+              </div>
+            }
 
 
 
@@ -103,106 +112,106 @@
             <input #galleryInput type="file" id="gallery-input" class="d-none" accept="image/*" (change)="processFile($event)">
             <input #pasteInput id="paste-input" class="d-none" [formControl]="form.controls['foto']" (paste)="onPaste($event)">
           </div>
-          </ng-container>
-        </panel>
+        </ng-container>
+      </panel>
 
-  <!-- ---------- DIRECCIÓN ----------
-       Debajo de la foto: es contenido alto y estrecho, y esa columna
-       quedaba medio vacía. La dirección se busca en el mapa y de ahí
-       salen la división política, las coordenadas y las dos fotos. -->
-    <panel
-      headerClass="bg-gray-800"
-      title="Dirección"
-      noButton="true"
-      noBody="true"
-      panelClass="mb-0"
-      icono="info"
-      fondoGris="true">
+      <!-- ---------- DIRECCIÓN ----------
+      Debajo de la foto: es contenido alto y estrecho, y esa columna
+      quedaba medio vacía. La dirección se busca en el mapa y de ahí
+      salen la división política, las coordenadas y las dos fotos. -->
+      <panel
+        headerClass="bg-gray-800"
+        title="Dirección"
+        noButton="true"
+        noBody="true"
+        panelClass="mb-0"
+        icono="info"
+        fondoGris="true">
 
-      <ng-container outsideBody>
-        <div class="form-card__body">
+        <ng-container outsideBody>
+          <div class="form-card__body">
 
-          <div class="campo emp-direccion">
-            <app-campoTexto
-              [control]="form.controls['direccion']"
-              label="Dirección"
-              placeholder="Búscala en el mapa o escríbela"
-              [maxLength]="1000"
-              [trimEspacios]="true">
-            </app-campoTexto>
+            <div class="campo emp-direccion">
+              <app-campoTexto
+                [control]="form.controls['direccion']"
+                label="Dirección"
+                placeholder="Búscala en el mapa o escríbela"
+                [maxLength]="1000"
+                [trimEspacios]="true">
+              </app-campoTexto>
 
-            <button type="button" class="btn btn-sm btn-primary emp-direccion__btn"
-                    title="Buscar la dirección en Google Maps"
-                    [disabled]="isdisabled"
-                    (click)="elegirDireccionEnElMapa()">
-              <i class="fa fa-map-location-dot me-1"></i>
-              <span>Buscar en el mapa</span>
-            </button>
-          </div>
-
-          @if (hayUbicacion) {
-            <div class="emp-ubicacion">
-
-              <!-- Lo que se guardará -->
-              <div class="emp-ubicacion__cabecera">
-                <span class="emp-ubicacion__titulo">
-                  <i class="fa fa-location-dot"></i>
-                  {{ resumenUbicacion.ubicacion || 'Dirección tomada del mapa' }}
-                </span>
-                <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar la dirección del mapa"
-                        [disabled]="isdisabled" (click)="quitarUbicacion()">
-                  <i class="fa fa-xmark"></i>
-                </button>
-              </div>
-
-              @if (resumenUbicacion.division) {
-                <span class="emp-ubicacion__linea">{{ resumenUbicacion.division }}</span>
-              }
-              @if (resumenUbicacion.calles) {
-                <span class="emp-ubicacion__linea">{{ resumenUbicacion.calles }}</span>
-              }
-
-              <!-- Coordenadas y enlace, que antes no se veían -->
-              @if (resumenUbicacion.coordenadas) {
-                <span class="emp-ubicacion__coords">
-                  <i class="fa fa-crosshairs"></i>{{ resumenUbicacion.coordenadas }}
-                </span>
-              }
-              @if (enlaceMapa) {
-                <a [href]="enlaceMapa" target="_blank" rel="noopener noreferrer" class="emp-ubicacion__enlace"
-                   [title]="enlaceMapa">
-                  <i class="fa fa-arrow-up-right-from-square"></i>Abrir en Google Maps
-                </a>
-              }
-
-              <!-- Las dos capturas, antes de guardar -->
-              @if (urlFotoMapa || urlFotoCasa) {
-                <div class="emp-fotos">
-                  @if (urlFotoMapa) {
-                    <button type="button" class="emp-foto" title="Ver la vista del mapa" (click)="verFoto('mapa')">
-                      <img [src]="urlFotoMapa" alt="Vista del mapa" />
-                      <span class="emp-foto__pie"><i class="fa fa-map me-1"></i>Mapa</span>
-                    </button>
-                  }
-                  @if (urlFotoCasa) {
-                    <button type="button" class="emp-foto" title="Ver la vista de la calle" (click)="verFoto('casa')">
-                      <img [src]="urlFotoCasa" alt="Vista de la calle" />
-                      <span class="emp-foto__pie"><i class="fa fa-house me-1"></i>Fachada</span>
-                    </button>
-                  }
-                </div>
-              } @else if (resumenUbicacion.coordenadas) {
-                <span class="emp-fotos__vacio">
-                  <i class="fa fa-image"></i> Sin fotos del lugar
-                </span>
-              }
-
+              <button type="button" class="btn btn-sm btn-primary emp-direccion__btn"
+                title="Buscar la dirección en Google Maps"
+                [disabled]="isdisabled"
+                (click)="elegirDireccionEnElMapa()">
+                <i class="fa fa-map-location-dot me-1"></i>
+                <span>Buscar en el mapa</span>
+              </button>
             </div>
-          }
 
-        </div>
-      </ng-container>
-    </panel>
+            @if (hayUbicacion) {
+              <div class="emp-ubicacion">
+
+                <!-- Lo que se guardará -->
+                <div class="emp-ubicacion__cabecera">
+                  <span class="emp-ubicacion__titulo">
+                    <i class="fa fa-location-dot"></i>
+                    {{ resumenUbicacion.ubicacion || 'Dirección tomada del mapa' }}
+                  </span>
+                  <button type="button" class="btn btn-xs btn-white text-danger" title="Quitar la dirección del mapa"
+                    [disabled]="isdisabled" (click)="quitarUbicacion()">
+                    <i class="fa fa-xmark"></i>
+                  </button>
+                </div>
+
+                @if (resumenUbicacion.division) {
+                  <span class="emp-ubicacion__linea">{{ resumenUbicacion.division }}</span>
+                }
+                @if (resumenUbicacion.calles) {
+                  <span class="emp-ubicacion__linea">{{ resumenUbicacion.calles }}</span>
+                }
+
+                <!-- Coordenadas y enlace, que antes no se veían -->
+                @if (resumenUbicacion.coordenadas) {
+                  <span class="emp-ubicacion__coords">
+                    <i class="fa fa-crosshairs"></i>{{ resumenUbicacion.coordenadas }}
+                  </span>
+                }
+                @if (enlaceMapa) {
+                  <a [href]="enlaceMapa" target="_blank" rel="noopener noreferrer" class="emp-ubicacion__enlace"
+                    [title]="enlaceMapa">
+                    <i class="fa fa-arrow-up-right-from-square"></i>Abrir en Google Maps
+                  </a>
+                }
+
+                <!-- Las dos capturas, antes de guardar -->
+                @if (urlFotoMapa || urlFotoCasa) {
+                  <div class="emp-fotos">
+                    @if (urlFotoMapa) {
+                      <button type="button" class="emp-foto" title="Ver la vista del mapa" (click)="verFoto('mapa')">
+                        <img [src]="urlFotoMapa" alt="Vista del mapa" />
+                        <span class="emp-foto__pie"><i class="fa fa-map me-1"></i>Mapa</span>
+                      </button>
+                    }
+                    @if (urlFotoCasa) {
+                      <button type="button" class="emp-foto" title="Ver la vista de la calle" (click)="verFoto('casa')">
+                        <img [src]="urlFotoCasa" alt="Vista de la calle" />
+                        <span class="emp-foto__pie"><i class="fa fa-house me-1"></i>Fachada</span>
+                      </button>
+                    }
+                  </div>
+                } @else if (resumenUbicacion.coordenadas) {
+                  <span class="emp-fotos__vacio">
+                    <i class="fa fa-image"></i> Sin fotos del lugar
+                  </span>
+                }
+
+              </div>
+            }
+
+          </div>
+        </ng-container>
+      </panel>
     </div>
 
     <!-- ============ COLUMNA DERECHA: FORMULARIO ============ -->
@@ -254,7 +263,7 @@
                       </div>
                       <div class="col">
                         <!-- Valida cédula y RUC con el algoritmo del SRI según el tipo
-                             elegido al lado; el pasaporte pasa sin dígito verificador. -->
+                        elegido al lado; el pasaporte pasa sin dígito verificador. -->
                         <app-campoIdentificacion
                           [control]="form.controls['numero_identificacion']"
                           [tipoControl]="ctrlTipoIdentificacion"
@@ -355,7 +364,7 @@
                         @if (form.controls['cargo_id'].value) {
                           <div class="col-auto">
                             <button type="button" class="btn btn-lookup btn-lookup--quitar"
-                                    (click)="limpiarCargo()" title="Quitar el cargo">
+                              (click)="limpiarCargo()" title="Quitar el cargo">
                               <i class="fa fa-times"></i>
                             </button>
                           </div>
@@ -393,7 +402,7 @@
                         @if (form.controls['departamento_id'].value) {
                           <div class="col-auto">
                             <button type="button" class="btn btn-lookup btn-lookup--quitar"
-                                    (click)="limpiarDepartamento()" title="Quitar el departamento">
+                              (click)="limpiarDepartamento()" title="Quitar el departamento">
                               <i class="fa fa-times"></i>
                             </button>
                           </div>
@@ -431,7 +440,7 @@
                         @if (form.controls['jefe_id'].value) {
                           <div class="col-auto">
                             <button type="button" class="btn btn-lookup btn-lookup--quitar"
-                                    (click)="limpiarJefe()" title="Quitar el jefe">
+                              (click)="limpiarJefe()" title="Quitar el jefe">
                               <i class="fa fa-times"></i>
                             </button>
                           </div>
@@ -441,9 +450,9 @@
                   </div>
 
                   <!-- Sucursal (ID + nombre + lupa, como el cargo).
-                       No es un dato más: de él depende desde dónde puede
-                       marcar asistencia esta persona. Sin sucursal, desde
-                       cualquier lugar. -->
+                  No es un dato más: de él depende desde dónde puede
+                  marcar asistencia esta persona. Sin sucursal, desde
+                  cualquier lugar. -->
                   <div class="campo campo-lookup campo-lookup--pegado">
                     <div class="row g-0 flex-nowrap">
                       <div class="col-4">
@@ -472,7 +481,7 @@
                         @if (form.controls['sucursal_id'].value) {
                           <div class="col-auto">
                             <button type="button" class="btn btn-lookup btn-lookup--quitar"
-                                    (click)="limpiarSucursal()" title="Quitar la sucursal">
+                              (click)="limpiarSucursal()" title="Quitar la sucursal">
                               <i class="fa fa-times"></i>
                             </button>
                           </div>
@@ -482,8 +491,8 @@
                   </div>
 
                   <!-- Horario de trabajo (ID + nombre + lupa, como la
-                       sucursal). Con él se le miden los atrasos de sus
-                       marcaciones; sin horario, nadie se los cuenta. -->
+                  sucursal). Con él se le miden los atrasos de sus
+                  marcaciones; sin horario, nadie se los cuenta. -->
                   <div class="campo campo-lookup campo-lookup--pegado">
                     <div class="row g-0 flex-nowrap">
                       <div class="col-4">
@@ -512,7 +521,7 @@
                         @if (form.controls['horario_id'].value) {
                           <div class="col-auto">
                             <button type="button" class="btn btn-lookup btn-lookup--quitar"
-                                    (click)="limpiarHorario()" title="Quitar el horario">
+                              (click)="limpiarHorario()" title="Quitar el horario">
                               <i class="fa fa-times"></i>
                             </button>
                           </div>
@@ -653,10 +662,10 @@
           </div>
 
           <!-- -------- Dónde más puede marcar --------
-               La sucursal de «Datos laborales» dice dónde trabaja; aquí van
-               las OTRAS donde también se le acepta la marcación: el recorrido
-               de un cobrador, los locales que visita una jefatura. Basta con
-               estar dentro del perímetro de una de ellas. -->
+          La sucursal de «Datos laborales» dice dónde trabaja; aquí van
+          las OTRAS donde también se le acepta la marcación: el recorrido
+          de un cobrador, los locales que visita una jefatura. Basta con
+          estar dentro del perímetro de una de ellas. -->
           <div class="col-12">
             <panel
               headerClass="bg-gray-800"
@@ -671,8 +680,8 @@
                 @if (!esView) {
                   <div class="contactos-toolbar">
                     <button type="button" class="btn btn-sm btn-primary"
-                            (click)="agregarSucursalMarcacion()"
-                            title="Buscar otra sucursal donde esta persona pueda marcar">
+                      (click)="agregarSucursalMarcacion()"
+                      title="Buscar otra sucursal donde esta persona pueda marcar">
                       <i class="fa fa-plus me-1"></i>Agregar sucursal
                     </button>
                   </div>
@@ -710,78 +719,78 @@
 
                   @if (!esView) {
                     <!-- El texto va en un <span>: .contactos-leyenda es un
-                         flex, y sin envolverlo cada <strong> sería un hijo
-                         suelto y la frase se partiría en columnas. -->
+                    flex, y sin envolverlo cada <strong> sería un hijo
+                    suelto y la frase se partiría en columnas. -->
                     <div class="contactos-leyenda">
                       <i class="fa-solid fa-circle-info"></i>
                       <span>
                         Podrá marcar dentro del perímetro de <strong>cualquiera</strong> de
                         estas sucursales o de la suya. Si alguna <strong>no tiene
-                        perímetro</strong>, podrá marcar desde cualquier lugar. Se
-                        guardan junto con el empleado.
-                      </span>
-                    </div>
-                  }
-                </div>
-              </ng-container>
-            </panel>
-          </div>
-
-          <!-- -------- Contactos de emergencia (grilla editable, estilo permisos) -------- -->
-          <div class="col-12">
-            <panel
-              headerClass="bg-gray-800"
-              title="Contactos de emergencia"
-              noButton="true"
-              noBody="true"
-              panelClass="mb-0"
-              icono="phone"
-              fondoGris="true">
-
-              <ng-container header>
-                @if (!esView) {
-                  <div class="contactos-toolbar">
-                    <button type="button" class="btn btn-sm btn-primary" (click)="agregarContacto()" title="Añadir una fila y escribir los datos del contacto">
-                      <i class="fa fa-plus me-1"></i>Agregar contacto
-                    </button>
+                      perímetro</strong>, podrá marcar desde cualquier lugar. Se
+                      guardan junto con el empleado.
+                    </span>
                   </div>
                 }
-              </ng-container>
+              </div>
+            </ng-container>
+          </panel>
+        </div>
 
-              <ng-container outsideBody>
-                <div class="form-card__body">
-                  <!-- Las celdas se editan con un clic; Activo se alterna en la
-                       celda (onCellContactoClicked); ACCIONES plegable con clic
-                       en su cabecera (onHeaderContactosClicked). -->
-                  <div class="contactos-grid" (click)="onHeaderContactosClicked($event)">
-                    <ag-grid-angular
-                      [rowData]="contactos"
-                      [columnDefs]="columnDefsContactos"
-                      [defaultColDef]="_appAgGridService.defaultColDef"
-                      [rowHeight]="36"
-                      [headerHeight]="_appAgGridService.headerHeight"
-                      [localeText]="_appAgGridService.localeText"
-                      [rowClassRules]="rowClassRulesContactos"
-                      [getRowId]="getRowIdContacto"
-                      [rowSelection]="'single'"
-                      [pagination]="false"
-                      [animateRows]="true"
-                      [singleClickEdit]="true"
-                      [stopEditingWhenCellsLoseFocus]="true"
-                      [suppressRowClickSelection]="true"
-                      [overlayNoRowsTemplate]="esView ? '<span>Sin contactos de emergencia.</span>' : '<span>Sin contactos todavía. Usa <b>Agregar contacto</b> y escribe directamente en las celdas.</span>'"
-                      [context]="{ componentParent: this }"
-                      class="ag-theme-alpine ag-grid-transparente h-100 w-100"
-                      [navigateToNextCell]="navegarConTeclado"
-                      (gridReady)="onGridContactosReady($event)"
-                      (cellClicked)="onCellContactoClicked($event)"
-                      (cellValueChanged)="onCellContactoChanged($event)">
-                    </ag-grid-angular>
-                  </div>
+        <!-- -------- Contactos de emergencia (grilla editable, estilo permisos) -------- -->
+        <div class="col-12">
+          <panel
+            headerClass="bg-gray-800"
+            title="Contactos de emergencia"
+            noButton="true"
+            noBody="true"
+            panelClass="mb-0"
+            icono="phone"
+            fondoGris="true">
 
-                  @if (!esView) {
-                    <!-- Mismo envoltorio que la leyenda de arriba: sin él los
-                         <strong> se repartían como columnas del flex. -->
+            <ng-container header>
+              @if (!esView) {
+                <div class="contactos-toolbar">
+                  <button type="button" class="btn btn-sm btn-primary" (click)="agregarContacto()" title="Añadir una fila y escribir los datos del contacto">
+                    <i class="fa fa-plus me-1"></i>Agregar contacto
+                  </button>
+                </div>
+              }
+            </ng-container>
+
+            <ng-container outsideBody>
+              <div class="form-card__body">
+                <!-- Las celdas se editan con un clic; Activo se alterna en la
+                celda (onCellContactoClicked); ACCIONES plegable con clic
+                en su cabecera (onHeaderContactosClicked). -->
+                <div class="contactos-grid" (click)="onHeaderContactosClicked($event)">
+                  <ag-grid-angular
+                    [rowData]="contactos"
+                    [columnDefs]="columnDefsContactos"
+                    [defaultColDef]="_appAgGridService.defaultColDef"
+                    [rowHeight]="36"
+                    [headerHeight]="_appAgGridService.headerHeight"
+                    [localeText]="_appAgGridService.localeText"
+                    [rowClassRules]="rowClassRulesContactos"
+                    [getRowId]="getRowIdContacto"
+                    [rowSelection]="'single'"
+                    [pagination]="false"
+                    [animateRows]="true"
+                    [singleClickEdit]="true"
+                    [stopEditingWhenCellsLoseFocus]="true"
+                    [suppressRowClickSelection]="true"
+                    [overlayNoRowsTemplate]="esView ? '<span>Sin contactos de emergencia.</span>' : '<span>Sin contactos todavía. Usa <b>Agregar contacto</b> y escribe directamente en las celdas.</span>'"
+                    [context]="{ componentParent: this }"
+                    class="ag-theme-alpine ag-grid-transparente h-100 w-100"
+                    [navigateToNextCell]="navegarConTeclado"
+                    (gridReady)="onGridContactosReady($event)"
+                    (cellClicked)="onCellContactoClicked($event)"
+                    (cellValueChanged)="onCellContactoChanged($event)">
+                  </ag-grid-angular>
+                </div>
+
+                @if (!esView) {
+                  <!-- Mismo envoltorio que la leyenda de arriba: sin él los
+                  <strong> se repartían como columnas del flex. -->
                     <div class="contactos-leyenda">
                       <i class="fa-solid fa-hand-pointer"></i>
                       <span>
@@ -807,34 +816,38 @@
 </app-modal-footer>
 
 <!-- ===================== IMAGEN EN PANTALLA COMPLETA ===================== -->
-<div class="fullscreen-overlay" *ngIf="showFullscreenImage" (click)="closeFullscreen()">
-  <div class="fullscreen-box">
-    <img [src]="imagen_previzualiza" class="fullscreen-image" alt="Foto en pantalla completa">
+@if (showFullscreenImage) {
+  <div class="fullscreen-overlay" (click)="closeFullscreen()">
+    <div class="fullscreen-box">
+      <img [src]="imagen_previzualiza" class="fullscreen-image" alt="Foto en pantalla completa">
+    </div>
+    <button type="button" class="btn-close-fullscreen" (click)="closeFullscreen()" title="Cerrar (Esc)">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   </div>
-  <button type="button" class="btn-close-fullscreen" (click)="closeFullscreen()" title="Cerrar (Esc)">
-    <i class="fa-solid fa-xmark"></i>
-  </button>
-</div>
+}
 
 <!-- ===================== CÁMARA ===================== -->
-<div class="camera-modal-overlay" *ngIf="showCameraModal">
-  <div class="camera-container">
-    <div class="camera-preview">
-      <video #cameraPreview id="cameraPreview" autoplay playsinline></video>
+@if (showCameraModal) {
+  <div class="camera-modal-overlay">
+    <div class="camera-container">
+      <div class="camera-preview">
+        <video #cameraPreview id="cameraPreview" autoplay playsinline></video>
+      </div>
+      <div class="camera-controls">
+        <button type="button" class="btn-switch-camera" (click)="switchCamera()" title="Cambiar cámara">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+        <button type="button" class="btn-capture" (click)="capturePhoto()" title="Tomar foto">
+          <i class="fa-solid fa-camera"></i>
+        </button>
+        <button type="button" class="btn-close-camera" (click)="closeCamera()" title="Cerrar cámara">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
     </div>
-    <div class="camera-controls">
-      <button type="button" class="btn-switch-camera" (click)="switchCamera()" title="Cambiar cámara">
-        <i class="fa-solid fa-rotate"></i>
-      </button>
-      <button type="button" class="btn-capture" (click)="capturePhoto()" title="Tomar foto">
-        <i class="fa-solid fa-camera"></i>
-      </button>
-      <button type="button" class="btn-close-camera" (click)="closeCamera()" title="Cerrar cámara">
-        <i class="fa-solid fa-times"></i>
-      </button>
+    <div class="camera-status">
+      {{ cameraError || 'Cámara ' + (isUsingFrontCamera ? 'frontal' : 'trasera') + ' activa' }}
     </div>
   </div>
-  <div class="camera-status">
-    {{ cameraError || 'Cámara ' + (isUsingFrontCamera ? 'frontal' : 'trasera') + ' activa' }}
-  </div>
-</div>
+}

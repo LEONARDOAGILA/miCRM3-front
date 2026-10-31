@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
@@ -20,6 +20,7 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { ZonaService } from '../../../services/zona.service';
 import { ClienteDeZona, ClienteUbicado, PuntoZona, TipoZona, ZonaModel } from '../../../interfaces/zonaModel';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /** Lo que se está editando en el formulario de la derecha. */
 interface Borrador {
@@ -73,7 +74,8 @@ const RADIO_INICIAL = 1000;
 @Component({
   selector: 'app-allZonas',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, AvisoComponent],
+  imports: [
+    CommonModule,FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, AvisoComponent],
   templateUrl: './allZonas.component.html',
   styleUrls: ['./allZonas.component.css'],
 })

@@ -1,11 +1,11 @@
 <!-- Se conserva el envoltorio .col-md: las pantallas colocan este componente
-     dentro de sus filas contando con que se comporte como columna. -->
+dentro de sus filas contando con que se comporte como columna. -->
 <div class="col-md">
   <div class="campo-area">
 
     <div class="form-floating">
       <!-- La altura iba en un style en línea; ahora la fija el CSS y se puede
-           ajustar con el input [filas]. -->
+      ajustar con el input [filas]. -->
       <textarea
         class="scroll form-control fs-13px campo-area__campo"
         [id]="label"
@@ -28,32 +28,40 @@
     </div>
 
     <!-- Zona de mensajes, igual que en app-campoTexto.
-         El hueco lo reserva el CSS (min-height), así que el formulario no salta
-         cuando aparece el error. -->
+    El hueco lo reserva el CSS (min-height), así que el formulario no salta
+    cuando aparece el error. -->
     <div class="campo-area__mensajes">
-      <small class="campo-area__error"
-             *ngIf="control.hasError('required') && (control.dirty || control.touched)">
-        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
-        Es requerido.
-      </small>
+      @if (control.hasError('required') && (control.dirty || control.touched)) {
+        <small class="campo-area__error"
+          >
+          <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+          Es requerido.
+        </small>
+      }
 
-      <small class="campo-area__error"
-             *ngIf="control.hasError('noEspacios') && (control.dirty || control.touched)">
-        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
-        No puede contener solo espacios.
-      </small>
+      @if (control.hasError('noEspacios') && (control.dirty || control.touched)) {
+        <small class="campo-area__error"
+          >
+          <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+          No puede contener solo espacios.
+        </small>
+      }
 
-      <small class="campo-area__error"
-             *ngIf="control.hasError('minlength') && (control.dirty || control.touched)">
-        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
-        No puede ser menor a los {{ minLength }} caracteres.
-      </small>
+      @if (control.hasError('minlength') && (control.dirty || control.touched)) {
+        <small class="campo-area__error"
+          >
+          <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+          No puede ser menor a los {{ minLength }} caracteres.
+        </small>
+      }
 
-      <small class="campo-area__error"
-             *ngIf="control.hasError('maxlength') && (control.dirty || control.touched)">
-        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
-        No puede exceder los {{ maxLength }} caracteres.
-      </small>
+      @if (control.hasError('maxlength') && (control.dirty || control.touched)) {
+        <small class="campo-area__error"
+          >
+          <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+          No puede exceder los {{ maxLength }} caracteres.
+        </small>
+      }
     </div>
 
   </div>

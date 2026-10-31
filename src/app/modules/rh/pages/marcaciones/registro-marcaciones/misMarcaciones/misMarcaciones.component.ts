@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { AgGridModule } from 'ag-grid-angular';
@@ -26,7 +26,7 @@ import { FilasEstirablesDirective } from '../../../../../../core/directives/fila
 @Component({
   selector: 'app-mis-marcaciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
+  imports: [FormsModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
   templateUrl: './misMarcaciones.component.html',
   styleUrls: ['./misMarcaciones.component.css'],
 })

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -39,7 +39,7 @@ import {
 @Component({
   selector: 'app-importarConversacion',
   standalone: true,
-  imports: [CommonModule, FormsModule, PanelComponent, ModalFooterComponent],
+  imports: [FormsModule, PanelComponent, ModalFooterComponent],
   templateUrl: './importarConversacion.component.html',
   styleUrls: ['./importarConversacion.component.css'],
 })

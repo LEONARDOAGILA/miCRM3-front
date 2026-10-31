@@ -6,34 +6,34 @@
 <!-- FIN breadcrumb -->
 
 <!-- INICIO PANEL -->
-<panel [title]="titulo" 
-       [noButton]="false" 
-       [noButtonCollapse]="true" 
-       [ButtonPrint]="accesoModel.reporte === true ? true : false"
-       [ButtonExportExcel]="accesoModel.reporte === true ? true : false"
-       [ButtonExportCsv]="accesoModel.reporte === true ? true : false"
-       (panelReloaded)="allHorarios(paginaActual)" 
-       (panelExpanded)="ajustarTamanoGrid()" 
-       (panelPrinted)="printPdf()"  
-       (panelExportExceled)="exportExcel()" 
-       (panelExportCsved)="exportCsv()"
-       [closeRoute]="'/seguridad'"
-       >
+<panel [title]="titulo"
+  [noButton]="false"
+  [noButtonCollapse]="true"
+  [ButtonPrint]="accesoModel.reporte === true ? true : false"
+  [ButtonExportExcel]="accesoModel.reporte === true ? true : false"
+  [ButtonExportCsv]="accesoModel.reporte === true ? true : false"
+  (panelReloaded)="allHorarios(paginaActual)"
+  (panelExpanded)="ajustarTamanoGrid()"
+  (panelPrinted)="printPdf()"
+  (panelExportExceled)="exportExcel()"
+  (panelExportCsved)="exportCsv()"
+  [closeRoute]="'/seguridad'"
+  >
 
   <div class="content-container1" style="margin-top: -19px;">
-    <ng-container *ngIf="(isLoading$ | async)">
+    @if ((isLoading$ | async)) {
       <div class="loader1"></div>
       <div class="overlay1"></div>
-    </ng-container>
-      
+    }
+
     <div class="content2">
       <div class="example-wrapper">
 
         <!-- CAMPO TEXTO DE BUSQUEDA -->
         <div class="row g-2 m-2 align-items-center">
           <!-- Buscador con su botón de quitar filtros dentro: los dos van
-               siempre juntos, así que viven juntos. El botón se enciende en rojo
-               y le sale la × al icono sólo cuando hay algo que quitar. -->
+          siempre juntos, así que viven juntos. El botón se enciende en rojo
+          y le sale la × al icono sólo cuando hay algo que quitar. -->
           <div class="col pe-1">
             <app-campoBusquedaPaginacion
               [id]="'filter-text-box'"
@@ -46,64 +46,68 @@
               (buscar)="onFilterTextBoxChanged($event)"
               (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
-          </div>                  
+          </div>
           <div class="col-auto ps-0">
             <button class="inactivo btn btn-primary d-flex align-items-center justify-content-center square-btn rounded-3"
-                    title="Agregar Horario"
-                    [disabled]="accesoModel.crear === false"
-                    (click)="addHorario()">
+              title="Agregar Horario"
+              [disabled]="accesoModel.crear === false"
+              (click)="addHorario()">
               <i class="fa fa-plus"></i>
             </button>
           </div>
 
           <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil.
-               Lo eliminado conserva sus días y se restaura desde ahí. -->
-          <div class="col-auto" *ngIf="accesoModel.papelera === true">
-            <button
-              class="btn btn-outline-secondary d-flex align-items-center justify-content-center square-btn rounded-3"
-              title="Papelera de reciclaje de horarios"
-              (click)="abrirPapelera()">
-              <i class="fa fa-trash-can"></i>
-            </button>
-          </div>
+          Lo eliminado conserva sus días y se restaura desde ahí. -->
+          @if (accesoModel.papelera === true) {
+            <div class="col-auto">
+              <button
+                class="btn btn-outline-secondary d-flex align-items-center justify-content-center square-btn rounded-3"
+                title="Papelera de reciclaje de horarios"
+                (click)="abrirPapelera()">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          }
 
-          <div class="col-auto" *ngIf="accesoModel.auditar === true">
-            <button
-              class="btn btn-warning d-flex align-items-center justify-content-center square-btn rounded-3 position-relative"
-              title="Ver historial de auditoría del registro seleccionado"
-              [disabled]="!selectedRow"
-              (click)="auditoria()">
-              <i class="fa fa-user-secret"></i>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 8px;">
-                <i class="fa fa-search"></i>
-              </span>
-            </button>            
-          </div>            
-        </div>             
-        
+          @if (accesoModel.auditar === true) {
+            <div class="col-auto">
+              <button
+                class="btn btn-warning d-flex align-items-center justify-content-center square-btn rounded-3 position-relative"
+                title="Ver historial de auditoría del registro seleccionado"
+                [disabled]="!selectedRow"
+                (click)="auditoria()">
+                <i class="fa fa-user-secret"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 8px;">
+                  <i class="fa fa-search"></i>
+                </span>
+              </button>
+            </div>
+          }
+        </div>
+
         <!-- INICIO DE AG-GRID (con altura fija y margin-top) -->
         <!-- El clic derecho se escucha en el contenedor: el evento
-             `cellContextMenu` de ag-Grid no llega (comprobado). -->
+        `cellContextMenu` de ag-Grid no llega (comprobado). -->
         <div (contextmenu)="onContextMenuGrilla($event)">
-        <ag-grid-angular 
-          style="height: 360.4px; --ag-line-height: 30px; margin-top: -10px;"
-          [rowData]="chorarioModel" 
-          [columnDefs]="columnDefs"
-          [defaultColDef]="_appAgGridService.defaultColDef" 
-          [sideBar]="_appAgGridService.sideBar" 
-          [rowHeight]="_appAgGridService.rowHeight" 
-          [headerHeight]="_appAgGridService.headerHeight"
-          [localeText]="_appAgGridService.localeText"
-          [rowSelection]="'single'"
-          [pagination]="false"
-          [animateRows]="true" 
-          class="ag-theme-alpine ag-grid-transparente p-2 ag-grid-responsive"
-          [navigateToNextCell]="navegarConTeclado"
-          [rowClassRules]="rowClassRules"
-          (filterChanged)="onFiltroColumna()"
-          (gridReady)="onGridReady($event)" 
-          (cellClicked)="onCellClicked($event)"                 
-        ></ag-grid-angular>
+          <ag-grid-angular
+            style="height: 360.4px; --ag-line-height: 30px; margin-top: -10px;"
+            [rowData]="chorarioModel"
+            [columnDefs]="columnDefs"
+            [defaultColDef]="_appAgGridService.defaultColDef"
+            [sideBar]="_appAgGridService.sideBar"
+            [rowHeight]="_appAgGridService.rowHeight"
+            [headerHeight]="_appAgGridService.headerHeight"
+            [localeText]="_appAgGridService.localeText"
+            [rowSelection]="'single'"
+            [pagination]="false"
+            [animateRows]="true"
+            class="ag-theme-alpine ag-grid-transparente p-2 ag-grid-responsive"
+            [navigateToNextCell]="navegarConTeclado"
+            [rowClassRules]="rowClassRules"
+            (filterChanged)="onFiltroColumna()"
+            (gridReady)="onGridReady($event)"
+            (cellClicked)="onCellClicked($event)"
+          ></ag-grid-angular>
         </div>
 
         <!-- INICIO CONTROLES DE PAGINACIÓN PERSONALIZADOS (mismo orden que perfiles) -->
@@ -112,22 +116,22 @@
 
           <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
             <button type="button" class="btn btn-sm btn-white" title="Primera página"
-                    (click)="firstPage()" [disabled]="paginaActual === 1">
+              (click)="firstPage()" [disabled]="paginaActual === 1">
               <i class="fa fa-angle-double-left"></i>
             </button>
             <button type="button" class="btn btn-sm btn-white" title="Página anterior"
-                    (click)="prevPage()" [disabled]="paginaActual === 1">
+              (click)="prevPage()" [disabled]="paginaActual === 1">
               <i class="fa fa-chevron-left"></i>
             </button>
             <span class="btn btn-sm btn-white pagination-page-badge disabled">
               Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
             </span>
             <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
-                    (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+              (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
               <i class="fa fa-chevron-right"></i>
             </button>
             <button type="button" class="btn btn-sm btn-white" title="Última página"
-                    (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
+              (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
               <i class="fa fa-angle-double-right"></i>
             </button>
           </div>
@@ -147,9 +151,9 @@
 <!-- FIN PANEL -->
 
 <!-- ================= MENU DEL BOTON DERECHO =================
-     Las mismas acciones que la columna ACCIONES, sin tener que llegar al
-     final de la fila ni desplegar la columna cuando esta plegada. -->
+Las mismas acciones que la columna ACCIONES, sin tener que llegar al
+final de la fila ni desplegar la columna cuando esta plegada. -->
 <app-menu-contextual #menuCtx
-                     [opciones]="opcionesContextuales"
-                     (elegida)="alElegirContextual($event)">
+  [opciones]="opcionesContextuales"
+  (elegida)="alElegirContextual($event)">
 </app-menu-contextual>

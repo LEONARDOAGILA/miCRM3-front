@@ -32,11 +32,12 @@ import { PapeleraProductosComponent } from '../papeleraProductos/papeleraProduct
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Catálogo de productos (inventarios.productos).
@@ -62,9 +63,14 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   styleUrls: ['./allProductos.component.css'],
   standalone: true,
   imports: [
-    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
-    CampoBusquedaPaginacionComponent, MenuContextualComponent,
-  ],
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    CampoBusquedaPaginacionComponent,
+    MenuContextualComponent
+],
 })
 export class AllProductosComponent implements OnInit, OnDestroy {
 

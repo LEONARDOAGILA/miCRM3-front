@@ -20,13 +20,15 @@
 
 
   </form>
-    
 
-  <div class="save-buttons" *ngIf="!isdisabled">
-    <button class="btn btn-primary" type="submit"  (click)="onSubmitForm($event, myForm.value)" [disabled]="isdisabled">
-        <i class="bi bi-save"><span class="m-2">Guardar</span></i>            
-    </button>
-  </div>
+
+  @if (!isdisabled) {
+    <div class="save-buttons">
+      <button class="btn btn-primary" type="submit"  (click)="onSubmitForm($event, myForm.value)" [disabled]="isdisabled">
+        <i class="bi bi-save"><span class="m-2">Guardar</span></i>
+      </button>
+    </div>
+  }
 
 
 </panel>

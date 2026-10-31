@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, Input, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 /** Una imagen del visor. */
@@ -26,7 +26,7 @@ export interface ImagenVisor {
 @Component({
   selector: 'app-visor-imagenes',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './visorImagenes.component.html',
   styleUrls: ['./visorImagenes.component.css'],
 })

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 import { GRUPOS_HUECOS, GrupoHuecos } from '../../../modules/ventas/interfaces/huecosPlantilla';
 
@@ -20,7 +20,7 @@ import { GRUPOS_HUECOS, GrupoHuecos } from '../../../modules/ventas/interfaces/h
 @Component({
   selector: 'app-huecosPlantilla',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './huecosPlantilla.component.html',
   styleUrls: ['./huecosPlantilla.component.css'],
 })

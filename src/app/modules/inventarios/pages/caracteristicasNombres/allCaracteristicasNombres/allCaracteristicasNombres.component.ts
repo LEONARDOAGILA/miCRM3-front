@@ -29,10 +29,11 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { AppDescargaService, PeticionDescarga, AccionDescarga }
   from '../../../../../service/app-descarga.service';
-import { CommonModule } from '@angular/common';
+
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * EL DICCIONARIO DE NOMBRES DE CARACTERÍSTICA
@@ -59,9 +60,13 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   styleUrls: ['./allCaracteristicasNombres.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
-    CampoBusquedaPaginacionComponent, MenuContextualComponent,
-  ],
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    CampoBusquedaPaginacionComponent,
+    MenuContextualComponent
+],
 })
 export class AllCaracteristicasNombresComponent implements OnInit, OnDestroy {
 

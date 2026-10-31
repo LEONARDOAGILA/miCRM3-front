@@ -1,5 +1,5 @@
 import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
@@ -42,7 +42,7 @@ export interface UbicacionElegida {
 @Component({
   selector: 'app-seleccionar-ubicacion',
   standalone: true,
-  imports: [CommonModule, PanelComponent, UbicacionGoogleMapsComponent],
+  imports: [PanelComponent, UbicacionGoogleMapsComponent],
   templateUrl: './seleccionarUbicacion.component.html',
   styleUrls: ['./seleccionarUbicacion.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

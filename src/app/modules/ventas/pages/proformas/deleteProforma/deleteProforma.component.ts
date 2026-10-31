@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
@@ -20,7 +20,7 @@ import { claseEstado, etiquetaEstado } from '../../../interfaces/proformaModel';
 @Component({
   selector: 'app-deleteProforma',
   standalone: true,
-  imports: [CommonModule, ModalArrastrableDirective],
+  imports: [ModalArrastrableDirective],
   templateUrl: './deleteProforma.component.html',
   styleUrls: ['./deleteProforma.component.css'],
 })

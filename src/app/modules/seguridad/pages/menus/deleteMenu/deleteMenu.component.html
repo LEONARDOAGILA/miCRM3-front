@@ -1,13 +1,13 @@
 <!-- ===================== SPINNER ===================== -->
-<ng-container *ngIf="isLoading">
+@if (isLoading) {
   <div class="loader1" role="status" aria-label="Eliminando"></div>
   <div class="overlay1" aria-hidden="true"></div>
-</ng-container>
+}
 
 <div class="modal-content border-0 shadow-lg"
-     role="alertdialog"
-     aria-labelledby="eliminarMenuTitulo"
-     aria-describedby="eliminarMenuDescripcion">
+  role="alertdialog"
+  aria-labelledby="eliminarMenuTitulo"
+  aria-describedby="eliminarMenuDescripcion">
 
   <!-- ===================== CABECERA ===================== -->
   <div appModalArrastrable class="modal-header eliminar-header">
@@ -15,9 +15,9 @@
       <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
     </h5>
     <button type="button"
-            class="btn-close btn-close-white"
-            aria-label="Cerrar"
-            (click)="modal.dismiss('Cross click')"></button>
+      class="btn-close btn-close-white"
+      aria-label="Cerrar"
+    (click)="modal.dismiss('Cross click')"></button>
   </div>
 
   <!-- ===================== CUERPO ===================== -->
@@ -61,24 +61,28 @@
         <span class="eliminar-datos__valor">{{ registro_selected?.nivel ?? '—' }}</span>
       </div>
 
-      <div class="list-group-item d-flex justify-content-between align-items-center"
-           *ngIf="registro_selected?.url">
-        <span class="eliminar-datos__etiqueta">
-          <i class="fa fa-link fa-fw me-1" aria-hidden="true"></i>URL
-        </span>
-        <span class="eliminar-datos__valor">{{ registro_selected?.url }}</span>
-      </div>
+      @if (registro_selected?.url) {
+        <div class="list-group-item d-flex justify-content-between align-items-center"
+          >
+          <span class="eliminar-datos__etiqueta">
+            <i class="fa fa-link fa-fw me-1" aria-hidden="true"></i>URL
+          </span>
+          <span class="eliminar-datos__valor">{{ registro_selected?.url }}</span>
+        </div>
+      }
 
-      <div class="list-group-item d-flex justify-content-between align-items-center"
-           *ngIf="registro_selected?.icono">
-        <span class="eliminar-datos__etiqueta">
-          <i class="fa fa-icons fa-fw me-1" aria-hidden="true"></i>Icono
-        </span>
-        <span class="eliminar-datos__valor">
-          <i [ngClass]="registro_selected?.icono" class="me-1" aria-hidden="true"></i>
-          {{ registro_selected?.icono }}
-        </span>
-      </div>
+      @if (registro_selected?.icono) {
+        <div class="list-group-item d-flex justify-content-between align-items-center"
+          >
+          <span class="eliminar-datos__etiqueta">
+            <i class="fa fa-icons fa-fw me-1" aria-hidden="true"></i>Icono
+          </span>
+          <span class="eliminar-datos__valor">
+            <i [ngClass]="registro_selected?.icono" class="me-1" aria-hidden="true"></i>
+            {{ registro_selected?.icono }}
+          </span>
+        </div>
+      }
 
     </div>
 
@@ -94,14 +98,14 @@
   <!-- ===================== PIE ===================== -->
   <div class="modal-footer eliminar-footer">
     <button type="button"
-            class="btn btn-outline-secondary"
-            (click)="modal.close('Close click')">
+      class="btn btn-outline-secondary"
+      (click)="modal.close('Close click')">
       <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
     </button>
     <button type="button"
-            class="btn btn-danger"
-            [disabled]="isLoading"
-            (click)="deleteMenu()">
+      class="btn btn-danger"
+      [disabled]="isLoading"
+      (click)="deleteMenu()">
       <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, eliminar
     </button>
   </div>

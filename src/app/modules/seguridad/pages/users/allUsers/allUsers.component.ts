@@ -31,10 +31,11 @@ import { PapeleraUsuariosComponent } from '../../grupos/papeleraUsuarios/papeler
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
-import { CommonModule } from '@angular/common';
+
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Listado de usuarios.
@@ -61,9 +62,13 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
   styleUrls: ['./allUsers.component.css'],
   standalone: true,
   imports: [
-    CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent, MenuContextualComponent,
-    CampoBusquedaPaginacionComponent,
-  ],
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    MenuContextualComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllUsersComponent implements OnInit, OnDestroy {
 

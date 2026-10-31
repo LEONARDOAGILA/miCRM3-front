@@ -1,11 +1,11 @@
 <!-- Se conserva el envoltorio .col-md: las pantallas que usan el combo lo
-     colocan en sus filas contando con que se comporte como columna. -->
+colocan en sus filas contando con que se comporte como columna. -->
 <div class="col-md">
   <div class="combo">
 
     <div class="form-floating combo-floating"
-         [class.is-focused]="isFocused || isDropdownOpen"
-         [class.is-disabled]="disabled">
+      [class.is-focused]="isFocused || isDropdownOpen"
+      [class.is-disabled]="disabled">
 
       <ng-select
         class="combo-select"
@@ -31,22 +31,24 @@
       </ng-select>
 
       <label [for]="idCampo" class="combo-label d-flex align-items-center py-0 fs-13px"
-             [class.active]="isFloating || !!value">
+        [class.active]="isFloating || !!value">
         {{ label }}
       </label>
 
     </div>
 
     <!-- Zona de mensajes, igual que en app-campoTexto.
-         Antes había aquí un <label class="col-form-label"> vacío que reservaba
-         espacio muerto; ahora el hueco lo reserva el CSS (min-height), así que
-         el formulario no salta cuando aparece el error. -->
+    Antes había aquí un <label class="col-form-label"> vacío que reservaba
+    espacio muerto; ahora el hueco lo reserva el CSS (min-height), así que
+    el formulario no salta cuando aparece el error. -->
     <div class="combo__mensajes">
-      <small class="combo__error"
-             *ngIf="control?.hasError('required') && (control?.dirty || control?.touched)">
-        <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
-        Es requerido.
-      </small>
+      @if (control?.hasError('required') && (control?.dirty || control?.touched)) {
+        <small class="combo__error"
+          >
+          <i class="fa fa-triangle-exclamation fa-fw" aria-hidden="true"></i>
+          Es requerido.
+        </small>
+      }
     </div>
 
   </div>
