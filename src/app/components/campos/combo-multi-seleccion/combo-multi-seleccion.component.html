@@ -23,18 +23,18 @@
     [(ngModel)]="valor"
     (ngModelChange)="seleccionCambiada()">
 
-    <!-- LO QUE AHORRA SITIO: se enseñan las primeras y el resto se resume
-         en «+N». Con seis elegidas, seis chapas empujan fuera de la barra
-         lo que venga detrás. Cada chapa conserva su × para quitarla suelta;
-         la del resumen no, que no se sabría cuál quitaría. -->
+    <!-- Se enseñan TODAS las elegidas, cada una con su × para quitarla
+         suelta: lo que se está filtrando tiene que poder leerse. Sólo si
+         quien lo coloca pone un tope (maximoVisible) aparece el resumen
+         «+N», y ése no lleva × porque no se sabría cuál quitaría. -->
     <ng-template ng-multi-label-tmp let-items="items" let-clear="clear">
-      @for (item of items.slice(0, maximoVisible); track item[bindValue] ?? item) {
+      @for (item of visibles(items); track item[bindValue] ?? item) {
         <div class="ng-value">
           <span class="ng-value-icon left" (click)="clear(item)" aria-hidden="true">×</span>
           <span class="ng-value-label">{{ item[bindLabel] ?? item }}</span>
         </div>
       }
-      @if (items.length > maximoVisible) {
+      @if (maximoVisible > 0 && items.length > maximoVisible) {
         <div class="ng-value cms__resumen"
              [title]="'También: ' + items.slice(maximoVisible).map(i => i[bindLabel] ?? i).join(', ')">
           <span class="ng-value-label">+{{ items.length - maximoVisible }}</span>

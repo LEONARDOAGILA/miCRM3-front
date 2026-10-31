@@ -64,10 +64,20 @@ export class ComboMultiSeleccionComponent implements ControlValueAccessor {
   /**
    * Cuántas elegidas se enseñan antes de resumir en «+N».
    *
-   * Es lo que de verdad ahorra sitio: con seis marcas elegidas, seis chapas
-   * empujan fuera de la barra lo que venga detrás.
+   * CERO —lo normal— las enseña TODAS: lo que se está filtrando tiene que
+   * poder leerse sin pasar el ratón por encima de un número. Se sube sólo
+   * donde el sitio mande, como una barra de herramientas estrecha; ahí seis
+   * chapas empujan fuera lo que venga detrás.
+   *
+   * Aunque se enseñen todas, la caja no crece sin fin: pasada su altura, las
+   * chapas se desplazan dentro del propio campo.
    */
-  @Input() maximoVisible = 2;
+  @Input() maximoVisible = 0;
+
+  /** Las que se pintan como chapa: todas, salvo que haya tope. */
+  visibles(items: any[]): any[] {
+    return this.maximoVisible > 0 ? items.slice(0, this.maximoVisible) : items;
+  }
 
   /** Normalmente false: se eligen varias de una pasada. */
   @Input() cerrarAlElegir = false;

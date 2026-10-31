@@ -47,20 +47,32 @@
 
 /* ---------- Que siga al tema ----------
    El tema por defecto de ng-select trae blancos y grises fijos; sin esto,
-   en modo oscuro el desplegable sale blanco sobre la pantalla oscura. */
+   en modo oscuro el desplegable sale blanco sobre la pantalla oscura.
+
+   OJO CON LA VARIABLE: aquí NO vale --bs-body-bg. En esta plantilla es un
+   GRIS (#dee2e6), no el blanco de Bootstrap, y el campo quedaba gris sobre
+   gris, con toda la pinta de estar deshabilitado. La de los campos y las
+   tarjetas es --bs-component-bg. */
 .cms ::ng-deep .ng-select-container {
-  background-color: var(--bs-body-bg, #fff);
+  background-color: var(--bs-component-bg, #fff);
   border-color: var(--bs-border-color, #dee2e6);
   color: var(--bs-body-color, #212529);
 }
 
+/* Y que se note que tiene el foco, como cualquier otro campo */
+.cms ::ng-deep .ng-select.ng-select-focused > .ng-select-container {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .2);
+}
+
 .cms ::ng-deep .ng-dropdown-panel {
-  background-color: var(--bs-body-bg, #fff);
+  background-color: var(--bs-component-bg, #fff);
   border-color: var(--bs-border-color, #dee2e6);
 }
 
 .cms ::ng-deep .ng-dropdown-panel .ng-option {
   background-color: transparent;
+  white-space: normal;        /* las rutas de categoría son largas */
   color: var(--bs-body-color, #212529);
 }
 

@@ -632,7 +632,16 @@
   min-width: 0;
   overflow: hidden;
   border-left: 1px solid var(--bs-border-color, #dee2e6);
-  background-color: var(--bs-body-bg, #fff);
+  /* Un punto más claro que el cuerpo, para que los campos blancos de dentro
+     se lean como campos. Con --bs-body-bg (un gris en esta plantilla) el
+     panel y los campos eran del mismo color y parecían deshabilitados. */
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* En el panel hay sitio de sobra a lo alto: caben varias filas de chapas
+   antes de tener que desplazar. En una barra estrecha no sería así. */
+.prod-filtros ::ng-deep .cms--compacto .ng-value-container {
+  max-height: 130px;
 }
 
 .prod-filtros__cabecera {
