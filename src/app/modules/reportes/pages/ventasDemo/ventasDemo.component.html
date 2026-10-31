@@ -1,0 +1,297 @@
+<!-- ============================================================
+     TABLERO DE VENTAS (DEMO)
+
+     Un armador de tabla dinámica: se elige qué va en las filas, qué en las
+     columnas, qué se mide y con qué operación. La misma respuesta del
+     servidor pinta la tabla y el gráfico.
+
+     Los datos son INVENTADOS (reportes.ventas_demo).
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Reportes</a></li>
+  <li class="breadcrumb-item active">Ventas (demo)</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       [ButtonPrint]="accesoModel?.reporte === true"
+       [ButtonExportExcel]="accesoModel?.reporte === true"
+       [ButtonExportCsv]="accesoModel?.reporte === true"
+       (panelReloaded)="recargar()"
+       (panelExpanded)="alRedimensionar()"
+       (panelPrinted)="printPdf()"
+       (panelExportExceled)="exportExcel()"
+       (panelExportCsved)="exportCsv()"
+       [closeRoute]="'/reportes'"
+       icono="chart-column">
+
+  <div class="content-container1 rep-contenido">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <!-- ========== 1. LOS FILTROS ========== -->
+    <div class="rep-barra">
+      <div class="rep-grupo">
+        <label class="rep-etiqueta">Desde</label>
+        <input type="date" class="form-control form-control-sm rep-fecha"
+               [(ngModel)]="filtros.desde" (change)="alCambiarFiltro()">
+      </div>
+      <div class="rep-grupo">
+        <label class="rep-etiqueta">Hasta</label>
+        <input type="date" class="form-control form-control-sm rep-fecha"
+               [(ngModel)]="filtros.hasta" (change)="alCambiarFiltro()">
+      </div>
+
+      <!-- Los rangos que de verdad se usan, de un clic -->
+      <div class="btn-group btn-group-sm rep-rangos" role="group">
+        <button type="button" class="btn btn-outline-secondary rep-btn" (click)="rango('mes')">Mes</button>
+        <button type="button" class="btn btn-outline-secondary rep-btn" (click)="rango('trimestre')">Trim.</button>
+        <button type="button" class="btn btn-outline-secondary rep-btn" (click)="rango('anio')">12 meses</button>
+        <button type="button" class="btn btn-outline-secondary rep-btn" (click)="rango('todo')">Todo</button>
+      </div>
+
+      <div class="rep-grupo rep-crece">
+        <label class="rep-etiqueta">Región</label>
+        <ng-select class="rep-select" [items]="opciones?.filtros?.['region'] || []"
+                   [multiple]="true" [closeOnSelect]="false" placeholder="Todas"
+                   [(ngModel)]="filtros.region" (change)="alCambiarFiltro()"></ng-select>
+      </div>
+      <div class="rep-grupo rep-crece">
+        <label class="rep-etiqueta">Categoría</label>
+        <ng-select class="rep-select" [items]="opciones?.filtros?.['categoria'] || []"
+                   [multiple]="true" [closeOnSelect]="false" placeholder="Todas"
+                   [(ngModel)]="filtros.categoria" (change)="alCambiarFiltro()"></ng-select>
+      </div>
+      <div class="rep-grupo rep-crece">
+        <label class="rep-etiqueta">Canal</label>
+        <ng-select class="rep-select" [items]="opciones?.filtros?.['canal'] || []"
+                   [multiple]="true" [closeOnSelect]="false" placeholder="Todos"
+                   [(ngModel)]="filtros.canal" (change)="alCambiarFiltro()"></ng-select>
+      </div>
+
+      <div class="rep-grupo rep-crece">
+        <label class="rep-etiqueta">Buscar</label>
+        <input type="text" class="form-control form-control-sm"
+               placeholder="producto, cliente, vendedor…"
+               [(ngModel)]="filtros.buscar" (keyup.enter)="alCambiarFiltro()">
+      </div>
+
+      <button type="button" class="btn btn-sm rep-btn"
+              [class.btn-danger]="cuantosFiltros > 0"
+              [class.btn-outline-secondary]="cuantosFiltros === 0"
+              [disabled]="cuantosFiltros === 0"
+              title="Quitar los filtros (las fechas se quedan)"
+              (click)="limpiarFiltros()">
+        <i class="fa fa-filter-circle-xmark"></i>
+        @if (cuantosFiltros > 0) { <span class="ms-1">{{ cuantosFiltros }}</span> }
+      </button>
+    </div>
+
+    <!-- ========== 2. EL ARMADOR ========== -->
+    <div class="rep-barra rep-barra--armado">
+      <span class="rep-titulo"><i class="fa fa-table-cells me-1"></i>Armar</span>
+
+      <div class="rep-grupo">
+        <label class="rep-etiqueta">Filas</label>
+        <select class="form-select form-select-sm" [(ngModel)]="filas" (change)="alCambiarArmado()">
+          @for (d of dimensiones; track d.id) { <option [value]="d.id">{{ d.name }}</option> }
+        </select>
+      </div>
+
+      <span class="rep-por">×</span>
+
+      <div class="rep-grupo">
+        <label class="rep-etiqueta">Columnas</label>
+        <select class="form-select form-select-sm" [(ngModel)]="columnas" (change)="alCambiarArmado()">
+          @for (d of dimensionesConNinguna; track d.id) { <option [value]="d.id">{{ d.name }}</option> }
+        </select>
+      </div>
+
+      <div class="rep-grupo">
+        <label class="rep-etiqueta">Medida</label>
+        <select class="form-select form-select-sm" [(ngModel)]="medida" (change)="alCambiarArmado()">
+          @for (m of medidas; track m.id) { <option [value]="m.id">{{ m.name }}</option> }
+        </select>
+      </div>
+
+      <div class="rep-grupo">
+        <label class="rep-etiqueta">Operación</label>
+        <select class="form-select form-select-sm" [(ngModel)]="agregacion" (change)="alCambiarArmado()">
+          @for (a of agregaciones; track a.id) { <option [value]="a.id">{{ a.name }}</option> }
+        </select>
+      </div>
+
+      <div class="rep-grupo">
+        <label class="rep-etiqueta">Orden</label>
+        <select class="form-select form-select-sm" [(ngModel)]="orden" (change)="alCambiarArmado()">
+          <option value="valor">De mayor a menor</option>
+          <option value="etiqueta">Por nombre</option>
+        </select>
+      </div>
+
+      <div class="rep-grupo">
+        <label class="rep-etiqueta">Gráfico</label>
+        <select class="form-select form-select-sm" [(ngModel)]="tipoGrafico" (change)="alCambiarGrafico()">
+          @for (g of graficos; track g.id) { <option [value]="g.id">{{ g.name }}</option> }
+        </select>
+      </div>
+
+      <button type="button" class="btn btn-sm rep-btn"
+              [class.btn-primary]="verGrafico" [class.btn-outline-secondary]="!verGrafico"
+              [title]="verGrafico ? 'Esconder el gráfico' : 'Mostrar el gráfico'"
+              (click)="verGrafico = !verGrafico; alCambiarGrafico()">
+        <i class="fa" [ngClass]="verGrafico ? 'fa-chart-simple' : 'fa-eye-slash'"></i>
+      </button>
+    </div>
+
+    <!-- ========== 3. LAS PESTAÑAS ========== -->
+    <ul class="nav nav-tabs rep-pestanas">
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="pestana === 'pivote'" (click)="irAPestana('pivote')">
+          <i class="fa fa-table-cells me-1"></i>Resumen
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="pestana === 'detalle'" (click)="irAPestana('detalle')">
+          <i class="fa fa-list me-1"></i>Detalle
+          @if (totalDetalle) { <span class="badge bg-secondary ms-1">{{ totalDetalle }}</span> }
+        </a>
+      </li>
+    </ul>
+
+    <!-- ========== 4a. RESUMEN ========== -->
+    @if (pestana === 'pivote') {
+
+      <div class="rep-resumen">
+        <span class="rep-chip rep-chip--fuerte">
+          <i class="fa fa-coins"></i>
+          {{ nombreMedida }} ({{ agregacion === 'SUM' ? 'total' : agregacion.toLowerCase() }}):
+          <b>{{ formatear(pivote?.gran_total) }}</b>
+        </span>
+        <span class="rep-chip">
+          {{ pivote?.meta?.cuantas_filas || 0 }} {{ nombreFilas | lowercase }}
+          @if (columnas !== 'ninguna') { × {{ pivote?.meta?.cuantas_columnas || 0 }} {{ nombreColumnas | lowercase }} }
+        </span>
+        @if (filtros.desde || filtros.hasta) {
+          <span class="rep-chip rep-chip--suave">
+            <i class="fa fa-calendar"></i> {{ filtros.desde || '…' }} → {{ filtros.hasta || '…' }}
+          </span>
+        }
+        <span class="rep-chip rep-chip--demo" title="Son datos inventados: reportes.ventas_demo">
+          <i class="fa fa-flask"></i> datos de ejemplo
+        </span>
+      </div>
+
+      @if (verGrafico && grafico) {
+        <div class="rep-grafico">
+          @if (tipoGrafico === 'pastel') {
+            <apx-chart [series]="grafico.series" [labels]="grafico.labels" [chart]="grafico.chart"
+                       [legend]="grafico.legend" [dataLabels]="grafico.dataLabels"
+                       [tooltip]="grafico.tooltip" [stroke]="grafico.stroke"></apx-chart>
+          } @else {
+            <apx-chart [series]="grafico.series" [chart]="grafico.chart" [xaxis]="grafico.xaxis"
+                       [yaxis]="grafico.yaxis" [dataLabels]="grafico.dataLabels"
+                       [stroke]="grafico.stroke" [fill]="grafico.fill" [legend]="grafico.legend"
+                       [tooltip]="grafico.tooltip" [plotOptions]="grafico.plotOptions"></apx-chart>
+          }
+          @if (recortadoElGrafico) {
+            <p class="rep-nota">
+              <i class="fa fa-circle-info me-1"></i>
+              El gráfico enseña las <b>{{ filasEnGrafico }}</b> primeras de
+              {{ pivote?.meta?.cuantas_filas }}: con más, la leyenda tapa el dibujo.
+              La tabla de abajo las tiene todas.
+            </p>
+          }
+        </div>
+      }
+
+      <div class="rep-grid">
+        <ag-grid-angular
+          class="ag-theme-alpine ag-grid-transparente w-100"
+          [rowData]="filasGrid"
+          [columnDefs]="columnDefs"
+          [pinnedBottomRowData]="filaTotales"
+          [defaultColDef]="_appAgGridService.defaultColDef"
+          [domLayout]="'autoHeight'"
+          [rowHeight]="30"
+          [headerHeight]="34"
+          [localeText]="_appAgGridService.localeText"
+          [enableCellTextSelection]="true"
+          [suppressRowClickSelection]="true"
+          [pagination]="false"
+          [tooltipShowDelay]="400"
+          [overlayNoRowsTemplate]="'<span>No hay ventas con esos filtros</span>'"
+          (gridReady)="onGridReady($event)">
+        </ag-grid-angular>
+      </div>
+
+      <p class="rep-pie">
+        <i class="fa fa-lightbulb me-1"></i>
+        La suma la hace PostgreSQL, no el navegador: aquí sólo llegan las celdas que se ven.
+        El total de cada fila viene del servidor y <b>no es la suma de sus celdas</b> cuando la
+        operación es un promedio, un mínimo o un máximo.
+      </p>
+    }
+
+    <!-- ========== 4b. DETALLE ========== -->
+    @if (pestana === 'detalle') {
+      <div class="rep-grid rep-grid--detalle">
+        <ag-grid-angular
+          class="ag-theme-alpine ag-grid-transparente w-100"
+          [rowData]="detalle"
+          [columnDefs]="columnDefsDetalle"
+          [defaultColDef]="_appAgGridService.defaultColDef"
+          [rowHeight]="_appAgGridService.rowHeight"
+          [headerHeight]="_appAgGridService.headerHeight"
+          [localeText]="_appAgGridService.localeText"
+          [enableCellTextSelection]="true"
+          [pagination]="false"
+          [tooltipShowDelay]="400"
+          [overlayNoRowsTemplate]="'<span>No hay ventas con esos filtros</span>'"
+          (gridReady)="onGridDetalleReady($event)"
+          (sortChanged)="onOrdenDetalle()">
+        </ag-grid-angular>
+      </div>
+
+      <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+        <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+          <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                  (click)="primeraPagina()" [disabled]="paginaDetalle === 1">
+            <i class="fa fa-angle-double-left"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                  (click)="paginaAnterior()" [disabled]="paginaDetalle === 1">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <span class="btn btn-sm btn-white pagination-page-badge disabled">
+            Página <b>{{ paginaDetalle }}</b> de <b>{{ ultimaPaginaDetalle }}</b>
+          </span>
+          <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                  (click)="paginaSiguiente()" [disabled]="paginaDetalle === ultimaPaginaDetalle">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-white" title="Última página"
+                  (click)="ultimaPagina()" [disabled]="paginaDetalle === ultimaPaginaDetalle">
+            <i class="fa fa-angle-double-right"></i>
+          </button>
+        </div>
+
+        <div class="pagination-info small text-muted">
+          Mostrando <b>{{ desdeDetalle }}</b> – <b>{{ hastaDetalle }}</b> de <b>{{ totalDetalle }}</b> ventas
+          @if (cuantosFiltros > 0) { <span class="lista-filtrado">(filtrado)</span> }
+        </div>
+      </div>
+
+      <p class="rep-pie">
+        <i class="fa fa-lightbulb me-1"></i>
+        Ordenar por una columna lo hace el <b>servidor</b>: así se ordenan las
+        {{ totalDetalle }} ventas y no sólo las {{ porPaginaDetalle }} de esta página.
+      </p>
+    }
+
+  </div>
+</panel>

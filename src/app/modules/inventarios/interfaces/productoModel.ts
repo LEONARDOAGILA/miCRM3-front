@@ -52,12 +52,6 @@ export interface ProductoModel {
   maneja_serie: boolean;
   garantia_meses: number;
 
-  // ---------- Para el despacho ----------
-  peso_kg?: number | null;
-  alto_cm?: number | null;
-  ancho_cm?: number | null;
-  profundidad_cm?: number | null;
-
   activo: boolean;
 
   // ---------- Galería ----------

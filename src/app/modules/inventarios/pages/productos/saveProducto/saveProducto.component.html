@@ -1,8 +1,9 @@
 <!-- ============================================================
      GUARDAR PRODUCTO (modal)
 
-     Cuatro paneles: identificación, comercial, existencias y despacho,
-     más la galería. En 'view' todo va deshabilitado y sin guardar.
+     Cinco pestañas: identificación (con el estado y los interruptores),
+     características, descripción, imágenes, y precio con existencias.
+     En 'view' todo va deshabilitado y sin guardar.
      ============================================================ -->
 
 <!-- ===================== SPINNER ===================== -->
@@ -20,767 +21,694 @@
 <!-- ===================== CUERPO ===================== -->
 <div class="modal-body producto-modal-body">
   <form [formGroup]="form" class="form-validate" novalidate>
-    <!-- DOS COLUMNAS A PARTIR DE xl, UNA SOLA POR DEBAJO.
-         Las imágenes van escritas LAS ÚLTIMAS pero con `order-xl-first`: en
-         el móvil se rellena primero lo que se escribe (nadie sube fotos antes
-         de poner el nombre) y en pantalla ancha quedan a la izquierda, como
-         el avatar en el formulario de usuario. -->
-    <div class="row g-3">
+    <!-- CINCO PESTAÑAS.
+         La ficha tenía los paneles repartidos en dos columnas y había que
+         recorrerla entera para dar con cualquier cosa. La barra la pinta
+         app-tab-panel, la misma de Gestión de clientes: aquí sólo se dice
+         cuáles hay, y eso vive en el .ts porque los contadores cambian con
+         los datos.
 
-      <!-- ============ LOS DATOS ============ -->
-      <div class="col-12 col-xl-8">
+         VAN CON @if, NO ESCONDIDAS CON CSS: una rejilla de ag-Grid que se
+         crea dentro de un display:none se mide con cero de alto y no pinta
+         ninguna fila. Así cada pestaña se construye cuando se abre, ya
+         visible. Los valores no se pierden: viven en el FormGroup, no en
+         los campos. -->
+    <app-tab-panel
+      [pestanas]="pestanas"
+      [activa]="pestana"
+      [conPanel]="true"
+      (cambiada)="pestana = $any($event)">
 
-      <!-- ---------- 1 y 2. Identificación y precio ----------
-           En paralelo a partir de xxl y apilados por debajo, como
-           Existencias y Peso y medidas. OJO: al partir la columna de datos
-           en dos, cada panel se queda en unos 360px, así que las rejillas
-           de dentro llevan su propio col-xxl-*: con los de antes, el
-           buscador de marca caía a 180px (necesita 259, medido) y los
-           campos de precio a 60px. -->
-      <div class="row g-3">
-        <div class="col-12 col-xxl-6">
-      <panel
-        headerClass="bg-gray-800"
-        title="Identificación"
-        noButton="true"
-        noBody="true"
-        panelClass="mb-3"
-        icono="box"
-        fondoGris="true">
+      <!-- ===== IDENTIFICACIÓN ===== -->
+      @if (pestana === 'identificacion') {
+        <div class="row g-3">
+          <div class="col-12 col-xl-8">
+            <panel
+              headerClass="bg-gray-800"
+              title="Identificación"
+              noButton="true"
+              noBody="true"
+              panelClass="mb-0"
+              icono="box"
+              fondoGris="true">
 
-        <div header class="panel-acciones">
-          @if (esView) {
-            <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
-          }
-        </div>
-
-        <ng-container outsideBody>
-          <div class="form-card__body">
-            <div class="row g-3 align-items-start">
-
-              <!-- Código (SKU) -->
-              <div class="col-6 col-md-3 col-xxl-5">
-                <app-campoTexto
-                  [control]="form.controls['codigo']"
-                  label="CÓDIGO (SKU)"
-                  placeholder="RF-28K"
-                  [maxLength]="30"
-                  [minLength]="2"
-                  [trimEspacios]="true">
-                </app-campoTexto>
-              </div>
-
-              <!-- Código de barras -->
-              <div class="col-6 col-md-3 col-xxl-7">
-                <app-campoTexto
-                  [control]="form.controls['codigo_barras']"
-                  label="CÓDIGO DE BARRAS"
-                  placeholder="EAN / UPC del fabricante"
-                  [maxLength]="50"
-                  icono="fa-barcode">
-                </app-campoTexto>
-              </div>
-
-              <!-- Nombre -->
-              <div class="col-12">
-                <app-campoTexto
-                  [control]="form.controls['nombre']"
-                  label="NOMBRE DEL PRODUCTO"
-                  placeholder="Refrigeradora Samsung 28 pies French Door"
-                  [maxLength]="150"
-                  [minLength]="3"
-                  [trimEspacios]="true">
-                </app-campoTexto>
-              </div>
-
-              <!-- Modelo: debajo del nombre y del mismo ancho, que es su
-                   pareja natural (el nombre dice qué es y el modelo cuál). -->
-              <div class="col-12">
-                <app-campoTexto
-                  [control]="form.controls['modelo']"
-                  label="MODELO"
-                  placeholder="RF28K9070SR"
-                  [maxLength]="80">
-                </app-campoTexto>
-              </div>
-
-              <!-- Marca: id + nombre + lupa, como el perfil en saveUser.
-                   Se escribe el id y al salir del campo se trae el nombre; o
-                   se busca con la lupa. El nombre va deshabilitado porque es
-                   lo que dice la marca elegida, no algo que se escriba.
-                   MEDIA FILA: son cuatro piezas en línea y con un tercio de
-                   la columna se quedan en 214px, donde ni las etiquetas
-                   caben (medido). -->
-              <div class="col-12 col-md-6 col-xxl-12">
-                <div class="campo-lookup">
-                  <!-- g-0: sin hueco entre piezas. Los bordes se comparten
-                       desde el CSS para que las cuatro se lean como un solo
-                       campo, no como cuatro cosas sueltas. -->
-                  <div class="row g-0 flex-nowrap">
-                    <div class="col-4">
-                      <app-campoNumeroEntero
-                        [control]="form.controls['marca_id']"
-                        label="ID Marca"
-                        placeholder="ID"
-                        [maxLength]="10"
-                        [limpiable]="false"
-                        (blur)="cargarMarcaPorId()">
-                      </app-campoNumeroEntero>
-                    </div>
-                    <div class="col">
-                      <app-campoTexto
-                        [control]="marcaNombreControl"
-                        label="Marca"
-                        placeholder="Sin marca">
-                      </app-campoTexto>
-                    </div>
-                    @if (!esView) {
-                      <div class="col-auto">
-                        <button type="button" class="btn btn-lookup"
-                                (click)="abrirModalMarcas()" title="Buscar marca">
-                          <i class="fa fa-search"></i>
-                        </button>
-                      </div>
-                      @if (form.controls['marca_id'].value) {
-                        <div class="col-auto">
-                          <button type="button" class="btn btn-lookup btn-lookup--quitar"
-                                  (click)="limpiarMarca()" title="Quitar la marca">
-                            <i class="fa fa-times"></i>
-                          </button>
-                        </div>
-                      }
-                    }
-                  </div>
-                </div>
-              </div>
-
-              <!-- Categoría: id + nombre + lupa, igual que la marca. El
-                   nombre que se enseña es la RUTA entera («Tecnología >
-                   Celulares > Accesorios») porque hay dos «Accesorios» en el
-                   árbol y a secas no se sabe cuál es. -->
-              <div class="col-12 col-md-6 col-xxl-12">
-                <div class="campo-lookup">
-                  <div class="row g-0 flex-nowrap">
-                    <div class="col-4">
-                      <app-campoNumeroEntero
-                        [control]="form.controls['categoria_id']"
-                        label="ID Categ."
-                        placeholder="ID"
-                        [maxLength]="10"
-                        [limpiable]="false"
-                        (blur)="cargarCategoriaPorId()">
-                      </app-campoNumeroEntero>
-                    </div>
-                    <div class="col">
-                      <app-campoTexto
-                        [control]="categoriaNombreControl"
-                        label="Categoría"
-                        placeholder="Sin categoría">
-                      </app-campoTexto>
-                    </div>
-                    @if (!esView) {
-                      <div class="col-auto">
-                        <button type="button" class="btn btn-lookup"
-                                (click)="abrirModalCategorias()" title="Buscar categoría">
-                          <i class="fa fa-search"></i>
-                        </button>
-                      </div>
-                      @if (form.controls['categoria_id'].value) {
-                        <div class="col-auto">
-                          <button type="button" class="btn btn-lookup btn-lookup--quitar"
-                                  (click)="limpiarCategoria()" title="Quitar la categoría">
-                            <i class="fa fa-times"></i>
-                          </button>
-                        </div>
-                      }
-                    }
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </ng-container>
-      </panel>
-        </div>
-
-        <div class="col-12 col-xxl-6">
-      <panel
-        headerClass="bg-gray-800"
-        title="Precio y condiciones"
-        noButton="true"
-        noBody="true"
-        panelClass="mb-3"
-        icono="dollar"
-        fondoGris="true">
-
-        <ng-container outsideBody>
-          <div class="form-card__body">
-            <div class="row g-3 align-items-start">
-
-              <!-- Unidad -->
-              <div class="col-6 col-md-4 col-xxl-6">
-                <div class="campo-combo">
-                  <app-combo
-                    formControlName="unidad"
-                    [items]="unidades"
-                    [label]="'Unidad'"
-                    bindLabel="name"
-                    bindValue="id">
-                  </app-combo>
-                </div>
-              </div>
-
-              <!-- Costo -->
-              <div class="col-6 col-md-4 col-xxl-6">
-                <app-campoTexto
-                  [control]="form.controls['costo']"
-                  label="COSTO"
-                  placeholder="0.00"
-                  type="number"
-                  [maxLength]="14"
-                  icono="fa-dollar-sign">
-                </app-campoTexto>
-              </div>
-
-              <!-- Precio -->
-              <div class="col-6 col-md-4 col-xxl-6">
-                <app-campoTexto
-                  [control]="form.controls['precio']"
-                  label="PRECIO"
-                  placeholder="0.00"
-                  type="number"
-                  [maxLength]="14"
-                  icono="fa-dollar-sign">
-                </app-campoTexto>
-              </div>
-
-              <!-- El margen, informativo -->
-              <div class="col-6 col-md-4 col-xxl-6">
-                <div class="prod-margen" [class.is-rojo]="margenEnRojo">
-                  <span class="prod-margen__label">Margen</span>
-                  <span class="prod-margen__valor">
-                    {{ margen === null ? '—' : (margen | number:'1.1-1') + ' %' }}
-                  </span>
-                </div>
-                @if (margenEnRojo) {
-                  <p class="campo-hint text-danger">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    El precio está por debajo del costo.
-                  </p>
+              <div header class="panel-acciones">
+                @if (esView) {
+                  <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
                 }
               </div>
 
-              <!-- Garantía -->
-              <div class="col-6 col-md-4 col-xxl-6">
-                <div class="campo-combo">
-                  <app-combo
-                    formControlName="garantia_meses"
-                    [items]="garantias"
-                    [label]="'Garantía'"
-                    bindLabel="name"
-                    bindValue="id">
-                  </app-combo>
-                </div>
-              </div>
+              <ng-container outsideBody>
+                <div class="form-card__body">
+                  <div class="row g-3 align-items-start">
 
-              <!-- ¿Grava impuesto? Aquí sólo se dice SÍ o NO: la tarifa ya
-                   no se escribe en la ficha del producto. -->
-              <div class="col-12">
-                <div class="prod-interruptor">
-                  <app-checkbox
-                    [control]="ctrlImpuesto"
-                    label="Grava impuesto"
-                    [id]="'ck-producto-impuesto'">
-                  </app-checkbox>
-                  <p class="campo-hint mb-0">
-                    <i class="fa-solid fa-circle-info"></i>
-                    Apágalo en lo exento. El porcentaje no se pone aquí: saldrá de las tablas de impuestos.
-                  </p>
-                </div>
-              </div>
+                    <!-- Código (SKU) -->
+                    <div class="col-6 col-md-3 col-xxl-5">
+                      <app-campoTexto
+                        [control]="form.controls['codigo']"
+                        label="CÓDIGO (SKU)"
+                        placeholder="RF-28K"
+                        [maxLength]="30"
+                        [minLength]="2"
+                        [trimEspacios]="true">
+                      </app-campoTexto>
+                    </div>
 
-            </div>
+                    <!-- Código de barras -->
+                    <div class="col-6 col-md-3 col-xxl-7">
+                      <app-campoTexto
+                        [control]="form.controls['codigo_barras']"
+                        label="CÓDIGO DE BARRAS"
+                        placeholder="EAN / UPC del fabricante"
+                        [maxLength]="50"
+                        icono="fa-barcode">
+                      </app-campoTexto>
+                    </div>
+
+                    <!-- Nombre -->
+                    <div class="col-12">
+                      <app-campoTexto
+                        [control]="form.controls['nombre']"
+                        label="NOMBRE DEL PRODUCTO"
+                        placeholder="Refrigeradora Samsung 28 pies French Door"
+                        [maxLength]="150"
+                        [minLength]="3"
+                        [trimEspacios]="true">
+                      </app-campoTexto>
+                    </div>
+
+                    <!-- Modelo: debajo del nombre y del mismo ancho, que es su
+                         pareja natural (el nombre dice qué es y el modelo cuál). -->
+                    <div class="col-12">
+                      <app-campoTexto
+                        [control]="form.controls['modelo']"
+                        label="MODELO"
+                        placeholder="RF28K9070SR"
+                        [maxLength]="80">
+                      </app-campoTexto>
+                    </div>
+
+                    <!-- Marca: id + nombre + lupa, como el perfil en saveUser.
+                         Se escribe el id y al salir del campo se trae el nombre; o
+                         se busca con la lupa. El nombre va deshabilitado porque es
+                         lo que dice la marca elegida, no algo que se escriba.
+                         MEDIA FILA: son cuatro piezas en línea y con un tercio de
+                         la columna se quedan en 214px, donde ni las etiquetas
+                         caben (medido). -->
+                    <div class="col-12 col-md-6 col-xxl-12">
+                      <div class="campo-lookup">
+                        <!-- g-0: sin hueco entre piezas. Los bordes se comparten
+                             desde el CSS para que las cuatro se lean como un solo
+                             campo, no como cuatro cosas sueltas. -->
+                        <div class="row g-0 flex-nowrap">
+                          <div class="col-4">
+                            <app-campoNumeroEntero
+                              [control]="form.controls['marca_id']"
+                              label="ID Marca"
+                              placeholder="ID"
+                              [maxLength]="10"
+                              [limpiable]="false"
+                              (blur)="cargarMarcaPorId()">
+                            </app-campoNumeroEntero>
+                          </div>
+                          <div class="col">
+                            <app-campoTexto
+                              [control]="marcaNombreControl"
+                              label="Marca"
+                              placeholder="Sin marca">
+                            </app-campoTexto>
+                          </div>
+                          @if (!esView) {
+                            <div class="col-auto">
+                              <button type="button" class="btn btn-lookup"
+                                      (click)="abrirModalMarcas()" title="Buscar marca">
+                                <i class="fa fa-search"></i>
+                              </button>
+                            </div>
+                            @if (form.controls['marca_id'].value) {
+                              <div class="col-auto">
+                                <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                        (click)="limpiarMarca()" title="Quitar la marca">
+                                  <i class="fa fa-times"></i>
+                                </button>
+                              </div>
+                            }
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Categoría: id + nombre + lupa, igual que la marca. El
+                         nombre que se enseña es la RUTA entera («Tecnología >
+                         Celulares > Accesorios») porque hay dos «Accesorios» en el
+                         árbol y a secas no se sabe cuál es. -->
+                    <div class="col-12 col-md-6 col-xxl-12">
+                      <div class="campo-lookup">
+                        <div class="row g-0 flex-nowrap">
+                          <div class="col-4">
+                            <app-campoNumeroEntero
+                              [control]="form.controls['categoria_id']"
+                              label="ID Categ."
+                              placeholder="ID"
+                              [maxLength]="10"
+                              [limpiable]="false"
+                              (blur)="cargarCategoriaPorId()">
+                            </app-campoNumeroEntero>
+                          </div>
+                          <div class="col">
+                            <app-campoTexto
+                              [control]="categoriaNombreControl"
+                              label="Categoría"
+                              placeholder="Sin categoría">
+                            </app-campoTexto>
+                          </div>
+                          @if (!esView) {
+                            <div class="col-auto">
+                              <button type="button" class="btn btn-lookup"
+                                      (click)="abrirModalCategorias()" title="Buscar categoría">
+                                <i class="fa fa-search"></i>
+                              </button>
+                            </div>
+                            @if (form.controls['categoria_id'].value) {
+                              <div class="col-auto">
+                                <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                        (click)="limpiarCategoria()" title="Quitar la categoría">
+                                  <i class="fa fa-times"></i>
+                                </button>
+                              </div>
+                            }
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </ng-container>
+            </panel>
           </div>
-        </ng-container>
-      </panel>
-        </div>
-      </div>
 
-      <!-- ---------- 3 y 4. Existencias y medidas ----------
-           Los dos son cortos, pero sólo caben uno al lado del otro cuando hay
-           sitio: a xl la columna de datos mide 749px y, partida en dos, el
-           campo se queda en 135px y «PROFUNDIDAD (cm)» no entra. Por eso
-           van en paralelo a partir de xxl y apilados por debajo. `h-100`
-           les da la misma altura aunque uno tenga una línea más. -->
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-xxl-6">
-      <panel
-        headerClass="bg-gray-800"
-        title="Existencias"
-        noButton="true"
-        noBody="true"
-        panelClass="mb-3"
-        icono="boxes"
-        fondoGris="true">
-
-        <ng-container outsideBody>
-          <div class="form-card__body">
-            <div class="row g-3 align-items-start">
-
-              <!-- ¿Lleva stock? -->
-              <div class="col-12">
-                <div class="prod-interruptor">
-                  <app-checkbox
-                    [control]="ctrlManejaStock"
-                    label="Controla existencias"
-                    [id]="'ck-producto-stock'">
-                  </app-checkbox>
-                  <p class="campo-hint mb-0">
-                    <i class="fa-solid fa-circle-info"></i>
-                    Apágalo para servicios o instalaciones, que no tienen bodega.
-                  </p>
-                </div>
+          <div class="col-12 col-xl-4">
+            <!-- Estado, lo primero que se ve al abrir el producto: antes
+                 quedaba al final del primer panel, que es donde menos se mira. -->
+            <div class="estado-producto mb-3" [class.is-on]="ctrlActivo.value">
+              <span class="estado-producto__icon"><i class="fa-solid fa-power-off"></i></span>
+              <div class="estado-producto__text">
+                <span class="estado-producto__label">Estado</span>
+                <span class="estado-producto__hint">
+                  {{ ctrlActivo.value ? 'Se ofrece al vender' : 'No se ofrece al vender' }}
+                </span>
               </div>
-
-              <!-- Mínimo y máximo -->
-              <div class="col-6">
-                <app-campoTexto
-                  [control]="form.controls['stock_minimo']"
-                  label="STOCK MÍNIMO"
-                  placeholder="0"
-                  type="number"
-                  [maxLength]="12">
-                </app-campoTexto>
-              </div>
-
-              <div class="col-6">
-                <app-campoTexto
-                  [control]="form.controls['stock_maximo']"
-                  label="STOCK MÁXIMO"
-                  placeholder="Sin tope"
-                  type="number"
-                  [maxLength]="12">
-                </app-campoTexto>
-              </div>
-
-              <!-- ¿Por número de serie? -->
-              <div class="col-12">
-                <div class="prod-interruptor">
-                  <app-checkbox
-                    [control]="ctrlManejaSerie"
-                    label="Control por serie / IMEI"
-                    [id]="'ck-producto-serie'">
-                  </app-checkbox>
-                  <p class="campo-hint mb-0">
-                    <i class="fa-solid fa-circle-info"></i>
-                    Enciéndelo en lo que se garantiza por unidad: electrodomésticos, computadores, celulares.
-                  </p>
-                </div>
-              </div>
-
+              <app-checkbox class="estado-producto__switch palanca"
+                [control]="ctrlActivo"
+                [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
+                [id]="'ck-producto-activo'">
+              </app-checkbox>
             </div>
-          </div>
-        </ng-container>
-      </panel>
 
-        </div>
-
-        <div class="col-12 col-xxl-6">
-      <panel
-        headerClass="bg-gray-800"
-        title="Peso y medidas"
-        noButton="true"
-        noBody="true"
-        panelClass="mb-3"
-        icono="truck"
-        fondoGris="true">
-
-        <ng-container outsideBody>
-          <div class="form-card__body">
-            <div class="row g-3 align-items-start">
-
-              <div class="col-6">
-                <app-campoTexto
-                  [control]="form.controls['peso_kg']"
-                  label="PESO (kg)"
-                  placeholder="0.000"
-                  type="number"
-                  [maxLength]="10">
-                </app-campoTexto>
-              </div>
-
-              <div class="col-6">
-                <app-campoTexto
-                  [control]="form.controls['alto_cm']"
-                  label="ALTO (cm)"
-                  placeholder="0.00"
-                  type="number"
-                  [maxLength]="10">
-                </app-campoTexto>
-              </div>
-
-              <div class="col-6">
-                <app-campoTexto
-                  [control]="form.controls['ancho_cm']"
-                  label="ANCHO (cm)"
-                  placeholder="0.00"
-                  type="number"
-                  [maxLength]="10">
-                </app-campoTexto>
-              </div>
-
-              <div class="col-6">
-                <app-campoTexto
-                  [control]="form.controls['profundidad_cm']"
-                  label="PROFUNDIDAD (cm)"
-                  placeholder="0.00"
-                  type="number"
-                  [maxLength]="10">
-                </app-campoTexto>
-              </div>
-
-              <div class="col-12">
+            <!-- Los otros tres interruptores de la ficha, debajo de Estado.
+                 Estaban repartidos por los paneles de la columna de datos
+                 —el impuesto en Precio, los otros dos en Existencias— y había
+                 que recorrerla entera para ver cómo estaba configurado el
+                 producto. Juntos aquí se leen los cuatro de una vez. -->
+            <div class="prod-interruptores mb-3">
+              <div class="prod-interruptor">
+                <app-checkbox class="palanca"
+                  [control]="ctrlImpuesto"
+                  label="Grava impuesto"
+                  [id]="'ck-producto-impuesto'">
+                </app-checkbox>
                 <p class="campo-hint mb-0">
                   <i class="fa-solid fa-circle-info"></i>
-                  Opcionales. Son las de la caja, para calcular el flete y lo que cabe en el camión.
+                  Apágalo en lo exento. El porcentaje no se pone aquí: saldrá de las tablas de impuestos.
                 </p>
               </div>
-
-            </div>
-          </div>
-        </ng-container>
-      </panel>
-        </div>
-      </div>
-
-      <!-- ---------- 6. Descripción ---------- -->
-      <!-- Este panel SÍ lleva botonera, al revés que los demás del
-           formulario: es el único con el de expandir, que es lo que sirve
-           para escribir una ficha larga a pantalla completa. Los otros tres
-           botones (recargar, minimizar, cerrar) se apagan uno a uno, porque
-           noButton los apaga TODOS, expandir incluido. -->
-      <!-- ---------- 6. Características ----------
-           Lo que hay que rellenar sale de la CATEGORÍA: un portátil pide
-           procesador y memoria; un televisor, pulgadas y resolución. La
-           lista se mantiene en Inventarios → Características, y aquí sólo se
-           rellena. Si la categoría no tiene lista, el panel lo dice en vez
-           de quedarse vacío sin explicación. -->
-      <panel
-        headerClass="bg-gray-800"
-        title="Características"
-        noButton="true"
-        noBody="true"
-        panelClass="mb-3"
-        icono="tag"
-        fondoGris="true">
-
-        <div header class="panel-acciones">
-          @if (hayCaracteristicas) {
-            <span class="chip chip-info" title="Rellenas de la lista de la categoría">
-              <i class="fa-solid fa-list-check"></i>
-              {{ caracteristicasRellenas }} / {{ caracteristicas.length }}
-            </span>
-          }
-          <!-- Las obligatorias que faltan, donde se ve antes de pulsar Guardar -->
-          @if (obligatoriasVacias.length) {
-            <span class="chip chip-danger"
-                  [title]="'Sin esto no se puede guardar: ' + obligatoriasVacias.length + ' obligatoria(s) vacía(s)'">
-              <i class="fa-solid fa-asterisk"></i>
-              {{ obligatoriasVacias.length }}
-              {{ obligatoriasVacias.length === 1 ? 'obligatoria vacía' : 'obligatorias vacías' }}
-            </span>
-          }
-          <!-- Para algo que sólo tiene ESTE producto. Lo que se repita en
-               todos los de su categoría va en Inventarios → Características,
-               que entonces se pide solo. -->
-          @if (!esView) {
-            <button type="button" class="btn btn-sm btn-primary"
-                    title="Añadir una característica sólo para este producto. El nombre se escoge del diccionario"
-                    (click)="agregarCaracteristica()">
-              <i class="fa fa-plus me-1"></i>Agregar
-            </button>
-          }
-        </div>
-
-        <ng-container outsideBody>
-          <div class="form-card__body">
-
-            @if (cargandoCaracteristicas) {
-              <p class="campo-hint">
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                Cargando la lista de la categoría…
-              </p>
-            } @else if (!hayCaracteristicas) {
-              <p class="campo-hint">
-                <i class="fa-solid fa-circle-info"></i>
-                @if (form.controls['categoria_id'].value) {
-                  Esta categoría todavía no tiene características definidas. Se definen una
-                  sola vez en <b>Inventarios → Características</b> y desde entonces se piden
-                  en todos sus productos.
-                } @else {
-                  Elija primero la categoría del producto: de ella sale la lista de
-                  características que hay que rellenar.
-                }
-              </p>
-            } @else {
-              <!-- Una rejilla y no ocho campos flotantes: con ocho
-                   características los campos se comían media pantalla y aquí
-                   caben en ocho filas. El NOMBRE no se toca (lo pone la lista
-                   de la categoría); se escribe en la columna VALOR, con un
-                   solo clic, como en «Personas de contacto» de saveCliente. -->
-              <div class="carac-grid">
-                <ag-grid-angular
-                  class="ag-theme-alpine ag-grid-transparente w-100"
-                  [rowData]="caracteristicas"
-                  [columnDefs]="columnDefsCaracteristicas"
-                  [defaultColDef]="_appAgGridService.defaultColDef"
-                  [domLayout]="'autoHeight'"
-                  [rowHeight]="30"
-                  [headerHeight]="30"
-                  [localeText]="_appAgGridService.localeText"
-                  [rowClassRules]="rowClassRulesCaracteristicas"
-                  [getRowId]="getRowIdCaracteristica"
-                  [singleClickEdit]="true"
-                  [stopEditingWhenCellsLoseFocus]="true"
-                  [suppressRowClickSelection]="true"
-                  [pagination]="false"
-                  [animateRows]="true"
-                  [rowDragManaged]="true"
-                  [suppressMoveWhenRowDragging]="false"
-                  [tooltipShowDelay]="400"
-                  (gridReady)="onGridCaracteristicasReady($event)"
-                  (rowDragEnd)="onFilaArrastrada()"
-                  (cellClicked)="onCeldaCaracteristicaClic($event)"
-                  (cellValueChanged)="onCaracteristicaChanged($event)">
-                </ag-grid-angular>
-              </div>
-
-              @if (!esView) {
-                <!-- El texto va dentro de un <span>: .campo-hint es flex, y
-                     suelto cada <b> se convertía en un ítem propio y la frase
-                     salía troceada en columnas (visto en una captura). -->
-                <p class="campo-hint carac-leyenda">
-                  <i class="fa-solid fa-hand-pointer"></i>
-                  <span>
-                    Haz clic en la columna <b>Valor</b>; lo que se deje vacío no se guarda.
-                    Cada fila se rellena <b>como dice su tipo</b>: las de número sólo admiten cifras
-                    —con su unidad al lado— y las de lista se escogen de un desplegable.
-                    Las marcadas con <b class="carac-obligatoria">*</b> son <b>obligatorias</b>:
-                    sin ellas no se guarda el producto.
-                    Si un valor es largo, <b>arrastre el borde de abajo de la fila</b> para
-                    estirarla y verlo entero; con doble clic en ese borde vuelve a su sitio.
-                    Los nombres salen de la lista de la categoría, que se mantiene en
-                    <b>Inventarios → Características</b>, y el tipo y la unidad, de
-                    <b>Nombres de característica</b>.
-                  </span>
-                  <button type="button" class="btn btn-link btn-sm carac-leyenda__limpiar"
-                          (click)="limpiarCaracteristicas()">
-                    Vaciar todos los valores
-                  </button>
+              <div class="prod-interruptor">
+                <app-checkbox class="palanca"
+                  [control]="ctrlManejaStock"
+                  label="Controla existencias"
+                  [id]="'ck-producto-stock'">
+                </app-checkbox>
+                <p class="campo-hint mb-0">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Apágalo para servicios o instalaciones, que no tienen bodega.
                 </p>
-              }
-            }
-
-          </div>
-        </ng-container>
-      </panel>
-
-      <panel
-        headerClass="bg-gray-800"
-        title="Descripción"
-        noBody="true"
-        [noButtonReload]="true"
-        [noButtonCollapse]="true"
-        [noButtonRemove]="true"
-        panelClass="mb-0"
-        icono="editar"
-        fondoGris="true">
-
-        <ng-container outsideBody>
-          <div class="form-card__body">
-            <!-- El editor con formato, el mismo que «Qué se habló» de una
-                 gestión (cerrarGestion). Una descripción de producto lleva
-                 listas —lo que trae la caja—, negritas y algún enlace, y en
-                 un textarea eso se escribe con guiones y se lee peor.
-
-                 El de pantalla completa es el de la CABECERA del panel, no
-                 el de la cinta ([expandible]): dos botones para lo mismo
-                 solo confunden, y el del panel es el que llevan las demas
-                 pantallas. Al expandir, el editor crece con el panel (ver
-                 .panel-expand en el .css).
-
-                 [cintaEnMovil]="false": en el teléfono la cinta se comería
-                 media pantalla para dar un formato que ahí nadie va a dar. -->
-            <app-campoNgxEditor
-              class="prod-descripcion"
-              [formControl]="ctrlDescripcion"
-              [almacen]="almacenDeImagenes"
-              [avisar]="avisarDelPegado"
-              [placeholder]="'Características, lo que incluye la caja, condiciones de la garantía… (opcional)'"
-              [cinta]="true"
-              [hoja]="true"
-              [cintaEnMovil]="false"
-              [soloLectura]="esView"
-              alto="12rem">
-            </app-campoNgxEditor>
-
-            @if (!esNuevo && productoModel) {
-              <div class="producto-meta">
-                <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ productoModel.created_at }} por <b>{{ productoModel.created_by || '—' }}</b></span>
-                <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ productoModel.updated_at }} por <b>{{ productoModel.updated_by || '—' }}</b></span>
               </div>
-            }
-          </div>
-        </ng-container>
-      </panel>
-
-      </div>
-
-      <!-- ============ LAS IMÁGENES ============
-           order-xl-first: a la izquierda en pantalla ancha, al final en el
-           móvil (ver la nota de arriba). -->
-      <div class="col-12 col-xl-4 order-xl-first prod-col-media">
-
-      <!-- Estado: aqui arriba, encima de las imagenes. En la columna de
-           datos quedaba al final del primer panel, que es donde menos se
-           mira; aqui es lo primero que se ve al abrir el producto. -->
-      <div class="estado-producto mb-3" [class.is-on]="ctrlActivo.value">
-        <span class="estado-producto__icon"><i class="fa-solid fa-power-off"></i></span>
-        <div class="estado-producto__text">
-          <span class="estado-producto__label">Estado</span>
-          <span class="estado-producto__hint">
-            {{ ctrlActivo.value ? 'Se ofrece al vender' : 'No se ofrece al vender' }}
-          </span>
-        </div>
-        <app-checkbox class="estado-producto__switch"
-          [control]="ctrlActivo"
-          [label]="ctrlActivo.value ? 'Activo' : 'Inactivo'"
-          [id]="'ck-producto-activo'">
-        </app-checkbox>
-      </div>
-
-
-      <!-- ---------- 5. Galería ---------- -->
-      <panel
-        headerClass="bg-gray-800"
-        title="Imágenes"
-        noButton="true"
-        noBody="true"
-        panelClass="h-100 mb-0"
-        icono="images"
-        fondoGris="true">
-  
-        <div header class="panel-acciones">
-          @if (totalImagenes > 0) {
-            <span class="chip chip-info">
-              <i class="fa-solid fa-images"></i> {{ totalImagenes }}
-            </span>
-          }
-          @if (esNuevo && imagenesPendientes.length > 0) {
-            <span class="chip chip-muted" title="Se suben al guardar">
-              <i class="fa-solid fa-clock"></i> pendientes
-            </span>
-          }
-        </div>
-  
-        <ng-container outsideBody>
-          <div class="form-card__body">
-  
-            <div class="prod-galeria">
-  
-              <!-- Las ya guardadas -->
-              @for (img of imagenes; track img.id; let i = $index) {
-                <figure class="prod-foto" [class.is-principal]="img.principal">
-                  <img [src]="urlImagen(img)" [alt]="img.nombre_original || 'Imagen del producto'" />
-  
-                  @if (img.principal) {
-                    <span class="prod-foto__sello" title="Es la que sale en la lista">
-                      <i class="fa-solid fa-star"></i>
-                    </span>
-                  }
-  
-                  @if (imagenEnVuelo === img.id) {
-                    <span class="prod-foto__velo">
-                      <span class="spinner-border spinner-border-sm" role="status" aria-label="Guardando"></span>
-                    </span>
-                  } @else if (!esView) {
-                    <figcaption class="prod-foto__barra">
-                      <button type="button" title="Mover a la izquierda"
-                              [disabled]="i === 0" (click)="moverImagen(i, -1)">
-                        <i class="fa-solid fa-chevron-left"></i>
-                      </button>
-                      <button type="button"
-                              [title]="img.principal ? 'Ya es la principal' : 'Hacerla la principal'"
-                              [disabled]="img.principal" (click)="marcarPrincipal(img)">
-                        <i class="fa-solid fa-star"></i>
-                      </button>
-                      <button type="button" class="es-peligro" title="Quitar esta imagen"
-                              (click)="quitarImagen(img)">
-                        <i class="fa-solid fa-trash"></i>
-                      </button>
-                      <button type="button" title="Mover a la derecha"
-                              [disabled]="i === imagenes.length - 1" (click)="moverImagen(i, 1)">
-                        <i class="fa-solid fa-chevron-right"></i>
-                      </button>
-                    </figcaption>
-                  }
-                </figure>
-              }
-  
-              <!-- Las que esperan a que el producto exista -->
-              @for (p of imagenesPendientes; track $index; let i = $index) {
-                <figure class="prod-foto is-pendiente" title="Se subirá al guardar">
-                  <img [src]="p.vista" [alt]="p.file.name" />
-                  <span class="prod-foto__sello prod-foto__sello--espera">
-                    <i class="fa-solid fa-clock"></i>
-                  </span>
-                  @if (!esView) {
-                    <figcaption class="prod-foto__barra">
-                      <button type="button" class="es-peligro" title="Quitar de la lista"
-                              (click)="quitarPendiente(i)">
-                        <i class="fa-solid fa-xmark"></i>
-                      </button>
-                    </figcaption>
-                  }
-                </figure>
-              }
-  
-              <!-- Añadir -->
-              @if (!esView) {
-                <label class="prod-anadir" for="imagenes-producto"
-                       title="Elegir una o varias imágenes">
-                  @if (imagenEnVuelo === 'nueva') {
-                    <span class="spinner-border spinner-border-sm" role="status" aria-label="Subiendo"></span>
-                  } @else {
-                    <i class="fa-solid fa-plus"></i>
-                    <span>Añadir</span>
-                  }
-                </label>
-                <input type="file" id="imagenes-producto" class="d-none"
-                       accept="image/*" multiple (change)="onImagenesElegidas($event)" />
-              }
-  
-              @if (totalImagenes === 0 && esView) {
-                <p class="text-muted small mb-0">Este producto no tiene imágenes.</p>
-              }
+              <div class="prod-interruptor">
+                <app-checkbox class="palanca"
+                  [control]="ctrlManejaSerie"
+                  label="Control por serie / IMEI"
+                  [id]="'ck-producto-serie'">
+                </app-checkbox>
+                <p class="campo-hint mb-0">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Enciéndelo en lo que se garantiza por unidad: electrodomésticos, computadores, celulares.
+                </p>
+              </div>
             </div>
-  
+          </div>
+        </div>
+      }
+
+      <!-- ===== CARACTERÍSTICAS ===== -->
+      @if (pestana === 'caracteristicas') {
+        <!-- Lo que hay que rellenar sale de la CATEGORÍA: un portátil pide
+             procesador y memoria; un televisor, pulgadas y resolución. La
+             lista se mantiene en Inventarios → Características, y aquí sólo se
+             rellena. Si la categoría no tiene lista, el panel lo dice en vez
+             de quedarse vacío sin explicación. -->
+        <panel
+          headerClass="bg-gray-800"
+          title="Características"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-0"
+          icono="tag"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (hayCaracteristicas) {
+              <span class="chip chip-info" title="Rellenas de la lista de la categoría">
+                <i class="fa-solid fa-list-check"></i>
+                {{ caracteristicasRellenas }} / {{ caracteristicas.length }}
+              </span>
+            }
+            <!-- Las obligatorias que faltan, donde se ve antes de pulsar Guardar -->
+            @if (obligatoriasVacias.length) {
+              <span class="chip chip-danger"
+                    [title]="'Sin esto no se puede guardar: ' + obligatoriasVacias.length + ' obligatoria(s) vacía(s)'">
+                <i class="fa-solid fa-asterisk"></i>
+                {{ obligatoriasVacias.length }}
+                {{ obligatoriasVacias.length === 1 ? 'obligatoria vacía' : 'obligatorias vacías' }}
+              </span>
+            }
+            <!-- Para algo que sólo tiene ESTE producto. Lo que se repita en
+                 todos los de su categoría va en Inventarios → Características,
+                 que entonces se pide solo. -->
             @if (!esView) {
-              <p class="campo-hint mt-2 mb-0">
-                <i class="fa-solid fa-circle-info"></i>
-                Hasta 10 MB cada una. La marcada con <i class="fa-solid fa-star"></i> es la que sale en la lista.
-                @if (esNuevo) { Las nuevas se suben al guardar el producto. }
-              </p>
+              <button type="button" class="btn btn-sm btn-primary"
+                      title="Añadir una característica sólo para este producto. El nombre se escoge del diccionario"
+                      (click)="agregarCaracteristica()">
+                <i class="fa fa-plus me-1"></i>Agregar
+              </button>
             }
-  
           </div>
-        </ng-container>
-      </panel>
 
-      </div>
+          <ng-container outsideBody>
+            <div class="form-card__body">
 
-    </div>
+              @if (cargandoCaracteristicas) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-spinner fa-spin"></i>
+                  Cargando la lista de la categoría…
+                </p>
+              } @else if (!hayCaracteristicas) {
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  @if (form.controls['categoria_id'].value) {
+                    Esta categoría todavía no tiene características definidas. Se definen una
+                    sola vez en <b>Inventarios → Características</b> y desde entonces se piden
+                    en todos sus productos.
+                  } @else {
+                    Elija primero la categoría del producto: de ella sale la lista de
+                    características que hay que rellenar.
+                  }
+                </p>
+              } @else {
+                <!-- Una rejilla y no ocho campos flotantes: con ocho
+                     características los campos se comían media pantalla y aquí
+                     caben en ocho filas. El NOMBRE no se toca (lo pone la lista
+                     de la categoría); se escribe en la columna VALOR, con un
+                     solo clic, como en «Personas de contacto» de saveCliente. -->
+                <div class="carac-grid">
+                  <ag-grid-angular
+                    class="ag-theme-alpine ag-grid-transparente w-100"
+                    [rowData]="caracteristicas"
+                    [columnDefs]="columnDefsCaracteristicas"
+                    [defaultColDef]="_appAgGridService.defaultColDef"
+                    [domLayout]="'autoHeight'"
+                    [rowHeight]="30"
+                    [headerHeight]="30"
+                    [localeText]="_appAgGridService.localeText"
+                    [rowClassRules]="rowClassRulesCaracteristicas"
+                    [getRowId]="getRowIdCaracteristica"
+                    [singleClickEdit]="true"
+                    [stopEditingWhenCellsLoseFocus]="true"
+                    [suppressRowClickSelection]="true"
+                    [pagination]="false"
+                    [animateRows]="true"
+                    [rowDragManaged]="true"
+                    [suppressMoveWhenRowDragging]="false"
+                    [tooltipShowDelay]="400"
+                    (gridReady)="onGridCaracteristicasReady($event)"
+                    (rowDragEnd)="onFilaArrastrada()"
+                    (cellClicked)="onCeldaCaracteristicaClic($event)"
+                    (cellValueChanged)="onCaracteristicaChanged($event)">
+                  </ag-grid-angular>
+                </div>
+
+                @if (!esView) {
+                  <!-- El texto va dentro de un <span>: .campo-hint es flex, y
+                       suelto cada <b> se convertía en un ítem propio y la frase
+                       salía troceada en columnas (visto en una captura). -->
+                  <p class="campo-hint carac-leyenda">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    <span>
+                      Haz clic en la columna <b>Valor</b>; lo que se deje vacío no se guarda.
+                      Cada fila se rellena <b>como dice su tipo</b>: las de número sólo admiten cifras
+                      —con su unidad al lado— y las de lista se escogen de un desplegable.
+                      Las marcadas con <b class="carac-obligatoria">*</b> son <b>obligatorias</b>:
+                      sin ellas no se guarda el producto.
+                      Si un valor es largo, <b>arrastre el borde de abajo de la fila</b> para
+                      estirarla y verlo entero; con doble clic en ese borde vuelve a su sitio.
+                      Los nombres salen de la lista de la categoría, que se mantiene en
+                      <b>Inventarios → Características</b>, y el tipo y la unidad, de
+                      <b>Nombres de característica</b>.
+                    </span>
+                    <button type="button" class="btn btn-link btn-sm carac-leyenda__limpiar"
+                            (click)="limpiarCaracteristicas()">
+                      Vaciar todos los valores
+                    </button>
+                  </p>
+                }
+              }
+
+            </div>
+          </ng-container>
+        </panel>
+      }
+
+      <!-- ===== DESCRIPCIÓN ===== -->
+      @if (pestana === 'descripcion') {
+        <!-- Este panel SÍ lleva botonera, al revés que los demás del
+             formulario: es el único con el de expandir, que es lo que sirve
+             para escribir una ficha larga a pantalla completa. Los otros tres
+             botones (recargar, minimizar, cerrar) se apagan uno a uno, porque
+             noButton los apaga TODOS, expandir incluido. -->
+        <panel
+          headerClass="bg-gray-800"
+          title="Descripción"
+          noBody="true"
+          [noButtonReload]="true"
+          [noButtonCollapse]="true"
+          [noButtonRemove]="true"
+          panelClass="mb-0"
+          icono="editar"
+          fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+              <!-- El editor con formato, el mismo que «Qué se habló» de una
+                   gestión (cerrarGestion). Una descripción de producto lleva
+                   listas —lo que trae la caja—, negritas y algún enlace, y en
+                   un textarea eso se escribe con guiones y se lee peor.
+
+                   El de pantalla completa es el de la CABECERA del panel, no
+                   el de la cinta ([expandible]): dos botones para lo mismo
+                   solo confunden, y el del panel es el que llevan las demas
+                   pantallas. Al expandir, el editor crece con el panel (ver
+                   .panel-expand en el .css).
+
+                   [cintaEnMovil]="false": en el teléfono la cinta se comería
+                   media pantalla para dar un formato que ahí nadie va a dar. -->
+              <app-campoNgxEditor
+                class="prod-descripcion"
+                [formControl]="ctrlDescripcion"
+                [almacen]="almacenDeImagenes"
+                [avisar]="avisarDelPegado"
+                [placeholder]="'Características, lo que incluye la caja, condiciones de la garantía… (opcional)'"
+                [cinta]="true"
+                [hoja]="true"
+                [cintaEnMovil]="false"
+                [soloLectura]="esView"
+                alto="12rem">
+              </app-campoNgxEditor>
+
+              @if (!esNuevo && productoModel) {
+                <div class="producto-meta">
+                  <span><i class="fa-regular fa-calendar-plus"></i> Creado {{ productoModel.created_at }} por <b>{{ productoModel.created_by || '—' }}</b></span>
+                  <span><i class="fa-regular fa-calendar-check"></i> Actualizado {{ productoModel.updated_at }} por <b>{{ productoModel.updated_by || '—' }}</b></span>
+                </div>
+              }
+            </div>
+          </ng-container>
+        </panel>
+      }
+
+      <!-- ===== IMÁGENES ===== -->
+      @if (pestana === 'imagenes') {
+        <panel
+          headerClass="bg-gray-800"
+          title="Imágenes"
+          noButton="true"
+          noBody="true"
+          panelClass="mb-0"
+          icono="images"
+          fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (totalImagenes > 0) {
+              <span class="chip chip-info">
+                <i class="fa-solid fa-images"></i> {{ totalImagenes }}
+              </span>
+            }
+            @if (esNuevo && imagenesPendientes.length > 0) {
+              <span class="chip chip-muted" title="Se suben al guardar">
+                <i class="fa-solid fa-clock"></i> pendientes
+              </span>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <div class="prod-galeria">
+
+                <!-- Las ya guardadas -->
+                @for (img of imagenes; track img.id; let i = $index) {
+                  <figure class="prod-foto" [class.is-principal]="img.principal">
+                    <img [src]="urlImagen(img)" [alt]="img.nombre_original || 'Imagen del producto'" />
+
+                    @if (img.principal) {
+                      <span class="prod-foto__sello" title="Es la que sale en la lista">
+                        <i class="fa-solid fa-star"></i>
+                      </span>
+                    }
+
+                    @if (imagenEnVuelo === img.id) {
+                      <span class="prod-foto__velo">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-label="Guardando"></span>
+                      </span>
+                    } @else if (!esView) {
+                      <figcaption class="prod-foto__barra">
+                        <button type="button" title="Mover a la izquierda"
+                                [disabled]="i === 0" (click)="moverImagen(i, -1)">
+                          <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button type="button"
+                                [title]="img.principal ? 'Ya es la principal' : 'Hacerla la principal'"
+                                [disabled]="img.principal" (click)="marcarPrincipal(img)">
+                          <i class="fa-solid fa-star"></i>
+                        </button>
+                        <button type="button" class="es-peligro" title="Quitar esta imagen"
+                                (click)="quitarImagen(img)">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                        <button type="button" title="Mover a la derecha"
+                                [disabled]="i === imagenes.length - 1" (click)="moverImagen(i, 1)">
+                          <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                      </figcaption>
+                    }
+                  </figure>
+                }
+
+                <!-- Las que esperan a que el producto exista -->
+                @for (p of imagenesPendientes; track $index; let i = $index) {
+                  <figure class="prod-foto is-pendiente" title="Se subirá al guardar">
+                    <img [src]="p.vista" [alt]="p.file.name" />
+                    <span class="prod-foto__sello prod-foto__sello--espera">
+                      <i class="fa-solid fa-clock"></i>
+                    </span>
+                    @if (!esView) {
+                      <figcaption class="prod-foto__barra">
+                        <button type="button" class="es-peligro" title="Quitar de la lista"
+                                (click)="quitarPendiente(i)">
+                          <i class="fa-solid fa-xmark"></i>
+                        </button>
+                      </figcaption>
+                    }
+                  </figure>
+                }
+
+                <!-- Añadir -->
+                @if (!esView) {
+                  <label class="prod-anadir" for="imagenes-producto"
+                         title="Elegir una o varias imágenes">
+                    @if (imagenEnVuelo === 'nueva') {
+                      <span class="spinner-border spinner-border-sm" role="status" aria-label="Subiendo"></span>
+                    } @else {
+                      <i class="fa-solid fa-plus"></i>
+                      <span>Añadir</span>
+                    }
+                  </label>
+                  <input type="file" id="imagenes-producto" class="d-none"
+                         accept="image/*" multiple (change)="onImagenesElegidas($event)" />
+                }
+
+                @if (totalImagenes === 0 && esView) {
+                  <p class="text-muted small mb-0">Este producto no tiene imágenes.</p>
+                }
+              </div>
+
+              @if (!esView) {
+                <p class="campo-hint mt-2 mb-0">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Hasta 10 MB cada una. La marcada con <i class="fa-solid fa-star"></i> es la que sale en la lista.
+                  @if (esNuevo) { Las nuevas se suben al guardar el producto. }
+                </p>
+              }
+
+            </div>
+          </ng-container>
+        </panel>
+      }
+
+      <!-- ===== PRECIO Y EXISTENCIAS =====
+           Juntos en una pestaña: los dos son cortos y se contestan de
+           corrido —a cuánto se compra, a cuánto se vende y cuánto se
+           quiere tener—. A partir de xxl van uno al lado del otro. -->
+      @if (pestana === 'precio') {
+        <div class="row g-3">
+          <div class="col-12 col-xxl-6">
+            <panel
+              headerClass="bg-gray-800"
+              title="Precio y condiciones"
+              noButton="true"
+              noBody="true"
+              panelClass="mb-0"
+              icono="dollar"
+              fondoGris="true">
+
+              <ng-container outsideBody>
+                <div class="form-card__body">
+                  <div class="row g-3 align-items-start">
+
+                    <!-- Unidad -->
+                    <div class="col-6 col-md-4 col-xxl-6">
+                      <div class="campo-combo">
+                        <app-combo
+                          formControlName="unidad"
+                          [items]="unidades"
+                          [label]="'Unidad'"
+                          bindLabel="name"
+                          bindValue="id">
+                        </app-combo>
+                      </div>
+                    </div>
+
+                    <!-- Costo -->
+                    <div class="col-6 col-md-4 col-xxl-6">
+                      <app-campoTexto
+                        [control]="form.controls['costo']"
+                        label="COSTO"
+                        placeholder="0.00"
+                        type="number"
+                        [maxLength]="14"
+                        icono="fa-dollar-sign">
+                      </app-campoTexto>
+                    </div>
+
+                    <!-- Precio -->
+                    <div class="col-6 col-md-4 col-xxl-6">
+                      <app-campoTexto
+                        [control]="form.controls['precio']"
+                        label="PRECIO"
+                        placeholder="0.00"
+                        type="number"
+                        [maxLength]="14"
+                        icono="fa-dollar-sign">
+                      </app-campoTexto>
+                    </div>
+
+                    <!-- El margen, informativo -->
+                    <div class="col-6 col-md-4 col-xxl-6">
+                      <div class="prod-margen" [class.is-rojo]="margenEnRojo">
+                        <span class="prod-margen__label">Margen</span>
+                        <span class="prod-margen__valor">
+                          {{ margen === null ? '—' : (margen | number:'1.1-1') + ' %' }}
+                        </span>
+                      </div>
+                      @if (margenEnRojo) {
+                        <p class="campo-hint text-danger">
+                          <i class="fa-solid fa-triangle-exclamation"></i>
+                          El precio está por debajo del costo.
+                        </p>
+                      }
+                    </div>
+
+                    <!-- Garantía -->
+                    <div class="col-6 col-md-4 col-xxl-6">
+                      <div class="campo-combo">
+                        <app-combo
+                          formControlName="garantia_meses"
+                          [items]="garantias"
+                          [label]="'Garantía'"
+                          bindLabel="name"
+                          bindValue="id">
+                        </app-combo>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </ng-container>
+            </panel>
+          </div>
+          <div class="col-12 col-xxl-6">
+            <panel
+              headerClass="bg-gray-800"
+              title="Existencias"
+              noButton="true"
+              noBody="true"
+              panelClass="mb-0"
+              icono="boxes"
+              fondoGris="true">
+
+              <ng-container outsideBody>
+                <div class="form-card__body">
+                  <div class="row g-3 align-items-start">
+
+                    <!-- Mínimo y máximo -->
+                    <div class="col-6">
+                      <app-campoTexto
+                        [control]="form.controls['stock_minimo']"
+                        label="STOCK MÍNIMO"
+                        placeholder="0"
+                        type="number"
+                        [maxLength]="12">
+                      </app-campoTexto>
+                    </div>
+
+                    <div class="col-6">
+                      <app-campoTexto
+                        [control]="form.controls['stock_maximo']"
+                        label="STOCK MÁXIMO"
+                        placeholder="Sin tope"
+                        type="number"
+                        [maxLength]="12">
+                      </app-campoTexto>
+                    </div>
+
+                  </div>
+                </div>
+              </ng-container>
+            </panel>
+          </div>
+        </div>
+      }
+
+    </app-tab-panel>
   </form>
 </div>
 

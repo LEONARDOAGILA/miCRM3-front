@@ -72,7 +72,28 @@
 .chip-info  { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
 .chip-danger{ background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .12);  color: var(--bs-danger-text-emphasis, #b02a37); }
 
-/* ============================================================
+/* Los chips de la BARRA DEL PANEL van aparte. Esa barra lleva
+   `bg-gray-800`, o sea fondo oscuro EN LOS DOS TEMAS, así que no pueden
+   tomar el color de las variables del tema: en claro
+   `--bs-primary-text-emphasis` y `--bs-danger-text-emphasis` son un azul y
+   un rojo OSCUROS, y sobre esa barra no se leían —en oscuro sí, que es por
+   lo que pasaba desapercibido—. Aquí van fijos claros. Los de fuera de la
+   barra se quedan como están, que su fondo sí sigue al tema. */
+.panel-acciones .chip-muted {
+  background-color: rgba(255, 255, 255, .16);
+  color: rgba(255, 255, 255, .88);
+}
+
+.panel-acciones .chip-info {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .38);
+  color: #fff;
+}
+
+.panel-acciones .chip-danger {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .45);
+  color: #fff;
+}
+
 /* ============================================================
    ESTADO DEL PRODUCTO (switch)
    ============================================================ */
@@ -133,17 +154,24 @@
   text-overflow: ellipsis;
 }
 
-.estado-producto__switch {
-  margin-left: auto;
-}
-
-.estado-producto__switch ::ng-deep .form-check {
+/* ============================================================
+   LA PALANCA
+   ============================================================
+   `app-checkbox` pinta el cuadradito de Bootstrap; lo que lo
+   convierte en palanca son estas cuatro reglas `::ng-deep`. Estaban
+   sólo en el bloque de Estado y los otros tres interruptores de la
+   ficha (impuesto, existencias, serie) se quedaban con el cuadrado:
+   ahora es una clase que se pone en el `app-checkbox`.
+   El orden importa: las de Estado van DESPUÉS para poder afinar la
+   etiqueta, que allí es un «Activo / Inactivo» pequeño al lado del
+   rótulo de verdad, y aquí es el nombre del campo. */
+.palanca ::ng-deep .form-check {
   margin: 0;
   padding-left: 3rem;
   min-height: auto;
 }
 
-.estado-producto__switch ::ng-deep .form-check-input {
+.palanca ::ng-deep .form-check-input {
   width: 2.5rem;
   height: 1.35rem;
   margin-top: 0;
@@ -158,16 +186,25 @@
   transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
 }
 
-.estado-producto__switch ::ng-deep .form-check-input:checked {
+.palanca ::ng-deep .form-check-input:checked {
   background-color: var(--bs-success, #198754);
   background-position: right center;
 }
 
+.palanca ::ng-deep .form-check-label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+  vertical-align: middle;
+}
+
+.estado-producto__switch {
+  margin-left: auto;
+}
+
 .estado-producto__switch ::ng-deep .form-check-label {
   font-size: .75rem;
-  font-weight: 600;
   color: var(--bs-secondary-color, #6c757d);
-  vertical-align: middle;
 }
 
 /* ============================================================
@@ -229,23 +266,6 @@
 .producto-meta i {
   margin-right: .3rem;
   color: var(--bs-app-theme, #00acac);
-}
-
-/* ============================================================
-   LAS DOS COLUMNAS
-   ============================================================
-   A partir de xl el formulario se parte en dos: los datos a la derecha y
-   las imágenes a la izquierda, como el avatar en el modal de usuario. Por
-   debajo de xl todo va en una sola columna y manda el orden del DOM, que
-   es el de rellenar: primero lo que se escribe, las fotos al final. */
-@media (min-width: 1200px) {
-  /* La columna de imágenes acompaña al desplazamiento del formulario: en
-     un producto con muchos campos, si no, se queda arriba sola. */
-  .prod-col-media {
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-  }
 }
 
 @media (max-width: 767.98px) {
@@ -444,8 +464,16 @@
 }
 
 /* ---------- Los interruptores de existencias ---------- */
+/* Van apilados bajo Estado, en la columna estrecha: uno debajo de otro
+   y con el mismo aire que hay entre Estado y las imágenes. */
+.prod-interruptores {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
 .prod-interruptor {
-  padding: .5rem .6rem;
+  padding: .6rem;
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .375rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);

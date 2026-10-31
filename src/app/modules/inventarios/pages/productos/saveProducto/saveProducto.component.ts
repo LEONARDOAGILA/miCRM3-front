@@ -35,6 +35,7 @@ import { CampoNgxEditorComponent } from '../../../../../components/campos/campoN
 import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { TabPanelComponent, PestanaTab } from '../../../../../components/campos/tabPanel/tabPanel.component';
 
 /** Acciones con las que se abre el modal desde allProductos. */
 type AccionProducto = 'add' | 'edit' | 'clon' | 'view';
@@ -63,7 +64,7 @@ type AccionProducto = 'add' | 'edit' | 'clon' | 'view';
     CommonModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
     ModalHeaderComponent, ModalFooterComponent, ComboComponent,
     CampoTextoComponent, CampoNgxEditorComponent, CampoNumeroEnteroComponent,
-    CheckboxComponent,
+    CheckboxComponent, TabPanelComponent,
   ],
 })
 export class SaveProductoComponent implements OnInit, OnDestroy {
@@ -72,6 +73,22 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
   @Input() registro_selected: any = {};
   @Input() accion: AccionProducto = 'add';
   @Output() registrosE: EventEmitter<any> = new EventEmitter();
+
+  /** La pestaña abierta. */
+  public pestana: 'identificacion' | 'caracteristicas' | 'descripcion' | 'imagenes' | 'precio' = 'identificacion';
+
+  /** En qué pestaña se rellena cada campo, para poder llevar allí al que
+   *  no deja guardar: repartido el formulario, el campo en rojo puede estar
+   *  en una pestaña que no se ve, y antes el aviso no llevaba a ninguna parte. */
+  private readonly PESTANA_DEL_CAMPO: Record<string, string> = {
+    codigo: 'identificacion', nombre: 'identificacion', codigo_barras: 'identificacion',
+    modelo: 'identificacion', marca_id: 'identificacion', categoria_id: 'identificacion',
+    activo: 'identificacion', impuesto: 'identificacion',
+    maneja_stock: 'identificacion', maneja_serie: 'identificacion',
+    unidad: 'precio', costo: 'precio', precio: 'precio', garantia_meses: 'precio',
+    stock_minimo: 'precio', stock_maximo: 'precio',
+    descripcion: 'descripcion',
+  };
 
   public form: FormGroup;
   public isLoading$ = this._loadingService.isLoading$;
@@ -367,10 +384,6 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       garantia_meses: [{ value: 0, disabled: this.isdisabled }],
 
       // Despacho
-      peso_kg:        [{ value: null, disabled: this.isdisabled }, [Validators.min(0)]],
-      alto_cm:        [{ value: null, disabled: this.isdisabled }, [Validators.min(0)]],
-      ancho_cm:       [{ value: null, disabled: this.isdisabled }, [Validators.min(0)]],
-      profundidad_cm: [{ value: null, disabled: this.isdisabled }, [Validators.min(0)]],
 
       activo:         [{ value: true, disabled: this.isdisabled }],
     });
@@ -590,6 +603,47 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
    */
   get obligatoriasVacias(): any[] {
     return this.caracteristicas.filter(c => c.requerido && !(c.valor ?? '').toString().trim());
+  }
+
+  /**
+   * Las pestañas de la ficha.
+   *
+   * LOS CONTADORES VAN EN EL RÓTULO a propósito: lo que falta por rellenar
+   * hay que verlo desde cualquier pestaña, y eso es justo lo que se pierde al
+   * repartir un formulario. En la de características se enseña lo que falta
+   * en rojo, y si no falta nada, cuántas llevan valor.
+   */
+  get pestanas(): PestanaTab[] {
+    const faltan = this.obligatoriasVacias.length;
+    const total = this.caracteristicas.length;
+
+    return [
+      { id: 'identificacion', texto: 'Identificación', icono: 'fa-box',
+        ayuda: 'Qué es el producto, cómo se clasifica y cómo se controla' },
+
+      { id: 'caracteristicas', texto: 'Características', icono: 'fa-tag',
+        insignia: faltan ? faltan : (total ? `${this.caracteristicasRellenas}/${total}` : null),
+        tonoInsignia: faltan ? 'peligro' : 'apagada',
+        ayuda: faltan
+          ? `Faltan ${faltan} obligatorias por rellenar`
+          : 'Lo que pide la categoría: medidas, materiales, consumo…' },
+
+      { id: 'descripcion', texto: 'Descripción', icono: 'fa-align-left',
+        ayuda: 'La ficha larga, con formato' },
+
+      { id: 'imagenes', texto: 'Imágenes', icono: 'fa-images',
+        insignia: this.totalImagenes || null,
+        ayuda: 'Las fotos del producto' },
+
+      { id: 'precio', texto: 'Precio y existencias', icono: 'fa-dollar-sign',
+        ayuda: 'Costo, precio, garantía y cuánto se quiere tener' },
+    ];
+  }
+
+  /** Abre la pestaña donde está ese campo. */
+  private irAlCampo(campo: string): void {
+    const p = this.PESTANA_DEL_CAMPO[campo];
+    if (p) { this.pestana = p as any; }
   }
 
   /**
@@ -1194,10 +1248,6 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         stock_maximo:   m.stock_maximo != null ? Number(m.stock_maximo) : null,
         maneja_serie:   m.maneja_serie === true,
         garantia_meses: Number(m.garantia_meses ?? 0),
-        peso_kg:        m.peso_kg != null ? Number(m.peso_kg) : null,
-        alto_cm:        m.alto_cm != null ? Number(m.alto_cm) : null,
-        ancho_cm:       m.ancho_cm != null ? Number(m.ancho_cm) : null,
-        profundidad_cm: m.profundidad_cm != null ? Number(m.profundidad_cm) : null,
         activo:         m.activo !== false,
       });
 
@@ -1420,6 +1470,10 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     Object.values(this.form.controls).forEach(control => control.markAsTouched());
 
     if (this.form.invalid) {
+      // A la pestaña del primer campo en rojo: con la ficha repartida, el
+      // aviso a secas no dice ni dónde mirar.
+      const primero = Object.keys(this.form.controls).find(k => this.form.controls[k].invalid);
+      if (primero) { this.irAlCampo(primero); }
       this._toastr.error('Revise los campos del formulario.', 'No se puede Guardar', { timeOut: 20000, closeButton: true });
       return;
     }
@@ -1449,11 +1503,16 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
           : `Hay ${this.obligatoriasVacias.length} características obligatorias sin rellenar`,
         { timeOut: 20000, closeButton: true });
 
-      // El cursor en la primera que falta, que si no hay que ir a buscarla
+      // El cursor en la primera que falta, que si no hay que ir a buscarla.
+      // Primero la pestaña: la rejilla se crea al abrirla, así que lo de
+      // dentro espera un ciclo a que exista.
+      this.pestana = 'caracteristicas';
       const i = this.caracteristicas.indexOf(this.obligatoriasVacias[0]);
       if (i >= 0) {
-        this.gridCaracteristicas?.ensureIndexVisible(i);
-        this.gridCaracteristicas?.startEditingCell({ rowIndex: i, colKey: 'valor' });
+        setTimeout(() => {
+          this.gridCaracteristicas?.ensureIndexVisible(i);
+          this.gridCaracteristicas?.startEditingCell({ rowIndex: i, colKey: 'valor' });
+        });
       }
       return;
     }
@@ -1467,6 +1526,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       .filter(x => x.motivo);
 
     if (malas.length) {
+      this.pestana = 'caracteristicas';
       this._toastr.error(
         malas.map(x => `«${x.c.nombre}» ${x.motivo}`).join('. '),
         malas.length === 1 ? 'Una característica no vale' : `${malas.length} características no valen`,
@@ -1491,7 +1551,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     payload.descripcion = soloTexto(payload.descripcion)
       ? (payload.descripcion ?? '').trim()
       : null;
-    for (const k of ['stock_maximo', 'peso_kg', 'alto_cm', 'ancho_cm', 'profundidad_cm']) {
+    for (const k of ['stock_maximo']) {
       payload[k] = (payload[k] === '' || payload[k] === null || payload[k] === undefined) ? null : Number(payload[k]);
     }
     for (const k of ['costo', 'precio', 'stock_minimo', 'garantia_meses']) {
