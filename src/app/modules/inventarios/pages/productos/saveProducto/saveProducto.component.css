@@ -464,6 +464,18 @@
 }
 
 /* ---------- Los interruptores de existencias ---------- */
+/* La columna de los interruptores acompaña al desplazamiento: la pestaña de
+   al lado puede ser larga (Imágenes, Características) y si no, «¿está activo?»
+   se queda arriba, fuera de la vista, que es justo lo que se quería evitar
+   sacándolos de la pestaña. */
+@media (min-width: 1200px) {
+  .prod-col-interruptores {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+  }
+}
+
 /* Van apilados bajo Estado, en la columna estrecha: uno debajo de otro
    y con el mismo aire que hay entre Estado y las imágenes. */
 .prod-interruptores {
