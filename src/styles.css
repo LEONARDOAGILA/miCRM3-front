@@ -432,3 +432,136 @@ ag-grid-angular.filas-estirando .ag-row {
   align-items: center;
   padding-top: 0;
 }
+
+/* ============================================================
+   LOS BOTONES DE LA COLUMNA ACCIONES
+   ============================================================
+   AQUÍ, Y EN NINGÚN OTRO SITIO. Hasta el 31/10/2026 había CINCO
+   aspectos distintos conviviendo —medidos en el navegador, no
+   supuestos—: el ojo salía verde en 29 pantallas y azul en otras
+   tres, el lápiz azul fijo en unas y siguiendo el tema en otras, el
+   icono de clonar cambiaba (fa-clone contra fa-copy), y Tipos de
+   usuario los pintaba como pastillas con borde y fondo.
+
+   Se quedó el aspecto de Características. Para cambiar un color se
+   cambia aquí y cambia en las 32 pantallas.
+
+   VA ACOTADO A .ag-cell A PROPÓSITO. Estos nombres de clase no son
+   sólo de la columna de acciones: allZonas, por ejemplo, tiene un
+   «.btn-editar» en otra parte de su pantalla. Acotándolo a la celda
+   de la rejilla, fuera de ella no se toca nada.
+
+   DOS FAMILIAS DE NOMBRES. Conviven porque el componente compartido
+   (app-action-buttons) usa unos y las pantallas que pintan la celda
+   con una cadena de HTML —para no crear un componente Angular por
+   fila— usan otros. Se listan las dos en vez de renombrar una:
+   renombrar obliga a tocar el marcado de cada pantalla y no se gana
+   nada. */
+.ag-cell .btn-ver,
+.ag-cell .btn-view,
+.ag-cell .btn-editar,
+.ag-cell .btn-edit,
+.ag-cell .btn-clonar,
+.ag-cell .btn-create,
+.ag-cell .btn-borrar,
+.ag-cell .btn-eliminar,
+.ag-cell .btn-delete,
+.ag-cell .btn-add,
+.ag-cell .btn-cambio-clave {
+  padding: .15rem .4rem;
+  font-size: .75rem;
+  line-height: 1;
+  width: auto;
+  height: auto;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  background: none;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+/* El realce al pasar por encima sale del color del TEXTO del tema, no de
+   un negro fijo: sobre el fondo oscuro un rgba(0,0,0,.06) no se vería. */
+.ag-cell .btn-ver:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-view:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-editar:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-edit:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-clonar:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-create:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-borrar:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-eliminar:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-delete:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-add:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-cambio-clave:hover:not(:disabled):not([disabled]) {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  filter: none;
+}
+
+.ag-cell .btn-ver:disabled,
+.ag-cell .btn-view:disabled,
+.ag-cell .btn-editar:disabled,
+.ag-cell .btn-edit:disabled,
+.ag-cell .btn-clonar:disabled,
+.ag-cell .btn-create:disabled,
+.ag-cell .btn-borrar:disabled,
+.ag-cell .btn-eliminar:disabled,
+.ag-cell .btn-delete:disabled,
+.ag-cell .btn-add:disabled,
+.ag-cell .btn-cambio-clave:disabled,
+.ag-cell .btn-ver[disabled],
+.ag-cell .btn-view[disabled],
+.ag-cell .btn-editar[disabled],
+.ag-cell .btn-edit[disabled],
+.ag-cell .btn-clonar[disabled],
+.ag-cell .btn-create[disabled],
+.ag-cell .btn-borrar[disabled],
+.ag-cell .btn-eliminar[disabled],
+.ag-cell .btn-delete[disabled],
+.ag-cell .btn-add[disabled],
+.ag-cell .btn-cambio-clave[disabled] {
+  opacity: .35;
+  cursor: not-allowed;
+  background: none;
+}
+
+/* Los colores. Sólo EDITAR sigue al tema de la aplicación; los demás van
+   fijos a propósito, para que signifiquen siempre lo mismo. */
+.ag-cell .btn-ver,
+.ag-cell .btn-view            { color: #5b9bd5; }
+
+.ag-cell .btn-editar,
+.ag-cell .btn-edit            { color: var(--bs-app-theme, #00acac); }
+
+.ag-cell .btn-clonar,
+.ag-cell .btn-create          { color: #8e7cc3; }
+
+.ag-cell .btn-borrar,
+.ag-cell .btn-eliminar,
+.ag-cell .btn-delete          { color: var(--bs-danger, #ff5b57); }
+
+.ag-cell .btn-subcategoria,
+.ag-cell .btn-subcuenta,
+.ag-cell .btn-subgrupo,
+.ag-cell .btn-subdepartamento {
+  padding: .15rem .4rem;
+  font-size: .75rem;
+  line-height: 1;
+  width: auto;
+  height: auto;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  background: none;
+  cursor: pointer;
+  color: var(--bs-app-theme, #00acac);
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.ag-cell .btn-subcategoria:hover:not(:disabled),
+.ag-cell .btn-subcuenta:hover:not(:disabled),
+.ag-cell .btn-subgrupo:hover:not(:disabled),
+.ag-cell .btn-subdepartamento:hover:not(:disabled) {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.ag-cell .btn-add             { color: #2ecc71; }
+.ag-cell .btn-cambio-clave    { color: #f39c12; }

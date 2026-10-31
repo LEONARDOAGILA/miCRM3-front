@@ -1534,18 +1534,8 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       border-radius: .25rem;
     }
 
-    /* El mismo botón de icono que trae app-action-buttons: esa clase vive
-       dentro de SU css con alcance, así que aquí hay que repetirla. */
-    .btn-subcategoria {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 3px 5px;
-      font-size: 1.1em;
-      color: var(--bs-app-theme, #00acac);
-      transition: all .3s ease;
-    }
-
+    /* El aspecto de este botón sale de styles.css, con el del resto de
+       la columna ACCIONES. Antes se repetía aquí y se quedó atrás. */
     .btn-subcategoria:hover:not(:disabled) { transform: scale(1.2); }
     .btn-subcategoria:active:not(:disabled) { transform: scale(.95); }
     .btn-subcategoria:disabled { opacity: .35; cursor: not-allowed; }

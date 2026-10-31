@@ -272,7 +272,7 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
             `<button type="button" class="btn-icon btn-ver" data-accion="ver" title="Ver"><i class="fa fa-eye"></i></button>`
           ];
           if (this.accesoModel?.editar) {
-            botones.push(`<button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen"></i></button>`);
+            botones.push(`<button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen-to-square"></i></button>`);
           }
           if (this.accesoModel?.eliminar) {
             // Un tipo en uso no se puede borrar (lo rechaza la base): se avisa

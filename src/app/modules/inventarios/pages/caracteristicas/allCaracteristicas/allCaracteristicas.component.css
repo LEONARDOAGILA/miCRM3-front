@@ -175,21 +175,8 @@
   gap: .25rem;
 }
 
-:host ::ng-deep .carac-acciones .btn {
-  --bs-btn-padding-x: .4rem;
-  --bs-btn-padding-y: .15rem;
-  --bs-btn-font-size: .75rem;
-  border: 1px solid transparent;
-}
-
-:host ::ng-deep .carac-acciones .btn-ver    { color: #5b9bd5; }
-:host ::ng-deep .carac-acciones .btn-editar { color: var(--bs-app-theme, #00acac); }
-:host ::ng-deep .carac-acciones .btn-clonar { color: #8e7cc3; }
-:host ::ng-deep .carac-acciones .btn-borrar { color: var(--bs-danger, #ff5b57); }
-
-:host ::ng-deep .carac-acciones .btn:hover {
-  background-color: rgba(0, 0, 0, .06);
-}
+/* El aspecto de estos cuatro botones vive en styles.css, con el del
+   resto de pantallas. Aquí sólo queda la fila. */
 
 /* La chapa del filtro por categoría, con su × */
 .carac-chip {
