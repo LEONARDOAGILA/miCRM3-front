@@ -49,186 +49,252 @@
 
           <!-- ===== IDENTIFICACIÓN ===== -->
           @if (pestana === 'identificacion') {
-            <panel
-              headerClass="bg-gray-800"
-              title="Identificación"
-              noButton="true"
-              noBody="true"
-              panelClass="mb-0"
-              icono="box"
-              fondoGris="true">
+            <!-- DOS TARJETAS, no una: a la izquierda TODO lo que es un código
+                 —el tuyo, el del fabricante y los de los proveedores— y a la
+                 derecha lo que dice qué es el producto. Antes el SKU y el
+                 código de barras iban en la misma rejilla que el nombre y la
+                 marca, y con cinco códigos eso se vuelve ilegible: una columna
+                 estrecha con los cinco apilados se lee de un vistazo y se
+                 rellena de arriba abajo. -->
+            <div class="row g-3">
 
-              <div header class="panel-acciones">
-                @if (esView) {
-                  <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
-                }
+              <!-- ---------- LOS CÓDIGOS ---------- -->
+              <div class="col-12 col-md-4">
+                <panel
+                  headerClass="bg-gray-800"
+                  title="Códigos"
+                  noButton="true"
+                  noBody="true"
+                  panelClass="mb-0"
+                  icono="barcode"
+                  fondoGris="true">
+
+                  <ng-container outsideBody>
+                    <div class="form-card__body prod-codigos">
+                      <div class="row g-3">
+
+                        <!-- Código (SKU): el tuyo, el obligatorio -->
+                        <div class="col-12">
+                          <app-campoTexto
+                            [control]="form.controls['codigo']"
+                            label="CÓDIGO (SKU)"
+                            placeholder="RF-28K"
+                            [maxLength]="30"
+                            [minLength]="2"
+                            [trimEspacios]="true">
+                          </app-campoTexto>
+                        </div>
+
+                        <!-- Código de barras: el del fabricante -->
+                        <div class="col-12">
+                          <app-campoTexto
+                            [control]="form.controls['codigo_barras']"
+                            label="CÓDIGO DE BARRAS"
+                            placeholder="EAN / UPC del fabricante"
+                            [maxLength]="50"
+                            icono="fa-barcode">
+                          </app-campoTexto>
+                        </div>
+
+
+                        <div class="col-12">
+                          <app-campoTexto
+                            [control]="form.controls['codigo2']"
+                            label="CÓDIGO ALTERNO 2"
+                            placeholder="Código del proveedor"
+                            [maxLength]="50"
+                            [trimEspacios]="true">
+                          </app-campoTexto>
+                        </div>
+
+                        <div class="col-12">
+                          <app-campoTexto
+                            [control]="form.controls['codigo3']"
+                            label="CÓDIGO ALTERNO 3"
+                            placeholder="Código del proveedor"
+                            [maxLength]="50"
+                            [trimEspacios]="true">
+                          </app-campoTexto>
+                        </div>
+
+                        <div class="col-12">
+                          <app-campoTexto
+                            [control]="form.controls['codigo4']"
+                            label="CÓDIGO ALTERNO 4"
+                            placeholder="Código del proveedor"
+                            [maxLength]="50"
+                            [trimEspacios]="true">
+                          </app-campoTexto>
+                        </div>
+
+                      </div>
+                    </div>
+                  </ng-container>
+                </panel>
               </div>
 
-              <ng-container outsideBody>
-                <div class="form-card__body">
-                  <div class="row g-3 align-items-start">
+              <!-- ---------- QUÉ ES EL PRODUCTO ---------- -->
+              <div class="col-12 col-md-8">
+                <panel
+                  headerClass="bg-gray-800"
+                  title="Identificación"
+                  noButton="true"
+                  noBody="true"
+                  panelClass="mb-0"
+                  icono="box"
+                  fondoGris="true">
 
-                    <!-- Código (SKU) -->
-                    <div class="col-6 col-md-3 col-xxl-5">
-                      <app-campoTexto
-                        [control]="form.controls['codigo']"
-                        label="CÓDIGO (SKU)"
-                        placeholder="RF-28K"
-                        [maxLength]="30"
-                        [minLength]="2"
-                        [trimEspacios]="true">
-                      </app-campoTexto>
-                    </div>
-
-                    <!-- Código de barras -->
-                    <div class="col-6 col-md-3 col-xxl-7">
-                      <app-campoTexto
-                        [control]="form.controls['codigo_barras']"
-                        label="CÓDIGO DE BARRAS"
-                        placeholder="EAN / UPC del fabricante"
-                        [maxLength]="50"
-                        icono="fa-barcode">
-                      </app-campoTexto>
-                    </div>
-
-                    <!-- Nombre -->
-                    <div class="col-12">
-                      <app-campoTexto
-                        [control]="form.controls['nombre']"
-                        label="NOMBRE DEL PRODUCTO"
-                        placeholder="Refrigeradora Samsung 28 pies French Door"
-                        [maxLength]="150"
-                        [minLength]="3"
-                        [trimEspacios]="true">
-                      </app-campoTexto>
-                    </div>
-
-                    <!-- Modelo: debajo del nombre y del mismo ancho, que es su
-                         pareja natural (el nombre dice qué es y el modelo cuál). -->
-                    <div class="col-12">
-                      <app-campoTexto
-                        [control]="form.controls['modelo']"
-                        label="MODELO"
-                        placeholder="RF28K9070SR"
-                        [maxLength]="80">
-                      </app-campoTexto>
-                    </div>
-
-                    <!-- Marca: id + nombre + lupa, como el perfil en saveUser.
-                         Se escribe el id y al salir del campo se trae el nombre; o
-                         se busca con la lupa. El nombre va deshabilitado porque es
-                         lo que dice la marca elegida, no algo que se escriba.
-                         MEDIA FILA: son cuatro piezas en línea y con un tercio de
-                         la columna se quedan en 214px, donde ni las etiquetas
-                         caben (medido). -->
-                    <div class="col-12 col-md-6 col-xxl-12">
-                      <div class="campo-lookup">
-                        <!-- g-0: sin hueco entre piezas. Los bordes se comparten
-                             desde el CSS para que las cuatro se lean como un solo
-                             campo, no como cuatro cosas sueltas. -->
-                        <div class="row g-0 flex-nowrap">
-                          <div class="col-4">
-                            <app-campoNumeroEntero
-                              [control]="form.controls['marca_id']"
-                              label="ID Marca"
-                              placeholder="ID"
-                              [maxLength]="10"
-                              [limpiable]="false"
-                              (blur)="cargarMarcaPorId()">
-                            </app-campoNumeroEntero>
-                          </div>
-                          <div class="col">
-                            <app-campoTexto
-                              [control]="marcaNombreControl"
-                              label="Marca"
-                              placeholder="Sin marca">
-                            </app-campoTexto>
-                          </div>
-                          @if (!esView) {
-                            <div class="col-auto">
-                              <button type="button" class="btn btn-lookup"
-                                      (click)="abrirModalMarcas()" title="Buscar marca">
-                                <i class="fa fa-search"></i>
-                              </button>
-                            </div>
-                            @if (form.controls['marca_id'].value) {
-                              <div class="col-auto">
-                                <button type="button" class="btn btn-lookup btn-lookup--quitar"
-                                        (click)="limpiarMarca()" title="Quitar la marca">
-                                  <i class="fa fa-times"></i>
-                                </button>
-                              </div>
-                            }
-                          }
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Categoría: id + nombre + lupa, igual que la marca. El
-                         nombre que se enseña es la RUTA entera («Tecnología >
-                         Celulares > Accesorios») porque hay dos «Accesorios» en el
-                         árbol y a secas no se sabe cuál es. -->
-                    <div class="col-12 col-md-6 col-xxl-12">
-                      <div class="campo-lookup">
-                        <div class="row g-0 flex-nowrap">
-                          <div class="col-4">
-                            <app-campoNumeroEntero
-                              [control]="form.controls['categoria_id']"
-                              label="ID Categ."
-                              placeholder="ID"
-                              [maxLength]="10"
-                              [limpiable]="false"
-                              (blur)="cargarCategoriaPorId()">
-                            </app-campoNumeroEntero>
-                          </div>
-                          <div class="col">
-                            <app-campoTexto
-                              [control]="categoriaNombreControl"
-                              label="Categoría"
-                              placeholder="Sin categoría">
-                            </app-campoTexto>
-                          </div>
-                          <!-- Con la categoría heredada del árbol no hay nada
-                               que buscar ni que quitar: se quitan los dos
-                               botones en vez de dejarlos sin efecto. -->
-                          @if (!esView && !categoriaBloqueada) {
-                            <div class="col-auto">
-                              <button type="button" class="btn btn-lookup"
-                                      (click)="abrirModalCategorias()" title="Buscar categoría">
-                                <i class="fa fa-search"></i>
-                              </button>
-                            </div>
-                            @if (form.controls['categoria_id'].value) {
-                              <div class="col-auto">
-                                <button type="button" class="btn btn-lookup btn-lookup--quitar"
-                                        (click)="limpiarCategoria()" title="Quitar la categoría">
-                                  <i class="fa fa-times"></i>
-                                </button>
-                              </div>
-                            }
-                          }
-                          @if (categoriaBloqueada) {
-                            <div class="col-auto d-flex align-items-center">
-                              <i class="fa fa-lock prod-categoria__candado"
-                                 title="Viene de la categoría elegida en el listado"></i>
-                            </div>
-                          }
-                        </div>
-
-                        @if (categoriaBloqueada) {
-                          <p class="campo-hint mb-0">
-                            <i class="fa-solid fa-circle-info"></i>
-                            Nace en «{{ categoriaRuta || 'la categoría elegida' }}», que es la rama
-                            abierta en el listado. Para crearlo en otra, ciérralo y elige esa rama.
-                          </p>
-                        }
-                      </div>
-                    </div>
-
+                  <div header class="panel-acciones">
+                    @if (esView) {
+                      <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+                    }
                   </div>
-                </div>
-              </ng-container>
-            </panel>
+
+                  <ng-container outsideBody>
+                    <div class="form-card__body">
+                      <div class="row g-3 align-items-start">
+
+                        <!-- Nombre -->
+                        <div class="col-12">
+                          <app-campoTexto
+                            [control]="form.controls['nombre']"
+                            label="NOMBRE DEL PRODUCTO"
+                            placeholder="Refrigeradora Samsung 28 pies French Door"
+                            [maxLength]="150"
+                            [minLength]="3"
+                            [trimEspacios]="true">
+                          </app-campoTexto>
+                        </div>
+
+                        <!-- Modelo: debajo del nombre y del mismo ancho, que es su
+                             pareja natural (el nombre dice qué es y el modelo cuál). -->
+                        <div class="col-12">
+                          <app-campoTexto
+                            [control]="form.controls['modelo']"
+                            label="MODELO"
+                            placeholder="RF28K9070SR"
+                            [maxLength]="80">
+                          </app-campoTexto>
+                        </div>
+
+                        <!-- Marca: id + nombre + lupa, como el perfil en saveUser.
+                             Se escribe el id y al salir del campo se trae el nombre; o
+                             se busca con la lupa. El nombre va deshabilitado porque es
+                             lo que dice la marca elegida, no algo que se escriba.
+                             MEDIA FILA: son cuatro piezas en línea y con un tercio de
+                             la columna se quedan en 214px, donde ni las etiquetas
+                             caben (medido). -->
+                        <div class="col-12 col-md-6 col-xxl-12">
+                          <div class="campo-lookup">
+                            <!-- g-0: sin hueco entre piezas. Los bordes se comparten
+                                 desde el CSS para que las cuatro se lean como un solo
+                                 campo, no como cuatro cosas sueltas. -->
+                            <div class="row g-0 flex-nowrap">
+                              <div class="col-4">
+                                <app-campoNumeroEntero
+                                  [control]="form.controls['marca_id']"
+                                  label="ID Marca"
+                                  placeholder="ID"
+                                  [maxLength]="10"
+                                  [limpiable]="false"
+                                  (blur)="cargarMarcaPorId()">
+                                </app-campoNumeroEntero>
+                              </div>
+                              <div class="col">
+                                <app-campoTexto
+                                  [control]="marcaNombreControl"
+                                  label="Marca"
+                                  placeholder="Sin marca">
+                                </app-campoTexto>
+                              </div>
+                              @if (!esView) {
+                                <div class="col-auto">
+                                  <button type="button" class="btn btn-lookup"
+                                          (click)="abrirModalMarcas()" title="Buscar marca">
+                                    <i class="fa fa-search"></i>
+                                  </button>
+                                </div>
+                                @if (form.controls['marca_id'].value) {
+                                  <div class="col-auto">
+                                    <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                            (click)="limpiarMarca()" title="Quitar la marca">
+                                      <i class="fa fa-times"></i>
+                                    </button>
+                                  </div>
+                                }
+                              }
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Categoría: id + nombre + lupa, igual que la marca. El
+                             nombre que se enseña es la RUTA entera («Tecnología >
+                             Celulares > Accesorios») porque hay dos «Accesorios» en el
+                             árbol y a secas no se sabe cuál es. -->
+                        <div class="col-12 col-md-6 col-xxl-12">
+                          <div class="campo-lookup">
+                            <div class="row g-0 flex-nowrap">
+                              <div class="col-4">
+                                <app-campoNumeroEntero
+                                  [control]="form.controls['categoria_id']"
+                                  label="ID Categ."
+                                  placeholder="ID"
+                                  [maxLength]="10"
+                                  [limpiable]="false"
+                                  (blur)="cargarCategoriaPorId()">
+                                </app-campoNumeroEntero>
+                              </div>
+                              <div class="col">
+                                <app-campoTexto
+                                  [control]="categoriaNombreControl"
+                                  label="Categoría"
+                                  placeholder="Sin categoría">
+                                </app-campoTexto>
+                              </div>
+                              <!-- Con la categoría heredada del árbol no hay nada
+                                   que buscar ni que quitar: se quitan los dos
+                                   botones en vez de dejarlos sin efecto. -->
+                              @if (!esView && !categoriaBloqueada) {
+                                <div class="col-auto">
+                                  <button type="button" class="btn btn-lookup"
+                                          (click)="abrirModalCategorias()" title="Buscar categoría">
+                                    <i class="fa fa-search"></i>
+                                  </button>
+                                </div>
+                                @if (form.controls['categoria_id'].value) {
+                                  <div class="col-auto">
+                                    <button type="button" class="btn btn-lookup btn-lookup--quitar"
+                                            (click)="limpiarCategoria()" title="Quitar la categoría">
+                                      <i class="fa fa-times"></i>
+                                    </button>
+                                  </div>
+                                }
+                              }
+                              @if (categoriaBloqueada) {
+                                <div class="col-auto d-flex align-items-center">
+                                  <i class="fa fa-lock prod-categoria__candado"
+                                     title="Viene de la categoría elegida en el listado"></i>
+                                </div>
+                              }
+                            </div>
+
+                            @if (categoriaBloqueada) {
+                              <p class="campo-hint mb-0">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Nace en «{{ categoriaRuta || 'la categoría elegida' }}», que es la rama
+                                abierta en el listado. Para crearlo en otra, ciérralo y elige esa rama.
+                              </p>
+                            }
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+                  </ng-container>
+                </panel>
+              </div>
+
+            </div>
           }
 
           <!-- ===== CARACTERÍSTICAS ===== -->

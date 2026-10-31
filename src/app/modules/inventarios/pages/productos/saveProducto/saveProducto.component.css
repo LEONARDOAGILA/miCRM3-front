@@ -251,6 +251,27 @@
   color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
 }
 
+/* ---------- La columna de los códigos ----------
+   Cinco campos apilados: el SKU, el código de barras y los tres con los que
+   cada proveedor llama a este mismo producto. */
+
+/* La raya que separa los dos primeros —los que identifican el producto— de
+   los tres de los proveedores, que lo identifican PARA ALGUIEN. Va con el
+   color del tema, no con el gris por defecto del <hr>, que en modo oscuro
+   casi no se ve. */
+.prod-codigos__raya {
+  margin: .25rem 0 .75rem;
+  border: 0;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  opacity: 1;
+}
+
+/* .campo-hint nace con margen superior NEGATIVO para pegarse al campo que
+   tiene encima; aquí lo que tiene encima es la raya, y ese margen la pisa. */
+.prod-codigos__ayuda {
+  margin: 0;
+}
+
 /* Quién y cuándo (edición / vista) */
 .producto-meta {
   display: flex;

@@ -93,6 +93,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
    *  en una pestaña que no se ve, y antes el aviso no llevaba a ninguna parte. */
   private readonly PESTANA_DEL_CAMPO: Record<string, string> = {
     codigo: 'identificacion', nombre: 'identificacion', codigo_barras: 'identificacion',
+    codigo2: 'identificacion', codigo3: 'identificacion', codigo4: 'identificacion',
     modelo: 'identificacion', marca_id: 'identificacion', categoria_id: 'identificacion',
     activo: 'identificacion', impuesto: 'identificacion',
     maneja_stock: 'identificacion', maneja_serie: 'identificacion',
@@ -381,6 +382,12 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       // Identificación
       codigo:         [{ value: '', disabled: this.isdisabled }, [Validators.required, Validators.minLength(2), Validators.maxLength(30)]],
       codigo_barras:  [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
+      // Los códigos alternos: la referencia con la que cada proveedor llama a
+      // este mismo producto. Ni obligatorios ni únicos —dos proveedores pueden
+      // usar la misma para cosas distintas—, sólo se buscan.
+      codigo2:        [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
+      codigo3:        [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
+      codigo4:        [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
       nombre:         [{ value: '', disabled: this.isdisabled }, [Validators.required, Validators.minLength(3), Validators.maxLength(150)]],
       // 20.000 y no 4.000: ahora lo que se guarda es HTML, y las etiquetas
       // ocupan. Una ficha de media página en texto pasa de 4.000 en cuanto
@@ -1260,6 +1267,14 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         // El código de barras NO se clona: es el EAN del fabricante y es
         // único, así que la copia saldría rechazada al guardar
         codigo_barras:  this.accion === 'clon' ? '' : (m.codigo_barras ?? ''),
+        // Los alternos TAMPOCO se clonan, aunque aquí no haya nada que los
+        // rechace: son la referencia del proveedor para ESTE producto, y la
+        // copia es otro. Arrastrarlos haría que buscar el código del
+        // proveedor devolviese dos productos, que es justo lo que se quiere
+        // evitar teniéndolos.
+        codigo2:        this.accion === 'clon' ? '' : (m.codigo2 ?? ''),
+        codigo3:        this.accion === 'clon' ? '' : (m.codigo3 ?? ''),
+        codigo4:        this.accion === 'clon' ? '' : (m.codigo4 ?? ''),
         nombre:         (m.nombre ?? '') + this.textoClon,
         descripcion:    m.descripcion ?? '',
         marca_id:       m.marca_id ?? null,
@@ -1507,7 +1522,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     const payload: any = this.form.getRawValue();
 
     // Los vacíos van como null, no como '': el back los distingue
-    for (const k of ['codigo_barras', 'modelo']) {
+    for (const k of ['codigo_barras', 'codigo2', 'codigo3', 'codigo4', 'modelo']) {
       payload[k] = (payload[k] ?? '').toString().trim() || null;
     }
 
