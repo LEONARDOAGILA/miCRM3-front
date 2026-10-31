@@ -326,9 +326,17 @@
           @if (cuantosFiltros) { <span class="prod-filtros__cuantos">{{ cuantosFiltros }}</span> }
         </span>
         <div class="btn-group" role="group">
-          <button type="button" class="btn btn-xs btn-white" title="Quitar todos los filtros"
-                  [disabled]="!hayFiltro" (click)="clearAllFilters()">
-            <i class="fa fa-filter-circle-xmark"></i>
+          <!-- Encendido en rojo cuando hay filtros puestos, igual que el que
+               está junto al buscador: mismas clases y mismo cambio de icono,
+               para que los dos se lean como el mismo mando. -->
+          <button type="button"
+                  class="btn btn-xs"
+                  [class.btn-outline-danger]="hayFiltro"
+                  [class.prod-filtros__limpiar--apagado]="!hayFiltro"
+                  [title]="tituloQuitarFiltros"
+                  [attr.aria-label]="tituloQuitarFiltros"
+                  (click)="clearAllFilters()">
+            <i class="fas" [ngClass]="hayFiltro ? 'fa-filter-circle-xmark' : 'fa-filter'"></i>
           </button>
           <button type="button" class="btn btn-xs btn-white" title="Plegar el panel" (click)="alternarFiltros()">
             <i class="fa fa-angles-right"></i>

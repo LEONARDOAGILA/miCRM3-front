@@ -165,6 +165,22 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   public anchoFiltros = this.leerAnchoFiltros();
   public redimensionandoFiltros = false;
 
+  /**
+   * Lo que dice el botón de quitar filtros al pasar por encima.
+   *
+   * Cuenta lo MISMO que el botón de al lado del buscador —que limpia todo—,
+   * así que nombra también la búsqueda y las columnas, no sólo el panel.
+   */
+  get tituloQuitarFiltros(): string {
+    if (!this.hayFiltro) { return 'No hay filtros que quitar'; }
+    const partes: string[] = [];
+    if (this.cuantosFiltros) { partes.push(this.cuantosFiltros === 1 ? '1 filtro' : this.cuantosFiltros + ' filtros'); }
+    if (this.searchTerm) { partes.push('la búsqueda'); }
+    if (this.cuantasColumnasFiltradas === 1) { partes.push('1 columna'); }
+    else if (this.cuantasColumnasFiltradas > 1) { partes.push(this.cuantasColumnasFiltradas + ' columnas'); }
+    return 'Quitar ' + partes.join(' y ');
+  }
+
   /** Cuántos filtros hay puestos, para avisar con el panel plegado. */
   get cuantosFiltros(): number {
     return (this.marcaFiltro.length ? 1 : 0)

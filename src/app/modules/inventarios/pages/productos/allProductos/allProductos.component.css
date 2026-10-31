@@ -664,6 +664,21 @@
   color: var(--bs-secondary-color, #6c757d);
 }
 
+/* El botón de quitar filtros, APAGADO.
+   No usa btn-outline-secondary porque esa clase lleva el gris COMPILADO
+   (#6c757d) y no sigue al tema: sobre el panel en oscuro daba 2,97:1, que no
+   se lee. Con las variables del tema sube y vale en los dos.
+   El ENCENDIDO sí es btn-outline-danger, el mismo del botón del buscador. */
+.prod-filtros__limpiar--apagado {
+  color: var(--bs-secondary-color, #6c757d);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.prod-filtros__limpiar--apagado:hover {
+  color: var(--bs-body-color, #212529);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
 .prod-filtros__cuantos {
   min-width: 18px;
   padding: 0 5px;
