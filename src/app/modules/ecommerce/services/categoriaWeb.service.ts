@@ -47,6 +47,16 @@ export class CategoriaWebService {
     return this._http.post(this.URL_SERVICIOS + 'ordenarDestacadas', { ids });
   }
 
+  /**
+   * El orden en la tienda, dentro de UNA rama.
+   *
+   * Van las hijas de un mismo padre, en su orden. No hacen falta todas las
+   * hermanas: las que no salen en la tienda no están en la pantalla.
+   */
+  ordenarCategorias(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'ordenarCategorias', { ids });
+  }
+
   // ================================================================
   // LAS IMÁGENES DE CADA CATEGORÍA
   // ================================================================

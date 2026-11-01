@@ -20,6 +20,18 @@ import {
 } from '../../../interfaces/categoriaImagenModel';
 import { SaveImagenCategoriaComponent } from '../saveImagenCategoria/saveImagenCategoria.component';
 
+/**
+ * Una categoría visible en la tienda con las suyas debajo.
+ *
+ * Cada rama es su propia lista arrastrable: el orden se decide entre
+ * hermanas, porque es así como lo pinta la tienda. Mover una categoría a
+ * otra rama es cambiar el árbol, y eso es de Inventarios.
+ */
+interface RamaTienda {
+  categoria: CategoriaWebModel;
+  hijos: RamaTienda[];
+}
+
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
 import { filtrarArbol, recorrer } from '../../../../seguridad/pages/grupos/arbolGrupos';
@@ -164,6 +176,75 @@ export class AllCategoriasWebComponent implements OnInit {
     return c.estado !== 'visible';
   }
 
+  /**
+   * Las que SÍ se ven en la tienda, como ramas, para la última columna.
+   *
+   * VA EN UN CAMPO y no en un getter: cada rama es su propia lista
+   * arrastrable, y un array nuevo en cada ciclo de detección de cambios deja
+   * al cdkDropList sin saber qué movió.
+   */
+  public enLaTienda: RamaTienda[] = [];
+
+  /** Cuántas se ven en la tienda, contando todas las ramas. */
+  get cuantasEnLaTienda(): number {
+    return this.categorias.filter(c => c.estado === 'visible').length;
+  }
+
+  /**
+   * Arma el árbol de las visibles EN EL ORDEN DE LA TIENDA.
+   *
+   * El servidor ya las devuelve así —`orden_web` primero y el del catálogo
+   * de reserva—, así que aquí sólo hay que colgarlas de su padre sin
+   * reordenar nada: ordenarlo otra vez sería repetir la regla y acabar
+   * enseñando algo distinto de lo que ve el cliente.
+   */
+  private armarEnLaTienda(): void {
+    const porId = new Map<number, RamaTienda>();
+    const raices: RamaTienda[] = [];
+
+    for (const c of this.categorias) {
+      if (c.estado !== 'visible') { continue; }
+      porId.set(c.id, { categoria: c, hijos: [] });
+    }
+
+    for (const c of this.categorias) {
+      const rama = porId.get(c.id);
+      if (!rama) { continue; }
+      const padre = c.padre_id ? porId.get(c.padre_id) : undefined;
+      if (padre) { padre.hijos.push(rama); } else { raices.push(rama); }
+    }
+
+    this.enLaTienda = raices;
+  }
+
+  /**
+   * Se soltó una categoría dentro de su rama: ése es el orden de la tienda.
+   *
+   * SE MANDA LA RAMA ENTERA, no sólo la que se movió: el servidor exige que
+   * todas sean del mismo padre, y es lo que se acaba de ver en pantalla.
+   */
+  async soltarEnLaTienda(evento: CdkDragDrop<RamaTienda[]>, lista: RamaTienda[]): Promise<void> {
+    if (!this.puedeEditar || evento.previousIndex === evento.currentIndex) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    moveItemInArray(lista, evento.previousIndex, evento.currentIndex);
+    const ids = lista.map(r => r.categoria.id);
+
+    this.trabajando = true;
+    try {
+      const res: any = await firstValueFrom(this._categoriaService.ordenarCategorias(ids));
+      this.categorias = res?.data ?? this.categorias;
+      this.construirArbol();
+      this._toastr.success(res?.message ?? 'Orden guardado', 'Listo');
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo guardar el orden', 'Error',
+                         { timeOut: 15000, closeButton: true });
+      await this.cargarArbol();
+    } finally {
+      this.trabajando = false;
+    }
+  }
+
   /** Cuántas imágenes tiene una categoría, para la lista de la derecha. */
   cuentaDe(id: number): CuentaImagenes | undefined {
     return this.cuentas.get(id);
@@ -274,6 +355,7 @@ export class AllCategoriasWebComponent implements OnInit {
     this.originalNodes = raices;
     this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
     this.ordenarDestacadasEnPantalla();
+    this.armarEnLaTienda();
   }
 
   /**
