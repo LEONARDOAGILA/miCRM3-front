@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -47,7 +47,7 @@ import { PapeleraPieComponent } from '../papeleraPie/papeleraPie.component';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
-    CommonModule, ReactiveFormsModule,
+    CommonModule, RouterLink, ReactiveFormsModule,
     PanelComponent, TabPanelComponent, CampoTextoComponent, CheckboxComponent,
     CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
   ],

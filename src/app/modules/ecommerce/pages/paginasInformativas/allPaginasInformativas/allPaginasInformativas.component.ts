@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
@@ -52,7 +52,7 @@ import { PapeleraPaginasInformativasComponent } from '../papeleraPaginasInformat
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
-    CommonModule, PanelComponent,
+    CommonModule, RouterLink, PanelComponent,
     CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
   ],
 })

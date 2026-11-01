@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { AuthGuard } from '../../core/guards/auth.guard';
 import { AccessResolver } from '../../core/resolvers/access.resolver';
 
+import { EcommerceHomeComponent } from './pages/home/home.component';
 import { AllPaginasInformativasComponent } from './pages/paginasInformativas/allPaginasInformativas/allPaginasInformativas.component';
 import { EditEncabezadoComponent } from './pages/encabezado/editEncabezado/editEncabezado.component';
 import { EditPieComponent } from './pages/pie/editPie/editPie.component';
@@ -32,7 +33,15 @@ export const ECOMMERCE_ROUTES: Routes = [
   {
     path: '',
     children: [
-      { path: '', redirectTo: 'allPaginasInformativas', pathMatch: 'full' },
+      { path: '', redirectTo: 'home', pathMatch: 'full' },
+
+      // La portada del módulo: las once áreas con lo que hay en cada una
+      {
+        path: 'home',
+        component: EcommerceHomeComponent,
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
 
       {
         path: 'allPaginasInformativas',
@@ -58,7 +67,7 @@ export const ECOMMERCE_ROUTES: Routes = [
         resolve: { access: AccessResolver },
       },
 
-      { path: '**', redirectTo: 'allPaginasInformativas' },
+      { path: '**', redirectTo: 'home' },
     ],
   },
 ];

@@ -1,0 +1,145 @@
+/* ============================================================
+   LA PORTADA DEL MÓDULO ECOMMERCE
+   ============================================================
+   Todos los colores salen de variables de Bootstrap: un gris compilado aquí
+   no se lee dentro de una caja oscura. */
+
+.eco-rejilla {
+  display: grid;
+  /* Se acomodan solas: tres por fila en pantalla ancha, una en el móvil, sin
+     media queries que haya que mantener. */
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: .75rem;
+}
+
+.eco-tarjeta {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .875rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+/* La que ya tiene pantalla se puede pinchar y se nota */
+.eco-tarjeta--lista {
+  cursor: pointer;
+  border-left-color: var(--bs-app-theme, #00acac);
+}
+
+.eco-tarjeta--lista:hover,
+.eco-tarjeta--lista:focus-visible {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* La que no, se ve pero no invita: ni cursor, ni relieve, ni flecha */
+.eco-tarjeta--pendiente {
+  opacity: .72;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.eco-tarjeta__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 2.5rem;
+  border-radius: .5rem;
+  font-size: 1rem;
+  color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.eco-tarjeta--pendiente .eco-tarjeta__icono {
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.eco-tarjeta__texto {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.eco-tarjeta__titulo {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.eco-tarjeta__descripcion {
+  font-size: .75rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Lo que hay dentro: es el dato, así que se lee más que la descripción */
+.eco-tarjeta__resumen {
+  margin-top: .25rem;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.eco-tarjeta--pendiente .eco-tarjeta__resumen {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.eco-tarjeta__flecha {
+  align-self: center;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Etiquetas ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .1rem .4rem;
+  border-radius: 1rem;
+  font-size: .625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.chip-pendiente {
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  margin-left: auto;
+}

@@ -1,0 +1,80 @@
+<!-- ============================================================
+     LA PORTADA DEL MÓDULO ECOMMERCE
+
+     Una tarjeta por área de la página web, con lo que hay dentro. Las
+     que aún no están trasladadas salen igual, marcadas: esconderlas
+     daría la impresión de que la página web son cuatro cosas.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item active">Página web</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       icono="globe">
+
+  <div header class="panel-acciones">
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  @if (error) {
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>
+        No se pudo leer el resumen, así que las tarjetas salen sin sus
+        cantidades. Las pantallas funcionan igual.
+      </span>
+    </div>
+  }
+
+  <div class="eco-rejilla">
+    @for (area of areas; track area.clave) {
+      <div class="eco-tarjeta"
+           [class.eco-tarjeta--lista]="lista(area)"
+           [class.eco-tarjeta--pendiente]="!lista(area)"
+           [attr.role]="lista(area) ? 'button' : null"
+           [attr.tabindex]="lista(area) ? 0 : null"
+           (click)="abrir(area)"
+           (keydown.enter)="abrir(area)">
+
+        <span class="eco-tarjeta__icono">
+          <i class="fa-solid" [ngClass]="area.icono"></i>
+        </span>
+
+        <div class="eco-tarjeta__texto">
+          <span class="eco-tarjeta__titulo">
+            {{ area.titulo }}
+            @if (!lista(area)) {
+              <span class="chip chip-pendiente">Pendiente</span>
+            }
+          </span>
+
+          <span class="eco-tarjeta__descripcion">{{ area.descripcion }}</span>
+
+          <span class="eco-tarjeta__resumen">
+            @if (cargando) {
+              <i class="fa-solid fa-spinner fa-spin"></i>
+            } @else {
+              {{ resumen(area) }}
+            }
+          </span>
+        </div>
+
+        @if (lista(area)) {
+          <i class="fa-solid fa-chevron-right eco-tarjeta__flecha"></i>
+        }
+      </div>
+    }
+  </div>
+
+  <p class="campo-hint mt-3 mb-0">
+    <i class="fa-solid fa-circle-info"></i>
+    Las áreas marcadas como pendientes siguen administrándose en el CRM
+    anterior; sus cantidades son reales y se trasladan una a una.
+  </p>
+</panel>
