@@ -83,6 +83,22 @@
   color: var(--bs-body-color, #212529);
 }
 
+/* El nombre de siempre, cuando el de la tienda lo tapa. Pequeño y apagado:
+   sirve para reconocer la sección, no para competir con el de arriba. */
+.seccion-de-fabrica {
+  font-size: .72rem;
+  line-height: 1.2;
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seccion-de-fabrica i {
+  margin-right: .2rem;
+  opacity: .8;
+}
+
 .seccion-etiquetas {
   display: flex;
   flex-wrap: wrap;
@@ -221,6 +237,157 @@
   flex: 0 0 auto;
   margin-top: .1rem;
   color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* Un aviso que no impide guardar: el icono en ámbar en vez del color del tema */
+.campo-hint--aviso i { color: var(--bs-warning, #ffc107); }
+
+/* ============================================================
+   LA PINTA DEL RÓTULO
+   ============================================================
+   Los tres controles en una fila que se parte sola, y debajo la muestra. */
+.rotulo-pinta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  align-items: flex-end;
+}
+
+.rotulo-campo {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 8rem;
+}
+
+.rotulo-campo--ancho { flex: 1 1 14rem; }
+
+.rotulo-campo > label {
+  font-size: .65rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ===== El color =====
+   Copiado del modal de archivos (core/administrador-archivos/save-file), con
+   sus mismos nombres: es la paleta que ya se usa en el CRM para elegir un
+   color, y aquí tiene que verse y funcionar igual. */
+.color-bloque__fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+/* El <input type="color"> nativo es feo y cambia por navegador: se esconde
+   dentro de una muestra redonda y el clic lo abre igual */
+.color-muestra {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--bs-component-bg, #fff);
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.color-muestra input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.color-valor {
+  padding: .1rem .4rem;
+  border-radius: .25rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-body-color, #212529);
+  font-size: .7rem;
+}
+
+.color-paleta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  margin-left: auto;
+}
+
+.color-paleta__punto {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid var(--bs-component-bg, #fff);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+  cursor: pointer;
+  transition: transform .12s ease;
+}
+
+.color-paleta__punto:hover { transform: scale(1.15); }
+
+/* El puesto se señala con un anillo y no cambiándole el color: el color ES el dato */
+.color-paleta__punto.is-activo {
+  box-shadow: 0 0 0 2px var(--bs-app-theme, #00acac);
+}
+
+.color-paleta__punto:disabled { cursor: default; opacity: .5; }
+
+@media (max-width: 575.98px) {
+  .color-paleta { margin-left: 0; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .color-paleta__punto { transition: none; }
+}
+
+.rotulo-quitar {
+  padding: 0 .25rem;
+  font-size: .7rem;
+  text-decoration: none;
+}
+
+/* ===== La muestra =====
+   SIEMPRE BLANCA, en los dos temas del CRM: blanco es el fondo de la sección
+   en la tienda, y una muestra sobre el panel oscuro enseñaría un contraste
+   que el cliente no va a ver. Por eso nada de aquí dentro usa variables del
+   tema: en oscuro se volverían invisibles sobre el blanco. */
+.rotulo-muestra {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin: .6rem 0 .25rem;
+  padding: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: .375rem;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.rotulo-muestra-texto {
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+/* La sección que no lleva rótulo: la muestra enseña su aire y dónde empieza */
+.rotulo-muestra-sin {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding-top: .5rem;
+  border-top: 1px dashed #ced4da;
+  font-size: .75rem;
+  color: #6c757d;
+}
+
+.rotulo-muestra-pie {
+  font-size: .65rem;
+  color: #6c757d;
 }
 
 /* ============================================================

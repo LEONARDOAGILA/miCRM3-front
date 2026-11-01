@@ -9,9 +9,20 @@ export interface SeccionInicioModel {
   id: number;
   /** La que conoce la tienda. No se cambia: está en su código. */
   clave: string;
+  /** Cómo se llama la sección aquí dentro. Es fija, para reconocerla. */
   nombre: string;
+  /**
+   * CÓMO SE LLAMA EN LA TIENDA: lo que lee el cliente encima de la sección.
+   *
+   * Esto sí se cambia, y es lo que sale en la página web. Vacío, la tienda
+   * pone el que trae de fábrica —o ninguno—, que es cómo se ve hoy.
+   */
   titulo: string | null;
   subtitulo: string | null;
+  /** De qué tamaño, de qué color y con qué letra se lee ese rótulo. */
+  estilo: EstiloRotulo;
+  /** Cuánto espacio ocupa la sección en la portada. */
+  alto: AltoSeccion;
   orden: number;
   activo: boolean;
   /** 'YYYY-MM-DDTHH:mm', como lo quiere un <input type="datetime-local">. */
@@ -28,6 +39,107 @@ export interface SeccionInicioModel {
 }
 
 export type EstadoSeccion = 'visible' | 'oculta' | 'programada' | 'terminada';
+
+/**
+ * LA PINTA DEL RÓTULO.
+ *
+ * SON CLAVES, NO CSS. «grande» y «deportiva» las traduce la tienda a sus
+ * propias clases, y la base sólo admite las de su lista. Si por aquí viajara
+ * CSS, quien pueda editar la portada estaría escribiendo en la hoja de
+ * estilos de la tienda.
+ *
+ * EL TAMAÑO ES UNA ESCALA, no una medida. La tienda encoge sus títulos en
+ * tablet y en celular; guardar «32px» rompería eso y el rótulo saldría
+ * gigante en un teléfono.
+ *
+ * El color es lo único libre, y va en `#rrggbb`. Null = el que la tienda use
+ * en esa sección, que no siempre es el mismo.
+ */
+export interface EstiloRotulo {
+  tamano: TamanoRotulo;
+  color: string | null;
+  fuente: FuenteRotulo;
+}
+
+export type TamanoRotulo = 'pequeno' | 'normal' | 'grande' | 'enorme';
+export type FuenteRotulo = 'titulos' | 'texto' | 'deportiva' | 'serif';
+
+/**
+ * Los tamaños, con la escala que les aplica la tienda.
+ *
+ * LA ESCALA ESTÁ TAMBIÉN EN `_home.scss` de la tienda (`.ae-rotulo--grande`),
+ * que es quien manda: ésta es para que la muestra de esta pantalla enseñe lo
+ * mismo que se va a ver. Si allá se cambia, aquí también.
+ */
+export const TAMANOS_ROTULO: { valor: TamanoRotulo; texto: string; escala: number }[] = [
+  { valor: 'pequeno', texto: 'Pequeño', escala: 0.75 },
+  { valor: 'normal',  texto: 'Normal',  escala: 1 },
+  { valor: 'grande',  texto: 'Grande',  escala: 1.35 },
+  { valor: 'enorme',  texto: 'Enorme',  escala: 1.75 },
+];
+
+/** El tamaño de los títulos de la tienda en computadora, del que sale la escala. */
+export const ROTULO_BASE_PX = 28;
+
+/**
+ * Las letras, con cómo se escriben en CSS para la muestra.
+ *
+ * SÓLO ESTÁN LAS QUE LA TIENDA CARGA DE VERDAD —Poppins, Inter y Barlow
+ * Condensed— más una con serifa que ya traen todos los equipos. Ofrecer
+ * cualquier otra sería enseñar aquí una letra que el cliente no va a ver.
+ */
+export const FUENTES_ROTULO: {
+  valor: FuenteRotulo; texto: string; pista: string; css: string; cursiva: boolean; versalitas: boolean;
+}[] = [
+  { valor: 'titulos',   texto: 'La de los títulos', pista: 'Poppins, la de toda la tienda',
+    css: "'Poppins', sans-serif",            cursiva: false, versalitas: false },
+  { valor: 'texto',     texto: 'La del texto',      pista: 'Inter, más sobria',
+    css: "'Inter', sans-serif",              cursiva: false, versalitas: false },
+  { valor: 'deportiva', texto: 'Deportiva',         pista: 'estrecha y en cursiva, como España Motos',
+    css: "'Barlow Condensed', sans-serif",   cursiva: true,  versalitas: true },
+  { valor: 'serif',     texto: 'Con serifa',        pista: 'clásica, para algo elegante',
+    css: "Georgia, 'Times New Roman', serif", cursiva: false, versalitas: false },
+];
+
+/** El color con el que la tienda pinta sus títulos: lo de fábrica, y con lo que se compara. */
+export const ROTULO_COLOR_TIENDA = '#1d1d1f';
+
+/**
+ * La paleta rápida, la misma que la del administrador de archivos
+ * (`core/pages/administrador-archivos/save-file`).
+ *
+ * SE REPITE LA DE ALLÁ A PROPÓSITO: es la paleta que ya se usa en el CRM para
+ * elegir un color, y quien la conoce de las carpetas la reconoce aquí. El
+ * selector de al lado sigue admitiendo cualquier otro.
+ */
+export const COLORES_ROTULO = [
+  '#F0B13B', '#348fe2', '#00acac', '#727cb6', '#ff5b57', '#f59c1a', '#A6A09B', '#2d353c',
+];
+
+/**
+ * EL ALTO DE LA SECCIÓN: cuánto espacio ocupa en la portada.
+ *
+ * ES EL AIRE, NO EL CONTENIDO. Lo que crece o se encoge es el espacio que la
+ * sección deja a su alrededor; las fotos, las tarjetas y los logos siguen
+ * midiendo lo que miden. Estirarlos los sacaría aplastados o recortados.
+ *
+ * Como el tamaño del rótulo, es una escala y no una medida: la tienda da 56
+ * px de aire en computadora y 40 en el teléfono, y cada uno se multiplica por
+ * lo suyo. Un «120px» guardado aquí dejaría el teléfono con tres dedos de
+ * nada entre dos secciones.
+ */
+export type AltoSeccion = 'compacta' | 'normal' | 'amplia' | 'extra';
+
+/** El aire de una sección en computadora, del que sale la escala. */
+export const AIRE_BASE_PX = 56;
+
+/** LAS ESCALAS ESTÁN TAMBIÉN EN `_home.scss` de la tienda, que es quien manda. */
+export const ALTOS_SECCION: { valor: AltoSeccion; texto: string; escala: number }[] = [
+  { valor: 'compacta', texto: 'Compacta', escala: 0.5 },
+  { valor: 'normal',   texto: 'Normal',   escala: 1 },
+  { valor: 'amplia',   texto: 'Amplia',   escala: 1.5 },
+  { valor: 'extra',    texto: 'Muy amplia', escala: 2 },
+];
 
 /**
  * De dónde saca sus datos la sección.
@@ -65,14 +177,24 @@ export const ESTADOS_SECCION: Record<EstadoSeccion, { texto: string; clase: stri
  * Vive en el front porque es cómo se explica, no cómo funciona. La clave y la
  * fuente las manda el servidor; esto es sólo la cara.
  *
- * `rotulo` dice qué campos tiene sentido enseñar: la tienda sólo pinta título
- * encima de dos secciones, y ofrecerlo en las otras seis serían seis casillas
- * que se rellenan y no salen en ninguna parte.
+ * `rotulo` dice qué campos tiene sentido enseñar: ofrecer un título en una
+ * sección que no lo pinta sería una casilla que se rellena y no sale en
+ * ninguna parte. Por eso los dos banners no lo tienen: son imágenes de borde
+ * a borde y encima de ellas no se lee nada.
+ *
+ * `rotuloDeFabrica` es lo que la tienda pone cuando el campo se deja vacío.
+ * Importa decirlo: sin eso, «Categorías Destacadas» parece un texto que
+ * aparece solo y nadie se atreve a borrarlo por miedo a que la sección se
+ * quede sin nombre.
  */
 export interface VistaSeccion {
   icono: string;
   descripcion: string;
   rotulo: 'ninguno' | 'titulo' | 'titulo_subtitulo';
+  /** Con rótulo: lo que se lee si se deja vacío, o null si no se lee nada. */
+  rotuloDeFabrica?: string | null;
+  /** Sin rótulo: por qué esta sección no lleva título. */
+  sinRotulo?: string;
 }
 
 export const VISTA_SECCIONES: Record<string, VistaSeccion> = {
@@ -80,43 +202,51 @@ export const VISTA_SECCIONES: Record<string, VistaSeccion> = {
     icono: 'fa-panorama',
     descripcion: 'Las imágenes grandes que rotan arriba del todo.',
     rotulo: 'ninguno',
+    sinRotulo: 'son imágenes de borde a borde y encima de ellas no se lee nada',
   },
   categorias_destacadas: {
     icono: 'fa-star',
     descripcion: 'Las categorías marcadas como destacadas, con su imagen.',
-    rotulo: 'ninguno',
+    rotulo: 'titulo',
+    rotuloDeFabrica: 'Categorías Destacadas',
   },
   ofertas_flash: {
     icono: 'fa-bolt',
     descripcion: 'Productos en oferta con cuenta regresiva. La fecha «hasta» es la cuenta que ve el cliente.',
     rotulo: 'titulo_subtitulo',
+    rotuloDeFabrica: null,
   },
   banner_simple: {
     icono: 'fa-image',
     descripcion: 'Una franja de imágenes entre dos secciones.',
     rotulo: 'ninguno',
+    sinRotulo: 'es una franja de imágenes y encima de ella no se lee nada',
   },
   // La clave sigue siendo `mosaico` —es la que conoce la tienda y está en su
   // código—; el nombre con el que se habla de ella viene de la base.
   mosaico: {
     icono: 'fa-tags',
     descripcion: 'Las categorías marcadas «En promoción», en tarjetas grandes de cuatro en cuatro.',
-    rotulo: 'ninguno',
+    rotulo: 'titulo',
+    rotuloDeFabrica: null,
   },
   grilla: {
     icono: 'fa-grip',
     descripcion: 'Productos de todas las marcas, uno al lado del otro.',
     rotulo: 'titulo',
+    rotuloDeFabrica: null,
   },
   bloques: {
     icono: 'fa-layer-group',
     descripcion: 'Cada bloque enseña los productos destacados de una categoría y, al lado, sus promociones.',
     rotulo: 'ninguno',
+    sinRotulo: 'el título lo lleva cada bloque, no la sección entera',
   },
   marcas: {
     icono: 'fa-copyright',
     descripcion: 'Los logos de las marcas, en el orden de Marcas de la tienda.',
-    rotulo: 'ninguno',
+    rotulo: 'titulo',
+    rotuloDeFabrica: null,
   },
 };
 
@@ -125,4 +255,5 @@ export const VISTA_POR_DEFECTO: VistaSeccion = {
   icono: 'fa-puzzle-piece',
   descripcion: 'Una sección de la tienda.',
   rotulo: 'ninguno',
+  sinRotulo: 'esta pantalla todavía no sabe cómo se pinta',
 };

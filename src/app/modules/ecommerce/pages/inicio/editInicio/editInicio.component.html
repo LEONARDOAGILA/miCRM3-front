@@ -67,7 +67,14 @@
             </span>
 
             <span class="seccion-textos">
-              <b class="seccion-nombre">{{ s.nombre }}</b>
+              <!-- El nombre que lee el cliente en cuanto se pone uno; debajo,
+                   el de siempre, para seguir reconociendo la sección -->
+              <b class="seccion-nombre">{{ comoSeLlama(s) }}</b>
+              @if (renombrada(s)) {
+                <span class="seccion-de-fabrica">
+                  <i class="fa-solid fa-tag"></i> {{ s.nombre }} en el CRM
+                </span>
+              }
               <span class="seccion-etiquetas">
                 <span class="chip" [ngClass]="estados[s.estado].clase">
                   <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
@@ -129,11 +136,16 @@
                   <div class="col-12" [class.col-md-6]="vista(s).rotulo === 'titulo_subtitulo'">
                     <app-campoTexto
                       [control]="$any(formularios[s.clave].controls['titulo'])"
-                      label="TÍTULO"
-                      placeholder="Lo que se lee encima de la sección"
+                      label="CÓMO SE LLAMA EN LA TIENDA"
+                      [placeholder]="ejemploRotulo(s)"
                       [maxLength]="80"
                       [trimEspacios]="true">
                     </app-campoTexto>
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Es lo que lee el cliente encima de esta sección en la
+                      página web. {{ rotuloVacio(s) }}
+                    </p>
                   </div>
                 }
 
@@ -141,12 +153,145 @@
                   <div class="col-12 col-md-6">
                     <app-campoTexto
                       [control]="$any(formularios[s.clave].controls['subtitulo'])"
-                      label="SUBTÍTULO"
+                      label="LA LÍNEA DE ABAJO"
+                      placeholder="Debajo del nombre, más pequeña"
                       [maxLength]="80"
                       [trimEspacios]="true">
                     </app-campoTexto>
                   </div>
                 }
+
+                <!-- ---------- Cómo se ve en la tienda ----------
+                     El alto lo llevan las ocho; el resto, sólo las que pintan
+                     un rótulo. -->
+                <div class="col-12">
+                  <label class="seccion-rotulo">CÓMO SE VE EN LA TIENDA</label>
+
+                  <div class="rotulo-pinta">
+                    <div class="rotulo-campo">
+                      <label [attr.for]="'alto-' + s.clave">Alto de la sección</label>
+                      <select class="form-select form-select-sm" formControlName="alto"
+                              [id]="'alto-' + s.clave">
+                        @for (a of altos; track a.valor) {
+                          <option [value]="a.valor">{{ a.texto }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    @if (vista(s).rotulo !== 'ninguno') {
+                      <div class="rotulo-campo">
+                        <label [attr.for]="'tamano-' + s.clave">Tamaño de la letra</label>
+                        <select class="form-select form-select-sm" formControlName="tamano"
+                                [id]="'tamano-' + s.clave">
+                          @for (t of tamanos; track t.valor) {
+                            <option [value]="t.valor">{{ t.texto }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      <div class="rotulo-campo rotulo-campo--ancho">
+                        <label [attr.for]="'fuente-' + s.clave">Tipo de letra</label>
+                        <select class="form-select form-select-sm" formControlName="fuente"
+                                [id]="'fuente-' + s.clave">
+                          @for (f of fuentes; track f.valor) {
+                            <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      <!-- La misma paleta del administrador de archivos: el
+                           selector del navegador escondido en una muestra
+                           redonda, el código al lado y los colores de siempre -->
+                      <div class="rotulo-campo rotulo-campo--ancho color-bloque">
+                        <label [attr.for]="'color-' + s.clave">Color</label>
+                        <div class="color-bloque__fila">
+                          <label class="color-muestra" [style.background-color]="colorMuestra(s)"
+                                 title="Elegir cualquier color">
+                            <input type="color" [id]="'color-' + s.clave"
+                                   [value]="colorMuestra(s)"
+                                   [disabled]="!puedeEditar"
+                                   aria-label="Color del rótulo"
+                                   (input)="colorDelSelector(s, $event)">
+                          </label>
+
+                          <code class="color-valor">
+                            {{ colorPropio(s) ? colorMuestra(s) : 'El de la tienda' }}
+                          </code>
+
+                          @if (colorPropio(s)) {
+                            <button type="button" class="btn btn-xs btn-link rotulo-quitar"
+                                    [disabled]="!puedeEditar"
+                                    (click)="quitarColor(s)">
+                              Quitar
+                            </button>
+                          }
+
+                          <div class="color-paleta">
+                            @for (c of colores; track c) {
+                              <button type="button" class="color-paleta__punto"
+                                      [class.is-activo]="colorPropio(s) && colorMuestra(s).toLowerCase() === c.toLowerCase()"
+                                      [style.background-color]="c"
+                                      [title]="c" [attr.aria-label]="'Color ' + c"
+                                      [disabled]="!puedeEditar"
+                                      (click)="elegirColor(s, c)"></button>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- La muestra: fondo blanco siempre, porque blanco es el de la
+                       sección en la tienda. Nada de aquí dentro usa los colores del
+                       tema del CRM: en el tema oscuro desaparecerían.
+
+                       El hueco de arriba es el aire de verdad que va a dejar la
+                       sección: «Amplia» no dice nada hasta que se ve al lado de
+                       lo que ya hay. -->
+                  <div class="rotulo-muestra" [style.padding-top.px]="aireMuestra(s)">
+                    @if (vista(s).rotulo !== 'ninguno') {
+                      <span class="rotulo-muestra-texto"
+                            [style.font-size.px]="tamanoMuestra(s)"
+                            [style.color]="colorMuestra(s)"
+                            [style.font-family]="fuenteMuestra(s).css"
+                            [style.font-style]="fuenteMuestra(s).cursiva ? 'italic' : 'normal'"
+                            [style.text-transform]="fuenteMuestra(s).versalitas ? 'uppercase' : 'none'">
+                        {{ textoMuestra(s) }}
+                      </span>
+                    } @else {
+                      <span class="rotulo-muestra-sin">
+                        <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+                        Aquí empieza la sección, sin nada escrito encima
+                      </span>
+                    }
+                    <span class="rotulo-muestra-pie">
+                      Deja {{ aireMuestra(s) }} px de aire encima en computadora.
+                      @if (vista(s).rotulo !== 'ninguno') {
+                        Así se lee el rótulo.
+                      }
+                      En celular la tienda lo encoge todo sola.
+                    </span>
+                  </div>
+
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    El alto es el espacio que ocupa la sección: lo que cambia es el
+                    aire que deja, no el tamaño de las fotos ni de las tarjetas.
+                    @if (vista(s).rotulo === 'ninguno') {
+                      Esta sección no lleva nada escrito encima en la tienda:
+                      {{ vista(s).sinRotulo }}.
+                    }
+                  </p>
+
+                  @if (colorFlojo(s)) {
+                    <p class="campo-hint campo-hint--aviso">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                      Ese color se lee flojo sobre el fondo blanco de la tienda
+                      ({{ contraste(s) }} a 1, y lo mínimo son 3 a 1). Se guarda
+                      igual, pero a un cliente con la pantalla al sol le va a costar.
+                    </p>
+                  }
+                </div>
 
                 <div class="col-12">
                   <label class="seccion-rotulo">ENTRE QUÉ FECHAS SE VE <span>opcional</span></label>
