@@ -20,18 +20,6 @@ import {
 } from '../../../interfaces/categoriaImagenModel';
 import { SaveImagenCategoriaComponent } from '../saveImagenCategoria/saveImagenCategoria.component';
 
-/**
- * Una categoría visible en la tienda con las suyas debajo.
- *
- * Cada rama es su propia lista arrastrable: el orden se decide entre
- * hermanas, porque es así como lo pinta la tienda. Mover una categoría a
- * otra rama es cambiar el árbol, y eso es de Inventarios.
- */
-interface RamaTienda {
-  categoria: CategoriaWebModel;
-  hijos: RamaTienda[];
-}
-
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
 import { filtrarArbol, recorrer } from '../../../../seguridad/pages/grupos/arbolGrupos';
@@ -140,7 +128,7 @@ export class AllCategoriasWebComponent implements OnInit {
     return this.imagenes.find(i => i.sale_ahora) ?? null;
   }
 
-  /** Cuántas categorías saldrían hoy en el mosaico de la portada. */
+  /** Cuántas categorías tienen hoy una imagen programada saliendo. */
   get cuantasEnLaPortada(): number {
     let n = 0;
     for (const c of this.categorias) {
@@ -177,84 +165,66 @@ export class AllCategoriasWebComponent implements OnInit {
   }
 
   /**
-   * Las que SÍ se ven en la tienda, como ramas, para la última columna.
+   * Las que están EN PROMOCIÓN, en el orden en que salen sus tarjetas.
    *
-   * VA EN UN CAMPO y no en un getter: cada rama es su propia lista
-   * arrastrable, y un array nuevo en cada ciclo de detección de cambios deja
-   * al cdkDropList sin saber qué movió.
+   * VA EN UN CAMPO y no en un getter: es la lista que se arrastra, y un
+   * array nuevo en cada ciclo de detección de cambios deja al cdkDropList
+   * sin saber qué movió.
    */
-  public enLaTienda: RamaTienda[] = [];
+  public enPromocion: CategoriaWebModel[] = [];
 
-  /** Cuántas llevan encendido «Se ve en la tienda». */
-  public cuantasEnLaTienda = 0;
+  /** Rehace la lista de promociones a partir del árbol. */
+  private ordenarPromocionEnPantalla(): void {
+    this.enPromocion = this.categorias
+      .filter(c => c.promocion)
+      .sort((a, b) => {
+        // Las recién marcadas (sin orden) van al final, como en la tienda
+        const oa = a.promocion_orden ?? Number.MAX_SAFE_INTEGER;
+        const ob = b.promocion_orden ?? Number.MAX_SAFE_INTEGER;
+        if (oa !== ob) { return oa - ob; }
+        return a.orden - b.orden || a.nombre.localeCompare(b.nombre);
+      });
+  }
 
-  /**
-   * Arma el árbol de las ENCENDIDAS, en el orden de la tienda.
-   *
-   * ENTRAN LAS QUE TIENEN EL CHECK «Se ve en la tienda», no sólo las que de
-   * verdad acaban saliendo. Son cosas distintas: una categoría encendida
-   * puede no salir porque está inactiva en el catálogo o porque no tiene
-   * ninguna de producto debajo. Ésas también se ordenan —el día que se
-   * arreglen saldrán donde se las dejó— y se marcan con un aviso.
-   *
-   * APAGAR UN PADRE APAGA LA RAMA, así que una hija encendida bajo un padre
-   * apagado tampoco entra: en la tienda no está, y dejarla aquí suelta la
-   * sacaría de donde cuelga.
-   *
-   * El servidor ya las devuelve en el orden de la tienda —`orden_web`
-   * primero y el del catálogo de reserva—, así que aquí sólo hay que
-   * colgarlas de su padre sin reordenar nada: ordenarlo otra vez sería
-   * repetir la regla y acabar enseñando algo distinto de lo que ve el
-   * cliente.
-   */
-  private armarEnLaTienda(): void {
-    const porId = new Map<number, RamaTienda>();
-    const raices: RamaTienda[] = [];
-
-    // El servidor las manda por nivel, así que un padre siempre se mira
-    // antes que sus hijas y basta con una pasada.
-    for (const c of this.categorias) {
-      if (c.oculta) { continue; }
-      if (c.padre_id && !porId.has(c.padre_id)) { continue; }
-
-      const rama: RamaTienda = { categoria: c, hijos: [] };
-      porId.set(c.id, rama);
-
-      const padre = c.padre_id ? porId.get(c.padre_id) : undefined;
-      if (padre) { padre.hijos.push(rama); } else { raices.push(rama); }
-    }
-
-    this.enLaTienda = raices;
-    this.cuantasEnLaTienda = porId.size;
+  /** Una en promoción que no se ve en la tienda no sale en las tarjetas. */
+  noSaleAunqueEnPromocion(c: CategoriaWebModel): boolean {
+    return c.estado !== 'visible';
   }
 
   /**
-   * Encendida pero sin llegar a salir en la tienda.
+   * La marca de «en promoción»: las tarjetas grandes de la portada.
    *
-   * No es lo mismo que apagarla: el check está puesto y aun así no sale,
-   * porque está inactiva en el catálogo o porque no tiene ninguna categoría
-   * de producto debajo. Las dos se arreglan en Inventarios.
+   * ES OTRA COSA QUE «destacada», que son los círculos de arriba. Una
+   * categoría puede estar en las dos, en una o en ninguna.
    */
-  encendidaPeroNoSale(c: CategoriaWebModel): boolean {
-    return !c.oculta && c.estado !== 'visible';
+  async alternarPromocion(): Promise<void> {
+    const c = this.seleccionada;
+    if (!c || !this.puedeEditar || this.trabajando) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    await this.accionCategoria(() => this._categoriaService.editCategoriaWeb(c.id, {
+      oculta: c.oculta,
+      nombre_web: c.nombre_web ?? null,
+      promocion: !c.promocion,
+    }));
   }
 
   /**
-   * Se soltó una categoría dentro de su rama: ése es el orden de la tienda.
+   * Se soltó una promoción en otro sitio: ése es el orden de las tarjetas.
    *
-   * SE MANDA LA RAMA ENTERA, no sólo la que se movió: el servidor exige que
-   * todas sean del mismo padre, y es lo que se acaba de ver en pantalla.
+   * SE GUARDA AL SOLTAR, sin botón: es un gesto, y pedir que además se
+   * confirme convierte un gesto en dos pasos.
    */
-  async soltarEnLaTienda(evento: CdkDragDrop<RamaTienda[]>, lista: RamaTienda[]): Promise<void> {
+  async soltarPromocion(evento: CdkDragDrop<CategoriaWebModel[]>): Promise<void> {
     if (!this.puedeEditar || evento.previousIndex === evento.currentIndex) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
-    moveItemInArray(lista, evento.previousIndex, evento.currentIndex);
-    const ids = lista.map(r => r.categoria.id);
+    moveItemInArray(this.enPromocion, evento.previousIndex, evento.currentIndex);
+    const ids = this.enPromocion.map(c => c.id);
 
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(this._categoriaService.ordenarCategorias(ids));
+      const res: any = await firstValueFrom(this._categoriaService.ordenarPromocion(ids));
       this.categorias = res?.data ?? this.categorias;
       this.construirArbol();
       this._toastr.success(res?.message ?? 'Orden guardado', 'Listo');
@@ -377,7 +347,7 @@ export class AllCategoriasWebComponent implements OnInit {
     this.originalNodes = raices;
     this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
     this.ordenarDestacadasEnPantalla();
-    this.armarEnLaTienda();
+    this.ordenarPromocionEnPantalla();
   }
 
   /**
@@ -552,7 +522,6 @@ export class AllCategoriasWebComponent implements OnInit {
     await this.accionCategoria(() => this._categoriaService.editCategoriaWeb(c.id, {
       oculta: c.oculta,
       nombre_web: this.nombreWeb.trim() || null,
-      destacada: c.destacada,
     }));
   }
 

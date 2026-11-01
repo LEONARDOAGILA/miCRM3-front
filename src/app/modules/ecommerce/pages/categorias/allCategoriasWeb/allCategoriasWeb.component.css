@@ -592,45 +592,11 @@
 }
 
 /* Encendida y aun así no sale en la tienda */
-.cat-tienda__fila.is-fuera { opacity: .62; }
-
-.cat-tienda__lista { min-height: .5rem; }
-
-.cat-tienda__fila {
-  display: flex;
-  align-items: center;
-  gap: .3rem;
-  padding: .25rem .3rem;
-  margin-bottom: .2rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .375rem;
-  background-color: var(--bs-component-bg, #fff);
-}
-
-.cat-tienda__fila.is-actual {
-  border-color: var(--bs-app-theme, #00acac);
-  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
-}
-
 /* Las hijas, sangradas y con su hilo: se ve de qué cuelgan */
-.cat-tienda__hijos {
-  margin-left: .55rem;
-  padding-left: .4rem;
-  border-left: 1px solid var(--bs-border-color, #dee2e6);
-}
-
 .cat-tienda__estrella {
   flex: 0 0 auto;
   font-size: .625rem;
   color: #e9b115;
-}
-
-.cat-tienda__fantasma {
-  min-height: 1.75rem;
-  margin-bottom: .2rem;
-  border: 1px dashed var(--bs-app-theme, #00acac);
-  border-radius: .375rem;
-  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
 }
 
 /* ---------- Etiquetas ---------- */

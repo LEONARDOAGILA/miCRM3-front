@@ -27,7 +27,7 @@
        panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
 
   <div header class="cat-cabecera">
-    <span class="cat-cabecera__cuenta" title="Las que hoy tienen imagen vigente salen en el mosaico de la portada">
+    <span class="cat-cabecera__cuenta" title="Cuántas categorías tienen hoy una imagen programada saliendo">
       {{ cuantasEnLaPortada }} con imagen hoy
     </span>
   </div>
@@ -165,8 +165,9 @@
                     </span>
                   </label>
 
-                  <!-- La marca de «destacada»: los círculos de arriba de la
-                       portada. El mosaico no la mira. -->
+                  <!-- Las dos marcas de la portada. Son dos secciones
+                       distintas y una categoría puede estar en las dos, en
+                       una o en ninguna. -->
                   <label class="form-check form-switch palanca mb-0"
                          [class.is-apagada]="seleccionada.oculta">
                     <input class="form-check-input" type="checkbox" role="switch"
@@ -179,13 +180,25 @@
                     </span>
                   </label>
 
+                  <label class="form-check form-switch palanca mb-0"
+                         [class.is-apagada]="seleccionada.oculta">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="cat-promocion"
+                           [checked]="seleccionada.promocion"
+                           [disabled]="!puedeEditar || trabajando || seleccionada.oculta"
+                           (change)="alternarPromocion()">
+                    <span class="form-check-label">
+                      <i class="fa-solid fa-tags"></i> En promoción
+                    </span>
+                  </label>
+
                   <p class="campo-hint mb-0">
                     <i class="fa-solid fa-circle-info"></i>
                     <span>
-                      Destacada la pone en los <b>círculos de arriba</b> de la
-                      portada. El <b>mosaico</b> es otra sección y se llena
-                      sola: ahí sale cualquier categoría con imagen vigente,
-                      esté destacada o no.
+                      <b>Destacada</b> la pone en los círculos de arriba de la
+                      portada. <b>En promoción</b>, en las tarjetas grandes de
+                      «Categorías en promoción». Son dos secciones y se
+                      encienden por separado.
                     </span>
                   </p>
                 </div>
@@ -229,8 +242,8 @@
                     Cada imagen tiene sus fechas, y la tienda enseña la que toque
                     hoy sola. Sin fechas es ilimitada. Si dos están en fecha a la
                     vez manda la de arriba: arrástralas para cambiar el orden.
-                    <b>Mientras haya una saliendo, esta categoría sale en el
-                    mosaico de la portada.</b>
+                    <b>Es la imagen que usan las dos secciones de la portada</b>
+                    —destacadas y promoción— cuando la categoría está marcada.
                   </span>
                 </p>
 
@@ -245,7 +258,7 @@
                     <div>
                       <b>Esta categoría no tiene ninguna imagen.</b>
                       En la tienda sale sólo en el menú y en los filtros; para
-                      que además salga en el mosaico de la portada, prográmale una.
+                      que salga con imagen en las secciones de la portada, prográmale una.
                     </div>
                   </div>
 
@@ -255,7 +268,8 @@
                     <p class="cat-aviso">
                       <i class="fa-solid fa-triangle-exclamation"></i>
                       Hoy no sale ninguna: están apagadas, o sus fechas no
-                      incluyen hoy. La categoría no aparecerá en el mosaico.
+                      incluyen hoy. La categoría seguirá saliendo en la portada
+                      si está marcada, pero sin imagen.
                     </p>
                   }
 
@@ -462,25 +476,26 @@
         </div>
       </div>
 
-      <!-- ---------- 2e. EL ORDEN EN LA TIENDA ---------- -->
-      <!-- Las que de verdad salen, en el orden en que la tienda las pinta.
-           Cada rama es su propia lista: el orden se decide entre hermanas,
-           que es como se ve en el menú. -->
+      <!-- ---------- 2e. LAS CATEGORÍAS EN PROMOCIÓN ---------- -->
+      <!-- Las tarjetas grandes de la portada. Es una MARCA, no una regla
+           implícita: antes salía aquí cualquiera con imagen vigente, y para
+           sacar una había que quitarle la imagen. -->
       <div class="cat-tienda">
 
         <div class="cat-destacadas__cabecera">
           <span class="cat-lateral__titulo">
-            <i class="fa fa-store me-1"></i> Orden en la tienda
+            <i class="fa fa-tags me-1"></i> En promoción
           </span>
-          <span class="cat-destacadas__cuenta">{{ cuantasEnLaTienda }}</span>
+          <span class="cat-destacadas__cuenta">{{ enPromocion.length }}</span>
         </div>
 
         <div class="cat-destacadas__cuerpo">
-          @if (enLaTienda.length === 0) {
+          @if (enPromocion.length === 0) {
             <p class="cat-destacadas__vacio">
-              <i class="fa-solid fa-store"></i>
+              <i class="fa-solid fa-tags"></i>
               <span>
-                Ninguna categoría tiene encendido «Se ve en la tienda».
+                Ninguna categoría en promoción. Marca una con la palanca
+                <b>En promoción</b> y aparecerá aquí.
               </span>
             </p>
 
@@ -488,78 +503,64 @@
             <p class="campo-hint">
               <i class="fa-solid fa-circle-info"></i>
               <span>
-                Las que tienen encendido <b>«Se ve en la tienda»</b>, en el
-                orden del menú y del mosaico. Se arrastra <b>dentro de su
-                rama</b>: mover una categoría a otra rama es cambiar el árbol,
-                y eso se hace en Inventarios.
+                El orden de las tarjetas de <b>«Categorías en promoción»</b>
+                en la portada. Arrástralas para cambiarlo: se guarda al
+                soltar.
               </span>
             </p>
 
             <ng-scrollbar class="cat-destacadas__lista">
-              <!-- Una lista por rama, y la de las hijas va dentro de su
-                   padre: así arrastrar una no la saca de donde cuelga. -->
-              <ng-container *ngTemplateOutlet="rama; context: { $implicit: enLaTienda }"></ng-container>
+              <div cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="enPromocion"
+                   [cdkDropListDisabled]="!puedeEditar || trabajando"
+                   (cdkDropListDropped)="soltarPromocion($event)">
+
+                @for (c of enPromocion; track c.id) {
+                  <div class="cat-dest"
+                       [class.is-actual]="c.id === seleccionId"
+                       [class.is-fuera]="noSaleAunqueEnPromocion(c)"
+                       cdkDrag>
+
+                    <div class="cat-dest__fantasma" *cdkDragPlaceholder></div>
+
+                    @if (puedeEditar) {
+                      <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                        <i class="fa-solid fa-grip-vertical"></i>
+                      </span>
+                    }
+
+                    <span class="cat-dest__puesto">{{ $index + 1 }}</span>
+
+                    <button type="button" class="cat-dest__nombre"
+                            [title]="'Abrir «' + c.nombre + '»'"
+                            (click)="seleccionar(c.id)">
+                      <i class="fa-solid"
+                         [class.fa-image]="cuentaDe(c.id)?.sale_alguna"
+                         [class.fa-tags]="!cuentaDe(c.id)?.sale_alguna"></i>
+                      {{ c.nombre }}
+                    </button>
+
+                    @if (c.destacada) {
+                      <i class="fa-solid fa-star cat-tienda__estrella"
+                         title="También está en los círculos de destacadas"></i>
+                    }
+
+                    @if (noSaleAunqueEnPromocion(c)) {
+                      <i class="fa-solid fa-triangle-exclamation cat-dest__aviso"
+                         title="Está en promoción pero no se ve en la tienda, así que no sale en la portada"></i>
+                    }
+                  </div>
+                }
+              </div>
             </ng-scrollbar>
+
+            <p class="cat-destacadas__pie">
+              <i class="fa-solid fa-image"></i> con imagen · <i class="fa-solid fa-tags"></i> sin imagen
+              (la tarjeta sale igual, con su nombre)
+            </p>
           }
         </div>
       </div>
-
     </div>
   </div>
-
-  <!-- La rama, que se llama a sí misma para los tres niveles del menú -->
-  <ng-template #rama let-lista>
-    <div class="cat-tienda__lista" cdkDropList cdkDropListLockAxis="y"
-         [cdkDropListData]="lista"
-         [cdkDropListDisabled]="!puedeEditar || trabajando"
-         (cdkDropListDropped)="soltarEnLaTienda($event, lista)">
-
-      @for (r of lista; track r.categoria.id) {
-        <div class="cat-tienda__item" cdkDrag>
-
-          <div class="cat-tienda__fantasma" *cdkDragPlaceholder></div>
-
-          <div class="cat-tienda__fila"
-               [class.is-actual]="r.categoria.id === seleccionId"
-               [class.is-fuera]="encendidaPeroNoSale(r.categoria)">
-            @if (puedeEditar) {
-              <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden dentro de su rama">
-                <i class="fa-solid fa-grip-vertical"></i>
-              </span>
-            }
-
-            <button type="button" class="cat-dest__nombre"
-                    [title]="'Abrir «' + r.categoria.nombre + '»'"
-                    (click)="seleccionar(r.categoria.id)">
-              <i class="fa-solid"
-                 [class.fa-image]="cuentaDe(r.categoria.id)?.sale_alguna"
-                 [class.fa-box]="!cuentaDe(r.categoria.id)?.sale_alguna && r.categoria.es_transaccion"
-                 [class.fa-layer-group]="!cuentaDe(r.categoria.id)?.sale_alguna && !r.categoria.es_transaccion"></i>
-              {{ r.categoria.nombre }}
-            </button>
-
-            @if (r.categoria.destacada) {
-              <i class="fa-solid fa-star cat-tienda__estrella"
-                 title="También está en los círculos de destacadas"></i>
-            }
-
-            <!-- Encendida y aun así no sale: eso no se ve en ninguna otra
-                 parte de esta columna. -->
-            @if (encendidaPeroNoSale(r.categoria)) {
-              <i class="fa-solid fa-triangle-exclamation cat-dest__aviso"
-                 [title]="estadosCategoria[r.categoria.estado].texto + ': '
-                          + estadosCategoria[r.categoria.estado].ayuda"></i>
-            }
-          </div>
-
-          @if (r.hijos.length) {
-            <div class="cat-tienda__hijos">
-              <ng-container *ngTemplateOutlet="rama; context: { $implicit: r.hijos }"></ng-container>
-            </div>
-          }
-        </div>
-      }
-    </div>
-  </ng-template>
 
 </panel>

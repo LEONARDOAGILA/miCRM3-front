@@ -159,9 +159,9 @@ export class EditInicioComponent implements OnInit {
       if (!s.cuantas) { return 'Sin imágenes'; }
       return s.cuantas + (s.cuantas === 1 ? ' imagen' : ' imágenes');
     }
-    if (s.fuente.tipo === 'categorias' || s.fuente.tipo === 'destacadas') {
+    if (s.fuente.tipo === 'promocion' || s.fuente.tipo === 'destacadas') {
       if (!s.cuantas) {
-        return s.fuente.tipo === 'destacadas' ? 'Ninguna destacada' : 'Ninguna con imagen';
+        return s.fuente.tipo === 'destacadas' ? 'Ninguna destacada' : 'Ninguna en promoción';
       }
       return s.cuantas + (s.cuantas === 1 ? ' categoría' : ' categorías');
     }
@@ -170,11 +170,11 @@ export class EditInicioComponent implements OnInit {
 
   /** Si esta sección se llena en otra pantalla, cuál y con qué regla. */
   seLlenaEn(s: SeccionInicioModel): { ruta: string; regla: string } | null {
-    if (s.fuente.tipo === 'categorias') {
+    if (s.fuente.tipo === 'promocion') {
       return {
         ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'allCategoriasWeb'),
-        regla: 'Sale aquí cualquier categoría de la tienda que tenga una imagen '
-             + 'vigente hoy. Programar la imagen es lo único que hace falta.',
+        regla: 'Salen aquí las categorías que marques como «En promoción», con su '
+             + 'imagen programada. Sin imagen, la tarjeta sale igual con su nombre.',
       };
     }
     if (s.fuente.tipo === 'destacadas') {

@@ -48,7 +48,16 @@ export class CategoriaWebService {
   }
 
   /**
-   * El orden en la tienda, dentro de UNA rama.
+   * El orden de las tarjetas de «Categorías en promoción».
+   *
+   * Van TODAS las que están en promoción, en el orden en que se ven.
+   */
+  ordenarPromocion(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'ordenarPromocion', { ids });
+  }
+
+  /**
+   * El orden en el MENÚ de la tienda, dentro de UNA rama.
    *
    * Van las hijas de un mismo padre, en su orden. No hacen falta todas las
    * hermanas: las que no salen en la tienda no están en la pantalla.

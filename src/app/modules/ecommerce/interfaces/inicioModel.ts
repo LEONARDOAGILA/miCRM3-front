@@ -33,18 +33,18 @@ export type EstadoSeccion = 'visible' | 'oculta' | 'programada' | 'terminada';
  * De dónde saca sus datos la sección.
  *
  *   galeria     las imágenes de una galería, aquí mismo
- *   categorias  el mosaico: cualquier categoría con imagen vigente
- *   destacadas  los círculos de arriba: sólo las marcadas a dedo
+ *   promocion   las tarjetas grandes: las categorías marcadas «En promoción»
+ *   destacadas  los círculos de arriba: las marcadas «Destacada»
  *   pendiente   todavía no tiene fuente, y `falta` dice cuál
  *
  * Lo decide el servidor —la tienda, la portada pública y el CRM tienen que
  * estar de acuerdo en esto— y la pantalla sólo lo enseña.
  */
 export interface FuenteSeccion {
-  tipo: 'galeria' | 'categorias' | 'destacadas' | 'pendiente';
+  tipo: 'galeria' | 'promocion' | 'destacadas' | 'pendiente';
   /** Con `galeria`: su clave. */
   galeria?: string;
-  /** Con `categorias` y `destacadas`: la pantalla donde se llena. */
+  /** Con `promocion` y `destacadas`: la pantalla donde se llena. */
   pantalla?: string;
   /** Con `pendiente`: qué falta. */
   falta?: string;
@@ -95,9 +95,11 @@ export const VISTA_SECCIONES: Record<string, VistaSeccion> = {
     descripcion: 'Una franja de imágenes entre dos secciones.',
     rotulo: 'ninguno',
   },
+  // La clave sigue siendo `mosaico` —es la que conoce la tienda y está en su
+  // código—; el nombre con el que se habla de ella viene de la base.
   mosaico: {
-    icono: 'fa-table-cells-large',
-    descripcion: 'Categorías con su imagen y su nombre, de cuatro en cuatro.',
+    icono: 'fa-tags',
+    descripcion: 'Las categorías marcadas «En promoción», en tarjetas grandes de cuatro en cuatro.',
     rotulo: 'ninguno',
   },
   grilla: {

@@ -32,6 +32,16 @@ export interface CategoriaWebModel {
    * final; así marcar una no mueve a las que ya estaban puestas.
    */
   destacada_orden?: number | null;
+
+  /**
+   * Marcada para las tarjetas de «Categorías en promoción» de la portada.
+   * Es otra marca y otra sección: una categoría puede estar en las dos, en
+   * una o en ninguna.
+   */
+  promocion: boolean;
+
+  /** En qué puesto sale entre las tarjetas. Nulo = al final. */
+  promocion_orden?: number | null;
   /** Las de transacción son donde cuelgan los productos */
   es_transaccion: boolean;
   activo: boolean;
