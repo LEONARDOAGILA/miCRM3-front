@@ -1,0 +1,366 @@
+<!-- ============================================================
+     ESPAÑA MOTOS
+
+     Un micro-sitio dentro de la tienda. Se publica aparte, y esa
+     palanca va arriba y separada: mientras está apagada la tienda
+     responde 404, así que se monta entera y se enciende al final.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
+  <li class="breadcrumb-item active">España Motos</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       icono="motorcycle">
+
+  <div header class="panel-acciones">
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Cargando España Motos…</p>
+    </div>
+  } @else {
+
+    <form [formGroup]="form" novalidate>
+
+      <!-- ---------- Publicar: lo primero y aparte ---------- -->
+      <div class="motos-publicar mb-3" [class.is-on]="ctrlPublicada.value">
+        <span class="motos-publicar__icon"><i class="fa-solid fa-globe"></i></span>
+        <div class="motos-publicar__text">
+          <span class="motos-publicar__label">Publicada</span>
+          <span class="motos-publicar__hint">
+            {{ ctrlPublicada.value
+                ? 'La tienda la enseña en /espana-motos'
+                : 'La tienda responde «no disponible»: puedes montarla con calma' }}
+          </span>
+        </div>
+        <app-checkbox class="motos-publicar__switch palanca"
+          [control]="ctrlPublicada"
+          [label]="ctrlPublicada.value ? 'En la tienda' : 'Sin publicar'"
+          [id]="'ck-motos-publicada'">
+        </app-checkbox>
+      </div>
+
+      <app-tab-panel
+        [pestanas]="pestanas"
+        [activa]="pestana"
+        [conPanel]="true"
+        (cambiada)="pestana = $any($event)">
+
+        <!-- ================= PORTADA ================= -->
+        @if (pestana === 'portada') {
+          <panel headerClass="bg-gray-800" title="Cómo se ve la portada" noButton="true"
+                 noBody="true" panelClass="mb-0" icono="image" fondoGris="true">
+            <ng-container outsideBody>
+              <div class="form-card__body">
+
+                <div class="motos-pieza" [class.is-on]="ctrlBanner.value">
+                  <div class="motos-pieza__texto">
+                    <b>Banner</b>
+                    <small>
+                      Las imágenes salen de la galería
+                      <code>{{ modelo?.galeria_banner || 'espana_motos_banner' }}</code>.
+                    </small>
+                  </div>
+                  <app-checkbox class="palanca"
+                    [control]="ctrlBanner"
+                    [label]="ctrlBanner.value ? 'Se ve' : 'Oculto'"
+                    [id]="'ck-motos-banner'">
+                  </app-checkbox>
+                </div>
+
+                <div class="motos-pieza" [class.is-on]="ctrlFondo.value">
+                  <div class="motos-pieza__texto">
+                    <b>Fondo</b>
+                    <small>Una imagen a todo lo ancho con su título encima.</small>
+                  </div>
+                  <app-checkbox class="palanca"
+                    [control]="ctrlFondo"
+                    [label]="ctrlFondo.value ? 'Se ve' : 'Oculto'"
+                    [id]="'ck-motos-fondo'">
+                  </app-checkbox>
+                </div>
+
+                @if (ctrlFondo.value) {
+                  <div class="motos-fondo">
+                    @if (fondoImagenUrl) {
+                      <img class="motos-fondo__imagen" [src]="fondoImagenUrl" alt="Fondo actual">
+                      @if (puedeEditar) {
+                        <div class="motos-fondo__botones">
+                          <button type="button" class="btn btn-xs btn-outline-secondary"
+                                  (click)="elegirFondo()">
+                            <i class="fa fa-images"></i> Cambiar imagen
+                          </button>
+                          <button type="button" class="btn btn-xs btn-outline-danger"
+                                  (click)="quitarFondo()">
+                            <i class="fa fa-times"></i> Quitar el fondo
+                          </button>
+                        </div>
+                      }
+                    } @else {
+                      <div class="motos-fondo__sin">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div>
+                          Falta la imagen. Con el fondo encendido y sin imagen
+                          quedaría una franja en blanco con el título flotando,
+                          así que no se puede guardar así.
+                          @if (puedeEditar) {
+                            <div class="mt-2">
+                              <button type="button" class="btn btn-xs btn-primary"
+                                      (click)="elegirFondo()">
+                                <i class="fa fa-images"></i> Elegir la imagen
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    <div class="row g-2 mt-1">
+                      <div class="col-12 col-md-5">
+                        <app-campoTexto
+                          [control]="$any(form.controls['fondo_titulo'])"
+                          label="TÍTULO"
+                          placeholder="MOVILIDAD TOTAL"
+                          [maxLength]="60">
+                        </app-campoTexto>
+                      </div>
+                      <div class="col-12 col-md-7">
+                        <app-campoTexto
+                          [control]="$any(form.controls['fondo_subtitulo'])"
+                          label="SUBTÍTULO"
+                          placeholder="Selecciona tu marca favorita"
+                          [maxLength]="120">
+                        </app-campoTexto>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                <div class="motos-pieza" [class.is-on]="ctrlTarjetas.value">
+                  <div class="motos-pieza__texto">
+                    <b>Tarjetas</b>
+                    <small>
+                      Salen de la galería
+                      <code>{{ modelo?.galeria_tarjetas || 'espana_motos_tarjetas' }}</code>.
+                    </small>
+                  </div>
+                  <app-checkbox class="palanca"
+                    [control]="ctrlTarjetas"
+                    [label]="ctrlTarjetas.value ? 'Se ven' : 'Ocultas'"
+                    [id]="'ck-motos-tarjetas'">
+                  </app-checkbox>
+                </div>
+
+                <div class="motos-pieza" [class.is-on]="ctrlMarcasVisible.value">
+                  <div class="motos-pieza__texto">
+                    <b>Marcas</b>
+                    <small>Los logos de las marcas que se venden aquí.</small>
+                  </div>
+                  <app-checkbox class="palanca"
+                    [control]="ctrlMarcasVisible"
+                    [label]="ctrlMarcasVisible.value ? 'Se ven' : 'Ocultas'"
+                    [id]="'ck-motos-marcas'">
+                  </app-checkbox>
+                </div>
+
+                @if (puedeEditar) {
+                  <div class="d-flex justify-content-end mt-3">
+                    <button type="button" class="btn btn-primary"
+                            [disabled]="guardando" (click)="guardarPortada()">
+                      <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar portada' }}
+                    </button>
+                  </div>
+                }
+
+              </div>
+            </ng-container>
+          </panel>
+        }
+
+        <!-- ================= CATÁLOGO ================= -->
+        @if (pestana === 'catalogo') {
+          <panel headerClass="bg-gray-800"
+                 [title]="'Pestañas del catálogo (' + pestanasCatalogo.length + ')'"
+                 noButton="true" noBody="true" panelClass="mb-0"
+                 icono="folder-tree" fondoGris="true">
+
+            <div header class="panel-acciones">
+              @if (puedeCrear) {
+                <button type="button" class="btn btn-xs btn-outline-light"
+                        [disabled]="trabajando" (click)="nuevaPestana()">
+                  <i class="fa fa-plus"></i> Nueva pestaña
+                </button>
+              }
+            </div>
+
+            <ng-container outsideBody>
+              <div class="form-card__body">
+
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Cada pestaña agrupa categorías del catálogo. Al pincharla en la
+                  tienda, el catálogo se limita a ellas. Se arrastra para cambiar
+                  el orden y se guarda solo.
+                </p>
+
+                @if (pestanasCatalogo.length === 0) {
+                  <p class="text-muted mb-0">
+                    Sin pestañas: el catálogo de España Motos no enseñaría nada.
+                  </p>
+                }
+
+                <div cdkDropList [cdkDropListData]="pestanasCatalogo"
+                     [cdkDropListDisabled]="!puedeEditar || trabajando"
+                     (cdkDropListDropped)="soltarPestana($event)">
+
+                  @for (p of pestanasCatalogo; track p.id) {
+                    <div class="motos-fila" [class.motos-fila--oculta]="!p.activo" cdkDrag>
+
+                      <div class="motos-fila__fantasma" *cdkDragPlaceholder></div>
+
+                      @if (puedeEditar) {
+                        <span class="motos-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                          <i class="fa-solid fa-grip-vertical"></i>
+                        </span>
+                      }
+
+                      <!-- Cada categoría en su etiqueta y con su ruta entera:
+                           juntas en una línea, «Refrigeración» de una rama y
+                           «Refrigeración» de otra se leerían igual. -->
+                      <span class="motos-fila__texto">
+                        <b>{{ p.nombre }}</b>
+                        @if (p.categorias_nombres?.length) {
+                          <span class="motos-fila__cats">
+                            @for (c of p.categorias_nombres; track c.id) {
+                              <span class="chip chip-muted">{{ c.nombre }}</span>
+                            }
+                          </span>
+                        } @else {
+                          <small class="motos-fila__detalle">Sin categorías</small>
+                        }
+                      </span>
+
+                      @if (!p.activo) {
+                        <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculta</span>
+                      }
+
+                      <span class="motos-fila__botones">
+                        @if (puedeEditar) {
+                          <button type="button" class="btn btn-xs btn-editar"
+                                  title="Modificar" (click)="editarPestana(p)">
+                            <i class="fa fa-pen"></i>
+                          </button>
+                        }
+                        @if (puedeEliminar) {
+                          <button type="button" class="btn btn-xs btn-borrar"
+                                  title="Quitar del catálogo"
+                                  [disabled]="trabajando" (click)="quitarPestana(p)">
+                            <i class="fa fa-trash"></i>
+                          </button>
+                        }
+                      </span>
+                    </div>
+                  }
+                </div>
+
+              </div>
+            </ng-container>
+          </panel>
+        }
+
+        <!-- ================= MARCAS ================= -->
+        @if (pestana === 'marcas') {
+          <panel headerClass="bg-gray-800"
+                 [title]="'Marcas de España Motos (' + marcas.length + ')'"
+                 noButton="true" noBody="true" panelClass="mb-0"
+                 icono="award" fondoGris="true">
+
+            <ng-container outsideBody>
+              <div class="form-card__body">
+
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Salen del catálogo de
+                  <a routerLink="/inventarios/allMarcas">Inventarios → Marcas</a>.
+                  Aquí sólo se elige cuáles se enseñan y en qué orden.
+                </p>
+
+                @if (puedeCrear) {
+                  <div class="motos-anadir">
+                    <app-combo
+                      class="motos-anadir__combo"
+                      [formControl]="marcaElegida"
+                      [items]="marcasDisponibles"
+                      [label]="'Añadir una marca'"
+                      bindLabel="name"
+                      bindValue="id">
+                    </app-combo>
+                    <button type="button" class="btn btn-primary"
+                            [disabled]="trabajando || !marcasDisponibles.length"
+                            (click)="anadirMarca()">
+                      <i class="fa fa-plus"></i> Añadir
+                    </button>
+                  </div>
+
+                  @if (!marcasDisponibles.length && marcasCatalogo.length) {
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-check"></i>
+                      Ya están todas las marcas del catálogo.
+                    </p>
+                  }
+                }
+
+                @if (marcas.length === 0) {
+                  <p class="text-muted mb-0">Todavía no hay marcas en España Motos.</p>
+                }
+
+                <div cdkDropList [cdkDropListData]="marcas"
+                     [cdkDropListDisabled]="!puedeEditar || trabajando"
+                     (cdkDropListDropped)="soltarMarca($event)">
+
+                  @for (m of marcas; track m.id) {
+                    <div class="motos-fila" [class.motos-fila--oculta]="!m.activo" cdkDrag>
+
+                      <div class="motos-fila__fantasma" *cdkDragPlaceholder></div>
+
+                      @if (puedeEditar) {
+                        <span class="motos-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                          <i class="fa-solid fa-grip-vertical"></i>
+                        </span>
+                      }
+
+                      <i class="fa-solid fa-award motos-fila__icono"></i>
+                      <span class="motos-fila__texto"><b>{{ m.nombre }}</b></span>
+
+                      <span class="motos-fila__botones">
+                        @if (puedeEliminar) {
+                          <button type="button" class="btn btn-xs btn-borrar"
+                                  title="Quitar de España Motos"
+                                  [disabled]="trabajando" (click)="quitarMarca(m)">
+                            <i class="fa fa-trash"></i>
+                          </button>
+                        }
+                      </span>
+                    </div>
+                  }
+                </div>
+
+              </div>
+            </ng-container>
+          </panel>
+        }
+
+      </app-tab-panel>
+    </form>
+  }
+</panel>

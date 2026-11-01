@@ -8,6 +8,7 @@ import { AllPaginasInformativasComponent } from './pages/paginasInformativas/all
 import { EditEncabezadoComponent } from './pages/encabezado/editEncabezado/editEncabezado.component';
 import { EditPieComponent } from './pages/pie/editPie/editPie.component';
 import { AllCategoriasWebComponent } from './pages/categorias/allCategoriasWeb/allCategoriasWeb.component';
+import { EditEspanaMotosComponent } from './pages/espanaMotos/editEspanaMotos/editEspanaMotos.component';
 
 // ============================================================================
 // MÓDULO ECOMMERCE: la administración de la página web.
@@ -73,6 +74,14 @@ export const ECOMMERCE_ROUTES: Routes = [
       {
         path: 'allCategoriasWeb',
         component: AllCategoriasWebComponent,
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
+
+      // Espana Motos: un micro-sitio con su propia publicacion
+      {
+        path: 'editEspanaMotos',
+        component: EditEspanaMotosComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },

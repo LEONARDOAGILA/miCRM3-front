@@ -131,7 +131,9 @@
   margin: .35rem 0 .75rem;
   font-size: .7rem;
   line-height: 1.35;
-  color: var(--bs-secondary-color, #6c757d);
+  /* Un gris más flojo se quedaba en 4,35:1 sobre el panel oscuro,
+     por debajo de lo que se lee en letra de .7rem. */
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
 }
 
 .campo-hint i {

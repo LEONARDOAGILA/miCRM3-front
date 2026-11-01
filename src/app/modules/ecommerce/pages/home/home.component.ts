@@ -76,7 +76,7 @@ export class EcommerceHomeComponent implements OnInit {
       descripcion: 'El logo de cada marca y cuáles salen en «Nuestras marcas».' },
     { clave: 'paginas_marca', titulo: 'Páginas de marca', icono: 'fa-copyright', ruta: null,
       descripcion: 'Una página por marca: banner, fotos y contacto.' },
-    { clave: 'espana_motos', titulo: 'España Motos', icono: 'fa-motorcycle', ruta: null,
+    { clave: 'espana_motos', titulo: 'España Motos', icono: 'fa-motorcycle', ruta: 'editEspanaMotos',
       descripcion: 'Banner, pestañas del catálogo, marcas y tarjetas.' },
     { clave: 'productos', titulo: 'Productos de la tienda', icono: 'fa-box-open', ruta: null,
       descripcion: 'Ficha técnica, imágenes y franjas del detalle de cada producto.' },

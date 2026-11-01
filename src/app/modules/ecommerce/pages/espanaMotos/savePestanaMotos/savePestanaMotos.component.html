@@ -1,0 +1,71 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-folder-tree me-2"></i>{{ titulo }}
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="activeModal.dismiss()"></button>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <div class="modal-body">
+    <div class="row g-3">
+
+      <div class="col-12">
+        <app-campoTexto
+          [control]="$any(form.controls['nombre'])"
+          label="NOMBRE DE LA PESTAÑA"
+          placeholder="A gasolina"
+          [maxLength]="30"
+          [trimEspacios]="true">
+        </app-campoTexto>
+      </div>
+
+      <div class="col-12">
+        @if (cargandoCategorias) {
+          <p class="text-muted mb-0">
+            <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando el catálogo…
+          </p>
+        } @else {
+          <app-combo-multi-seleccion
+            formControlName="categorias"
+            [items]="categorias"
+            bindLabel="nombre"
+            bindValue="id"
+            label="CATEGORÍAS QUE AGRUPA"
+            placeholder="Elige las categorías…"
+            ayuda="Al pinchar esta pestaña, el catálogo se limita a estas categorías.">
+          </app-combo-multi-seleccion>
+
+          <p class="campo-hint mb-0">
+            <i class="fa-solid fa-circle-info"></i>
+            @if (cuantas) {
+              {{ cuantas }} elegida{{ cuantas === 1 ? '' : 's' }}. Son del catálogo de
+              Inventarios: lo que no esté ahí, no se puede agrupar aquí.
+            } @else {
+              Hace falta al menos una: una pestaña sin categorías sería un botón
+              que no enseña nada.
+            }
+          </p>
+        }
+      </div>
+
+      <div class="col-12">
+        <app-checkbox class="palanca"
+          [control]="ctrlActivo"
+          [label]="ctrlActivo.value ? 'Se ve en el catálogo' : 'Oculta'"
+          [id]="'ck-pestana-activa'">
+        </app-checkbox>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger" (click)="activeModal.dismiss()">
+      <i class="fa fa-times"></i> Salir
+    </button>
+    <button type="submit" class="btn btn-primary" [disabled]="guardando || cargandoCategorias">
+      <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</form>
