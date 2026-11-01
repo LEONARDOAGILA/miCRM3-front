@@ -36,6 +36,9 @@ const routes: Routes = [
   { path: 'contabilidad', loadChildren: () => import('./modules/contabilidad/contabilidad.routes').then( m => m.CONTABILIDAD_ROUTES)},
   // Sin NgModule: su pantalla es standalone y loadChildren carga el array
   { path: 'reportes', loadChildren: () => import('./modules/reportes/reportes.routes').then( m => m.REPORTES_ROUTES)},
+  // La administración de la página web (la tienda es otro proyecto: miEcommerce).
+  // Se traslada por pantallas desde el CRM viejo, crm-front/src/app/pagina_web.
+  { path: 'ecommerce', loadChildren: () => import('./modules/ecommerce/ecommerce.routes').then( m => m.ECOMMERCE_ROUTES)},
   
   //{ path: '', redirectTo: '/home', pathMatch: 'full' },  
   { path: '', component: HomePage, canActivate: [AuthGuard], resolve: { profile: AccessResolver }  },  

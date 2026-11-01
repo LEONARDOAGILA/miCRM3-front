@@ -1,0 +1,224 @@
+<!-- ============================================================
+     LAS PÁGINAS DE TEXTO DE LA TIENDA
+
+     No es una rejilla a propósito: lo que importa de estas páginas no es
+     buscarlas entre muchas —son diez— sino ver cómo se agrupan y en qué
+     orden salen, que es lo que verá el visitante en «Documentos».
+     ============================================================ -->
+
+<!-- «Página web» no es un enlace todavía: el módulo aún no tiene su portada,
+     llega cuando estén más pantallas trasladadas. -->
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item">Página web</li>
+  <li class="breadcrumb-item active">Páginas informativas</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       icono="file-lines">
+
+  <!-- ---------- Barra de herramientas ---------- -->
+  <div header class="panel-acciones">
+    @if (puedeCrear) {
+      <button type="button" class="btn btn-sm btn-primary"
+              [disabled]="trabajando" (click)="nuevaPagina()">
+        <i class="fa fa-plus"></i> Nueva página
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-light"
+              [disabled]="trabajando" (click)="nuevaCarpeta()">
+        <i class="fa fa-folder-plus"></i> Nueva carpeta
+      </button>
+    }
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Papelera de reciclaje" (click)="abrirPapelera()">
+      <i class="fa fa-trash-can"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Cargando las páginas…</p>
+    </div>
+  } @else {
+
+    <!-- ================= LAS DE DIRECCIÓN PROPIA ================= -->
+    @if (fijas.length) {
+      <div class="pag-bloque">
+        <div class="pag-bloque__cabecera">
+          <i class="fa-solid fa-link pag-bloque__icono"></i>
+          <span class="pag-bloque__nombre">Con dirección propia</span>
+          <span class="pag-bloque__cuenta">{{ fijas.length }}</span>
+        </div>
+
+        <p class="pag-bloque__ayuda">
+          La tienda las abre en una dirección suya (/politicas-de-garantia,
+          /conocenos). No van en carpeta, no se borran y su orden no se toca:
+          cada una va por su cuenta.
+        </p>
+
+        <ul class="pag-lista">
+          @for (pagina of fijas; track pagina.id) {
+            <li class="pag-fila" [class.pag-fila--oculta]="!pagina.activo">
+              <i class="fa-regular fa-file-lines pag-fila__icono"></i>
+
+              <span class="pag-fila__texto">
+                <b>{{ pagina.titulo }}</b>
+                <code class="pag-fila__clave">{{ urlEnLaTienda(pagina) }}</code>
+              </span>
+
+              @if (!pagina.activo) {
+                <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculta</span>
+              }
+
+              <span class="pag-fila__botones">
+                <button type="button" class="btn btn-xs btn-editar"
+                        title="Abrir la página" (click)="editarPagina(pagina)">
+                  <i class="fa fa-pen"></i>
+                </button>
+                @if (puedeEditar) {
+                  <button type="button" class="btn btn-xs"
+                          [class.btn-ver]="!pagina.activo"
+                          [class.btn-borrar]="pagina.activo"
+                          [title]="pagina.activo ? 'Ocultar en la tienda' : 'Publicar en la tienda'"
+                          [disabled]="trabajando" (click)="alternarPagina(pagina)">
+                    <i class="fa" [ngClass]="pagina.activo ? 'fa-eye-slash' : 'fa-eye'"></i>
+                  </button>
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <!-- ================= LAS CARPETAS ================= -->
+    @if (!hayCarpetas && !bloques.length) {
+      <p class="text-muted mb-0">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        Todavía no hay carpetas. Crea una para empezar a agrupar las páginas que
+        salen en «Documentos» de la tienda.
+      </p>
+    }
+
+    <div cdkDropList [cdkDropListData]="bloques"
+         [cdkDropListDisabled]="!puedeEditar || trabajando"
+         (cdkDropListDropped)="soltarCarpeta($event)">
+
+      @for (bloque of bloques; track bloque.grupo?.id ?? 'sin-carpeta') {
+        <div class="pag-bloque" cdkDrag [cdkDragDisabled]="!bloque.grupo">
+
+          <div class="pag-bloque__fantasma" *cdkDragPlaceholder></div>
+
+          <div class="pag-bloque__cabecera">
+            @if (bloque.grupo && puedeEditar) {
+              <span class="pag-asa" cdkDragHandle title="Arrastra para cambiar el orden de las carpetas">
+                <i class="fa-solid fa-grip-vertical"></i>
+              </span>
+            }
+
+            <i class="fa-solid pag-bloque__icono"
+               [ngClass]="bloque.grupo ? 'fa-folder' : 'fa-folder-open'"></i>
+
+            <span class="pag-bloque__nombre">
+              {{ bloque.grupo ? bloque.grupo.nombre : 'Sin carpeta' }}
+            </span>
+            <span class="pag-bloque__cuenta">{{ bloque.paginas.length }}</span>
+
+            @if (bloque.grupo) {
+              <span class="pag-bloque__botones">
+                @if (puedeEditar) {
+                  <button type="button" class="btn btn-xs btn-editar"
+                          title="Renombrar la carpeta" (click)="renombrarCarpeta(bloque.grupo)">
+                    <i class="fa fa-pen"></i>
+                  </button>
+                }
+                @if (puedeEliminar) {
+                  <button type="button" class="btn btn-xs btn-borrar"
+                          title="Enviar la carpeta a la papelera"
+                          [disabled]="trabajando" (click)="borrarCarpeta(bloque)">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                }
+              </span>
+            }
+          </div>
+
+          @if (!bloque.grupo) {
+            <p class="pag-bloque__ayuda">
+              Páginas que se quedaron sin carpeta al restaurarlas mientras la
+              suya seguía en la papelera. Ábrelas y elígeles una: así no salen
+              en «Documentos» de la tienda.
+            </p>
+          }
+
+          @if (bloque.paginas.length === 0) {
+            <p class="pag-bloque__vacia">
+              <i class="fa-solid fa-circle-info me-1"></i>
+              Carpeta vacía.
+            </p>
+          }
+
+          <!-- Dentro de la carpeta se arrastra para ordenar. Cambiar de
+               carpeta se hace abriendo la página, no arrastrando. -->
+          <ul class="pag-lista" cdkDropList [cdkDropListData]="bloque.paginas"
+              [cdkDropListDisabled]="!puedeEditar || trabajando"
+              (cdkDropListDropped)="soltarPagina(bloque, $event)">
+
+            @for (pagina of bloque.paginas; track pagina.id) {
+              <li class="pag-fila" cdkDrag [class.pag-fila--oculta]="!pagina.activo">
+
+                <div class="pag-fila__fantasma" *cdkDragPlaceholder></div>
+
+                @if (puedeEditar) {
+                  <span class="pag-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                  </span>
+                }
+
+                <i class="fa-regular fa-file-lines pag-fila__icono"></i>
+
+                <span class="pag-fila__texto">
+                  <b>{{ pagina.titulo }}</b>
+                  <code class="pag-fila__clave">{{ urlEnLaTienda(pagina) }}</code>
+                </span>
+
+                @if (!pagina.activo) {
+                  <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculta</span>
+                }
+
+                <span class="pag-fila__botones">
+                  <button type="button" class="btn btn-xs btn-editar"
+                          title="Abrir la página" (click)="editarPagina(pagina)">
+                    <i class="fa fa-pen"></i>
+                  </button>
+                  @if (puedeEditar) {
+                    <button type="button" class="btn btn-xs"
+                            [class.btn-ver]="!pagina.activo"
+                            [class.btn-borrar]="pagina.activo"
+                            [title]="pagina.activo ? 'Ocultar en la tienda' : 'Publicar en la tienda'"
+                            [disabled]="trabajando" (click)="alternarPagina(pagina)">
+                      <i class="fa" [ngClass]="pagina.activo ? 'fa-eye-slash' : 'fa-eye'"></i>
+                    </button>
+                  }
+                  @if (puedeEliminar) {
+                    <button type="button" class="btn btn-xs btn-borrar"
+                            title="Enviar a la papelera"
+                            [disabled]="trabajando" (click)="borrarPagina(pagina)">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  }
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  }
+</panel>

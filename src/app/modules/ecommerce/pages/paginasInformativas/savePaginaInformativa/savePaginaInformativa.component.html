@@ -1,0 +1,266 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-file-lines me-2"></i>{{ titulo }}
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="activeModal.dismiss()"></button>
+</div>
+
+<div class="modal-body pag-cuerpo">
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Abriendo la página…</p>
+    </div>
+  } @else {
+
+    <form [formGroup]="form" novalidate>
+      <div class="row g-3">
+
+        <!-- ================= LO QUE IDENTIFICA LA PÁGINA ================= -->
+        <div class="col-12 col-xl-8">
+
+          <div class="row g-3 align-items-start">
+
+            <div class="col-12">
+              <app-campoTexto
+                [control]="$any(form.controls['titulo'])"
+                label="TÍTULO DE LA PÁGINA"
+                placeholder="Políticas de garantía"
+                [maxLength]="120"
+                [minLength]="2"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+            <!-- La dirección: se enseña pero no se toca. Es por donde la
+                 tienda pide la página y por donde la enlaza el menú. -->
+            @if (!esNueva && pagina) {
+              <div class="col-12">
+                <div class="pag-direccion">
+                  <span class="pag-direccion__etiqueta">DIRECCIÓN EN LA TIENDA</span>
+                  <code class="pag-direccion__valor">/paginas/{{ pagina.clave }}</code>
+                  <i class="fa fa-lock pag-direccion__candado"
+                     title="No se cambia: el menú y los enlaces de fuera apuntan aquí"></i>
+                </div>
+              </div>
+            }
+
+            <div class="col-12">
+              <app-combo
+                formControlName="grupo_id"
+                [items]="opcionesGrupo"
+                [label]="'Carpeta'"
+                bindLabel="name"
+                bindValue="id">
+              </app-combo>
+
+              @if (carpetaBloqueada) {
+                <p class="campo-hint mb-0">
+                  <i class="fa-solid fa-circle-info"></i>
+                  La tienda tiene una dirección propia para esta página, así que
+                  no va en ninguna carpeta.
+                </p>
+              } @else {
+                <p class="campo-hint mb-0">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Las páginas de una carpeta salen agrupadas bajo su nombre en
+                  «Documentos» de la tienda.
+                </p>
+              }
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ================= ESTADO ================= -->
+        <div class="col-12 col-xl-4">
+          <div class="estado-pagina" [class.is-on]="ctrlActivo.value">
+            <span class="estado-pagina__icon"><i class="fa-solid fa-power-off"></i></span>
+            <div class="estado-pagina__text">
+              <span class="estado-pagina__label">Estado</span>
+              <span class="estado-pagina__hint">
+                {{ ctrlActivo.value ? 'Se ve en la tienda' : 'Oculta en la tienda' }}
+              </span>
+            </div>
+            <app-checkbox class="estado-pagina__switch palanca"
+              [control]="ctrlActivo"
+              [label]="ctrlActivo.value ? 'Publicada' : 'Oculta'"
+              [id]="'ck-pagina-activa'">
+            </app-checkbox>
+          </div>
+
+          <!-- La imagen y el PDF se conservan; cambiarlos llega con el
+               traslado de los ficheros. Se enseñan para que no parezca que
+               se han perdido. -->
+          @if (hayImagen || hayPdf) {
+            <div class="pag-adjuntos mt-3">
+              <span class="pag-adjuntos__titulo">
+                <i class="fa-solid fa-paperclip"></i> Adjuntos de la página
+              </span>
+
+              @if (hayImagen) {
+                <a class="pag-adjunto" [href]="urlImagen" target="_blank" rel="noopener">
+                  <i class="fa-regular fa-image"></i> Ver la imagen
+                </a>
+              }
+              @if (hayPdf) {
+                <a class="pag-adjunto" [href]="urlPdf" target="_blank" rel="noopener">
+                  <i class="fa-regular fa-file-pdf"></i> {{ nombrePdf }}
+                </a>
+              }
+
+              <p class="campo-hint mb-0">
+                <i class="fa-solid fa-circle-info"></i>
+                Se conservan tal cual. Cambiarlos llega con el traslado de los
+                ficheros de la página web.
+              </p>
+            </div>
+          }
+        </div>
+
+        <!-- ================= EL CONTENIDO ================= -->
+        <div class="col-12">
+          <app-tab-panel
+            [pestanas]="pestanas"
+            [activa]="pestana"
+            [conPanel]="true"
+            (cambiada)="pestana = $any($event)">
+
+            @if (pestana === 'texto') {
+              <panel
+                headerClass="bg-gray-800"
+                title="Texto de la página"
+                noButton="true"
+                noBody="true"
+                panelClass="mb-0"
+                icono="align-left"
+                fondoGris="true">
+
+                <ng-container outsideBody>
+                  <div class="form-card__body">
+                    <app-campoNgxEditor
+                      class="pag-editor"
+                      [formControl]="ctrlTexto"
+                      [placeholder]="'El texto de la página, con sus títulos y sus listas…'"
+                      [cinta]="true"
+                      [hoja]="true"
+                      [cintaEnMovil]="false"
+                      [soloLectura]="esView"
+                      alto="22rem">
+                    </app-campoNgxEditor>
+                  </div>
+                </ng-container>
+              </panel>
+            }
+
+            @if (pestana === 'desplegables') {
+              <panel
+                headerClass="bg-gray-800"
+                [title]="'Desplegables (' + desplegables.length + ' de 6)'"
+                noButton="true"
+                noBody="true"
+                panelClass="mb-0"
+                icono="chevron-down"
+                fondoGris="true">
+
+                <div header class="panel-acciones">
+                  @if (puedeAnadirDesplegable) {
+                    <button type="button" class="btn btn-xs btn-outline-light"
+                            (click)="anadirDesplegable()">
+                      <i class="fa fa-plus"></i> Añadir
+                    </button>
+                  }
+                </div>
+
+                <ng-container outsideBody>
+                  <div class="form-card__body">
+
+                    @if (desplegables.length === 0) {
+                      <p class="text-muted mb-0">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Sin desplegables. Son los bloques que se abren al pinchar
+                        al final de la página, del tipo «preguntas frecuentes».
+                        Caben seis.
+                      </p>
+                    }
+
+                    <!-- OJO: se sigue el CONTROL, no la posición. Con track
+                         $index, al mover o quitar uno los campos enseñan el
+                         valor del que estaba antes en ese sitio. -->
+                    @for (grupo of desplegables.controls; track grupo; let i = $index) {
+                      <div class="pag-desplegable" [formGroup]="controlDesplegable(i)">
+
+                        <div class="pag-desplegable__barra">
+                          <span class="pag-desplegable__numero">{{ i + 1 }}</span>
+
+                          @if (!esView) {
+                            <button type="button" class="btn btn-xs btn-link"
+                                    [disabled]="i === 0"
+                                    title="Subir" (click)="moverDesplegable(i, -1)">
+                              <i class="fa fa-arrow-up"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-link"
+                                    [disabled]="i === desplegables.length - 1"
+                                    title="Bajar" (click)="moverDesplegable(i, 1)">
+                              <i class="fa fa-arrow-down"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-link text-danger ms-auto"
+                                    title="Quitar este desplegable" (click)="quitarDesplegable(i)">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                          }
+                        </div>
+
+                        <app-campoTexto
+                          [control]="$any(controlDesplegable(i).controls['titulo'])"
+                          label="TÍTULO DEL DESPLEGABLE"
+                          placeholder="¿Qué cubre la garantía?"
+                          [maxLength]="100"
+                          [trimEspacios]="true">
+                        </app-campoTexto>
+
+                        <app-campoNgxEditor
+                          [formControl]="$any(controlDesplegable(i).controls['texto'])"
+                          [placeholder]="'Lo que se ve al abrirlo…'"
+                          [cinta]="true"
+                          [cintaEnMovil]="false"
+                          [barraCorta]="true"
+                          [soloLectura]="esView"
+                          alto="9rem">
+                        </app-campoNgxEditor>
+
+                        @if (controlDesplegable(i).controls['pdf'].value) {
+                          <p class="campo-hint mb-0">
+                            <i class="fa-solid fa-paperclip"></i>
+                            Lleva un PDF adjunto, que se conserva.
+                          </p>
+                        }
+                      </div>
+                    }
+
+                  </div>
+                </ng-container>
+              </panel>
+            }
+
+          </app-tab-panel>
+        </div>
+
+      </div>
+    </form>
+  }
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-danger" (click)="activeModal.dismiss()">
+    <i class="fa fa-times"></i> Salir
+  </button>
+  @if (!esView) {
+    <button type="button" class="btn btn-primary" [disabled]="guardando || cargando"
+            (click)="guardar()">
+      <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar' }}
+    </button>
+  }
+</div>

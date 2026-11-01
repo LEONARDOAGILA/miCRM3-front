@@ -1,0 +1,37 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-folder me-2"></i>{{ titulo }}
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="activeModal.dismiss()"></button>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <div class="modal-body">
+
+    <app-campoTexto
+      [control]="$any(form.controls['nombre'])"
+      label="NOMBRE DE LA CARPETA"
+      placeholder="Protección de datos"
+      [maxLength]="60"
+      [minLength]="2"
+      [trimEspacios]="true">
+    </app-campoTexto>
+
+    <p class="campo-hint mb-0">
+      <i class="fa-solid fa-circle-info"></i>
+      Es el título con el que las páginas de esta carpeta salen agrupadas en
+      «Documentos» de la tienda.
+    </p>
+
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger" (click)="activeModal.dismiss()">
+      <i class="fa fa-times"></i> Salir
+    </button>
+    <button type="submit" class="btn btn-primary" [disabled]="guardando">
+      <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</form>

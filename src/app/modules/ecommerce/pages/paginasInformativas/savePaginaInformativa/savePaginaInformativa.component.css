@@ -1,0 +1,212 @@
+/* ============================================================
+   EL EDITOR DE UNA PÁGINA DE TEXTO
+   ============================================================ */
+
+.pag-cuerpo {
+  max-height: calc(100vh - 14rem);
+  overflow-y: auto;
+}
+
+.form-card__body {
+  padding: 1rem .875rem .25rem;
+}
+
+/* ---------- La dirección de la tienda (no se toca) ---------- */
+.pag-direccion {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.pag-direccion__etiqueta {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pag-direccion__valor {
+  font-size: .8125rem;
+  color: var(--bs-body-color, #212529);
+}
+
+.pag-direccion__candado {
+  margin-left: auto;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Estado ----------
+   Misma pieza que el Estado de la ficha de producto. */
+.estado-pagina {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  height: calc(3.5rem + 2px);
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.estado-pagina.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.estado-pagina__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.estado-pagina.is-on .estado-pagina__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.estado-pagina__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.estado-pagina__label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.estado-pagina__hint {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.estado-pagina__switch {
+  margin-left: auto;
+}
+
+/* ============================================================
+   LA PALANCA
+   ============================================================
+   `app-checkbox` pinta el cuadradito de Bootstrap; lo que lo convierte en
+   palanca son estas cuatro reglas `::ng-deep`. Van copiadas de la ficha de
+   producto a propósito: el estilo vive mitad en el HTML y mitad aquí, y
+   llevarse sólo el HTML deja un cuadrado. */
+.palanca ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.palanca ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.palanca ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.palanca ::ng-deep .form-check-label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+  vertical-align: middle;
+}
+
+/* ---------- Los adjuntos que todavía no se editan ---------- */
+.pag-adjuntos {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: .625rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.pag-adjuntos__titulo {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pag-adjunto {
+  font-size: .8125rem;
+  color: var(--bs-app-theme, #00acac);
+  text-decoration: none;
+}
+
+.pag-adjunto:hover { text-decoration: underline; }
+
+/* ---------- Los desplegables ---------- */
+.pag-desplegable {
+  padding: .75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.pag-desplegable__barra {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  margin-bottom: .5rem;
+}
+
+.pag-desplegable__numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: .6875rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 0;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}

@@ -1,0 +1,88 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-trash-can me-2"></i>Papelera de páginas informativas
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="cerrar()"></button>
+</div>
+
+<div class="modal-body">
+
+  @if (cargando) {
+    <div class="text-center py-4 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+    </div>
+  } @else if (vacia) {
+    <p class="text-muted text-center mb-0 py-4">
+      <i class="fa-solid fa-circle-check me-1"></i> La papelera está vacía.
+    </p>
+  } @else {
+
+    <!-- Las carpetas, con las páginas que se fueron con ellas debajo.
+         Restaurar la carpeta las devuelve todas de una vez. -->
+    @for (carpeta of carpetas; track carpeta.id) {
+      <div class="border rounded mb-2 p-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fa-solid fa-folder text-warning"></i>
+          <b>{{ carpeta.texto }}</b>
+          <small class="text-muted">
+            eliminada {{ carpeta.deleted_at }} por {{ carpeta.deleted_by || '—' }}
+          </small>
+          <button type="button" class="btn btn-xs btn-outline-primary ms-auto"
+                  [disabled]="trabajando" (click)="restaurar(carpeta)">
+            <i class="fa fa-rotate-left"></i> Restaurar
+          </button>
+        </div>
+
+        @if (paginasDe(carpeta).length) {
+          <ul class="list-unstyled mt-2 mb-0 ps-4">
+            @for (pagina of paginasDe(carpeta); track pagina.id) {
+              <li class="small text-muted">
+                <i class="fa-regular fa-file-lines me-1"></i>{{ pagina.texto }}
+              </li>
+            }
+          </ul>
+          <small class="text-muted ps-4">
+            Vuelven con la carpeta.
+          </small>
+        }
+      </div>
+    }
+
+    <!-- Las páginas que se tiraron solas -->
+    @if (sueltas.length) {
+      @for (pagina of sueltas; track pagina.id) {
+        <div class="border rounded mb-2 p-2 d-flex align-items-center gap-2">
+          <i class="fa-regular fa-file-lines text-secondary"></i>
+          <span>
+            <b>{{ pagina.texto }}</b>
+            <small class="text-muted ms-1">/paginas/{{ pagina.detalle }}</small>
+          </span>
+          <small class="text-muted">
+            eliminada {{ pagina.deleted_at }} por {{ pagina.deleted_by || '—' }}
+          </small>
+          <button type="button" class="btn btn-xs btn-outline-primary ms-auto"
+                  [disabled]="trabajando" (click)="restaurar(pagina)">
+            <i class="fa fa-rotate-left"></i> Restaurar
+          </button>
+        </div>
+      }
+      <p class="small text-muted mb-0">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        Una página cuya carpeta siga en la papelera vuelve sin carpeta.
+      </p>
+    }
+  }
+</div>
+
+<div class="modal-footer">
+  @if (puedeVaciar && !vacia) {
+    <button type="button" class="btn btn-danger me-auto"
+            [disabled]="trabajando" (click)="vaciar()">
+      <i class="fa fa-trash"></i> Vaciar papelera
+    </button>
+  }
+  <button type="button" class="btn btn-secondary" (click)="cerrar()">
+    <i class="fa fa-times"></i> Cerrar
+  </button>
+</div>
