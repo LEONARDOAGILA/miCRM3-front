@@ -60,6 +60,8 @@ export class EcommerceHomeComponent implements OnInit {
   public readonly areas: TarjetaArea[] = [
     { clave: 'inicio', titulo: 'Inicio de la tienda', icono: 'fa-house', ruta: 'editInicio',
       descripcion: 'Banner, categorías destacadas, ofertas, mosaico, bloques y marcas.' },
+    { clave: 'modelado', titulo: 'Modelado de la portada', icono: 'fa-object-group', ruta: 'modelado',
+      descripcion: 'La portada dibujada a escala: arrastra las secciones y estíralas para ver cómo queda.' },
     { clave: 'encabezado', titulo: 'Encabezado', icono: 'fa-window-maximize', ruta: 'editEncabezado',
       descripcion: 'La franja de arriba, el buscador, el menú y el aviso de crédito.' },
     { clave: 'pie', titulo: 'Pie de página', icono: 'fa-table-columns', ruta: 'editPie',
@@ -120,7 +122,9 @@ export class EcommerceHomeComponent implements OnInit {
    * columnas con 12 enlaces» dice algo y «15 elementos» no dice nada.
    */
   resumen(area: TarjetaArea): string {
-    const d = this.datos?.[area.clave];
+    // El modelado y el inicio son la misma portada vista de dos maneras, así
+    // que cuentan lo mismo y el servidor no manda dos veces la cuenta
+    const d = this.datos?.[area.clave === 'modelado' ? 'inicio' : area.clave];
     if (!d) { return this.error ? 'No se pudo cargar' : '—'; }
 
     const plural = (n: number, uno: string, varios: string) =>
@@ -128,6 +132,7 @@ export class EcommerceHomeComponent implements OnInit {
 
     switch (area.clave) {
       case 'inicio':
+      case 'modelado':
         return `${plural(d.visibles, 'sección visible', 'secciones visibles')} de ${d.total}`;
       case 'encabezado':
         return plural(d.enlaces, 'enlace', 'enlaces')

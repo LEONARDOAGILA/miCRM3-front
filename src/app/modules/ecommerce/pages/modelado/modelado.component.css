@@ -1,0 +1,429 @@
+/* ============================================================
+   EL MODELADO DE LA PORTADA
+
+   La página a escala a la izquierda; a la derecha el banquillo
+   —lo que no sale— y la ficha de la elegida.
+
+   LOS COLORES SALEN DEL TEMA salvo dentro de la página, que es
+   blanca porque blanca es la tienda: un dibujo con el fondo del
+   panel oscuro enseñaría un contraste que el cliente no ve.
+   ============================================================ */
+
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.mo-zoom {
+  width: auto;
+  min-width: 8.5rem;
+}
+
+.mo-mesa {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.mo-columna { flex: 0 0 auto; }
+
+.mo-lado {
+  flex: 1 1 16rem;
+  min-width: 14rem;
+  max-width: 24rem;
+}
+
+.mo-rotulo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .35rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.mo-rotulo span { font-weight: 400; opacity: .85; }
+
+/* ---------- La página ---------- */
+.mo-pagina {
+  position: relative;
+  padding: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+/* El encabezado de la tienda: está siempre, no se mueve y no se configura
+   aquí; se dibuja porque es lo que empuja a la primera sección */
+.mo-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  min-height: 18px;
+  background: repeating-linear-gradient(135deg, #f1f3f5 0 6px, #e9ecef 6px 12px);
+  color: #6c757d;
+  font-size: .62rem;
+  overflow: hidden;
+}
+
+.mo-seccion {
+  position: relative;
+  border-bottom: 1px solid #f1f3f5;
+  background-color: #fff;
+  cursor: grab;
+  user-select: none;
+}
+
+.mo-seccion:active { cursor: grabbing; }
+
+.mo-seccion--elegida {
+  outline: 2px solid var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+  z-index: 2;
+}
+
+/* Encendida pero hoy no sale: se dibuja apagada para no contar una portada
+   que el cliente no ve */
+.mo-seccion--muda { opacity: .55; }
+
+.mo-seccion--estirando { z-index: 3; }
+
+/* El aire: rayado, y es lo único que se estira */
+.mo-aire {
+  background: repeating-linear-gradient(135deg,
+      rgba(0, 172, 172, .10) 0 5px, rgba(0, 172, 172, .18) 5px 10px);
+}
+
+.mo-cuerpo {
+  position: relative;
+  overflow: hidden;
+  background-color: #fbfbfc;
+}
+
+/* El nombre no se escala con el dibujo: a 0,3 de escala no se leería */
+.mo-etiqueta {
+  position: absolute;
+  left: 4px;
+  top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  max-width: calc(100% - 8px);
+  padding: .1rem .35rem;
+  border-radius: .25rem;
+  background-color: rgba(255, 255, 255, .88);
+  color: #212529;
+  font-size: .68rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mo-etiqueta i { color: var(--bs-app-theme, #00acac); }
+
+.mo-medida {
+  color: #6c757d;
+  font-size: .62rem;
+}
+
+.mo-aviso {
+  position: absolute;
+  left: 4px;
+  bottom: 3px;
+  padding: .05rem .3rem;
+  border-radius: .25rem;
+  background-color: rgba(255, 193, 7, .22);
+  color: #664d03;
+  font-size: .6rem;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: calc(100% - 8px);
+  text-overflow: ellipsis;
+}
+
+/* ---------- El tirador ---------- */
+.mo-tirador {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: ns-resize;
+  touch-action: none;
+  z-index: 4;
+}
+
+.mo-tirador__raya {
+  width: 34px;
+  height: 3px;
+  border-radius: 2px;
+  background-color: var(--bs-app-theme, #00acac);
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+
+.mo-seccion:hover .mo-tirador__raya,
+.mo-tirador:focus-visible .mo-tirador__raya,
+.mo-seccion--estirando .mo-tirador__raya { opacity: 1; }
+
+.mo-tirador:focus-visible {
+  outline: 2px solid var(--bs-app-theme, #00acac);
+  outline-offset: -2px;
+}
+
+/* Lo que se está eligiendo mientras se estira */
+.mo-globo {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: .1rem .4rem;
+  border-radius: .25rem;
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: .65rem;
+  z-index: 5;
+}
+
+/* ---------- La raya del cliente ---------- */
+.mo-raya {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px dashed #dc3545;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.mo-raya span {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  padding: .05rem .3rem;
+  border-radius: .2rem;
+  background-color: #dc3545;
+  color: #fff;
+  font-size: .58rem;
+  white-space: nowrap;
+}
+
+/* ---------- El banquillo ---------- */
+.mo-banquillo {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  min-height: 5rem;
+  padding: .5rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .03);
+}
+
+.mo-chip {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .35rem .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .3rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-body-color, #212529);
+  font-size: .75rem;
+  cursor: grab;
+}
+
+.mo-chip i { color: var(--bs-secondary-color, #6c757d); }
+
+.mo-chip--elegida { outline: 2px solid var(--bs-app-theme, #00acac); }
+
+.mo-vacio {
+  padding: 1rem .75rem;
+  text-align: center;
+  color: #6c757d;
+  font-size: .7rem;
+}
+
+.mo-vacio--lado { color: var(--bs-secondary-color, #6c757d); }
+
+/* ---------- La ficha ---------- */
+.mo-ficha {
+  margin-top: .75rem;
+  padding: .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.mo-ficha__cabeza {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .35rem;
+  font-size: .85rem;
+  color: var(--bs-body-color, #212529);
+}
+
+.mo-ficha__cabeza i { color: var(--bs-app-theme, #00acac); }
+
+.mo-ficha__que {
+  margin: 0 0 .5rem;
+  font-size: .7rem;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.mo-ficha__datos {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .15rem .5rem;
+  margin: 0 0 .5rem;
+  font-size: .7rem;
+}
+
+.mo-ficha__datos dt {
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.mo-ficha__datos dd {
+  margin: 0;
+  color: var(--bs-body-color, #212529);
+}
+
+.mo-estimado { color: var(--bs-warning-text-emphasis, #997404); }
+
+.mo-pista { margin-top: .75rem; }
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 .75rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.campo-hint--aviso i { color: var(--bs-warning, #ffc107); }
+
+/* ---------- Los dibujos de dentro ----------
+   Cuatro trazos para reconocer la sección de un vistazo. No pretenden
+   parecerse a la tienda: sólo distinguir un carrusel de logos de una
+   rejilla de productos cuando la caja mide 40 px. */
+.mo-dibujo {
+  position: absolute;
+  inset: 18px 6px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.mo-dibujo > * { width: 100%; height: 100%; }
+
+.d-banner {
+  display: block;
+  border-radius: 3px;
+  background: linear-gradient(110deg, #ced4da 0 40%, #adb5bd 40% 100%);
+}
+
+.d-banner--simple { background: linear-gradient(110deg, #dee2e6 0 60%, #ced4da 60% 100%); }
+
+.d-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.d-circulo {
+  flex: 1 1 0;
+  aspect-ratio: 1;
+  max-height: 100%;
+  border-radius: 50%;
+  background-color: #ced4da;
+}
+
+.d-fila--carteles { align-items: stretch; }
+
+.d-cartel {
+  flex: 1 1 0;
+  border-radius: 3px;
+  background-color: #ced4da;
+}
+
+.d-logo {
+  flex: 1 1 0;
+  height: 50%;
+  border-radius: 2px;
+  background-color: #dee2e6;
+}
+
+.d-rejilla {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+}
+
+.d-rejilla > span {
+  border-radius: 2px;
+  background-color: #ced4da;
+}
+
+.d-rejilla--oferta { grid-template-rows: 1fr; }
+
+.d-bloques {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 4px;
+}
+
+.d-bloques > span {
+  border-radius: 3px;
+  background-color: #ced4da;
+}
+
+/* ---------- Arrastre ---------- */
+.mo-fantasma {
+  min-height: 1.5rem;
+  height: 100%;
+  border: 1px dashed var(--bs-app-theme, #00acac);
+  border-radius: .25rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .10);
+}
+
+::ng-deep .cdk-drag-preview {
+  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, .2),
+              0 8px 10px 1px rgba(0, 0, 0, .14),
+              0 3px 14px 2px rgba(0, 0, 0, .12);
+  border-radius: .375rem;
+  overflow: hidden;
+}
+
+::ng-deep .cdk-drag-animating {
+  transition: transform 180ms cubic-bezier(0, 0, .2, 1);
+}
+
+@media (max-width: 991.98px) {
+  .mo-lado { max-width: none; }
+}

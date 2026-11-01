@@ -45,7 +45,8 @@
          (cdkDropListDropped)="soltar($event)">
 
       @for (s of secciones; track s.clave) {
-        <div class="seccion" [class.seccion--abierta]="abierta === s.clave" cdkDrag>
+        <div class="seccion" [class.seccion--abierta]="abierta === s.clave"
+             [id]="'seccion-caja-' + s.clave" cdkDrag>
 
           <div class="seccion-fantasma" *cdkDragPlaceholder></div>
 

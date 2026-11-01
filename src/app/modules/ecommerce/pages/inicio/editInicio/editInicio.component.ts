@@ -114,6 +114,25 @@ export class EditInicioComponent implements OnInit {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
     this.pedirLetrasDeLaTienda();
     await this.cargar();
+    this.abrirLaQuePiden();
+  }
+
+  /**
+   * Si se llega desde el modelado, con `?seccion=`, se abre esa.
+   *
+   * Allí se elige una sección en el dibujo y se pulsa «configurar»; llegar
+   * aquí a la lista cerrada y tener que buscarla otra vez sería perder el
+   * sitio en el camino.
+   */
+  private abrirLaQuePiden(): void {
+    const clave = this.activeRoute.snapshot.queryParamMap.get('seccion');
+    if (!clave || !this.secciones.some(s => s.clave === clave)) { return; }
+
+    this.abierta = clave;
+    this.vistas.add(clave);
+    // Después de pintarla, que si no todavía no existe en el documento
+    setTimeout(() => document.getElementById('seccion-caja-' + clave)
+                             ?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
   }
 
   async cargar(): Promise<void> {

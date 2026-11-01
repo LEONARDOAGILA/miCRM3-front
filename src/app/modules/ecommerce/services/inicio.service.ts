@@ -38,6 +38,16 @@ export class InicioService {
                            activo === undefined ? {} : { activo });
   }
 
+  /**
+   * Sólo el alto, sin tocar lo demás.
+   *
+   * No se usa `editSeccion` para esto: guarda la sección entera, así que un
+   * `{ alto }` a secas le borraría el rótulo y su color.
+   */
+  altoSeccion(clave: string, alto: string): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'altoSeccion/' + clave, { alto });
+  }
+
   /** Van TODAS las claves, en el orden en que se ven. */
   ordenarSecciones(claves: string[]): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'ordenarSecciones', { claves });

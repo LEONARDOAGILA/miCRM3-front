@@ -1,0 +1,293 @@
+<!-- ============================================================
+     EL MODELADO DE LA PORTADA
+
+     La tienda dibujada a escala: cada sección del alto que ocupa
+     de verdad. Se arrastran para cambiarlas de sitio, se estiran
+     por abajo para darles aire, y se cruzan al banquillo para
+     quitarlas de la portada.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
+  <li class="breadcrumb-item active">Modelado de la portada</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       icono="object-group">
+
+  <div header class="panel-acciones">
+    <!-- Lo primero, porque el aire y las alturas no son los mismos en las dos -->
+    <div class="btn-group btn-group-sm" role="group" aria-label="Dónde se mira">
+      <!-- El elegido con `active` y no con btn-light: en este tema el botón
+           claro sale MÁS OSCURO que el de contorno, así que el par parecía
+           elegido al revés -->
+      @for (d of dispositivos; track d) {
+        <button type="button" class="btn btn-outline-light"
+                [class.active]="dispositivo === d"
+                [attr.aria-pressed]="dispositivo === d"
+                (click)="dispositivo = d">
+          <i class="fa-solid" [ngClass]="pagina[d].icono"></i> {{ pagina[d].texto }}
+        </button>
+      }
+    </div>
+
+    <!-- Sin ngModel: es un número suelto y no un formulario -->
+    <select class="form-select form-select-sm mo-zoom" aria-label="Tamaño del dibujo"
+            (change)="zoom = +$any($event.target).value">
+      @for (z of zooms; track z.valor) {
+        <option [value]="z.valor" [selected]="zoom === z.valor">{{ z.texto }}</option>
+      }
+    </select>
+
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Dibujando la portada…</p>
+    </div>
+
+  } @else {
+
+    <p class="campo-hint">
+      <i class="fa-solid fa-circle-info"></i>
+      Así queda la portada hoy, a escala. Arrastra una sección para cambiarla
+      de sitio, estírala por el borde de abajo para darle más o menos aire, y
+      sácala a la derecha para quitarla de la portada. Cada cosa se guarda al
+      soltarla.
+    </p>
+
+    <div class="mo-mesa" cdkDropListGroup>
+
+      <!-- ---------------- LA PÁGINA ---------------- -->
+      <div class="mo-columna">
+        <div class="mo-rotulo">
+          LA PORTADA
+          <span>{{ altoDeLaPagina }} px de largo</span>
+        </div>
+
+        <div class="mo-pagina" [style.width.px]="anchoPagina">
+
+          <!-- El encabezado está siempre y empuja a la primera sección: sin él
+               la raya del cliente caería 211 px más abajo de lo que cae -->
+          <div class="mo-cabecera" [style.height.px]="px(medidas.cabecera)">
+            <i class="fa-solid fa-window-maximize"></i> Encabezado de la tienda
+          </div>
+
+          <!-- Sin fijar el eje: el cdk decide en qué columna estás por dónde
+               está el puntero, y fijándole la x nunca llegaría al banquillo -->
+          <div cdkDropList id="portada"
+               [cdkDropListData]="enLaPortada"
+               [cdkDropListDisabled]="!puedeEditar || trabajando || !!estiron"
+               (cdkDropListDropped)="soltar($event)">
+
+            @for (s of enLaPortada; track s.clave) {
+              <div class="mo-seccion"
+                   [class.mo-seccion--elegida]="elegida === s.clave"
+                   [class.mo-seccion--muda]="!sale(s)"
+                   [class.mo-seccion--estirando]="estiron?.clave === s.clave"
+                   [style.height.px]="cajaPx(s)"
+                   [attr.aria-label]="comoSeLlama(s)"
+                   cdkDrag
+                   (click)="elegir(s.clave)">
+
+                <div class="mo-fantasma" *cdkDragPlaceholder></div>
+
+                <!-- El aire de arriba: rayado, porque es lo único que se estira -->
+                @if (aireArriba(s)) {
+                  <div class="mo-aire" [style.height.px]="px(aireArriba(s))"></div>
+                }
+
+                <div class="mo-cuerpo" [style.height.px]="cuerpoPx(s)">
+                  <!-- Un dibujo de lo que hay dentro: a este tamaño el nombre
+                       solo no basta para reconocerla de un vistazo -->
+                  <div class="mo-dibujo" aria-hidden="true">
+                    @switch (s.clave) {
+                      @case ('banner_principal') { <span class="d-banner"></span> }
+                      @case ('banner_simple')    { <span class="d-banner d-banner--simple"></span> }
+                      @case ('categorias_destacadas') {
+                        <span class="d-fila">
+                          @for (c of [1,2,3,4,5,6]; track c) { <span class="d-circulo"></span> }
+                        </span>
+                      }
+                      @case ('mosaico') {
+                        <span class="d-fila d-fila--carteles">
+                          @for (c of [1,2,3,4]; track c) { <span class="d-cartel"></span> }
+                        </span>
+                      }
+                      @case ('marcas') {
+                        <span class="d-fila">
+                          @for (c of [1,2,3,4,5]; track c) { <span class="d-logo"></span> }
+                        </span>
+                      }
+                      @case ('grilla') { <span class="d-rejilla">
+                        @for (c of [1,2,3,4,5,6,7,8]; track c) { <span></span> }
+                      </span> }
+                      @case ('ofertas_flash') { <span class="d-rejilla d-rejilla--oferta">
+                        @for (c of [1,2,3,4]; track c) { <span></span> }
+                      </span> }
+                      @case ('bloques') { <span class="d-bloques"><span></span><span></span></span> }
+                      @default { <span class="d-banner"></span> }
+                    }
+                  </div>
+
+                  <span class="mo-etiqueta">
+                    <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+                    <b>{{ comoSeLlama(s) }}</b>
+                    <span class="mo-medida">{{ altoTotal(s) }} px</span>
+                  </span>
+
+                  @if (!sale(s)) {
+                    <span class="mo-aviso">
+                      <i class="fa-solid fa-triangle-exclamation"></i> {{ porQueNoSale(s) }}
+                    </span>
+                  }
+                </div>
+
+                @if (aireAbajo(s)) {
+                  <div class="mo-aire" [style.height.px]="px(aireAbajo(s))"></div>
+                }
+
+                <!-- El tirador. Para el cdk un clic aquí no es un arrastre:
+                     por eso se le para el mousedown, que es con el que empieza -->
+                @if (puedeEditar) {
+                  <button type="button" class="mo-tirador"
+                          [attr.aria-label]="'Alto de ' + comoSeLlama(s) + ': ' + textoDelAlto(s)"
+                          [title]="'Estira para dar más o menos aire · ' + textoDelAlto(s)"
+                          (mousedown)="$event.stopPropagation()"
+                          (touchstart)="$event.stopPropagation()"
+                          (click)="$event.stopPropagation()"
+                          (pointerdown)="empezarEstiron(s, $event)"
+                          (pointermove)="estirando($event)"
+                          (pointerup)="soltarEstiron(s)"
+                          (pointercancel)="soltarEstiron(s)"
+                          (keydown.arrowup)="conElTeclado(s, -1)"
+                          (keydown.arrowdown)="conElTeclado(s, 1)">
+                    <span class="mo-tirador__raya"></span>
+                  </button>
+                }
+
+                @if (estiron?.clave === s.clave) {
+                  <span class="mo-globo">{{ textoDelAlto(s) }}</span>
+                }
+              </div>
+            }
+
+            @if (!enLaPortada.length) {
+              <div class="mo-vacio">La portada está vacía: arrastra aquí una sección.</div>
+            }
+          </div>
+
+          <!-- Hasta aquí llega la pantalla del cliente -->
+          @if (rayaPx !== null) {
+            <div class="mo-raya" [style.top.px]="rayaPx">
+              <span>Hasta aquí ve el cliente sin bajar</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- ---------------- EL BANQUILLO Y LA FICHA ---------------- -->
+      <div class="mo-lado">
+
+        <div class="mo-rotulo">
+          FUERA DE LA PORTADA
+          <span>{{ fuera.length }}</span>
+        </div>
+
+        <div class="mo-banquillo" cdkDropList id="fuera"
+             [cdkDropListData]="fuera"
+             [cdkDropListDisabled]="!puedeEditar || trabajando || !!estiron"
+             (cdkDropListDropped)="soltar($event)">
+
+          @for (s of fuera; track s.clave) {
+            <div class="mo-chip" cdkDrag (click)="elegir(s.clave)"
+                 [class.mo-chip--elegida]="elegida === s.clave">
+              <div class="mo-fantasma" *cdkDragPlaceholder></div>
+              <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+              <span>{{ comoSeLlama(s) }}</span>
+            </div>
+          }
+
+          @if (!fuera.length) {
+            <div class="mo-vacio mo-vacio--lado">
+              Están todas en la portada. Arrastra una aquí para quitarla.
+            </div>
+          }
+        </div>
+
+        <!-- La ficha de la elegida: lo que no cabe dentro del dibujo -->
+        @for (s of secciones; track s.clave) {
+          @if (elegida === s.clave) {
+            <div class="mo-ficha">
+              <div class="mo-ficha__cabeza">
+                <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+                <b>{{ comoSeLlama(s) }}</b>
+              </div>
+
+              <p class="mo-ficha__que">{{ vista(s).descripcion }}</p>
+
+              <dl class="mo-ficha__datos">
+                <dt>Estado</dt>
+                <dd>
+                  <span class="chip" [ngClass]="estados[s.estado].clase">
+                    <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
+                    {{ estados[s.estado].texto }}
+                  </span>
+                </dd>
+
+                <dt>Alto</dt>
+                <dd>{{ textoDelAlto(s) }} · {{ aireArriba(s) + aireAbajo(s) }} px de aire</dd>
+
+                <dt>Contenido</dt>
+                <dd>
+                  {{ contenido(s) }} px
+                  @if (!medido(s)) {
+                    <span class="mo-estimado" title="Esta sección todavía no se pinta en la tienda">
+                      (estimado)
+                    </span>
+                  }
+                </dd>
+
+                <dt>Ocupa</dt>
+                <dd>{{ altoTotal(s) }} px, desde el {{ desdeArriba(s) }}</dd>
+              </dl>
+
+              @if (s.activo && bajoLaRaya(s)) {
+                <p class="campo-hint campo-hint--aviso">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  Empieza por debajo de lo que se ve sin bajar: sólo la ven los
+                  clientes que bajen.
+                </p>
+              }
+
+              <button type="button" class="btn btn-xs btn-primary" (click)="configurar(s)">
+                <i class="fa fa-sliders"></i> Configurar esta sección
+              </button>
+            </div>
+          }
+        }
+
+        @if (!elegida) {
+          <p class="campo-hint mo-pista">
+            <i class="fa-solid fa-hand-pointer"></i>
+            Toca una sección del dibujo para ver sus medidas y abrirla.
+          </p>
+        }
+
+        <p class="campo-hint">
+          <i class="fa-solid fa-ruler-combined"></i>
+          Es un boceto: el aire es exacto, y el alto del contenido es el que
+          medía la tienda el 1/11/2026. Las tres secciones que todavía no se
+          pintan salen con una medida estimada.
+        </p>
+      </div>
+    </div>
+  }
+</panel>

@@ -11,6 +11,7 @@ import { AllCategoriasWebComponent } from './pages/categorias/allCategoriasWeb/a
 import { AllMarcasWebComponent } from './pages/marcas/allMarcasWeb/allMarcasWeb.component';
 import { EditEspanaMotosComponent } from './pages/espanaMotos/editEspanaMotos/editEspanaMotos.component';
 import { EditInicioComponent } from './pages/inicio/editInicio/editInicio.component';
+import { ModeladoComponent } from './pages/modelado/modelado.component';
 
 // ============================================================================
 // MÓDULO ECOMMERCE: la administración de la página web.
@@ -92,6 +93,15 @@ export const ECOMMERCE_ROUTES: Routes = [
       {
         path: 'editInicio',
         component: EditInicioComponent,
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
+
+      // La misma portada, vista por fuera: dibujada a escala, para arrastrar
+      // las secciones y estirarlas
+      {
+        path: 'modelado',
+        component: ModeladoComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },

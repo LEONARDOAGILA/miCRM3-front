@@ -250,6 +250,57 @@ export const VISTA_SECCIONES: Record<string, VistaSeccion> = {
   },
 };
 
+// ============================================================================
+// LO QUE MIDE LA TIENDA
+// ----------------------------------------------------------------------------
+// Para dibujar la portada a escala en el modelado hace falta saber cuánto
+// ocupa cada sección de verdad. No se puede calcular: el alto de un banner lo
+// manda su imagen, el de los carteles su proporción y el de los círculos su
+// CSS.
+//
+// ESTOS NÚMEROS ESTÁN MEDIDOS EN LA TIENDA (1/11/2026), abriéndola y midiendo
+// cada bloque a 1482 px y a 390 px. Es lo que hace que el dibujo sirva para
+// algo: un boceto con alturas inventadas enseñaría una portada que no existe.
+//
+// SON UNA FOTO, NO UNA FÓRMULA: si mañana el banner lleva otra imagen o las
+// tarjetas cambian de proporción, estos números envejecen. Por eso el dibujo
+// dice que es un boceto y enseña el aire —que sí es exacto, porque sale de
+// una regla— aparte del contenido.
+// ============================================================================
+
+export type Dispositivo = 'computadora' | 'celular';
+
+export const PAGINA: Record<Dispositivo, {
+  ancho: number; aireBase: number; ventana: number; cabecera: number; texto: string; icono: string;
+}> = {
+  // ventana: lo que se ve sin bajar. cabecera: lo que ocupa el encabezado de
+  // la tienda, que está siempre y empuja a la primera sección.
+  computadora: { ancho: 1482, aireBase: 56, ventana: 848, cabecera: 211,
+                 texto: 'Computadora', icono: 'fa-display' },
+  celular:     { ancho: 390,  aireBase: 40, ventana: 844, cabecera: 198,
+                 texto: 'Celular', icono: 'fa-mobile-screen' },
+};
+
+/**
+ * El alto del CONTENIDO de cada sección, sin el aire, en píxeles de la tienda.
+ *
+ * `medido` dice si sale de la tienda de verdad o es una estimación: las tres
+ * que todavía no se pintan —esperan al catálogo— no se pueden medir, y el
+ * dibujo las marca para que nadie decida nada sobre un número inventado.
+ */
+export const ALTO_CONTENIDO: Record<string, { computadora: number; celular: number; medido: boolean }> = {
+  banner_principal:      { computadora: 237, celular: 390, medido: true },
+  categorias_destacadas: { computadora: 326, celular: 255, medido: true },
+  ofertas_flash:         { computadora: 520, celular: 760, medido: false },
+  banner_simple:         { computadora: 148, celular:  57, medido: true },
+  mosaico:               { computadora: 548, celular: 429, medido: true },
+  grilla:                { computadora: 860, celular: 1900, medido: false },
+  bloques:               { computadora: 700, celular: 1400, medido: false },
+  marcas:                { computadora: 183, celular: 141, medido: true },
+};
+
+export const CONTENIDO_DESCONOCIDO = { computadora: 300, celular: 300, medido: false };
+
 /** Por si llega una clave que esta pantalla todavía no conoce. */
 export const VISTA_POR_DEFECTO: VistaSeccion = {
   icono: 'fa-puzzle-piece',
