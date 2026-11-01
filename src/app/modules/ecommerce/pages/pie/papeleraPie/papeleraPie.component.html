@@ -1,0 +1,89 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-trash-can me-2"></i>Papelera del pie
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="cerrar()"></button>
+</div>
+
+<div class="modal-body">
+
+  @if (cargando) {
+    <div class="text-center py-4 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+    </div>
+  } @else if (vacia) {
+    <p class="text-muted text-center mb-0 py-4">
+      <i class="fa-solid fa-circle-check me-1"></i> La papelera está vacía.
+    </p>
+  } @else {
+
+    @for (columna of columnas; track columna.id) {
+      <div class="border rounded mb-2 p-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fa-solid fa-table-columns text-secondary"></i>
+          <b>{{ columna.texto }}</b>
+          <small class="text-muted">
+            eliminada {{ columna.deleted_at }} por {{ columna.deleted_by || '—' }}
+          </small>
+          <button type="button" class="btn btn-xs btn-outline-primary ms-auto"
+                  [disabled]="trabajando" (click)="restaurar(columna)">
+            <i class="fa fa-rotate-left"></i> Restaurar
+          </button>
+        </div>
+
+        @if (enlacesDe(columna).length) {
+          <ul class="list-unstyled mt-2 mb-0 ps-4">
+            @for (enlace of enlacesDe(columna); track enlace.id) {
+              <li class="small text-muted">
+                <i class="fa-solid fa-link me-1"></i>{{ enlace.texto }}
+                <code class="ms-1">{{ enlace.detalle }}</code>
+              </li>
+            }
+          </ul>
+          <small class="text-muted ps-4">Vuelven con la columna.</small>
+        }
+      </div>
+    }
+
+    @if (sueltos.length) {
+      @for (enlace of sueltos; track enlace.id) {
+        <div class="border rounded mb-2 p-2 d-flex align-items-center gap-2">
+          <i class="fa-solid fa-link text-secondary"></i>
+          <span>
+            <b>{{ enlace.texto }}</b>
+            <small class="text-muted ms-1">{{ enlace.detalle }}</small>
+          </span>
+          <small class="text-muted">
+            eliminado {{ enlace.deleted_at }} por {{ enlace.deleted_by || '—' }}
+          </small>
+          <button type="button" class="btn btn-xs btn-outline-primary ms-auto"
+                  [disabled]="trabajando" (click)="restaurar(enlace)">
+            <i class="fa fa-rotate-left"></i> Restaurar
+          </button>
+        </div>
+      }
+    }
+
+    @if (columnas.length) {
+      <p class="small text-muted mb-0">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        Los enlaces que están dentro de una columna borrada sólo vuelven con
+        ella: en el pie todo se pinta dentro de una columna, así que sueltos no
+        tendrían dónde ir.
+      </p>
+    }
+  }
+</div>
+
+<div class="modal-footer">
+  @if (puedeVaciar && !vacia) {
+    <button type="button" class="btn btn-danger me-auto"
+            [disabled]="trabajando" (click)="vaciar()">
+      <i class="fa fa-trash"></i> Vaciar papelera
+    </button>
+  }
+  <button type="button" class="btn btn-secondary" (click)="cerrar()">
+    <i class="fa fa-times"></i> Cerrar
+  </button>
+</div>

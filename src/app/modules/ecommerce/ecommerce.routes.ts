@@ -5,6 +5,7 @@ import { AccessResolver } from '../../core/resolvers/access.resolver';
 
 import { AllPaginasInformativasComponent } from './pages/paginasInformativas/allPaginasInformativas/allPaginasInformativas.component';
 import { EditEncabezadoComponent } from './pages/encabezado/editEncabezado/editEncabezado.component';
+import { EditPieComponent } from './pages/pie/editPie/editPie.component';
 
 // ============================================================================
 // MÓDULO ECOMMERCE: la administración de la página web.
@@ -45,6 +46,14 @@ export const ECOMMERCE_ROUTES: Routes = [
       {
         path: 'editEncabezado',
         component: EditEncabezadoComponent,
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
+
+      // El pie tambien es una sola configuracion: «edit...» y sin id
+      {
+        path: 'editPie',
+        component: EditPieComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },

@@ -1,0 +1,239 @@
+<!-- ============================================================
+     EL PIE DE LA TIENDA
+
+     Dos pestañas, como el encabezado: las redes se revisan juntas y se
+     guardan con un botón; las columnas se arrastran y se guardan solas.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item">Ecommerce</li>
+  <li class="breadcrumb-item active">Pie de página</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       icono="window-minimize">
+
+  <div header class="panel-acciones">
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Papelera del pie" (click)="abrirPapelera()">
+      <i class="fa fa-trash-can"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Cargando el pie…</p>
+    </div>
+  } @else {
+
+    <app-tab-panel
+      [pestanas]="pestanas"
+      [activa]="pestana"
+      [conPanel]="true"
+      (cambiada)="pestana = $any($event)">
+
+      <!-- ================= REDES ================= -->
+      @if (pestana === 'redes') {
+        <panel headerClass="bg-gray-800" title="Redes sociales" noButton="true"
+               noBody="true" panelClass="mb-0" icono="share-nodes" fondoGris="true">
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                La lista es cerrada: la tienda tiene el dibujo de cada una.
+                Enciende la que uses y ponle su dirección; una apagada puede
+                quedarse a medias.
+              </p>
+
+              <form [formGroup]="form" novalidate>
+                <div formArrayName="redes">
+                  @for (red of redes.controls; track red; let i = $index) {
+                    <div class="pie-red" [formGroupName]="i"
+                         [class.pie-red--on]="ctrlRedActivo(i).value">
+
+                      <span class="pie-red__nombre">
+                        {{ controlRed(i).controls['nombre'].value }}
+                      </span>
+
+                      <app-campoTexto
+                        class="pie-red__campo"
+                        [control]="$any(controlRed(i).controls['enlace'])"
+                        label="DIRECCIÓN"
+                        placeholder="https://www.facebook.com/tu-pagina"
+                        [maxLength]="250"
+                        [trimEspacios]="true">
+                      </app-campoTexto>
+
+                      <app-checkbox class="pie-red__switch palanca"
+                        [control]="ctrlRedActivo(i)"
+                        [label]="ctrlRedActivo(i).value ? 'Visible' : 'Oculta'"
+                        [id]="'ck-red-' + controlRed(i).controls['tipo'].value">
+                      </app-checkbox>
+                    </div>
+                  }
+                </div>
+              </form>
+
+              @if (puedeEditar) {
+                <div class="d-flex justify-content-end mt-3">
+                  <button type="button" class="btn btn-primary"
+                          [disabled]="guardando" (click)="guardarRedes()">
+                    <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar redes' }}
+                  </button>
+                </div>
+              }
+
+            </div>
+          </ng-container>
+        </panel>
+      }
+
+      <!-- ================= COLUMNAS ================= -->
+      @if (pestana === 'columnas') {
+        <panel headerClass="bg-gray-800"
+               [title]="'Columnas del pie (' + columnas.length + ')'"
+               noButton="true" noBody="true" panelClass="mb-0"
+               icono="table-columns" fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (puedeCrear) {
+              <button type="button" class="btn btn-xs btn-outline-light"
+                      [disabled]="trabajando" (click)="nuevaColumna()">
+                <i class="fa fa-plus"></i> Nueva columna
+              </button>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                Se arrastra para cambiar el orden y se guarda solo. El título de
+                la columna no es un enlace; todo lo de dentro sí necesita su
+                dirección.
+              </p>
+
+              @if (columnas.length === 0) {
+                <p class="text-muted mb-0">El pie no tiene columnas todavía.</p>
+              }
+
+              <div cdkDropList [cdkDropListData]="columnas"
+                   [cdkDropListDisabled]="!puedeEditar || trabajando"
+                   (cdkDropListDropped)="soltarColumna($event)">
+
+                @for (columna of columnas; track columna.id) {
+                  <div class="pie-columna" cdkDrag>
+
+                    <div class="pie-columna__fantasma" *cdkDragPlaceholder></div>
+
+                    <div class="pie-columna__cabecera"
+                         [class.pie-columna__cabecera--oculta]="!columna.activo">
+                      @if (puedeEditar) {
+                        <span class="pie-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                          <i class="fa-solid fa-grip-vertical"></i>
+                        </span>
+                      }
+
+                      <i class="fa-solid fa-table-columns pie-columna__icono"></i>
+                      <span class="pie-columna__titulo">{{ columna.titulo }}</span>
+                      <span class="pie-columna__cuenta">{{ columna.enlaces.length }}</span>
+
+                      @if (!columna.activo) {
+                        <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculta</span>
+                      }
+
+                      <span class="pie-columna__botones">
+                        @if (puedeCrear) {
+                          <button type="button" class="btn btn-xs btn-ver"
+                                  title="Añadir un enlace a esta columna"
+                                  [disabled]="trabajando" (click)="nuevoEnlace(columna)">
+                            <i class="fa fa-plus"></i>
+                          </button>
+                        }
+                        @if (puedeEditar) {
+                          <button type="button" class="btn btn-xs btn-editar"
+                                  title="Renombrar la columna" (click)="editarColumna(columna)">
+                            <i class="fa fa-pen"></i>
+                          </button>
+                        }
+                        @if (puedeEliminar) {
+                          <button type="button" class="btn btn-xs btn-borrar"
+                                  title="Enviar la columna a la papelera"
+                                  [disabled]="trabajando" (click)="borrarColumna(columna)">
+                            <i class="fa fa-trash"></i>
+                          </button>
+                        }
+                      </span>
+                    </div>
+
+                    @if (columna.enlaces.length === 0) {
+                      <p class="pie-columna__vacia">
+                        <i class="fa-solid fa-circle-info me-1"></i> Columna vacía.
+                      </p>
+                    }
+
+                    <div cdkDropList [cdkDropListData]="columna.enlaces"
+                         [cdkDropListDisabled]="!puedeEditar || trabajando"
+                         (cdkDropListDropped)="soltarEnlace(columna, $event)">
+
+                      @for (enlace of columna.enlaces; track enlace.id) {
+                        <div class="pie-enlace" [class.pie-enlace--oculto]="!enlace.activo" cdkDrag>
+
+                          <div class="pie-columna__fantasma" *cdkDragPlaceholder></div>
+
+                          @if (puedeEditar) {
+                            <span class="pie-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                              <i class="fa-solid fa-grip-vertical"></i>
+                            </span>
+                          }
+
+                          <i class="fa-solid fa-link pie-enlace__icono"></i>
+
+                          <span class="pie-enlace__texto">
+                            {{ enlace.texto }}
+                            <code class="pie-enlace__destino">{{ enlace.enlace }}</code>
+                          </span>
+
+                          @if (!enlace.activo) {
+                            <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculto</span>
+                          }
+
+                          <span class="pie-columna__botones">
+                            @if (puedeEditar) {
+                              <button type="button" class="btn btn-xs btn-editar"
+                                      title="Modificar" (click)="editarEnlace(enlace)">
+                                <i class="fa fa-pen"></i>
+                              </button>
+                            }
+                            @if (puedeEliminar) {
+                              <button type="button" class="btn btn-xs btn-borrar"
+                                      title="Enviar a la papelera"
+                                      [disabled]="trabajando" (click)="borrarEnlace(enlace)">
+                                <i class="fa fa-trash"></i>
+                              </button>
+                            }
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+            </div>
+          </ng-container>
+        </panel>
+      }
+
+    </app-tab-panel>
+  }
+</panel>

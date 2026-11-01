@@ -1,0 +1,85 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid me-2" [ngClass]="esEnlace ? 'fa-link' : 'fa-table-columns'"></i>{{ titulo }}
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="activeModal.dismiss()"></button>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <div class="modal-body">
+    <div class="row g-3">
+
+      <div class="col-12">
+        <app-campoTexto
+          [control]="$any(form.controls['texto'])"
+          [label]="esEnlace ? 'TEXTO DEL ENLACE' : 'TÍTULO DE LA COLUMNA'"
+          [placeholder]="esEnlace ? 'Políticas de Garantía' : 'Atención al cliente'"
+          [maxLength]="60"
+          [trimEspacios]="true">
+        </app-campoTexto>
+
+        @if (!esEnlace) {
+          <p class="campo-hint mb-0">
+            <i class="fa-solid fa-circle-info"></i>
+            Es el encabezado de la columna en el pie. No es un enlace: no lleva
+            a ninguna parte al pincharlo.
+          </p>
+        }
+      </div>
+
+      @if (esEnlace) {
+        <div class="col-12">
+          <app-campoTexto
+            [control]="$any(form.controls['enlace'])"
+            label="DIRECCIÓN"
+            placeholder="/politicas-de-garantia"
+            [maxLength]="250"
+            [trimEspacios]="true">
+          </app-campoTexto>
+
+          @if (avisoPestana) {
+            <p class="campo-hint mb-0">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> {{ avisoPestana }}
+            </p>
+          } @else {
+            <p class="campo-hint mb-0">
+              <i class="fa-solid fa-circle-info"></i>
+              Obligatoria: en el pie no hay enlaces que sólo desplieguen.
+            </p>
+          }
+        </div>
+
+        <div class="col-12">
+          <app-campoTexto
+            [control]="$any(form.controls['icono'])"
+            label="ICONO (OPCIONAL)"
+            placeholder="whatsapp"
+            [maxLength]="40"
+            [trimEspacios]="true">
+          </app-campoTexto>
+        </div>
+      }
+
+      <div class="col-12">
+        <app-checkbox class="palanca"
+          [control]="ctrlActivo"
+          [label]="ctrlActivo.value
+                    ? (esEnlace ? 'Se ve en el pie' : 'La columna se ve en el pie')
+                    : (esEnlace ? 'Oculto' : 'Columna oculta')"
+          [id]="'ck-pie-activo'">
+        </app-checkbox>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger" (click)="activeModal.dismiss()">
+      <i class="fa fa-times"></i> Salir
+    </button>
+    <button type="submit" class="btn btn-primary" [disabled]="guardando">
+      <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</form>
