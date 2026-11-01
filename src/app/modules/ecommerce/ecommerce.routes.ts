@@ -4,6 +4,7 @@ import { AuthGuard } from '../../core/guards/auth.guard';
 import { AccessResolver } from '../../core/resolvers/access.resolver';
 
 import { AllPaginasInformativasComponent } from './pages/paginasInformativas/allPaginasInformativas/allPaginasInformativas.component';
+import { EditEncabezadoComponent } from './pages/encabezado/editEncabezado/editEncabezado.component';
 
 // ============================================================================
 // MÓDULO ECOMMERCE: la administración de la página web.
@@ -35,6 +36,15 @@ export const ECOMMERCE_ROUTES: Routes = [
       {
         path: 'allPaginasInformativas',
         component: AllPaginasInformativasComponent,
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
+
+      // El encabezado es UNA sola configuración, no un listado: por eso la
+      // ruta es «edit…» y no «all…», y por eso no lleva id.
+      {
+        path: 'editEncabezado',
+        component: EditEncabezadoComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },
