@@ -437,7 +437,7 @@
    no el detalle. En pantallas estrechas se va del todo, porque con tres
    columnas no cabe ninguna. */
 .cat-destacadas {
-  flex: 0 0 15rem;
+  flex: 0 0 13rem;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -445,7 +445,9 @@
   background-color: var(--bs-component-bg, #fff);
 }
 
-@media (max-width: 1199.98px) {
+/* Sólo se va cuando de verdad no cabe: con el menú lateral abierto, un
+   portátil de 1366 deja sitio justo para las cuatro. */
+@media (max-width: 991.98px) {
   .cat-destacadas { display: none; }
 }
 
@@ -572,7 +574,7 @@
    Comparte la cabecera, el cuerpo y el vacío con la de destacadas: son dos
    listas del mismo tamaño y el mismo trabajo. */
 .cat-tienda {
-  flex: 0 0 16rem;
+  flex: 0 0 14rem;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -582,10 +584,15 @@
 
 .cat-tienda .cat-lateral__titulo .fa-store { color: var(--bs-app-theme, #00acac); }
 
-/* Con cuatro columnas hace falta sitio: primero se va ésta, luego las dos */
-@media (max-width: 1599.98px) {
+/* Con cuatro columnas hace falta sitio, pero no tanto como para esconderla
+   en una pantalla normal: a 1500px caben las cuatro. Primero se va ésta,
+   luego la de destacadas. */
+@media (max-width: 1199.98px) {
   .cat-tienda { display: none; }
 }
+
+/* Encendida y aun así no sale en la tienda */
+.cat-tienda__fila.is-fuera { opacity: .62; }
 
 .cat-tienda__lista { min-height: .5rem; }
 

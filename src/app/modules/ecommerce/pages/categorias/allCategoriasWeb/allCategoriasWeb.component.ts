@@ -185,36 +185,58 @@ export class AllCategoriasWebComponent implements OnInit {
    */
   public enLaTienda: RamaTienda[] = [];
 
-  /** Cuántas se ven en la tienda, contando todas las ramas. */
-  get cuantasEnLaTienda(): number {
-    return this.categorias.filter(c => c.estado === 'visible').length;
-  }
+  /** Cuántas llevan encendido «Se ve en la tienda». */
+  public cuantasEnLaTienda = 0;
 
   /**
-   * Arma el árbol de las visibles EN EL ORDEN DE LA TIENDA.
+   * Arma el árbol de las ENCENDIDAS, en el orden de la tienda.
    *
-   * El servidor ya las devuelve así —`orden_web` primero y el del catálogo
-   * de reserva—, así que aquí sólo hay que colgarlas de su padre sin
-   * reordenar nada: ordenarlo otra vez sería repetir la regla y acabar
-   * enseñando algo distinto de lo que ve el cliente.
+   * ENTRAN LAS QUE TIENEN EL CHECK «Se ve en la tienda», no sólo las que de
+   * verdad acaban saliendo. Son cosas distintas: una categoría encendida
+   * puede no salir porque está inactiva en el catálogo o porque no tiene
+   * ninguna de producto debajo. Ésas también se ordenan —el día que se
+   * arreglen saldrán donde se las dejó— y se marcan con un aviso.
+   *
+   * APAGAR UN PADRE APAGA LA RAMA, así que una hija encendida bajo un padre
+   * apagado tampoco entra: en la tienda no está, y dejarla aquí suelta la
+   * sacaría de donde cuelga.
+   *
+   * El servidor ya las devuelve en el orden de la tienda —`orden_web`
+   * primero y el del catálogo de reserva—, así que aquí sólo hay que
+   * colgarlas de su padre sin reordenar nada: ordenarlo otra vez sería
+   * repetir la regla y acabar enseñando algo distinto de lo que ve el
+   * cliente.
    */
   private armarEnLaTienda(): void {
     const porId = new Map<number, RamaTienda>();
     const raices: RamaTienda[] = [];
 
+    // El servidor las manda por nivel, así que un padre siempre se mira
+    // antes que sus hijas y basta con una pasada.
     for (const c of this.categorias) {
-      if (c.estado !== 'visible') { continue; }
-      porId.set(c.id, { categoria: c, hijos: [] });
-    }
+      if (c.oculta) { continue; }
+      if (c.padre_id && !porId.has(c.padre_id)) { continue; }
 
-    for (const c of this.categorias) {
-      const rama = porId.get(c.id);
-      if (!rama) { continue; }
+      const rama: RamaTienda = { categoria: c, hijos: [] };
+      porId.set(c.id, rama);
+
       const padre = c.padre_id ? porId.get(c.padre_id) : undefined;
       if (padre) { padre.hijos.push(rama); } else { raices.push(rama); }
     }
 
     this.enLaTienda = raices;
+    this.cuantasEnLaTienda = porId.size;
+  }
+
+  /**
+   * Encendida pero sin llegar a salir en la tienda.
+   *
+   * No es lo mismo que apagarla: el check está puesto y aun así no sale,
+   * porque está inactiva en el catálogo o porque no tiene ninguna categoría
+   * de producto debajo. Las dos se arreglan en Inventarios.
+   */
+  encendidaPeroNoSale(c: CategoriaWebModel): boolean {
+    return !c.oculta && c.estado !== 'visible';
   }
 
   /**

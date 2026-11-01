@@ -479,14 +479,17 @@
           @if (enLaTienda.length === 0) {
             <p class="cat-destacadas__vacio">
               <i class="fa-solid fa-store"></i>
-              <span>Ninguna categoría sale en la tienda todavía.</span>
+              <span>
+                Ninguna categoría tiene encendido «Se ve en la tienda».
+              </span>
             </p>
 
           } @else {
             <p class="campo-hint">
               <i class="fa-solid fa-circle-info"></i>
               <span>
-                El orden del menú y del mosaico. Se arrastra <b>dentro de su
+                Las que tienen encendido <b>«Se ve en la tienda»</b>, en el
+                orden del menú y del mosaico. Se arrastra <b>dentro de su
                 rama</b>: mover una categoría a otra rama es cambiar el árbol,
                 y eso se hace en Inventarios.
               </span>
@@ -516,7 +519,9 @@
 
           <div class="cat-tienda__fantasma" *cdkDragPlaceholder></div>
 
-          <div class="cat-tienda__fila" [class.is-actual]="r.categoria.id === seleccionId">
+          <div class="cat-tienda__fila"
+               [class.is-actual]="r.categoria.id === seleccionId"
+               [class.is-fuera]="encendidaPeroNoSale(r.categoria)">
             @if (puedeEditar) {
               <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden dentro de su rama">
                 <i class="fa-solid fa-grip-vertical"></i>
@@ -536,6 +541,14 @@
             @if (r.categoria.destacada) {
               <i class="fa-solid fa-star cat-tienda__estrella"
                  title="También está en los círculos de destacadas"></i>
+            }
+
+            <!-- Encendida y aun así no sale: eso no se ve en ninguna otra
+                 parte de esta columna. -->
+            @if (encendidaPeroNoSale(r.categoria)) {
+              <i class="fa-solid fa-triangle-exclamation cat-dest__aviso"
+                 [title]="estadosCategoria[r.categoria.estado].texto + ': '
+                          + estadosCategoria[r.categoria.estado].ayuda"></i>
             }
           </div>
 
