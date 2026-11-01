@@ -37,6 +37,16 @@ export class CategoriaWebService {
     return this._http.post(this.URL_SERVICIOS + 'editCategoriaWeb/' + id, data);
   }
 
+  /**
+   * El orden de los círculos de la portada.
+   *
+   * VAN TODAS LAS DESTACADAS, en el orden en que se ven: un orden a medias
+   * dejaría las que faltan en un sitio que nadie eligió.
+   */
+  ordenarDestacadas(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'ordenarDestacadas', { ids });
+  }
+
   // ================================================================
   // LAS IMÁGENES DE CADA CATEGORÍA
   // ================================================================

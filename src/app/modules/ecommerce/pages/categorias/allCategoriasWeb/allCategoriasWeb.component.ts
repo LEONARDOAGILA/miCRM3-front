@@ -137,6 +137,38 @@ export class AllCategoriasWebComponent implements OnInit {
     return n;
   }
 
+  /**
+   * Las destacadas, EN EL ORDEN EN QUE SALEN en la portada.
+   *
+   * VA EN UN CAMPO y no en un getter: es la lista que se arrastra, y un
+   * array nuevo en cada ciclo de detección de cambios deja al cdkDropList
+   * sin saber qué movió.
+   */
+  public destacadas: CategoriaWebModel[] = [];
+
+  /** Rehace la lista de la derecha a partir del árbol. */
+  private ordenarDestacadasEnPantalla(): void {
+    this.destacadas = this.categorias
+      .filter(c => c.destacada)
+      .sort((a, b) => {
+        // Las recién marcadas (sin orden) van al final, como en la tienda
+        const oa = a.destacada_orden ?? Number.MAX_SAFE_INTEGER;
+        const ob = b.destacada_orden ?? Number.MAX_SAFE_INTEGER;
+        if (oa !== ob) { return oa - ob; }
+        return a.orden - b.orden || a.nombre.localeCompare(b.nombre);
+      });
+  }
+
+  /** Una destacada que no se ve en la tienda no sale en los círculos. */
+  noSaleAunqueDestacada(c: CategoriaWebModel): boolean {
+    return c.estado !== 'visible';
+  }
+
+  /** Cuántas imágenes tiene una categoría, para la lista de la derecha. */
+  cuentaDe(id: number): CuentaImagenes | undefined {
+    return this.cuentas.get(id);
+  }
+
   /** La ruta completa de la elegida, para saber de qué rama es. */
   get rutaSeleccionada(): string {
     if (!this.seleccionada) { return ''; }
@@ -241,6 +273,35 @@ export class AllCategoriasWebComponent implements OnInit {
 
     this.originalNodes = raices;
     this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
+    this.ordenarDestacadasEnPantalla();
+  }
+
+  /**
+   * Se soltó una destacada en otro sitio: ése es el orden de la portada.
+   *
+   * SE GUARDA AL SOLTAR, sin botón: es un gesto, y pedir que además se
+   * confirme convierte un gesto en dos pasos.
+   */
+  async soltarDestacada(evento: CdkDragDrop<CategoriaWebModel[]>): Promise<void> {
+    if (!this.puedeEditar || evento.previousIndex === evento.currentIndex) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    moveItemInArray(this.destacadas, evento.previousIndex, evento.currentIndex);
+    const ids = this.destacadas.map(c => c.id);
+
+    this.trabajando = true;
+    try {
+      const res: any = await firstValueFrom(this._categoriaService.ordenarDestacadas(ids));
+      this.categorias = res?.data ?? this.categorias;
+      this.construirArbol();
+      this._toastr.success(res?.message ?? 'Orden guardado', 'Listo');
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo guardar el orden', 'Error',
+                         { timeOut: 15000, closeButton: true });
+      await this.cargarArbol();
+    } finally {
+      this.trabajando = false;
+    }
   }
 
   onNodeSelect(node: FileTreeNode): void {

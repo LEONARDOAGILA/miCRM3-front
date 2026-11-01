@@ -1,13 +1,14 @@
 <!-- ============================================================
-     CATEGORÍAS DE LA TIENDA: ÁRBOL A LA IZQUIERDA, IMÁGENES A LA
-     DERECHA
+     CATEGORÍAS DE LA TIENDA: TRES COLUMNAS
 
-     Misma estructura que Inventarios → Características:
+     Misma estructura que Inventarios → Características, con una
+     columna más a la derecha:
        1. Miga de pan
        2. <panel> a toda la altura
           2a. Lateral: el árbol de categorías, con su buscador
           2b. Divisor arrastrable (doble clic: ancho por defecto)
           2c. Contenido: la categoría elegida y sus imágenes
+          2d. Orden de las destacadas: la lista que ve el cliente
      ============================================================ -->
 
 <ol class="breadcrumb lista-breadcrumb cat-breadcrumb">
@@ -378,6 +379,87 @@
             </div>
           </ng-scrollbar>
         }
+      </div>
+
+      <!-- ---------- 2d. EL ORDEN DE LAS DESTACADAS ---------- -->
+      <!-- Aparte de la categoría elegida a propósito: esta lista no es de
+           una categoría, es de todas. Es lo que ve el cliente arriba de la
+           portada, y se ordena mirándola entera. -->
+      <div class="cat-destacadas">
+
+        <div class="cat-destacadas__cabecera">
+          <span class="cat-lateral__titulo">
+            <i class="fa fa-star me-1"></i> Orden destacadas
+          </span>
+          <span class="cat-destacadas__cuenta">{{ destacadas.length }}</span>
+        </div>
+
+        <div class="cat-destacadas__cuerpo">
+          @if (destacadas.length === 0) {
+            <p class="cat-destacadas__vacio">
+              <i class="fa-solid fa-star"></i>
+              <span>
+                Ninguna destacada todavía. Marca una categoría con la palanca
+                <b>Destacada</b> y aparecerá aquí.
+              </span>
+            </p>
+
+          } @else {
+            <p class="campo-hint">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>
+                Éste es el orden en que salen los círculos de la portada.
+                Arrástralas para cambiarlo: se guarda al soltar.
+              </span>
+            </p>
+
+            <ng-scrollbar class="cat-destacadas__lista">
+              <div cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="destacadas"
+                   [cdkDropListDisabled]="!puedeEditar || trabajando"
+                   (cdkDropListDropped)="soltarDestacada($event)">
+
+                @for (c of destacadas; track c.id) {
+                  <div class="cat-dest"
+                       [class.is-actual]="c.id === seleccionId"
+                       [class.is-fuera]="noSaleAunqueDestacada(c)"
+                       cdkDrag>
+
+                    <div class="cat-dest__fantasma" *cdkDragPlaceholder></div>
+
+                    @if (puedeEditar) {
+                      <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                        <i class="fa-solid fa-grip-vertical"></i>
+                      </span>
+                    }
+
+                    <span class="cat-dest__puesto">{{ $index + 1 }}</span>
+
+                    <!-- Un clic la abre a la izquierda: desde aquí se ve el
+                         orden, y lo que se quiere tocar está en la ficha. -->
+                    <button type="button" class="cat-dest__nombre"
+                            [title]="'Abrir «' + c.nombre + '»'"
+                            (click)="seleccionar(c.id)">
+                      <i class="fa-solid"
+                         [class.fa-image]="cuentaDe(c.id)?.sale_alguna"
+                         [class.fa-star]="!cuentaDe(c.id)?.sale_alguna"></i>
+                      {{ c.nombre }}
+                    </button>
+
+                    @if (noSaleAunqueDestacada(c)) {
+                      <i class="fa-solid fa-triangle-exclamation cat-dest__aviso"
+                         title="Está destacada pero no se ve en la tienda, así que no sale en la portada"></i>
+                    }
+                  </div>
+                }
+              </div>
+            </ng-scrollbar>
+
+            <p class="cat-destacadas__pie">
+              <i class="fa-solid fa-image"></i> con imagen · <i class="fa-solid fa-star"></i> sin imagen
+              (la tienda pinta su inicial)
+            </p>
+          }
+        </div>
       </div>
 
     </div>

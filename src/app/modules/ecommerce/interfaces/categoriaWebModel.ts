@@ -26,6 +26,12 @@ export interface CategoriaWebModel {
    * portada. El mosaico NO la mira: ése lo llena cualquiera con imagen.
    */
   destacada: boolean;
+
+  /**
+   * En qué puesto sale entre los círculos. Nulo = recién marcada, va al
+   * final; así marcar una no mueve a las que ya estaban puestas.
+   */
+  destacada_orden?: number | null;
   /** Las de transacción son donde cuelgan los productos */
   es_transaccion: boolean;
   activo: boolean;
