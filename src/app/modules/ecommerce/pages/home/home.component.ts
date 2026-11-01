@@ -58,7 +58,7 @@ export class EcommerceHomeComponent implements OnInit {
    * entrar, luego lo que cuelga del menú, y al final el catálogo.
    */
   public readonly areas: TarjetaArea[] = [
-    { clave: 'inicio', titulo: 'Inicio de la tienda', icono: 'fa-house', ruta: null,
+    { clave: 'inicio', titulo: 'Inicio de la tienda', icono: 'fa-house', ruta: 'editInicio',
       descripcion: 'Banner, categorías destacadas, ofertas, mosaico, bloques y marcas.' },
     { clave: 'encabezado', titulo: 'Encabezado', icono: 'fa-window-maximize', ruta: 'editEncabezado',
       descripcion: 'La franja de arriba, el buscador, el menú y el aviso de crédito.' },

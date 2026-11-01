@@ -9,6 +9,7 @@ import { EditEncabezadoComponent } from './pages/encabezado/editEncabezado/editE
 import { EditPieComponent } from './pages/pie/editPie/editPie.component';
 import { AllCategoriasWebComponent } from './pages/categorias/allCategoriasWeb/allCategoriasWeb.component';
 import { EditEspanaMotosComponent } from './pages/espanaMotos/editEspanaMotos/editEspanaMotos.component';
+import { EditInicioComponent } from './pages/inicio/editInicio/editInicio.component';
 
 // ============================================================================
 // MÓDULO ECOMMERCE: la administración de la página web.
@@ -82,6 +83,14 @@ export const ECOMMERCE_ROUTES: Routes = [
       {
         path: 'editEspanaMotos',
         component: EditEspanaMotosComponent,
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
+
+      // La portada de la tienda: la lista de secciones en su orden
+      {
+        path: 'editInicio',
+        component: EditInicioComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },

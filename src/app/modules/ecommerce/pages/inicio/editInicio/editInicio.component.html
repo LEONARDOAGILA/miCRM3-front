@@ -1,0 +1,221 @@
+<!-- ============================================================
+     LA PORTADA DE LA TIENDA
+
+     No es un formulario: es la lista de secciones en el orden en
+     que se ven. Se arrastra para moverlas y se abre una para
+     configurarla.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
+  <li class="breadcrumb-item active">Inicio de la tienda</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       icono="house">
+
+  <div header class="panel-acciones">
+    <span class="inicio-cuenta">{{ enLaPortada }} de {{ secciones.length }} en la portada</span>
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Cargando las secciones del inicio…</p>
+    </div>
+
+  } @else {
+
+    <p class="campo-hint">
+      <i class="fa-solid fa-circle-info"></i>
+      Las secciones están en el orden en que se ven en la tienda: arrástralas
+      desde <i class="fa-solid fa-grip-vertical"></i> para moverlas, y abre una
+      para configurarla. Las secciones no se crean ni se borran aquí: cada una
+      existe porque la tienda sabe pintarla.
+    </p>
+
+    <div cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="secciones"
+         [cdkDropListDisabled]="!puedeEditar || trabajando"
+         (cdkDropListDropped)="soltar($event)">
+
+      @for (s of secciones; track s.clave) {
+        <div class="seccion" [class.seccion--abierta]="abierta === s.clave" cdkDrag>
+
+          <div class="seccion-fantasma" *cdkDragPlaceholder></div>
+
+          <!-- ---------- La cabecera: un clic la abre ---------- -->
+          <div class="seccion-cabecera" role="button" tabindex="0"
+               [attr.aria-expanded]="abierta === s.clave"
+               (click)="alternarSeccion(s.clave)"
+               (keydown.enter)="alternarSeccion(s.clave)">
+
+            @if (puedeEditar) {
+              <span class="seccion-asa" cdkDragHandle title="Arrastra para cambiar el orden"
+                    (click)="$event.stopPropagation()">
+                <i class="fa-solid fa-grip-vertical"></i>
+              </span>
+            }
+
+            <span class="seccion-icono" [class.seccion-icono--apagado]="s.estado !== 'visible'">
+              <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+            </span>
+
+            <span class="seccion-textos">
+              <b class="seccion-nombre">{{ s.nombre }}</b>
+              <span class="seccion-etiquetas">
+                <span class="chip" [ngClass]="estados[s.estado].clase">
+                  <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
+                  {{ estados[s.estado].texto }}
+                </span>
+
+                <span class="chip" [class.chip-muted]="s.fuente.tipo === 'galeria'"
+                      [class.chip-warn]="s.fuente.tipo !== 'galeria'">
+                  @if (s.fuente.tipo === 'galeria') {
+                    <i class="fa-solid fa-images"></i>
+                  } @else {
+                    <i class="fa-solid fa-hammer"></i>
+                  }
+                  {{ resumen(s) }}
+                </span>
+
+                <!-- Encendida y sin nada que enseñar: la tienda se la salta -->
+                @if (sinContenido(s)) {
+                  <span class="chip chip-warn">
+                    <i class="fa-solid fa-triangle-exclamation"></i> No sale: está vacía
+                  </span>
+                }
+              </span>
+            </span>
+
+            <!-- El interruptor guarda solo, y no abre la sección.
+                 Dice «encendida», no «en la portada»: lo segundo lo decide
+                 además la vigencia, y lo cuenta la etiqueta de la izquierda.
+                 Una sección encendida pero programada no está en la portada
+                 todavía, y el interruptor no puede decir que sí. -->
+            <span class="seccion-palanca" (click)="$event.stopPropagation()">
+              <label class="form-check form-switch palanca mb-0">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       [id]="'seccion-' + s.clave"
+                       [checked]="s.activo"
+                       [disabled]="!puedeEditar || trabajando"
+                       (change)="alternarActivo(s, $event)">
+                <span class="form-check-label">{{ s.activo ? 'Encendida' : 'Apagada' }}</span>
+              </label>
+            </span>
+
+            <i class="fa seccion-flecha"
+               [class.fa-chevron-down]="abierta === s.clave"
+               [class.fa-chevron-right]="abierta !== s.clave"></i>
+          </div>
+
+          <!-- ---------- El cuerpo: se pinta una vez y se esconde ---------- -->
+          @if (vistas.has(s.clave)) {
+            <div class="seccion-cuerpo" [hidden]="abierta !== s.clave"
+                 [formGroup]="formularios[s.clave]">
+
+              <p class="seccion-que-es">{{ vista(s).descripcion }}</p>
+
+              <!-- Rótulo y fechas -->
+              <div class="row g-2">
+                @if (vista(s).rotulo !== 'ninguno') {
+                  <div class="col-12" [class.col-md-6]="vista(s).rotulo === 'titulo_subtitulo'">
+                    <app-campoTexto
+                      [control]="$any(formularios[s.clave].controls['titulo'])"
+                      label="TÍTULO"
+                      placeholder="Lo que se lee encima de la sección"
+                      [maxLength]="80"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+                  </div>
+                }
+
+                @if (vista(s).rotulo === 'titulo_subtitulo') {
+                  <div class="col-12 col-md-6">
+                    <app-campoTexto
+                      [control]="$any(formularios[s.clave].controls['subtitulo'])"
+                      label="SUBTÍTULO"
+                      [maxLength]="80"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+                  </div>
+                }
+
+                <div class="col-12">
+                  <label class="seccion-rotulo">ENTRE QUÉ FECHAS SE VE <span>opcional</span></label>
+                  <div class="row g-2">
+                    <div class="col-6 col-md-3">
+                      <input type="datetime-local" class="form-control form-control-sm"
+                             formControlName="desde" aria-label="Desde">
+                      <small class="seccion-pie">Desde</small>
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <input type="datetime-local" class="form-control form-control-sm"
+                             formControlName="hasta" aria-label="Hasta">
+                      <small class="seccion-pie">Hasta</small>
+                    </div>
+                  </div>
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    @if (s.clave === 'ofertas_flash') {
+                      La fecha «hasta» es además la cuenta regresiva que ve el cliente.
+                    } @else {
+                      Para dejar lista la sección de una campaña: se enciende y se apaga sola.
+                    }
+                    Vacías, se ve siempre.
+                  </p>
+                </div>
+              </div>
+
+              @if (puedeEditar) {
+                <div class="d-flex justify-content-end mb-3">
+                  <button type="button" class="btn btn-sm btn-primary"
+                          [disabled]="guardando === s.clave" (click)="guardarSeccion(s)">
+                    <i class="fa fa-save"></i>
+                    {{ guardando === s.clave ? 'Guardando…' : 'Guardar la sección' }}
+                  </button>
+                </div>
+              }
+
+              <!-- Lo que enseña: su galería, o lo que falta para tenerla -->
+              <div class="seccion-contenido">
+                @if (s.fuente.tipo === 'galeria') {
+                  <app-galeriaImagenes
+                    [clave]="$any(s.fuente.galeria)"
+                    [puedeCrear]="puedeCrear"
+                    [puedeEditar]="puedeEditar"
+                    [puedeEliminar]="puedeEliminar"
+                    (cambiada)="galeriaCambiada()">
+                  </app-galeriaImagenes>
+
+                } @else {
+                  <div class="seccion-pendiente">
+                    <i class="fa-solid fa-hammer"></i>
+                    <div>
+                      <b>Todavía no se puede llenar desde aquí.</b>
+                      Falta {{ s.fuente.falta }}. Mientras tanto la tienda se
+                      salta esta sección, así que puede quedarse encendida sin
+                      estropear nada: el orden y las fechas que pongas ahora
+                      valen igual cuando llegue.
+                    </div>
+                  </div>
+                }
+              </div>
+
+              @if (s.updated_at) {
+                <small class="seccion-pie">
+                  Último cambio: {{ s.updated_at }} · {{ s.updated_by || '—' }}
+                </small>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</panel>

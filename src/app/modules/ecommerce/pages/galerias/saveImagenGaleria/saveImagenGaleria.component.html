@@ -1,0 +1,202 @@
+<!-- ============================================================
+     UNA IMAGEN DE UNA GALERÍA
+
+     El fichero se elige de la biblioteca compartida; aquí se
+     configura a dónde lleva, dónde se ve y entre qué fechas.
+     ============================================================ -->
+
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-image me-2"></i>{{ titulo }}
+    <small class="imagen-galeria">{{ galeria.nombre }}</small>
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="activeModal.dismiss()"></button>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <div class="modal-body">
+    <div class="row g-3">
+
+      <!-- ---------- El fichero ---------- -->
+      <div class="col-12 col-lg-5">
+        <label class="imagen-rotulo">IMAGEN</label>
+
+        @if (ficheroUrl) {
+          <img class="imagen-vista" [src]="ficheroUrl" alt="La imagen elegida">
+        } @else {
+          <div class="imagen-sin">
+            <i class="fa-solid fa-image"></i>
+            Todavía no has elegido ninguna
+          </div>
+        }
+
+        <button type="button" class="btn btn-sm btn-primary w-100 mt-2" (click)="elegir(false)">
+          <i class="fa fa-images"></i> {{ fichero ? 'Cambiar la imagen' : 'Elegir la imagen' }}
+        </button>
+
+        <!-- La de celular, aparte y opcional -->
+        <div class="imagen-movil">
+          <label class="imagen-rotulo">VERSIÓN PARA CELULAR <span>opcional</span></label>
+
+          @if (ficheroMovilUrl) {
+            <img class="imagen-vista imagen-vista--movil" [src]="ficheroMovilUrl" alt="La versión para celular">
+          }
+
+          <p class="campo-hint mb-2">
+            <i class="fa-solid fa-circle-info"></i>
+            Un banner apaisado recortado a pantalla de teléfono deja fuera lo
+            que importa. Sin esta, se usa la misma.
+          </p>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-xs btn-outline-secondary" (click)="elegir(true)">
+              <i class="fa fa-mobile-screen"></i> {{ ficheroMovil ? 'Cambiar' : 'Elegir' }}
+            </button>
+            @if (ficheroMovil) {
+              <button type="button" class="btn btn-xs btn-outline-danger" (click)="quitarMovil()">
+                <i class="fa fa-times"></i> Quitar
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- Lo demás ---------- -->
+      <div class="col-12 col-lg-7">
+        <div class="row g-3">
+
+          <div class="col-12">
+            <app-campoTexto
+              [control]="$any(form.controls['nombre'])"
+              label="NOMBRE"
+              placeholder="Para reconocerla en esta lista"
+              [maxLength]="100"
+              [trimEspacios]="true">
+            </app-campoTexto>
+          </div>
+
+          <div class="col-12">
+            <app-campoTexto
+              [control]="$any(form.controls['enlace'])"
+              label="A DÓNDE LLEVA"
+              placeholder="/shop o https://…"
+              [maxLength]="250"
+              [trimEspacios]="true">
+            </app-campoTexto>
+            <p class="campo-hint">
+              <i class="fa-solid fa-circle-info"></i>
+              Vale una ruta de la tienda (<code>/shop</code>), una dirección
+              completa, <code>mailto:</code> o <code>tel:</code>. Vacío, la
+              imagen no es un enlace.
+            </p>
+          </div>
+
+          @if (enlaceEsExterno) {
+            <div class="col-12">
+              <app-checkbox class="palanca"
+                [control]="ctrlPestana"
+                [label]="ctrlPestana.value ? 'Se abre en otra pestaña' : 'Se abre en la misma'"
+                [id]="'ck-imagen-pestana'">
+              </app-checkbox>
+            </div>
+          }
+
+          <div class="col-12 col-md-6">
+            <app-combo
+              formControlName="mostrar_en"
+              [items]="dondeSeVe"
+              bindLabel="name"
+              bindValue="id"
+              label="DÓNDE SE VE">
+            </app-combo>
+          </div>
+
+          <div class="col-12 col-md-6 d-flex align-items-end pb-2">
+            <app-checkbox class="palanca"
+              [control]="ctrlActivo"
+              [label]="ctrlActivo.value ? 'Encendida' : 'Apagada'"
+              [id]="'ck-imagen-activa'">
+            </app-checkbox>
+          </div>
+
+          <!-- Vigencia -->
+          <div class="col-12">
+            <label class="imagen-rotulo">ENTRE QUÉ FECHAS SE VE <span>opcional</span></label>
+            <div class="row g-2">
+              <div class="col-6">
+                <input type="datetime-local" class="form-control form-control-sm"
+                       formControlName="desde" aria-label="Desde">
+                <small class="imagen-pie">Desde</small>
+              </div>
+              <div class="col-6">
+                <input type="datetime-local" class="form-control form-control-sm"
+                       formControlName="hasta" aria-label="Hasta">
+                <small class="imagen-pie">Hasta</small>
+              </div>
+            </div>
+            <p class="campo-hint">
+              <i class="fa-solid fa-circle-info"></i>
+              Para dejar lista la promoción del viernes: se enciende y se apaga
+              sola. Vacías, se ve siempre.
+            </p>
+          </div>
+
+          <!-- El texto encima: sólo los banners lo pintan -->
+          @if (conTexto) {
+            <div class="col-12">
+              <label class="imagen-rotulo">TEXTO ENCIMA DE LA IMAGEN <span>opcional</span></label>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <app-campoTexto
+                [control]="$any(form.controls['titulo'])"
+                label="TÍTULO"
+                [maxLength]="40"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <app-campoTexto
+                [control]="$any(form.controls['boton'])"
+                label="TEXTO DEL BOTÓN"
+                placeholder="Ver más"
+                [maxLength]="20"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+            <div class="col-12 col-md-8">
+              <app-campoTexto
+                [control]="$any(form.controls['subtitulo'])"
+                label="SUBTÍTULO"
+                [maxLength]="80"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="imagen-rotulo">COLOR DEL TEXTO</label>
+              <div class="imagen-color">
+                <input type="color" class="form-control form-control-color"
+                       formControlName="color" aria-label="Color del texto">
+                <span class="imagen-color__codigo">{{ form.controls['color'].value || 'el del tema' }}</span>
+              </div>
+            </div>
+          }
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger" (click)="activeModal.dismiss()">
+      <i class="fa fa-times"></i> Salir
+    </button>
+    <button type="submit" class="btn btn-primary" [disabled]="guardando">
+      <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</form>

@@ -1,0 +1,258 @@
+/* ============================================================
+   LA PORTADA DE LA TIENDA
+   ============================================================
+   Colores de variables de Bootstrap, para que acompañen al tema claro y al
+   oscuro. */
+
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+.inicio-cuenta {
+  font-size: .75rem;
+  opacity: .9;
+}
+
+/* ---------- Cada sección ---------- */
+.seccion {
+  margin-bottom: .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  overflow: hidden;
+}
+
+.seccion--abierta {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 2px rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.seccion-cabecera {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  padding: .5rem .75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.seccion-cabecera:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .035);
+}
+
+.seccion-asa {
+  cursor: grab;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+}
+
+.seccion-asa:active { cursor: grabbing; }
+
+.seccion-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: .375rem;
+  font-size: .8125rem;
+  color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.seccion-icono--apagado {
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.seccion-textos {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.seccion-nombre {
+  font-size: .875rem;
+  line-height: 1.2;
+  color: var(--bs-body-color, #212529);
+}
+
+.seccion-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.seccion-palanca { flex: 0 0 auto; }
+
+.seccion-flecha {
+  flex: 0 0 auto;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- El cuerpo ---------- */
+.seccion-cuerpo {
+  padding: .75rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.seccion-que-es {
+  margin: 0 0 .75rem;
+  font-size: .75rem;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.seccion-contenido {
+  padding-top: .75rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+.seccion-pendiente {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  padding: .75rem;
+  border-radius: .375rem;
+  font-size: .75rem;
+  line-height: 1.45;
+  color: var(--bs-warning-text-emphasis, #997404);
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+}
+
+.seccion-pendiente i { margin-top: .15rem; font-size: 1rem; }
+
+.seccion-rotulo {
+  display: block;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.seccion-rotulo span { font-weight: 400; text-transform: none; opacity: .8; }
+
+.seccion-pie {
+  display: block;
+  font-size: .65rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.seccion-fantasma {
+  min-height: 3.25rem;
+  border: 1px dashed var(--bs-app-theme, #00acac);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+}
+
+/* ---------- Etiquetas ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .1rem .4rem;
+  border-radius: 1rem;
+  font-size: .65rem;
+  font-weight: 600;
+}
+
+.chip-muted {
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.chip-ok {
+  color: var(--bs-success-text-emphasis, #0a3622);
+  background-color: var(--bs-success-bg-subtle, #d1e7dd);
+}
+
+.chip-info {
+  color: var(--bs-info-text-emphasis, #055160);
+  background-color: var(--bs-info-bg-subtle, #cff4fc);
+}
+
+.chip-warn {
+  color: var(--bs-warning-text-emphasis, #997404);
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 .75rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  /* Un gris más flojo se quedaba en 4,35:1 sobre el panel oscuro,
+     por debajo de lo que se lee en letra de .7rem. */
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ============================================================
+   LA PALANCA
+   ============================================================
+   Aquí va sobre un <label> propio y no sobre app-checkbox: el interruptor
+   guarda solo, sin pasar por un formulario. El dibujo es el mismo. */
+.palanca {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding-left: 0;
+  min-height: auto;
+  cursor: pointer;
+}
+
+.palanca .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin: 0;
+  flex: 0 0 auto;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.palanca .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.palanca .form-check-input:disabled { opacity: .5; }
+
+.palanca .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+  cursor: pointer;
+}
+
+::ng-deep .cdk-drag-preview {
+  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, .2),
+              0 8px 10px 1px rgba(0, 0, 0, .14),
+              0 3px 14px 2px rgba(0, 0, 0, .12);
+  border-radius: .375rem;
+}
+
+::ng-deep .cdk-drag-animating {
+  transition: transform 180ms cubic-bezier(0, 0, .2, 1);
+}

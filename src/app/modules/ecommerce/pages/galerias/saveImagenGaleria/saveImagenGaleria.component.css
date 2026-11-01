@@ -1,0 +1,139 @@
+/* ============================================================
+   UNA IMAGEN DE UNA GALERÍA
+   ============================================================
+   Colores de variables de Bootstrap, para que acompañen al tema claro y al
+   oscuro. */
+
+.imagen-galeria {
+  margin-left: .5rem;
+  font-size: .75rem;
+  font-weight: 400;
+  opacity: .85;
+}
+
+.imagen-rotulo {
+  display: block;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.imagen-rotulo span {
+  font-weight: 400;
+  text-transform: none;
+  opacity: .8;
+}
+
+.imagen-vista {
+  display: block;
+  width: 100%;
+  max-height: 11rem;
+  /* `contain` y no `cover`: aquí se comprueba qué imagen es, y recortarla
+     para que cuadre esconde justo lo que hay que reconocer. */
+  object-fit: contain;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.imagen-vista--movil {
+  max-height: 7rem;
+  margin-bottom: .5rem;
+}
+
+.imagen-sin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  height: 7rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.imagen-sin i { font-size: 1.5rem; opacity: .5; }
+
+.imagen-movil {
+  margin-top: 1rem;
+  padding-top: .75rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+.imagen-pie {
+  display: block;
+  font-size: .65rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.imagen-color {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.imagen-color__codigo {
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 .75rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  /* Un gris más flojo se quedaba en 4,35:1 sobre el panel oscuro,
+     por debajo de lo que se lee en letra de .7rem. */
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ============================================================
+   LA PALANCA
+   ============================================================
+   El estilo vive mitad en el HTML y mitad aquí, y llevarse sólo el HTML deja
+   un cuadrado. */
+.palanca ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.palanca ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.palanca ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.palanca ::ng-deep .form-check-label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+  vertical-align: middle;
+}
