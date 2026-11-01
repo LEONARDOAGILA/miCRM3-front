@@ -1,12 +1,16 @@
 <!-- ============================================================
-     LAS CATEGORÍAS DE LA TIENDA
+     CATEGORÍAS DE LA TIENDA: ÁRBOL A LA IZQUIERDA, IMÁGENES A LA
+     DERECHA
 
-     El árbol es del catálogo; aquí sólo se decide qué sale y con qué
-     nombre. Se pinta plano con sangría: son 33 en tres niveles, y
-     plegarlas escondería justo lo que se viene a mirar.
+     Misma estructura que Inventarios → Características:
+       1. Miga de pan
+       2. <panel> a toda la altura
+          2a. Lateral: el árbol de categorías, con su buscador
+          2b. Divisor arrastrable (doble clic: ancho por defecto)
+          2c. Contenido: la categoría elegida y sus imágenes
      ============================================================ -->
 
-<ol class="breadcrumb lista-breadcrumb">
+<ol class="breadcrumb lista-breadcrumb cat-breadcrumb">
   <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
   <li class="breadcrumb-item active">Categorías de la tienda</li>
 </ol>
@@ -14,88 +18,343 @@
 <panel [title]="titulo"
        [noButton]="false"
        [noButtonCollapse]="true"
-       icono="tags">
+       (panelReloaded)="cargarArbol()"
+       [closeRoute]="'/ecommerce/home'"
+       icono="tags"
+       class="flex-1 d-flex flex-column overflow-hidden"
+       bodyClass="p-0 flex-1 overflow-hidden"
+       panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
 
-  <div header class="panel-acciones">
-    <button type="button" class="btn btn-sm btn-outline-light"
-            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
-      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
-    </button>
+  <div header class="cat-cabecera">
+    <span class="cat-cabecera__cuenta" title="Las que hoy tienen imagen vigente salen en el mosaico de la portada">
+      {{ cuantasEnLaPortada }} con imagen hoy
+    </span>
   </div>
 
-  @if (cargando) {
-    <div class="text-center py-5 text-muted">
-      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-      <p class="mt-2 mb-0">Cargando las categorías…</p>
-    </div>
-  } @else {
+  <div class="file-manager h-100 cat"
+       [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled, 'is-redimensionando': redimensionando }"
+       [style.--bs-file-manager-sidebar-width]="anchoLateral + 'px'"
+       [style.--bs-file-manager-mobile-sidebar-margin]="(-anchoLateral) + 'px'">
 
-    <div class="cat-resumen">
-      <span><b>{{ visibles }}</b> de {{ categorias.length }} se ven en la tienda</span>
-      @if (conProblema) {
-        <span class="cat-resumen__aviso">
-          <i class="fa-solid fa-triangle-exclamation"></i>
-          {{ conProblema }} no sale{{ conProblema === 1 ? '' : 'n' }} por algo del catálogo
-        </span>
-      }
-    </div>
+    <!-- .file-manager es flex en COLUMNA (el tema); la fila de verdad es
+         .file-manager-container. Sin él, el árbol y el contenido se apilan
+         uno encima del otro a todo lo ancho. -->
+    <div class="file-manager-container">
 
-    <p class="campo-hint">
-      <i class="fa-solid fa-circle-info"></i>
-      Crear, borrar y reordenar categorías es de
-      <a routerLink="/inventarios/allCategorias">Inventarios → Categorías</a>.
-      Aquí sólo se decide cuáles salen en la tienda y con qué nombre.
-    </p>
+      <!-- ---------- 2a. LATERAL: EL ÁRBOL ---------- -->
+      <div class="file-manager-sidebar cat-lateral">
 
-    <ul class="cat-lista">
-      @for (c of categorias; track c.id) {
-        <li class="cat-fila"
-            [class.cat-fila--fuera]="c.estado !== 'visible'"
-            [style.padding-left]="sangria(c)">
+        <div class="file-manager-sidebar-mobile-toggler">
+          <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Categorías">
+            <i class="fa" [ngClass]="mobileSidebarToggled ? 'fa-chevron-left' : 'fa-sitemap'"></i>
+          </button>
+        </div>
 
-          <i class="fa-solid cat-fila__icono"
-             [ngClass]="c.es_transaccion ? 'fa-box' : 'fa-layer-group'"
-             [title]="c.es_transaccion ? 'Aquí cuelgan productos' : 'Agrupa, no lleva productos'"></i>
+        <div class="cat-lateral__cabecera">
+          <span class="cat-lateral__titulo"><i class="fa fa-sitemap me-1"></i> Categorías</span>
+          <div class="btn-group cat-lateral__acciones" role="group" aria-label="Árbol">
+            <button type="button" class="btn btn-xs btn-white" title="Expandir todo" (click)="expandirTodo()">
+              <i class="fa fa-angles-down"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-white" title="Contraer todo" (click)="contraerTodo()">
+              <i class="fa fa-angles-up"></i>
+            </button>
+          </div>
+        </div>
 
-          <span class="cat-fila__nombre">
-            {{ c.nombre }}
-            @if (renombrada(c)) {
-              <small class="cat-fila__original" [title]="'En el catálogo: ' + c.nombre_catalogo">
-                ({{ c.nombre_catalogo }})
-              </small>
-            }
+        <div class="cat-lateral__buscador">
+          <i class="fa fa-search cat-lateral__lupa"></i>
+          <input type="text" class="form-control form-control-sm" placeholder="Buscar categoría…"
+                 [(ngModel)]="searchQuery" (input)="filterNodes()">
+          @if (searchQuery) {
+            <button type="button" class="cat-lateral__limpiar" title="Limpiar" (click)="limpiarBusquedaArbol()">&times;</button>
+          }
+        </div>
+
+        <div class="cat-lateral__arbol position-relative">
+          @if (recargandoArbol) {
+            <div class="loader1" role="status" aria-label="Recargando"></div>
+            <div class="overlay1" aria-hidden="true"></div>
+          }
+          <ng-scrollbar class="h-100">
+            <div class="cat-arbol">
+              @for (node of nodes; track node.id) {
+                <app-file-tree-node
+                  [node]="node"
+                  [isSelected]="node.isSelected"
+                  (nodeSelected)="onNodeSelect($event)"
+                  (nodeToggled)="onNodeToggle($event)">
+                </app-file-tree-node>
+              } @empty {
+                <div class="cat-arbol__vacio">
+                  <i class="fa fa-search"></i>
+                  <span>Nada coincide con «{{ searchQuery }}»</span>
+                </div>
+              }
+            </div>
+          </ng-scrollbar>
+        </div>
+
+        <div class="file-manager-sidebar-footer cat-lateral__pie">
+          <span class="cat-lateral__ayuda">
+            <i class="fa fa-image"></i> con imagen saliendo hoy
           </span>
+        </div>
+      </div>
 
-          <span class="chip" [ngClass]="etiqueta(c).clase" [title]="etiqueta(c).ayuda">
-            {{ etiqueta(c).texto }}
-          </span>
+      <!-- ---------- 2b. DIVISOR ARRASTRABLE ---------- -->
+      <div class="cat-divisor"
+           role="separator"
+           aria-orientation="vertical"
+           title="Arrastra para cambiar el ancho del árbol (doble clic: ancho por defecto)"
+           (pointerdown)="iniciarRedimension($event)"
+           (dblclick)="anchoLateral = ANCHO_LATERAL_DEFECTO; guardarAnchoLateral()">
+      </div>
 
-          <span class="cat-fila__botones">
-            @if (puedeEditar) {
-              <button type="button" class="btn btn-xs btn-editar"
-                      title="Cambiar el nombre con el que se ve en la tienda"
-                      (click)="editarNombre(c)">
-                <i class="fa fa-pen"></i>
+      <!-- ---------- 2c. CONTENIDO: LA CATEGORÍA Y SUS IMÁGENES ---------- -->
+      <div class="file-manager-content cat-contenido">
+
+        @if (!seleccionada) {
+          <div class="cat-vacio">
+            <i class="fa-solid fa-hand-pointer"></i>
+            <p>Elige una categoría del árbol para ver y programar sus imágenes.</p>
+          </div>
+
+        } @else {
+
+          <!-- La categoría: dónde estoy y cómo sale en la tienda -->
+          <div class="cat-ubicacion">
+            <nav class="cat-ruta" aria-label="Categoría" [title]="rutaSeleccionada">
+              <i class="fa fa-sitemap"></i> {{ rutaSeleccionada }}
+            </nav>
+
+            <span class="chip" [ngClass]="estadosCategoria[seleccionada.estado].clase"
+                  [title]="estadosCategoria[seleccionada.estado].ayuda">
+              {{ estadosCategoria[seleccionada.estado].texto }}
+            </span>
+
+            <div class="cat-ubicacion__acciones">
+              @if (puedeCrear) {
+                <button type="button" class="btn btn-sm btn-primary"
+                        [disabled]="trabajando" (click)="programar()">
+                  <i class="fa fa-plus"></i> Programar imagen
+                </button>
+              }
+              <button type="button" class="btn btn-sm btn-white" title="Volver a cargar"
+                      [disabled]="cargandoImagenes" (click)="cargarImagenes()">
+                <i class="fa fa-rotate" [class.fa-spin]="cargandoImagenes"></i>
               </button>
-            }
+            </div>
+          </div>
 
-            @if (palancaUtil(c)) {
-              <button type="button" class="btn btn-xs"
-                      [class.btn-ver]="c.oculta"
-                      [class.btn-borrar]="!c.oculta"
-                      [title]="c.oculta ? 'Que vuelva a salir en la tienda' : 'Que no salga en la tienda'"
-                      [disabled]="trabajando" (click)="alternar(c)">
-                <i class="fa" [ngClass]="c.oculta ? 'fa-eye' : 'fa-eye-slash'"></i>
-              </button>
-            } @else if (puedeEditar) {
-              <!-- Encenderla aquí no la haría aparecer: se dice dónde ir en vez
-                   de dejar un botón que no hace nada. -->
-              <i class="fa-solid fa-circle-question cat-fila__porque"
-                 [title]="etiqueta(c).ayuda"></i>
-            }
-          </span>
-        </li>
-      }
-    </ul>
-  }
+          <ng-scrollbar class="cat-scroll">
+            <div class="cat-cuerpo">
+
+              <!-- Cómo se ve en la tienda -->
+              <div class="cat-ajustes">
+                <label class="form-check form-switch palanca mb-0">
+                  <input class="form-check-input" type="checkbox" role="switch"
+                         id="cat-visible"
+                         [checked]="!seleccionada.oculta"
+                         [disabled]="!puedeEditar || trabajando"
+                         (change)="alternarVisible()">
+                  <span class="form-check-label">
+                    {{ seleccionada.oculta ? 'Apagada para la tienda' : 'Se ve en la tienda' }}
+                  </span>
+                </label>
+
+                <div class="cat-nombre-web">
+                  <label class="cat-rotulo" for="cat-nombre-web">
+                    NOMBRE EN LA TIENDA <span>opcional</span>
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="cat-nombre-web"
+                           [placeholder]="seleccionada.nombre_catalogo"
+                           maxlength="80"
+                           [disabled]="!puedeEditar || trabajando"
+                           [(ngModel)]="nombreWeb">
+                    <button type="button" class="btn btn-white"
+                            [disabled]="!puedeEditar || trabajando" (click)="guardarNombreWeb()">
+                      <i class="fa fa-save"></i>
+                    </button>
+                  </div>
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Vacío, se usa el del catálogo («{{ seleccionada.nombre_catalogo }}»). Así, si
+                    lo renombras en Inventarios, la tienda lo sigue.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Las imágenes -->
+              <div class="cat-seccion">
+                <div class="cat-seccion__titulo">
+                  <i class="fa-solid fa-images"></i>
+                  Imágenes programadas
+                  <span class="cat-seccion__cuenta">{{ imagenes.length }}</span>
+                </div>
+
+                <!-- El texto va dentro de un <span>: .campo-hint es flex, y un
+                     <b> suelto se convertiría en otra columna. -->
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span>
+                    Cada imagen tiene sus fechas, y la tienda enseña la que toque
+                    hoy sola. Sin fechas es ilimitada. Si dos están en fecha a la
+                    vez manda la de arriba: arrástralas para cambiar el orden.
+                    <b>Mientras haya una saliendo, esta categoría sale en el
+                    mosaico de la portada.</b>
+                  </span>
+                </p>
+
+                @if (cargandoImagenes) {
+                  <p class="text-muted small mb-0">
+                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando…
+                  </p>
+
+                } @else if (imagenes.length === 0) {
+                  <div class="cat-sin-imagenes">
+                    <i class="fa-solid fa-image"></i>
+                    <div>
+                      <b>Esta categoría no tiene ninguna imagen.</b>
+                      En la tienda sale sólo en el menú y en los filtros; para
+                      que además salga en el mosaico de la portada, prográmale una.
+                    </div>
+                  </div>
+
+                } @else {
+
+                  @if (!laQueSale) {
+                    <p class="cat-aviso">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                      Hoy no sale ninguna: están apagadas, o sus fechas no
+                      incluyen hoy. La categoría no aparecerá en el mosaico.
+                    </p>
+                  }
+
+                  <div cdkDropList [cdkDropListData]="imagenes"
+                       [cdkDropListDisabled]="!puedeEditar || trabajando"
+                       (cdkDropListDropped)="soltarImagen($event)">
+
+                    @for (i of imagenes; track i.id) {
+                      <div class="cat-fila"
+                           [class.cat-fila--sale]="i.sale_ahora"
+                           [class.cat-fila--apagada]="i.estado !== 'vigente'"
+                           cdkDrag>
+
+                        <div class="cat-fantasma" *cdkDragPlaceholder></div>
+
+                        @if (puedeEditar) {
+                          <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                            <i class="fa-solid fa-grip-vertical"></i>
+                          </span>
+                        }
+
+                        <img class="cat-miniatura" [src]="i.imagen_url" [alt]="i.nombre || 'Imagen'" loading="lazy">
+
+                        <div class="cat-datos">
+                          <b class="cat-nombre">{{ i.nombre || 'Sin nombre' }}</b>
+
+                          <span class="cat-etiquetas">
+                            @if (i.sale_ahora) {
+                              <span class="chip chip-ok" title="Es la que está viendo el cliente ahora mismo">
+                                <i class="fa-solid fa-circle-check"></i> Es la que sale
+                              </span>
+                            }
+
+                            <span class="chip" [ngClass]="estadosImagen[i.estado].clase"
+                                  [title]="estadosImagen[i.estado].ayuda">
+                              <i class="fa-solid" [ngClass]="estadosImagen[i.estado].icono"></i>
+                              {{ estadosImagen[i.estado].texto }}
+                            </span>
+
+                            @if (i.tapada) {
+                              <span class="chip chip-warn" title="Está en fecha, pero sale la de arriba">
+                                <i class="fa-solid fa-layer-group"></i> Tapada por la de arriba
+                              </span>
+                            }
+
+                            <span class="chip chip-muted">
+                              <i class="fa-solid" [class.fa-infinity]="!i.desde && !i.hasta"
+                                 [class.fa-calendar]="!!(i.desde || i.hasta)"></i>
+                              {{ vigencia(i) }}
+                            </span>
+                          </span>
+                        </div>
+
+                        <span class="cat-botones">
+                          @if (puedeEditar) {
+                            <button type="button" class="btn btn-xs btn-editar" title="Modificar"
+                                    [disabled]="trabajando" (click)="editarImagen(i)">
+                              <i class="fa fa-pen"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-ver"
+                                    [title]="i.activo ? 'Apagar' : 'Encender'"
+                                    [disabled]="trabajando" (click)="alternarImagen(i)">
+                              <i class="fa" [class.fa-eye]="!i.activo" [class.fa-eye-slash]="i.activo"></i>
+                            </button>
+                          }
+                          @if (puedeEliminar) {
+                            <button type="button" class="btn btn-xs btn-borrar" title="Quitar"
+                                    [disabled]="trabajando" (click)="quitarImagen(i)">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                          }
+                        </span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- La papelera DE ESTA CATEGORÍA -->
+                @if (contenido && (contenido.en_papelera || papeleraAbierta)) {
+                  <div class="cat-papelera">
+                    <button type="button" class="btn btn-xs btn-outline-secondary" (click)="alternarPapelera()">
+                      <i class="fa" [class.fa-chevron-right]="!papeleraAbierta"
+                         [class.fa-chevron-down]="papeleraAbierta"></i>
+                      Papelera ({{ contenido.en_papelera }})
+                    </button>
+
+                    @if (papeleraAbierta) {
+                      @if (papelera.length === 0) {
+                        <p class="text-muted small mt-2 mb-0">La papelera de esta categoría está vacía.</p>
+                      } @else {
+                        @for (p of papelera; track p.id) {
+                          <div class="cat-fila cat-fila--papelera">
+                            <img class="cat-miniatura" [src]="p.imagen_url" [alt]="p.nombre || 'Imagen'" loading="lazy">
+                            <div class="cat-datos">
+                              <b class="cat-nombre">{{ p.nombre || 'Sin nombre' }}</b>
+                              <small class="cat-detalle">Quitada el {{ p.deleted_at }} por {{ p.deleted_by || '—' }}</small>
+                            </div>
+                            <span class="cat-botones">
+                              @if (puedeEditar) {
+                                <button type="button" class="btn btn-xs btn-ver" title="Devolver"
+                                        [disabled]="trabajando" (click)="restaurarImagen(p)">
+                                  <i class="fa fa-rotate-left"></i>
+                                </button>
+                              }
+                            </span>
+                          </div>
+                        }
+
+                        @if (puedeEliminar) {
+                          <button type="button" class="btn btn-xs btn-outline-danger mt-2"
+                                  [disabled]="trabajando" (click)="vaciarPapelera()">
+                            <i class="fa fa-trash"></i> Vaciar la papelera de esta categoría
+                          </button>
+                        }
+                      }
+                    }
+                  </div>
+                }
+              </div>
+
+            </div>
+          </ng-scrollbar>
+        }
+      </div>
+
+    </div>
+  </div>
+
 </panel>
