@@ -14,11 +14,11 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { CategoriaWebService } from '../../../services/categoriaWeb.service';
 import { CategoriaWebModel, ESTADOS_CATEGORIA } from '../../../interfaces/categoriaWebModel';
+import { ImagenesDeCategoria, CuentaImagenes } from '../../../interfaces/categoriaImagenModel';
 import {
-  CategoriaImagenModel, ImagenesDeCategoria, ImagenCategoriaEnPapelera,
-  CuentaImagenes, ESTADOS_IMAGEN_CATEGORIA,
-} from '../../../interfaces/categoriaImagenModel';
-import { SaveImagenCategoriaComponent } from '../saveImagenCategoria/saveImagenCategoria.component';
+  ImagenProgramadaModel, ImagenProgramadaEnPapelera, ESTADOS_IMAGEN_PROGRAMADA,
+} from '../../../interfaces/imagenProgramadaModel';
+import { SaveImagenProgramadaComponent } from '../../imagenes/saveImagenProgramada/saveImagenProgramada.component';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
@@ -87,7 +87,7 @@ export class AllCategoriasWebComponent implements OnInit {
   public contenido: ImagenesDeCategoria | null = null;
   public cargandoImagenes = false;
 
-  public papelera: ImagenCategoriaEnPapelera[] = [];
+  public papelera: ImagenProgramadaEnPapelera[] = [];
   public papeleraAbierta = false;
 
   /** El nombre para la tienda, mientras se escribe. */
@@ -105,7 +105,7 @@ export class AllCategoriasWebComponent implements OnInit {
   public anchoLateral = this.leerAnchoLateral();
 
   public readonly estadosCategoria = ESTADOS_CATEGORIA;
-  public readonly estadosImagen = ESTADOS_IMAGEN_CATEGORIA;
+  public readonly estadosImagen = ESTADOS_IMAGEN_PROGRAMADA;
 
   private _categoriaService = inject(CategoriaWebService);
   private _seguridadService = inject(SeguridadService);
@@ -121,10 +121,10 @@ export class AllCategoriasWebComponent implements OnInit {
     return this.categorias.find(c => c.id === this.seleccionId) ?? null;
   }
 
-  get imagenes(): CategoriaImagenModel[] { return this.contenido?.imagenes ?? []; }
+  get imagenes(): ImagenProgramadaModel[] { return this.contenido?.imagenes ?? []; }
 
   /** La que se está viendo ahora mismo en la tienda, si hay alguna. */
-  get laQueSale(): CategoriaImagenModel | null {
+  get laQueSale(): ImagenProgramadaModel | null {
     return this.imagenes.find(i => i.sale_ahora) ?? null;
   }
 
@@ -548,30 +548,31 @@ export class AllCategoriasWebComponent implements OnInit {
   // ================================================================
 
   programar(): void { this.abrirImagen(null); }
-  editarImagen(i: CategoriaImagenModel): void { this.abrirImagen(i); }
+  editarImagen(i: ImagenProgramadaModel): void { this.abrirImagen(i); }
 
-  private abrirImagen(i: CategoriaImagenModel | null): void {
+  private abrirImagen(i: ImagenProgramadaModel | null): void {
     const c = this.seleccionada;
     if (!c) { return; }
     if (!(i ? this.puedeEditar : this.puedeCrear)) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
-    const ref = this.modal.open(SaveImagenCategoriaComponent,
+    const ref = this.modal.open(SaveImagenProgramadaComponent,
                                 { size: 'lg', backdrop: 'static', centered: true });
-    ref.componentInstance.categoriaId = c.id;
-    ref.componentInstance.categoriaNombre = this.rutaSeleccionada;
+    ref.componentInstance.tipo = 'categoria';
+    ref.componentInstance.duenioId = c.id;
+    ref.componentInstance.duenioNombre = this.rutaSeleccionada;
     ref.componentInstance.imagen = i;
 
     ref.result.then((data: ImagenesDeCategoria) => this.pintar(data),
                     () => { /* se cerró sin guardar */ });
   }
 
-  async alternarImagen(i: CategoriaImagenModel): Promise<void> {
+  async alternarImagen(i: ImagenProgramadaModel): Promise<void> {
     if (!this.puedeEditar || this.trabajando) { return; }
     await this.accionImagen(() => this._categoriaService.activarImagen(i.id));
   }
 
-  async quitarImagen(i: CategoriaImagenModel): Promise<void> {
+  async quitarImagen(i: ImagenProgramadaModel): Promise<void> {
     if (!this.puedeEliminar || this.trabajando) { return; }
     if (!confirm(`¿Quitar esta imagen de «${this.seleccionada?.nombre}»?\n\n`
                  + 'Va a la papelera de esta categoría: desde ahí se puede devolver.')) { return; }
@@ -579,7 +580,7 @@ export class AllCategoriasWebComponent implements OnInit {
     await this.accionImagen(() => this._categoriaService.deleteImagen(i.id));
   }
 
-  async soltarImagen(evento: CdkDragDrop<CategoriaImagenModel[]>): Promise<void> {
+  async soltarImagen(evento: CdkDragDrop<ImagenProgramadaModel[]>): Promise<void> {
     if (!this.puedeEditar || evento.previousIndex === evento.currentIndex || !this.contenido) { return; }
 
     moveItemInArray(this.contenido.imagenes, evento.previousIndex, evento.currentIndex);
@@ -604,7 +605,7 @@ export class AllCategoriasWebComponent implements OnInit {
     }
   }
 
-  async restaurarImagen(p: ImagenCategoriaEnPapelera): Promise<void> {
+  async restaurarImagen(p: ImagenProgramadaEnPapelera): Promise<void> {
     if (!this.puedeEditar || this.trabajando) { return; }
     await this.accionImagen(() => this._categoriaService.restaurarImagenes([p.id]));
   }
@@ -658,7 +659,7 @@ export class AllCategoriasWebComponent implements OnInit {
   }
 
   /** Las fechas en una línea legible. */
-  vigencia(i: CategoriaImagenModel): string {
+  vigencia(i: ImagenProgramadaModel): string {
     const bonita = (f: string | null) => (f ?? '').replace('T', ' ');
     if (!i.desde && !i.hasta) { return 'Siempre'; }
     if (i.desde && i.hasta) { return `${bonita(i.desde)} → ${bonita(i.hasta)}`; }

@@ -35,13 +35,14 @@ export type EstadoSeccion = 'visible' | 'oculta' | 'programada' | 'terminada';
  *   galeria     las imágenes de una galería, aquí mismo
  *   promocion   las tarjetas grandes: las categorías marcadas «En promoción»
  *   destacadas  los círculos de arriba: las marcadas «Destacada»
+ *   marcas      «Nuestras marcas»: las encendidas para la tienda, en su orden
  *   pendiente   todavía no tiene fuente, y `falta` dice cuál
  *
  * Lo decide el servidor —la tienda, la portada pública y el CRM tienen que
  * estar de acuerdo en esto— y la pantalla sólo lo enseña.
  */
 export interface FuenteSeccion {
-  tipo: 'galeria' | 'promocion' | 'destacadas' | 'pendiente';
+  tipo: 'galeria' | 'promocion' | 'destacadas' | 'marcas' | 'pendiente';
   /** Con `galeria`: su clave. */
   galeria?: string;
   /** Con `promocion` y `destacadas`: la pantalla donde se llena. */

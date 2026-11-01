@@ -80,6 +80,7 @@
                     @case ('galeria')    { <i class="fa-solid fa-images"></i> }
                     @case ('promocion')  { <i class="fa-solid fa-tags"></i> }
                     @case ('destacadas') { <i class="fa-solid fa-star"></i> }
+                    @case ('marcas')     { <i class="fa-solid fa-award"></i> }
                     @default             { <i class="fa-solid fa-hammer"></i> }
                   }
                   {{ resumen(s) }}
@@ -200,11 +201,11 @@
                   <div class="seccion-enlace">
                     <i class="fa-solid fa-tags"></i>
                     <div>
-                      <b>Esta sección se llena en «Categorías de la tienda».</b>
+                      <b>Esta sección se llena en «{{ donde.pantalla }}».</b>
                       {{ donde.regla }}
                       <div class="mt-2">
                         <a class="btn btn-xs btn-primary" [routerLink]="donde.ruta">
-                          <i class="fa fa-arrow-right"></i> Ir a Categorías de la tienda
+                          <i class="fa fa-arrow-right"></i> Ir a {{ donde.pantalla }}
                         </a>
                       </div>
                     </div>

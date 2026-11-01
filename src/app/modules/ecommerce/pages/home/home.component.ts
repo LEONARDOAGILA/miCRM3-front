@@ -72,7 +72,7 @@ export class EcommerceHomeComponent implements OnInit {
       descripcion: 'Cuáles salen en el menú y en el inicio, con su nombre para la web.' },
     { clave: 'galerias', titulo: 'Galerías', icono: 'fa-images', ruta: null,
       descripcion: 'Los bloques de imágenes: banners, tarjetas y logos de pago.' },
-    { clave: 'marcas_tienda', titulo: 'Marcas de la tienda', icono: 'fa-award', ruta: null,
+    { clave: 'marcas_tienda', titulo: 'Marcas de la tienda', icono: 'fa-award', ruta: 'allMarcasWeb',
       descripcion: 'El logo de cada marca y cuáles salen en «Nuestras marcas».' },
     { clave: 'paginas_marca', titulo: 'Páginas de marca', icono: 'fa-copyright', ruta: null,
       descripcion: 'Una página por marca: banner, fotos y contacto.' },

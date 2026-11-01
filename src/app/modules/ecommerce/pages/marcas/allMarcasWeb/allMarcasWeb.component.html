@@ -1,0 +1,470 @@
+<!-- ============================================================
+     MARCAS DE LA TIENDA: TRES COLUMNAS
+
+     Lo mismo que las categorías, con una diferencia: una marca no
+     cuelga de nadie, así que a la izquierda hay una LISTA y no un
+     árbol.
+       1. Miga de pan
+       2. <panel> a toda la altura
+          2a. Lateral: las marcas del catálogo, con su buscador
+          2b. Divisor arrastrable (doble clic: ancho por defecto)
+          2c. Contenido: la marca elegida y sus imágenes
+          2d. Orden en «Nuestras marcas»
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
+  <li class="breadcrumb-item active">Marcas de la tienda</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       (panelReloaded)="cargar()"
+       [closeRoute]="'/ecommerce/home'"
+       icono="award"
+       class="flex-1 d-flex flex-column overflow-hidden"
+       bodyClass="p-0 flex-1 overflow-hidden"
+       panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
+
+  <div header class="cat-cabecera">
+    <span class="cat-cabecera__cuenta" title="Cuántas marcas salen hoy con alguna imagen">
+      {{ conImagen }} con imagen
+    </span>
+  </div>
+
+  <div class="file-manager h-100 cat"
+       [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled, 'is-redimensionando': redimensionando }"
+       [style.--bs-file-manager-sidebar-width]="anchoLateral + 'px'"
+       [style.--bs-file-manager-mobile-sidebar-margin]="(-anchoLateral) + 'px'">
+
+    <div class="file-manager-container">
+
+      <!-- ---------- 2a. LATERAL: LAS MARCAS ---------- -->
+      <div class="file-manager-sidebar cat-lateral">
+
+        <div class="file-manager-sidebar-mobile-toggler">
+          <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Marcas">
+            <i class="fa" [ngClass]="mobileSidebarToggled ? 'fa-chevron-left' : 'fa-award'"></i>
+          </button>
+        </div>
+
+        <div class="cat-lateral__cabecera">
+          <span class="cat-lateral__titulo"><i class="fa fa-award me-1"></i> Marcas</span>
+          <span class="cat-destacadas__cuenta">{{ marcas.length }}</span>
+        </div>
+
+        <div class="cat-lateral__buscador">
+          <i class="fa fa-search cat-lateral__lupa"></i>
+          <input type="text" class="form-control form-control-sm" placeholder="Buscar marca…"
+                 [(ngModel)]="busqueda">
+          @if (busqueda) {
+            <button type="button" class="cat-lateral__limpiar" title="Limpiar" (click)="limpiarBusqueda()">&times;</button>
+          }
+        </div>
+
+        <div class="cat-lateral__arbol position-relative">
+          @if (recargando) {
+            <div class="loader1" role="status" aria-label="Recargando"></div>
+            <div class="overlay1" aria-hidden="true"></div>
+          }
+          <ng-scrollbar class="h-100">
+            <div class="mar-lista">
+              @for (m of visibles; track m.id) {
+                <button type="button" class="mar-item"
+                        [class.is-actual]="m.id === seleccionId"
+                        [class.is-apagada]="m.estado !== 'visible'"
+                        [title]="estadosMarca[m.estado].texto + ': ' + estadosMarca[m.estado].ayuda"
+                        (click)="seleccionar(m.id)">
+
+                  @if (m.logo_url) {
+                    <img class="mar-item__logo" [src]="m.logo_url" [alt]="m.nombre" loading="lazy">
+                  } @else {
+                    <span class="mar-item__logo mar-item__logo--sin">{{ m.nombre.charAt(0) }}</span>
+                  }
+
+                  <span class="mar-item__nombre">{{ m.nombre }}</span>
+
+                  @if (cuentaDe(m.id)?.sale_alguna) {
+                    <i class="fa-solid fa-image mar-item__chapa"
+                       title="Tiene una imagen programada saliendo hoy"></i>
+                  } @else if (cuentaDe(m.id)?.cuantas) {
+                    <span class="mar-item__chapa">{{ cuentaDe(m.id)?.cuantas }}</span>
+                  }
+                </button>
+              } @empty {
+                <div class="cat-arbol__vacio">
+                  <i class="fa fa-search"></i>
+                  <span>Ninguna marca se llama así.</span>
+                </div>
+              }
+            </div>
+          </ng-scrollbar>
+        </div>
+
+        <div class="file-manager-sidebar-footer cat-lateral__pie">
+          <span class="cat-lateral__ayuda">
+            <i class="fa fa-image"></i> con imagen programada saliendo hoy
+          </span>
+        </div>
+      </div>
+
+      <!-- ---------- 2b. DIVISOR ARRASTRABLE ---------- -->
+      <div class="cat-divisor"
+           role="separator"
+           aria-orientation="vertical"
+           title="Arrastra para cambiar el ancho de la lista (doble clic: ancho por defecto)"
+           (pointerdown)="iniciarRedimension($event)"
+           (dblclick)="anchoLateral = ANCHO_LATERAL_DEFECTO; guardarAnchoLateral()">
+      </div>
+
+      <!-- ---------- 2c. CONTENIDO: LA MARCA Y SUS IMÁGENES ---------- -->
+      <div class="file-manager-content cat-contenido">
+
+        @if (!seleccionada) {
+          <div class="cat-vacio">
+            <i class="fa-solid fa-hand-pointer"></i>
+            <p>Elige una marca de la lista para ver y programar sus imágenes.</p>
+          </div>
+
+        } @else {
+
+          <div class="cat-ubicacion">
+            <nav class="cat-ruta" [title]="seleccionada.nombre">
+              <i class="fa fa-award"></i> {{ seleccionada.nombre }}
+            </nav>
+
+            <span class="chip" [ngClass]="estadosMarca[seleccionada.estado].clase"
+                  [title]="estadosMarca[seleccionada.estado].ayuda">
+              {{ estadosMarca[seleccionada.estado].texto }}
+            </span>
+
+            <div class="cat-ubicacion__acciones">
+              @if (puedeCrear) {
+                <button type="button" class="btn btn-sm btn-primary"
+                        [disabled]="trabajando" (click)="programar()">
+                  <i class="fa fa-plus"></i> Programar imagen
+                </button>
+              }
+              <button type="button" class="btn btn-sm btn-white" title="Volver a cargar"
+                      [disabled]="cargandoImagenes" (click)="cargarImagenes()">
+                <i class="fa fa-rotate" [class.fa-spin]="cargandoImagenes"></i>
+              </button>
+            </div>
+          </div>
+
+          <ng-scrollbar class="cat-scroll">
+            <div class="cat-cuerpo">
+
+              <!-- Cómo se ve en la tienda -->
+              <div class="cat-ajustes">
+                <div class="mar-logo">
+                  <span class="cat-rotulo">LO QUE VE EL CLIENTE</span>
+                  @if (laDeLaTienda(seleccionada); as cual) {
+                    <img class="mar-logo__img" [src]="cual" [alt]="seleccionada.nombre">
+                  } @else {
+                    <div class="mar-logo__sin">
+                      <i class="fa-solid fa-image"></i>
+                      Sin logo ni imagen
+                    </div>
+                  }
+                  <small class="mar-logo__pie">
+                    @if (laQueSale) {
+                      <i class="fa-solid fa-calendar-check"></i> la programada «{{ laQueSale.nombre || 'sin nombre' }}»
+                    } @else if (seleccionada.logo) {
+                      <i class="fa-solid fa-tag"></i> el logo del catálogo
+                    } @else {
+                      <i class="fa-solid fa-triangle-exclamation"></i> la tienda no la puede pintar
+                    }
+                  </small>
+                </div>
+
+                <div class="cat-palancas">
+                  <label class="form-check form-switch palanca mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="mar-visible"
+                           [checked]="!seleccionada.oculta"
+                           [disabled]="!puedeEditar || trabajando"
+                           (change)="alternarVisible()">
+                    <span class="form-check-label">
+                      {{ seleccionada.oculta ? 'Apagada para la tienda' : 'Se ve en la tienda' }}
+                    </span>
+                  </label>
+
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>
+                      Encendida sale en <b>«Nuestras marcas»</b> y en los filtros
+                      del catálogo. El orden en que sale se arrastra en la
+                      columna de la derecha.
+                    </span>
+                  </p>
+                </div>
+
+                <div class="cat-nombre-web">
+                  <label class="cat-rotulo" for="mar-nombre-web">
+                    NOMBRE EN LA TIENDA <span>opcional</span>
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="mar-nombre-web"
+                           [placeholder]="seleccionada.nombre_catalogo"
+                           maxlength="80"
+                           [disabled]="!puedeEditar || trabajando"
+                           [(ngModel)]="nombreWeb">
+                    <button type="button" class="btn btn-white"
+                            [disabled]="!puedeEditar || trabajando" (click)="guardarNombreWeb()">
+                      <i class="fa fa-save"></i>
+                    </button>
+                  </div>
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>
+                      Vacío, se usa el del catálogo («{{ seleccionada.nombre_catalogo }}»). Así,
+                      si lo renombras en Inventarios, la tienda lo sigue.
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Las imágenes -->
+              <div class="cat-seccion">
+                <div class="cat-seccion__titulo">
+                  <i class="fa-solid fa-images"></i>
+                  Imágenes programadas
+                  <span class="cat-seccion__cuenta">{{ imagenes.length }}</span>
+                </div>
+
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span>
+                    Cada imagen tiene sus fechas, y la tienda enseña la que toque
+                    hoy sola. Sin fechas es ilimitada. Si dos están en fecha a la
+                    vez manda la de arriba: arrástralas para cambiar el orden.
+                    <b>Sin ninguna en fecha se usa el logo del catálogo</b>, así
+                    que la marca nunca se queda sin nada que enseñar.
+                  </span>
+                </p>
+
+                @if (cargandoImagenes) {
+                  <p class="text-muted small mb-0">
+                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando…
+                  </p>
+
+                } @else if (imagenes.length === 0) {
+                  <div class="cat-sin-imagenes">
+                    <i class="fa-solid fa-image"></i>
+                    <div>
+                      <b>Esta marca no tiene ninguna imagen programada.</b>
+                      En la tienda sale con el logo del catálogo. Prográmale una
+                      sólo si quieres cambiarlo durante una campaña.
+                    </div>
+                  </div>
+
+                } @else {
+
+                  @if (!laQueSale) {
+                    <p class="cat-aviso">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                      Hoy no sale ninguna: están apagadas, o sus fechas no
+                      incluyen hoy. La tienda está usando el logo del catálogo.
+                    </p>
+                  }
+
+                  <div cdkDropList [cdkDropListData]="imagenes"
+                       [cdkDropListDisabled]="!puedeEditar || trabajando"
+                       (cdkDropListDropped)="soltarImagen($event)">
+
+                    @for (i of imagenes; track i.id) {
+                      <div class="cat-fila"
+                           [class.cat-fila--sale]="i.sale_ahora"
+                           [class.cat-fila--apagada]="i.estado !== 'vigente'"
+                           cdkDrag>
+
+                        <div class="cat-fantasma" *cdkDragPlaceholder></div>
+
+                        @if (puedeEditar) {
+                          <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                            <i class="fa-solid fa-grip-vertical"></i>
+                          </span>
+                        }
+
+                        <img class="cat-miniatura" [src]="i.imagen_url" [alt]="i.nombre || 'Imagen'" loading="lazy">
+
+                        <div class="cat-datos">
+                          <b class="cat-nombre">{{ i.nombre || 'Sin nombre' }}</b>
+
+                          <span class="cat-etiquetas">
+                            @if (i.sale_ahora) {
+                              <span class="chip chip-ok" title="Es la que está viendo el cliente ahora mismo">
+                                <i class="fa-solid fa-circle-check"></i> Es la que sale
+                              </span>
+                            }
+
+                            <span class="chip" [ngClass]="estadosImagen[i.estado].clase"
+                                  [title]="estadosImagen[i.estado].ayuda">
+                              <i class="fa-solid" [ngClass]="estadosImagen[i.estado].icono"></i>
+                              {{ estadosImagen[i.estado].texto }}
+                            </span>
+
+                            @if (i.tapada) {
+                              <span class="chip chip-warn" title="Está en fecha, pero sale la de arriba">
+                                <i class="fa-solid fa-layer-group"></i> Tapada por la de arriba
+                              </span>
+                            }
+
+                            <span class="chip chip-muted">
+                              <i class="fa-solid" [class.fa-infinity]="!i.desde && !i.hasta"
+                                 [class.fa-calendar]="!!(i.desde || i.hasta)"></i>
+                              {{ vigencia(i) }}
+                            </span>
+                          </span>
+                        </div>
+
+                        <span class="cat-botones">
+                          @if (puedeEditar) {
+                            <button type="button" class="btn btn-xs btn-editar" title="Modificar"
+                                    [disabled]="trabajando" (click)="editarImagen(i)">
+                              <i class="fa fa-pen"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-ver"
+                                    [title]="i.activo ? 'Apagar' : 'Encender'"
+                                    [disabled]="trabajando" (click)="alternarImagen(i)">
+                              <i class="fa" [class.fa-eye]="!i.activo" [class.fa-eye-slash]="i.activo"></i>
+                            </button>
+                          }
+                          @if (puedeEliminar) {
+                            <button type="button" class="btn btn-xs btn-borrar" title="Quitar"
+                                    [disabled]="trabajando" (click)="quitarImagen(i)">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                          }
+                        </span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- La papelera DE ESTA MARCA -->
+                @if (contenido && (contenido.en_papelera || papeleraAbierta)) {
+                  <div class="cat-papelera">
+                    <button type="button" class="btn btn-xs btn-outline-secondary" (click)="alternarPapelera()">
+                      <i class="fa" [class.fa-chevron-right]="!papeleraAbierta"
+                         [class.fa-chevron-down]="papeleraAbierta"></i>
+                      Papelera ({{ contenido.en_papelera }})
+                    </button>
+
+                    @if (papeleraAbierta) {
+                      @if (papelera.length === 0) {
+                        <p class="text-muted small mt-2 mb-0">La papelera de esta marca está vacía.</p>
+                      } @else {
+                        @for (p of papelera; track p.id) {
+                          <div class="cat-fila cat-fila--papelera">
+                            <img class="cat-miniatura" [src]="p.imagen_url" [alt]="p.nombre || 'Imagen'" loading="lazy">
+                            <div class="cat-datos">
+                              <b class="cat-nombre">{{ p.nombre || 'Sin nombre' }}</b>
+                              <small class="cat-detalle">Quitada el {{ p.deleted_at }} por {{ p.deleted_by || '—' }}</small>
+                            </div>
+                            <span class="cat-botones">
+                              @if (puedeEditar) {
+                                <button type="button" class="btn btn-xs btn-ver" title="Devolver"
+                                        [disabled]="trabajando" (click)="restaurarImagen(p)">
+                                  <i class="fa fa-rotate-left"></i>
+                                </button>
+                              }
+                            </span>
+                          </div>
+                        }
+
+                        @if (puedeEliminar) {
+                          <button type="button" class="btn btn-xs btn-outline-danger mt-2"
+                                  [disabled]="trabajando" (click)="vaciarPapelera()">
+                            <i class="fa fa-trash"></i> Vaciar la papelera de esta marca
+                          </button>
+                        }
+                      }
+                    }
+                  </div>
+                }
+              </div>
+
+            </div>
+          </ng-scrollbar>
+        }
+      </div>
+
+      <!-- ---------- 2d. EL ORDEN EN «NUESTRAS MARCAS» ---------- -->
+      <div class="cat-tienda">
+
+        <div class="cat-destacadas__cabecera">
+          <span class="cat-lateral__titulo">
+            <i class="fa fa-store me-1"></i> Orden en la tienda
+          </span>
+          <span class="cat-destacadas__cuenta">{{ enLaTienda.length }}</span>
+        </div>
+
+        <div class="cat-destacadas__cuerpo">
+          @if (enLaTienda.length === 0) {
+            <p class="cat-destacadas__vacio">
+              <i class="fa-solid fa-store"></i>
+              <span>Ninguna marca sale en la tienda todavía.</span>
+            </p>
+
+          } @else {
+            <p class="campo-hint">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>
+                El orden de <b>«Nuestras marcas»</b> en la portada. Arrástralas
+                para cambiarlo: se guarda al soltar.
+              </span>
+            </p>
+
+            <ng-scrollbar class="cat-destacadas__lista">
+              <div cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="enLaTienda"
+                   [cdkDropListDisabled]="!puedeEditar || trabajando"
+                   (cdkDropListDropped)="soltarEnLaTienda($event)">
+
+                @for (m of enLaTienda; track m.id) {
+                  <div class="cat-dest" [class.is-actual]="m.id === seleccionId" cdkDrag>
+
+                    <div class="cat-dest__fantasma" *cdkDragPlaceholder></div>
+
+                    @if (puedeEditar) {
+                      <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                        <i class="fa-solid fa-grip-vertical"></i>
+                      </span>
+                    }
+
+                    <span class="cat-dest__puesto">{{ $index + 1 }}</span>
+
+                    <button type="button" class="cat-dest__nombre"
+                            [title]="'Abrir «' + m.nombre + '»'"
+                            (click)="seleccionar(m.id)">
+                      <i class="fa-solid"
+                         [class.fa-image]="cuentaDe(m.id)?.sale_alguna"
+                         [class.fa-tag]="!cuentaDe(m.id)?.sale_alguna"></i>
+                      {{ m.nombre }}
+                    </button>
+
+                    <!-- Sin logo ni imagen, la tienda no la pinta: el carrusel
+                         sólo enseña las marcas que tienen algo. -->
+                    @if (!cuentaDe(m.id)?.sale_alguna && !m.logo) {
+                      <i class="fa-solid fa-triangle-exclamation cat-dest__aviso"
+                         title="No tiene logo ni imagen programada, así que la tienda no la enseña"></i>
+                    }
+                  </div>
+                }
+              </div>
+            </ng-scrollbar>
+
+            <p class="cat-destacadas__pie">
+              <i class="fa-solid fa-image"></i> con imagen programada ·
+              <i class="fa-solid fa-tag"></i> con el logo del catálogo
+            </p>
+          }
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</panel>

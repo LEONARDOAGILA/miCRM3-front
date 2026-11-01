@@ -1,5 +1,5 @@
 <!-- ============================================================
-     PROGRAMAR UNA IMAGEN DE CATEGORÍA
+     PROGRAMAR UNA IMAGEN
 
      El fichero y entre qué fechas se ve. Sin fechas, siempre.
      ============================================================ -->
@@ -7,7 +7,7 @@
 <div class="modal-header bg-gray-800 text-white">
   <h5 class="modal-title">
     <i class="fa-solid fa-calendar-days me-2"></i>{{ titulo }}
-    <small class="img-categoria">{{ categoriaNombre }}</small>
+    <small class="img-categoria">{{ duenioNombre }}</small>
   </h5>
   <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
           (click)="activeModal.dismiss()"></button>
@@ -101,7 +101,7 @@
           <app-checkbox class="palanca"
             [control]="ctrlActivo"
             [label]="ctrlActivo.value ? 'Encendida' : 'Apagada'"
-            [id]="'ck-imagen-categoria'">
+            [id]="'ck-imagen-programada'">
           </app-checkbox>
           <p class="campo-hint mt-1 mb-0">
             <i class="fa-solid fa-circle-info"></i>

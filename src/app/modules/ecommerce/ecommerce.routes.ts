@@ -8,6 +8,7 @@ import { AllPaginasInformativasComponent } from './pages/paginasInformativas/all
 import { EditEncabezadoComponent } from './pages/encabezado/editEncabezado/editEncabezado.component';
 import { EditPieComponent } from './pages/pie/editPie/editPie.component';
 import { AllCategoriasWebComponent } from './pages/categorias/allCategoriasWeb/allCategoriasWeb.component';
+import { AllMarcasWebComponent } from './pages/marcas/allMarcasWeb/allMarcasWeb.component';
 import { EditEspanaMotosComponent } from './pages/espanaMotos/editEspanaMotos/editEspanaMotos.component';
 import { EditInicioComponent } from './pages/inicio/editInicio/editInicio.component';
 
@@ -91,6 +92,14 @@ export const ECOMMERCE_ROUTES: Routes = [
       {
         path: 'editInicio',
         component: EditInicioComponent,
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
+
+      // Las marcas de la tienda: igual que las categorías, con lista en vez de árbol
+      {
+        path: 'allMarcasWeb',
+        component: AllMarcasWebComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },

@@ -6,13 +6,18 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
 import { CategoriaWebService } from '../../../services/categoriaWeb.service';
-import { CategoriaImagenModel } from '../../../interfaces/categoriaImagenModel';
+import { MarcaWebService } from '../../../services/marcaWeb.service';
+import { ImagenProgramadaModel } from '../../../interfaces/imagenProgramadaModel';
 
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 /**
- * PROGRAMAR UNA IMAGEN DE CATEGORÍA.
+ * PROGRAMAR UNA IMAGEN, de una categoría o de una marca.
+ *
+ * ES EL MISMO MODAL PARA LAS DOS porque se administran igual: un fichero y
+ * entre qué fechas se ve. Lo único que cambia es a quién se le guarda, y eso
+ * llega en `tipo`. Dos copias de esto acabarían comportándose distinto.
  *
  * Se sube el fichero y se dice entre qué fechas se ve. SIN FECHAS ES
  * ILIMITADA —«desde siempre» y «para siempre»—, que es el caso normal y por
@@ -26,21 +31,25 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
  * tres pantallas después, mirando la tienda.
  */
 @Component({
-  selector: 'app-saveImagenCategoria',
-  templateUrl: './saveImagenCategoria.component.html',
-  styleUrls: ['./saveImagenCategoria.component.css'],
+  selector: 'app-saveImagenProgramada',
+  templateUrl: './saveImagenProgramada.component.html',
+  styleUrls: ['./saveImagenProgramada.component.css'],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, ReactiveFormsModule, CampoTextoComponent, CheckboxComponent],
 })
-export class SaveImagenCategoriaComponent implements OnInit {
+export class SaveImagenProgramadaComponent implements OnInit {
 
-  /** La categoría a la que va. Hace falta siempre. */
-  @Input() categoriaId!: number;
-  @Input() categoriaNombre = '';
+  /** De quién es la imagen: decide a qué servicio se le guarda. */
+  @Input() tipo: 'categoria' | 'marca' = 'categoria';
+
+  /** El id de esa categoría o marca. Hace falta siempre. */
+  @Input() duenioId!: number;
+  /** Su nombre, para la cabecera del modal. */
+  @Input() duenioNombre = '';
 
   /** La imagen que se modifica; sin ella, se programa una nueva. */
-  @Input() imagen: CategoriaImagenModel | null = null;
+  @Input() imagen: ImagenProgramadaModel | null = null;
 
   public form!: FormGroup;
   public guardando = false;
@@ -52,6 +61,7 @@ export class SaveImagenCategoriaComponent implements OnInit {
 
   private fb = inject(FormBuilder);
   private _categoriaService = inject(CategoriaWebService);
+  private _marcaService = inject(MarcaWebService);
   private _toastr = inject(ToastrService);
   public activeModal = inject(NgbActiveModal);
 
@@ -147,9 +157,11 @@ export class SaveImagenCategoriaComponent implements OnInit {
 
     this.guardando = true;
     try {
+      // El servicio sale del tipo: el resto del modal no sabe de quién es
+      const servicio: any = this.tipo === 'marca' ? this._marcaService : this._categoriaService;
       const res: any = await firstValueFrom(
-        this.esNueva ? this._categoriaService.addImagen(this.categoriaId, cuerpo)
-                     : this._categoriaService.editImagen(this.categoriaId, this.imagen!.id, cuerpo));
+        this.esNueva ? servicio.addImagen(this.duenioId, cuerpo)
+                     : servicio.editImagen(this.duenioId, this.imagen!.id, cuerpo));
 
       this._toastr.success(res?.message ?? 'Imagen guardada', 'Listo');
       // Vuelven las imágenes enteras: la pantalla las pinta tal cual

@@ -165,14 +165,19 @@ export class EditInicioComponent implements OnInit {
       }
       return s.cuantas + (s.cuantas === 1 ? ' categoría' : ' categorías');
     }
+    if (s.fuente.tipo === 'marcas') {
+      if (!s.cuantas) { return 'Ninguna marca en la tienda'; }
+      return s.cuantas + (s.cuantas === 1 ? ' marca' : ' marcas');
+    }
     return 'Falta ' + (s.fuente.falta ?? 'su fuente');
   }
 
   /** Si esta sección se llena en otra pantalla, cuál y con qué regla. */
-  seLlenaEn(s: SeccionInicioModel): { ruta: string; regla: string } | null {
+  seLlenaEn(s: SeccionInicioModel): { ruta: string; pantalla: string; regla: string } | null {
     if (s.fuente.tipo === 'promocion') {
       return {
         ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'allCategoriasWeb'),
+        pantalla: 'Categorías de la tienda',
         regla: 'Salen aquí las categorías que marques como «En promoción», con su '
              + 'imagen programada. Sin imagen, la tarjeta sale igual con su nombre.',
       };
@@ -180,8 +185,18 @@ export class EditInicioComponent implements OnInit {
     if (s.fuente.tipo === 'destacadas') {
       return {
         ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'allCategoriasWeb'),
+        pantalla: 'Categorías de la tienda',
         regla: 'Salen aquí sólo las categorías que marques como «destacada», '
              + 'con su imagen programada. Sin imagen, la tienda pinta su inicial.',
+      };
+    }
+    if (s.fuente.tipo === 'marcas') {
+      return {
+        ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'allMarcasWeb'),
+        pantalla: 'Marcas de la tienda',
+        regla: 'Salen aquí las marcas encendidas para la tienda, en su orden, con su '
+             + 'imagen programada o, si no tienen, con el logo del catálogo. La tienda '
+             + 'sólo enseña las que tienen una de las dos.',
       };
     }
     return null;
