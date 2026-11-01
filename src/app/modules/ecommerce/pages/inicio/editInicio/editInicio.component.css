@@ -116,6 +116,26 @@
   border-top: 1px dashed var(--bs-border-color, #dee2e6);
 }
 
+/* Se llena en otra pantalla: no es un aviso, es un camino */
+.seccion-enlace {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  padding: .75rem;
+  border-radius: .375rem;
+  font-size: .75rem;
+  line-height: 1.45;
+  color: var(--bs-body-color, #212529);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.seccion-enlace > i {
+  margin-top: .15rem;
+  font-size: 1rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
 .seccion-pendiente {
   display: flex;
   align-items: flex-start;

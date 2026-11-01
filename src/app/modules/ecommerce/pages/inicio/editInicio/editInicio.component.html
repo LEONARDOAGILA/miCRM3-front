@@ -74,12 +74,13 @@
                   {{ estados[s.estado].texto }}
                 </span>
 
-                <span class="chip" [class.chip-muted]="s.fuente.tipo === 'galeria'"
-                      [class.chip-warn]="s.fuente.tipo !== 'galeria'">
-                  @if (s.fuente.tipo === 'galeria') {
-                    <i class="fa-solid fa-images"></i>
-                  } @else {
-                    <i class="fa-solid fa-hammer"></i>
+                <span class="chip" [class.chip-muted]="s.fuente.tipo !== 'pendiente'"
+                      [class.chip-warn]="s.fuente.tipo === 'pendiente'">
+                  @switch (s.fuente.tipo) {
+                    @case ('galeria')    { <i class="fa-solid fa-images"></i> }
+                    @case ('categorias') { <i class="fa-solid fa-tags"></i> }
+                    @case ('destacadas') { <i class="fa-solid fa-star"></i> }
+                    @default             { <i class="fa-solid fa-hammer"></i> }
                   }
                   {{ resumen(s) }}
                 </span>
@@ -182,7 +183,7 @@
                 </div>
               }
 
-              <!-- Lo que enseña: su galería, o lo que falta para tenerla -->
+              <!-- Lo que enseña: su galería, dónde se llena, o lo que falta -->
               <div class="seccion-contenido">
                 @if (s.fuente.tipo === 'galeria') {
                   <app-galeriaImagenes
@@ -192,6 +193,22 @@
                     [puedeEliminar]="puedeEliminar"
                     (cambiada)="galeriaCambiada()">
                   </app-galeriaImagenes>
+
+                } @else if (seLlenaEn(s); as donde) {
+                  <!-- Se llena en otra pantalla, y no es un «falta»: se dice
+                       la regla y se lleva allí, que es lo que se va a hacer. -->
+                  <div class="seccion-enlace">
+                    <i class="fa-solid fa-tags"></i>
+                    <div>
+                      <b>Esta sección se llena en «Categorías de la tienda».</b>
+                      {{ donde.regla }}
+                      <div class="mt-2">
+                        <a class="btn btn-xs btn-primary" [routerLink]="donde.ruta">
+                          <i class="fa fa-arrow-right"></i> Ir a Categorías de la tienda
+                        </a>
+                      </div>
+                    </div>
+                  </div>
 
                 } @else {
                   <div class="seccion-pendiente">

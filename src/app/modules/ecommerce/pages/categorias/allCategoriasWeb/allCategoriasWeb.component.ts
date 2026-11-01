@@ -226,6 +226,7 @@ export class AllCategoriasWebComponent implements OnInit {
         titulo: [c.nombre,
                  estado ? estado.texto : c.estado,
                  cuantas ? `${cuantas} imagen(es)` + (sale ? ', una saliendo hoy' : ', ninguna hoy') : 'sin imágenes',
+                 c.destacada ? 'destacada' : '',
                 ].filter(Boolean).join(' — '),
         isOpen: this.abiertos.has(c.id),
         isSelected: this.seleccionId === c.id,
@@ -359,6 +360,24 @@ export class AllCategoriasWebComponent implements OnInit {
     }));
   }
 
+  /**
+   * La marca de «destacada»: los círculos de arriba de la portada.
+   *
+   * ES DISTINTA DEL MOSAICO, que se llena solo con cualquier categoría que
+   * tenga imagen vigente. Ésta se elige a dedo, y por eso es una marca.
+   */
+  async alternarDestacada(): Promise<void> {
+    const c = this.seleccionada;
+    if (!c || !this.puedeEditar || this.trabajando) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    await this.accionCategoria(() => this._categoriaService.editCategoriaWeb(c.id, {
+      oculta: c.oculta,
+      nombre_web: c.nombre_web ?? null,
+      destacada: !c.destacada,
+    }));
+  }
+
   /** Guarda el nombre con el que se enseña en la tienda. */
   async guardarNombreWeb(): Promise<void> {
     const c = this.seleccionada;
@@ -368,6 +387,7 @@ export class AllCategoriasWebComponent implements OnInit {
     await this.accionCategoria(() => this._categoriaService.editCategoriaWeb(c.id, {
       oculta: c.oculta,
       nombre_web: this.nombreWeb.trim() || null,
+      destacada: c.destacada,
     }));
   }
 

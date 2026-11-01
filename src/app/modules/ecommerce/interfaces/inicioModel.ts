@@ -32,13 +32,21 @@ export type EstadoSeccion = 'visible' | 'oculta' | 'programada' | 'terminada';
 /**
  * De dónde saca sus datos la sección.
  *
- * `galeria` es la única que se administra hoy; `pendiente` dice qué falta por
- * trasladar. Lo decide el servidor —la tienda, la portada pública y el CRM
- * tienen que estar de acuerdo en esto— y la pantalla sólo lo enseña.
+ *   galeria     las imágenes de una galería, aquí mismo
+ *   categorias  el mosaico: cualquier categoría con imagen vigente
+ *   destacadas  los círculos de arriba: sólo las marcadas a dedo
+ *   pendiente   todavía no tiene fuente, y `falta` dice cuál
+ *
+ * Lo decide el servidor —la tienda, la portada pública y el CRM tienen que
+ * estar de acuerdo en esto— y la pantalla sólo lo enseña.
  */
 export interface FuenteSeccion {
-  tipo: 'galeria' | 'pendiente';
+  tipo: 'galeria' | 'categorias' | 'destacadas' | 'pendiente';
+  /** Con `galeria`: su clave. */
   galeria?: string;
+  /** Con `categorias` y `destacadas`: la pantalla donde se llena. */
+  pantalla?: string;
+  /** Con `pendiente`: qué falta. */
   falta?: string;
 }
 

@@ -159,7 +159,32 @@ export class EditInicioComponent implements OnInit {
       if (!s.cuantas) { return 'Sin imágenes'; }
       return s.cuantas + (s.cuantas === 1 ? ' imagen' : ' imágenes');
     }
+    if (s.fuente.tipo === 'categorias' || s.fuente.tipo === 'destacadas') {
+      if (!s.cuantas) {
+        return s.fuente.tipo === 'destacadas' ? 'Ninguna destacada' : 'Ninguna con imagen';
+      }
+      return s.cuantas + (s.cuantas === 1 ? ' categoría' : ' categorías');
+    }
     return 'Falta ' + (s.fuente.falta ?? 'su fuente');
+  }
+
+  /** Si esta sección se llena en otra pantalla, cuál y con qué regla. */
+  seLlenaEn(s: SeccionInicioModel): { ruta: string; regla: string } | null {
+    if (s.fuente.tipo === 'categorias') {
+      return {
+        ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'allCategoriasWeb'),
+        regla: 'Sale aquí cualquier categoría de la tienda que tenga una imagen '
+             + 'vigente hoy. Programar la imagen es lo único que hace falta.',
+      };
+    }
+    if (s.fuente.tipo === 'destacadas') {
+      return {
+        ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'allCategoriasWeb'),
+        regla: 'Salen aquí sólo las categorías que marques como «destacada», '
+             + 'con su imagen programada. Sin imagen, la tienda pinta su inicial.',
+      };
+    }
+    return null;
   }
 
   /**
@@ -174,7 +199,7 @@ export class EditInicioComponent implements OnInit {
    * hoy.
    */
   sinContenido(s: SeccionInicioModel): boolean {
-    return s.fuente.tipo === 'galeria' && s.estado === 'visible' && !s.con_contenido;
+    return s.fuente.tipo !== 'pendiente' && s.estado === 'visible' && !s.con_contenido;
   }
 
   alternarSeccion(clave: string): void {

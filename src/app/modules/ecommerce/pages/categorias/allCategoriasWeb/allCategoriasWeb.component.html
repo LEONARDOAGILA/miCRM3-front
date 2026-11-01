@@ -152,16 +152,42 @@
 
               <!-- Cómo se ve en la tienda -->
               <div class="cat-ajustes">
-                <label class="form-check form-switch palanca mb-0">
-                  <input class="form-check-input" type="checkbox" role="switch"
-                         id="cat-visible"
-                         [checked]="!seleccionada.oculta"
-                         [disabled]="!puedeEditar || trabajando"
-                         (change)="alternarVisible()">
-                  <span class="form-check-label">
-                    {{ seleccionada.oculta ? 'Apagada para la tienda' : 'Se ve en la tienda' }}
-                  </span>
-                </label>
+                <div class="cat-palancas">
+                  <label class="form-check form-switch palanca mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="cat-visible"
+                           [checked]="!seleccionada.oculta"
+                           [disabled]="!puedeEditar || trabajando"
+                           (change)="alternarVisible()">
+                    <span class="form-check-label">
+                      {{ seleccionada.oculta ? 'Apagada para la tienda' : 'Se ve en la tienda' }}
+                    </span>
+                  </label>
+
+                  <!-- La marca de «destacada»: los círculos de arriba de la
+                       portada. El mosaico no la mira. -->
+                  <label class="form-check form-switch palanca mb-0"
+                         [class.is-apagada]="seleccionada.oculta">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="cat-destacada"
+                           [checked]="seleccionada.destacada"
+                           [disabled]="!puedeEditar || trabajando || seleccionada.oculta"
+                           (change)="alternarDestacada()">
+                    <span class="form-check-label">
+                      <i class="fa-solid fa-star"></i> Destacada
+                    </span>
+                  </label>
+
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>
+                      Destacada la pone en los <b>círculos de arriba</b> de la
+                      portada. El <b>mosaico</b> es otra sección y se llena
+                      sola: ahí sale cualquier categoría con imagen vigente,
+                      esté destacada o no.
+                    </span>
+                  </p>
+                </div>
 
                 <div class="cat-nombre-web">
                   <label class="cat-rotulo" for="cat-nombre-web">

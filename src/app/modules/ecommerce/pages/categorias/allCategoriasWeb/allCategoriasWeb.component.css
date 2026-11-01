@@ -265,6 +265,20 @@
   background-color: var(--bs-component-bg, #fff);
 }
 
+.cat-palancas {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+/* La categoría apagada no puede estar destacada: la palanca se ve, pero
+   deshabilitada, para que se entienda qué hay que encender antes. */
+.cat-palancas .palanca.is-apagada { opacity: .5; }
+
+.cat-palancas .palanca .fa-star { color: #e9b115; margin-right: .2rem; }
+
 .cat-nombre-web { flex: 1 1 18rem; min-width: 0; }
 
 .cat-rotulo {

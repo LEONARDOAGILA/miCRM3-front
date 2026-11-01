@@ -20,6 +20,12 @@ export interface CategoriaWebModel {
 
   /** Apagada a mano: ella y todo lo que cuelgue de ella dejan de salir */
   oculta: boolean;
+
+  /**
+   * Marcada a dedo para los círculos de «Categorías destacadas» de la
+   * portada. El mosaico NO la mira: ése lo llena cualquiera con imagen.
+   */
+  destacada: boolean;
   /** Las de transacción son donde cuelgan los productos */
   es_transaccion: boolean;
   activo: boolean;
