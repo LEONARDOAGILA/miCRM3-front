@@ -68,7 +68,7 @@ export class EcommerceHomeComponent implements OnInit {
       descripcion: 'Términos, políticas y garantías: el texto que se lee en la tienda.' },
     { clave: 'sucursales', titulo: 'Nuestras tiendas', icono: 'fa-store', ruta: null,
       descripcion: 'Ciudades y sucursales con su dirección, horario y ubicación.' },
-    { clave: 'categorias', titulo: 'Categorías de la tienda', icono: 'fa-tags', ruta: null,
+    { clave: 'categorias', titulo: 'Categorías de la tienda', icono: 'fa-tags', ruta: 'allCategoriasWeb',
       descripcion: 'Cuáles salen en el menú y en el inicio, con su nombre para la web.' },
     { clave: 'galerias', titulo: 'Galerías', icono: 'fa-images', ruta: null,
       descripcion: 'Los bloques de imágenes: banners, tarjetas y logos de pago.' },

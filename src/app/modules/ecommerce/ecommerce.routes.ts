@@ -7,6 +7,7 @@ import { EcommerceHomeComponent } from './pages/home/home.component';
 import { AllPaginasInformativasComponent } from './pages/paginasInformativas/allPaginasInformativas/allPaginasInformativas.component';
 import { EditEncabezadoComponent } from './pages/encabezado/editEncabezado/editEncabezado.component';
 import { EditPieComponent } from './pages/pie/editPie/editPie.component';
+import { AllCategoriasWebComponent } from './pages/categorias/allCategoriasWeb/allCategoriasWeb.component';
 
 // ============================================================================
 // MÓDULO ECOMMERCE: la administración de la página web.
@@ -63,6 +64,15 @@ export const ECOMMERCE_ROUTES: Routes = [
       {
         path: 'editPie',
         component: EditPieComponent,
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
+
+      // Las categorias de la tienda: el arbol es de Inventarios, aqui solo
+      // se decide que sale y con que nombre.
+      {
+        path: 'allCategoriasWeb',
+        component: AllCategoriasWebComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },

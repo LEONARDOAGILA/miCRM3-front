@@ -1,0 +1,101 @@
+<!-- ============================================================
+     LAS CATEGORÍAS DE LA TIENDA
+
+     El árbol es del catálogo; aquí sólo se decide qué sale y con qué
+     nombre. Se pinta plano con sangría: son 33 en tres niveles, y
+     plegarlas escondería justo lo que se viene a mirar.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
+  <li class="breadcrumb-item active">Categorías de la tienda</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       icono="tags">
+
+  <div header class="panel-acciones">
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Cargando las categorías…</p>
+    </div>
+  } @else {
+
+    <div class="cat-resumen">
+      <span><b>{{ visibles }}</b> de {{ categorias.length }} se ven en la tienda</span>
+      @if (conProblema) {
+        <span class="cat-resumen__aviso">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          {{ conProblema }} no sale{{ conProblema === 1 ? '' : 'n' }} por algo del catálogo
+        </span>
+      }
+    </div>
+
+    <p class="campo-hint">
+      <i class="fa-solid fa-circle-info"></i>
+      Crear, borrar y reordenar categorías es de
+      <a routerLink="/inventarios/allCategorias">Inventarios → Categorías</a>.
+      Aquí sólo se decide cuáles salen en la tienda y con qué nombre.
+    </p>
+
+    <ul class="cat-lista">
+      @for (c of categorias; track c.id) {
+        <li class="cat-fila"
+            [class.cat-fila--fuera]="c.estado !== 'visible'"
+            [style.padding-left]="sangria(c)">
+
+          <i class="fa-solid cat-fila__icono"
+             [ngClass]="c.es_transaccion ? 'fa-box' : 'fa-layer-group'"
+             [title]="c.es_transaccion ? 'Aquí cuelgan productos' : 'Agrupa, no lleva productos'"></i>
+
+          <span class="cat-fila__nombre">
+            {{ c.nombre }}
+            @if (renombrada(c)) {
+              <small class="cat-fila__original" [title]="'En el catálogo: ' + c.nombre_catalogo">
+                ({{ c.nombre_catalogo }})
+              </small>
+            }
+          </span>
+
+          <span class="chip" [ngClass]="etiqueta(c).clase" [title]="etiqueta(c).ayuda">
+            {{ etiqueta(c).texto }}
+          </span>
+
+          <span class="cat-fila__botones">
+            @if (puedeEditar) {
+              <button type="button" class="btn btn-xs btn-editar"
+                      title="Cambiar el nombre con el que se ve en la tienda"
+                      (click)="editarNombre(c)">
+                <i class="fa fa-pen"></i>
+              </button>
+            }
+
+            @if (palancaUtil(c)) {
+              <button type="button" class="btn btn-xs"
+                      [class.btn-ver]="c.oculta"
+                      [class.btn-borrar]="!c.oculta"
+                      [title]="c.oculta ? 'Que vuelva a salir en la tienda' : 'Que no salga en la tienda'"
+                      [disabled]="trabajando" (click)="alternar(c)">
+                <i class="fa" [ngClass]="c.oculta ? 'fa-eye' : 'fa-eye-slash'"></i>
+              </button>
+            } @else if (puedeEditar) {
+              <!-- Encenderla aquí no la haría aparecer: se dice dónde ir en vez
+                   de dejar un botón que no hace nada. -->
+              <i class="fa-solid fa-circle-question cat-fila__porque"
+                 [title]="etiqueta(c).ayuda"></i>
+            }
+          </span>
+        </li>
+      }
+    </ul>
+  }
+</panel>
