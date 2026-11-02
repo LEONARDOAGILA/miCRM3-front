@@ -341,15 +341,18 @@ export const VISTA_POR_DEFECTO: VistaSeccion = {
  * servidor al crearla (`seccion_7`), así que no hay una lista fija donde
  * apuntarla. Se arma con el nombre que traiga.
  *
- * LLEVA RÓTULO y de fábrica no dice nada: lo que se lee encima lo escribe
- * quien arma el escaparate. Dejar el nombre interno como rótulo de fábrica
- * sacaría «pro1» en la tienda.
+ * LLEVA RÓTULO Y LÍNEA DE ABAJO, y de fábrica no dicen nada: lo que se lee
+ * encima lo escribe quien arma el escaparate. Dejar el nombre interno como
+ * rótulo de fábrica sacaría «pro1» en la tienda.
+ *
+ * La línea de abajo porque es lo que distingue un escaparate de una lista:
+ * «Recomendados para ti» y, más pequeño, «Las mejores ofertas para tu hogar».
  */
 export function vistaDeProductos(nombre: string): VistaSeccion {
   return {
     icono: 'fa-basket-shopping',
     descripcion: `Los productos de «${nombre}», en el orden que tengan ahí.`,
-    rotulo: 'titulo',
+    rotulo: 'titulo_subtitulo',
     rotuloDeFabrica: null,
   };
 }
