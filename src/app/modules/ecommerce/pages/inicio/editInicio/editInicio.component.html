@@ -170,6 +170,123 @@
                   </div>
                 }
 
+                <!-- ---------- El color de los botones de la tarjeta ----------
+                     Sólo las secciones de productos: son las únicas que pintan
+                     tarjetas con botones. Se elige el FONDO; la letra y el
+                     icono los calcula la tienda para que se lean encima. -->
+                @if (conBotones(s)) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo">EL COLOR DE LOS BOTONES</label>
+
+                    <div class="botones-colores">
+                      @for (b of botones; track b.campo) {
+                        <div class="boton-color">
+                          <!-- La muestra ES el botón: con su fondo y con la
+                               letra que la tienda le va a poner encima -->
+                          <span class="boton-color__muestra"
+                                [style.background-color]="colorBoton(s, b)"
+                                [style.color]="textoBoton(s, b)"
+                                [title]="b.ayuda">
+                            <i class="fa-solid" [ngClass]="b.icono"></i>
+                            {{ b.texto }}
+                          </span>
+
+                          <!-- ---------- El fondo ---------- -->
+                          <span class="boton-color__que">Fondo</span>
+                          <div class="color-bloque__fila">
+                            <label class="color-muestra" [style.background-color]="colorBoton(s, b)"
+                                   [title]="'Elegir cualquier color de fondo para ' + b.texto">
+                              <input type="color" [id]="b.campo + '-' + s.clave"
+                                     [value]="colorBoton(s, b)"
+                                     [disabled]="!puedeEditar"
+                                     [attr.aria-label]="'Fondo del botón ' + b.texto"
+                                     (input)="colorBotonDelSelector(s, b, $event)">
+                            </label>
+
+                            <code class="color-valor">
+                              {{ botonPropio(s, b) ? colorBoton(s, b) : 'El de la tienda' }}
+                            </code>
+
+                            @if (botonPropio(s, b)) {
+                              <button type="button" class="btn btn-xs btn-link rotulo-quitar"
+                                      [disabled]="!puedeEditar"
+                                      (click)="ponerColorBoton(s, b, '')">
+                                Quitar
+                              </button>
+                            }
+                          </div>
+
+                          <div class="color-paleta">
+                            @for (c of colores; track c) {
+                              <button type="button" class="color-paleta__punto"
+                                      [class.is-activo]="botonPropio(s, b) && colorBoton(s, b).toLowerCase() === c.toLowerCase()"
+                                      [style.background-color]="c"
+                                      [title]="c" [attr.aria-label]="'Fondo ' + c + ' para ' + b.texto"
+                                      [disabled]="!puedeEditar"
+                                      (click)="ponerColorBoton(s, b, c)"></button>
+                            }
+                          </div>
+
+                          <!-- ---------- La letra ----------
+                               Sin elegir ninguna, la tienda pone la que se lea
+                               encima del fondo; por eso la muestra de arriba
+                               ya enseña cuál sería. -->
+                          <span class="boton-color__que">Letra e icono</span>
+                          <div class="color-bloque__fila">
+                            <label class="color-muestra" [style.background-color]="textoBoton(s, b)"
+                                   [title]="'Elegir cualquier color de letra para ' + b.texto">
+                              <input type="color" [id]="b.campoTexto + '-' + s.clave"
+                                     [value]="textoBoton(s, b)"
+                                     [disabled]="!puedeEditar"
+                                     [attr.aria-label]="'Letra del botón ' + b.texto"
+                                     (input)="textoBotonDelSelector(s, b, $event)">
+                            </label>
+
+                            <code class="color-valor">
+                              {{ textoPropio(s, b) ? textoBoton(s, b) : 'La que se lea' }}
+                            </code>
+
+                            @if (textoPropio(s, b)) {
+                              <button type="button" class="btn btn-xs btn-link rotulo-quitar"
+                                      [disabled]="!puedeEditar"
+                                      (click)="ponerTextoBoton(s, b, '')">
+                                Quitar
+                              </button>
+                            }
+                          </div>
+
+                          <div class="color-paleta">
+                            @for (c of colores; track c) {
+                              <button type="button" class="color-paleta__punto"
+                                      [class.is-activo]="textoPropio(s, b) && textoBoton(s, b).toLowerCase() === c.toLowerCase()"
+                                      [style.background-color]="c"
+                                      [title]="c" [attr.aria-label]="'Letra ' + c + ' para ' + b.texto"
+                                      [disabled]="!puedeEditar"
+                                      (click)="ponerTextoBoton(s, b, c)"></button>
+                            }
+                          </div>
+
+                          <!-- Se avisa, no se prohíbe: igual que con el rótulo -->
+                          @if (botonFlojo(s, b)) {
+                            <p class="campo-hint campo-hint--aviso mb-0">
+                              <i class="fa-solid fa-triangle-exclamation"></i>
+                              Así cuesta leerlo ({{ contrasteBotonTexto(s, b) }} a 1, y lo
+                              mínimo son 4,5 a 1). Se guarda igual.
+                            </p>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Se elige el fondo; la letra y el icono los pone la tienda
+                      en blanco o en negro, el que se lea encima. Sin elegir
+                      ninguno, cada botón se queda con el color de siempre.
+                    </p>
+                  </div>
+                }
+
                 <!-- ---------- Cómo se ve en la tienda ----------
                      El alto lo llevan todas; el resto, sólo las que pintan
                      un rótulo. -->

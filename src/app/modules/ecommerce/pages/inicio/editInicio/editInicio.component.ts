@@ -15,6 +15,7 @@ import {
   SeccionInicioModel, VistaSeccion, ESTADOS_SECCION, VISTA_SECCIONES, VISTA_POR_DEFECTO,
   vistaDeProductos,
   TAMANOS_ROTULO, FUENTES_ROTULO, COLORES_ROTULO, ROTULO_BASE_PX, ROTULO_COLOR_TIENDA,
+  BOTONES_TARJETA, BotonTarjeta, colorDeTextoSobre,
   ALTOS_SECCION, AIRE_BASE_PX,
 } from '../../../interfaces/inicioModel';
 
@@ -184,6 +185,16 @@ export class EditInicioComponent implements OnInit {
       alto:      [s.alto ?? 'normal'],
       desde:     [s.desde ?? ''],
       hasta:     [s.hasta ?? ''],
+      // Los cuatro botones de la tarjeta: fondo y letra. Vacío en el fondo es
+      // «el de la tienda»; vacío en la letra, «la que se lea encima»
+      boton_favorito_color: [s.botones?.favorito?.fondo ?? ''],
+      boton_favorito_texto: [s.botones?.favorito?.texto ?? ''],
+      boton_carrito_color:  [s.botones?.carrito?.fondo ?? ''],
+      boton_carrito_texto:  [s.botones?.carrito?.texto ?? ''],
+      boton_whatsapp_color: [s.botones?.whatsapp?.fondo ?? ''],
+      boton_whatsapp_texto: [s.botones?.whatsapp?.texto ?? ''],
+      boton_tarjeta_color:  [s.botones?.tarjeta?.fondo ?? ''],
+      boton_tarjeta_texto:  [s.botones?.tarjeta?.texto ?? ''],
     });
   }
 
@@ -289,6 +300,102 @@ export class EditInicioComponent implements OnInit {
     this.elegirColor(s, '');
   }
 
+  // ================================================================
+  // EL COLOR DE LOS BOTONES DE LA TARJETA
+  // ================================================================
+  //
+  // Los cuatro se configuran igual que el del rótulo —misma paleta, mismo
+  // selector, mismo «quitar»— y por eso comparten estos métodos en vez de
+  // tener cuatro juegos: la plantilla recorre `botones` y pasa cuál es.
+  //
+  // SÓLO SE ELIGE EL FONDO. La letra y el icono los calcula `colorDeTextoSobre`
+  // y la tienda hace lo mismo con la misma fórmula, así que la muestra de aquí
+  // es lo que se va a ver.
+
+  public readonly botones = BOTONES_TARJETA;
+
+  /** El fondo elegido para ese botón, o el que usa la tienda hoy. */
+  colorBoton(s: SeccionInicioModel, b: BotonTarjeta): string {
+    return this.valorBoton(s, b.campo) || b.deLaTienda;
+  }
+
+  /** Si se eligió fondo a mano; mientras no, manda la tienda. */
+  botonPropio(s: SeccionInicioModel, b: BotonTarjeta): boolean {
+    return this.valorBoton(s, b.campo) !== '';
+  }
+
+  /**
+   * La letra del botón: la elegida, o la que la tienda va a poner.
+   *
+   * Y lo que la tienda pone depende de si hay fondo propio: con fondo propio
+   * calcula la que se lea encima, y sin él usa la suya de siempre. Esta
+   * pantalla tiene que decir lo mismo, o la muestra miente.
+   */
+  textoBoton(s: SeccionInicioModel, b: BotonTarjeta): string {
+    const elegida = this.valorBoton(s, b.campoTexto);
+    if (elegida) { return elegida; }
+    return this.botonPropio(s, b) ? colorDeTextoSobre(this.colorBoton(s, b)) : b.textoDeLaTienda;
+  }
+
+  /** Si se eligió letra a mano. */
+  textoPropio(s: SeccionInicioModel, b: BotonTarjeta): boolean {
+    return this.valorBoton(s, b.campoTexto) !== '';
+  }
+
+  ponerColorBoton(s: SeccionInicioModel, b: BotonTarjeta, color: string): void {
+    this.ponerCampo(s, b.campo, color);
+  }
+
+  ponerTextoBoton(s: SeccionInicioModel, b: BotonTarjeta, color: string): void {
+    this.ponerCampo(s, b.campoTexto, color);
+  }
+
+  colorBotonDelSelector(s: SeccionInicioModel, b: BotonTarjeta, evento: Event): void {
+    this.ponerColorBoton(s, b, (evento.target as HTMLInputElement).value);
+  }
+
+  textoBotonDelSelector(s: SeccionInicioModel, b: BotonTarjeta, evento: Event): void {
+    this.ponerTextoBoton(s, b, (evento.target as HTMLInputElement).value);
+  }
+
+  /**
+   * Si ese par de colores no se va a leer en la tienda.
+   *
+   * SE AVISA, NO SE PROHÍBE, igual que con el color del rótulo: la
+   * combinación puede ser justo la de una campaña, y quien administra está
+   * mirando la muestra de al lado. Pero un botón que se eligió por bonito y
+   * resulta ilegible es un fallo que nadie ve hasta que lo ve un cliente.
+   *
+   * El 4,5:1 es el mínimo de la WCAG para texto normal, que es lo que son
+   * estos botones: doce píxeles en mayúsculas.
+   */
+  botonFlojo(s: SeccionInicioModel, b: BotonTarjeta): boolean {
+    return this.contrasteBoton(s, b) < 4.5;
+  }
+
+  contrasteBotonTexto(s: SeccionInicioModel, b: BotonTarjeta): string {
+    return this.contrasteBoton(s, b).toFixed(1).replace('.', ',');
+  }
+
+  private contrasteBoton(s: SeccionInicioModel, b: BotonTarjeta): number {
+    return this.contrasteEntre(this.colorBoton(s, b), this.textoBoton(s, b));
+  }
+
+  private ponerCampo(s: SeccionInicioModel, campo: string, color: string): void {
+    if (!this.puedeEditar) { return; }
+    this.formularios[s.clave].patchValue({ [campo]: color });
+    this.formularios[s.clave].markAsDirty();
+  }
+
+  private valorBoton(s: SeccionInicioModel, campo: string): string {
+    return (this.formularios[s.clave]?.value?.[campo] ?? '').toString().trim();
+  }
+
+  /** Si esta sección pinta tarjetas con botones: sólo las de productos. */
+  conBotones(s: SeccionInicioModel): boolean {
+    return s.fuente.tipo === 'productos';
+  }
+
   /**
    * Si ese color se va a leer mal sobre el fondo blanco de la sección.
    *
@@ -309,15 +416,26 @@ export class EditInicioComponent implements OnInit {
   }
 
   private contrasteConBlanco(hex: string): number {
-    const canal = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    return this.contrasteEntre(hex, '#ffffff');
+  }
+
+  /** El contraste entre dos colores, como lo define la WCAG: de 1 a 21. */
+  private contrasteEntre(uno: string, otro: string): number {
+    const a = this.luz(uno);
+    const b = this.luz(otro);
+    if (a === null || b === null) { return 21; }
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  }
+
+  /** La luminancia de un «#rrggbb»; null si no es un color. */
+  private luz(hex: string): number | null {
     const n = parseInt((hex || '').replace('#', ''), 16);
-    if (isNaN(n)) { return 21; }
+    if (isNaN(n)) { return null; }
 
-    const luz = 0.2126 * canal(((n >> 16) & 255) / 255)
-              + 0.7152 * canal(((n >> 8) & 255) / 255)
-              + 0.0722 * canal((n & 255) / 255);
-
-    return 1.05 / (luz + 0.05);
+    const canal = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    return 0.2126 * canal(((n >> 16) & 255) / 255)
+         + 0.7152 * canal(((n >> 8) & 255) / 255)
+         + 0.0722 * canal((n & 255) / 255);
   }
 
   /**
@@ -491,6 +609,17 @@ export class EditInicioComponent implements OnInit {
         rotulo_fuente: conRotulo ? limpio(v.fuente) : null,
         // El alto sí lo llevan todas: hasta un banner sin rótulo ocupa su sitio
         alto:          limpio(v.alto),
+        // Los botones sólo donde hay tarjetas que los pinten: guardarle un
+        // color a un banner lo dejaría ahí, sin que nada lo enseñe y sin que
+        // nadie pueda saber de dónde salió
+        boton_favorito_color: this.conBotones(s) ? limpio(v.boton_favorito_color) : null,
+        boton_favorito_texto: this.conBotones(s) ? limpio(v.boton_favorito_texto) : null,
+        boton_carrito_color:  this.conBotones(s) ? limpio(v.boton_carrito_color)  : null,
+        boton_carrito_texto:  this.conBotones(s) ? limpio(v.boton_carrito_texto)  : null,
+        boton_whatsapp_color: this.conBotones(s) ? limpio(v.boton_whatsapp_color) : null,
+        boton_whatsapp_texto: this.conBotones(s) ? limpio(v.boton_whatsapp_texto) : null,
+        boton_tarjeta_color:  this.conBotones(s) ? limpio(v.boton_tarjeta_color)  : null,
+        boton_tarjeta_texto:  this.conBotones(s) ? limpio(v.boton_tarjeta_texto)  : null,
         activo:        s.activo,
         desde,
         hasta,

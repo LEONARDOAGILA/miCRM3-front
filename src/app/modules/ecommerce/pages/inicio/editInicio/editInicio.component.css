@@ -443,3 +443,72 @@
 ::ng-deep .cdk-drag-animating {
   transition: transform 180ms cubic-bezier(0, 0, .2, 1);
 }
+
+/* ============================================================
+   EL COLOR DE LOS BOTONES DE LA TARJETA
+   ============================================================
+   Sólo sale en las secciones de productos. Son cuatro bloques
+   iguales —muestra, selector, código y paleta—, así que la
+   plantilla los recorre y aquí sólo se les da sitio.
+
+   SE ELIGE EL FONDO Y NADA MÁS: la letra la calcula la tienda
+   para que se lea encima (colorDeTextoSobre). Por eso la
+   muestra de arriba se pinta con los dos colores: es lo que se
+   va a ver, no una aproximación. */
+.botones-colores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: .75rem;
+  margin-bottom: .5rem;
+}
+
+.boton-color {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  padding: .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* La muestra ES el botón, con el mismo aire y la misma esquina que en la
+   tienda: si aquí saliera redondo y allá cuadrado, el color elegido se
+   vería distinto de como se eligió. */
+.boton-color__muestra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+
+  height: 34px;
+  padding: 0 .6rem;
+  border-radius: 8px;
+  /* Un borde del mismo color: así el botón blanco sobre el panel claro no
+     desaparece, que es justo el caso del de tarjeta y el de favorito */
+  box-shadow: inset 0 0 0 1px rgba(var(--bs-body-color-rgb, 33, 37, 41), .18);
+
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El rótulo de cada mitad del bloque: FONDO y LETRA E ICONO */
+.boton-color__que {
+  font-size: .625rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Los cuatro bloques son estrechos: la paleta cabe en dos filas y no
+   empuja al selector fuera */
+.boton-color .color-paleta__punto {
+  width: 16px;
+  height: 16px;
+}

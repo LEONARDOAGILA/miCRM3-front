@@ -59,6 +59,99 @@ export interface SeccionInicioModel {
    * sección de productos detrás», y esa regla es suya.
    */
   fija: boolean;
+
+  /** El fondo de los cuatro botones de la tarjeta. Sólo lo usan las de productos. */
+  botones: BotonesColores;
+}
+
+/**
+ * LOS COLORES DE UN BOTÓN de la tarjeta de un producto.
+ *
+ * LOS DOS SON OPCIONALES Y NO SIGNIFICAN LO MISMO. `fondo` en null es «el de
+ * la tienda»; `texto` en null es «el que se lea encima del fondo», que lo
+ * calcula la tienda con `colorDeTextoSobre`.
+ *
+ * Por eso se puede elegir sólo la letra —el corazón rojo sobre el círculo
+ * blanco de siempre— sin tener que elegir también un fondo.
+ */
+export interface BotonColores {
+  fondo: string | null;
+  texto: string | null;
+}
+
+export interface BotonesColores {
+  favorito: BotonColores;
+  carrito: BotonColores;
+  whatsapp: BotonColores;
+  tarjeta: BotonColores;
+}
+
+/** Un botón de la tarjeta, tal como se configura y como lo pinta la tienda. */
+export interface BotonTarjeta {
+  /** El campo del fondo que viaja al servidor. */
+  campo: 'boton_favorito_color' | 'boton_carrito_color' | 'boton_whatsapp_color' | 'boton_tarjeta_color';
+  /** El de su letra. */
+  campoTexto: 'boton_favorito_texto' | 'boton_carrito_texto' | 'boton_whatsapp_texto' | 'boton_tarjeta_texto';
+  /** La clave dentro de `botones`. */
+  clave: keyof BotonesColores;
+  texto: string;
+  icono: string;
+  /**
+   * El que usa la tienda hoy, para enseñarlo cuando no se eligió ninguno.
+   *
+   * ESTÁ TAMBIÉN EN LA TIENDA (_base.scss y _seccion-productos.scss). Son dos
+   * sitios porque son dos proyectos; si allí cambia el rojo de la casa, aquí
+   * hay que cambiarlo también o la muestra mentirá.
+   */
+  deLaTienda: string;
+  /** Y la letra que usa hoy, para lo mismo. */
+  textoDeLaTienda: string;
+  ayuda: string;
+}
+
+export const BOTONES_TARJETA: BotonTarjeta[] = [
+  { campo: 'boton_favorito_color', campoTexto: 'boton_favorito_texto', clave: 'favorito',
+    texto: 'Favorito', icono: 'fa-heart',
+    deLaTienda: '#ffffff', textoDeLaTienda: '#df1122',
+    ayuda: 'El círculo del corazón, arriba de la foto. La «letra» es el corazón; marcado se rellena y sin marcar va hueco' },
+  { campo: 'boton_carrito_color', campoTexto: 'boton_carrito_texto', clave: 'carrito',
+    texto: 'Agregar', icono: 'fa-cart-shopping',
+    deLaTienda: '#df1122', textoDeLaTienda: '#ffffff',
+    ayuda: 'El botón ancho de agregar al carrito' },
+  { campo: 'boton_whatsapp_color', campoTexto: 'boton_whatsapp_texto', clave: 'whatsapp',
+    texto: 'WhatsApp', icono: 'fa-whatsapp',
+    deLaTienda: '#118645', textoDeLaTienda: '#ffffff',
+    ayuda: 'El de comprar por WhatsApp' },
+  { campo: 'boton_tarjeta_color', campoTexto: 'boton_tarjeta_texto', clave: 'tarjeta',
+    texto: 'Tarjeta', icono: 'fa-credit-card',
+    deLaTienda: '#ffffff', textoDeLaTienda: '#df1122',
+    ayuda: 'El de comprar con tarjeta. Sin fondo propio va de contorno, y el borde toma este color' },
+];
+
+/**
+ * El color de letra que se lee encima de ese fondo: blanco o casi negro.
+ *
+ * LA TIENDA HACE ESTO MISMO (shared/utils/boton-color.util.ts) y tiene que dar
+ * el mismo resultado: aquí es la muestra que se mira al elegir y allí es lo
+ * que ve el cliente. Si las dos no coinciden, se elige un color mirando una
+ * muestra que no es la verdad.
+ *
+ * Se compara el contraste contra blanco y contra negro y gana el mayor, que es
+ * lo que dice la WCAG; no un umbral de luminancia, que falla justo en los
+ * colores medios donde más falta hace acertar.
+ */
+export function colorDeTextoSobre(fondo: string): string {
+  const n = parseInt((fondo || '').replace('#', ''), 16);
+  if (isNaN(n)) { return '#ffffff'; }
+
+  const canal = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const lum = 0.2126 * canal(((n >> 16) & 255) / 255)
+            + 0.7152 * canal(((n >> 8) & 255) / 255)
+            + 0.0722 * canal((n & 255) / 255);
+
+  const conBlanco = 1.05 / (lum + 0.05);
+  const conNegro  = (lum + 0.05) / 0.05;
+  return conBlanco >= conNegro ? '#ffffff' : '#1d1d1f';
 }
 
 export type EstadoSeccion = 'visible' | 'oculta' | 'programada' | 'terminada';
