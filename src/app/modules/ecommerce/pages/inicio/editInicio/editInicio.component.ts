@@ -13,6 +13,7 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { InicioService } from '../../../services/inicio.service';
 import {
   SeccionInicioModel, VistaSeccion, ESTADOS_SECCION, VISTA_SECCIONES, VISTA_POR_DEFECTO,
+  vistaDeProductos,
   TAMANOS_ROTULO, FUENTES_ROTULO, COLORES_ROTULO, ROTULO_BASE_PX, ROTULO_COLOR_TIENDA,
   ALTOS_SECCION, AIRE_BASE_PX,
 } from '../../../interfaces/inicioModel';
@@ -29,9 +30,11 @@ import { GaleriaImagenesComponent } from '../../galerias/galeriaImagenes/galeria
  * para moverlas, en vez de un campo «orden» por sección, que obliga a
  * imaginarse el resultado.
  *
- * AQUÍ NO SE CREAN NI SE BORRAN SECCIONES: cada una existe porque la tienda
- * sabe pintarla. Lo que se administra es cuáles se ven, en qué orden, CÓMO SE
- * LLAMAN EN LA TIENDA y entre qué fechas.
+ * AQUÍ NO SE CREAN NI SE BORRAN SECCIONES, pero por dos motivos distintos:
+ * las OCHO DE FÁBRICA existen porque la tienda sabe pintarlas, y las de
+ * PRODUCTOS se crean y se borran en «Productos por sección», que es donde se
+ * les meten los productos. Lo que se administra aquí es cuáles se ven, en qué
+ * orden, CÓMO SE LLAMAN EN LA TIENDA y entre qué fechas.
  *
  * EL NOMBRE DE LA SECCIÓN ES DE AQUÍ; EL RÓTULO ES DEL CLIENTE. «Categorías
  * destacadas» es como la llamamos nosotros y no cambia, porque es como se
@@ -82,7 +85,7 @@ export class EditInicioComponent implements OnInit {
    * El cuerpo de una sección se PINTA UNA VEZ Y SE ESCONDE, no se destruye:
    * dentro va una galería que se carga sola, y destruirla al cerrar la haría
    * pedir sus imágenes otra vez a cada clic. Pero sólo se monta la que se
-   * abre: montar las ocho de entrada pediría galerías que nadie va a mirar.
+   * abre: montarlas todas de entrada pediría galerías que nadie va a mirar.
    */
   public vistas = new Set<string>();
 
@@ -152,7 +155,7 @@ export class EditInicioComponent implements OnInit {
    * Pinta la lista que devolvió el servidor.
    *
    * LOS FORMULARIOS NO SE REHACEN a cada respuesta: guardar una sección
-   * devuelve las ocho, y rehacerlas todas borraría lo que se esté escribiendo
+   * devuelve la lista entera, y rehacerlas todas borraría lo que se escribe
    * en otra. Se crea el que falte, y el de la sección guardada se pone al día
    * aparte.
    */
@@ -189,6 +192,9 @@ export class EditInicioComponent implements OnInit {
   // ================================================================
 
   vista(s: SeccionInicioModel): VistaSeccion {
+    // Las de productos no pueden estar en el catálogo de claves: la suya la
+    // fabrica el servidor al crearlas, así que su cara se arma con su nombre.
+    if (s.producto_seccion_id) { return vistaDeProductos(s.nombre); }
     return VISTA_SECCIONES[s.clave] ?? VISTA_POR_DEFECTO;
   }
 
@@ -351,11 +357,28 @@ export class EditInicioComponent implements OnInit {
       if (!s.cuantas) { return 'Ninguna marca en la tienda'; }
       return s.cuantas + (s.cuantas === 1 ? ' marca' : ' marcas');
     }
+    if (s.fuente.tipo === 'productos') {
+      if (!s.cuantas) { return 'Sin productos todavía'; }
+      return s.cuantas + (s.cuantas === 1 ? ' producto' : ' productos');
+    }
     return 'Falta ' + (s.fuente.falta ?? 'su fuente');
   }
 
   /** Si esta sección se llena en otra pantalla, cuál y con qué regla. */
-  seLlenaEn(s: SeccionInicioModel): { ruta: string; pantalla: string; regla: string } | null {
+  seLlenaEn(s: SeccionInicioModel):
+      { ruta: string; pantalla: string; regla: string; params?: Record<string, any> } | null {
+    if (s.fuente.tipo === 'productos') {
+      return {
+        ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'producto-por-seccion'),
+        pantalla: 'Productos por sección',
+        // El enlace lleva la sección puesta: llegar a una lista de escaparates
+        // y tener que buscar el que se estaba mirando es el paso que sobra.
+        params: s.fuente.seccion_id ? { seccion: s.fuente.seccion_id } : undefined,
+        regla: 'Salen aquí los productos que le metas a este escaparate, en el '
+             + 'orden que tengan allí. Lo que aquí se decide es dónde va en la '
+             + 'portada, qué se lee encima y entre qué fechas se ve.',
+      };
+    }
     if (s.fuente.tipo === 'promocion') {
       return {
         ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'allCategoriasWeb'),
@@ -382,6 +405,21 @@ export class EditInicioComponent implements OnInit {
       };
     }
     return null;
+  }
+
+  /**
+   * Lo que esta sección NO hace todavía en la tienda.
+   *
+   * Va aparte de la regla de arriba a propósito: una cosa es dónde se llena y
+   * otra si el cliente la ve. Una sección de productos se administra entera
+   * desde hoy —orden, rótulo, alto, fechas— pero la tienda todavía no sabe
+   * pintarla, y callarlo sería dejar a alguien esperando a que aparezca.
+   */
+  avisoTienda(s: SeccionInicioModel): string | null {
+    if (s.fuente.tipo !== 'productos') { return null; }
+    return 'La tienda todavía no pinta estas secciones: le falta el diseño para '
+         + 'ellas y la ficha del producto (existencias, «destacado» y el precio '
+         + 'anterior). Lo que ordenes y escribas ahora vale igual cuando llegue.';
   }
 
   /**
@@ -451,7 +489,7 @@ export class EditInicioComponent implements OnInit {
         rotulo_tamano: conRotulo ? limpio(v.tamano) : null,
         rotulo_color:  conRotulo ? limpio(v.color) : null,
         rotulo_fuente: conRotulo ? limpio(v.fuente) : null,
-        // El alto sí lo llevan las ocho: hasta un banner sin rótulo ocupa su sitio
+        // El alto sí lo llevan todas: hasta un banner sin rótulo ocupa su sitio
         alto:          limpio(v.alto),
         activo:        s.activo,
         desde,

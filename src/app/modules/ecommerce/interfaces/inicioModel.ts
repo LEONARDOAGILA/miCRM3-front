@@ -2,8 +2,14 @@
  * Una SECCIÓN de la portada de la tienda.
  *
  * La portada no es una página: es esta lista, que se enciende, se apaga y se
- * reordena. Las secciones no se crean ni se borran desde el CRM —cada una
- * existe porque la tienda sabe pintarla—, así que aquí no hay «nueva».
+ * reordena.
+ *
+ * HAY DE DOS CLASES. Las OCHO DE FÁBRICA existen porque la tienda sabe
+ * pintarlas —banner, destacadas, marcas— y no se crean ni se borran. Las demás
+ * son SECCIONES DE PRODUCTOS que alguien armó en «Productos por sección»: se
+ * crean y se borran allí, y aquí aparecen como una fila más, con su orden, su
+ * rótulo, su alto y sus fechas como las otras. Por eso en esta pantalla no hay
+ * «nueva» ni «borrar»: el sitio de crearlas es el otro.
  */
 export interface SeccionInicioModel {
   id: number;
@@ -36,6 +42,23 @@ export interface SeccionInicioModel {
   cuantas: number | null;
   /** Si hoy tiene algo que enseñar. Sin contenido, la tienda se la salta. */
   con_contenido: boolean;
+
+  /**
+   * A qué escaparate de «Productos por sección» apunta, si es uno.
+   *
+   * Las ocho de siempre traen null: existen porque la tienda sabe pintarlas y
+   * no se crean ni se borran. Las demás son una sección de productos que
+   * alguien armó, y aquí aparecen como una fila más de la portada.
+   */
+  producto_seccion_id: number | null;
+
+  /**
+   * Si es una de las de fábrica.
+   *
+   * Lo decide el servidor y no la pantalla: «de fábrica» significa «sin
+   * sección de productos detrás», y esa regla es suya.
+   */
+  fija: boolean;
 }
 
 export type EstadoSeccion = 'visible' | 'oculta' | 'programada' | 'terminada';
@@ -154,11 +177,13 @@ export const ALTOS_SECCION: { valor: AltoSeccion; texto: string; escala: number 
  * estar de acuerdo en esto— y la pantalla sólo lo enseña.
  */
 export interface FuenteSeccion {
-  tipo: 'galeria' | 'promocion' | 'destacadas' | 'marcas' | 'pendiente';
+  tipo: 'galeria' | 'promocion' | 'destacadas' | 'marcas' | 'productos' | 'pendiente';
   /** Con `galeria`: su clave. */
   galeria?: string;
-  /** Con `promocion` y `destacadas`: la pantalla donde se llena. */
+  /** Con `promocion`, `destacadas` y `productos`: la pantalla donde se llena. */
   pantalla?: string;
+  /** Con `productos`: cuál escaparate, para abrirlo ya elegido. */
+  seccion_id?: number;
   /** Con `pendiente`: qué falta. */
   falta?: string;
 }
@@ -308,3 +333,33 @@ export const VISTA_POR_DEFECTO: VistaSeccion = {
   rotulo: 'ninguno',
   sinRotulo: 'esta pantalla todavía no sabe cómo se pinta',
 };
+
+/**
+ * La cara de una sección de productos.
+ *
+ * No está en VISTA_SECCIONES y no puede estarlo: su clave la fabrica el
+ * servidor al crearla (`seccion_7`), así que no hay una lista fija donde
+ * apuntarla. Se arma con el nombre que traiga.
+ *
+ * LLEVA RÓTULO y de fábrica no dice nada: lo que se lee encima lo escribe
+ * quien arma el escaparate. Dejar el nombre interno como rótulo de fábrica
+ * sacaría «pro1» en la tienda.
+ */
+export function vistaDeProductos(nombre: string): VistaSeccion {
+  return {
+    icono: 'fa-basket-shopping',
+    descripcion: `Los productos de «${nombre}», en el orden que tengan ahí.`,
+    rotulo: 'titulo',
+    rotuloDeFabrica: null,
+  };
+}
+
+/**
+ * Lo que ocuparía una sección de productos en la portada.
+ *
+ * ESTIMADO, como las otras tres que todavía no se pintan: la tienda no sabe
+ * dibujarlas, así que no hay nada que medir. Sale de la grilla, que es la que
+ * más se le parece —productos uno al lado del otro—, y por eso se marca como
+ * no medida y el modelado lo dice.
+ */
+export const CONTENIDO_SECCION_PRODUCTOS = { computadora: 860, celular: 1900, medido: false };

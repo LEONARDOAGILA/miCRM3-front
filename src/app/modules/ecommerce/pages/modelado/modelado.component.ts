@@ -12,8 +12,8 @@ import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import { InicioService } from '../../services/inicio.service';
 import {
   SeccionInicioModel, VistaSeccion, AltoSeccion, Dispositivo,
-  ESTADOS_SECCION, VISTA_SECCIONES, VISTA_POR_DEFECTO,
-  ALTOS_SECCION, PAGINA, ALTO_CONTENIDO, CONTENIDO_DESCONOCIDO,
+  ESTADOS_SECCION, VISTA_SECCIONES, VISTA_POR_DEFECTO, vistaDeProductos,
+  ALTOS_SECCION, PAGINA, ALTO_CONTENIDO, CONTENIDO_DESCONOCIDO, CONTENIDO_SECCION_PRODUCTOS,
 } from '../../interfaces/inicioModel';
 
 import { PanelComponent } from '../../../../components/panel/panel.component';
@@ -162,6 +162,9 @@ export class ModeladoComponent implements OnInit {
   }
 
   vista(s: SeccionInicioModel): VistaSeccion {
+    // Las de productos no están en el catálogo de claves: la suya la fabrica
+    // el servidor al crearlas, así que su cara se arma con su nombre.
+    if (s.producto_seccion_id) { return vistaDeProductos(s.nombre); }
     return VISTA_SECCIONES[s.clave] ?? VISTA_POR_DEFECTO;
   }
 
@@ -169,13 +172,31 @@ export class ModeladoComponent implements OnInit {
     return (s.titulo ?? '').trim() || s.nombre;
   }
 
+  /**
+   * Qué dibujo le toca.
+   *
+   * No se puede conmutar por la clave como las ocho de siempre: la de una
+   * sección de productos es `seccion_7` y caería en el dibujo por defecto,
+   * que es un banner. Las de productos se dibujan como la grilla, que es lo
+   * que serán: productos uno al lado del otro.
+   */
+  dibujoDe(s: SeccionInicioModel): string {
+    return s.producto_seccion_id ? 'grilla' : s.clave;
+  }
+
   private contenidoDe(s: SeccionInicioModel) {
+    if (s.producto_seccion_id) { return CONTENIDO_SECCION_PRODUCTOS; }
     return ALTO_CONTENIDO[s.clave] ?? CONTENIDO_DESCONOCIDO;
   }
 
   /** Si su alto está medido en la tienda o es una estimación. */
   medido(s: SeccionInicioModel): boolean {
     return this.contenidoDe(s).medido;
+  }
+
+  /** Cuántas salen con una medida estimada, para decirlo sin un número a mano. */
+  get cuantasEstimadas(): number {
+    return this.secciones.filter(s => !this.medido(s)).length;
   }
 
   private escalaDelAlto(alto: AltoSeccion): number {

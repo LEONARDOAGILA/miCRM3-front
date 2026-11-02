@@ -108,7 +108,9 @@
                   <!-- Un dibujo de lo que hay dentro: a este tamaño el nombre
                        solo no basta para reconocerla de un vistazo -->
                   <div class="mo-dibujo" aria-hidden="true">
-                    @switch (s.clave) {
+                    <!-- Por `dibujoDe` y no por la clave: la de una sección de
+                         productos es `seccion_7` y caería en el banner -->
+                    @switch (dibujoDe(s)) {
                       @case ('banner_principal') { <span class="d-banner"></span> }
                       @case ('banner_simple')    { <span class="d-banner d-banner--simple"></span> }
                       @case ('categorias_destacadas') {
@@ -284,8 +286,16 @@
         <p class="campo-hint">
           <i class="fa-solid fa-ruler-combined"></i>
           Es un boceto: el aire es exacto, y el alto del contenido es el que
-          medía la tienda el 1/11/2026. Las tres secciones que todavía no se
-          pintan salen con una medida estimada.
+          medía la tienda el 1/11/2026.
+          <!-- Cuántas son se cuenta, no se escribe: cada sección de productos
+               que se cree añade una más, y un número a mano envejece el día
+               siguiente. -->
+          @if (cuantasEstimadas === 1) {
+            Una sección todavía no se pinta y sale con una medida estimada.
+          } @else if (cuantasEstimadas > 1) {
+            Las {{ cuantasEstimadas }} secciones que todavía no se pintan salen
+            con una medida estimada.
+          }
         </p>
       </div>
     </div>

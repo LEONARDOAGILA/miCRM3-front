@@ -50,6 +50,11 @@ import { SaveSeccionProductoComponent } from './saveSeccionProducto/saveSeccionP
  * televisores de tres marcas y una barra de sonido porque ésa es la oferta de
  * esta semana.
  *
+ * CREAR UNA LA PONE EN LA PORTADA, al final y encendida: aparece en «Inicio de
+ * la tienda» como una fila más, y allí se le da su orden, su rótulo, su alto y
+ * sus fechas. Aquí se decide QUÉ lleva dentro; allí, DÓNDE y CÓMO se ve. Lo
+ * hace la base al crearla, así que esta pantalla no tiene que acordarse.
+ *
  * EL CATÁLOGO NO SE PIDE AQUÍ: la rejilla usa `ProductoService.allProductos`,
  * la misma que la pantalla de productos. Paginación en servidor, buscador,
  * marcas, categorías por rama y los dos rangos ya están resueltos allí, y un
@@ -263,6 +268,11 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
       if (this.seccionId !== null && !this.secciones.some(s => s.id === this.seccionId)) {
         this.seccionId = null;
       }
+      // La que pidan por la dirección gana: se llega aquí desde la portada,
+      // con una sección concreta en la cabeza. Sólo al entrar: después manda
+      // lo que se haya pulsado.
+      if (primera) { this.seccionId = this.laQuePiden() ?? this.seccionId; }
+
       if (this.seccionId === null && (primera || this.vista === 'seccion') && this.secciones.length) {
         this.seccionId = this.secciones[0].id;
       }
@@ -275,6 +285,20 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
     } finally {
       this.cargandoSecciones = false;
     }
+  }
+
+  /**
+   * La sección que pide la dirección (`?seccion=7`), si existe y está viva.
+   *
+   * Se comprueba contra la lista en vez de fiarse del número: la dirección la
+   * puede traer un enlace viejo de una sección que ya está en la papelera, y
+   * elegir una que no está deja la pantalla con los botones apagados y sin
+   * decir por qué.
+   */
+  private laQuePiden(): number | null {
+    const pedida = Number(this.activeRoute.snapshot.queryParamMap.get('seccion'));
+    if (!Number.isFinite(pedida) || pedida <= 0) { return null; }
+    return this.secciones.some(s => s.id === pedida) ? pedida : null;
   }
 
   async elegirSeccion(s: SeccionProductoModel): Promise<void> {

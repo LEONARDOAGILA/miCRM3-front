@@ -32,12 +32,19 @@
 
   } @else {
 
+    <!-- El texto va dentro de UN <span>. `.campo-hint` es flex, así que cada
+         trozo suelto y cada <i> son items distintos: con el icono del asa en
+         medio, el párrafo se partía en tres y una palabra se quedaba sola en
+         la línea de abajo. -->
     <p class="campo-hint">
       <i class="fa-solid fa-circle-info"></i>
-      Las secciones están en el orden en que se ven en la tienda: arrástralas
-      desde <i class="fa-solid fa-grip-vertical"></i> para moverlas, y abre una
-      para configurarla. Las secciones no se crean ni se borran aquí: cada una
-      existe porque la tienda sabe pintarla.
+      <span>
+        Las secciones están en el orden en que se ven en la tienda: arrástralas
+        desde <i class="fa-solid fa-grip-vertical"></i> para moverlas, y abre una
+        para configurarla. Aquí no se crean ni se borran: las de fábrica existen
+        porque la tienda sabe pintarlas, y las de productos se crean y se borran
+        en «Productos por sección».
+      </span>
     </p>
 
     <div cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="secciones"
@@ -89,6 +96,7 @@
                     @case ('promocion')  { <i class="fa-solid fa-tags"></i> }
                     @case ('destacadas') { <i class="fa-solid fa-star"></i> }
                     @case ('marcas')     { <i class="fa-solid fa-award"></i> }
+                    @case ('productos')  { <i class="fa-solid fa-basket-shopping"></i> }
                     @default             { <i class="fa-solid fa-hammer"></i> }
                   }
                   {{ resumen(s) }}
@@ -163,7 +171,7 @@
                 }
 
                 <!-- ---------- Cómo se ve en la tienda ----------
-                     El alto lo llevan las ocho; el resto, sólo las que pintan
+                     El alto lo llevan todas; el resto, sólo las que pintan
                      un rótulo. -->
                 <div class="col-12">
                   <label class="seccion-rotulo">CÓMO SE VE EN LA TIENDA</label>
@@ -345,12 +353,26 @@
                   <!-- Se llena en otra pantalla, y no es un «falta»: se dice
                        la regla y se lleva allí, que es lo que se va a hacer. -->
                   <div class="seccion-enlace">
-                    <i class="fa-solid fa-tags"></i>
+                    <i class="fa-solid" [ngClass]="vista(s).icono"></i>
                     <div>
                       <b>Esta sección se llena en «{{ donde.pantalla }}».</b>
                       {{ donde.regla }}
+
+                      <!-- Lo que todavía no hace en la tienda, aparte de la
+                           regla: una cosa es dónde se llena y otra si el
+                           cliente la ve. -->
+                      @if (avisoTienda(s); as aviso) {
+                        <p class="campo-hint campo-hint--aviso mt-2 mb-0">
+                          <i class="fa-solid fa-triangle-exclamation"></i> {{ aviso }}
+                        </p>
+                      }
+
                       <div class="mt-2">
-                        <a class="btn btn-xs btn-primary" [routerLink]="donde.ruta">
+                        <!-- Con la sección puesta: llegar a la lista y tener que
+                             buscar la que se estaba mirando es el paso que sobra -->
+                        <a class="btn btn-xs btn-primary"
+                           [routerLink]="donde.ruta"
+                           [queryParams]="donde.params ?? null">
                           <i class="fa fa-arrow-right"></i> Ir a {{ donde.pantalla }}
                         </a>
                       </div>
