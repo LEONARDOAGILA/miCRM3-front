@@ -1,0 +1,517 @@
+<!-- ============================================================
+     PRODUCTOS POR SECCIÓN: TRES COLUMNAS
+
+       1. Miga de pan
+       2. <panel> a toda la altura
+          2a. Las secciones, con lo que lleva cada una
+          2b. Divisor arrastrable
+          2c. El catálogo (o la sección), con sus casillas
+          2d. Divisor arrastrable
+          2e. Los filtros, y abajo la asignación masiva
+
+     El armazón de las tres columnas —el plegado, los divisores, las
+     tiras— está en core/styles/columnas-plegables.css, compartido.
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb pps-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
+  <li class="breadcrumb-item active">Productos por sección</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       (panelReloaded)="recargar()"
+       (panelExpanded)="ajustarTamanoGrid()"
+       [closeRoute]="'/ecommerce/home'"
+       icono="basket-shopping"
+       class="flex-1 d-flex flex-column overflow-hidden"
+       bodyClass="p-0 flex-1 overflow-hidden"
+       panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
+
+  @if (isLoading$ | async) {
+    <div class="loader1"></div>
+    <div class="overlay1"></div>
+  }
+
+  <div class="file-manager h-100 cpl"
+       [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled,
+                    'cpl--redimensionando': redimensionando }"
+       [style.--bs-file-manager-sidebar-width]="(lateralPlegado ? 34 : anchoLateral) + 'px'"
+       [style.--bs-file-manager-mobile-sidebar-margin]="(-(lateralPlegado ? 34 : anchoLateral)) + 'px'"
+       [style.--cpl-ancho-panel]="(filtrosPlegados ? 34 : anchoFiltros) + 'px'">
+
+    <div class="file-manager-container">
+
+      <!-- ---------- 2a. LAS SECCIONES ---------- -->
+      <div class="file-manager-sidebar cpl-lateral" [class.is-plegado]="lateralPlegado">
+
+        @if (lateralPlegado) {
+          <button type="button" class="cpl-tira" (click)="alternarLateral()"
+                  title="Mostrar las secciones">
+            <i class="fa fa-angles-right cpl-tira__flecha"></i>
+            <span class="cpl-tira__texto">Secciones</span>
+            @if (secciones.length) {
+              <span class="cpl-tira__chapa">{{ secciones.length }}</span>
+            }
+          </button>
+        } @else {
+
+          <div class="file-manager-sidebar-mobile-toggler">
+            <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Secciones">
+              <i class="fa" [ngClass]="mobileSidebarToggled ? 'fa-chevron-left' : 'fa-basket-shopping'"></i>
+            </button>
+          </div>
+
+          <div class="cpl-lateral__cabecera">
+            <span class="cpl-lateral__titulo">
+              <i class="fa fa-basket-shopping"></i> Secciones
+              @if (secciones.length) { <span class="cpl-panel__cuantos">{{ secciones.length }}</span> }
+            </span>
+            <div class="btn-group cpl-lateral__acciones" role="group" aria-label="Secciones">
+              <button type="button" class="btn btn-xs btn-primary"
+                      [title]="puedeCrear ? 'Nueva sección' : 'No tienes permiso para crear secciones'"
+                      [disabled]="!puedeCrear"
+                      (click)="nuevaSeccion()">
+                <i class="fa fa-plus"></i>
+              </button>
+              <button type="button" class="btn btn-xs btn-white" title="Plegar la columna"
+                      (click)="alternarLateral()">
+                <i class="fa fa-angles-left"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="cpl-lateral__cuerpo">
+            @if (cargandoSecciones) {
+              <div class="loader1" role="status" aria-label="Cargando"></div>
+              <div class="overlay1" aria-hidden="true"></div>
+            }
+
+            <ng-scrollbar class="h-100">
+              <!-- Una sola lista, así que el eje SÍ se puede fijar: no hay otra
+                   columna a la que soltar. -->
+              <div class="pps-lista"
+                   cdkDropList
+                   cdkDropListLockAxis="y"
+                   [cdkDropListDisabled]="!puedeEditar || trabajando"
+                   (cdkDropListDropped)="moverSeccion($event)">
+
+                @for (s of secciones; track s.id) {
+                  <div class="pps-seccion"
+                       [class.is-elegida]="seccionId === s.id"
+                       [class.is-apagada]="!s.visible"
+                       cdkDrag
+                       [attr.aria-current]="seccionId === s.id ? 'true' : null"
+                       (click)="elegirSeccion(s)">
+
+                    <div class="pps-fantasma" *cdkDragPlaceholder></div>
+
+                    @if (puedeEditar) {
+                      <span class="pps-seccion__asa" cdkDragHandle
+                            title="Arrastra para cambiar el orden"
+                            (click)="$event.stopPropagation()">
+                        <i class="fa fa-grip-vertical"></i>
+                      </span>
+                    }
+
+                    <div class="pps-seccion__cuerpo">
+                      <span class="pps-seccion__nombre">{{ s.nombre }}</span>
+                      <span class="pps-seccion__datos">
+                        <span class="pps-chapa"
+                              [title]="s.productos + ' productos dentro'">{{ s.productos }}</span>
+                        <!-- `visible` lo calcula la base: encendida Y en fechas.
+                             Encendida con la vigencia pasada está encendida y no
+                             se ve, y sin esto la lista diría que sí. -->
+                        @if (!s.activo) {
+                          <span class="pps-seccion__aviso" title="Apagada: no se ve en la tienda">
+                            <i class="fa fa-power-off"></i> apagada
+                          </span>
+                        } @else if (!s.visible) {
+                          <span class="pps-seccion__aviso" title="Encendida, pero fuera de sus fechas">
+                            <i class="fa fa-calendar-xmark"></i> fuera de fecha
+                          </span>
+                        }
+                      </span>
+                    </div>
+
+                    <div class="pps-seccion__mandos" (click)="$event.stopPropagation()">
+                      <!-- La palanca de encendido, el estándar de la casa -->
+                      <div class="form-check form-switch pps-switch">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               [checked]="s.activo"
+                               [disabled]="!puedeEditar || trabajando"
+                               [attr.aria-label]="(s.activo ? 'Apagar' : 'Encender') + ' ' + s.nombre"
+                               [title]="puedeEditar
+                                          ? (s.activo ? 'Apagar «' + s.nombre + '»' : 'Encender «' + s.nombre + '»')
+                                          : (s.activo ? 'Encendida' : 'Apagada')"
+                               (change)="alternarSeccion(s)">
+                      </div>
+
+                      <button type="button" class="btn btn-xs btn-white"
+                              [title]="'Nombre y fechas de «' + s.nombre + '»'"
+                              [disabled]="!puedeEditar"
+                              (click)="editarSeccion(s)">
+                        <i class="fa fa-pen"></i>
+                      </button>
+                      <button type="button" class="btn btn-xs btn-white pps-borrar"
+                              [title]="puedeBorrar ? 'Enviar a la papelera' : 'No tienes permiso para eliminar'"
+                              [disabled]="!puedeBorrar || trabajando"
+                              (click)="borrarSeccion(s)">
+                        <i class="fa fa-trash-can"></i>
+                      </button>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="cpl-vacio">
+                    <i class="fa fa-basket-shopping"></i>
+                    <span>Todavía no hay secciones.</span>
+                    @if (puedeCrear) {
+                      <button type="button" class="btn btn-xs btn-primary" (click)="nuevaSeccion()">
+                        <i class="fa fa-plus"></i> Crear la primera
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </ng-scrollbar>
+          </div>
+
+          <div class="file-manager-sidebar-footer cpl-lateral__pie">
+            <span class="cpl-panel__pista">
+              La chapita dice cuántos productos tiene dentro.
+            </span>
+            <span class="cpl-lateral__ayuda"
+                  title="Elige una sección y márcale productos en la rejilla del medio. Arrastra para cambiar el orden en que irían en la tienda.">
+              <i class="fa fa-hand-pointer"></i>
+            </span>
+          </div>
+        }
+      </div>
+
+      <!-- ---------- 2b. DIVISOR ---------- -->
+      <div class="cpl-divisor"
+           [class.is-inerte]="lateralPlegado"
+           role="separator"
+           aria-orientation="vertical"
+           title="Arrastra para cambiar el ancho (doble clic: ancho por defecto)"
+           (pointerdown)="iniciarRedimension($event, 'lateral')"
+           (dblclick)="anchoPorDefecto('lateral')">
+      </div>
+
+      <!-- ---------- 2c. LA REJILLA ---------- -->
+      <div class="file-manager-content cpl-contenido">
+
+        <div class="cpl-ubicacion">
+
+          <!-- Dos listas distintas, no un filtro de la misma: el catálogo lo
+               pagina el servidor y la sección llega entera. -->
+          <div class="btn-group btn-group-sm" role="group" aria-label="Qué se está viendo">
+            @for (v of vistas; track v.clave) {
+              <button type="button" class="btn btn-outline-primary"
+                      [class.active]="vista === v.clave"
+                      [attr.aria-pressed]="vista === v.clave"
+                      [title]="v.ayuda"
+                      (click)="cambiarVista(v.clave)">
+                <i class="fa-solid" [ngClass]="v.icono"></i> {{ v.texto }}
+              </button>
+            }
+          </div>
+
+          <!-- A qué sección va lo que se marque. Sin ella, el gesto no tiene
+               destino, y eso hay que decirlo donde se mira. -->
+          <span class="pps-destino" [class.is-sin]="!seccion">
+            @if (seccion) {
+              <i class="fa fa-arrow-right-to-bracket"></i>
+              <b>{{ seccion.nombre }}</b>
+              <span class="pps-destino__cuenta">{{ seccion.productos }} dentro</span>
+            } @else {
+              <i class="fa fa-triangle-exclamation"></i>
+              Elige una sección de la izquierda
+            }
+          </span>
+
+          <div class="cpl-ubicacion__acciones">
+            <!-- El buscador sólo busca en el catálogo: la sección llega entera
+                 y se mira de un vistazo. -->
+            @if (vista === 'catalogo') {
+              <app-campoBusquedaPaginacion
+                [id]="'pps-buscar'"
+                [placeholder]="'Buscar por código, nombre, modelo, marca…'"
+                [iconClass]="'fa fa-search fa-lg'"
+                [containerClass]="'w-100'"
+                [conLimpiarFiltros]="true"
+                [hayFiltro]="hayFiltro"
+                [columnasFiltradas]="cuantasColumnasFiltradas"
+                (buscar)="onFilterTextBoxChanged($event)"
+                (limpiarFiltros)="limpiarTodosLosFiltros()">
+              </app-campoBusquedaPaginacion>
+            }
+
+            <!-- Los dos botones de la selección múltiple. El title va también
+                 en el envoltorio: un <button disabled> no recibe eventos de
+                 ratón, así que su propio title no se llega a ver y el aviso se
+                 perdería justo cuando hace falta. -->
+            <span [title]="motivoSinAsignar || 'Meter en la sección lo que esté marcado'">
+              <button type="button" class="btn btn-primary cpl-btn position-relative"
+                      [disabled]="!!motivoSinAsignar || trabajando"
+                      (click)="agregarSeleccionados()">
+                <i class="fa fa-plus"></i>
+                @if (cuantosSeleccionados) {
+                  <span class="badge rounded-pill bg-danger pps-badge">{{ cuantosSeleccionados }}</span>
+                }
+              </button>
+            </span>
+
+            <span [title]="motivoSinAsignar || 'Sacar de la sección lo que esté marcado'">
+              <button type="button" class="btn btn-outline-danger cpl-btn"
+                      [disabled]="!!motivoSinAsignar || trabajando"
+                      (click)="quitarSeleccionados()">
+                <i class="fa fa-minus"></i>
+              </button>
+            </span>
+
+            @if (filtrosPlegados) {
+              <button type="button" class="btn btn-outline-secondary cpl-btn"
+                      title="Mostrar los filtros" (click)="alternarFiltros()">
+                <i class="fa fa-filter"></i>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- ---------- REJILLA ---------- -->
+        <div class="pps-grilla-caja">
+          <ag-grid-angular
+            class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla pps-grilla"
+            [rowData]="filas"
+            [columnDefs]="columnDefs"
+            [enableCellTextSelection]="true"
+            [defaultColDef]="_appAgGridService.defaultColDef"
+            [sideBar]="_appAgGridService.sideBar"
+            [rowHeight]="_appAgGridService.rowHeight"
+            [headerHeight]="_appAgGridService.headerHeight"
+            [localeText]="_appAgGridService.localeText"
+            [rowSelection]="'multiple'"
+            [suppressRowClickSelection]="true"
+            [rowDragManaged]="vista === 'seccion'"
+            [pagination]="false"
+            [animateRows]="true"
+            [tooltipShowDelay]="400"
+            [rowClassRules]="rowClassRules"
+            [overlayNoRowsTemplate]="vista === 'seccion'
+                ? '<span>Esta sección todavía no tiene productos: cámbiate al catálogo y márcale unos cuantos</span>'
+                : '<span>No hay productos que cumplan el filtro</span>'"
+            (gridReady)="onGridReady($event)"
+            (filterChanged)="onFiltroColumna()"
+            (rowDragEnd)="onFilaArrastrada()"
+            (cellClicked)="onCellClicked($event)">
+          </ag-grid-angular>
+        </div>
+
+        <!-- ---------- PIE DE LA REJILLA ---------- -->
+        <div class="cpl-paginacion">
+
+          <!-- Paginar es cosa del catálogo: la sección llega entera -->
+          @if (vista === 'catalogo') {
+            <div class="btn-group" role="group" aria-label="Paginación">
+              <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                      (click)="primeraPagina()" [disabled]="paginaActual === 1">
+                <i class="fa fa-angle-double-left"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                      (click)="anteriorPagina()" [disabled]="paginaActual === 1">
+                <i class="fa fa-chevron-left"></i>
+              </button>
+              <span class="btn btn-sm btn-white cpl-pagina disabled">
+                Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+              </span>
+              <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                      (click)="siguientePagina()" [disabled]="paginaActual === ultimaPagina">
+                <i class="fa fa-chevron-right"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-white" title="Última página"
+                      (click)="ultima()" [disabled]="paginaActual === ultimaPagina">
+                <i class="fa fa-angle-double-right"></i>
+              </button>
+            </div>
+
+            <div class="cpl-paginacion__info">
+              Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> productos
+              @if (hayFiltro) { <span class="pps-filtrado">(filtrado)</span> }
+            </div>
+          } @else {
+            <div class="cpl-paginacion__info">
+              <b>{{ totalRegistros }}</b> {{ totalRegistros === 1 ? 'producto' : 'productos' }} en la sección
+            </div>
+            @if (puedeEditar && totalRegistros > 1) {
+              <div class="cpl-paginacion__info">
+                <i class="fa fa-grip-vertical"></i>
+                Arrastra una fila por su asa para cambiar el orden en que irían en la tienda
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- ---------- 2d. DIVISOR ---------- -->
+      <div class="cpl-divisor cpl-divisor--derecha"
+           [class.is-inerte]="filtrosPlegados"
+           role="separator"
+           aria-orientation="vertical"
+           title="Arrastra para cambiar el ancho de los filtros"
+           (pointerdown)="iniciarRedimension($event, 'filtros')"
+           (dblclick)="anchoPorDefecto('filtros')">
+      </div>
+
+      <!-- ---------- 2e. LOS FILTROS Y LA ASIGNACIÓN MASIVA ---------- -->
+      <div class="cpl-panel" [class.is-plegado]="filtrosPlegados">
+
+        @if (filtrosPlegados) {
+          <button type="button" class="cpl-tira" (click)="alternarFiltros()"
+                  title="Mostrar los filtros">
+            <i class="fa fa-angles-left cpl-tira__flecha"></i>
+            <span class="cpl-tira__texto">Filtros</span>
+            @if (cuantosFiltros) {
+              <span class="cpl-tira__chapa">{{ cuantosFiltros }}</span>
+            }
+          </button>
+        } @else {
+
+          <div class="cpl-panel__cabecera">
+            <span class="cpl-panel__titulo">
+              <i class="fa fa-filter"></i> Filtros
+              @if (cuantosFiltros) { <span class="cpl-panel__cuantos">{{ cuantosFiltros }}</span> }
+            </span>
+            <div class="btn-group" role="group">
+              <button type="button" class="btn btn-xs"
+                      [class.btn-outline-danger]="hayFiltro"
+                      [class.cpl-panel__limpiar--apagado]="!hayFiltro"
+                      [title]="tituloQuitarFiltros"
+                      [attr.aria-label]="tituloQuitarFiltros"
+                      (click)="limpiarTodosLosFiltros()">
+                <i class="fas" [ngClass]="hayFiltro ? 'fa-filter-circle-xmark' : 'fa-filter'"></i>
+              </button>
+              <button type="button" class="btn btn-xs btn-white" title="Plegar el panel"
+                      (click)="alternarFiltros()">
+                <i class="fa fa-angles-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <ng-scrollbar class="cpl-panel__cuerpo">
+            <div class="cpl-panel__lista">
+
+              <!-- Los filtros son del catálogo: en «La sección» no hay servidor
+                   que los aplique, y dejarlos tocables haría creer que filtran. -->
+              @if (vista === 'seccion') {
+                <p class="campo-hint campo-hint--aviso">
+                  <i class="fa-solid fa-circle-info"></i>
+                  Los filtros son del catálogo. Cámbiate a «Catálogo» para usarlos.
+                </p>
+              }
+
+              <div class="pps-grupo" [class.is-inerte]="vista === 'seccion'">
+                <label class="cpl-grupo__titulo">Marcas</label>
+                <app-combo-multi-seleccion
+                  [items]="marcas"
+                  bindLabel="nombre"
+                  bindValue="id"
+                  placeholder="Todas"
+                  ayuda="Filtrar por una o varias marcas"
+                  [compacto]="true"
+                  [(ngModel)]="marcaFiltro"
+                  (ngModelChange)="onFiltroCambiado()">
+                </app-combo-multi-seleccion>
+              </div>
+
+              <div class="pps-grupo" [class.is-inerte]="vista === 'seccion'">
+                <label class="cpl-grupo__titulo">Categorías</label>
+                <app-combo-multi-seleccion
+                  [items]="categoriasPlanas"
+                  bindLabel="ruta"
+                  bindValue="id"
+                  placeholder="Todas"
+                  ayuda="Cada categoría incluye lo que cuelga de ella"
+                  [compacto]="true"
+                  [(ngModel)]="categoriaFiltro"
+                  (ngModelChange)="onFiltroCambiado()">
+                </app-combo-multi-seleccion>
+              </div>
+
+              <div class="pps-grupo" [class.is-inerte]="vista === 'seccion'">
+                <label class="cpl-grupo__titulo">Precio</label>
+                <div class="cpl-rango">
+                  <input type="number" class="form-control form-control-sm" placeholder="Desde"
+                         [(ngModel)]="precioMin" (change)="onFiltroCambiado()">
+                  <span class="cpl-rango__sep">–</span>
+                  <input type="number" class="form-control form-control-sm" placeholder="Hasta"
+                         [(ngModel)]="precioMax" (change)="onFiltroCambiado()">
+                </div>
+              </div>
+
+              <div class="pps-grupo" [class.is-inerte]="vista === 'seccion'">
+                <label class="cpl-grupo__titulo">Costo</label>
+                <div class="cpl-rango">
+                  <input type="number" class="form-control form-control-sm" placeholder="Desde"
+                         [(ngModel)]="costoMin" (change)="onFiltroCambiado()">
+                  <span class="cpl-rango__sep">–</span>
+                  <input type="number" class="form-control form-control-sm" placeholder="Hasta"
+                         [(ngModel)]="costoMax" (change)="onFiltroCambiado()">
+                </div>
+              </div>
+
+              <p class="cpl-panel__pista">
+                <i class="fa-solid fa-circle-info"></i>
+                Un rango vale con un solo extremo: «desde 100» trae todo lo que
+                cueste eso o más.
+              </p>
+
+            </div>
+          </ng-scrollbar>
+
+          <!-- ---------- LA ASIGNACIÓN MASIVA ----------
+               El motivo de que este panel esté aquí: no son los N de la página,
+               son TODOS los que cumplen el filtro. El número va en el botón
+               porque es lo único que dice de cuántos se está hablando. -->
+          <div class="cpl-panel__pie">
+            <span class="d-block"
+                  [title]="vista !== 'catalogo'
+                             ? 'Cámbiate a «Catálogo» para asignar por filtro'
+                             : (motivoSinAsignar || 'Mete en la sección todos los que cumplen el filtro')">
+              <button type="button" class="btn btn-sm btn-primary w-100 pps-masiva"
+                      [disabled]="!!motivoSinAsignar || trabajando || vista !== 'catalogo' || !totalRegistros"
+                      (click)="agregarTodoElFiltro()">
+                <i class="fa fa-layer-group"></i>
+                <!-- El número es lo único que dice de cuántos se está hablando.
+                     Fuera del catálogo no hay número que dar, y «los 0» no se
+                     entiende: ahí el botón dice qué es y por qué no se puede. -->
+                @if (vista !== 'catalogo') {
+                  Asignación masiva por filtro
+                } @else {
+                  Agregar los {{ totalRegistros }}
+                  @if (seccion) { a «{{ seccion.nombre }}» }
+                }
+              </button>
+            </span>
+            <p class="cpl-panel__pista mt-2 mb-0">
+              @if (vista !== 'catalogo') {
+                Sólo desde «Catálogo».
+              } @else if (hayFiltro) {
+                Son todos los que cumplen el filtro, no sólo los de esta página.
+                Los que ya estén dentro no se duplican.
+              } @else {
+                Sin filtros, son <b>todos</b> los productos del catálogo. Pon
+                antes una marca, una categoría o un rango.
+              }
+            </p>
+          </div>
+        }
+      </div>
+
+    </div>
+  </div>
+
+</panel>

@@ -12,6 +12,7 @@ import { AllMarcasWebComponent } from './pages/marcas/allMarcasWeb/allMarcasWeb.
 import { EditEspanaMotosComponent } from './pages/espanaMotos/editEspanaMotos/editEspanaMotos.component';
 import { EditInicioComponent } from './pages/inicio/editInicio/editInicio.component';
 import { ModeladoComponent } from './pages/modelado/modelado.component';
+import { ProductoPorSeccionComponent } from './pages/producto-por-seccion/producto-por-seccion.component';
 
 // ============================================================================
 // MÓDULO ECOMMERCE: la administración de la página web.
@@ -40,7 +41,7 @@ export const ECOMMERCE_ROUTES: Routes = [
     children: [
       { path: '', redirectTo: 'home', pathMatch: 'full' },
 
-      // La portada del módulo: las once áreas con lo que hay en cada una
+      // La portada del módulo: las áreas de la tienda con lo que hay en cada una
       {
         path: 'home',
         component: EcommerceHomeComponent,
@@ -102,6 +103,20 @@ export const ECOMMERCE_ROUTES: Routes = [
       {
         path: 'modelado',
         component: ModeladoComponent,
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
+
+      // Secciones de productos: escaparates armados a mano. Tres columnas —las
+      // secciones, el catálogo con casillas, y los filtros para meter de golpe
+      // todo lo que cumple uno—.
+      //
+      // El `path` lleva guiones y no camelCase como los de arriba: el programa
+      // sale de este tramo tal cual (PRODUCTO-POR-SECCION), y el menú tiene que
+      // decir exactamente lo mismo.
+      {
+        path: 'producto-por-seccion',
+        component: ProductoPorSeccionComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },

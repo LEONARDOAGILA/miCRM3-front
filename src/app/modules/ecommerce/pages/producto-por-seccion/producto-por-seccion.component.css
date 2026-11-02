@@ -1,0 +1,340 @@
+/* ============================================================
+   PRODUCTOS POR SECCIÓN
+
+   Aquí sólo va lo PROPIO de esta pantalla. El armazón de las tres
+   columnas —el plegado, los divisores, las tiras, el panel de la
+   derecha, la paginación— está en core/styles/columnas-plegables.css,
+   que se lista antes que esta hoja en `styleUrls`.
+
+   Las clases del spinner (overlay1, loader1), .ag-grid-transparente y
+   .fila-inactiva son globales y viven en scss/angular.scss y
+   styles.css.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida 20px: el tema deja un hueco entre la
+   cabecera de la aplicación y el primer elemento de la página que aquí
+   sobra, porque el panel ya trae el suyo. */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Los avisos ---------- */
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 .75rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.campo-hint--aviso i { color: var(--bs-warning, #ffc107); }
+
+/* ============================================================
+   LA LISTA DE SECCIONES
+   ============================================================ */
+.pps-lista {
+  min-height: 100%;
+  padding: .4rem .5rem .5rem;
+}
+
+.pps-seccion {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .4rem .45rem;
+  margin-bottom: .25rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-body-bg, #fff);
+  cursor: pointer;
+  transition: border-color .12s ease, background-color .12s ease;
+}
+
+.pps-seccion:hover {
+  border-color: var(--bs-app-theme, #00acac);
+}
+
+/* La elegida: es el destino de todo lo que se marque en la rejilla, así
+   que tiene que verse de lejos y no por un matiz de fondo. */
+.pps-seccion.is-elegida {
+  border-color: var(--bs-app-theme, #00acac);
+  border-left-width: 4px;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .09);
+}
+
+/* Apagada o fuera de fecha: la tienda no la enseñaría. Se atenúa el
+   nombre, no la fila entera: los mandos tienen que seguir legibles para
+   poder encenderla. */
+.pps-seccion.is-apagada .pps-seccion__nombre {
+  opacity: .6;
+  text-decoration: line-through;
+  text-decoration-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .35);
+}
+
+.pps-seccion__asa {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color, #adb5bd);
+  font-size: 11px;
+  cursor: grab;
+}
+
+.pps-seccion__asa:active { cursor: grabbing; }
+
+.pps-seccion__cuerpo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+}
+
+.pps-seccion__nombre {
+  font-size: .8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  /* El nombre cede y se recorta: lo que manda en el ancho son la chapita
+     y los mandos. El nombre entero está en el título de la fila. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pps-seccion__datos {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pps-chapa {
+  min-width: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  color: var(--bs-body-color, #212529);
+  font-size: .625rem;
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.pps-seccion.is-elegida .pps-chapa {
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+}
+
+.pps-seccion__aviso {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+.pps-seccion__mandos {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .15rem;
+}
+
+.pps-seccion__mandos .btn {
+  padding: .1rem .35rem;
+  font-size: 10px;
+}
+
+.pps-borrar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* La palanca, el estándar de la casa: el HTML pone .form-switch y aquí va
+   el tamaño. Sin esto sale una casilla cuadrada. */
+.pps-switch {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.pps-switch .form-check-input {
+  width: 1.9rem;
+  height: 1rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.pps-switch .form-check-input:disabled {
+  cursor: default;
+}
+
+/* El hueco que deja la fila mientras se arrastra */
+.pps-fantasma {
+  height: 44px;
+  margin-bottom: .25rem;
+  border: 1px dashed var(--bs-app-theme, #00acac);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
+}
+
+/* ============================================================
+   LA FRANJA DE ARRIBA DE LA REJILLA
+   ============================================================ */
+
+/* A qué sección va lo que se marque. Es el dato que falta cuando se mira
+   la rejilla, así que va pegado al conmutador de vistas. */
+.pps-destino {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+
+  padding: .2rem .5rem;
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-body-color, #212529);
+  font-size: .75rem;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pps-destino i { color: var(--bs-app-theme, #00acac); }
+
+.pps-destino__cuenta {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Sin sección elegida no hay destino: en ámbar, porque los botones de
+   meter y sacar están apagados por eso. */
+.pps-destino.is-sin {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .16);
+}
+
+.pps-destino.is-sin i { color: var(--bs-warning, #ffc107); }
+
+/* Cuántos hay marcados, sobre el botón de meter */
+.pps-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  font-size: 9px;
+  padding: .2em .4em;
+}
+
+.pps-filtrado {
+  font-style: italic;
+  opacity: .8;
+}
+
+/* Los filtros no valen en «La sección»: se atenúan y no se pueden tocar.
+   Apagados pero visibles: así se ve que SIGUEN puestos, y volver al
+   catálogo no sorprende con un filtro que no se recordaba. */
+.pps-grupo.is-inerte {
+  opacity: .5;
+  pointer-events: none;
+}
+
+.pps-masiva {
+  white-space: normal;
+  line-height: 1.25;
+  text-align: left;
+}
+
+/* ============================================================
+   LA REJILLA
+   ============================================================ */
+.pps-grilla-caja {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Altura de arranque; ajustarAlturaGrid() la sustituye en cuanto la
+   rejilla está lista. --ag-line-height es la altura de línea de celda
+   que usa el tema alpine. */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- La foto del producto ----------
+   `::ng-deep` porque las celdas las dibuja ag-Grid fuera de la
+   encapsulación del componente. El hueco gris de los productos sin foto
+   mide lo mismo que la imagen: así la fila no cambia de alto según tenga
+   foto o no. */
+:host ::ng-deep .lista-foto {
+  width: 26px;
+  height: 26px;
+  border-radius: .25rem;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+}
+
+:host ::ng-deep .lista-foto--vacia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: .25rem;
+  background-color: var(--bs-gray-800, #2d353c);
+  color: var(--bs-gray-500, #adb5bd);
+  font-size: 11px;
+}
+
+/* ---------- El asa de arrastrar de la rejilla ----------
+   Columna estrecha y sin relleno: dentro sólo cabe el agarre de ag-Grid. */
+:host ::ng-deep .pps-grilla .ag-cell.celda-asa {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+:host ::ng-deep .pps-grilla .ag-drag-handle {
+  color: var(--bs-secondary-color, #adb5bd);
+  cursor: grab;
+}
+
+:host ::ng-deep .pps-grilla .ag-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* La fila mientras se arrastra: el fantasma que sigue al ratón */
+:host ::ng-deep .ag-dnd-ghost {
+  font-size: 12px;
+}
+
+/* ---------- La fila que ya está dentro ----------
+   Con mil productos y diez por página, la casilla sola obliga a mirar
+   fila por fila. Una franja a la izquierda y un fondo muy suave se leen
+   de un barrido.
+
+   NO se toca el color del texto: la fila inactiva (.fila-inactiva, en
+   styles.css) ya usa eso para decir otra cosa, y las dos cosas se pueden
+   dar a la vez —un producto apagado que está en la sección—. */
+:host ::ng-deep .ag-row.pps-fila--dentro .ag-cell {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
+}
+
+:host ::ng-deep .ag-row.pps-fila--dentro .ag-cell:first-of-type {
+  box-shadow: inset 3px 0 0 0 var(--bs-app-theme, #00acac);
+}

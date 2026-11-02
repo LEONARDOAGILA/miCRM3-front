@@ -1,0 +1,554 @@
+/* ============================================================
+   EL ARMAZÓN DE COLUMNAS PLEGABLES
+
+   Una pantalla con una columna a la izquierda, el contenido en el
+   medio y —si hace falta— un panel a la derecha. Las dos columnas de
+   los lados se pliegan a una tira vertical con su nombre, y se
+   ensanchan arrastrando el divisor (doble clic: ancho por defecto).
+
+   ES UNA HOJA COMPARTIDA, no un componente: lo que se repite es el
+   CSS, no la plantilla —cada pantalla pone dentro otra cosa—, y un
+   componente contenedor obligaría a pasarle todo por <ng-content> y
+   @Input. Se usa listándola en `styleUrls` antes de la propia:
+
+       styleUrls: ['../../../core/styles/columnas-plegables.css',
+                   './mi-pantalla.component.css']
+
+   Angular la compila POR COMPONENTE, con la encapsulación de cada
+   uno, así que dos pantallas que la usen no se pisan.
+
+   EL ANFITRIÓN tiene que llevar las clases del tema y la de aquí:
+
+       <div class="file-manager h-100 cpl"
+            [class.cpl--redimensionando]="redimensionando"
+            [style.--bs-file-manager-sidebar-width]="…"
+            [style.--cpl-ancho-panel]="…">
+         <div class="file-manager-container"> … </div>
+       </div>
+
+   .file-manager es flex en COLUMNA (lo pone el tema); la fila de
+   verdad es .file-manager-container. Sin él, las columnas se apilan
+   una encima de otra a todo lo ancho.
+
+   Viene de la pantalla de productos, que lo había copiado de
+   Características, ésa de Usuarios y grupos, y ésa del administrador
+   de archivos. Esas cuatro siguen con su copia y su prefijo propio;
+   cuando se toquen, lo que toca es traerlas aquí.
+   ============================================================ */
+
+/* ============================================================
+   LA COLUMNA DE LA IZQUIERDA
+   ============================================================ */
+.cpl-lateral {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.cpl-lateral__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cpl-lateral__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cpl-lateral__acciones .btn {
+  padding: .15rem .45rem;
+  font-size: 11px;
+}
+
+.cpl-lateral__buscador {
+  position: relative;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cpl-lateral__buscador .form-control {
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+}
+
+.cpl-lateral__lupa {
+  position: absolute;
+  top: 50%;
+  left: 1.3rem;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.cpl-lateral__limpiar {
+  position: absolute;
+  top: 50%;
+  right: 1.1rem;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.cpl-lateral__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* Lo que se desplaza: la lista, el árbol, lo que sea */
+.cpl-lateral__cuerpo {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.cpl-lateral__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.cpl-lateral__ayuda {
+  color: var(--bs-app-theme, #00acac);
+  font-size: 12px;
+  cursor: help;
+}
+
+/* La caja que ng-scrollbar pone alrededor del contenido se hace tan ancha
+   como la fila más larga, y entonces un `max-width: 100%` de las filas se
+   mide contra ESA anchura y no recorta nada. */
+:host ::ng-deep .cpl-lateral__cuerpo .ng-scroll-content {
+  max-width: 100%;
+}
+
+/* Cuando no hay nada que enseñar */
+.cpl-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cpl-vacio i {
+  font-size: 1.5rem;
+  opacity: .5;
+}
+
+/* ============================================================
+   EL DIVISOR (estilo VS Code)
+   ============================================================ */
+.cpl-divisor {
+  position: relative;
+  flex: 0 0 10px;
+  box-sizing: border-box;
+  background-color: var(--bs-body-bg, #e4e7e8);
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.cpl-divisor::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background-color: transparent;
+  transition: background-color .1s ease .25s;
+}
+
+/* Los puntitos del agarre */
+.cpl-divisor::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 15px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background-image: radial-gradient(circle, rgba(var(--bs-body-color-rgb, 33, 37, 41), .45) 1.1px, transparent 1.4px);
+  background-size: 3px 5px;
+  background-repeat: repeat-y;
+  background-position: center;
+  transition: opacity .1s ease .25s;
+  pointer-events: none;
+}
+
+.cpl-divisor:hover::before,
+.cpl--redimensionando .cpl-divisor::before {
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.cpl--redimensionando .cpl-divisor::before {
+  transition-delay: 0s;
+}
+
+.cpl-divisor:hover::after,
+.cpl--redimensionando .cpl-divisor::after {
+  opacity: 0;
+}
+
+/* Mientras se arrastra, el cursor es el mismo en toda la pantalla: si no,
+   al salirse del divisor parece que se soltó. */
+.cpl--redimensionando,
+.cpl--redimensionando * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.cpl--redimensionando .file-manager-sidebar {
+  transition: none;
+}
+
+/* Plegado no hay nada que arrastrar: el divisor deja de responder para que
+   no se pueda estirar una columna que no se ve. */
+.cpl-divisor.is-inerte {
+  pointer-events: none;
+  cursor: default;
+  opacity: .4;
+}
+
+/* ============================================================
+   EL CONTENIDO DEL MEDIO
+   ============================================================ */
+.cpl-contenido {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  /* El tema le pone un borde de inicio que aquí lo pone el divisor */
+  border-inline-start: 0 !important;
+}
+
+/* La franja de arriba: dónde estoy, el buscador, los botones. Todo en UNA
+   fila: el buscador se estira con el hueco que quede y los botones nunca se
+   parten. */
+.cpl-ubicacion {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cpl-ubicacion__acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: .5rem;
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+/* El buscador se come el hueco libre; los botones se quedan de su tamaño */
+:host ::ng-deep .cpl-ubicacion__acciones app-campoBusquedaPaginacion {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Botones cuadrados a la altura del buscador (form-control del tema) */
+.cpl-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* ============================================================
+   LA TIRA DE CUANDO UNA COLUMNA ESTÁ PLEGADA
+   ============================================================
+   NO ES DECORATIVA: es el botón de volver a abrirla, y lleva una
+   chapita con cuántas cosas hay dentro o cuántos filtros están
+   puestos. Una columna plegada que sigue filtrando sin decirlo es una
+   trampa. */
+.cpl-lateral.is-plegado,
+.cpl-panel.is-plegado {
+  padding: 0;
+  overflow: hidden;
+}
+
+.cpl-tira {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+
+  width: 100%;
+  height: 100%;
+  padding: .5rem 0;
+
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--bs-secondary-color, #6c757d);
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.cpl-tira:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+  color: var(--bs-body-color, #212529);
+}
+
+.cpl-tira__texto {
+  /* De abajo arriba, como las pestañas laterales */
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.cpl-tira__flecha {
+  font-size: .75rem;
+}
+
+.cpl-tira__chapa {
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: .625rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   EL PANEL DE LA DERECHA
+   ============================================================ */
+.cpl-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 var(--cpl-ancho-panel, 270px);
+  width: var(--cpl-ancho-panel, 270px);
+  min-width: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+  /* Un punto más claro que el cuerpo, para que los campos blancos de dentro
+     se lean como campos. Con --bs-body-bg (un gris en esta plantilla) el
+     panel y los campos eran del mismo color y parecían deshabilitados. */
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* En el panel hay sitio de sobra a lo alto: caben varias filas de chapas
+   antes de tener que desplazar. En una barra estrecha no sería así. */
+.cpl-panel ::ng-deep .cms--compacto .ng-value-container {
+  max-height: 130px;
+}
+
+.cpl-panel__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .5rem .6rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cpl-panel__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cpl-panel__cuantos {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: .625rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* El botón de quitar filtros, APAGADO.
+   No usa btn-outline-secondary porque esa clase lleva el gris COMPILADO
+   (#6c757d) y no sigue al tema: sobre el panel en oscuro daba 2,97:1, que no
+   se lee. Con las variables del tema sube y vale en los dos.
+   El ENCENDIDO sí es btn-outline-danger, el mismo del botón del buscador. */
+.cpl-panel__limpiar--apagado {
+  color: var(--bs-secondary-color, #6c757d);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cpl-panel__limpiar--apagado:hover {
+  color: var(--bs-body-color, #212529);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.cpl-panel__cuerpo {
+  flex: 1;
+  min-height: 0;
+}
+
+.cpl-panel__lista {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+  padding: .75rem .6rem;
+}
+
+.cpl-panel__pie {
+  padding: .6rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.cpl-panel__pista {
+  margin: 0;
+  font-size: .6875rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cpl-grupo__titulo {
+  display: block;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Los dos extremos de un rango ---------- */
+.cpl-rango {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.cpl-rango .form-control {
+  min-width: 0;          /* que puedan encoger dentro del flex */
+  font-size: .8125rem;
+}
+
+.cpl-rango__sep {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ============================================================
+   PAGINACIÓN
+   ============================================================ */
+.cpl-paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: 0 .5rem .25rem;
+}
+
+.cpl-paginacion .btn-group {
+  display: flex;
+  align-items: center;
+}
+
+.cpl-paginacion .btn-group .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto":
+   hereda el borde y la altura de los demás y queda alineado con ellos. */
+.cpl-paginacion .cpl-pagina.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.cpl-paginacion__info {
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cpl-paginacion__info b {
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+/* btn-white del tema es blanco fijo; en oscuro se pasa a la superficie del
+   tema para que el grupo no destaque como un bloque blanco. */
+[data-bs-theme="dark"] .cpl-paginacion .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
+}
+
+/* ============================================================
+   EN PANTALLAS ESTRECHAS
+   ============================================================
+   Tres columnas no caben: el panel de la derecha se va debajo, a lo
+   ancho, y su divisor desaparece. */
+@media (max-width: 991.98px) {
+  .cpl-panel {
+    flex: 1 1 100%;
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+  }
+
+  .cpl-divisor--derecha {
+    display: none;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .cpl-paginacion {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .cpl-paginacion .btn-group {
+    justify-content: center;
+  }
+
+  .cpl-paginacion .btn-group .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .cpl-paginacion__info {
+    font-size: .7rem;
+  }
+}

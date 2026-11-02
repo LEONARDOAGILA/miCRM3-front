@@ -22,7 +22,7 @@ interface TarjetaArea {
 /**
  * LA PORTADA DEL MÓDULO ECOMMERCE.
  *
- * Una rejilla con las once áreas de la página web, cada una con lo que hay
+ * Una rejilla con las áreas de la página web, cada una con lo que hay
  * dentro —«3 columnas con 12 enlaces», «33 categorías, todas visibles»— y su
  * enlace. Sirve para ver de un vistazo qué está configurado y qué está vacío
  * sin entrar en diez pantallas.
@@ -82,6 +82,9 @@ export class EcommerceHomeComponent implements OnInit {
       descripcion: 'Banner, pestañas del catálogo, marcas y tarjetas.' },
     { clave: 'productos', titulo: 'Productos de la tienda', icono: 'fa-box-open', ruta: null,
       descripcion: 'Ficha técnica, imágenes y franjas del detalle de cada producto.' },
+    { clave: 'producto_secciones', titulo: 'Productos por sección', icono: 'fa-basket-shopping',
+      ruta: 'producto-por-seccion',
+      descripcion: 'Escaparates armados a mano: «Los más vendidos», «Ofertas de navidad».' },
   ];
 
   private http = inject(HttpClient);
@@ -158,6 +161,10 @@ export class EcommerceHomeComponent implements OnInit {
         return `${plural(d.marcas, 'marca', 'marcas')}, ${plural(d.pestanas, 'pestaña', 'pestañas')}`;
       case 'productos':
         return plural(d.productos, 'producto', 'productos');
+      case 'producto_secciones':
+        return d.secciones === 0
+          ? 'Todavía ninguna'
+          : `${plural(d.secciones, 'sección', 'secciones')} con ${plural(d.productos, 'producto', 'productos')}`;
       default:
         return '—';
     }
