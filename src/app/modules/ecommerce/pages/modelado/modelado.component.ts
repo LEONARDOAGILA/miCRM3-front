@@ -12,7 +12,7 @@ import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import { InicioService } from '../../services/inicio.service';
 import {
   SeccionInicioModel, VistaSeccion, AltoSeccion, Dispositivo,
-  ESTADOS_SECCION, VISTA_SECCIONES, VISTA_POR_DEFECTO, vistaDeProductos,
+  ESTADOS_SECCION, VISTA_SECCIONES, VISTA_POR_DEFECTO, vistaDeProductos, vistaDeBanner,
   ALTOS_SECCION, PAGINA, ALTO_CONTENIDO, CONTENIDO_DESCONOCIDO, CONTENIDO_SECCION_PRODUCTOS,
 } from '../../interfaces/inicioModel';
 
@@ -162,9 +162,10 @@ export class ModeladoComponent implements OnInit {
   }
 
   vista(s: SeccionInicioModel): VistaSeccion {
-    // Las de productos no están en el catálogo de claves: la suya la fabrica
-    // el servidor al crearlas, así que su cara se arma con su nombre.
+    // Las de productos y los banners no están en el catálogo de claves: las
+    // suyas las fabrica el servidor al crearlas.
     if (s.producto_seccion_id) { return vistaDeProductos(s.nombre); }
+    if (s.es_banner) { return vistaDeBanner(); }
     return VISTA_SECCIONES[s.clave] ?? VISTA_POR_DEFECTO;
   }
 
@@ -175,17 +176,25 @@ export class ModeladoComponent implements OnInit {
   /**
    * Qué dibujo le toca.
    *
-   * No se puede conmutar por la clave como las ocho de siempre: la de una
-   * sección de productos es `seccion_7` y caería en el dibujo por defecto,
-   * que es un banner. Las de productos se dibujan como la grilla, que es lo
-   * que serán: productos uno al lado del otro.
+   * No se puede conmutar por la clave como las de siempre: la de una sección
+   * de productos es `seccion_7` y caería en el dibujo por defecto, que es un
+   * banner. Todas las de productos comparten un dibujo —una rejilla de
+   * tarjetas—, que es lo que son.
    */
   dibujoDe(s: SeccionInicioModel): string {
-    return s.producto_seccion_id ? 'grilla' : s.clave;
+    if (s.producto_seccion_id) { return 'productos'; }
+    // Las marcas en promoción son los MISMOS carteles que el mosaico, con
+    // otros datos: se dibujan igual en vez de tener un dibujo repetido
+    if (s.clave === 'marcas_promocion') { return 'mosaico'; }
+    return s.clave;
   }
 
   private contenidoDe(s: SeccionInicioModel) {
     if (s.producto_seccion_id) { return CONTENIDO_SECCION_PRODUCTOS; }
+    // Todos los banners miden lo mismo que el de siempre: son la misma pieza
+    // con otras imágenes. Sin esto caerían en la medida por defecto y el
+    // dibujo diría que ocupan el doble de lo que ocupan.
+    if (s.es_banner) { return ALTO_CONTENIDO['banner_simple']; }
     return ALTO_CONTENIDO[s.clave] ?? CONTENIDO_DESCONOCIDO;
   }
 
@@ -376,7 +385,7 @@ export class ModeladoComponent implements OnInit {
   }
 
   /**
-   * El orden de las OCHO con una sección puesta donde se acaba de soltar.
+   * El orden de las de siempre con una sección puesta donde se acaba de soltar.
    *
    * El orden va entero al servidor, y aquí sólo se ven las encendidas: hay que
    * devolver también las apagadas, Y EN SU SITIO. Si se mandaran al final,

@@ -128,13 +128,9 @@
                           @for (c of [1,2,3,4,5]; track c) { <span class="d-logo"></span> }
                         </span>
                       }
-                      @case ('grilla') { <span class="d-rejilla">
+                      @case ('productos') { <span class="d-rejilla">
                         @for (c of [1,2,3,4,5,6,7,8]; track c) { <span></span> }
                       </span> }
-                      @case ('ofertas_flash') { <span class="d-rejilla d-rejilla--oferta">
-                        @for (c of [1,2,3,4]; track c) { <span></span> }
-                      </span> }
-                      @case ('bloques') { <span class="d-bloques"><span></span><span></span></span> }
                       @default { <span class="d-banner"></span> }
                     }
                   </div>
@@ -291,10 +287,11 @@
                que se cree añade una más, y un número a mano envejece el día
                siguiente. -->
           @if (cuantasEstimadas === 1) {
-            Una sección todavía no se pinta y sale con una medida estimada.
+            Una sale con una medida estimada: su alto depende de cuántos
+            productos lleve.
           } @else if (cuantasEstimadas > 1) {
-            Las {{ cuantasEstimadas }} secciones que todavía no se pintan salen
-            con una medida estimada.
+            {{ cuantasEstimadas }} salen con una medida estimada: su alto
+            depende de cuántos productos lleven.
           }
         </p>
       </div>

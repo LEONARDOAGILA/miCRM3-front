@@ -565,3 +565,32 @@ ag-grid-angular.filas-estirando .ag-row {
 
 .ag-cell .btn-add             { color: #2ecc71; }
 .ag-cell .btn-cambio-clave    { color: #f39c12; }
+
+/* ============================================================================
+   MODALES ALTOS: QUE EL PIE SE VEA SIEMPRE
+   ============================================================================
+   SE SALÍAN DE LA VENTANA. Con la ventana en 658 px, el modal de «Modificar la
+   imagen» dejaba su pie —donde están Guardar y Cancelar— en el píxel 765: fuera
+   de la pantalla y sin forma de llegar. Al alejar el zoom del navegador
+   aparecía, que es como se notó.
+
+   DÓNDE SE ROMPÍA. Al abrir un modal con `scrollable: true`, ng-bootstrap pone
+   el componente dentro de `.modal-content` y le añade `.component-host-scrollable`
+   para que sea una columna flexible; Bootstrap, por su parte, le da al cuerpo
+   `flex: 1 1 auto; min-height: 0; overflow-y: auto`. Entre los dos hay un
+   <form> que envuelve el cuerpo y el pie, y que es `display: block`: ahí se
+   corta la cadena. El cuerpo deja de ser un elemento flexible, crece hasta lo
+   que pida su contenido y empuja el pie fuera.
+
+   Esto lo arregla para TODOS los modales que envuelven en un <form>, que son
+   la mayoría, en vez de repetir la misma regla en la hoja de cada uno. El
+   selector es el exacto: sólo dentro de un modal desplazable de ng-bootstrap.
+
+   `min-height: 0` no es decorativo: sin él, un elemento flexible no encoge por
+   debajo de su contenido y la regla no cambiaría nada. */
+.component-host-scrollable > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}

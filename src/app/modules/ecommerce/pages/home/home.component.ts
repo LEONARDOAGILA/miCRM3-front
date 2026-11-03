@@ -59,7 +59,7 @@ export class EcommerceHomeComponent implements OnInit {
    */
   public readonly areas: TarjetaArea[] = [
     { clave: 'inicio', titulo: 'Inicio de la tienda', icono: 'fa-house', ruta: 'editInicio',
-      descripcion: 'Banner, categorías destacadas, ofertas, mosaico, bloques y marcas.' },
+      descripcion: 'Banner, categorías destacadas, mosaico, marcas y tus secciones de productos.' },
     { clave: 'modelado', titulo: 'Modelado de la portada', icono: 'fa-object-group', ruta: 'modelado',
       descripcion: 'La portada dibujada a escala: arrastra las secciones y estíralas para ver cómo queda.' },
     { clave: 'encabezado', titulo: 'Encabezado', icono: 'fa-window-maximize', ruta: 'editEncabezado',

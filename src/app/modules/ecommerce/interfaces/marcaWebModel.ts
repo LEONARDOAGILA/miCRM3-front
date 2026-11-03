@@ -32,6 +32,18 @@ export interface MarcaWebModel {
   orden_web?: number | null;
 
   /**
+   * Marcada para las tarjetas de «Marcas en promoción» de la portada.
+   *
+   * ES OTRA SECCIÓN que «Nuestras marcas»: una marca puede estar en las dos,
+   * en una o en ninguna. Funciona igual que la promoción de las categorías y
+   * en la tienda se pinta con los mismos carteles.
+   */
+  promocion: boolean;
+
+  /** En qué puesto sale entre las tarjetas. Nulo = al final. */
+  promocion_orden?: number | null;
+
+  /**
    * POR QUÉ sale o no sale. Más simple que el de las categorías: una marca
    * no cuelga de nadie.
    *

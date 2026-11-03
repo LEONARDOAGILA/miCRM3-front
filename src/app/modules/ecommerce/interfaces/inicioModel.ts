@@ -4,7 +4,7 @@
  * La portada no es una página: es esta lista, que se enciende, se apaga y se
  * reordena.
  *
- * HAY DE DOS CLASES. Las OCHO DE FÁBRICA existen porque la tienda sabe
+ * HAY DE DOS CLASES. Las CINCO DE FÁBRICA existen porque la tienda sabe
  * pintarlas —banner, destacadas, marcas— y no se crean ni se borran. Las demás
  * son SECCIONES DE PRODUCTOS que alguien armó en «Productos por sección»: se
  * crean y se borran allí, y aquí aparecen como una fila más, con su orden, su
@@ -46,11 +46,34 @@ export interface SeccionInicioModel {
   /**
    * A qué escaparate de «Productos por sección» apunta, si es uno.
    *
-   * Las ocho de siempre traen null: existen porque la tienda sabe pintarlas y
+   * Las cinco de siempre traen null: existen porque la tienda sabe pintarlas y
    * no se crean ni se borran. Las demás son una sección de productos que
    * alguien armó, y aquí aparecen como una fila más de la portada.
    */
   producto_seccion_id: number | null;
+
+  /**
+   * A qué galería de imágenes apunta, si es un banner.
+   *
+   * UNA SECCIÓN CON GALERÍA ES UN BANNER. Se crean y se borran desde esta
+   * misma pantalla —son imágenes con su sitio en la portada, nada más—, y por
+   * eso son las únicas que sí se pueden crear aquí.
+   */
+  galeria_id: number | null;
+
+  /** Lo mismo, dicho por el servidor para no repetir la regla aquí. */
+  es_banner: boolean;
+
+  /**
+   * CÓMO SE ENSEÑA ESE BANNER: rotando (una imagen a la vez, la de siempre) o
+   * en carteles (todas a la vez, como las categorías en promoción pero sin
+   * texto ni botón).
+   *
+   * Llega siempre resuelto, nunca null: que la pantalla tenga que acordarse
+   * de que «vacío es rotativo» es la manera de que un día se olvide. Sólo lo
+   * miran las secciones con galería.
+   */
+  banner_vista: VistaBanner;
 
   /**
    * Si es una de las de fábrica.
@@ -62,7 +85,74 @@ export interface SeccionInicioModel {
 
   /** El fondo de los cuatro botones de la tarjeta. Sólo lo usan las de productos. */
   botones: BotonesColores;
+
+  /**
+   * El fondo y el borde de la tarjeta, y el cartel del descuento de su
+   * esquina. Sólo lo usan las de productos, como los botones.
+   */
+  tarjeta: TarjetaColores;
+
+  /** Cómo se enseña la sección y, si lleva, la imagen de al lado. */
+  imagen: ImagenDeSeccion;
 }
+
+/** De qué manera se enseña una sección de productos. */
+export type LadoImagen = 'sola' | 'izquierda' | 'derecha';
+
+/** Y de qué manera se enseña un banner. */
+export type VistaBanner = 'rotativo' | 'carteles';
+
+export interface VistaDeBanner {
+  valor: VistaBanner;
+  texto: string;
+  ayuda: string;
+}
+
+export const VISTAS_BANNER: VistaDeBanner[] = [
+  { valor: 'rotativo', texto: 'Una que rota',
+    ayuda: 'Una imagen a la vez, de borde a borde, cambiando sola. Es como se ve hoy' },
+  { valor: 'carteles', texto: 'Todas en carteles',
+    ayuda: 'Todas a la vez, en carteles verticales como las categorías en promoción. Sin texto ni botón: sólo la imagen, y cada una lleva a su enlace' },
+];
+
+/**
+ * LA IMAGEN DE AL LADO de una sección de productos.
+ *
+ * SIN FICHERO, `lado` SIEMPRE LLEGA 'sola', y eso lo decide el servidor: con
+ * «a la izquierda» y sin imagen, la tienda dejaría una columna vacía al lado
+ * de los productos. Pero el resto —el texto, el enlace, incluso el lado
+ * elegido— se guarda igual, así que subir la imagen después lo recupera todo.
+ *
+ * `archivo` es el nombre del fichero en el servidor y `url` la dirección para
+ * verlo; la arma el servidor, porque en la base va sólo el nombre.
+ */
+export interface ImagenDeSeccion {
+  /** Lo que va a hacer la tienda. Sin fichero, siempre 'sola'. */
+  lado: LadoImagen;
+  /** Lo que se eligió, que puede no ser lo mismo mientras falte la imagen. */
+  elegido: LadoImagen;
+  archivo: string | null;
+  url: string | null;
+  alt: string | null;
+  enlace: string | null;
+  nueva_pestana: boolean;
+}
+
+/** Las tres maneras de enseñar una sección de productos, para la pantalla. */
+export interface Disposicion {
+  valor: LadoImagen;
+  texto: string;
+  ayuda: string;
+}
+
+export const DISPOSICIONES: Disposicion[] = [
+  { valor: 'sola', texto: 'Sólo productos',
+    ayuda: 'La fila de tarjetas ocupa todo el ancho, como hasta ahora' },
+  { valor: 'izquierda', texto: 'Imagen a la izquierda',
+    ayuda: 'La imagen a la izquierda y las tarjetas a su derecha' },
+  { valor: 'derecha', texto: 'Imagen a la derecha',
+    ayuda: 'Las tarjetas a la izquierda y la imagen al final' },
+];
 
 /**
  * LOS COLORES DE UN BOTÓN de la tarjeta de un producto.
@@ -86,16 +176,69 @@ export interface BotonesColores {
   tarjeta: BotonColores;
 }
 
-/** Un botón de la tarjeta, tal como se configura y como lo pinta la tienda. */
-export interface BotonTarjeta {
+/**
+ * LOS COLORES DE LA TARJETA ENTERA: su fondo, su borde y el cartel del
+ * descuento de la esquina.
+ *
+ * OJO CON EL NOMBRE: `botones.tarjeta` es el BOTÓN de comprar con tarjeta de
+ * crédito, y esto es LA TARJETA DEL PRODUCTO. Son dos cosas distintas en dos
+ * niveles distintos; el choque viene de antes y en esta casa «la tarjeta»
+ * siempre ha sido la del producto.
+ *
+ * NO HAY COLOR DE LETRA PARA LA TARJETA, y es a propósito: con un fondo
+ * oscuro, el nombre del producto y los precios —que son gris oscuro—
+ * desaparecerían, así que la tienda calcula la letra que se lea encima, igual
+ * que ya hace con los botones. Nadie tiene que elegir dos colores para
+ * cambiar uno.
+ */
+export interface TarjetaColores {
+  fondo: string | null;
+  borde: string | null;
+  descuento: BotonColores;
+  etiqueta: EtiquetaTarjeta;
+}
+
+/**
+ * LA ETIQUETA DE LA TARJETA: la pastilla de encima del descuento.
+ *
+ * Se configura igual que el cartel de descuento —fondo y letra— PERO LLEVA
+ * ADEMÁS SUS PALABRAS: el texto del descuento lo calcula la tienda de los dos
+ * precios, y el de la etiqueta no sale de ningún dato, hay que escribirlo.
+ *
+ * SIN `rotulo` NO HAY ETIQUETA, y eso lo decide el servidor: un color elegido
+ * y un texto que se borró después no pueden dejar una pastilla vacía en la
+ * esquina de cada tarjeta.
+ */
+export interface EtiquetaTarjeta extends BotonColores {
+  /** Lo que se lee dentro. Null = no hay etiqueta. */
+  rotulo: string | null;
+}
+
+/**
+ * UNA COSA DE LA TARJETA QUE SE PUEDE PINTAR: un botón, el cartel del
+ * descuento, o la tarjeta entera.
+ *
+ * Todas se configuran igual —misma muestra, misma paleta, mismo «Quitar»—,
+ * así que la pantalla recorre listas de esto y no tiene un juego de métodos
+ * por cada una.
+ */
+export interface ColorDeTarjeta {
   /** El campo del fondo que viaja al servidor. */
-  campo: 'boton_favorito_color' | 'boton_carrito_color' | 'boton_whatsapp_color' | 'boton_tarjeta_color';
-  /** El de su letra. */
-  campoTexto: 'boton_favorito_texto' | 'boton_carrito_texto' | 'boton_whatsapp_texto' | 'boton_tarjeta_texto';
-  /** La clave dentro de `botones`. */
-  clave: keyof BotonesColores;
+  campo: string;
+  /** El de su letra, o null cuando esa cosa no tiene letra que elegir. */
+  campoTexto: string | null;
+  /**
+   * El campo de SUS PALABRAS, cuando las tiene.
+   *
+   * Sólo la etiqueta: lo demás que se pinta en la tarjeta o no lleva texto
+   * —el fondo, el borde— o lo saca de un dato —el descuento, de los precios—.
+   * Va aquí y no como un caso aparte en la plantilla para que la lista siga
+   * describiendo del todo lo que hay que enseñar.
+   */
+  campoRotulo?: string;
   texto: string;
-  icono: string;
+  /** El icono de la muestra, o null cuando la muestra no es un botón. */
+  icono: string | null;
   /**
    * El que usa la tienda hoy, para enseñarlo cuando no se eligió ninguno.
    *
@@ -107,6 +250,15 @@ export interface BotonTarjeta {
   /** Y la letra que usa hoy, para lo mismo. */
   textoDeLaTienda: string;
   ayuda: string;
+}
+
+/** Un botón de la tarjeta, tal como se configura y como lo pinta la tienda. */
+export interface BotonTarjeta extends ColorDeTarjeta {
+  campo: 'boton_favorito_color' | 'boton_carrito_color' | 'boton_whatsapp_color' | 'boton_tarjeta_color';
+  campoTexto: 'boton_favorito_texto' | 'boton_carrito_texto' | 'boton_whatsapp_texto' | 'boton_tarjeta_texto';
+  /** La clave dentro de `botones`. */
+  clave: keyof BotonesColores;
+  icono: string;
 }
 
 export const BOTONES_TARJETA: BotonTarjeta[] = [
@@ -126,6 +278,34 @@ export const BOTONES_TARJETA: BotonTarjeta[] = [
     texto: 'Tarjeta', icono: 'fa-credit-card',
     deLaTienda: '#ffffff', textoDeLaTienda: '#df1122',
     ayuda: 'El de comprar con tarjeta. Sin fondo propio va de contorno, y el borde toma este color' },
+];
+
+/**
+ * LO DEMÁS QUE SE PINTA EN LA TARJETA: su fondo, su borde y el cartel del
+ * descuento.
+ *
+ * Van en una lista aparte de los botones porque no son botones y no se
+ * enseñan igual: los cuatro botones llevan cada uno su muestra, y estos tres
+ * se ven todos juntos en una tarjeta de mentira, que es donde se nota si el
+ * fondo y el borde pegan.
+ *
+ * EL FONDO Y EL BORDE NO TIENEN LETRA (`campoTexto` en null): la de la
+ * tarjeta la calcula la tienda para que se lea encima del fondo.
+ */
+export const COLORES_TARJETA: ColorDeTarjeta[] = [
+  { campo: 'tarjeta_fondo_color', campoTexto: null, texto: 'Fondo de la tarjeta', icono: null,
+    deLaTienda: '#ffffff', textoDeLaTienda: '#374151',
+    ayuda: 'El fondo de toda la tarjeta. Con uno oscuro, la tienda aclara sola el nombre y los precios' },
+  { campo: 'tarjeta_borde_color', campoTexto: null, texto: 'Borde de la tarjeta', icono: null,
+    deLaTienda: '#ececec', textoDeLaTienda: '#374151',
+    ayuda: 'La raya de alrededor. Sin elegir ninguno desaparece al pasar el mouse; elegido, se queda' },
+  { campo: 'descuento_color', campoTexto: 'descuento_texto', texto: 'Cartel de descuento', icono: 'fa-tag',
+    deLaTienda: '#df1122', textoDeLaTienda: '#ffffff',
+    ayuda: 'El «-12%» de arriba a la izquierda. Sólo sale en los productos que tengan descuento' },
+  { campo: 'etiqueta_color', campoTexto: 'etiqueta_texto', campoRotulo: 'etiqueta',
+    texto: 'Etiqueta', icono: 'fa-bookmark',
+    deLaTienda: '#1d1d1f', textoDeLaTienda: '#ffffff',
+    ayuda: 'La pastilla de encima del descuento. Sale en todas las tarjetas de la sección; sin texto no sale ninguna' },
 ];
 
 /**
@@ -328,12 +508,6 @@ export const VISTA_SECCIONES: Record<string, VistaSeccion> = {
     rotulo: 'titulo',
     rotuloDeFabrica: 'Categorías Destacadas',
   },
-  ofertas_flash: {
-    icono: 'fa-bolt',
-    descripcion: 'Productos en oferta con cuenta regresiva. La fecha «hasta» es la cuenta que ve el cliente.',
-    rotulo: 'titulo_subtitulo',
-    rotuloDeFabrica: null,
-  },
   banner_simple: {
     icono: 'fa-image',
     descripcion: 'Una franja de imágenes entre dos secciones.',
@@ -348,21 +522,18 @@ export const VISTA_SECCIONES: Record<string, VistaSeccion> = {
     rotulo: 'titulo',
     rotuloDeFabrica: null,
   },
-  grilla: {
-    icono: 'fa-grip',
-    descripcion: 'Productos de todas las marcas, uno al lado del otro.',
-    rotulo: 'titulo',
-    rotuloDeFabrica: null,
-  },
-  bloques: {
-    icono: 'fa-layer-group',
-    descripcion: 'Cada bloque enseña los productos destacados de una categoría y, al lado, sus promociones.',
-    rotulo: 'ninguno',
-    sinRotulo: 'el título lo lleva cada bloque, no la sección entera',
-  },
   marcas: {
     icono: 'fa-copyright',
     descripcion: 'Los logos de las marcas, en el orden de Marcas de la tienda.',
+    rotulo: 'titulo',
+    rotuloDeFabrica: null,
+  },
+  // Los MISMOS carteles que «Categorías en promoción», con marcas. Son dos
+  // secciones distintas y una marca puede estar en ésta y en «Nuestras
+  // marcas» a la vez.
+  marcas_promocion: {
+    icono: 'fa-tags',
+    descripcion: 'Las marcas marcadas «En promoción», en tarjetas grandes de cuatro en cuatro.',
     rotulo: 'titulo',
     rotuloDeFabrica: null,
   },
@@ -402,19 +573,19 @@ export const PAGINA: Record<Dispositivo, {
 /**
  * El alto del CONTENIDO de cada sección, sin el aire, en píxeles de la tienda.
  *
- * `medido` dice si sale de la tienda de verdad o es una estimación: las tres
- * que todavía no se pintan —esperan al catálogo— no se pueden medir, y el
- * dibujo las marca para que nadie decida nada sobre un número inventado.
+ * `medido` dice si sale de la tienda de verdad o es una estimación. Las de
+ * aquí están todas medidas; las que no lo están son las de productos, cuyo
+ * alto depende de lo que lleven (CONTENIDO_SECCION_PRODUCTOS), y el dibujo las
+ * marca para que nadie decida nada sobre un número inventado.
  */
 export const ALTO_CONTENIDO: Record<string, { computadora: number; celular: number; medido: boolean }> = {
   banner_principal:      { computadora: 237, celular: 390, medido: true },
   categorias_destacadas: { computadora: 326, celular: 255, medido: true },
-  ofertas_flash:         { computadora: 520, celular: 760, medido: false },
   banner_simple:         { computadora: 148, celular:  57, medido: true },
   mosaico:               { computadora: 548, celular: 429, medido: true },
-  grilla:                { computadora: 860, celular: 1900, medido: false },
-  bloques:               { computadora: 700, celular: 1400, medido: false },
   marcas:                { computadora: 183, celular: 141, medido: true },
+  // La misma pieza que el mosaico, con otros datos: ocupa lo mismo
+  marcas_promocion:      { computadora: 548, celular: 429, medido: true },
 };
 
 export const CONTENIDO_DESCONOCIDO = { computadora: 300, celular: 300, medido: false };
@@ -451,11 +622,27 @@ export function vistaDeProductos(nombre: string): VistaSeccion {
 }
 
 /**
- * Lo que ocuparía una sección de productos en la portada.
+ * La cara de un banner.
  *
- * ESTIMADO, como las otras tres que todavía no se pintan: la tienda no sabe
- * dibujarlas, así que no hay nada que medir. Sale de la grilla, que es la que
- * más se le parece —productos uno al lado del otro—, y por eso se marca como
+ * Tampoco están en el catálogo de claves: la de un banner es `banner_35`, que
+ * la fabrica el servidor al crearlo. Todos se ven igual —son lo mismo—, así
+ * que no hay una entrada por banner sino esta función.
+ */
+export function vistaDeBanner(): VistaSeccion {
+  return {
+    icono: 'fa-image',
+    descripcion: 'Sus imágenes, rotando una a una o todas a la vez en carteles. Cada imagen con sus fechas.',
+    rotulo: 'ninguno',
+    sinRotulo: 'es una franja de imágenes y encima de ella no se lee nada',
+  };
+}
+
+/**
+ * Lo que ocupa una sección de productos en la portada.
+ *
+ * ESTIMADO, y seguirá estándolo: estas secciones SÍ se pintan, pero su alto
+ * depende de cuántos productos lleve cada una y de si tiene imagen al lado,
+ * así que no hay un número que medir una vez y guardar. Por eso se marca como
  * no medida y el modelado lo dice.
  */
 export const CONTENIDO_SECCION_PRODUCTOS = { computadora: 860, celular: 1900, medido: false };

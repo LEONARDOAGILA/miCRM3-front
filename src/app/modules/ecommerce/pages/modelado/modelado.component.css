@@ -390,19 +390,6 @@
   background-color: #ced4da;
 }
 
-.d-rejilla--oferta { grid-template-rows: 1fr; }
-
-.d-bloques {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 4px;
-}
-
-.d-bloques > span {
-  border-radius: 3px;
-  background-color: #ced4da;
-}
-
 /* ---------- Arrastre ---------- */
 .mo-fantasma {
   min-height: 1.5rem;

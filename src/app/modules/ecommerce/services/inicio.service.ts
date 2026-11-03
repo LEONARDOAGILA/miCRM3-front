@@ -48,6 +48,48 @@ export class InicioService {
     return this._http.post(this.URL_SERVICIOS + 'altoSeccion/' + clave, { alto });
   }
 
+  /**
+   * La imagen de al lado de una sección de productos.
+   *
+   * Tampoco va por `editSeccion`, y por el mismo motivo que el alto: aquélla
+   * guarda todos los campos de la sección, así que un guardado normal —que no
+   * lleva el fichero— borraría la imagen. Se sube al elegirla, como en las
+   * galerías, y lo demás de la imagen (el lado, el texto y el enlace) sí viaja
+   * con el resto.
+   */
+  subirImagenSeccion(clave: string, archivo: File): Observable<any> {
+    const cuerpo = new FormData();
+    cuerpo.append('imagen', archivo);
+    // Sin cabecera Content-Type a mano: el navegador tiene que ponerla él con
+    // su `boundary`, y escribirla la deja sin él
+    return this._http.post(this.URL_SERVICIOS + 'imagenSeccion/' + clave, cuerpo);
+  }
+
+  quitarImagenSeccion(clave: string): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'imagenSeccion/' + clave);
+  }
+
+  /**
+   * Un banner nuevo en la portada.
+   *
+   * ES LA ÚNICA SECCIÓN QUE SE CREA DESDE AQUÍ: un banner son imágenes con su
+   * sitio, y la tienda ya sabe pintarlo. Las de fábrica son código y las de
+   * productos se arman en «Productos por sección».
+   */
+  addBanner(nombre: string): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'addBanner', { nombre });
+  }
+
+  /** Le cambia el nombre. El servidor lo lleva también a su galería. */
+  nombreBanner(clave: string, nombre: string): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'nombreBanner/' + clave, { nombre });
+  }
+
+  /** Lo borra CON SUS IMÁGENES. No hay papelera: quien llame, que pregunte antes. */
+  deleteBanner(clave: string): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'deleteBanner/' + clave);
+  }
+
   /** Van TODAS las claves, en el orden en que se ven. */
   ordenarSecciones(claves: string[]): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'ordenarSecciones', { claves });

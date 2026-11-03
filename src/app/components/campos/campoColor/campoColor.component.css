@@ -1,0 +1,98 @@
+/* ===== Elegir un color =====
+   Los nombres de clase son los del modal de archivos
+   (core/administrador-archivos/save-file), de donde salió esto: es la paleta
+   que ya se usa en el CRM y tiene que verse y funcionar igual. */
+:host {
+  display: block;
+}
+
+.color-bloque__fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.color-muestra {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--bs-component-bg, #fff);
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.color-muestra input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.color-valor {
+  padding: .1rem .4rem;
+  border-radius: .25rem;
+  background-color: var(--bs-component-bg, #fff);
+  color: var(--bs-body-color, #212529);
+  font-size: .7rem;
+}
+
+.color-quitar {
+  padding: 0 .25rem;
+  font-size: .7rem;
+  text-decoration: none;
+}
+
+/* Pegada al borde derecho de la fila */
+.color-paleta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  margin-left: auto;
+}
+
+.color-paleta__punto {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid var(--bs-component-bg, #fff);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+  cursor: pointer;
+  transition: transform .12s ease;
+}
+
+.color-paleta__punto:hover { transform: scale(1.15); }
+
+/* El puesto se señala con un anillo y no cambiándole el color: el color ES el dato */
+.color-paleta__punto.is-activo {
+  box-shadow: 0 0 0 2px var(--bs-app-theme, #00acac);
+}
+
+.color-paleta__punto:disabled { cursor: default; opacity: .5; }
+
+/* Apilado: la paleta baja a su propia línea. Es `flex-basis: 100%` y no un
+   elemento aparte porque así los dos modos comparten el mismo marcado */
+:host(.campo-color--apilado) .color-paleta {
+  flex-basis: 100%;
+  margin-left: 0;
+}
+
+/* Bloques estrechos: los puntos caben en dos filas y no empujan al selector fuera */
+:host(.campo-color--compacto) .color-paleta__punto {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 575.98px) {
+  .color-paleta { margin-left: 0; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .color-paleta__punto { transition: none; }
+}

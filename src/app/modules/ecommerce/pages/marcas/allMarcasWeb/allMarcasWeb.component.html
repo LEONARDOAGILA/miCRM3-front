@@ -191,14 +191,52 @@
                     </span>
                   </label>
 
+                  <!-- La otra sección de la portada. Es otra marca distinta de
+                       la de arriba: una marca puede estar en las dos, en una o
+                       en ninguna, igual que las categorías. -->
+                  <label class="form-check form-switch palanca mb-0"
+                         [class.is-apagada]="seleccionada.oculta">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="mar-promocion"
+                           [checked]="seleccionada.promocion"
+                           [disabled]="!puedeEditar || trabajando || seleccionada.oculta"
+                           (change)="alternarPromocion()">
+                    <span class="form-check-label">
+                      <i class="fa-solid fa-tags"></i> En promoción
+                    </span>
+                  </label>
+
                   <p class="campo-hint mb-0">
                     <i class="fa-solid fa-circle-info"></i>
                     <span>
-                      Encendida sale en <b>«Nuestras marcas»</b> y en los filtros
-                      del catálogo. El orden en que sale se arrastra en la
-                      columna de la derecha.
+                      Encendida sale en <b>«Nuestras marcas»</b> —la tira de
+                      logos— y en los filtros del catálogo. <b>En promoción</b>
+                      la pone además en las tarjetas grandes, los mismos
+                      carteles que los de categorías. Los dos órdenes se
+                      arrastran en la columna de la derecha.
                     </span>
                   </p>
+
+                  <!-- Cada sección usa una imagen distinta, y es lo que más se
+                       pregunta: la tira es de logos y el cartel es de fotos -->
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>
+                      Cada sitio usa una imagen distinta: la tira enseña el
+                      <b>logo del catálogo</b> (se sube en Inventarios →
+                      Marcas) y el cartel de promoción, la <b>imagen
+                      programada</b> de aquí abajo. Sin ella, el cartel sale
+                      con su color y su nombre.
+                    </span>
+                  </p>
+
+                  @if (seleccionada.oculta && seleccionada.promocion) {
+                    <p class="campo-hint campo-hint--aviso mb-0">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                      Está marcada en promoción pero apagada para la tienda, así
+                      que no sale en la portada.
+                    </p>
+                  }
                 </div>
 
                 <div class="cat-nombre-web">
@@ -439,17 +477,17 @@
                     <button type="button" class="cat-dest__nombre"
                             [title]="'Abrir «' + m.nombre + '»'"
                             (click)="seleccionar(m.id)">
+                      <!-- Esta tira usa el LOGO del catálogo y nada más: la
+                           imagen programada es de los carteles de promoción -->
                       <i class="fa-solid"
-                         [class.fa-image]="cuentaDe(m.id)?.sale_alguna"
-                         [class.fa-tag]="!cuentaDe(m.id)?.sale_alguna"></i>
+                         [class.fa-tag]="!!m.logo"
+                         [class.fa-ban]="!m.logo"></i>
                       {{ m.nombre }}
                     </button>
 
-                    <!-- Sin logo ni imagen, la tienda no la pinta: el carrusel
-                         sólo enseña las marcas que tienen algo. -->
-                    @if (!cuentaDe(m.id)?.sale_alguna && !m.logo) {
+                    @if (!m.logo) {
                       <i class="fa-solid fa-triangle-exclamation cat-dest__aviso"
-                         title="No tiene logo ni imagen programada, así que la tienda no la enseña"></i>
+                         title="No tiene logo en el catálogo, así que esta tira no la enseña. Se sube en Inventarios → Marcas"></i>
                     }
                   </div>
                 }
@@ -457,9 +495,83 @@
             </ng-scrollbar>
 
             <p class="cat-destacadas__pie">
-              <i class="fa-solid fa-image"></i> con imagen programada ·
-              <i class="fa-solid fa-tag"></i> con el logo del catálogo
+              <i class="fa-solid fa-tag"></i> con logo del catálogo ·
+              <i class="fa-solid fa-ban"></i> sin logo: no sale en la tira
             </p>
+          }
+        </div>
+      </div>
+
+      <!-- ---------- 2e. EL ORDEN DE LOS CARTELES DE PROMOCIÓN ----------
+           Otra lista y otro orden: son dos secciones distintas de la portada
+           y una marca puede salir en las dos en distinto puesto. -->
+      <div class="cat-tienda">
+
+        <div class="cat-destacadas__cabecera">
+          <span class="cat-lateral__titulo">
+            <i class="fa fa-tags me-1"></i> Orden en promoción
+          </span>
+          <span class="cat-destacadas__cuenta">{{ enPromocion.length }}</span>
+        </div>
+
+        <div class="cat-destacadas__cuerpo">
+          @if (enPromocion.length === 0) {
+            <p class="cat-destacadas__vacio">
+              <i class="fa-solid fa-tags"></i>
+              <span>
+                Ninguna marca en promoción todavía. Marca una con la palanca
+                «En promoción» y aparecerá aquí.
+              </span>
+            </p>
+
+          } @else {
+            <p class="campo-hint">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>
+                El orden de los carteles de <b>«Marcas en promoción»</b> en la
+                portada. Arrástralas para cambiarlo: se guarda al soltar.
+              </span>
+            </p>
+
+            <ng-scrollbar class="cat-destacadas__lista">
+              <div cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="enPromocion"
+                   [cdkDropListDisabled]="!puedeEditar || trabajando"
+                   (cdkDropListDropped)="soltarPromocion($event)">
+
+                @for (m of enPromocion; track m.id) {
+                  <div class="cat-dest" [class.is-actual]="m.id === seleccionId" cdkDrag>
+
+                    <div class="cat-dest__fantasma" *cdkDragPlaceholder></div>
+
+                    @if (puedeEditar) {
+                      <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                        <i class="fa-solid fa-grip-vertical"></i>
+                      </span>
+                    }
+
+                    <span class="cat-dest__puesto">{{ $index + 1 }}</span>
+
+                    <button type="button" class="cat-dest__nombre"
+                            [title]="'Abrir «' + m.nombre + '»'"
+                            (click)="seleccionar(m.id)">
+                      <!-- Y el cartel usa la imagen PROGRAMADA, no el logo: un
+                           logo estirado a toda la tarjeta sale recortado -->
+                      <i class="fa-solid"
+                         [class.fa-image]="cuentaDe(m.id)?.sale_alguna"
+                         [class.fa-fill-drip]="!cuentaDe(m.id)?.sale_alguna"></i>
+                      {{ m.nombre }}
+                    </button>
+
+                    <!-- El cartel se pinta igual sin foto, con su color de
+                         fondo, pero conviene saber cuál va a salir así -->
+                    @if (!cuentaDe(m.id)?.sale_alguna) {
+                      <i class="fa-solid fa-triangle-exclamation cat-dest__aviso"
+                         title="No tiene imagen programada en fecha: el cartel sale sólo con su color y su nombre"></i>
+                    }
+                  </div>
+                }
+              </div>
+            </ng-scrollbar>
           }
         </div>
       </div>

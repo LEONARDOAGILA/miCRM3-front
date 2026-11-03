@@ -1,11 +1,11 @@
 import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 import {
-  CdkDrag, CdkDragDrop, CdkDragHandle, CdkDragPlaceholder, CdkDropList, moveItemInArray,
+  CdkDrag, CdkDragDrop, CdkDragHandle, CdkDragPlaceholder, CdkDropList,
 } from '@angular/cdk/drag-drop';
 
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
@@ -13,14 +13,17 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { InicioService } from '../../../services/inicio.service';
 import {
   SeccionInicioModel, VistaSeccion, ESTADOS_SECCION, VISTA_SECCIONES, VISTA_POR_DEFECTO,
-  vistaDeProductos,
+  vistaDeProductos, vistaDeBanner,
   TAMANOS_ROTULO, FUENTES_ROTULO, COLORES_ROTULO, ROTULO_BASE_PX, ROTULO_COLOR_TIENDA,
-  BOTONES_TARJETA, BotonTarjeta, colorDeTextoSobre,
+  BOTONES_TARJETA, COLORES_TARJETA, ColorDeTarjeta, colorDeTextoSobre,
+  DISPOSICIONES, LadoImagen, VISTAS_BANNER, VistaBanner,
   ALTOS_SECCION, AIRE_BASE_PX,
 } from '../../../interfaces/inicioModel';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { CampoColorComponent } from '../../../../../components/campos/campoColor/campoColor.component';
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 import { GaleriaImagenesComponent } from '../../galerias/galeriaImagenes/galeriaImagenes.component';
 
 /**
@@ -32,7 +35,7 @@ import { GaleriaImagenesComponent } from '../../galerias/galeriaImagenes/galeria
  * imaginarse el resultado.
  *
  * AQUÍ NO SE CREAN NI SE BORRAN SECCIONES, pero por dos motivos distintos:
- * las OCHO DE FÁBRICA existen porque la tienda sabe pintarlas, y las de
+ * las CINCO DE FÁBRICA existen porque la tienda sabe pintarlas, y las de
  * PRODUCTOS se crean y se borran en «Productos por sección», que es donde se
  * les meten los productos. Lo que se administra aquí es cuáles se ven, en qué
  * orden, CÓMO SE LLAMAN EN LA TIENDA y entre qué fechas.
@@ -62,8 +65,9 @@ import { GaleriaImagenesComponent } from '../../galerias/galeriaImagenes/galeria
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
-    CommonModule, RouterLink, ReactiveFormsModule,
-    PanelComponent, CampoTextoComponent, GaleriaImagenesComponent,
+    CommonModule, RouterLink, ReactiveFormsModule, FormsModule,
+    PanelComponent, CampoColorComponent, CampoTextoComponent, CheckboxComponent,
+    GaleriaImagenesComponent,
     CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
   ],
 })
@@ -109,9 +113,181 @@ export class EditInicioComponent implements OnInit {
   get puedeCrear(): boolean { return this.accesoModel?.crear === true; }
   get puedeEliminar(): boolean { return this.accesoModel?.eliminar === true; }
 
-  /** Cuántas se ven hoy de verdad: encendidas, en fecha y con algo que enseñar. */
+  /** Cuántas se ven hoy de verdad: activas, en fecha y con algo que enseñar. */
   get enLaPortada(): number {
     return this.secciones.filter(s => s.estado === 'visible' && s.con_contenido).length;
+  }
+
+  // ================================================================
+  // EL FILTRO DE LA LISTA
+  // ================================================================
+  //
+  // ES SÓLO DE LA PANTALLA: no se pide nada al servidor ni se guarda en
+  // ningún sitio. La lista son siete filas; filtrarlas aquí es inmediato y
+  // volver a pedirlas sería esperar por algo que ya está en memoria.
+  //
+  // «ACTIVA» NO ES LO MISMO QUE «EN LA PORTADA», y el filtro va por lo
+  // primero: una sección activa pero programada para diciembre, o activa y
+  // vacía, no se ve en la tienda. Lo que dice la palanca es si está activa, y
+  // es lo que se filtra; cuántas se ven de verdad lo cuenta la etiqueta de
+  // arriba.
+
+  public filtro: 'todas' | 'activas' | 'inactivas' = 'todas';
+
+  public readonly filtros = [
+    { valor: 'todas' as const,     texto: 'Todas',      icono: 'fa-list' },
+    { valor: 'activas' as const,   texto: 'Activas',    icono: 'fa-circle-check' },
+    { valor: 'inactivas' as const, texto: 'Inactivas',  icono: 'fa-circle-minus' },
+  ];
+
+  /**
+   * Las que se enseñan ahora mismo.
+   *
+   * Un getter y no una lista guardada: la palanca de una fila cambia
+   * `s.activo` y con el filtro puesto esa fila tiene que salir de la lista en
+   * el momento. Con una copia habría que acordarse de rehacerla en cada sitio
+   * que toque el estado, y el día que se olvide la lista enseñaría una cosa y
+   * la base otra. Son siete filas: el coste de filtrarlas no se nota.
+   */
+  get seccionesVisibles(): SeccionInicioModel[] {
+    if (this.filtro === 'activas')   { return this.secciones.filter(s => s.activo); }
+    if (this.filtro === 'inactivas') { return this.secciones.filter(s => !s.activo); }
+    return this.secciones;
+  }
+
+  get cuantasActivas(): number {
+    return this.secciones.filter(s => s.activo).length;
+  }
+
+  get cuantasInactivas(): number {
+    return this.secciones.length - this.cuantasActivas;
+  }
+
+  /** Cuántas hay de cada clase, para el número de cada botón del filtro. */
+  cuantasDe(valor: 'todas' | 'activas' | 'inactivas'): number {
+    if (valor === 'activas')   { return this.cuantasActivas; }
+    if (valor === 'inactivas') { return this.cuantasInactivas; }
+    return this.secciones.length;
+  }
+
+  /** Si hay un filtro puesto. */
+  get filtrando(): boolean {
+    return this.filtro !== 'todas';
+  }
+
+  // ================================================================
+  // LOS BANNERS
+  // ================================================================
+  //
+  // SON LA ÚNICA SECCIÓN QUE SE CREA Y SE BORRA DESDE AQUÍ. Un banner es una
+  // galería de imágenes con su sitio en la portada y nada más, y la tienda ya
+  // sabe pintarlo: no hace falta código nuevo por cada uno. Las de fábrica
+  // existen porque la tienda las sabe pintar y las de productos se arman en
+  // «Productos por sección», así que ésas siguen sin crearse aquí.
+
+  /** Si está abierto el renglón de «añadir banner». */
+  public creandoBanner = false;
+  public nombreNuevoBanner = '';
+  /** La clave del banner en el que se está trabajando, o null. */
+  public bannerOcupado: string | null = null;
+
+  abrirNuevoBanner(): void {
+    this.creandoBanner = true;
+    this.nombreNuevoBanner = '';
+  }
+
+  cerrarNuevoBanner(): void {
+    this.creandoBanner = false;
+    this.nombreNuevoBanner = '';
+  }
+
+  async crearBanner(): Promise<void> {
+    const nombre = this.nombreNuevoBanner.trim();
+    if (!this.puedeCrear || !nombre || this.bannerOcupado) { return; }
+
+    // La clave del banner nuevo la fabrica el servidor, y la respuesta de la
+    // casa sólo trae `message` y `data`: se reconoce porque antes no estaba.
+    // Dos personas creando a la vez verían cada una la suya, que es lo que
+    // hay que mirar.
+    const antes = new Set(this.secciones.map(s => s.clave));
+
+    this.bannerOcupado = 'nuevo';
+    try {
+      const res: any = await firstValueFrom(this._inicioService.addBanner(nombre));
+      this._toastr.success(res?.message ?? 'Banner creado', 'Listo');
+      // `true`: la lista trae una fila que antes no estaba y necesita su
+      // formulario. Sin rehacerlos, al abrirla no habría dónde escribir
+      this.pintar(res?.data, true);
+      this.cerrarNuevoBanner();
+      // Se abre sola: lo siguiente que hay que hacer es meterle imágenes
+      const nueva = (res?.data ?? []).find((x: SeccionInicioModel) => !antes.has(x.clave));
+      if (nueva) { this.abrirSeccion(nueva.clave); }
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo crear el banner', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.bannerOcupado = null;
+    }
+  }
+
+  /** El nombre que se está escribiendo para ese banner. */
+  nombreDe(s: SeccionInicioModel): string {
+    return (this.formularios[s.clave]?.value?.nombre ?? '').toString();
+  }
+
+  /** Si ese nombre se puede guardar: no está vacío y no es el que ya tiene. */
+  puedeRenombrar(s: SeccionInicioModel): boolean {
+    const nombre = this.nombreDe(s).trim();
+    return this.puedeEditar && !!nombre && nombre !== s.nombre && this.bannerOcupado === null;
+  }
+
+  async renombrarBanner(s: SeccionInicioModel): Promise<void> {
+    if (!this.puedeRenombrar(s)) { return; }
+
+    this.bannerOcupado = s.clave;
+    try {
+      const res: any = await firstValueFrom(
+        this._inicioService.nombreBanner(s.clave, this.nombreDe(s).trim()));
+      this._toastr.success(res?.message ?? 'Nombre guardado', 'Listo');
+      this.pintar(res?.data);
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo cambiar el nombre', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.bannerOcupado = null;
+    }
+  }
+
+  /**
+   * Borra el banner CON SUS IMÁGENES.
+   *
+   * SE PREGUNTA DICIENDO CUÁNTAS SE VAN, y no es una pregunta de cortesía: no
+   * hay papelera donde ir a buscarlas. La papelera de una galería vive dentro
+   * de la galería, y aquí la galería también se borra.
+   */
+  async borrarBanner(s: SeccionInicioModel): Promise<void> {
+    if (!this.puedeEliminar || !s.es_banner || this.bannerOcupado) { return; }
+
+    const cuantas = s.cuantas ?? 0;
+    const conQue = cuantas === 0
+      ? 'No tiene ninguna imagen.'
+      : `Se borran también sus ${cuantas} ${cuantas === 1 ? 'imagen' : 'imágenes'}.`;
+    if (!confirm(`¿Borrar el banner «${s.nombre}»?\n\n${conQue}\nEsto no se puede deshacer.\n`)) {
+      return;
+    }
+
+    this.bannerOcupado = s.clave;
+    try {
+      const res: any = await firstValueFrom(this._inicioService.deleteBanner(s.clave));
+      this._toastr.success(res?.message ?? 'Banner borrado', 'Listo');
+      if (this.abierta === s.clave) { this.abierta = null; }
+      this.pintar(res?.data, true);
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo borrar el banner', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.bannerOcupado = null;
+    }
   }
 
   async ngOnInit(): Promise<void> {
@@ -132,8 +308,7 @@ export class EditInicioComponent implements OnInit {
     const clave = this.activeRoute.snapshot.queryParamMap.get('seccion');
     if (!clave || !this.secciones.some(s => s.clave === clave)) { return; }
 
-    this.abierta = clave;
-    this.vistas.add(clave);
+    this.abrirSeccion(clave);
     // Después de pintarla, que si no todavía no existe en el documento
     setTimeout(() => document.getElementById('seccion-caja-' + clave)
                              ?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
@@ -177,6 +352,9 @@ export class EditInicioComponent implements OnInit {
 
   private formularioDe(s: SeccionInicioModel): FormGroup {
     return this.fb.group({
+      // Sólo lo usan los banners: es su nombre de aquí dentro, y se guarda
+      // por su propia puerta (no viaja con `editSeccion`)
+      nombre:    [s.nombre ?? '', [Validators.maxLength(100)]],
       titulo:    [s.titulo ?? '', [Validators.maxLength(80)]],
       subtitulo: [s.subtitulo ?? '', [Validators.maxLength(80)]],
       tamano:    [s.estilo?.tamano ?? 'normal'],
@@ -195,6 +373,25 @@ export class EditInicioComponent implements OnInit {
       boton_whatsapp_texto: [s.botones?.whatsapp?.texto ?? ''],
       boton_tarjeta_color:  [s.botones?.tarjeta?.fondo ?? ''],
       boton_tarjeta_texto:  [s.botones?.tarjeta?.texto ?? ''],
+      // La tarjeta entera y su cartel de descuento. La LETRA de la tarjeta no
+      // está aquí porque no se elige: la calcula la tienda
+      tarjeta_fondo_color:  [s.tarjeta?.fondo ?? ''],
+      tarjeta_borde_color:  [s.tarjeta?.borde ?? ''],
+      descuento_color:      [s.tarjeta?.descuento?.fondo ?? ''],
+      descuento_texto:      [s.tarjeta?.descuento?.texto ?? ''],
+      // La etiqueta: sus palabras y sus dos colores
+      etiqueta:             [s.tarjeta?.etiqueta?.rotulo ?? '', [Validators.maxLength(30)]],
+      etiqueta_color:       [s.tarjeta?.etiqueta?.fondo ?? ''],
+      etiqueta_texto:       [s.tarjeta?.etiqueta?.texto ?? ''],
+      // Cómo se enseña la sección. Va `elegido` y no `lado`: sin imagen
+      // subida, `lado` llega 'sola' aunque se haya elegido un lado, y el
+      // formulario tiene que seguir enseñando lo que eligió quien administra
+      disposicion:          [s.imagen?.elegido ?? 'sola'],
+      // Sólo lo usan los banners. Viaja con el resto porque es un campo más
+      banner_vista:         [s.banner_vista ?? 'rotativo'],
+      imagen_alt:           [s.imagen?.alt ?? ''],
+      imagen_enlace:        [s.imagen?.enlace ?? ''],
+      imagen_nueva_pestana: [s.imagen?.nueva_pestana ?? true],
     });
   }
 
@@ -203,9 +400,10 @@ export class EditInicioComponent implements OnInit {
   // ================================================================
 
   vista(s: SeccionInicioModel): VistaSeccion {
-    // Las de productos no pueden estar en el catálogo de claves: la suya la
-    // fabrica el servidor al crearlas, así que su cara se arma con su nombre.
+    // Las de productos y los banners no pueden estar en el catálogo de claves:
+    // las suyas las fabrica el servidor al crearlas.
     if (s.producto_seccion_id) { return vistaDeProductos(s.nombre); }
+    if (s.es_banner) { return vistaDeBanner(); }
     return VISTA_SECCIONES[s.clave] ?? VISTA_POR_DEFECTO;
   }
 
@@ -292,14 +490,6 @@ export class EditInicioComponent implements OnInit {
     this.formularios[s.clave].markAsDirty();
   }
 
-  colorDelSelector(s: SeccionInicioModel, evento: Event): void {
-    this.elegirColor(s, (evento.target as HTMLInputElement).value);
-  }
-
-  quitarColor(s: SeccionInicioModel): void {
-    this.elegirColor(s, '');
-  }
-
   // ================================================================
   // EL COLOR DE LOS BOTONES DE LA TARJETA
   // ================================================================
@@ -315,12 +505,12 @@ export class EditInicioComponent implements OnInit {
   public readonly botones = BOTONES_TARJETA;
 
   /** El fondo elegido para ese botón, o el que usa la tienda hoy. */
-  colorBoton(s: SeccionInicioModel, b: BotonTarjeta): string {
+  colorBoton(s: SeccionInicioModel, b: ColorDeTarjeta): string {
     return this.valorBoton(s, b.campo) || b.deLaTienda;
   }
 
   /** Si se eligió fondo a mano; mientras no, manda la tienda. */
-  botonPropio(s: SeccionInicioModel, b: BotonTarjeta): boolean {
+  botonPropio(s: SeccionInicioModel, b: ColorDeTarjeta): boolean {
     return this.valorBoton(s, b.campo) !== '';
   }
 
@@ -331,31 +521,25 @@ export class EditInicioComponent implements OnInit {
    * calcula la que se lea encima, y sin él usa la suya de siempre. Esta
    * pantalla tiene que decir lo mismo, o la muestra miente.
    */
-  textoBoton(s: SeccionInicioModel, b: BotonTarjeta): string {
+  textoBoton(s: SeccionInicioModel, b: ColorDeTarjeta): string {
     const elegida = this.valorBoton(s, b.campoTexto);
     if (elegida) { return elegida; }
     return this.botonPropio(s, b) ? colorDeTextoSobre(this.colorBoton(s, b)) : b.textoDeLaTienda;
   }
 
   /** Si se eligió letra a mano. */
-  textoPropio(s: SeccionInicioModel, b: BotonTarjeta): boolean {
+  textoPropio(s: SeccionInicioModel, b: ColorDeTarjeta): boolean {
     return this.valorBoton(s, b.campoTexto) !== '';
   }
 
-  ponerColorBoton(s: SeccionInicioModel, b: BotonTarjeta, color: string): void {
+  ponerColorBoton(s: SeccionInicioModel, b: ColorDeTarjeta, color: string): void {
     this.ponerCampo(s, b.campo, color);
   }
 
-  ponerTextoBoton(s: SeccionInicioModel, b: BotonTarjeta, color: string): void {
+  ponerTextoBoton(s: SeccionInicioModel, b: ColorDeTarjeta, color: string): void {
+    // El fondo y el borde de la tarjeta no tienen letra que elegir
+    if (!b.campoTexto) { return; }
     this.ponerCampo(s, b.campoTexto, color);
-  }
-
-  colorBotonDelSelector(s: SeccionInicioModel, b: BotonTarjeta, evento: Event): void {
-    this.ponerColorBoton(s, b, (evento.target as HTMLInputElement).value);
-  }
-
-  textoBotonDelSelector(s: SeccionInicioModel, b: BotonTarjeta, evento: Event): void {
-    this.ponerTextoBoton(s, b, (evento.target as HTMLInputElement).value);
   }
 
   /**
@@ -368,16 +552,24 @@ export class EditInicioComponent implements OnInit {
    *
    * El 4,5:1 es el mínimo de la WCAG para texto normal, que es lo que son
    * estos botones: doce píxeles en mayúsculas.
+   *
+   * SÓLO SE AVISA DE LO QUE SE ELIGIÓ AQUÍ. Los colores de siempre de la
+   * tienda no se deciden en esta pantalla —el corazón rojo sobre el círculo
+   * blanco se queda en 4,0:1 y es el diseño de la casa—, así que avisar de
+   * ellos ponía una advertencia permanente en todas las secciones. Un aviso
+   * que sale siempre es un aviso que nadie lee, y el día que de verdad haga
+   * falta pasará desapercibido.
    */
-  botonFlojo(s: SeccionInicioModel, b: BotonTarjeta): boolean {
+  botonFlojo(s: SeccionInicioModel, b: ColorDeTarjeta): boolean {
+    if (!this.botonPropio(s, b) && !this.textoPropio(s, b)) { return false; }
     return this.contrasteBoton(s, b) < 4.5;
   }
 
-  contrasteBotonTexto(s: SeccionInicioModel, b: BotonTarjeta): string {
+  contrasteBotonTexto(s: SeccionInicioModel, b: ColorDeTarjeta): string {
     return this.contrasteBoton(s, b).toFixed(1).replace('.', ',');
   }
 
-  private contrasteBoton(s: SeccionInicioModel, b: BotonTarjeta): number {
+  private contrasteBoton(s: SeccionInicioModel, b: ColorDeTarjeta): number {
     return this.contrasteEntre(this.colorBoton(s, b), this.textoBoton(s, b));
   }
 
@@ -387,13 +579,219 @@ export class EditInicioComponent implements OnInit {
     this.formularios[s.clave].markAsDirty();
   }
 
-  private valorBoton(s: SeccionInicioModel, campo: string): string {
+  /**
+   * Lo que hay guardado en ese campo del formulario.
+   *
+   * Admite `null` porque hay cosas sin letra —el fondo y el borde de la
+   * tarjeta—: ahí «no hay campo» y «el campo está vacío» llevan al mismo
+   * sitio, y así quien pregunta no tiene que comprobarlo antes.
+   */
+  private valorBoton(s: SeccionInicioModel, campo: string | null): string {
+    if (!campo) { return ''; }
     return (this.formularios[s.clave]?.value?.[campo] ?? '').toString().trim();
   }
 
   /** Si esta sección pinta tarjetas con botones: sólo las de productos. */
   conBotones(s: SeccionInicioModel): boolean {
     return s.fuente.tipo === 'productos';
+  }
+
+  // ================================================================
+  // EL COLOR DE LA TARJETA Y DE SU CARTEL
+  // ================================================================
+  //
+  // El fondo, el borde y el cartel del descuento se eligen con los mismos
+  // métodos que los botones —la lista es de lo mismo, `ColorDeTarjeta`—, así
+  // que aquí abajo sólo está lo que los botones no necesitan: la letra que la
+  // tienda va a calcular sola, para poder enseñarla en la muestra.
+
+  public readonly coloresTarjeta = COLORES_TARJETA;
+
+  /**
+   * El cartel del descuento, suelto.
+   *
+   * La muestra de la tarjeta lo pinta aparte —va encima de la foto, no en la
+   * lista de campos—, y sacarlo por su nombre es menos frágil que por su
+   * puesto en la lista: el día que se añada un color más, un índice se
+   * quedaría apuntando a otra cosa sin avisar.
+   */
+  public readonly cartel = COLORES_TARJETA.find(c => c.campo === 'descuento_color')!;
+
+  /** Y la etiqueta, por lo mismo: va en la muestra, encima del descuento. */
+  public readonly etiqueta = COLORES_TARJETA.find(c => c.campo === 'etiqueta_color')!;
+
+  /** Lo que diría la etiqueta hoy. Vacío = no hay etiqueta que enseñar. */
+  textoEtiqueta(s: SeccionInicioModel): string {
+    return this.valorBoton(s, 'etiqueta');
+  }
+
+  /** El fondo elegido para la tarjeta, o el blanco de la tienda. */
+  fondoTarjeta(s: SeccionInicioModel): string {
+    return this.valorBoton(s, 'tarjeta_fondo_color') || '#ffffff';
+  }
+
+  /** El borde elegido, o el gris de siempre. */
+  bordeTarjeta(s: SeccionInicioModel): string {
+    return this.valorBoton(s, 'tarjeta_borde_color') || '#ececec';
+  }
+
+  /**
+   * LA LETRA DE LA TARJETA, que no se elige: la calcula la tienda.
+   *
+   * Con un fondo oscuro, el nombre del producto y los precios —gris oscuro—
+   * desaparecerían. La tienda pone la que se lea encima, y esta pantalla tiene
+   * que decir lo mismo o la muestra miente. Sin fondo propio, el gris de
+   * siempre.
+   */
+  letraTarjeta(s: SeccionInicioModel): string {
+    const fondo = this.valorBoton(s, 'tarjeta_fondo_color');
+    return fondo ? colorDeTextoSobre(fondo) : '#374151';
+  }
+
+  /** La de los textos secundarios: la misma, más apagada. */
+  letraFlojaTarjeta(s: SeccionInicioModel): string {
+    return this.conAlfa(this.letraTarjeta(s), 0.62);
+  }
+
+  /** Y la de las rayas de la caja de precios. */
+  lineaTarjeta(s: SeccionInicioModel): string {
+    return this.conAlfa(this.letraTarjeta(s), 0.22);
+  }
+
+  /**
+   * El color de «Tarjeta Crédito» y «Crédito Directo».
+   *
+   * ES EL ROJO DE LA CASA, salvo que el fondo elegido no lo deje leer: con un
+   * azul oscuro detrás, ese rojo se queda en nada y los dos rótulos
+   * desaparecen. Ahí pasa a la letra de la tarjeta, que sí se lee. El 3:1 es
+   * el mínimo de la WCAG para texto pequeño en negrita como ése.
+   */
+  acentoTarjeta(s: SeccionInicioModel): string {
+    const fondo = this.valorBoton(s, 'tarjeta_fondo_color');
+    if (!fondo) { return '#df1122'; }
+    return this.contrasteEntre(fondo, '#df1122') >= 3 ? '#df1122' : this.letraTarjeta(s);
+  }
+
+  /**
+   * Si el cartel del descuento se va a confundir con la tarjeta.
+   *
+   * No es cuestión de leer la letra —de eso avisa `botonFlojo`—, sino de que
+   * el cartel entero se pierda: con el mismo color de fondo que la tarjeta,
+   * el «-12%» queda flotando sin su pastilla y parece un fallo. 3:1 es lo que
+   * pide la WCAG para algo que no es texto.
+   */
+  cartelSeConfunde(s: SeccionInicioModel, b: ColorDeTarjeta): boolean {
+    if (b.campo !== 'descuento_color' || !this.botonPropio(s, b)) { return false; }
+    return this.contrasteEntre(this.colorBoton(s, b), this.fondoTarjeta(s)) < 3;
+  }
+
+  /** Un «#rrggbb» con transparencia, para los textos apagados de la muestra. */
+  private conAlfa(hex: string, alfa: number): string {
+    const n = parseInt((hex || '').replace('#', ''), 16);
+    if (isNaN(n)) { return hex; }
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alfa})`;
+  }
+
+  // ================================================================
+  // CÓMO SE ENSEÑA LA SECCIÓN: SOLA, O CON UNA IMAGEN AL LADO
+  // ================================================================
+  //
+  // EL FICHERO SE SUBE AL ELEGIRLO, como en las galerías, y no con el botón
+  // de guardar: `editSeccion` escribe todos los campos de la sección, así que
+  // la imagen tiene su propia puerta o un guardado normal la borraría. Lo
+  // demás —el lado, el texto y el enlace— sí viaja con el resto.
+
+  public readonly disposiciones = DISPOSICIONES;
+
+  /** Las dos formas de enseñar un banner. */
+  public readonly vistasBanner = VISTAS_BANNER;
+
+  /** La vista elegida en el formulario para ese banner. */
+  vistaDe(s: SeccionInicioModel): VistaBanner {
+    return (this.formularios[s.clave]?.value?.banner_vista ?? 'rotativo') as VistaBanner;
+  }
+
+  ponerVista(s: SeccionInicioModel, valor: VistaBanner): void {
+    this.ponerCampo(s, 'banner_vista', valor);
+  }
+
+  /** La clave de la sección cuya imagen se está subiendo, o null. */
+  public subiendoImagen: string | null = null;
+
+  /** El lado elegido en el formulario. */
+  disposicionDe(s: SeccionInicioModel): LadoImagen {
+    return (this.formularios[s.clave]?.value?.disposicion ?? 'sola') as LadoImagen;
+  }
+
+  ponerDisposicion(s: SeccionInicioModel, valor: LadoImagen): void {
+    this.ponerCampo(s, 'disposicion', valor);
+  }
+
+  /** Si hay fichero subido. */
+  hayImagen(s: SeccionInicioModel): boolean {
+    return !!s.imagen?.url;
+  }
+
+  /**
+   * Si se eligió un lado pero todavía no hay imagen.
+   *
+   * SE AVISA Y SE GUARDA IGUAL: el lado elegido se conserva, así que subir la
+   * imagen más tarde lo recupera. Pero mientras no esté, la tienda enseña la
+   * sección sola, y eso hay que decirlo o parecerá que no se guardó.
+   */
+  faltaImagen(s: SeccionInicioModel): boolean {
+    return this.disposicionDe(s) !== 'sola' && !this.hayImagen(s);
+  }
+
+  /**
+   * Si tiene sentido ofrecer «abrir en otra pestaña».
+   *
+   * SÓLO PARA LOS `https://`, que es la regla de la casa (fn_nueva_pestana en
+   * la base): un enlace de la propia tienda nunca abre pestaña —sacaría al
+   * cliente de la navegación— y un `http://` sin cifrar tampoco se puede
+   * abrir en la ventana de dentro. Fuera de ese caso, la casilla no decide
+   * nada y se apaga.
+   */
+  puedeAbrirPestana(s: SeccionInicioModel): boolean {
+    return (this.formularios[s.clave]?.value?.imagen_enlace ?? '')
+      .toString().trim().toLowerCase().startsWith('https://');
+  }
+
+  async elegirImagen(s: SeccionInicioModel, evento: Event): Promise<void> {
+    const input = evento.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    // El input se vacía siempre: sin esto, volver a elegir el MISMO fichero
+    // no dispara «change» y parecería que no pasó nada
+    input.value = '';
+    if (!archivo || !this.puedeEditar) { return; }
+
+    this.subiendoImagen = s.clave;
+    try {
+      const res: any = await firstValueFrom(this._inicioService.subirImagenSeccion(s.clave, archivo));
+      this._toastr.success(res?.message ?? 'Imagen guardada', 'Listo');
+      this.pintar(res?.data);
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo subir la imagen', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.subiendoImagen = null;
+    }
+  }
+
+  async quitarImagen(s: SeccionInicioModel): Promise<void> {
+    if (!this.puedeEditar || !this.hayImagen(s)) { return; }
+
+    this.subiendoImagen = s.clave;
+    try {
+      const res: any = await firstValueFrom(this._inicioService.quitarImagenSeccion(s.clave));
+      this._toastr.success(res?.message ?? 'Imagen quitada', 'Listo');
+      this.pintar(res?.data);
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo quitar la imagen', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.subiendoImagen = null;
+    }
   }
 
   /**
@@ -556,8 +954,22 @@ export class EditInicioComponent implements OnInit {
   }
 
   alternarSeccion(clave: string): void {
-    this.abierta = this.abierta === clave ? null : clave;
-    if (this.abierta) { this.vistas.add(this.abierta); }
+    if (this.abierta === clave) { this.abierta = null; return; }
+    this.abrirSeccion(clave);
+  }
+
+  /**
+   * Abre una sección: la marca como abierta Y como vista.
+   *
+   * LAS DOS COSAS JUNTAS, SIEMPRE. El cuerpo sólo se pinta para las que están
+   * en `vistas` —así una portada de quince secciones no arma quince
+   * formularios de golpe—, así que marcar `abierta` a secas deja la fila con
+   * la flecha hacia abajo y sin nada debajo. Pasó al crear un banner: se abría
+   * sola y salía vacía.
+   */
+  abrirSeccion(clave: string): void {
+    this.abierta = clave;
+    this.vistas.add(clave);
   }
 
   // ================================================================
@@ -620,6 +1032,22 @@ export class EditInicioComponent implements OnInit {
         boton_whatsapp_texto: this.conBotones(s) ? limpio(v.boton_whatsapp_texto) : null,
         boton_tarjeta_color:  this.conBotones(s) ? limpio(v.boton_tarjeta_color)  : null,
         boton_tarjeta_texto:  this.conBotones(s) ? limpio(v.boton_tarjeta_texto)  : null,
+        // Y lo mismo con la tarjeta y su cartel: sólo donde hay tarjetas
+        tarjeta_fondo_color:  this.conBotones(s) ? limpio(v.tarjeta_fondo_color)  : null,
+        tarjeta_borde_color:  this.conBotones(s) ? limpio(v.tarjeta_borde_color)  : null,
+        descuento_color:      this.conBotones(s) ? limpio(v.descuento_color)      : null,
+        descuento_texto:      this.conBotones(s) ? limpio(v.descuento_texto)      : null,
+        etiqueta:             this.conBotones(s) ? limpio(v.etiqueta)             : null,
+        etiqueta_color:       this.conBotones(s) ? limpio(v.etiqueta_color)       : null,
+        etiqueta_texto:       this.conBotones(s) ? limpio(v.etiqueta_texto)       : null,
+        // La disposición y la imagen, también sólo donde hay productos. El
+        // FICHERO no va aquí: se sube al elegirlo, por su propia puerta
+        disposicion:          this.conBotones(s) ? (limpio(v.disposicion) || 'sola') : null,
+        // Y la vista sólo donde hay un banner que enseñar
+        banner_vista:         s.es_banner ? (limpio(v.banner_vista) || 'rotativo') : null,
+        imagen_alt:           this.conBotones(s) ? limpio(v.imagen_alt)    : null,
+        imagen_enlace:        this.conBotones(s) ? limpio(v.imagen_enlace) : null,
+        imagen_nueva_pestana: this.conBotones(s) ? !!v.imagen_nueva_pestana : null,
         activo:        s.activo,
         desde,
         hasta,
@@ -654,10 +1082,47 @@ export class EditInicioComponent implements OnInit {
     });
   }
 
+  /**
+   * Mover una sección de sitio.
+   *
+   * LAS POSICIONES QUE DA EL ARRASTRE SON LAS DE LA LISTA QUE SE VE, no las de
+   * la portada: con un filtro puesto hay filas escondidas por el medio, y
+   * aplicarlas tal cual movería la que no es. Por eso se traducen.
+   *
+   * LA REGLA ES LA QUE SE VE: la sección se coloca justo delante de aquella
+   * encima de la que se soltó. Si se soltó la última, se coloca detrás de la
+   * última que se ve. Nunca se la hace saltar por encima de filas escondidas,
+   * porque su posición respecto a ellas no se podía ver al arrastrar y
+   * cambiarla sería mover algo a ciegas.
+   *
+   * Sin filtro las dos listas son la misma y esto da exactamente lo de antes.
+   */
   async soltar(evento: CdkDragDrop<SeccionInicioModel[]>): Promise<void> {
     if (!this.puedeEditar || evento.previousIndex === evento.currentIndex) { return; }
 
-    moveItemInArray(this.secciones, evento.previousIndex, evento.currentIndex);
+    const visibles = this.seccionesVisibles;
+    const movida = visibles[evento.previousIndex];
+    if (!movida) { return; }
+
+    // La lista que se ve y la de verdad, las dos sin la que se está moviendo
+    const restoVisible = visibles.filter(s => s !== movida);
+    const todas = this.secciones.filter(s => s !== movida);
+
+    const delante = restoVisible[evento.currentIndex];
+    let destino: number;
+    if (delante) {
+      destino = todas.indexOf(delante);
+    } else if (restoVisible.length) {
+      // Se soltó al final: detrás de la última que se ve
+      destino = todas.indexOf(restoVisible[restoVisible.length - 1]) + 1;
+    } else {
+      // Era la única visible: no hay contra qué moverla
+      return;
+    }
+
+    todas.splice(destino, 0, movida);
+    this.secciones = todas;
+
     await this.accion(() => this._inicioService.ordenarSecciones(this.secciones.map(s => s.clave)), false);
   }
 

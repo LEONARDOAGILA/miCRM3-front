@@ -30,7 +30,13 @@ export class MarcaWebService {
     return this._http.get(this.URL_SERVICIOS + 'allMarcasWeb');
   }
 
-  /** { oculta?, nombre_web? }. Un nombre vacío o igual al del catálogo se descarta. */
+  /**
+   * { oculta?, nombre_web?, promocion? }. Un nombre vacío o igual al del
+   * catálogo se descarta.
+   *
+   * LO QUE NO SE MANDA NO SE TOCA: `promocion` sin mandar deja la marca como
+   * estaba, así que guardar el nombre no la saca de la portada.
+   */
   editMarcaWeb(id: number, data: any): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'editMarcaWeb/' + id, data);
   }
@@ -38,6 +44,11 @@ export class MarcaWebService {
   /** El orden de «Nuestras marcas». Van TODAS las que salen en la tienda. */
   ordenarMarcas(ids: number[]): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'ordenarMarcas', { ids });
+  }
+
+  /** El de los carteles de «Marcas en promoción», que es otro. */
+  ordenarPromocion(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'ordenarPromocion', { ids });
   }
 
   // ================================================================

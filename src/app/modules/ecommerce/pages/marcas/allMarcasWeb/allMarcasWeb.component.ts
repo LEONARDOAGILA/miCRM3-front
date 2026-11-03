@@ -132,6 +132,9 @@ export class AllMarcasWebComponent implements OnInit {
    */
   public enLaTienda: MarcaWebModel[] = [];
 
+  /** Las que salen en los carteles de «Marcas en promoción», en su orden. */
+  public enPromocion: MarcaWebModel[] = [];
+
   /** Cuántas salen hoy con alguna imagen (programada o el logo del catálogo). */
   get conImagen(): number {
     return this.enLaTienda.filter(m => this.cuentas.get(m.id)?.sale_alguna || m.logo).length;
@@ -180,9 +183,24 @@ export class AllMarcasWebComponent implements OnInit {
     }
   }
 
-  /** El servidor ya las manda en el orden de la tienda: aquí sólo se filtra. */
+  /**
+   * Las dos listas de la derecha: «Nuestras marcas» y los carteles de
+   * «Marcas en promoción».
+   *
+   * SON DOS ÓRDENES DISTINTOS, como en categorías: una marca puede estar en
+   * las dos secciones y en distinto puesto en cada una. El servidor manda la
+   * lista en el orden de «Nuestras marcas»; el de los carteles se arma aquí
+   * con `promocion_orden`, y las recién marcadas —que vienen sin puesto— se
+   * van al final para no mover a las que ya estaban puestas.
+   */
   private armarEnLaTienda(): void {
     this.enLaTienda = this.marcas.filter(m => m.estado === 'visible');
+
+    this.enPromocion = this.marcas
+      .filter(m => m.promocion && m.estado === 'visible')
+      .sort((a, b) => (a.promocion_orden ?? Number.MAX_SAFE_INTEGER)
+                    - (b.promocion_orden ?? Number.MAX_SAFE_INTEGER)
+                   || a.nombre.localeCompare(b.nombre));
   }
 
   async seleccionar(id: number): Promise<void> {
@@ -276,6 +294,24 @@ export class AllMarcasWebComponent implements OnInit {
     }));
   }
 
+  /**
+   * La pone o la saca de «Marcas en promoción».
+   *
+   * Se mandan también `oculta` y el nombre porque el servidor guarda la fila
+   * entera; `promocion` es lo único que cambia aquí.
+   */
+  async alternarPromocion(): Promise<void> {
+    const m = this.seleccionada;
+    if (!m || !this.puedeEditar || this.trabajando) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    await this.accionMarca(() => this._marcaService.editMarcaWeb(m.id, {
+      oculta: m.oculta,
+      nombre_web: m.nombre_web ?? null,
+      promocion: !m.promocion,
+    }));
+  }
+
   async guardarNombreWeb(): Promise<void> {
     const m = this.seleccionada;
     if (!m || !this.puedeEditar || this.trabajando) { return; }
@@ -320,6 +356,34 @@ export class AllMarcasWebComponent implements OnInit {
     this.trabajando = true;
     try {
       const res: any = await firstValueFrom(this._marcaService.ordenarMarcas(ids));
+      this.marcas = res?.data ?? this.marcas;
+      this.armarEnLaTienda();
+      this._toastr.success(res?.message ?? 'Orden guardado', 'Listo');
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo guardar el orden', 'Error',
+                         { timeOut: 15000, closeButton: true });
+      await this.cargar();
+    } finally {
+      this.trabajando = false;
+    }
+  }
+
+  /**
+   * Se soltó una marca en otro sitio dentro de los carteles.
+   *
+   * VA POR SU PROPIA PUERTA: es otro orden que el de «Nuestras marcas», y
+   * mandarlo por la misma movería la sección que no es.
+   */
+  async soltarPromocion(evento: CdkDragDrop<MarcaWebModel[]>): Promise<void> {
+    if (!this.puedeEditar || evento.previousIndex === evento.currentIndex) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    moveItemInArray(this.enPromocion, evento.previousIndex, evento.currentIndex);
+    const ids = this.enPromocion.map(m => m.id);
+
+    this.trabajando = true;
+    try {
+      const res: any = await firstValueFrom(this._marcaService.ordenarPromocion(ids));
       this.marcas = res?.data ?? this.marcas;
       this.armarEnLaTienda();
       this._toastr.success(res?.message ?? 'Orden guardado', 'Listo');

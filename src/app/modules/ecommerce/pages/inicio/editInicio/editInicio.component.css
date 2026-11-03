@@ -269,87 +269,10 @@
 }
 
 /* ===== El color =====
-   Copiado del modal de archivos (core/administrador-archivos/save-file), con
-   sus mismos nombres: es la paleta que ya se usa en el CRM para elegir un
-   color, y aquí tiene que verse y funcionar igual. */
-.color-bloque__fila {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .5rem;
-}
-
-/* El <input type="color"> nativo es feo y cambia por navegador: se esconde
-   dentro de una muestra redonda y el clic lo abre igual */
-.color-muestra {
-  position: relative;
-  flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 2px solid var(--bs-component-bg, #fff);
-  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.color-muestra input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.color-valor {
-  padding: .1rem .4rem;
-  border-radius: .25rem;
-  background-color: var(--bs-component-bg, #fff);
-  color: var(--bs-body-color, #212529);
-  font-size: .7rem;
-}
-
-.color-paleta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .3rem;
-  margin-left: auto;
-}
-
-.color-paleta__punto {
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: 2px solid var(--bs-component-bg, #fff);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
-  cursor: pointer;
-  transition: transform .12s ease;
-}
-
-.color-paleta__punto:hover { transform: scale(1.15); }
-
-/* El puesto se señala con un anillo y no cambiándole el color: el color ES el dato */
-.color-paleta__punto.is-activo {
-  box-shadow: 0 0 0 2px var(--bs-app-theme, #00acac);
-}
-
-.color-paleta__punto:disabled { cursor: default; opacity: .5; }
-
-@media (max-width: 575.98px) {
-  .color-paleta { margin-left: 0; width: 100%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .color-paleta__punto { transition: none; }
-}
-
-.rotulo-quitar {
-  padding: 0 .25rem;
-  font-size: .7rem;
-  text-decoration: none;
-}
+   El selector, el codigo y la paleta viven ahora en app-campoColor
+   (components/campos/campoColor): estaban copiados aqui y en los dos modales
+   de archivos, y hacian falta cuatro copias mas. Lo unico que queda aqui es
+   donde se colocan. */
 
 /* ===== La muestra =====
    SIEMPRE BLANCA, en los dos temas del CRM: blanco es el fondo de la sección
@@ -506,9 +429,441 @@
   color: var(--bs-secondary-color, #6c757d);
 }
 
-/* Los cuatro bloques son estrechos: la paleta cabe en dos filas y no
-   empuja al selector fuera */
-.boton-color .color-paleta__punto {
-  width: 16px;
-  height: 16px;
+
+/* ===== La tarjeta y su cartel =====
+   La muestra a la izquierda y los campos a la derecha. El fondo y el borde
+   por separado no dicen nada: juntos en una tarjeta se ve de un vistazo si
+   pegan, y es lo que decide quien los elige. */
+.tarjeta-colores {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: .5rem;
+}
+
+.tarjeta-colores__campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: .75rem;
+}
+
+.tarjeta-color {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  padding: .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* ===== La muestra de la tarjeta =====
+   Los colores los pone la plantilla, porque son los elegidos. Lo de aquí es
+   sólo la forma, y copia la de la tienda (_seccion-productos.scss): si aquí
+   saliera cuadrada y allá redondeada, el color se elegiría mirando otra cosa.
+
+   NADA DE AQUÍ DENTRO USA VARIABLES DEL TEMA DEL CRM: encima de un fondo
+   elegido, el tema oscuro las volvería invisibles. */
+.tarjeta-muestra {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: .6rem;
+  border: 1px solid transparent;
+  border-radius: .75rem;
+  overflow: hidden;
+}
+
+.tarjeta-muestra__media {
+  position: relative;
+  padding: .6rem .6rem 0;
+}
+
+/* Pegado al borde izquierdo y redondeado sólo por la derecha, como en la
+   tienda: es una etiqueta de la tarjeta, no de la foto */
+/* Las dos pastillas en columna, como en la tienda: la etiqueta encima del
+   descuento. Apiladas aquí y no con un `top` distinto cada una, porque la de
+   arriba puede no estar y entonces el descuento tiene que subir */
+.tarjeta-muestra__carteles {
+  position: absolute;
+  top: .35rem;
+  left: 0;
+  z-index: 1;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .2rem;
+  /* Que no se coma la tarjeta entera si el texto es largo */
+  max-width: 85%;
+}
+
+.tarjeta-muestra__cartel {
+  max-width: 100%;
+  padding: .1rem .4rem;
+  border-radius: 0 999px 999px 0;
+  font-size: .625rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El hueco de la foto, gris siempre: el producto de la muestra no existe, y
+   una foto de verdad aquí distraería de lo único que se está eligiendo */
+.tarjeta-muestra__foto {
+  display: block;
+  height: 64px;
+  border-radius: .25rem;
+  background-color: rgba(128, 128, 128, .22);
+}
+
+.tarjeta-muestra__nombre {
+  padding: .5rem .6rem;
+  font-size: .7rem;
+  line-height: 1.3;
+}
+
+.tarjeta-muestra__precios {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin: 0 .6rem;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+}
+
+.tarjeta-muestra__precio {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: .3rem .35rem;
+  font-size: .625rem;
+  line-height: 1.3;
+}
+
+/* La raya del medio es el borde de la segunda columna, igual que en la
+   tienda: así mide el alto exacto de la caja */
+.tarjeta-muestra__precio + .tarjeta-muestra__precio {
+  border-left: 1px solid transparent;
+}
+
+.tarjeta-muestra__precio b {
+  font-size: .75rem;
+}
+
+.tarjeta-muestra__rotulo {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* En pantallas estrechas la muestra se va arriba y ocupa su ancho: a 200 px
+   de columna, los campos se quedaban sin sitio */
+@media (max-width: 991.98px) {
+  .tarjeta-colores {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tarjeta-muestra {
+    max-width: 220px;
+  }
+}
+
+/* ===== Cómo se enseña la sección =====
+   Tres botones con su dibujo. Un desplegable obligaría a imaginarse qué
+   significa «imagen a la izquierda»; el dibujo lo enseña. */
+.disposiciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-bottom: .75rem;
+}
+
+.disposicion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  cursor: pointer;
+}
+
+.disposicion.is-activa {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+.disposicion:disabled { cursor: default; opacity: .6; }
+
+.disposicion__texto {
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+/* El dibujo: una banda que es la imagen y tres rayas que son las tarjetas. El
+   orden lo pone `flex-direction`, así que el de la derecha es el mismo marcado
+   del revés y no hay dos dibujos que mantener. */
+.disposicion__dibujo {
+  display: flex;
+  gap: 3px;
+  width: 96px;
+  height: 40px;
+}
+
+.disposicion__dibujo--derecha { flex-direction: row-reverse; }
+
+.disposicion__banda {
+  flex: 0 0 30%;
+  border-radius: 3px;
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+/* Sin imagen, las tarjetas ocupan todo: la banda no se quita del marcado, se
+   deja sin sitio, y así los tres dibujos miden lo mismo */
+.disposicion__dibujo--sola .disposicion__banda { display: none; }
+
+.disposicion__cartas {
+  display: flex;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+}
+
+.disposicion__cartas i {
+  flex: 1;
+  border-radius: 3px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .22);
+}
+
+/* ===== La imagen de al lado ===== */
+.imagen-lado {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: .5rem;
+}
+
+/* El hueco tiene la proporción con la que se va a ver en la tienda —del alto
+   de las tarjetas— para que no sorprenda el recorte */
+.imagen-lado__foto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.imagen-lado__foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagen-lado__hueco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .3rem;
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.imagen-lado__hueco i { font-size: 1.4rem; }
+
+.imagen-lado__campos {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.imagen-lado__botones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+/* El <input type="file"> va escondido dentro: la etiqueta ES el botón */
+.imagen-lado__subir {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.imagen-lado__subir.disabled { cursor: default; opacity: .65; }
+
+@media (max-width: 575.98px) {
+  .imagen-lado {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .imagen-lado__foto {
+    max-width: 160px;
+  }
+}
+
+/* ===== El filtro de la lista =====
+   Los tres botones a la izquierda y, cuando hay filtro puesto, el aviso de que
+   no se puede arrastrar al lado. En una fila que se parte sola: en un teléfono
+   el aviso baja debajo de los botones en vez de estrujarlos. */
+.inicio-filtro {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem .75rem;
+  margin-bottom: .75rem;
+}
+
+/* El número de cada clase, dentro de su botón. Es una pastilla y no texto
+   suelto: así se lee como un dato y no como parte del rótulo */
+.inicio-filtro__cuantas {
+  display: inline-block;
+  min-width: 1.25rem;
+  margin-left: .35rem;
+  padding: 0 .3rem;
+  border-radius: 999px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .12);
+  font-size: .7rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Dentro del botón puesto, el fondo del tema se come la pastilla: se aclara
+   con el color del propio botón */
+.btn-primary .inicio-filtro__cuantas {
+  background-color: rgba(255, 255, 255, .25);
+}
+
+.inicio-filtro__aviso {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ===== Cuando el filtro no deja nada ===== */
+.inicio-vacio {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.inicio-vacio i {
+  display: block;
+  margin-bottom: .5rem;
+  font-size: 1.75rem;
+  opacity: .5;
+}
+
+/* El botón de añadir, al final de la fila del filtro */
+.inicio-filtro__nuevo {
+  margin-left: auto;
+}
+
+/* ===== Crear un banner =====
+   Un renglón, no un modal: lo único que hace falta para que exista es el
+   nombre, y abrir una ventana para un campo es más ceremonia que trabajo. */
+.inicio-nuevo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .75rem;
+  padding: .75rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.inicio-nuevo__rotulo {
+  margin: 0;
+  font-size: .625rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.inicio-nuevo input {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
+/* En su propia línea cuando no cabe: el pie explica, no estorba */
+.inicio-nuevo__pie {
+  flex-basis: 100%;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ===== Lo que sólo tienen los banners =====
+   Su nombre a la izquierda y el botón de borrarlo a la derecha, separado del
+   resto: no es un campo más, se lleva las imágenes por delante. */
+.banner-propio {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.banner-propio__nombre {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.banner-propio__fila {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.banner-propio__fila input {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 420px;
+}
+
+/* ===== Cómo se enseña un banner =====
+   Los dos dibujos reusan la caja de .disposicion__dibujo: una franja ancha
+   para el que rota y cuatro carteles verticales para el otro. */
+.vista-banner--rotativo,
+.vista-banner--carteles {
+  display: flex;
+  align-items: center;
+  width: 96px;
+  height: 40px;
+}
+
+.vista-banner__franja {
+  width: 100%;
+  height: 22px;
+  border-radius: 3px;
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.vista-banner__carteles {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Verticales y todos iguales: es lo que los distingue de la franja */
+.vista-banner__carteles i {
+  flex: 1;
+  border-radius: 3px;
+  background-color: var(--bs-app-theme, #00acac);
 }
