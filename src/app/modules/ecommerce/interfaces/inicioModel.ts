@@ -13,6 +13,14 @@
  */
 export interface SeccionInicioModel {
   id: number;
+  /**
+   * DE QUÉ CUERPO ES.
+   *
+   * La clave es única DENTRO del cuerpo, no en la tabla: cada cuerpo tiene su
+   * «banner_principal» y sus «categorias_destacadas». Por eso lo que
+   * identifica una sección es su `id`, y todas las llamadas van por ahí.
+   */
+  cuerpo_id: number;
   /** La que conoce la tienda. No se cambia: está en su código. */
   clave: string;
   /** Cómo se llama la sección aquí dentro. Es fija, para reconocerla. */
@@ -90,6 +98,14 @@ export interface SeccionInicioModel {
   segundos: number | null;
 
   /**
+   * CUÁNTAS TARJETAS SALEN ANTES DEL BOTÓN «Ver más productos».
+   *
+   * Sólo lo mira la sección 'paginada'. null = las doce del catálogo, que es
+   * lo que se usa cuando no se elige.
+   */
+  por_pagina: number | null;
+
+  /**
    * EN QUÉ FORMA SE PINTAN SUS FICHAS: en círculo o en cuadro.
    *
    * Llega siempre resuelta, nunca null, como `banner_vista`. Hoy sólo la mira
@@ -99,10 +115,23 @@ export interface SeccionInicioModel {
   forma: FormaFicha;
 
   /**
-   * Si es una de las de fábrica.
+   * DE DÓNDE SACA LO QUE ENSEÑA: de toda la tienda o de su cuerpo.
    *
-   * Lo decide el servidor y no la pantalla: «de fábrica» significa «sin
-   * sección de productos detrás», y esa regla es suya.
+   * Llega siempre resuelto, nunca null. Lo miran «Categorías destacadas»,
+   * «Categorías en promoción» y «Marcas»: con 'cuerpo' enseñan lo que cuelga
+   * de la categoría a la que apunta su cuerpo, o lo que tiene productos de su
+   * marca. En el cuerpo principal, que no apunta a nada, da igual lo que diga.
+   */
+  alcance: 'tienda' | 'cuerpo';
+
+  /**
+   * Si es una de las de fábrica: NO SE BORRA NI SE RENOMBRA, sólo se apaga.
+   *
+   * Lo decide el servidor y no la pantalla: de fábrica son las que existen
+   * porque la tienda sabe pintarlas y nacen con el cuerpo —el banner
+   * principal, las destacadas, el mosaico, las marcas—. Las que se crean son
+   * las que el servidor nombra él mismo («banner_7», «seccion_12»), y esa
+   * regla es suya.
    */
   fija: boolean;
 
@@ -121,9 +150,11 @@ export interface SeccionInicioModel {
 
 /** De qué manera se enseña una sección de productos. */
 // Cómo se enseña una sección de productos. Las tres primeras hablan de la
-// imagen de al lado; 'cartel' no lleva imagen: cambia la forma de las
-// tarjetas, que pasan a ser carteles cuadrados de tres por fila
-export type LadoImagen = 'sola' | 'izquierda' | 'derecha' | 'cartel';
+// imagen de al lado; las dos últimas no llevan imagen y cambian la forma de
+// enseñar las tarjetas: 'cartel' las pone en carteles cuadrados de tres por
+// fila, y 'paginada' las enseña TODAS en rejilla, de tantas en tantas, con un
+// botón «Ver más productos» debajo
+export type LadoImagen = 'sola' | 'izquierda' | 'derecha' | 'cartel' | 'paginada';
 
 /** Y de qué manera se enseña un banner. */
 export type VistaBanner = 'rotativo' | 'carteles';
@@ -196,7 +227,17 @@ export const DISPOSICIONES: Disposicion[] = [
     ayuda: 'Las tarjetas a la izquierda y la imagen al final' },
   { valor: 'cartel', texto: 'En carteles',
     ayuda: 'Los productos en carteles cuadrados, tres por fila: la foto a todo el cartel y el nombre y el precio escritos encima. Sin imagen de al lado' },
+  { valor: 'paginada', texto: 'Todos, paginados',
+    ayuda: 'Salen TODOS, en rejilla y de tantos en tantos, con un botón «Ver más productos» debajo. Las otras cuatro son una fila que se mueve con las flechas, y con muchos productos esconde casi todos. Sin imagen de al lado' },
 ];
+
+/** Si esa manera de enseñar la sección los pagina en vez de ponerlos en una fila. */
+export function esPaginada(lado: LadoImagen | null | undefined): boolean {
+  return lado === 'paginada';
+}
+
+/** Cuántas tarjetas salen antes del botón, cuando no se elige. Es el del catálogo. */
+export const POR_PAGINA_DEFECTO = 12;
 
 /** Si esa manera de enseñar la sección lleva imagen a un lado. */
 export function llevaImagenAlLado(lado: LadoImagen | null | undefined): boolean {

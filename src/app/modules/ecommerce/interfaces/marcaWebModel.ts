@@ -1,3 +1,4 @@
+import { PaginaDeCategoria } from './categoriaWebModel';
 import { ImagenProgramadaModel } from './imagenProgramadaModel';
 
 /**
@@ -51,6 +52,9 @@ export interface MarcaWebModel {
    *  oculta    la apagaste aquí
    *  inactiva  está inactiva en el catálogo
    */
+  /** Su página en la tienda, si la tiene. Se administra en «Cuerpos de la tienda». */
+  cuerpo?: PaginaDeCategoria | null;
+
   estado: 'visible' | 'oculta' | 'inactiva';
 }
 

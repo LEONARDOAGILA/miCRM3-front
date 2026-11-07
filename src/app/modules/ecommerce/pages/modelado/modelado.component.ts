@@ -329,7 +329,7 @@ export class ModeladoComponent implements OnInit {
       if (evento.previousIndex === evento.currentIndex) { return; }
       if (!aLaPortada) { return; }   // el banquillo no tiene orden: no se ven
       moveItemInArray(this.enLaPortada, evento.previousIndex, evento.currentIndex);
-      await this.guardarOrden(s.clave);
+      await this.guardarOrden(s.id);
       return;
     }
 
@@ -347,13 +347,13 @@ export class ModeladoComponent implements OnInit {
 
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(this._inicioService.activarSeccion(s.clave, activo));
+      const res: any = await firstValueFrom(this._inicioService.activarSeccion(s.id, activo));
       this._toastr.success(res?.message ?? 'Listo', 'Listo');
 
       // Encender no dice dónde: el sitio es donde se soltó, así que va detrás
       if (activo) {
-        const claves = this.ordenConLaMovida(s.clave);
-        const orden: any = await firstValueFrom(this._inicioService.ordenarSecciones(claves));
+        const ids = this.ordenConLaMovida(s.id);
+        const orden: any = await firstValueFrom(this._inicioService.ordenarSecciones(ids));
         this.pintar(orden?.data);
       } else {
         this.pintar(res?.data);
@@ -367,13 +367,13 @@ export class ModeladoComponent implements OnInit {
     }
   }
 
-  private async guardarOrden(clave: string): Promise<void> {
+  private async guardarOrden(id: number): Promise<void> {
     if (this._seguridadService.isexpired()) { return; }
 
     this.trabajando = true;
     try {
       const res: any = await firstValueFrom(
-        this._inicioService.ordenarSecciones(this.ordenConLaMovida(clave)));
+        this._inicioService.ordenarSecciones(this.ordenConLaMovida(id)));
       this.pintar(res?.data);
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo guardar el orden', 'Error',
@@ -395,13 +395,13 @@ export class ModeladoComponent implements OnInit {
    * Por eso se mira QUIÉN QUEDÓ DETRÁS de la movida y se la cuela justo
    * delante: las demás no se tocan.
    */
-  private ordenConLaMovida(clave: string): string[] {
-    const i = this.enLaPortada.findIndex(s => s.clave === clave);
-    const siguiente = i >= 0 && i + 1 < this.enLaPortada.length ? this.enLaPortada[i + 1].clave : null;
+  private ordenConLaMovida(id: number): number[] {
+    const i = this.enLaPortada.findIndex(s => s.id === id);
+    const siguiente = i >= 0 && i + 1 < this.enLaPortada.length ? this.enLaPortada[i + 1].id : null;
 
-    const resto = this.secciones.map(s => s.clave).filter(c => c !== clave);
+    const resto = this.secciones.map(s => s.id).filter(x => x !== id);
     const donde = siguiente ? resto.indexOf(siguiente) : resto.length;
-    resto.splice(donde < 0 ? resto.length : donde, 0, clave);
+    resto.splice(donde < 0 ? resto.length : donde, 0, id);
     return resto;
   }
 
@@ -499,7 +499,7 @@ export class ModeladoComponent implements OnInit {
 
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(this._inicioService.altoSeccion(s.clave, alto));
+      const res: any = await firstValueFrom(this._inicioService.altoSeccion(s.id, alto));
       this._toastr.success(res?.message ?? 'Listo', 'Listo');
       this.pintar(res?.data);
     } catch (e: any) {

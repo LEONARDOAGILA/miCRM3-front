@@ -1,0 +1,59 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-trash-can me-2"></i>Papelera de cuerpos
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="cerrar()"></button>
+</div>
+
+<div class="modal-body">
+
+  @if (cargando) {
+    <div class="text-center py-4 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+    </div>
+  } @else if (vacia) {
+    <p class="text-muted text-center mb-0 py-4">
+      <i class="fa-solid fa-circle-check me-1"></i> La papelera está vacía.
+    </p>
+  } @else {
+
+    @for (c of filas; track c.id) {
+      <div class="border rounded mb-2 p-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <i class="fa-solid fa-layer-group text-secondary"></i>
+          <b>{{ c.nombre }}</b>
+          <code>/{{ c.ruta }}</code>
+          <span class="chip chip-muted">{{ cuantas(c) }}</span>
+          <small class="text-muted">
+            eliminado {{ c.deleted_at }} por {{ c.deleted_by || '—' }}
+          </small>
+          <button type="button" class="btn btn-xs btn-outline-primary ms-auto"
+                  [disabled]="trabajando" (click)="restaurar(c)">
+            <i class="fa fa-rotate-left"></i> Restaurar
+          </button>
+        </div>
+        <small class="text-muted">{{ aDondeApunta(c) }}</small>
+      </div>
+    }
+
+    <p class="small text-muted mb-0">
+      <i class="fa-solid fa-circle-info me-1"></i>
+      Vuelve entero, con sus secciones y sus imágenes. Si mientras estaba aquí
+      alguien cogió su nombre, su dirección o su categoría, el servidor lo dirá
+      al restaurar.
+    </p>
+  }
+</div>
+
+<div class="modal-footer">
+  @if (puedeVaciar && !vacia) {
+    <button type="button" class="btn btn-danger me-auto"
+            [disabled]="trabajando" (click)="vaciar()">
+      <i class="fa fa-trash"></i> Vaciar papelera
+    </button>
+  }
+  <button type="button" class="btn btn-secondary" (click)="cerrar()">
+    <i class="fa fa-times"></i> Cerrar
+  </button>
+</div>

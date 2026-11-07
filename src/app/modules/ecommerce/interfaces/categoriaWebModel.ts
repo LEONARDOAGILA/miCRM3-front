@@ -57,6 +57,19 @@ export interface CategoriaWebModel {
    *  sin_categorias_de_producto no tiene ninguna de transacción debajo
    */
   estado: 'visible' | 'oculta' | 'oculta_por_padre' | 'inactiva' | 'sin_categorias_de_producto';
+
+  /**
+   * SU PÁGINA EN LA TIENDA, si la tiene (ecommerce.cuerpos).
+   *
+   * Es lo que decide a dónde lleva el clic en esta categoría —en el menú, en
+   * las destacadas, en el mosaico—: con página, a su página; sin ella, al
+   * catálogo filtrado de siempre.
+   *
+   * AQUÍ NO SE CREA NI SE EDITA: se enseña y se enlaza. Una página es su
+   * dirección, su título, su texto y sus secciones, y vive en «Cuerpos de la
+   * tienda». Viene también si está APAGADA, que no es lo mismo que no tenerla.
+   */
+  cuerpo?: PaginaDeCategoria | null;
 }
 
 /** Lo que se lee en la etiqueta de estado y lo que hay que hacer con ella. */
@@ -87,3 +100,20 @@ export const ESTADOS_CATEGORIA: Record<string, { texto: string; ayuda: string; c
     clase: 'chip-aviso',
   },
 };
+
+/**
+ * La página de una categoría o de una marca, como la ve el CRM.
+ *
+ * La misma forma en las dos pantallas: lo que se enseña es idéntico —«tiene
+ * página, se llama así, vive aquí»— y partirla en dos tipos sería copiar el
+ * bloque y que un día dejen de decir lo mismo.
+ */
+export interface PaginaDeCategoria {
+  id: number;
+  nombre: string;
+  ruta: string;
+  /** Armada por el servidor: «/movilidad». */
+  url: string;
+  /** Apagada existe, pero no recibe clics: la categoría vuelve a llevar al catálogo. */
+  activo: boolean;
+}

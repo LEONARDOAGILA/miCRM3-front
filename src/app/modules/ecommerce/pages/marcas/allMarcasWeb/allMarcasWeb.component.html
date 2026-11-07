@@ -262,6 +262,54 @@
                     </span>
                   </p>
                 </div>
+
+                <!-- ---------- Su página en la tienda ----------
+                     No se edita aquí: se dice qué pasa al pinchar la marca y se
+                     enlaza a «Cuerpos de la tienda», que es donde vive. Lo
+                     mismo que en «Categorías de la tienda». -->
+                <div class="cat-pagina">
+                  <label class="cat-rotulo">SU PÁGINA EN LA TIENDA</label>
+
+                  @if (seleccionada.cuerpo; as pagina) {
+                    <p class="cat-pagina__tiene">
+                      <i class="fa-solid fa-layer-group"></i>
+                      <span>
+                        Al pincharla se abre <b>{{ pagina.nombre }}</b>, en
+                        <code>{{ pagina.url }}</code>.
+                      </span>
+                    </p>
+
+                    @if (!pagina.activo) {
+                      <p class="cat-aviso">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Pero está apagada, así que hoy el clic sigue llevando al
+                        catálogo filtrado.
+                      </p>
+                    }
+
+                    <a class="btn btn-sm btn-white" routerLink="/ecommerce/editInicio"
+                       [queryParams]="{ cuerpo: pagina.id }">
+                      <i class="fa fa-up-right-from-square"></i> Abrir su página
+                    </a>
+
+                  } @else {
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      <span>
+                        No tiene. Al pinchar su logo en «Nuestras marcas», o su
+                        cartel en «Marcas en promoción», se abre el catálogo
+                        filtrado (<code>/shop?marca={{ seleccionada.id }}</code>).
+                        Con página propia se abriría una tuya, con su banner y sus
+                        secciones.
+                      </span>
+                    </p>
+
+                    <a class="btn btn-sm btn-white" routerLink="/ecommerce/editInicio"
+                       [queryParams]="{ marca: seleccionada.id }">
+                      <i class="fa fa-plus"></i> Hacerle una página
+                    </a>
+                  }
+                </div>
               </div>
 
               <!-- Las imágenes -->

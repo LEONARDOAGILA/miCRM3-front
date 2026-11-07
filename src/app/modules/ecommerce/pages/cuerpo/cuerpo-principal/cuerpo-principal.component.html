@@ -1,49 +1,66 @@
 <!-- ============================================================
-     LA PORTADA DE LA TIENDA
+     LOS CUERPOS DE LA TIENDA
 
-     No es un formulario: es la lista de secciones en el orden en
-     que se ven. Se arrastra para moverlas y se abre una para
-     configurarla.
+     Un cuerpo es una página hecha de secciones. Uno es el
+     PRINCIPAL y sale al abrir la tienda; los demás se llegan por
+     su dirección, y si apuntan a una categoría o a una marca, el
+     clic en ella lleva ahí en vez de al catálogo filtrado.
+
+     Tres columnas: los cuerpos, las secciones del elegido y los
+     campos de la sección elegida.
      ============================================================ -->
 
 <ol class="breadcrumb lista-breadcrumb">
   <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
-  <li class="breadcrumb-item active">Inicio de la tienda</li>
+  <li class="breadcrumb-item active">Cuerpos de la tienda</li>
 </ol>
 
 <panel [title]="titulo"
        [noButton]="false"
        [noButtonCollapse]="true"
-       icono="house"
+       icono="layer-group"
        class="flex-1 d-flex flex-column overflow-hidden"
        bodyClass="p-0 flex-1 overflow-hidden"
        panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
 
   <div header class="panel-acciones">
-    <span class="inicio-cuenta">{{ enLaPortada }} de {{ secciones.length }} en la portada</span>
+    @if (elCuerpo) {
+      <span class="inicio-cuenta">
+        {{ enLaPortada }} de {{ secciones.length }} se ven en
+        <code>{{ urlDelCuerpo }}</code>
+      </span>
+    }
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Papelera de cuerpos" (click)="abrirPapelera()">
+      <i class="fa fa-trash-can"></i>
+    </button>
     <button type="button" class="btn btn-sm btn-outline-light"
             title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
       <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
     </button>
   </div>
 
-  @if (cargando) {
+  @if (cargandoCuerpos) {
     <div class="text-center py-5 text-muted">
       <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-      <p class="mt-2 mb-0">Cargando las secciones del inicio…</p>
+      <p class="mt-2 mb-0">Cargando los cuerpos de la tienda…</p>
     </div>
 
   } @else {
 
     <!-- ============================================================
-         DOS COLUMNAS, como el catálogo de productos y las características:
-         la lista a la izquierda y lo que se configura a la derecha.
+         TRES COLUMNAS, como el catálogo de productos y las características
+         pero con una más delante: los cuerpos, las secciones del cuerpo
+         elegido y los campos de la sección elegida.
 
          ANTES ERA UN ACORDEÓN: cada sección desplegaba sus campos debajo, y
          con quince campos abiertos en medio de la lista no se veía dónde
          acababa una sección y empezaba la otra.
          ============================================================ -->
-    <div class="file-manager h-100 inicio"
+    <!-- SIN h-100: esa clase de Bootstrap lleva !important y le ganaba al
+         alto que mide el componente, que es el que hace que las columnas
+         lleguen hasta abajo aunque estén plegadas -->
+    <div class="file-manager inicio"
          [class.is-redimensionando]="redimensionando"
          [style.--bs-file-manager-sidebar-width]="(lateralPlegado ? 34 : anchoLateral) + 'px'"
          [style.--bs-file-manager-mobile-sidebar-margin]="(-(lateralPlegado ? 34 : anchoLateral)) + 'px'">
@@ -52,8 +69,157 @@
            .file-manager-container -->
       <div class="file-manager-container">
 
+      <!-- ---------- PRIMERA: LOS CUERPOS ---------- -->
+      <div class="cuerpos-lateral" [class.is-plegado]="cuerposPlegado"
+           [style.flex]="'0 0 ' + (cuerposPlegado ? 34 : anchoCuerpos) + 'px'">
+
+        <!-- PLEGADA: la columna entera se vuelve una tira vertical, como el
+             árbol del catálogo de productos. La tira ES el botón de volver a
+             abrirla —no un botón suelto dentro de 34 px, que no cabe— y lleva
+             su chapa con cuántos cuerpos hay, para que plegada no parezca
+             que no hay nada. -->
+        @if (cuerposPlegado) {
+          <button type="button" class="inicio-tira" (click)="alternarCuerpos()"
+                  title="Ver los cuerpos">
+            <i class="fa fa-angles-right inicio-tira__flecha"></i>
+            <span class="inicio-tira__texto">Cuerpos</span>
+            @if (cuerpos.length) {
+              <span class="inicio-tira__chapa">{{ cuerpos.length }}</span>
+            }
+          </button>
+        } @else {
+
+          <div class="inicio-lateral__cabecera">
+            <span class="inicio-lateral__titulo">Cuerpos</span>
+
+            <div class="inicio-lateral__acciones">
+              @if (puedeCrear) {
+                <button type="button" class="btn btn-xs btn-outline-theme"
+                        title="Una página nueva de secciones"
+                        [disabled]="trabajando" (click)="nuevoCuerpo()">
+                  <i class="fa fa-plus"></i> Cuerpo
+                </button>
+              }
+              <button type="button" class="btn btn-xs btn-white"
+                      title="Plegar los cuerpos" (click)="alternarCuerpos()">
+                <i class="fa fa-angles-left"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="cuerpos-lista">
+
+            <p class="campo-hint inicio-lateral__ayuda">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>
+                El que lleva <i class="fa-solid fa-house"></i> es el que sale al
+                abrir la tienda. Los demás viven en su dirección.
+              </span>
+            </p>
+
+            @for (c of cuerpos; track c.id) {
+              <div class="cuerpo" [class.is-elegido]="cuerpoElegido === c.id"
+                   [class.is-apagado]="!c.activo"
+                   role="button" tabindex="0"
+                   [attr.aria-pressed]="cuerpoElegido === c.id"
+                   (click)="elegirCuerpo(c)" (keydown.enter)="elegirCuerpo(c)">
+
+                <!-- La palanca a la IZQUIERDA del texto, como en el catálogo -->
+                @if (!c.principal) {
+                  <label class="cuerpo__palanca form-check check-lista"
+                         [title]="c.activo ? 'Se ve en la tienda' : 'Apagado'"
+                         (click)="alternarActivoCuerpo(c, $event)">
+                    <input class="form-check-input" type="checkbox"
+                           [checked]="c.activo" [disabled]="!puedeEditar || trabajando">
+                  </label>
+                } @else {
+                  <span class="cuerpo__casa" title="Es la entrada de la tienda">
+                    <i class="fa-solid fa-house"></i>
+                  </span>
+                }
+
+                <div class="cuerpo__textos">
+                  <span class="cuerpo__nombre">
+                    <!-- El principal ya lleva su casita a la izquierda: repetirla
+                         aquí serían dos casas en la misma tarjeta -->
+                    @if (!c.principal) {
+                      <i class="fa-solid cuerpo__icono" [ngClass]="iconoDe(c)"></i>
+                    }
+                    {{ c.nombre }}
+                  </span>
+                  <span class="cuerpo__detalle">{{ aDondeApunta(c) }}</span>
+                  <span class="cuerpo__pie">
+                    <code>{{ c.url }}</code>
+                    <!-- Con su icono y no «6 sec.»: abreviado se lee «segundos»,
+                         que es justo lo que hay en la sección de al lado -->
+                    <span class="cuerpo__cuantas"
+                          [title]="c.secciones + ' secciones'">
+                      <i class="fa-solid fa-layer-group"></i> {{ c.secciones }}
+                    </span>
+                    @if (c.catalogo) {
+                      <span class="chip chip-muted" title="Debajo de las secciones va el catálogo">
+                        <i class="fa-solid fa-table-cells"></i>
+                      </span>
+                    }
+                  </span>
+                </div>
+
+                <div class="cuerpo__botones">
+                  @if (puedeEditar && !c.principal) {
+                    <button type="button" class="btn btn-xs btn-ver"
+                            title="Hacerlo la entrada de la tienda"
+                            [disabled]="trabajando" (click)="hacerPrincipal(c, $event)">
+                      <i class="fa fa-house"></i>
+                    </button>
+                  }
+                  @if (puedeEditar) {
+                    <button type="button" class="btn btn-xs btn-editar"
+                            title="Su nombre, su dirección y a dónde apunta"
+                            [disabled]="trabajando" (click)="editarCuerpo(c); $event.stopPropagation()">
+                      <i class="fa fa-pen"></i>
+                    </button>
+                  }
+                  @if (puedeEliminar && !c.principal) {
+                    <button type="button" class="btn btn-xs btn-borrar"
+                            title="Enviarlo a la papelera con sus secciones"
+                            [disabled]="trabajando" (click)="borrarCuerpo(c, $event)">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <p class="text-muted mb-0">No hay ningún cuerpo todavía.</p>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- ---------- EL DIVISOR DE LOS CUERPOS ---------- -->
+      <div class="inicio-divisor"
+           [class.is-inerte]="cuerposPlegado"
+           role="separator"
+           aria-orientation="vertical"
+           title="Arrastra para cambiar el ancho de los cuerpos (doble clic: el de siempre)"
+           (pointerdown)="iniciarRedimension($event, 'cuerpos')"
+           (dblclick)="anchoPorDefecto('cuerpos')">
+      </div>
+
       <!-- ---------- IZQUIERDA: LAS SECCIONES ---------- -->
       <div class="file-manager-sidebar inicio-lateral" [class.is-plegado]="lateralPlegado">
+
+        <!-- PLEGADA: igual que la columna de los cuerpos, una tira vertical
+             que es su propio botón -->
+        @if (lateralPlegado) {
+          <button type="button" class="inicio-tira" (click)="alternarLateral()"
+                  title="Ver las secciones">
+            <i class="fa fa-angles-right inicio-tira__flecha"></i>
+            <span class="inicio-tira__texto">Secciones</span>
+            @if (secciones.length) {
+              <span class="inicio-tira__chapa">{{ secciones.length }}</span>
+            }
+          </button>
+        } @else {
 
         <div class="inicio-lateral__cabecera">
           <span class="inicio-lateral__titulo">Secciones</span>
@@ -67,16 +233,22 @@
                 <i class="fa fa-plus"></i> Banner
               </button>
             }
+            <!-- Y lo que se trae de «Productos por sección»: el mismo escaparate
+                 puede salir en varias páginas -->
+            @if (puedeCrear && !anadiendoEscaparate) {
+              <button type="button" class="btn btn-xs btn-outline-theme"
+                      title="Enseñar aquí un escaparate de «Productos por sección»"
+                      [disabled]="trabajando" (click)="abrirAnadirEscaparate()">
+                <i class="fa fa-plus"></i> Escaparate
+              </button>
+            }
             <button type="button" class="btn btn-xs btn-white"
-                    [title]="lateralPlegado ? 'Ver la lista' : 'Plegar la lista'"
-                    (click)="alternarLateral()">
-              <i class="fa-solid" [ngClass]="lateralPlegado ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+                    title="Plegar la lista" (click)="alternarLateral()">
+              <i class="fa fa-angles-left"></i>
             </button>
           </div>
         </div>
 
-        <!-- Plegada se queda una tira con el rótulo de canto, como el árbol
-             del catálogo: ocupa 34 px y se vuelve a abrir desde su botón -->
         <div class="inicio-lateral__cuerpo">
 
           <p class="campo-hint inicio-lateral__ayuda">
@@ -135,7 +307,7 @@
               <button type="button" class="btn btn-sm btn-primary"
                       [disabled]="!nombreNuevoBanner.trim() || !!bannerOcupado"
                       (click)="crearBanner()">
-                {{ bannerOcupado === 'nuevo' ? 'Creando…' : 'Crear' }}
+                {{ bannerOcupado === NACIENDO ? 'Creando…' : 'Crear' }}
               </button>
               <button type="button" class="btn btn-sm btn-white"
                       [disabled]="!!bannerOcupado" (click)="cerrarNuevoBanner()">
@@ -147,6 +319,46 @@
             </div>
           }
 
+          <!-- Traer un escaparate de «Productos por sección»: el mismo puede
+               salir en varias páginas, cada una con su rótulo y sus colores -->
+          @if (anadiendoEscaparate) {
+            <div class="inicio-nuevo">
+              <label class="inicio-nuevo__rotulo" for="nuevo-escaparate">CUÁL SE ENSEÑA AQUÍ</label>
+              @if (cargandoEscaparates) {
+                <span class="text-muted">
+                  <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando…
+                </span>
+              } @else if (escaparates.length === 0) {
+                <span class="inicio-nuevo__pie">
+                  Esta página ya enseña todos los escaparates que hay. Se crean en
+                  «Productos por sección».
+                </span>
+              } @else {
+                <select id="nuevo-escaparate" class="form-select form-select-sm"
+                        [(ngModel)]="escaparateElegido" [ngModelOptions]="{ standalone: true }"
+                        [disabled]="trabajando">
+                  <option [ngValue]="null">Elige un escaparate…</option>
+                  @for (e of escaparates; track e.id) {
+                    <option [ngValue]="e.id">{{ rotuloEscaparate(e) }}</option>
+                  }
+                </select>
+                <button type="button" class="btn btn-sm btn-primary"
+                        [disabled]="!escaparateElegido || trabajando"
+                        (click)="anadirEscaparate()">
+                  Añadir
+                </button>
+              }
+              <button type="button" class="btn btn-sm btn-white"
+                      [disabled]="trabajando" (click)="cerrarAnadirEscaparate()">
+                Cancelar
+              </button>
+              <span class="inicio-nuevo__pie">
+                Se pone al final y encendida. Sus productos se siguen eligiendo en
+                «Productos por sección», y son los mismos en todas las páginas donde salga.
+              </span>
+            </div>
+          }
+
           <!-- `cdkDropListData` es la lista DE VERDAD, que es la que se
                reordena; las posiciones que da el arrastre son las de la lista
                que se ve y las traduce `soltar()` -->
@@ -154,12 +366,12 @@
                [cdkDropListDisabled]="!puedeEditar || trabajando"
                (cdkDropListDropped)="soltar($event)">
 
-            @for (s of seccionesVisibles; track s.clave) {
-              <div class="seccion" [class.is-elegida]="elegida === s.clave"
-                   [id]="'seccion-caja-' + s.clave" cdkDrag
+            @for (s of seccionesVisibles; track s.id) {
+              <div class="seccion" [class.is-elegida]="elegida === s.id"
+                   [id]="'seccion-caja-' + s.id" cdkDrag
                    role="button" tabindex="0"
-                   [attr.aria-pressed]="elegida === s.clave"
-                   (click)="elegir(s.clave)" (keydown.enter)="elegir(s.clave)">
+                   [attr.aria-pressed]="elegida === s.id"
+                   (click)="elegir(s.id)" (keydown.enter)="elegir(s.id)">
 
                 <div class="seccion-fantasma" *cdkDragPlaceholder></div>
 
@@ -176,10 +388,10 @@
                      Dice «activa», no «en la portada»: lo segundo lo decide
                      además la vigencia, y eso lo cuenta la etiqueta de abajo -->
                 <span class="seccion-palanca" (click)="$event.stopPropagation()">
-                  <label class="form-check form-switch palanca mb-0"
+                  <label class="form-check check-lista mb-0"
                          [title]="s.activo ? 'Activa' : 'Inactiva'">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           [id]="'seccion-' + s.clave"
+                    <input class="form-check-input" type="checkbox"
+                           [id]="'seccion-' + s.id"
                            [checked]="s.activo"
                            [disabled]="!puedeEditar || trabajando"
                            (change)="alternarActivo(s, $event)">
@@ -226,24 +438,57 @@
                     }
                   </span>
                 </span>
+
+                <!-- QUITAR EL ESCAPARATE DE ESTA PÁGINA, en la misma lista donde
+                     se añadió con «Escaparate»: es donde se busca.
+
+                     Sólo los escaparates: las de fábrica se apagan con su
+                     palanca y los banners se borran desde sus campos, porque
+                     eso sí se lleva sus imágenes por delante. Quitar un
+                     escaparate no borra nada, y por eso vive aquí. -->
+                @if (s.producto_seccion_id && puedeEliminar) {
+                  <span class="seccion-botones" (click)="$event.stopPropagation()">
+                    <button type="button" class="btn btn-xs btn-borrar"
+                            title="Quitar de esta página (el escaparate y sus productos siguen en «Productos por sección»)"
+                            [disabled]="trabajando" (click)="quitarEscaparate(s)">
+                      <i class="fa fa-xmark"></i>
+                    </button>
+                  </span>
+                }
               </div>
             } @empty {
-              <!-- Con el filtro puesto y nada que enseñar. Se dice qué falta y se
-                   ofrece la salida, en vez de dejar un hueco en blanco -->
-              <div class="inicio-vacio">
-                <i class="fa-solid" [ngClass]="filtro === 'activas' ? 'fa-circle-check' : 'fa-circle-minus'"></i>
-                <p class="mb-2">
-                  {{ filtro === 'activas'
-                     ? 'No hay ninguna sección activa.'
-                     : 'No hay ninguna sección inactiva: están todas activas.' }}
-                </p>
-                <button type="button" class="btn btn-sm btn-white" (click)="filtro = 'todas'">
-                  Ver todas
-                </button>
-              </div>
+              <!-- Al cambiar de cuerpo la lista se vacía hasta que llega la
+                   suya: enseñar la del cuerpo anterior sería invitar a tocar
+                   la sección de otra página -->
+              @if (cargando) {
+                <div class="inicio-vacio">
+                  <i class="fa-solid fa-spinner fa-spin"></i>
+                  <p class="mb-0">Cargando las secciones…</p>
+                </div>
+              } @else if (filtrando) {
+                <!-- Con el filtro puesto y nada que enseñar. Se dice qué falta y se
+                     ofrece la salida, en vez de dejar un hueco en blanco -->
+                <div class="inicio-vacio">
+                  <i class="fa-solid" [ngClass]="filtro === 'activas' ? 'fa-circle-check' : 'fa-circle-minus'"></i>
+                  <p class="mb-2">
+                    {{ filtro === 'activas'
+                       ? 'No hay ninguna sección activa.'
+                       : 'No hay ninguna sección inactiva: están todas activas.' }}
+                  </p>
+                  <button type="button" class="btn btn-sm btn-white" (click)="filtro = 'todas'">
+                    Ver todas
+                  </button>
+                </div>
+              } @else {
+                <div class="inicio-vacio">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <p class="mb-0">Este cuerpo no tiene secciones.</p>
+                </div>
+              }
             }
           </div>
         </div>
+        }
       </div>
 
       <!-- ---------- EL DIVISOR ---------- -->
@@ -274,7 +519,7 @@
             </span>
           </div>
 
-          <div class="inicio-campos" [formGroup]="formularios[s.clave]">
+          <div class="inicio-campos" [formGroup]="formularios[s.id]">
 
               <!-- Qué es esta sección ya lo dice la cabecera de arriba, que se
                    queda a la vista al desplazar: repetirlo aquí era leerlo dos
@@ -285,7 +530,7 @@
                 @if (vista(s).rotulo !== 'ninguno') {
                   <div class="col-12" [class.col-md-6]="vista(s).rotulo === 'titulo_subtitulo'">
                     <app-campoTexto
-                      [control]="$any(formularios[s.clave].controls['titulo'])"
+                      [control]="$any(formularios[s.id].controls['titulo'])"
                       label="CÓMO SE LLAMA EN LA TIENDA"
                       [placeholder]="ejemploRotulo(s)"
                       [maxLength]="80"
@@ -302,12 +547,44 @@
                 @if (vista(s).rotulo === 'titulo_subtitulo') {
                   <div class="col-12 col-md-6">
                     <app-campoTexto
-                      [control]="$any(formularios[s.clave].controls['subtitulo'])"
+                      [control]="$any(formularios[s.id].controls['subtitulo'])"
                       label="LA LÍNEA DE ABAJO"
                       placeholder="Debajo del nombre, más pequeña"
                       [maxLength]="80"
                       [trimEspacios]="true">
                     </app-campoTexto>
+                  </div>
+                }
+
+                <!-- ---------- De dónde sale lo que enseña ----------
+                     Sólo en un cuerpo que apunte a una categoría o a una
+                     marca: en el principal no hay «lo de esta página», y en un
+                     banner o un escaparate el campo no diría nada.
+
+                     Se dice CON SUS NOMBRES lo que va a enseñar cada opción:
+                     «las categorías que cuelgan de Movilidad» se entiende y
+                     «de esta página» hay que adivinarlo. -->
+                @if (miraElAlcance(s)) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo">DE DÓNDE SALEN</label>
+
+                    <div class="destinos">
+                      @for (a of alcances; track a.valor) {
+                        <button type="button" class="destino"
+                                [class.is-activo]="alcanceDe(s) === a.valor"
+                                [attr.aria-pressed]="alcanceDe(s) === a.valor"
+                                [disabled]="!puedeEditar"
+                                (click)="ponerAlcance(s, a.valor)">
+                          <i class="fa-solid" [ngClass]="a.valor === 'cuerpo' ? 'fa-sitemap' : 'fa-store'"></i>
+                          {{ a.texto }}
+                        </button>
+                      }
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      <span>{{ queEnsena(s) }}</span>
+                    </p>
                   </div>
                 }
 
@@ -369,7 +646,7 @@
 
                           <!-- ---------- El fondo ---------- -->
                           <span class="boton-color__que">Fondo</span>
-                          <app-campoColor [idCampo]="b.campo + '-' + s.clave"
+                          <app-campoColor [idCampo]="b.campo + '-' + s.id"
                                           [valor]="colorBoton(s, b)"
                                           [propio]="botonPropio(s, b)"
                                           porDefecto="El de la tienda"
@@ -385,7 +662,7 @@
                                encima del fondo; por eso la muestra de arriba
                                ya enseña cuál sería. -->
                           <span class="boton-color__que">Letra e icono</span>
-                          <app-campoColor [idCampo]="b.campoTexto + '-' + s.clave"
+                          <app-campoColor [idCampo]="b.campoTexto + '-' + s.id"
                                           [valor]="textoBoton(s, b)"
                                           [propio]="textoPropio(s, b)"
                                           porDefecto="La que se lea"
@@ -479,7 +756,7 @@
                                  elegir color antes no sirve de nada -->
                             @if (c.campoRotulo) {
                               <app-campoTexto
-                                [control]="$any(formularios[s.clave].controls[c.campoRotulo])"
+                                [control]="$any(formularios[s.id].controls[c.campoRotulo])"
                                 label="QUÉ DICE"
                                 placeholder="Ej.: NUEVO, LIQUIDACIÓN"
                                 [maxLength]="30"
@@ -492,7 +769,7 @@
                               </p>
                             }
 
-                            <app-campoColor [idCampo]="c.campo + '-' + s.clave"
+                            <app-campoColor [idCampo]="c.campo + '-' + s.id"
                                             [valor]="colorBoton(s, c)"
                                             [propio]="botonPropio(s, c)"
                                             porDefecto="El de la tienda"
@@ -508,7 +785,7 @@
                                    qué es, y «Letra del cartel» dentro de la de
                                    la etiqueta decía otra cosa -->
                               <span class="boton-color__que">Letra</span>
-                              <app-campoColor [idCampo]="c.campoTexto + '-' + s.clave"
+                              <app-campoColor [idCampo]="c.campoTexto + '-' + s.id"
                                               [valor]="textoBoton(s, c)"
                                               [propio]="textoPropio(s, c)"
                                               porDefecto="La que se lea"
@@ -550,20 +827,52 @@
                     </p>
                   </div>
 
+                  <!-- ---------- Cuántas antes del botón ----------
+                       Sólo la paginada: las otras cuatro son una fila, y en una
+                       fila «cuántas salen» lo decide el ancho de la pantalla. -->
+                  @if (conBotones(s) && esPaginadaLa(s)) {
+                    <div class="col-12">
+                      <label class="seccion-rotulo" [attr.for]="'por-pagina-' + s.id">
+                        CUÁNTAS SALEN ANTES DEL BOTÓN
+                      </label>
+
+                      <div class="input-group input-group-sm campo-segundos">
+                        <input type="number" class="form-control form-control-sm"
+                               [id]="'por-pagina-' + s.id" formControlName="por_pagina"
+                               min="2" max="48" step="1" placeholder="12"
+                               [attr.disabled]="puedeEditar ? null : ''">
+                        <span class="input-group-text">productos</span>
+                      </div>
+
+                      <p class="campo-hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>
+                          Entre 2 y 48; vacío, <b>12</b>, que es lo que usa el
+                          catálogo de la tienda. Debajo sale «Ver más productos»
+                          mientras queden, y la dirección va contando las páginas
+                          —así el botón «atrás» del navegador funciona y se puede
+                          compartir una página concreta—.
+                        </span>
+                      </p>
+                    </div>
+                  }
+
                   <!-- ---------- Si la fila pasa sola ----------
                        La fila se mueve con las flechas desde siempre; esto la
                        hace pasar sola cada tantos segundos. Con palanca y no
                        sólo con el número en blanco porque son dos preguntas
                        distintas —si se mueve, y cada cuánto—, y porque
-                       apagarla sin perder el número deja volver atrás. -->
-                  @if (conBotones(s)) {
+                       apagarla sin perder el número deja volver atrás.
+
+                       La paginada no se mueve: se baja. -->
+                  @if (conBotones(s) && !esPaginadaLa(s)) {
                     <div class="col-12">
                       <label class="seccion-rotulo">CÓMO SE MUEVE LA FILA</label>
 
                       <div class="segundos-fila">
                         <label class="form-check form-switch palanca mb-0">
                           <input class="form-check-input" type="checkbox" role="switch"
-                                 [id]="'mueve-' + s.clave" formControlName="mueve_sola"
+                                 [id]="'mueve-' + s.id" formControlName="mueve_sola"
                                  [attr.disabled]="puedeEditar ? null : ''">
                           <span class="form-check-label">
                             {{ seMueveSola(s) ? 'Pasa sola' : 'Sólo con las flechas' }}
@@ -573,7 +882,7 @@
                         @if (seMueveSola(s)) {
                           <div class="input-group input-group-sm campo-segundos">
                             <input type="number" class="form-control form-control-sm"
-                                   [id]="'segundos-' + s.clave" formControlName="segundos"
+                                   [id]="'segundos-' + s.id" formControlName="segundos"
                                    min="2" max="60" step="1" placeholder="5"
                                    [attr.disabled]="puedeEditar ? null : ''">
                             <span class="input-group-text">segundos</span>
@@ -639,21 +948,21 @@
                                  el nativo no se puede pintar y cambia por
                                  navegador -->
                             <label class="btn btn-sm btn-outline-theme imagen-lado__subir"
-                                   [class.disabled]="!puedeEditar || subiendoImagen === s.clave">
-                              @if (subiendoImagen === s.clave) {
+                                   [class.disabled]="!puedeEditar || subiendoImagen === s.id">
+                              @if (subiendoImagen === s.id) {
                                 <i class="fa-solid fa-spinner fa-spin"></i> Subiendo…
                               } @else {
                                 <i class="fa-solid fa-upload"></i>
                                 {{ hayImagen(s) ? 'Cambiar imagen' : 'Subir imagen' }}
                               }
                               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif"
-                                     [disabled]="!puedeEditar || subiendoImagen === s.clave"
+                                     [disabled]="!puedeEditar || subiendoImagen === s.id"
                                      (change)="elegirImagen(s, $event)" hidden>
                             </label>
 
                             @if (hayImagen(s)) {
                               <button type="button" class="btn btn-sm btn-link rotulo-quitar"
-                                      [disabled]="!puedeEditar || subiendoImagen === s.clave"
+                                      [disabled]="!puedeEditar || subiendoImagen === s.id"
                                       (click)="quitarImagen(s)">
                                 Quitar imagen
                               </button>
@@ -669,7 +978,7 @@
                           </p>
 
                           <app-campoTexto
-                            [control]="$any(formularios[s.clave].controls['imagen_alt'])"
+                            [control]="$any(formularios[s.id].controls['imagen_alt'])"
                             label="QUÉ SE VE EN LA IMAGEN"
                             placeholder="Ej.: Motos con 3 meses de gracia"
                             [maxLength]="120"
@@ -682,7 +991,7 @@
                           </p>
 
                           <app-campoTexto
-                            [control]="$any(formularios[s.clave].controls['imagen_enlace'])"
+                            [control]="$any(formularios[s.id].controls['imagen_enlace'])"
                             label="A DÓNDE LLEVA AL PULSARLA"
                             placeholder="/motos  o  https://…"
                             [maxLength]="250"
@@ -699,8 +1008,8 @@
                                abre pestaña y un http:// siempre la abre -->
                           @if (puedeAbrirPestana(s)) {
                             <app-checkbox
-                              [control]="$any(formularios[s.clave].controls['imagen_nueva_pestana'])"
-                              [id]="'pestana-' + s.clave"
+                              [control]="$any(formularios[s.id].controls['imagen_nueva_pestana'])"
+                              [id]="'pestana-' + s.id"
                               label="Abrirla en otra pestaña">
                             </app-checkbox>
                           }
@@ -728,9 +1037,9 @@
 
                   <div class="rotulo-pinta">
                     <div class="rotulo-campo">
-                      <label [attr.for]="'alto-' + s.clave">Alto de la sección</label>
+                      <label [attr.for]="'alto-' + s.id">Alto de la sección</label>
                       <select class="form-select form-select-sm" formControlName="alto"
-                              [id]="'alto-' + s.clave">
+                              [id]="'alto-' + s.id">
                         @for (a of altos; track a.valor) {
                           <option [value]="a.valor">{{ a.texto }}</option>
                         }
@@ -739,9 +1048,9 @@
 
                     @if (vista(s).rotulo !== 'ninguno') {
                       <div class="rotulo-campo">
-                        <label [attr.for]="'tamano-' + s.clave">Tamaño de la letra</label>
+                        <label [attr.for]="'tamano-' + s.id">Tamaño de la letra</label>
                         <select class="form-select form-select-sm" formControlName="tamano"
-                                [id]="'tamano-' + s.clave">
+                                [id]="'tamano-' + s.id">
                           @for (t of tamanos; track t.valor) {
                             <option [value]="t.valor">{{ t.texto }}</option>
                           }
@@ -749,9 +1058,9 @@
                       </div>
 
                       <div class="rotulo-campo rotulo-campo--ancho">
-                        <label [attr.for]="'fuente-' + s.clave">Tipo de letra</label>
+                        <label [attr.for]="'fuente-' + s.id">Tipo de letra</label>
                         <select class="form-select form-select-sm" formControlName="fuente"
-                                [id]="'fuente-' + s.clave">
+                                [id]="'fuente-' + s.id">
                           @for (f of fuentes; track f.valor) {
                             <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
                           }
@@ -762,8 +1071,8 @@
                            selector del navegador escondido en una muestra
                            redonda, el código al lado y los colores de siempre -->
                       <div class="rotulo-campo rotulo-campo--ancho color-bloque">
-                        <label [attr.for]="'color-' + s.clave">Color</label>
-                        <app-campoColor [idCampo]="'color-' + s.clave"
+                        <label [attr.for]="'color-' + s.id">Color</label>
+                        <app-campoColor [idCampo]="'color-' + s.id"
                                         [valor]="colorMuestra(s)"
                                         [propio]="colorPropio(s)"
                                         porDefecto="El de la tienda"
@@ -853,7 +1162,7 @@
                      cambia la imagen; en carteles, la página de carteles. -->
                 @if (tieneGaleria(s)) {
                   <div class="col-12">
-                    <label class="seccion-rotulo" [attr.for]="'segundos-' + s.clave">
+                    <label class="seccion-rotulo" [attr.for]="'segundos-' + s.id">
                       CADA CUÁNTO CAMBIA {{ queCambia(s) === 'de imagen' ? 'DE IMAGEN' : 'DE PÁGINA' }}
                       <span>opcional</span>
                     </label>
@@ -861,7 +1170,7 @@
                       <div class="col-6 col-md-3">
                         <div class="input-group input-group-sm">
                           <input type="number" class="form-control form-control-sm"
-                                 [id]="'segundos-' + s.clave" formControlName="segundos"
+                                 [id]="'segundos-' + s.id" formControlName="segundos"
                                  min="2" max="60" step="1" placeholder="5"
                                  [attr.disabled]="puedeEditar ? null : ''">
                           <span class="input-group-text">segundos</span>
@@ -923,18 +1232,18 @@
 
                 <div class="banner-propio">
                   <div class="banner-propio__nombre">
-                    <label class="seccion-rotulo" [attr.for]="'nombre-' + s.clave">
+                    <label class="seccion-rotulo" [attr.for]="'nombre-' + s.id">
                       CÓMO SE LLAMA AQUÍ DENTRO
                     </label>
                     <div class="banner-propio__fila">
                       <input type="text" class="form-control form-control-sm"
-                             [id]="'nombre-' + s.clave" formControlName="nombre"
+                             [id]="'nombre-' + s.id" formControlName="nombre"
                              maxlength="100" placeholder="Ej.: Banner de Navidad"
                              [attr.disabled]="puedeEditar ? null : ''">
                       <button type="button" class="btn btn-sm btn-white"
                               [disabled]="!puedeRenombrar(s)"
                               (click)="renombrarBanner(s)">
-                        {{ bannerOcupado === s.clave ? 'Guardando…' : 'Guardar nombre' }}
+                        {{ bannerOcupado === s.id ? 'Guardando…' : 'Guardar nombre' }}
                       </button>
                     </div>
                     <p class="campo-hint">
@@ -953,12 +1262,34 @@
                 </div>
               }
 
+              <!-- ---------- Quitar un escaparate de ESTA página ----------
+                   No es la papelera: el escaparate y sus productos siguen en
+                   «Productos por sección», y se puede volver a añadir. Por eso
+                   el botón dice lo que hace y el aviso lo repite. -->
+              @if (s.producto_seccion_id && puedeEliminar) {
+                <div class="escaparate-propio">
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>
+                      Los productos de esta sección se eligen en
+                      <a routerLink="/ecommerce/producto-por-seccion">Productos por sección</a>,
+                      y son los mismos en todas las páginas donde salga. Lo de aquí
+                      —el rótulo, los colores, el sitio— es sólo de esta página.
+                    </span>
+                  </p>
+                  <button type="button" class="btn btn-sm btn-outline-danger"
+                          [disabled]="trabajando" (click)="quitarEscaparate(s)">
+                    <i class="fa fa-eye-slash"></i> Quitar de esta página
+                  </button>
+                </div>
+              }
+
               @if (puedeEditar) {
                 <div class="d-flex justify-content-end mb-3">
                   <button type="button" class="btn btn-sm btn-primary"
-                          [disabled]="guardando === s.clave" (click)="guardarSeccion(s)">
+                          [disabled]="guardando === s.id" (click)="guardarSeccion(s)">
                     <i class="fa fa-save"></i>
-                    {{ guardando === s.clave ? 'Guardando…' : 'Guardar la sección' }}
+                    {{ guardando === s.id ? 'Guardando…' : 'Guardar la sección' }}
                   </button>
                 </div>
               }

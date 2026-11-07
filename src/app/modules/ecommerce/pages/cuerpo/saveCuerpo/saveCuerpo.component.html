@@ -1,0 +1,238 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-layer-group me-2"></i>{{ titulo }}
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="activeModal.dismiss()"></button>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <div class="modal-body">
+    <div class="row g-3">
+
+      <div class="col-12 col-md-6">
+        <app-campoTexto
+          [control]="$any(form.controls['nombre'])"
+          label="CÓMO SE LLAMA"
+          placeholder="Movilidad"
+          [maxLength]="100"
+          [trimEspacios]="true">
+        </app-campoTexto>
+        <!-- El texto va dentro de UN <span>: `.campo-hint` es flex, así que
+             cada trozo suelto sería un item distinto -->
+        <p class="campo-hint mb-0">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Es el nombre de aquí, para reconocerlo en la lista. No se ve en la tienda.</span>
+        </p>
+      </div>
+
+      <div class="col-12 col-md-6">
+        @if (esPrincipal) {
+          <label class="seccion-rotulo">DIRECCIÓN</label>
+          <p class="direccion direccion--fija">
+            <i class="fa-solid fa-house"></i> <code>/</code>
+          </p>
+          <p class="campo-hint mb-0">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Es el cuerpo principal: vive en la entrada de la tienda y su dirección no se cambia.</span>
+          </p>
+        } @else {
+          <app-campoTexto
+            [control]="$any(form.controls['ruta'])"
+            label="DIRECCIÓN"
+            placeholder="movilidad"
+            [maxLength]="60"
+            [noEspacios]="true"
+            [trimEspacios]="true">
+          </app-campoTexto>
+          <p class="direccion">
+            La página va a estar en <code>{{ direccion }}</code>
+          </p>
+        }
+      </div>
+
+      <!-- ---------- A dónde apunta ----------
+           Es lo que hace que los enlaces salgan solos: sin esto habría que
+           enlazar la página a mano en el menú, en las destacadas y en el
+           mosaico, y el que se olvidara dejaría una página inalcanzable. -->
+      @if (!esPrincipal) {
+        <div class="col-12">
+          <label class="seccion-rotulo">A DÓNDE APUNTA</label>
+
+          <div class="destinos">
+            @for (d of destinos; track d.valor) {
+              <button type="button" class="destino"
+                      [class.is-activo]="destino === d.valor"
+                      [attr.aria-pressed]="destino === d.valor"
+                      [title]="d.ayuda"
+                      (click)="ponerDestino(d.valor)">
+                <i class="fa-solid" [ngClass]="d.valor === 'categoria' ? 'fa-sitemap'
+                                             : d.valor === 'marca' ? 'fa-tag' : 'fa-file'"></i>
+                {{ d.texto }}
+              </button>
+            }
+          </div>
+
+          <p class="campo-hint">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>{{ ayudaDestino }}</span>
+          </p>
+
+          @if (cargandoListas) {
+            <p class="text-muted mb-0">
+              <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando categorías y marcas…
+            </p>
+          } @else if (destino === 'categoria') {
+            <app-combo
+              formControlName="categoria_id"
+              label="LA CATEGORÍA"
+              [items]="categorias"
+              bindLabel="nombre"
+              bindValue="id">
+            </app-combo>
+            <p class="campo-hint mb-0">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Sólo salen las que la tienda enseña: una oculta haría una página a la que nadie llega.</span>
+            </p>
+          } @else if (destino === 'marca') {
+            <app-combo
+              formControlName="marca_id"
+              label="LA MARCA"
+              [items]="marcas"
+              bindLabel="nombre"
+              bindValue="id">
+            </app-combo>
+          }
+        </div>
+      }
+
+      <!-- ---------- Lo que lee el visitante ---------- -->
+      <div class="col-12">
+        <app-campoTexto
+          [control]="$any(form.controls['titulo'])"
+          label="TÍTULO DE LA PÁGINA (OPCIONAL)"
+          placeholder="Motos, scooters y bicicletas"
+          [maxLength]="120"
+          [trimEspacios]="true">
+        </app-campoTexto>
+        <p class="campo-hint mb-0">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Lo que se lee arriba, antes de las secciones. Vacío, la página empieza por su primera sección.</span>
+        </p>
+      </div>
+
+      <div class="col-12">
+        <app-campoTextoArea
+          [control]="$any(form.controls['descripcion'])"
+          label="TEXTO DE ARRIBA (OPCIONAL)"
+          placeholder="Encuentra motos, scooters y bicicletas de las mejores marcas, con financiación inmediata."
+          [maxLength]="4000"
+          [alto]="90">
+        </app-campoTextoArea>
+        <p class="campo-hint mb-0">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Un párrafo debajo del título. Es lo que lee quien llega de Google.</span>
+        </p>
+      </div>
+
+      <!-- ---------- El fondo de la página ----------
+           Es de ESTA página: el rojo de los botones y del encabezado se elige
+           una sola vez en «Encabezado» y vale para todas. Un fondo oscuro no
+           se prohíbe, se avisa: los rótulos de las secciones se escriben en
+           negro y encima de un fondo oscuro desaparecen, pero puede ser justo
+           lo que se busca para una campaña. -->
+      <div class="col-12">
+        <label class="seccion-rotulo">EL FONDO DE LA PÁGINA</label>
+
+        <app-campoColor idCampo="fondo-cuerpo"
+                        [valor]="fondoQueSeVe" [propio]="hayFondoPropio"
+                        porDefecto="Blanco, el de siempre"
+                        etiqueta="Fondo"
+                        [paleta]="paletaFondo"
+                        [deshabilitado]="guardando"
+                        (cambia)="ponerFondo($event)">
+        </app-campoColor>
+
+        <!-- Cómo va a quedar: el papel con un rótulo y una tarjeta encima, que
+             es lo que de verdad se ve en una página de la tienda -->
+        <div class="fondo-muestra" [style.background-color]="fondoQueSeVe" aria-hidden="true">
+          <span class="fondo-muestra__rotulo">Categorías destacadas</span>
+          <span class="fondo-muestra__tarjeta">Un producto</span>
+        </div>
+
+        @if (fondoIlegible) {
+          <p class="campo-hint campo-hint--aviso">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>
+              Encima de este fondo, los rótulos en negro quedan en
+              <b>{{ contrasteTexto }}:1</b> y no se leen (hace falta 4,5:1). Se
+              puede usar igual, pero entonces dale a cada sección un color de
+              rótulo claro.
+            </span>
+          </p>
+        } @else {
+          <p class="campo-hint mb-0">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>
+              El papel sobre el que se pinta esta página. Vacío, blanco. No cambia
+              el encabezado ni el pie, que son de toda la tienda.
+            </span>
+          </p>
+        }
+      </div>
+
+      <!-- ---------- Las dos palancas ---------- -->
+      @if (destino !== 'libre' && !esPrincipal) {
+        <div class="col-12">
+          <app-checkbox class="palanca"
+            [control]="ctrlCatalogo"
+            [label]="ctrlCatalogo.value
+                      ? 'Debajo de las secciones va el catálogo'
+                      : 'Sin catálogo: sólo las secciones'"
+            [id]="'ck-cuerpo-catalogo'">
+          </app-checkbox>
+          <p class="campo-hint mb-0">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>
+              La rejilla de productos de su categoría o su marca, con filtros, orden
+              y paginación, igual que en la tienda. Va al final, después de lo que
+              hayas montado arriba.
+            </span>
+          </p>
+        </div>
+      }
+
+      <div class="col-12">
+        @if (esPrincipal) {
+          <p class="campo-hint mb-0">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>El cuerpo principal no se puede apagar: la tienda se quedaría sin página de entrada.</span>
+          </p>
+        } @else {
+          <app-checkbox class="palanca"
+            [control]="ctrlActivo"
+            [label]="ctrlActivo.value ? 'La página se ve en la tienda' : 'Página apagada'"
+            [id]="'ck-cuerpo-activo'">
+          </app-checkbox>
+          <p class="campo-hint mb-0">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>
+              Apagada, su dirección no existe para el visitante y la categoría o la
+              marca vuelven a llevar al catálogo de siempre.
+            </span>
+          </p>
+        }
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger" (click)="activeModal.dismiss()">
+      <i class="fa fa-times"></i> Salir
+    </button>
+    <button type="submit" class="btn btn-primary" [disabled]="guardando">
+      <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</form>

@@ -734,3 +734,33 @@
 ::ng-deep .cdk-drag-animating {
   transition: transform 180ms cubic-bezier(0, 0, .2, 1);
 }
+
+/* ---------- Su página en la tienda ----------
+   No se edita aquí: se dice qué pasa al pinchar la categoría y se enlaza a
+   «Cuerpos de la tienda», que es donde vive. */
+.cat-pagina {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.cat-pagina__tiene {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: 0 0 .5rem;
+  font-size: .75rem;
+  line-height: 1.45;
+  color: var(--bs-body-color);
+}
+
+.cat-pagina__tiene i {
+  margin-top: .15rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.cat-pagina code {
+  padding: .05rem .3rem;
+  border-radius: .25rem;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  color: var(--bs-body-color);
+}
