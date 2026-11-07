@@ -31,11 +31,35 @@ export interface EnlacePieModel {
   activo: boolean;
 }
 
+/**
+ * LA IMAGEN DE UNA COLUMNA, la que se pone en vez de la lista de enlaces.
+ *
+ * Con fichero, la tienda enseña la imagen y NO los enlaces; sin él, la lista
+ * de siempre. Los enlaces no se borran: quitar la imagen los devuelve, así que
+ * probar no cuesta nada.
+ *
+ * Llega siempre, también vacía: el texto y el enlace se pueden escribir antes
+ * de subir el fichero y se guardan igual.
+ */
+export interface ImagenColumnaPie {
+  /** El nombre del fichero en la base; null si no hay ninguna. */
+  archivo: string | null;
+  /** La dirección para verla, armada por el servidor. */
+  url?: string | null;
+  /** Qué se ve en ella, para quien no ve la pantalla. */
+  alt: string | null;
+  /** A dónde lleva al pincharla; null = no lleva a ningún sitio. */
+  enlace: string | null;
+  /** No se escribe a mano: lo decide el servidor por la dirección. */
+  nueva_pestana: boolean;
+}
+
 export interface ColumnaPieModel {
   id: number;
   titulo: string;
   orden: number;
   activo: boolean;
+  imagen: ImagenColumnaPie;
   enlaces: EnlacePieModel[];
 }
 

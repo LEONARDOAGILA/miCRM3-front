@@ -6,7 +6,7 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
 import { PieService } from '../../../services/pie.service';
-import { ColumnaPieModel, EnlacePieModel } from '../../../interfaces/pieModel';
+import { ColumnaPieModel, EnlacePieModel, ImagenColumnaPie, PieModel } from '../../../interfaces/pieModel';
 
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
@@ -28,6 +28,7 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
 @Component({
   selector: 'app-savePiePieza',
   templateUrl: './savePiePieza.component.html',
+  styleUrls: ['./savePiePieza.component.css'],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, ReactiveFormsModule, CampoTextoComponent, CheckboxComponent],
@@ -55,7 +56,9 @@ export class SavePiePiezaComponent implements OnInit {
   get esNuevo(): boolean { return this.pieza === null; }
 
   get titulo(): string {
-    if (!this.esNuevo) { return this.esEnlace ? 'Modificar enlace' : 'Renombrar columna'; }
+    // «Renombrar» se quedó corto: desde aquí se le pone también la imagen que
+    // puede llevar en vez de sus enlaces
+    if (!this.esNuevo) { return this.esEnlace ? 'Modificar enlace' : 'Modificar columna'; }
     return this.esEnlace ? `Nuevo enlace en «${this.columnaTitulo}»` : 'Nueva columna';
   }
 
@@ -86,6 +89,105 @@ export class SavePiePiezaComponent implements OnInit {
       this.form.addControl('enlace',
         this.fb.control(p.enlace ?? '', [Validators.required, Validators.maxLength(250)]));
       this.form.addControl('icono', this.fb.control(p.icono ?? ''));
+    } else {
+      // La imagen que la columna puede llevar EN VEZ de sus enlaces. El texto y
+      // la dirección se guardan con el título; el fichero va por su puerta
+      this.imagen = p.imagen ?? null;
+      this.form.addControl('imagen_alt',
+        this.fb.control(p.imagen?.alt ?? '', [Validators.maxLength(120)]));
+      this.form.addControl('imagen_enlace',
+        this.fb.control(p.imagen?.enlace ?? '', [Validators.maxLength(250)]));
+    }
+  }
+
+  // ================================================================
+  // LA IMAGEN DE LA COLUMNA
+  // ================================================================
+  //
+  // CON IMAGEN, LA TIENDA NO ENSEÑA LOS ENLACES de esta columna. No se borran:
+  // quitar la imagen los devuelve tal cual, así que probar no cuesta nada.
+  //
+  // EL FICHERO SE SUBE AL MOMENTO y no con «Guardar»: necesita que la columna
+  // exista para colgarse de ella, así que en una columna nueva el bloque no
+  // sale hasta que se guarda por primera vez.
+
+  public imagen: ImagenColumnaPie | null = null;
+  public subiendo = false;
+  /** El pie que devolvió la última subida, para que la pantalla no se quede vieja. */
+  private pieActualizado: PieModel | null = null;
+
+  get esColumnaGuardada(): boolean { return !this.esEnlace && !this.esNuevo; }
+
+  get hayImagen(): boolean { return !!this.imagen?.url; }
+
+  /** Lo que va a hacer la imagen al pincharla. */
+  get avisoPestanaImagen(): string {
+    const enlace: string = (this.form?.controls['imagen_enlace']?.value ?? '').trim();
+    if (!enlace) { return ''; }
+    return enlace.startsWith('https://')
+      ? 'Va a otro sitio: se abrirá en una pestaña nueva.'
+      : 'Es de la propia tienda: se abrirá en la misma pestaña.';
+  }
+
+  async elegirImagen(evento: Event): Promise<void> {
+    const entrada = evento.target as HTMLInputElement;
+    const archivo = entrada.files?.[0];
+    // Se limpia siempre: sin esto, elegir DOS VECES el mismo fichero no
+    // dispara el evento y parece que la pantalla se quedó colgada
+    entrada.value = '';
+    if (!archivo || this.subiendo) { return; }
+
+    this.subiendo = true;
+    try {
+      const res: any = await firstValueFrom(
+        this._pieService.subirImagenColumna((this.pieza as ColumnaPieModel).id, archivo));
+      this.recogerPie(res);
+      this._toastr.success(res?.message ?? 'Imagen guardada', 'Listo');
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo subir la imagen', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.subiendo = false;
+    }
+  }
+
+  async quitarImagen(): Promise<void> {
+    if (this.subiendo || !this.hayImagen) { return; }
+
+    this.subiendo = true;
+    try {
+      const res: any = await firstValueFrom(
+        this._pieService.quitarImagenColumna((this.pieza as ColumnaPieModel).id));
+      this.recogerPie(res);
+      this._toastr.success(res?.message ?? 'Imagen quitada', 'Listo');
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo quitar la imagen', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.subiendo = false;
+    }
+  }
+
+  /** Del pie que devuelve el servidor, la imagen de ESTA columna. */
+  private recogerPie(res: any): void {
+    const pie: PieModel | null = res?.data ?? null;
+    if (!pie) { return; }
+    this.pieActualizado = pie;
+    const id = (this.pieza as ColumnaPieModel).id;
+    this.imagen = (pie.columnas ?? []).find(c => c.id === id)?.imagen ?? null;
+  }
+
+  /**
+   * Cerrar sin guardar.
+   *
+   * SI SE SUBIÓ O SE QUITÓ UNA IMAGEN, eso YA está guardado: se cierra
+   * devolviendo el pie para que la pantalla de detrás no enseñe lo de antes.
+   */
+  cerrar(): void {
+    if (this.pieActualizado) {
+      this.activeModal.close(this.pieActualizado);
+    } else {
+      this.activeModal.dismiss();
     }
   }
 
@@ -113,7 +215,13 @@ export class SavePiePiezaComponent implements OnInit {
           : this._pieService.editEnlace((this.pieza as EnlacePieModel).id, payload));
 
       } else {
-        const payload = { titulo: v.texto.trim(), activo: v.activo !== false };
+        const payload = {
+          titulo: v.texto.trim(),
+          activo: v.activo !== false,
+          // El fichero NO va aquí: ya se subió por su puerta
+          imagen_alt: (v.imagen_alt ?? '').trim() || null,
+          imagen_enlace: (v.imagen_enlace ?? '').trim() || null,
+        };
         res = await firstValueFrom(this.esNuevo
           ? this._pieService.addColumna(payload)
           : this._pieService.editColumna((this.pieza as ColumnaPieModel).id, payload));

@@ -14,7 +14,10 @@
 <panel [title]="titulo"
        [noButton]="false"
        [noButtonCollapse]="true"
-       icono="house">
+       icono="house"
+       class="flex-1 d-flex flex-column overflow-hidden"
+       bodyClass="p-0 flex-1 overflow-hidden"
+       panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
 
   <div header class="panel-acciones">
     <span class="inicio-cuenta">{{ enLaPortada }} de {{ secciones.length }} en la portada</span>
@@ -32,180 +35,250 @@
 
   } @else {
 
-    <!-- El texto va dentro de UN <span>. `.campo-hint` es flex, así que cada
-         trozo suelto y cada <i> son items distintos: con el icono del asa en
-         medio, el párrafo se partía en tres y una palabra se quedaba sola en
-         la línea de abajo. -->
-    <p class="campo-hint">
-      <i class="fa-solid fa-circle-info"></i>
-      <span>
-        Las secciones están en el orden en que se ven en la tienda: arrástralas
-        desde <i class="fa-solid fa-grip-vertical"></i> para moverlas, y abre una
-        para configurarla. Los banners se crean y se borran aquí, con todos los
-        que hagan falta; las de fábrica existen porque la tienda sabe pintarlas
-        y no se tocan, y las de productos se crean y se borran en «Productos por
-        sección».
-      </span>
-    </p>
+    <!-- ============================================================
+         DOS COLUMNAS, como el catálogo de productos y las características:
+         la lista a la izquierda y lo que se configura a la derecha.
 
-    <!-- ---------- El filtro ----------
-         Cada botón lleva su número: así se sabe cuántas hay de cada clase sin
-         tener que pulsarlo, y un «Inactivas 0» dice que no hay ninguna
-         apagada mejor que una lista vacía. -->
-    <div class="inicio-filtro">
-      <div class="btn-group btn-group-sm" role="group" aria-label="Ver sólo activas o inactivas">
-        @for (f of filtros; track f.valor) {
-          <button type="button" class="btn"
-                  [class.btn-primary]="filtro === f.valor"
-                  [class.btn-white]="filtro !== f.valor"
-                  [attr.aria-pressed]="filtro === f.valor"
-                  (click)="filtro = f.valor">
-            <i class="fa-solid me-1" [ngClass]="f.icono"></i>{{ f.texto }}
-            <span class="inicio-filtro__cuantas">{{ cuantasDe(f.valor) }}</span>
-          </button>
-        }
-      </div>
+         ANTES ERA UN ACORDEÓN: cada sección desplegaba sus campos debajo, y
+         con quince campos abiertos en medio de la lista no se veía dónde
+         acababa una sección y empezaba la otra.
+         ============================================================ -->
+    <div class="file-manager h-100 inicio"
+         [class.is-redimensionando]="redimensionando"
+         [style.--bs-file-manager-sidebar-width]="(lateralPlegado ? 34 : anchoLateral) + 'px'"
+         [style.--bs-file-manager-mobile-sidebar-margin]="(-(lateralPlegado ? 34 : anchoLateral)) + 'px'">
 
-      <!-- Se mueve igual con filtro, pero conviene decir contra qué se mueve:
-           lo que no se ve no se toca -->
-      @if (filtrando) {
-        <span class="inicio-filtro__aviso">
-          <i class="fa-solid fa-circle-info"></i>
-          Al mover con el filtro puesto, la sección se coloca entre las que
-          ves; las que no salen se quedan donde están.
-        </span>
-      }
+      <!-- .file-manager es flex en COLUMNA (el tema); la fila de verdad es
+           .file-manager-container -->
+      <div class="file-manager-container">
 
-      <!-- Lo único que se crea desde esta pantalla. Va aquí arriba, con el
-           filtro, y no dentro de la lista: es una acción de la lista entera -->
-      @if (puedeCrear && !creandoBanner) {
-        <button type="button" class="btn btn-sm btn-outline-theme inicio-filtro__nuevo"
-                [disabled]="!!bannerOcupado" (click)="abrirNuevoBanner()">
-          <i class="fa fa-plus"></i> Añadir banner
-        </button>
-      }
-    </div>
+      <!-- ---------- IZQUIERDA: LAS SECCIONES ---------- -->
+      <div class="file-manager-sidebar inicio-lateral" [class.is-plegado]="lateralPlegado">
 
-    <!-- El renglón de crear: un campo y dos botones, sin modal. Lo único que
-         hace falta para nacer es el nombre; las imágenes se le meten después,
-         en su propia fila -->
-    @if (creandoBanner) {
-      <div class="inicio-nuevo">
-        <label class="inicio-nuevo__rotulo" for="nuevo-banner">CÓMO SE VA A LLAMAR</label>
-        <input id="nuevo-banner" type="text" class="form-control form-control-sm"
-               placeholder="Ej.: Banner de Navidad" maxlength="100"
-               [(ngModel)]="nombreNuevoBanner" [ngModelOptions]="{ standalone: true }"
-               [disabled]="!!bannerOcupado"
-               (keydown.enter)="crearBanner()" (keydown.escape)="cerrarNuevoBanner()">
-        <button type="button" class="btn btn-sm btn-primary"
-                [disabled]="!nombreNuevoBanner.trim() || !!bannerOcupado"
-                (click)="crearBanner()">
-          {{ bannerOcupado === 'nuevo' ? 'Creando…' : 'Crear' }}
-        </button>
-        <button type="button" class="btn btn-sm btn-white"
-                [disabled]="!!bannerOcupado" (click)="cerrarNuevoBanner()">
-          Cancelar
-        </button>
-        <span class="inicio-nuevo__pie">
-          Nace apagado y vacío: enciéndelo cuando le metas imágenes.
-        </span>
-      </div>
-    }
+        <div class="inicio-lateral__cabecera">
+          <span class="inicio-lateral__titulo">Secciones</span>
 
-    <!-- `cdkDropListData` es la lista DE VERDAD, que es la que se reordena;
-         las posiciones que da el arrastre son las de la lista que se ve y las
-         traduce `soltar()` -->
-    <div cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="secciones"
-         [cdkDropListDisabled]="!puedeEditar || trabajando"
-         (cdkDropListDropped)="soltar($event)">
+          <div class="inicio-lateral__acciones">
+            <!-- Lo único que se crea desde esta pantalla -->
+            @if (puedeCrear && !creandoBanner) {
+              <button type="button" class="btn btn-xs btn-outline-theme"
+                      title="Añadir un banner" [disabled]="!!bannerOcupado"
+                      (click)="abrirNuevoBanner()">
+                <i class="fa fa-plus"></i> Banner
+              </button>
+            }
+            <button type="button" class="btn btn-xs btn-white"
+                    [title]="lateralPlegado ? 'Ver la lista' : 'Plegar la lista'"
+                    (click)="alternarLateral()">
+              <i class="fa-solid" [ngClass]="lateralPlegado ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+            </button>
+          </div>
+        </div>
 
-      @for (s of seccionesVisibles; track s.clave) {
-        <div class="seccion" [class.seccion--abierta]="abierta === s.clave"
-             [id]="'seccion-caja-' + s.clave" cdkDrag>
+        <!-- Plegada se queda una tira con el rótulo de canto, como el árbol
+             del catálogo: ocupa 34 px y se vuelve a abrir desde su botón -->
+        <div class="inicio-lateral__cuerpo">
 
-          <div class="seccion-fantasma" *cdkDragPlaceholder></div>
+          <p class="campo-hint inicio-lateral__ayuda">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>
+              En el orden en que se ven en la tienda: arrástralas desde
+              <i class="fa-solid fa-grip-vertical"></i> para moverlas y pulsa
+              una para configurarla a la derecha.
+            </span>
+          </p>
 
-          <!-- ---------- La cabecera: un clic la abre ---------- -->
-          <div class="seccion-cabecera" role="button" tabindex="0"
-               [attr.aria-expanded]="abierta === s.clave"
-               (click)="alternarSeccion(s.clave)"
-               (keydown.enter)="alternarSeccion(s.clave)">
+          <!-- ---------- El filtro ----------
+               Cada botón lleva su número: así se sabe cuántas hay de cada clase sin
+               tener que pulsarlo, y un «Inactivas 0» dice que no hay ninguna
+               apagada mejor que una lista vacía. -->
+          <div class="inicio-filtro">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Ver sólo activas o inactivas">
+              @for (f of filtros; track f.valor) {
+                <button type="button" class="btn"
+                        [class.btn-primary]="filtro === f.valor"
+                        [class.btn-white]="filtro !== f.valor"
+                        [attr.aria-pressed]="filtro === f.valor"
+                        (click)="filtro = f.valor">
+                  <i class="fa-solid me-1" [ngClass]="f.icono"></i>{{ f.texto }}
+                  <span class="inicio-filtro__cuantas">{{ cuantasDe(f.valor) }}</span>
+                </button>
+              }
+            </div>
 
-            @if (puedeEditar) {
-              <span class="seccion-asa" cdkDragHandle title="Arrastra para cambiar el orden"
-                    (click)="$event.stopPropagation()">
-                <i class="fa-solid fa-grip-vertical"></i>
+            <!-- Se mueve igual con filtro, pero conviene decir contra qué se mueve:
+                 lo que no se ve no se toca -->
+            @if (filtrando) {
+              <span class="inicio-filtro__aviso">
+                <i class="fa-solid fa-circle-info"></i>
+                Al mover con el filtro puesto, la sección se coloca entre las que
+                ves; las que no salen se quedan donde están.
               </span>
             }
 
+            <!-- «Añadir banner» NO está aquí: se fue a la cabecera de la
+                 columna, con el botón de plegar. Es una acción de la lista
+                 entera, no del filtro, y ahí arriba se ve siempre -->
+          </div>
+
+          <!-- El renglón de crear: un campo y dos botones, sin modal. Lo único que
+               hace falta para nacer es el nombre; las imágenes se le meten después,
+               en su propia fila -->
+          @if (creandoBanner) {
+            <div class="inicio-nuevo">
+              <label class="inicio-nuevo__rotulo" for="nuevo-banner">CÓMO SE VA A LLAMAR</label>
+              <input id="nuevo-banner" type="text" class="form-control form-control-sm"
+                     placeholder="Ej.: Banner de Navidad" maxlength="100"
+                     [(ngModel)]="nombreNuevoBanner" [ngModelOptions]="{ standalone: true }"
+                     [disabled]="!!bannerOcupado"
+                     (keydown.enter)="crearBanner()" (keydown.escape)="cerrarNuevoBanner()">
+              <button type="button" class="btn btn-sm btn-primary"
+                      [disabled]="!nombreNuevoBanner.trim() || !!bannerOcupado"
+                      (click)="crearBanner()">
+                {{ bannerOcupado === 'nuevo' ? 'Creando…' : 'Crear' }}
+              </button>
+              <button type="button" class="btn btn-sm btn-white"
+                      [disabled]="!!bannerOcupado" (click)="cerrarNuevoBanner()">
+                Cancelar
+              </button>
+              <span class="inicio-nuevo__pie">
+                Nace apagado y vacío: enciéndelo cuando le metas imágenes.
+              </span>
+            </div>
+          }
+
+          <!-- `cdkDropListData` es la lista DE VERDAD, que es la que se
+               reordena; las posiciones que da el arrastre son las de la lista
+               que se ve y las traduce `soltar()` -->
+          <div class="inicio-lista" cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="secciones"
+               [cdkDropListDisabled]="!puedeEditar || trabajando"
+               (cdkDropListDropped)="soltar($event)">
+
+            @for (s of seccionesVisibles; track s.clave) {
+              <div class="seccion" [class.is-elegida]="elegida === s.clave"
+                   [id]="'seccion-caja-' + s.clave" cdkDrag
+                   role="button" tabindex="0"
+                   [attr.aria-pressed]="elegida === s.clave"
+                   (click)="elegir(s.clave)" (keydown.enter)="elegir(s.clave)">
+
+                <div class="seccion-fantasma" *cdkDragPlaceholder></div>
+
+                @if (puedeEditar) {
+                  <span class="seccion-asa" cdkDragHandle title="Arrastra para cambiar el orden"
+                        (click)="$event.stopPropagation()">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                  </span>
+                }
+
+                <!-- EL INTERRUPTOR, A LA IZQUIERDA DEL NOMBRE: es lo que más se
+                     toca de la lista y lo primero que se mira. Guarda solo y no
+                     cambia de sección.
+                     Dice «activa», no «en la portada»: lo segundo lo decide
+                     además la vigencia, y eso lo cuenta la etiqueta de abajo -->
+                <span class="seccion-palanca" (click)="$event.stopPropagation()">
+                  <label class="form-check form-switch palanca mb-0"
+                         [title]="s.activo ? 'Activa' : 'Inactiva'">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           [id]="'seccion-' + s.clave"
+                           [checked]="s.activo"
+                           [disabled]="!puedeEditar || trabajando"
+                           (change)="alternarActivo(s, $event)">
+                  </label>
+                </span>
+
+                <span class="seccion-icono" [class.seccion-icono--apagado]="s.estado !== 'visible'">
+                  <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+                </span>
+
+                <span class="seccion-textos">
+                  <!-- El nombre que lee el cliente en cuanto se pone uno; debajo,
+                       el de siempre, para seguir reconociendo la sección -->
+                  <b class="seccion-nombre">{{ comoSeLlama(s) }}</b>
+                  @if (renombrada(s)) {
+                    <span class="seccion-de-fabrica">
+                      <i class="fa-solid fa-tag"></i> {{ s.nombre }} en el CRM
+                    </span>
+                  }
+                  <span class="seccion-etiquetas">
+                    <span class="chip" [ngClass]="estados[s.estado].clase">
+                      <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
+                      {{ estados[s.estado].texto }}
+                    </span>
+
+                    <span class="chip" [class.chip-muted]="s.fuente.tipo !== 'pendiente'"
+                          [class.chip-warn]="s.fuente.tipo === 'pendiente'">
+                      @switch (s.fuente.tipo) {
+                        @case ('galeria')    { <i class="fa-solid fa-images"></i> }
+                        @case ('promocion')  { <i class="fa-solid fa-tags"></i> }
+                        @case ('destacadas') { <i class="fa-solid fa-star"></i> }
+                        @case ('marcas')     { <i class="fa-solid fa-award"></i> }
+                        @case ('productos')  { <i class="fa-solid fa-basket-shopping"></i> }
+                        @default             { <i class="fa-solid fa-hammer"></i> }
+                      }
+                      {{ resumen(s) }}
+                    </span>
+
+                    <!-- Encendida y sin nada que enseñar: la tienda se la salta -->
+                    @if (sinContenido(s)) {
+                      <span class="chip chip-warn">
+                        <i class="fa-solid fa-triangle-exclamation"></i> No sale: está vacía
+                      </span>
+                    }
+                  </span>
+                </span>
+              </div>
+            } @empty {
+              <!-- Con el filtro puesto y nada que enseñar. Se dice qué falta y se
+                   ofrece la salida, en vez de dejar un hueco en blanco -->
+              <div class="inicio-vacio">
+                <i class="fa-solid" [ngClass]="filtro === 'activas' ? 'fa-circle-check' : 'fa-circle-minus'"></i>
+                <p class="mb-2">
+                  {{ filtro === 'activas'
+                     ? 'No hay ninguna sección activa.'
+                     : 'No hay ninguna sección inactiva: están todas activas.' }}
+                </p>
+                <button type="button" class="btn btn-sm btn-white" (click)="filtro = 'todas'">
+                  Ver todas
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- EL DIVISOR ---------- -->
+      <div class="inicio-divisor"
+           [class.is-inerte]="lateralPlegado"
+           role="separator"
+           aria-orientation="vertical"
+           title="Arrastra para cambiar el ancho de la lista (doble clic: el de siempre)"
+           (pointerdown)="iniciarRedimension($event)"
+           (dblclick)="anchoPorDefecto()">
+      </div>
+
+      <!-- ---------- DERECHA: LO QUE SE CONFIGURA ---------- -->
+      <div class="file-manager-content inicio-contenido">
+        @if (laElegida; as s) {
+
+          <div class="inicio-contenido__cabecera">
             <span class="seccion-icono" [class.seccion-icono--apagado]="s.estado !== 'visible'">
               <i class="fa-solid" [ngClass]="vista(s).icono"></i>
             </span>
-
-            <span class="seccion-textos">
-              <!-- El nombre que lee el cliente en cuanto se pone uno; debajo,
-                   el de siempre, para seguir reconociendo la sección -->
-              <b class="seccion-nombre">{{ comoSeLlama(s) }}</b>
-              @if (renombrada(s)) {
-                <span class="seccion-de-fabrica">
-                  <i class="fa-solid fa-tag"></i> {{ s.nombre }} en el CRM
-                </span>
-              }
-              <span class="seccion-etiquetas">
-                <span class="chip" [ngClass]="estados[s.estado].clase">
-                  <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
-                  {{ estados[s.estado].texto }}
-                </span>
-
-                <span class="chip" [class.chip-muted]="s.fuente.tipo !== 'pendiente'"
-                      [class.chip-warn]="s.fuente.tipo === 'pendiente'">
-                  @switch (s.fuente.tipo) {
-                    @case ('galeria')    { <i class="fa-solid fa-images"></i> }
-                    @case ('promocion')  { <i class="fa-solid fa-tags"></i> }
-                    @case ('destacadas') { <i class="fa-solid fa-star"></i> }
-                    @case ('marcas')     { <i class="fa-solid fa-award"></i> }
-                    @case ('productos')  { <i class="fa-solid fa-basket-shopping"></i> }
-                    @default             { <i class="fa-solid fa-hammer"></i> }
-                  }
-                  {{ resumen(s) }}
-                </span>
-
-                <!-- Encendida y sin nada que enseñar: la tienda se la salta -->
-                @if (sinContenido(s)) {
-                  <span class="chip chip-warn">
-                    <i class="fa-solid fa-triangle-exclamation"></i> No sale: está vacía
-                  </span>
-                }
-              </span>
+            <div class="inicio-contenido__textos">
+              <b>{{ comoSeLlama(s) }}</b>
+              <span class="seccion-que-es">{{ vista(s).descripcion }}</span>
+            </div>
+            <span class="chip" [ngClass]="estados[s.estado].clase">
+              <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
+              {{ estados[s.estado].texto }}
             </span>
-
-            <!-- El interruptor guarda solo, y no abre la sección.
-                 Dice «activa», no «en la portada»: lo segundo lo decide
-                 además la vigencia, y lo cuenta la etiqueta de la izquierda.
-                 Una sección activa pero programada no está en la portada
-                 todavía, y el interruptor no puede decir que sí. -->
-            <span class="seccion-palanca" (click)="$event.stopPropagation()">
-              <label class="form-check form-switch palanca mb-0">
-                <input class="form-check-input" type="checkbox" role="switch"
-                       [id]="'seccion-' + s.clave"
-                       [checked]="s.activo"
-                       [disabled]="!puedeEditar || trabajando"
-                       (change)="alternarActivo(s, $event)">
-                <span class="form-check-label">{{ s.activo ? 'Activa' : 'Inactiva' }}</span>
-              </label>
-            </span>
-
-            <i class="fa seccion-flecha"
-               [class.fa-chevron-down]="abierta === s.clave"
-               [class.fa-chevron-right]="abierta !== s.clave"></i>
           </div>
 
-          <!-- ---------- El cuerpo: se pinta una vez y se esconde ---------- -->
-          @if (vistas.has(s.clave)) {
-            <div class="seccion-cuerpo" [hidden]="abierta !== s.clave"
-                 [formGroup]="formularios[s.clave]">
+          <div class="inicio-campos" [formGroup]="formularios[s.clave]">
 
-              <p class="seccion-que-es">{{ vista(s).descripcion }}</p>
+              <!-- Qué es esta sección ya lo dice la cabecera de arriba, que se
+                   queda a la vista al desplazar: repetirlo aquí era leerlo dos
+                   veces seguidas -->
 
               <!-- Rótulo y fechas -->
               <div class="row g-2">
@@ -235,6 +308,41 @@
                       [maxLength]="80"
                       [trimEspacios]="true">
                     </app-campoTexto>
+                  </div>
+                }
+
+                <!-- ---------- En qué forma salen las categorías ----------
+                     Sólo «Categorías destacadas», que es la única sección con
+                     dos maneras de pintarse. Con dibujos y no con un
+                     desplegable: «en cuadro» se entiende de un vistazo
+                     viéndolo. -->
+                @if (esDestacadas(s)) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo">CÓMO SE PINTAN LAS CATEGORÍAS</label>
+
+                    <div class="disposiciones">
+                      @for (f of formasFicha; track f.valor) {
+                        <button type="button" class="disposicion"
+                                [class.is-activa]="formaDe(s) === f.valor"
+                                [attr.aria-pressed]="formaDe(s) === f.valor"
+                                [disabled]="!puedeEditar"
+                                [title]="f.ayuda"
+                                (click)="ponerForma(s, f.valor)">
+                          <span class="disposicion__dibujo"
+                                [ngClass]="'forma--' + f.valor" aria-hidden="true">
+                            <i></i><i></i><i></i>
+                          </span>
+                          <span class="disposicion__texto">{{ f.texto }}</span>
+                        </button>
+                      }
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      En círculo salen seis por fila con el nombre debajo, como
+                      hasta ahora. En cuadro salen cinco fichas anchas, con la
+                      foto entera y el nombre escrito encima.
+                    </p>
                   </div>
                 }
 
@@ -442,9 +550,50 @@
                     </p>
                   </div>
 
+                  <!-- ---------- Si la fila pasa sola ----------
+                       La fila se mueve con las flechas desde siempre; esto la
+                       hace pasar sola cada tantos segundos. Con palanca y no
+                       sólo con el número en blanco porque son dos preguntas
+                       distintas —si se mueve, y cada cuánto—, y porque
+                       apagarla sin perder el número deja volver atrás. -->
+                  @if (conBotones(s)) {
+                    <div class="col-12">
+                      <label class="seccion-rotulo">CÓMO SE MUEVE LA FILA</label>
+
+                      <div class="segundos-fila">
+                        <label class="form-check form-switch palanca mb-0">
+                          <input class="form-check-input" type="checkbox" role="switch"
+                                 [id]="'mueve-' + s.clave" formControlName="mueve_sola"
+                                 [attr.disabled]="puedeEditar ? null : ''">
+                          <span class="form-check-label">
+                            {{ seMueveSola(s) ? 'Pasa sola' : 'Sólo con las flechas' }}
+                          </span>
+                        </label>
+
+                        @if (seMueveSola(s)) {
+                          <div class="input-group input-group-sm campo-segundos">
+                            <input type="number" class="form-control form-control-sm"
+                                   [id]="'segundos-' + s.clave" formControlName="segundos"
+                                   min="2" max="60" step="1" placeholder="5"
+                                   [attr.disabled]="puedeEditar ? null : ''">
+                            <span class="input-group-text">segundos</span>
+                          </div>
+                        }
+                      </div>
+
+                      <p class="campo-hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Apagada, la fila se queda quieta y el cliente la mueve
+                        con las flechas, como hasta ahora. Encendida, pasa de
+                        tarjeta cada tantos segundos —entre 2 y 60; vacío, 5— y
+                        para mientras él tiene el mouse encima.
+                      </p>
+                    </div>
+                  }
+
                   <!-- ---------- Cómo se enseña la sección ----------
                        Sola, o con una imagen a un lado que puede llevar a
-                       otra página. Los tres dibujos y no un desplegable:
+                       otra página. Los cuatro dibujos y no un desplegable:
                        «imagen a la izquierda» se entiende de un vistazo
                        viéndolo, y leyéndolo hay que imaginárselo. -->
                   <div class="col-12">
@@ -468,7 +617,8 @@
                       }
                     </div>
 
-                    @if (disposicionDe(s) !== 'sola') {
+                    <!-- Sólo con imagen a un lado: «sólo productos» y «en carteles» no llevan ninguna -->
+                    @if (conImagenAlLado(s)) {
                       <div class="imagen-lado">
                         <!-- La imagen tal cual la va a ver el cliente -->
                         <div class="imagen-lado__foto">
@@ -697,6 +847,35 @@
                     apaga sola. Vacías, se ve siempre.
                   </p>
                 </div>
+
+                <!-- ---------- Cada cuánto se mueve ----------
+                     Sólo en los banners: el principal y los simples. Rotando
+                     cambia la imagen; en carteles, la página de carteles. -->
+                @if (tieneGaleria(s)) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo" [attr.for]="'segundos-' + s.clave">
+                      CADA CUÁNTO CAMBIA {{ queCambia(s) === 'de imagen' ? 'DE IMAGEN' : 'DE PÁGINA' }}
+                      <span>opcional</span>
+                    </label>
+                    <div class="row g-2">
+                      <div class="col-6 col-md-3">
+                        <div class="input-group input-group-sm">
+                          <input type="number" class="form-control form-control-sm"
+                                 [id]="'segundos-' + s.clave" formControlName="segundos"
+                                 min="2" max="60" step="1" placeholder="5"
+                                 [attr.disabled]="puedeEditar ? null : ''">
+                          <span class="input-group-text">segundos</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Cada cuánto cambia {{ queCambia(s) }}, entre 2 y 60
+                      segundos. Vacío, cada 5, que es como ha ido siempre. Para
+                      mientras el cliente tiene el mouse encima.
+                    </p>
+                  </div>
+                }
               </div>
 
               <!-- ---------- Lo que sólo tienen los banners ----------
@@ -844,24 +1023,19 @@
                   Último cambio: {{ s.updated_at }} · {{ s.updated_by || '—' }}
                 </small>
               }
-            </div>
-          }
-        </div>
-      } @empty {
-        <!-- Con el filtro puesto y nada que enseñar. Se dice qué falta y se
-             ofrece la salida, en vez de dejar un hueco en blanco -->
-        <div class="inicio-vacio">
-          <i class="fa-solid" [ngClass]="filtro === 'activas' ? 'fa-circle-check' : 'fa-circle-minus'"></i>
-          <p class="mb-2">
-            {{ filtro === 'activas'
-               ? 'No hay ninguna sección activa.'
-               : 'No hay ninguna sección inactiva: están todas activas.' }}
-          </p>
-          <button type="button" class="btn btn-sm btn-white" (click)="filtro = 'todas'">
-            Ver todas
-          </button>
-        </div>
-      }
+          </div>
+
+        } @else {
+          <!-- Sin ninguna elegida: se dice qué hacer, en vez de dejar media
+               pantalla en blanco -->
+          <div class="inicio-elige">
+            <i class="fa-solid fa-hand-pointer"></i>
+            <p class="mb-0">Elige una sección de la izquierda para configurarla.</p>
+          </div>
+        }
+      </div>
+
+      </div>
     </div>
   }
 </panel>

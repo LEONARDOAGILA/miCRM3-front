@@ -217,6 +217,62 @@
               </panel>
             </div>
 
+            <!-- ---------- El color de la tienda ---------- -->
+            <div class="col-12">
+              <panel headerClass="bg-gray-800" title="El color de la tienda" noButton="true"
+                     noBody="true" panelClass="mb-0" icono="palette" fondoGris="true">
+
+                <ng-container outsideBody>
+                  <div class="form-card__body">
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      No es sólo del encabezado: es el color de TODA la tienda.
+                      Cambia la barra de categorías, los botones, los carteles de
+                      descuento, los círculos de las categorías, las flechas y el
+                      pie, todo a la vez. Sin elegir ninguno se queda el rojo de
+                      siempre.
+                    </p>
+
+                    <div class="color-tienda">
+                      <app-campoColor idCampo="color-tienda"
+                                      [valor]="colorQueSeVe" [propio]="hayColorPropio"
+                                      porDefecto="El rojo de siempre"
+                                      etiqueta="Color de la tienda"
+                                      [paleta]="paletaTienda"
+                                      [deshabilitado]="!puedeEditar"
+                                      (cambia)="ponerColor($event)" />
+
+                      <!-- La muestra: la barra tal como se va a ver, y los dos
+                           tonos que salen solos del color elegido -->
+                      <div class="color-tienda__muestra" aria-hidden="true">
+                        <span class="color-tienda__barra" [style.background-color]="colorQueSeVe">
+                          <b>CATEGORÍAS</b>
+                          <span class="color-tienda__pastilla" [style.color]="colorQueSeVe">APLICA AQUÍ</span>
+                        </span>
+
+                        <span class="color-tienda__tonos">
+                          <i [style.background-color]="colorQueSeVe" title="El que elegiste"></i>
+                          <i [style.background-color]="tonos.oscuro" title="Con el mouse encima (sale solo)"></i>
+                          <i [style.background-color]="tonos.claro" title="Fondos suaves (sale solo)"></i>
+                        </span>
+                      </div>
+                    </div>
+
+                    @if (colorIlegible) {
+                      <p class="color-tienda__aviso">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        La letra blanca encima de este color se lee a
+                        {{ contrasteTexto }}:1, por debajo del 4,5:1 que hace
+                        falta. Los textos de la barra y de los botones son
+                        blancos: con un color tan claro se van a perder. Se
+                        guarda igual, pero mira la muestra antes.
+                      </p>
+                    }
+                  </div>
+                </ng-container>
+              </panel>
+            </div>
+
             @if (puedeEditar) {
               <div class="col-12 d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-primary"

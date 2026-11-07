@@ -10,7 +10,7 @@ import { EditPieComponent } from './pages/pie/editPie/editPie.component';
 import { AllCategoriasWebComponent } from './pages/categorias/allCategoriasWeb/allCategoriasWeb.component';
 import { AllMarcasWebComponent } from './pages/marcas/allMarcasWeb/allMarcasWeb.component';
 import { EditEspanaMotosComponent } from './pages/espanaMotos/editEspanaMotos/editEspanaMotos.component';
-import { EditInicioComponent } from './pages/inicio/editInicio/editInicio.component';
+import { CuerpoPrincipalComponent } from './pages/cuerpo/cuerpo-principal/cuerpo-principal.component';
 import { ModeladoComponent } from './pages/modelado/modelado.component';
 import { ProductoPorSeccionComponent } from './pages/producto-por-seccion/producto-por-seccion.component';
 
@@ -90,10 +90,12 @@ export const ECOMMERCE_ROUTES: Routes = [
         resolve: { access: AccessResolver },
       },
 
-      // La portada de la tienda: la lista de secciones en su orden
+      // La portada de la tienda: la lista de secciones en su orden.
+      // El `path` se queda en editInicio aunque la carpeta sea
+      // cuerpo/cuerpo-principal: es la url del menú, y vive en la base.
       {
         path: 'editInicio',
-        component: EditInicioComponent,
+        component: CuerpoPrincipalComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },

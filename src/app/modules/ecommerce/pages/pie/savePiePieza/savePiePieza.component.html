@@ -3,7 +3,7 @@
     <i class="fa-solid me-2" [ngClass]="esEnlace ? 'fa-link' : 'fa-table-columns'"></i>{{ titulo }}
   </h5>
   <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
-          (click)="activeModal.dismiss()"></button>
+          (click)="cerrar()"></button>
 </div>
 
 <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
@@ -61,6 +61,87 @@
         </div>
       }
 
+      <!-- ---------- La imagen de la columna ----------
+           En vez de escribir varias líneas con sus enlaces: los medios de
+           pago, el sello de garantía, las aplicaciones… Sólo al modificar una
+           columna que ya existe: el fichero tiene que colgarse de algo. -->
+      @if (esColumnaGuardada) {
+        <div class="col-12">
+          <label class="seccion-rotulo">IMAGEN DE LA COLUMNA <span>opcional</span></label>
+
+          <div class="col-imagen">
+            <div class="col-imagen__foto">
+              @if (hayImagen) {
+                <img [src]="imagen?.url" [alt]="imagen?.alt || 'Imagen de la columna'">
+              } @else {
+                <span class="col-imagen__hueco"><i class="fa-solid fa-image"></i></span>
+              }
+            </div>
+
+            <div class="col-imagen__acciones">
+              <label class="btn btn-sm btn-white mb-0">
+                <i class="fa fa-upload"></i>
+                {{ subiendo ? 'Subiendo…' : (hayImagen ? 'Cambiar' : 'Subir imagen') }}
+                <input type="file" accept="image/*" hidden
+                       [disabled]="subiendo" (change)="elegirImagen($event)">
+              </label>
+
+              @if (hayImagen) {
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        [disabled]="subiendo" (click)="quitarImagen()">
+                  <i class="fa fa-trash"></i> Quitar
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- El texto va dentro de UN <span>: `.campo-hint` es flex, así que
+               cada trozo suelto y cada <b> serían items distintos y el párrafo
+               se partiría en pedazos -->
+          <p class="campo-hint">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>
+              Con imagen, esta columna enseña la imagen y <b>no</b> sus enlaces.
+              No se borran: al quitar la imagen vuelven tal cual.
+            </span>
+          </p>
+        </div>
+
+        <div class="col-12">
+          <app-campoTexto
+            [control]="$any(form.controls['imagen_alt'])"
+            label="QUÉ SE VE EN LA IMAGEN"
+            placeholder="Medios de pago que aceptamos"
+            [maxLength]="120"
+            [trimEspacios]="true">
+          </app-campoTexto>
+          <p class="campo-hint mb-0">
+            <i class="fa-solid fa-circle-info"></i>
+            Es lo que se lee en voz alta para quien no ve la pantalla.
+          </p>
+        </div>
+
+        <div class="col-12">
+          <app-campoTexto
+            [control]="$any(form.controls['imagen_enlace'])"
+            label="A DÓNDE LLEVA (OPCIONAL)"
+            placeholder="/formas-de-pago"
+            [maxLength]="250"
+            [trimEspacios]="true">
+          </app-campoTexto>
+          @if (avisoPestanaImagen) {
+            <p class="campo-hint mb-0">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> {{ avisoPestanaImagen }}
+            </p>
+          } @else {
+            <p class="campo-hint mb-0">
+              <i class="fa-solid fa-circle-info"></i>
+              Vacía, la imagen se queda quieta: no lleva a ninguna parte.
+            </p>
+          }
+        </div>
+      }
+
       <div class="col-12">
         <app-checkbox class="palanca"
           [control]="ctrlActivo"
@@ -75,7 +156,7 @@
   </div>
 
   <div class="modal-footer">
-    <button type="button" class="btn btn-danger" (click)="activeModal.dismiss()">
+    <button type="button" class="btn btn-danger" (click)="cerrar()">
       <i class="fa fa-times"></i> Salir
     </button>
     <button type="submit" class="btn btn-primary" [disabled]="guardando">

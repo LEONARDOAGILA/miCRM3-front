@@ -34,6 +34,21 @@ export interface ConfigEncabezado {
   /** Las que van rotando dentro del buscador. Entre 1 y 5. */
   buscador_frases: string[];
   credito: AvisoCredito;
+
+  /**
+   * EL COLOR DE TODA LA TIENDA, no sólo del encabezado.
+   *
+   * La barra de categorías, los botones, los carteles de descuento, los
+   * círculos de las categorías, las flechas y el pie leen la misma variable
+   * (`--ae-rojo`), así que con un color cambia todo a la vez.
+   *
+   * Vive en el encabezado porque la tienda ya lo pide en su PRIMERA llamada,
+   * antes de pintar nada: así el color llega con lo que ya se pedía.
+   *
+   * null = el rojo de siempre. Los tonos de hover y de fondo suave los calcula
+   * la tienda a partir de éste (`tonosDelColor`), no se guardan.
+   */
+  color_principal?: string | null;
 }
 
 /** Un enlace del menú. Los principales traen sus `hijos`; los hijos, no. */

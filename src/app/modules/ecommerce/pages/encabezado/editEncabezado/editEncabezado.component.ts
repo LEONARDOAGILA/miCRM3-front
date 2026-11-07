@@ -15,9 +15,11 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { EncabezadoService } from '../../../services/encabezado.service';
 import { EncabezadoModel, EnlaceEncabezadoModel } from '../../../interfaces/encabezadoModel';
+import { COLOR_TIENDA, contrasteEntre, tonosDelColor } from '../../../interfaces/inicioModel';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { TabPanelComponent, PestanaTab } from '../../../../../components/campos/tabPanel/tabPanel.component';
+import { CampoColorComponent } from '../../../../../components/campos/campoColor/campoColor.component';
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 import { SaveEnlaceEncabezadoComponent } from '../saveEnlaceEncabezado/saveEnlaceEncabezado.component';
@@ -56,7 +58,7 @@ import { PapeleraEncabezadoComponent } from '../papeleraEncabezado/papeleraEncab
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule, RouterLink, ReactiveFormsModule,
-    PanelComponent, TabPanelComponent, CampoTextoComponent, CheckboxComponent,
+    PanelComponent, TabPanelComponent, CampoColorComponent, CampoTextoComponent, CheckboxComponent,
     CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
   ],
 })
@@ -96,6 +98,58 @@ export class EditEncabezadoComponent implements OnInit {
   get credito(): FormGroup { return this.form.controls['credito'] as FormGroup; }
   get frases(): FormArray { return this.form.controls['buscador_frases'] as FormArray; }
 
+  // ================================================================
+  // EL COLOR DE LA TIENDA
+  // ================================================================
+  //
+  // NO ES SÓLO DEL ENCABEZADO: la barra de categorías, los botones, los
+  // carteles de descuento, los círculos de las categorías, las flechas y el
+  // pie leen la misma variable de la tienda (`--ae-rojo`). Por eso se elige
+  // UNO y cambia todo a la vez, en vez de ir color por color y acabar con la
+  // barra de un tono y los botones de otro.
+  //
+  // UN SOLO COLOR Y NO TRES: el del mouse encima y el de los fondos suaves
+  // salen de él con la misma cuenta que hace la tienda (`tonosDelColor`).
+  //
+  // SE AVISA, NO SE PROHÍBE, igual que con los botones del inicio: la letra de
+  // la barra y de los botones es BLANCA y está escrita en la hoja de estilos
+  // de la tienda, así que un color claro la deja sin leerse. Puede ser justo
+  // el color de la marca, y quien administra está mirando la muestra de al
+  // lado; pero un texto que no se lee es un fallo que ve el cliente.
+
+  /** El de siempre, el que usa la tienda cuando nadie ha elegido ninguno. */
+  public readonly colorDeFabrica = COLOR_TIENDA;
+
+  /** Colores de arranque: el de la casa y cinco que sí aguantan letra blanca. */
+  public readonly paletaTienda = [COLOR_TIENDA, '#0A58CA', '#0F766E', '#7C3AED', '#B45309', '#1D1D1F'];
+
+  get ctrlColor(): FormControl { return this.form.controls['color_principal'] as FormControl; }
+
+  /** Lo elegido a mano, o vacío. */
+  get colorElegido(): string { return (this.ctrlColor?.value ?? '').toString(); }
+
+  get hayColorPropio(): boolean { return !!this.colorElegido; }
+
+  /** El que se va a ver: el elegido o el de siempre. */
+  get colorQueSeVe(): string { return this.colorElegido || COLOR_TIENDA; }
+
+  /** Los dos que salen de él: el del mouse encima y el de los fondos suaves. */
+  get tonos(): { oscuro: string; claro: string } { return tonosDelColor(this.colorQueSeVe); }
+
+  ponerColor(color: string): void {
+    if (!this.puedeEditar) { return; }
+    this.ctrlColor.setValue(color || '');
+    this.ctrlColor.markAsDirty();
+  }
+
+  /** Cuánto contrasta la letra blanca encima de ese color (WCAG, de 1 a 21). */
+  get contrasteConBlanco(): number { return contrasteEntre(this.colorQueSeVe, '#ffffff'); }
+
+  get contrasteTexto(): string { return this.contrasteConBlanco.toFixed(1).replace('.', ','); }
+
+  /** Si la letra blanca no llega al 4,5:1 que pide la WCAG para texto normal. */
+  get colorIlegible(): boolean { return this.contrasteConBlanco < 4.5; }
+
   get ctrlBarraActiva(): FormControl { return this.barra.controls['activo'] as FormControl; }
   get ctrlCreditoActivo(): FormControl { return this.credito.controls['activo'] as FormControl; }
 
@@ -119,6 +173,8 @@ export class EditEncabezadoComponent implements OnInit {
         boton_enlace: ['', [Validators.maxLength(250)]],
       }),
       buscador_frases: this.fb.array([]),
+      // El color de TODA la tienda. Vacío = el rojo de siempre
+      color_principal: [''],
       credito: this.fb.group({
         activo:       [true],
         texto:        ['', [Validators.maxLength(60)]],
@@ -159,6 +215,7 @@ export class EditEncabezadoComponent implements OnInit {
         boton_texto:  c.barra_superior?.boton_texto ?? '',
         boton_enlace: c.barra_superior?.boton_enlace ?? '',
       },
+      color_principal: c.color_principal ?? '',
       credito: {
         activo:       c.credito?.activo !== false,
         texto:        c.credito?.texto ?? '',
@@ -216,6 +273,7 @@ export class EditEncabezadoComponent implements OnInit {
         boton_enlace: limpio(v.barra_superior.boton_enlace),
       },
       buscador_frases: (v.buscador_frases ?? []).map((f: string) => (f ?? '').trim()).filter(Boolean),
+      color_principal: limpio(v.color_principal),
       credito: {
         activo:       v.credito.activo !== false,
         texto:        limpio(v.credito.texto),

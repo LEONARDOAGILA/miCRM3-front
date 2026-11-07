@@ -76,6 +76,29 @@ export interface SeccionInicioModel {
   banner_vista: VistaBanner;
 
   /**
+   * CADA CUÁNTOS SEGUNDOS SE MUEVE SOLA, o null.
+   *
+   * null NO ES CERO: es «lo que hace esa sección cuando nadie ha elegido
+   * nada», y no es lo mismo en todas. Un banner rota cada 5 segundos —un
+   * banner se mueve, no hay que encenderlo—; una sección de productos se queda
+   * quieta y se mueve con las flechas, como ha sido siempre.
+   *
+   * Por eso llega sin resolver, al revés que `banner_vista`: la pantalla tiene
+   * que poder enseñar el campo vacío, y un 5 escrito ahí diría que alguien lo
+   * eligió.
+   */
+  segundos: number | null;
+
+  /**
+   * EN QUÉ FORMA SE PINTAN SUS FICHAS: en círculo o en cuadro.
+   *
+   * Llega siempre resuelta, nunca null, como `banner_vista`. Hoy sólo la mira
+   * «Categorías destacadas», que es la única sección con dos maneras de
+   * pintarse; las demás la traen igual y no la usan.
+   */
+  forma: FormaFicha;
+
+  /**
    * Si es una de las de fábrica.
    *
    * Lo decide el servidor y no la pantalla: «de fábrica» significa «sin
@@ -97,10 +120,29 @@ export interface SeccionInicioModel {
 }
 
 /** De qué manera se enseña una sección de productos. */
-export type LadoImagen = 'sola' | 'izquierda' | 'derecha';
+// Cómo se enseña una sección de productos. Las tres primeras hablan de la
+// imagen de al lado; 'cartel' no lleva imagen: cambia la forma de las
+// tarjetas, que pasan a ser carteles cuadrados de tres por fila
+export type LadoImagen = 'sola' | 'izquierda' | 'derecha' | 'cartel';
 
 /** Y de qué manera se enseña un banner. */
 export type VistaBanner = 'rotativo' | 'carteles';
+
+/** En qué forma se pintan las fichas de una sección. Hoy sólo las destacadas. */
+export type FormaFicha = 'circulo' | 'cuadrado';
+
+export interface FormaDeFicha {
+  valor: FormaFicha;
+  texto: string;
+  ayuda: string;
+}
+
+export const FORMAS_FICHA: FormaDeFicha[] = [
+  { valor: 'circulo', texto: 'En círculo',
+    ayuda: 'La foto recortada en redondo y el nombre debajo. Es como se ve hoy' },
+  { valor: 'cuadrado', texto: 'En cuadro',
+    ayuda: 'Una ficha ancha con la foto a todo el cuadro y el nombre escrito encima, abajo. Caben menos por fila, porque cada una es más ancha' },
+];
 
 export interface VistaDeBanner {
   valor: VistaBanner;
@@ -138,7 +180,7 @@ export interface ImagenDeSeccion {
   nueva_pestana: boolean;
 }
 
-/** Las tres maneras de enseñar una sección de productos, para la pantalla. */
+/** Las cuatro maneras de enseñar una sección de productos, para la pantalla. */
 export interface Disposicion {
   valor: LadoImagen;
   texto: string;
@@ -152,7 +194,14 @@ export const DISPOSICIONES: Disposicion[] = [
     ayuda: 'La imagen a la izquierda y las tarjetas a su derecha' },
   { valor: 'derecha', texto: 'Imagen a la derecha',
     ayuda: 'Las tarjetas a la izquierda y la imagen al final' },
+  { valor: 'cartel', texto: 'En carteles',
+    ayuda: 'Los productos en carteles cuadrados, tres por fila: la foto a todo el cartel y el nombre y el precio escritos encima. Sin imagen de al lado' },
 ];
+
+/** Si esa manera de enseñar la sección lleva imagen a un lado. */
+export function llevaImagenAlLado(lado: LadoImagen | null | undefined): boolean {
+  return lado === 'izquierda' || lado === 'derecha';
+}
 
 /**
  * LOS COLORES DE UN BOTÓN de la tarjeta de un producto.
@@ -332,6 +381,65 @@ export function colorDeTextoSobre(fondo: string): string {
   const conBlanco = 1.05 / (lum + 0.05);
   const conNegro  = (lum + 0.05) / 0.05;
   return conBlanco >= conNegro ? '#ffffff' : '#1d1d1f';
+}
+
+/**
+ * El contraste entre dos «#rrggbb», como lo define la WCAG: de 1 a 21.
+ *
+ * 21 si alguno de los dos no es un color: sin saber de qué color se habla, lo
+ * que no puede hacerse es avisar de un problema que a lo mejor no existe.
+ */
+export function contrasteEntre(uno: string, otro: string): number {
+  const a = luminancia(uno);
+  const b = luminancia(otro);
+  if (a === null || b === null) { return 21; }
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+/** La luminancia de un «#rrggbb»; null si no es un color. */
+export function luminancia(hex: string): number | null {
+  const n = parseInt((hex || '').replace('#', ''), 16);
+  if (isNaN(n)) { return null; }
+
+  const canal = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * canal(((n >> 16) & 255) / 255)
+       + 0.7152 * canal(((n >> 8) & 255) / 255)
+       + 0.0722 * canal((n & 255) / 255);
+}
+
+/**
+ * EL COLOR DE LA TIENDA de siempre, el rojo de Almacenes España.
+ *
+ * Es el `--ae-rojo` de la hoja de estilos de la tienda, y está aquí para que
+ * la muestra del CRM enseñe lo que se ve de verdad cuando nadie ha elegido
+ * ninguno. Si allí cambia, cambia aquí.
+ */
+export const COLOR_TIENDA = '#df1122';
+
+/**
+ * Los dos tonos que salen del color principal: el del hover y el de los fondos
+ * suaves.
+ *
+ * NO SE GUARDAN NI SE ELIGEN: acertar tres colores que van juntos es donde se
+ * acaba viendo un hover que no pega con su botón. LA TIENDA HACE ESTA MISMA
+ * CUENTA (shared/utils/color-tienda.util.ts) y tiene que dar lo mismo: aquí es
+ * la muestra y allí es lo que ve el cliente.
+ *
+ * Con `color-mix` sería una línea, pero el suelo de la tienda es iOS 15 y allí
+ * no existe: se calcula a mano.
+ */
+export function tonosDelColor(principal: string): { oscuro: string; claro: string } {
+  const n = parseInt((principal || '').replace('#', ''), 16);
+  if (isNaN(n)) { return { oscuro: '#b5121d', claro: '#fdecee' }; }
+
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const hex = (x: number) => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0');
+  // Oscuro: el mismo color con un 18% menos de luz. Claro: el mismo a un 8%
+  // sobre blanco, que es el fondo de las etiquetas y los avisos
+  return {
+    oscuro: '#' + hex(r * 0.82) + hex(g * 0.82) + hex(b * 0.82),
+    claro: '#' + hex(r + (255 - r) * 0.92) + hex(g + (255 - g) * 0.92) + hex(b + (255 - b) * 0.92),
+  };
 }
 
 export type EstadoSeccion = 'visible' | 'oculta' | 'programada' | 'terminada';

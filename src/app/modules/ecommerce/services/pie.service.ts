@@ -44,6 +44,24 @@ export class PieService {
   }
 
   /** Se lleva sus enlaces; restaurarla los devuelve. */
+  /**
+   * La imagen de una columna, por su propia puerta.
+   *
+   * Va aparte de `editColumna` porque esa escribe todos los campos de la
+   * columna: con el fichero dentro, renombrarla lo borraría. Es multipart, así
+   * que NO se le pone Content-Type a mano —el navegador tiene que poner el
+   * suyo con el `boundary`—.
+   */
+  subirImagenColumna(id: number, archivo: File): Observable<any> {
+    const datos = new FormData();
+    datos.append('imagen', archivo);
+    return this._http.post(this.URL_SERVICIOS + 'imagenColumna/' + id, datos);
+  }
+
+  quitarImagenColumna(id: number): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'imagenColumna/' + id);
+  }
+
   deleteColumna(id: any): Observable<any> {
     return this._http.delete(this.URL_SERVICIOS + 'deleteColumna/' + id);
   }

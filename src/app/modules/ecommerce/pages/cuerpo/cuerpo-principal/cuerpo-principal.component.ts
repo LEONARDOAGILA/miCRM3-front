@@ -15,8 +15,9 @@ import {
   SeccionInicioModel, VistaSeccion, ESTADOS_SECCION, VISTA_SECCIONES, VISTA_POR_DEFECTO,
   vistaDeProductos, vistaDeBanner,
   TAMANOS_ROTULO, FUENTES_ROTULO, COLORES_ROTULO, ROTULO_BASE_PX, ROTULO_COLOR_TIENDA,
-  BOTONES_TARJETA, COLORES_TARJETA, ColorDeTarjeta, colorDeTextoSobre,
-  DISPOSICIONES, LadoImagen, VISTAS_BANNER, VistaBanner,
+  BOTONES_TARJETA, COLORES_TARJETA, ColorDeTarjeta, colorDeTextoSobre, contrasteEntre,
+  DISPOSICIONES, LadoImagen, llevaImagenAlLado, VISTAS_BANNER, VistaBanner,
+  FORMAS_FICHA, FormaFicha,
   ALTOS_SECCION, AIRE_BASE_PX,
 } from '../../../interfaces/inicioModel';
 
@@ -59,9 +60,9 @@ import { GaleriaImagenesComponent } from '../../galerias/galeriaImagenes/galeria
  * guardar a cada tecla sería guardar lo que se está escribiendo a medias.
  */
 @Component({
-  selector: 'app-editInicio',
-  templateUrl: './editInicio.component.html',
-  styleUrls: ['./editInicio.component.css'],
+  selector: 'app-cuerpo-principal',
+  templateUrl: './cuerpo-principal.component.html',
+  styleUrls: ['./cuerpo-principal.component.css'],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
@@ -71,7 +72,7 @@ import { GaleriaImagenesComponent } from '../../galerias/galeriaImagenes/galeria
     CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder,
   ],
 })
-export class EditInicioComponent implements OnInit {
+export class CuerpoPrincipalComponent implements OnInit {
 
   public titulo = 'Inicio de la tienda';
   public accesoModel!: AccesoModel;
@@ -81,18 +82,17 @@ export class EditInicioComponent implements OnInit {
   public trabajando = false;
   public guardando: string | null = null;
 
-  /** La abierta, por clave. Sólo una: el acordeón es la lista de la tienda. */
-  public abierta: string | null = null;
-
   /**
-   * Las que ya se abrieron alguna vez.
+   * LA SECCIÓN ELEGIDA, por clave. Sólo una.
    *
-   * El cuerpo de una sección se PINTA UNA VEZ Y SE ESCONDE, no se destruye:
-   * dentro va una galería que se carga sola, y destruirla al cerrar la haría
-   * pedir sus imágenes otra vez a cada clic. Pero sólo se monta la que se
-   * abre: montarlas todas de entrada pediría galerías que nadie va a mirar.
+   * La pantalla es de dos columnas, como el catálogo de productos o las
+   * características: la lista a la izquierda y lo que se configura a la
+   * derecha. ANTES ERA UN ACORDEÓN y cada sección desplegaba sus campos
+   * debajo: con quince campos abiertos en medio de la lista no se sabía
+   * dónde empezaba una sección y acababa la otra, y había que subir y bajar
+   * para comparar dos.
    */
-  public vistas = new Set<string>();
+  public elegida: string | null = null;
 
   public formularios: Record<string, FormGroup> = {};
 
@@ -221,7 +221,7 @@ export class EditInicioComponent implements OnInit {
       this.cerrarNuevoBanner();
       // Se abre sola: lo siguiente que hay que hacer es meterle imágenes
       const nueva = (res?.data ?? []).find((x: SeccionInicioModel) => !antes.has(x.clave));
-      if (nueva) { this.abrirSeccion(nueva.clave); }
+      if (nueva) { this.elegir(nueva.clave); }
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo crear el banner', 'Error',
                          { timeOut: 20000, closeButton: true });
@@ -280,7 +280,7 @@ export class EditInicioComponent implements OnInit {
     try {
       const res: any = await firstValueFrom(this._inicioService.deleteBanner(s.clave));
       this._toastr.success(res?.message ?? 'Banner borrado', 'Listo');
-      if (this.abierta === s.clave) { this.abierta = null; }
+      if (this.elegida === s.clave) { this.elegida = null; }
       this.pintar(res?.data, true);
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo borrar el banner', 'Error',
@@ -294,21 +294,21 @@ export class EditInicioComponent implements OnInit {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
     this.pedirLetrasDeLaTienda();
     await this.cargar();
-    this.abrirLaQuePiden();
+    this.elegirLaQuePiden();
   }
 
   /**
-   * Si se llega desde el modelado, con `?seccion=`, se abre esa.
+   * Si se llega desde el modelado, con `?seccion=`, se elige esa.
    *
    * Allí se elige una sección en el dibujo y se pulsa «configurar»; llegar
    * aquí a la lista cerrada y tener que buscarla otra vez sería perder el
    * sitio en el camino.
    */
-  private abrirLaQuePiden(): void {
+  private elegirLaQuePiden(): void {
     const clave = this.activeRoute.snapshot.queryParamMap.get('seccion');
     if (!clave || !this.secciones.some(s => s.clave === clave)) { return; }
 
-    this.abrirSeccion(clave);
+    this.elegir(clave);
     // Después de pintarla, que si no todavía no existe en el documento
     setTimeout(() => document.getElementById('seccion-caja-' + clave)
                              ?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
@@ -389,6 +389,11 @@ export class EditInicioComponent implements OnInit {
       disposicion:          [s.imagen?.elegido ?? 'sola'],
       // Sólo lo usan los banners. Viaja con el resto porque es un campo más
       banner_vista:         [s.banner_vista ?? 'rotativo'],
+      segundos:             [s.segundos ?? null],
+      forma:                [s.forma ?? 'circulo'],
+      // Sólo para la pantalla: en una sección de productos, primero se decide
+      // SI pasa sola y luego cada cuánto. Lo que se guarda es un número o nada
+      mueve_sola:           [s.segundos !== null],
       imagen_alt:           [s.imagen?.alt ?? ''],
       imagen_enlace:        [s.imagen?.enlace ?? ''],
       imagen_nueva_pestana: [s.imagen?.nueva_pestana ?? true],
@@ -715,6 +720,54 @@ export class EditInicioComponent implements OnInit {
     this.ponerCampo(s, 'banner_vista', valor);
   }
 
+  /**
+   * Si la sección es un banner: una galería de imágenes con su sitio.
+   *
+   * NO ES `es_banner`, que es más estrecho: ése dice «se creó aquí y se puede
+   * borrar aquí», y deja fuera al banner principal, que es de fábrica. Para
+   * los segundos manda la fuente, porque lo que rota son imágenes y las dos
+   * clases las tienen.
+   */
+  tieneGaleria(s: SeccionInicioModel): boolean {
+    return s.fuente?.tipo === 'galeria';
+  }
+
+  /**
+   * Qué es lo que cambia cada tantos segundos en ese banner.
+   *
+   * Un banner se mueve siempre; lo que cambia es QUÉ. Rotando es la imagen; en
+   * carteles, la página de carteles. El campo de los segundos es el mismo, y
+   * sólo cambia cómo se explica.
+   */
+  queCambia(s: SeccionInicioModel): string {
+    return this.tieneGaleria(s) && s.es_banner && this.vistaDe(s) === 'carteles'
+      ? 'de página de carteles' : 'de imagen';
+  }
+
+  /** Si la palanca de «pasa sola» está encendida (sólo secciones de productos). */
+  seMueveSola(s: SeccionInicioModel): boolean {
+    return this.formularios[s.clave]?.value?.mueve_sola === true;
+  }
+
+  // ================================================================
+  // LA FORMA DE LAS FICHAS (hoy sólo las categorías destacadas)
+  // ================================================================
+
+  public readonly formasFicha = FORMAS_FICHA;
+
+  /** Si es la sección que se puede pintar de dos formas. */
+  esDestacadas(s: SeccionInicioModel): boolean {
+    return s.fuente?.tipo === 'destacadas';
+  }
+
+  formaDe(s: SeccionInicioModel): FormaFicha {
+    return (this.formularios[s.clave]?.value?.forma ?? 'circulo') as FormaFicha;
+  }
+
+  ponerForma(s: SeccionInicioModel, valor: FormaFicha): void {
+    this.ponerCampo(s, 'forma', valor);
+  }
+
   /** La clave de la sección cuya imagen se está subiendo, o null. */
   public subiendoImagen: string | null = null;
 
@@ -725,6 +778,17 @@ export class EditInicioComponent implements OnInit {
 
   ponerDisposicion(s: SeccionInicioModel, valor: LadoImagen): void {
     this.ponerCampo(s, 'disposicion', valor);
+  }
+
+  /**
+   * Si la manera elegida lleva imagen a un lado.
+   *
+   * NO ES «distinto de sola»: «en carteles» tampoco la lleva —ahí lo que
+   * cambia es la forma de las tarjetas—, y con la comparación de antes la
+   * pantalla pedía subir una imagen que no se iba a usar en ningún sitio.
+   */
+  conImagenAlLado(s: SeccionInicioModel): boolean {
+    return llevaImagenAlLado(this.disposicionDe(s));
   }
 
   /** Si hay fichero subido. */
@@ -740,7 +804,7 @@ export class EditInicioComponent implements OnInit {
    * sección sola, y eso hay que decirlo o parecerá que no se guardó.
    */
   faltaImagen(s: SeccionInicioModel): boolean {
-    return this.disposicionDe(s) !== 'sola' && !this.hayImagen(s);
+    return this.conImagenAlLado(s) && !this.hayImagen(s);
   }
 
   /**
@@ -817,23 +881,15 @@ export class EditInicioComponent implements OnInit {
     return this.contrasteEntre(hex, '#ffffff');
   }
 
-  /** El contraste entre dos colores, como lo define la WCAG: de 1 a 21. */
+  /**
+   * El contraste entre dos colores, como lo define la WCAG: de 1 a 21.
+   *
+   * La cuenta vive en `inicioModel` desde que también la usa «Encabezado»
+   * para avisar si el color de la tienda deja la letra blanca sin leerse:
+   * dos copias de esto son dos avisos que un día dejan de decir lo mismo.
+   */
   private contrasteEntre(uno: string, otro: string): number {
-    const a = this.luz(uno);
-    const b = this.luz(otro);
-    if (a === null || b === null) { return 21; }
-    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-  }
-
-  /** La luminancia de un «#rrggbb»; null si no es un color. */
-  private luz(hex: string): number | null {
-    const n = parseInt((hex || '').replace('#', ''), 16);
-    if (isNaN(n)) { return null; }
-
-    const canal = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-    return 0.2126 * canal(((n >> 16) & 255) / 255)
-         + 0.7152 * canal(((n >> 8) & 255) / 255)
-         + 0.0722 * canal((n & 255) / 255);
+    return contrasteEntre(uno, otro);
   }
 
   /**
@@ -953,23 +1009,94 @@ export class EditInicioComponent implements OnInit {
     return s.fuente.tipo !== 'pendiente' && s.estado === 'visible' && !s.con_contenido;
   }
 
-  alternarSeccion(clave: string): void {
-    if (this.abierta === clave) { this.abierta = null; return; }
-    this.abrirSeccion(clave);
+  /**
+   * Elegir una sección: sus campos salen en la columna de la derecha.
+   *
+   * NO ALTERNA. Volver a pulsar la que ya está elegida la deja como está: en
+   * dos columnas, «cerrarla» dejaría media pantalla en blanco sin que nadie
+   * lo haya pedido.
+   */
+  elegir(clave: string): void {
+    this.elegida = clave;
+  }
+
+  /** La sección elegida, o null. La columna de la derecha pinta la suya. */
+  get laElegida(): SeccionInicioModel | null {
+    return this.secciones.find(s => s.clave === this.elegida) ?? null;
+  }
+
+  // ================================================================
+  // LA COLUMNA DE LA IZQUIERDA
+  // ================================================================
+  //
+  // El mismo divisor que el árbol del catálogo de productos y el de
+  // características: se arrastra para cambiar el ancho, doble clic lo
+  // devuelve al de siempre y el ancho se recuerda en este navegador.
+
+  private readonly CLAVE_ANCHO = 'miCRM3.cuerpoPrincipal.anchoLateral';
+  public readonly ANCHO_DEFECTO = 360;
+  private readonly ANCHO_MIN = 260;
+  private readonly ANCHO_MAX = 620;
+
+  public anchoLateral = this.leerAncho();
+  public lateralPlegado = false;
+  public redimensionando = false;
+
+  alternarLateral(): void {
+    this.lateralPlegado = !this.lateralPlegado;
   }
 
   /**
-   * Abre una sección: la marca como abierta Y como vista.
+   * Arrastrar el divisor cambia el ancho de la lista.
    *
-   * LAS DOS COSAS JUNTAS, SIEMPRE. El cuerpo sólo se pinta para las que están
-   * en `vistas` —así una portada de quince secciones no arma quince
-   * formularios de golpe—, así que marcar `abierta` a secas deja la fila con
-   * la flecha hacia abajo y sin nada debajo. Pasó al crear un banner: se abría
-   * sola y salía vacía.
+   * Con captura del puntero: sin ella, al mover deprisa el ratón se sale del
+   * divisor y el arrastre se queda a medias.
    */
-  abrirSeccion(clave: string): void {
-    this.abierta = clave;
-    this.vistas.add(clave);
+  iniciarRedimension(ev: PointerEvent): void {
+    if (ev.button !== 0 || this.lateralPlegado) { return; }
+    ev.preventDefault();
+
+    const divisor = ev.currentTarget as HTMLElement;
+    const xInicial = ev.clientX;
+    const anchoInicial = this.anchoLateral;
+    this.redimensionando = true;
+    divisor.setPointerCapture(ev.pointerId);
+
+    const mover = (e: PointerEvent) => {
+      const nuevo = anchoInicial + (e.clientX - xInicial);
+      this.anchoLateral = Math.min(this.ANCHO_MAX, Math.max(this.ANCHO_MIN, Math.round(nuevo)));
+    };
+    const soltar = (e: PointerEvent) => {
+      divisor.removeEventListener('pointermove', mover);
+      divisor.removeEventListener('pointerup', soltar);
+      divisor.removeEventListener('pointercancel', soltar);
+      divisor.releasePointerCapture(e.pointerId);
+      this.redimensionando = false;
+      this.guardarAncho();
+    };
+
+    divisor.addEventListener('pointermove', mover);
+    divisor.addEventListener('pointerup', soltar);
+    divisor.addEventListener('pointercancel', soltar);
+  }
+
+  anchoPorDefecto(): void {
+    this.anchoLateral = this.ANCHO_DEFECTO;
+    this.guardarAncho();
+  }
+
+  guardarAncho(): void {
+    try { localStorage.setItem(this.CLAVE_ANCHO, String(this.anchoLateral)); }
+    catch { /* ventana privada o almacenamiento bloqueado */ }
+  }
+
+  private leerAncho(): number {
+    try {
+      const guardado = Number(localStorage.getItem(this.CLAVE_ANCHO));
+      const vale = Number.isFinite(guardado)
+        && guardado >= this.ANCHO_MIN && guardado <= this.ANCHO_MAX;
+      return vale ? guardado : this.ANCHO_DEFECTO;
+    } catch { return this.ANCHO_DEFECTO; }
   }
 
   // ================================================================
@@ -998,6 +1125,12 @@ export class EditInicioComponent implements OnInit {
 
     const v = f.getRawValue();
     const limpio = (x: any) => (x ?? '').toString().trim() || null;
+    // Los segundos: un entero o null. Lo que no sea un número se manda vacío,
+    // que la base entiende como «el ritmo de siempre»
+    const segundosDe = (x: any) => {
+      const n = Math.round(Number(limpio(x)));
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
 
     const desde = limpio(v.desde);
     const hasta = limpio(v.hasta);
@@ -1045,6 +1178,14 @@ export class EditInicioComponent implements OnInit {
         disposicion:          this.conBotones(s) ? (limpio(v.disposicion) || 'sola') : null,
         // Y la vista sólo donde hay un banner que enseñar
         banner_vista:         s.es_banner ? (limpio(v.banner_vista) || 'rotativo') : null,
+        // Vacío se manda como null, que es «lo que hace de siempre»: un banner
+        // rota a su ritmo y una sección de productos se queda quieta. En las de
+        // productos manda la palanca: apagada, null aunque haya un número
+        // escrito, para que volver a encenderla lo recupere
+        forma:                this.esDestacadas(s) ? (limpio(v.forma) || 'circulo') : null,
+        segundos:             this.tieneGaleria(s) ? segundosDe(v.segundos)
+                            : this.conBotones(s)   ? (v.mueve_sola ? (segundosDe(v.segundos) ?? 5) : null)
+                            : null,
         imagen_alt:           this.conBotones(s) ? limpio(v.imagen_alt)    : null,
         imagen_enlace:        this.conBotones(s) ? limpio(v.imagen_enlace) : null,
         imagen_nueva_pestana: this.conBotones(s) ? !!v.imagen_nueva_pestana : null,

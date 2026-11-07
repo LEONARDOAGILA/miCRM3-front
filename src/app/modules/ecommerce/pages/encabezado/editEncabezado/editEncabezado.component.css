@@ -270,3 +270,64 @@
   gap: .375rem;
   margin-left: auto;
 }
+
+/* ===== El color de la tienda ===== */
+/* El selector y la muestra en la misma línea: se elige mirando cómo queda, no
+   leyendo un código hexadecimal */
+.color-tienda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: .5rem;
+}
+
+.color-tienda__muestra {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+/* La barra de categorías de la tienda, en pequeño */
+.color-tienda__barra {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .35rem .6rem;
+  border-radius: .35rem;
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.color-tienda__pastilla {
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  background-color: #fff;
+  font-size: .65rem;
+  font-weight: 700;
+}
+
+/* Los tres tonos: el elegido y los dos que salen de él */
+.color-tienda__tonos {
+  display: inline-flex;
+  gap: .25rem;
+}
+
+.color-tienda__tonos i {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: .25rem;
+  border: 1px solid rgba(0, 0, 0, .12);
+}
+
+.color-tienda__aviso {
+  margin: 0;
+  font-size: .78rem;
+  color: #b54708;
+}
+
+.color-tienda__aviso i {
+  margin-right: .35rem;
+}

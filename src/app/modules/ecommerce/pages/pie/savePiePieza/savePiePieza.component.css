@@ -1,0 +1,77 @@
+/* Lo mismo que en «Inicio de la tienda»: el rótulo pequeño de un bloque y el
+   texto de ayuda de debajo. Aquí estaban sin estilo —el diálogo no tenía hoja
+   propia— y las ayudas se leían como párrafos sueltos. */
+.seccion-rotulo {
+  display: block;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.seccion-rotulo span { font-weight: 400; text-transform: none; opacity: .8; }
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 0;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ===== La imagen de la columna ===== */
+/* La muestra y los botones en la misma línea: se decide mirando la imagen, no
+   leyendo el nombre del fichero */
+.col-imagen {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.col-imagen__foto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 8rem;
+  height: 5rem;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* Entera y sin recortar: es un dibujo (medios de pago, sellos), y recortarlo
+   por el centro se come justo lo que hay que leer */
+.col-imagen__foto img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.col-imagen__hueco {
+  font-size: 1.5rem;
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .5;
+}
+
+.col-imagen__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+/* El <input type="file"> va escondido dentro de la etiqueta: el nativo es feo
+   y cambia en cada navegador, y el clic en la etiqueta lo abre igual */
+.col-imagen__acciones label {
+  cursor: pointer;
+}

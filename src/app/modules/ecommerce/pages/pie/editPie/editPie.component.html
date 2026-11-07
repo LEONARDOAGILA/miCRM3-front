@@ -115,11 +115,18 @@
           <ng-container outsideBody>
             <div class="form-card__body">
 
+              <!-- El texto va dentro de UN <span>: `.campo-hint` es flex, así
+                   que cada trozo suelto sería un item distinto -->
               <p class="campo-hint">
                 <i class="fa-solid fa-circle-info"></i>
-                Se arrastra para cambiar el orden y se guarda solo. El título de
-                la columna no es un enlace; todo lo de dentro sí necesita su
-                dirección.
+                <span>
+                  Se arrastra para cambiar el orden y se guarda solo. El título
+                  de la columna no es un enlace; todo lo de dentro sí necesita
+                  su dirección. Con el lápiz
+                  <i class="fa fa-pen"></i> de una columna también se le pone
+                  una <b>imagen</b>, que sale en la tienda en vez de sus
+                  enlaces.
+                </span>
               </p>
 
               @if (columnas.length === 0) {
@@ -147,6 +154,17 @@
                       <span class="pie-columna__titulo">{{ columna.titulo }}</span>
                       <span class="pie-columna__cuenta">{{ columna.enlaces.length }}</span>
 
+                      <!-- Con imagen, la columna enseña la imagen y NO sus
+                           enlaces: hay que poder verlo sin abrirla, porque los
+                           enlaces de debajo siguen estando y no se ven en la
+                           tienda -->
+                      @if (columna.imagen?.url) {
+                        <span class="chip chip-muted"
+                              title="Enseña esta imagen en vez de sus enlaces">
+                          <i class="fa-solid fa-image"></i> Con imagen
+                        </span>
+                      }
+
                       @if (!columna.activo) {
                         <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculta</span>
                       }
@@ -161,7 +179,8 @@
                         }
                         @if (puedeEditar) {
                           <button type="button" class="btn btn-xs btn-editar"
-                                  title="Renombrar la columna" (click)="editarColumna(columna)">
+                                  title="El título y la imagen de la columna"
+                                  (click)="editarColumna(columna)">
                             <i class="fa fa-pen"></i>
                           </button>
                         }
