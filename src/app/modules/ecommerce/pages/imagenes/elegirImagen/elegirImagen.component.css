@@ -1,0 +1,139 @@
+/* ============================================================
+   ELEGIR UNA IMAGEN
+   ============================================================
+   Colores de variables de Bootstrap, para que acompañen al tema claro y al
+   oscuro. */
+
+.elegir-para {
+  margin-left: .5rem;
+  font-size: .75rem;
+  font-weight: 400;
+  opacity: .85;
+}
+
+.elegir-barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .25rem;
+}
+
+.elegir-buscar {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.elegir-buscar i {
+  position: absolute;
+  top: 50%;
+  left: .6rem;
+  transform: translateY(-50%);
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.elegir-buscar .form-control {
+  padding-left: 1.9rem;
+}
+
+/* El de serie no se puede estilar: va escondido detrás de la etiqueta */
+.elegir-fichero {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- La rejilla ---------- */
+.elegir-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: .5rem;
+  /* Con ciento y pico, sin tope el modal crece más que la pantalla */
+  max-height: 26rem;
+  overflow-y: auto;
+  padding: .125rem;
+}
+
+.elegir-ficha {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.elegir-ficha:hover {
+  border-color: var(--bs-app-theme, #00acac);
+}
+
+.elegir-ficha.is-elegida {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 3px rgba(var(--bs-app-theme-rgb, 0, 172, 172), .25);
+}
+
+.elegir-ficha__img {
+  display: block;
+  width: 100%;
+  height: 6rem;
+  /* `contain` y no `cover`: aquí se elige un logo o un banner, y recortarlo
+     para que cuadre en el hueco esconde justo lo que hay que reconocer. */
+  object-fit: contain;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.elegir-ficha__pie {
+  padding: .2rem .35rem;
+  font-size: .65rem;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.elegir-ficha__marca {
+  position: absolute;
+  top: .25rem;
+  right: .25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  font-size: .625rem;
+  color: #fff;
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.elegir-cuenta {
+  margin-right: auto;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 .75rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  /* Un gris más flojo se quedaba en 4,35:1 sobre el panel oscuro,
+     por debajo de lo que se lee en letra de .7rem. */
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}

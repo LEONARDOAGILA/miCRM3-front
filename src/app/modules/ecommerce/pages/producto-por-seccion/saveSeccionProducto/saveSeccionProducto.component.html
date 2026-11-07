@@ -1,0 +1,58 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-basket-shopping me-2"></i>{{ titulo }}
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="activeModal.dismiss()"></button>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <div class="modal-body">
+
+    <app-campoTexto
+      [control]="$any(form.controls['nombre'])"
+      label="NOMBRE DE LA SECCIÓN"
+      placeholder="Los más vendidos"
+      [maxLength]="80"
+      [minLength]="2"
+      [trimEspacios]="true">
+    </app-campoTexto>
+
+    <!-- Las dos fechas en una fila: son un rango y se leen juntas -->
+    <label class="form-label mt-2">ENTRE QUÉ FECHAS SE VE <span class="text-muted">(opcional)</span></label>
+    <div class="row g-2">
+      <div class="col-6">
+        <input type="datetime-local" class="form-control form-control-sm"
+               formControlName="desde" aria-label="Desde">
+      </div>
+      <div class="col-6">
+        <input type="datetime-local" class="form-control form-control-sm"
+               formControlName="hasta" aria-label="Hasta">
+      </div>
+    </div>
+
+    <p class="campo-hint mb-0 mt-2">
+      <i class="fa-solid fa-circle-info"></i>
+      {{ queVigencia }}
+      Sirve para armar la sección de navidad en noviembre y que se apague sola.
+    </p>
+
+    @if (!esNueva) {
+      <p class="campo-hint mb-0 mt-2">
+        <i class="fa-solid fa-boxes-stacked"></i>
+        Los productos que lleva dentro no se tocan aquí: se eligen en la
+        rejilla de la pantalla.
+      </p>
+    }
+
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger" (click)="activeModal.dismiss()">
+      <i class="fa fa-times"></i> Salir
+    </button>
+    <button type="submit" class="btn btn-primary" [disabled]="guardando">
+      <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</form>

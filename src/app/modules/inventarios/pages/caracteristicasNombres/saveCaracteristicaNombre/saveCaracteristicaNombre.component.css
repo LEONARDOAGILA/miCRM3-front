@@ -1,0 +1,319 @@
+:host {
+  /* El alto REAL de un campo: .form-floating lleva min-height
+     calc(3.5rem + 2px) y un minimo gana a la utilidad .h-45px del tema.
+     Lo usa el boton de la lupa para quedar a su misma altura. */
+  --sp-field-h: calc(3.5rem + 2px);
+}
+
+/* ============================================================
+   ALTA / MODIFICACION DE UNA CARACTERISTICA
+   ============================================================
+   La tarjeta, los avisos y el interruptor de estado vienen de
+   saveCategoria; el campo con lupa (pegado), de saveProducto. Es el
+   mismo lenguaje visual: lo que cambia es el prefijo de las clases. */
+
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .25rem;
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: -.5rem 0 .5rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.estado-caracteristica {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  height: calc(3.5rem + 2px); /* mismo alto que un campo flotante */
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.estado-caracteristica.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.estado-caracteristica__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.estado-caracteristica.is-on .estado-caracteristica__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.estado-caracteristica__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.estado-caracteristica__label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+}
+
+.estado-caracteristica__hint {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.estado-caracteristica__switch {
+  margin-left: auto;
+}
+
+.estado-caracteristica__switch ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.estado-caracteristica__switch ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.estado-caracteristica__switch ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.estado-caracteristica__switch ::ng-deep .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  vertical-align: middle;
+}
+
+/* (Este bloque viene de saveCaracteristica, donde hay el trio id + ruta +
+   lupa para la categoria. Aqui no hay lupa; el fichero se copio entero.) */
+.campo-lookup .row {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.btn-lookup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  width: 42px;
+  height: var(--sp-field-h);
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #ced4da);
+  border-radius: .375rem;
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  color: var(--bs-body-color, #212529);
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.btn-lookup:hover,
+.btn-lookup:focus {
+  background-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  color: #fff;
+}
+
+/* Quitar la marca: en rojo al pasar, como el de quitar grupo en saveUser */
+.btn-lookup--quitar:hover,
+.btn-lookup--quitar:focus {
+  background-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger, #dc3545);
+}
+
+/* El nombre de la marca va deshabilitado: que se vea de solo lectura y no
+   apagado, la misma regla que saveUser usa para el nombre del perfil. */
+:host ::ng-deep .campo-lookup .form-control:disabled,
+:host ::ng-deep .campo-lookup .form-control[readonly] {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+}
+
+/* LAS CUATRO PIEZAS, PEGADAS.
+   La plantilla las pone sin hueco (g-0) y aqui se comparte el borde
+   entre piezas (margen de -1px) y se redondean solo los extremos: a la
+   vista es un campo unico, no cuatro cosas sueltas. Al enfocar o pasar
+   por encima, la pieza sube de capa para que se le vea el borde entero
+   y no medio tapado por la de al lado. */
+:host ::ng-deep .campo-lookup .form-control,
+.campo-lookup .btn-lookup {
+  border-radius: 0;
+}
+
+.campo-lookup .row > * + * {
+  margin-left: -1px;
+}
+
+:host ::ng-deep .campo-lookup .row > *:first-child .form-control {
+  border-top-left-radius: .375rem;
+  border-bottom-left-radius: .375rem;
+}
+
+/* El ultimo es un boton mientras se edita y el nombre cuando solo se ve */
+:host ::ng-deep .campo-lookup .row > *:last-child .form-control,
+.campo-lookup .row > *:last-child .btn-lookup {
+  border-top-right-radius: .375rem;
+  border-bottom-right-radius: .375rem;
+}
+
+:host ::ng-deep .campo-lookup .form-control:focus,
+.campo-lookup .btn-lookup:hover,
+.campo-lookup .btn-lookup:focus {
+  position: relative;
+  z-index: 2;
+}
+
+/* ============================================================
+   LA DESCRIPCION (campoNgxEditor)
+   ============================================================
+   En una pantalla grande el editor se queda corto con sus 12rem: debajo
+   no hay nada mas que las fechas, asi que el hueco esta libre y una
+   ficha de producto se escribe mejor viendo mas de seis lineas.
+
+   --cne-alto lo pone campoNgxEditor EN LINEA (desde su [alto]), y un
+   estilo en linea gana a la hoja de estilos: de ahi el !important. Es el
+   mismo apaño que usa cerrarGestion. */
+@media (min-width: 992px) {
+  :host ::ng-deep .prod-descripcion .cne__fondo {
+    --cne-alto: 18rem !important;
+  }
+}
+
+/* ---------- El panel de la descripcion, expandido ----------
+   .panel-expand lo pone el tema: fixed, inset 0 y flex en columna. Lo que
+   el panel PROYECTA (nuestro .form-card__body) es hijo directo suyo, asi
+   que hay que decirle que crezca, y al editor con el; si no, el editor se
+   queda con sus 12rem en mitad de una pantalla vacia.
+
+   El ultimo escalon (.NgxEditor a 100%) es el mismo que usa el propio
+   campoNgxEditor para su pantalla completa: sin el, la zona de escritura
+   mide lo que mide el texto y no se puede pinchar debajo. */
+:host ::ng-deep .panel.panel-expand > .form-card__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .panel.panel-expand .prod-descripcion {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .panel.panel-expand .prod-descripcion .cne {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .panel.panel-expand .prod-descripcion .cne__fondo {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* --cne-alto y no min-height:100%: lo segundo no resuelve contra un padre
+   de alto automatico y la hoja se quedaba de 36px en medio de la pantalla
+   (medido al expandir en la pantalla de verdad). Los 220px son la
+   cabecera del panel, la cinta y el aire de la hoja. */
+:host ::ng-deep .panel.panel-expand .prod-descripcion .cne__fondo {
+  --cne-alto: calc(100vh - 220px) !important;
+}
+
+/* ============================================================
+   LO PROPIO DE ESTA PANTALLA (el resto viene de saveCaracteristica)
+   ============================================================ */
+
+/* El aviso de «este nombre acaba en un paréntesis»: amarillo, no rojo. No es
+   un error, es una herencia de cuando no había columna de unidad. */
+.campo-hint--aviso {
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+/* Cuando el tipo no es numérico, el hueco de la unidad explica por qué no
+   está, en vez de dejar un agujero y descolocar la fila. */
+.campo-hint--hueco {
+  margin-top: 1.9rem;
+}
+
+/* Las unidades más usadas, para no escribirlas. */
+.unidad-sugeridas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin-top: .15rem;
+}
+
+.unidad-chip {
+  border: 1px solid var(--bs-border-color, rgba(0, 0, 0, .15));
+  background: transparent;
+  /* La variable del tema, no un hex: con un color compilado la chapita se
+     queda ilegible en uno de los dos temas. */
+  color: var(--bs-component-color, inherit);
+  border-radius: .75rem;
+  padding: .05rem .4rem;
+  font-size: 10.5px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.unidad-chip:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.unidad-chip.is-on {
+  background: var(--bs-app-theme, #00acac);
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme-color, #fff);
+}
+
+.unidad-chip:disabled {
+  opacity: .5;
+  cursor: default;
+}

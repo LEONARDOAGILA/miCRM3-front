@@ -1,0 +1,114 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading) {
+  <div class="loader1" role="status" aria-label="Eliminando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<div class="modal-content border-0 shadow-lg"
+     role="alertdialog"
+     aria-labelledby="eliminarPuntoVentaTitulo"
+     aria-describedby="eliminarPuntoVentaDescripcion">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header eliminar-header">
+    <h5 class="modal-title" id="eliminarPuntoVentaTitulo">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
+    </h5>
+    <button type="button"
+            class="btn-close btn-close-white"
+            aria-label="Cerrar"
+            (click)="modal.dismiss('Cross click')"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <div class="eliminar-aviso">
+      <div class="eliminar-aviso__icono">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      </div>
+      <div>
+        <h6 class="eliminar-aviso__titulo">¿Enviar esta caja a la papelera de reciclaje?</h6>
+        <!-- Borrado lógico: sale del listado pero sus cuentas se quedan, para
+             que al restaurarla vuelva con lo suyo puesto. -->
+        <p class="eliminar-aviso__texto" id="eliminarPuntoVentaDescripcion">
+          Dejará de aparecer en el listado y no se podrá elegir al facturar, pero
+          <b>no se borra</b>: queda en la papelera y puede volver.
+          @if (cuentasPropias > 0) {
+            <br><b>Sus {{ cuentasPropias }} {{ cuentasPropias === 1 ? 'cuenta configurada' : 'cuentas configuradas' }}
+            se conservan</b> mientras esté en la papelera; sólo se pierden si se elimina definitivamente.
+          }
+        </p>
+      </div>
+    </div>
+
+    <!-- Datos del registro -->
+    <div class="list-group list-group-flush eliminar-datos">
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-hashtag fa-fw me-1" aria-hidden="true"></i>Código
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.codigo }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-cash-register fa-fw me-1" aria-hidden="true"></i>Punto de venta
+        </span>
+        <span class="eliminar-datos__valor">
+          {{ registro_selected?.nombre }} (nº {{ registro_selected?.numero }})
+        </span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-store fa-fw me-1" aria-hidden="true"></i>Sucursal
+        </span>
+        <span class="eliminar-datos__valor">{{ registro_selected?.sucursal_nombre || '—' }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-coins fa-fw me-1" aria-hidden="true"></i>Cuentas propias
+        </span>
+        <span class="eliminar-datos__valor">{{ cuentasPropias }}</span>
+      </div>
+
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="eliminar-datos__etiqueta">
+          <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
+        </span>
+        <span class="badge fs-10px"
+              [ngClass]="registro_selected?.activo ? 'bg-teal' : 'bg-danger'">
+          {{ registro_selected?.activo ? 'ACTIVO' : 'INACTIVO' }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Alternativa no destructiva -->
+    <p class="eliminar-nota">
+      <i class="fa fa-info-circle fa-fw me-1" aria-hidden="true"></i>
+      Si la caja ya no se usa pero tiene historial, <b>desactívela</b> en lugar de eliminarla:
+      deja de ofrecerse y lo asentado se sigue entendiendo.
+    </p>
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer eliminar-footer">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            (click)="modal.close('Close click')">
+      <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-danger"
+            [disabled]="isLoading"
+            (click)="deletePuntoVenta()">
+      <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
+    </button>
+  </div>
+
+</div>

@@ -1,7 +1,7 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, ColumnApi, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -19,9 +19,15 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { SaveCaracteristicaComponent } from '../saveCaracteristica/saveCaracteristica.component';
 import { DeleteCaracteristicaComponent } from '../deleteCaracteristica/deleteCaracteristica.component';
 import { CategoriaService } from '../../../services/categoria.service';
-import { FileTreeNode } from '../../../../../components/file-tree-node/file-tree-node.component';
+import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
 import { buscarNodo, filtrarArbol, recorrer } from '../../../../seguridad/pages/grupos/arbolGrupos';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { NgScrollbarModule } from 'ngx-scrollbar';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * LISTADO DE CARACTERÍSTICAS (la plantilla de cada categoría).
@@ -42,7 +48,12 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-allCaracteristicas',
   templateUrl: './allCaracteristicas.component.html',
   styleUrls: ['./allCaracteristicas.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, NgScrollbarModule, PanelComponent,
+    CampoBusquedaPaginacionComponent, FileTreeNodeComponent,
+  ],
 })
 export class AllCaracteristicasComponent implements OnInit, OnDestroy {
 
@@ -51,7 +62,7 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
 
   // ---------- ag-Grid ----------
   public gridApi!: GridApi;
-  private gridColumnApi!: ColumnApi;
+  private gridColumnApi!: GridApi;
   public columnDefs: any[] = [];
   public caracteristicaModel: any[] = [];
   public selectedRow: any = null;
@@ -142,6 +153,8 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
 
   /** Para no pisar una petición con otra al encender/apagar deprisa. */
   private readonly activoEnVuelo = new Set<number>();
+  /** Lo mismo para la palanca de «Requerida»: son dos columnas distintas. */
+  private readonly requeridoEnVuelo = new Set<number>();
 
   private unsubscribe$ = new Subject<void>();
   private readonly timeoutIds = new Set<any>();
@@ -226,7 +239,7 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
         headerName: '', field: this.COLUMNA_ASA, colId: this.COLUMNA_ASA,
         rowDrag: true, hide: true,
         minWidth: 34, maxWidth: 34,
-        sortable: false, filter: false, resizable: false, suppressMenu: true,
+        sortable: false, filter: false, resizable: false, suppressHeaderMenuButton: true,
         cellClass: 'celda-asa',
         headerTooltip: 'Arrastre una fila para cambiarla de sitio dentro de su categoría',
       },
@@ -246,6 +259,22 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
           <span class="carac-activo" data-accion="activo"
                 title="${p.value ? 'Desactivar' : 'Activar'} esta característica">
             <i class="fa ${p.value ? 'fa-toggle-on text-teal' : 'fa-toggle-off text-muted'}"></i>
+          </span>`,
+      },
+
+      {
+        // La otra palanca: «Activa» dice si se pide, «Requerida» si el
+        // producto se puede guardar sin ella. Se atiende por data-accion,
+        // igual que la de activo.
+        headerName: 'Requerida', field: 'requerido',
+        headerTooltip: 'Si está marcada, el producto de esa categoría no se puede guardar sin rellenarla',
+        cellStyle: { textAlign: 'center' }, minWidth: 110, maxWidth: 120,
+        // Sin filtro de cabecera, igual que «Activa»: se pulsa, no se filtra
+        sortable: false, filter: false,
+        cellRenderer: (p: any) => `
+          <span class="carac-activo" data-accion="requerido"
+                title="${p.value ? 'Dejar de exigirla' : 'Exigirla al guardar el producto'}">
+            <i class="fa ${p.value ? 'fa-asterisk text-danger' : 'fa-minus text-muted'}"></i>
           </span>`,
       },
 
@@ -271,7 +300,7 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
       {
         headerName: 'ACCIONES', field: 'actions',
         pinned: 'right', minWidth: 150, maxWidth: 150,
-        sortable: false, resizable: false, filter: false, suppressMenu: true,
+        sortable: false, resizable: false, filter: false, suppressHeaderMenuButton: true,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         // HTML suelto con data-accion en vez de un componente renderer: son
         // cuatro botones sin estado y así no hay un componente por fila.
@@ -288,7 +317,7 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.gridColumnApi = params.columnApi;
+    this.gridColumnApi = params.api;
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
     this.ajustarAlturaGrid();
     this.actualizarAsas();
@@ -333,7 +362,8 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
     if (!boton || !e.data) { return; }
 
     switch (boton.dataset['accion']) {
-      case 'activo':   this.cambiarActivo(e.data, e.node as RowNode); break;
+      case 'activo':    this.cambiarActivo(e.data, e.node as IRowNode); break;
+      case 'requerido': this.cambiarRequerido(e.data, e.node as IRowNode); break;
       case 'ver':      this.abrirFormulario(e.data, 'view'); break;
       case 'editar':   this.editCaracteristica(e.data); break;
       case 'clonar':   this.clonCaracteristica(e.data); break;
@@ -781,7 +811,7 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
         this.caracteristicaModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData([]);
+        this.gridApi?.setGridOption('rowData', []);
         return;
       }
 
@@ -794,7 +824,7 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      this.gridApi?.setRowData(this.caracteristicaModel);
+      this.gridApi?.setGridOption('rowData', this.caracteristicaModel);
 
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
@@ -802,7 +832,7 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
       this.caracteristicaModel = [];
       this.totalRegistros = 0;
       this.ultimaPagina = 1;
-      this.gridApi?.setRowData([]);
+      this.gridApi?.setGridOption('rowData', []);
     } finally {
       this._loadingService.setLoading(false);
       // El asa sale o se esconde según lo que haya quedado en pantalla
@@ -862,7 +892,7 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
   }
 
   /** La casilla de Activa: enciende o apaga sin salir de la rejilla. */
-  cambiarActivo(fila: any, nodo?: RowNode | null): void {
+  cambiarActivo(fila: any, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -875,6 +905,32 @@ export class AllCaracteristicasComponent implements OnInit, OnDestroy {
       puede: this.accesoModel?.editar !== false,
       que: 'característica',
       llamar: (id, activo) => this._caracteristicaService.activarCaracteristica(id, activo),
+      nombre: (f: any) => f.nombre,
+      hasta: this.unsubscribe$,
+    });
+  }
+
+  /**
+   * La casilla de «Requerida»: exigirla o dejar de exigirla sin abrir la ficha.
+   *
+   * El mismo mecanismo que la de activo —con su giro mientras guarda y su
+   * vuelta atrás si falla—, pero con `campo: 'requerido'`. El servidor
+   * contesta diciendo cuántos productos de esa categoría se quedan sin poder
+   * guardarse, y ese mensaje es el que sale en el aviso.
+   */
+  cambiarRequerido(fila: any, nodo?: IRowNode | null): void {
+    if (!fila) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    this._appAgGridService.alternarActivo({
+      gridApi: this.gridApi,
+      filas: this.caracteristicaModel,
+      fila, nodo,
+      campo: 'requerido',
+      enVuelo: this.requeridoEnVuelo,
+      puede: this.accesoModel?.editar !== false,
+      que: 'característica',
+      llamar: (id, requerido) => this._caracteristicaService.requeridoCaracteristica(id, requerido),
       nombre: (f: any) => f.nombre,
       hasta: this.unsubscribe$,
     });

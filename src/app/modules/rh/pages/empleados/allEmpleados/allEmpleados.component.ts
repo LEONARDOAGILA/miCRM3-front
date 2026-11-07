@@ -1,10 +1,10 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -26,8 +26,15 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { SaveEmpleadoComponent } from '../saveEmpleado/saveEmpleado.component';
 import { DeleteEmpleadoComponent } from '../deleteEmpleado/deleteEmpleado.component';
 import { RegistrarRostroComponent } from '../registrarRostro/registrarRostro.component';
+import { PapeleraEmpleadosComponent } from '../papeleraEmpleados/papeleraEmpleados.component';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Listado de empleados (rh.empleados).
@@ -44,7 +51,16 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-allEmpleados',
   templateUrl: './allEmpleados.component.html',
   styleUrls: ['./allEmpleados.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    MenuContextualComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllEmpleadosComponent implements OnInit, OnDestroy {
 
@@ -161,11 +177,94 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
   }
 
   // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Los aplica el SERVIDOR, no la rejilla: esta pantalla pagina, así que
+  // ag-Grid sólo tiene las filas de la página y filtrar ahí buscaría dentro
+  // de diez. La cabecera sólo recoge lo que el usuario pidió.
+
+  /**
+   * Las columnas que llevan filtro, y de qué tipo.
+   *
+   * Tiene que decir lo mismo que la lista blanca de EmpleadoController y que
+   * rh.fn_empleados_listar_paginado: lo que no esté en las tres se tira en el
+   * servidor, así que ponerlo sólo aquí sería pintar un filtro que no filtra.
+   *
+   * `activo` y `foto` se quedan fuera a propósito: una es una casilla —y
+   * escribir en un filtro para marcarla no se entiende, para eso está
+   * Estado— y la otra es una imagen.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero', salario: 'numero',
+    numero_identificacion: 'texto', tipo_identificacion: 'texto',
+    nombres: 'texto', apellidos: 'texto', nombre_completo: 'texto',
+    email: 'texto', celular: 'texto', telefono: 'texto',
+    cargo_nombre: 'texto', departamento_nombre: 'texto',
+    sucursal_nombre: 'texto', horario_nombre: 'texto', jefe_nombre: 'texto',
+    estado: 'texto', tipo_contrato: 'texto',
+    created_by: 'texto', updated_by: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
+    fecha_ingreso: 'texto', fecha_salida: 'texto',
+    created_at: 'texto', updated_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /** Las columnas con su filtro de cabecera (el cómo vive en AppAgGridService). */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+
+  /** La cabecera pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.paginaActual = 1;
+    this.allEmpleados(1);
+  }
+
+  /** Cuántas columnas llevan filtro; el buscador lo enseña y se pone rojo. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o un filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
+
+  clearAllFilters(): void {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medias.
+    this.limpiando = true;
+    this.campoBusquedaPaginacion?.reset();
+    this.searchTerm = '';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí: medido contra
+    // ag-Grid 28, `setFilterModel` avisa DESPUÉS de esta línea.
+    this.programar(() => { this.limpiando = false; }, 0);
+
+    this.paginaActual = 1;
+    this.allEmpleados(1);
+  }
+
+  // ================================================================
   // AG-GRID
   // ================================================================
 
   initializeGrid(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       {
         headerName: 'Id',
         field: 'id',
@@ -230,6 +329,35 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
         cellStyle: { textAlign: 'left' },
         minWidth: 150,
         maxWidth: 260,
+      },
+      {
+        // DÓNDE TRABAJA. Importa porque es lo que decide desde dónde puede
+        // marcar asistencia: sin sucursal, desde cualquier lugar.
+        headerName: 'Sucursal',
+        field: 'sucursal_nombre',
+        headerTooltip: 'Sin sucursal, el empleado puede marcar asistencia desde cualquier lugar',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 150,
+        maxWidth: 240,
+        cellRenderer: (params: any) => params.value
+          ? `<span class="emp-sucursal">${params.value}</span>`
+          : `<span class="emp-sucursal emp-sucursal--no" title="Puede marcar desde cualquier lugar">
+               <i class="fa fa-earth-americas"></i> Sin sucursal</span>`,
+      },
+      {
+        // A QUÉ HORA SE LE ESPERA. Junto a la sucursal son las dos cosas que
+        // deciden si una marcación vale y si llegó tarde: sin horario, nadie
+        // le cuenta los minutos.
+        headerName: 'Horario',
+        field: 'horario_nombre',
+        headerTooltip: 'Sin horario, al empleado no se le miden los atrasos',
+        cellStyle: { textAlign: 'left' },
+        minWidth: 150,
+        maxWidth: 240,
+        cellRenderer: (params: any) => params.value
+          ? `<span class="emp-sucursal">${params.value}</span>`
+          : `<span class="emp-sucursal emp-sucursal--no" title="No se le miden los atrasos">
+               <i class="fa fa-clock"></i> Sin horario</span>`,
       },
       {
         headerName: 'Correo',
@@ -319,7 +447,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllEmpleadosComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllEmpleadosComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -331,7 +459,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
           `
         }
       }
-    ];
+    ]);
   }
 
   /** 1500 → "$ 1.500,00"; vacío si no hay salario. */
@@ -382,7 +510,8 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     }
   }
 
-  private static readonly ANCHO_ACCIONES_ABIERTA = 130;
+  // Cinco iconos en la fila: ver, modificar, clonar, eliminar y rostro.
+  private static readonly ANCHO_ACCIONES_ABIERTA = 140;
   private static readonly ANCHO_ACCIONES_PLEGADA = 50;
 
   /** Pliega o despliega la columna ACCIONES (pulsando su cabecera). */
@@ -409,7 +538,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -482,7 +611,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
    * registro que hoy no cumpliría alguna regla —cargado antes de que
    * existiera— no se podría desactivar hasta arreglarle todo lo demás.
    */
-  cambiarActivo(fila: EmpleadoModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: EmpleadoModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -522,7 +651,8 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
 
       const res = await firstValueFrom(
-        this._empleadoService.allEmpleados(page, this.registrosPorPagina, this.searchTerm)
+        this._empleadoService.allEmpleados(page, this.registrosPorPagina, this.searchTerm,
+                                           this.filtrosColumna)
       ) as any;
 
       if (res.body?.status !== 'success') {
@@ -530,7 +660,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
         this.empleadoModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.empleadoModel);
+        this.gridApi?.setGridOption('rowData', this.empleadoModel);
         return;
       }
 
@@ -543,7 +673,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) this.gridApi.setRowData(this.empleadoModel);
+      if (this.gridApi) this.gridApi.setGridOption('rowData', this.empleadoModel);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar empleados:', error);
@@ -558,7 +688,8 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
-        this._empleadoService.allEmpleados(1, this.totalRegistros, this.searchTerm)
+        this._empleadoService.allEmpleados(1, this.totalRegistros, this.searchTerm,
+                                           this.filtrosColumna)
       ) as any;
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
@@ -609,19 +740,9 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     await this.allEmpleados(1);
   }
 
-  clearAllFilters() {
-    this.campoBusquedaPaginacion?.reset();
-    if (this.gridApi) {
-      this.gridApi.setFilterModel(null);
-      this.searchTerm = '';
-      this.gridApi.onFilterChanged();
-      this.allEmpleados(this.paginaActual).then(() => {
-        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
-          this.goToPage(this.ultimaPagina);
-        }
-      });
-    }
-  }
+  // El `clearAllFilters` de antes vivía aquí y llamaba a onFilterChanged()
+  // a mano. Ahora vive arriba, junto a los filtros de columna, y corta la
+  // recarga doble que disparaba setFilterModel.
 
   // ================================================================
   // PAGINACIÓN
@@ -755,7 +876,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.empleadoModel = [nuevo, ...this.empleadoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.empleadoModel);
+      this.gridApi?.setGridOption('rowData', this.empleadoModel);
     });
   }
 
@@ -765,7 +886,7 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.empleadoModel = [nuevo, ...this.empleadoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.empleadoModel);
+      this.gridApi?.setGridOption('rowData', this.empleadoModel);
     });
   }
 
@@ -807,6 +928,144 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * La papelera de reciclaje.
+   *
+   * Lo que se «elimina» no se borra: va aquí, y desde aquí se restaura o se
+   * borra de verdad. Sólo con el acceso «papelera» del perfil.
+   */
+  abrirPapelera(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(PapeleraEmpleadosComponent, {
+      centered: true, size: 'xl', backdrop: 'static', keyboard: true
+    });
+    // El permiso viaja con el modal: allí también hay auditoría
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
+    this.escucharModal(modalRef, modalRef.componentInstance.cambio,
+                       () => this.allEmpleados(this.paginaActual));
+  }
+
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, sin tener que llegar hasta
+  // el final de la fila ni desplegar la columna cuando está plegada.
+  //
+  // NO SE USA EL EVENTO `cellContextMenu` DE ag-Grid: se probó contra la
+  // librería y no llega. Aquí se escucha el `contextmenu` de la rejilla y la
+  // fila se resuelve con la API pública.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se puede hacer con este empleado, según el perfil. */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    const puedeCrear   = this.accesoModel?.crear    === true;
+    const puedeEditar  = this.accesoModel?.editar   === true;
+    const puedeBorrar  = this.accesoModel?.eliminar === true;
+    const puedeVer     = this.accesoModel?.ver      === true;
+    const puedeAuditar = this.accesoModel?.auditar  === true;
+
+    const correo  = String(fila?.email ?? '').trim();
+    const celular = String(fila?.celular ?? '').trim();
+
+    return [
+      { id: 'ver',    texto: 'Ver',       icono: 'fa-eye',   visible: puedeVer },
+      { id: 'editar', texto: 'Modificar', icono: 'fa-pen',   visible: puedeEditar },
+      { id: 'clonar', texto: 'Clonar',    icono: 'fa-clone', visible: puedeCrear,
+        ayuda: 'Crear otro empleado partiendo de éste' },
+      {
+        id: 'rostro', texto: 'Registrar rostro', icono: 'fa-user-check',
+        separadorAntes: true, visible: puedeEditar,
+        ayuda: 'Las cinco muestras que usa el kiosco de marcación',
+      },
+      {
+        id: 'activo', texto: fila?.activo ? 'Desactivar' : 'Activar',
+        icono: fila?.activo ? 'fa-toggle-off' : 'fa-toggle-on',
+        visible: puedeEditar,
+        ayuda: fila?.activo ? 'Dejar de usarlo, sin borrarlo' : 'Volver a usarlo',
+      },
+      {
+        id: 'correo', texto: 'Escribirle un correo', icono: 'fa-envelope',
+        separadorAntes: true,
+        deshabilitada: correo === '',
+        ayuda: correo !== '' ? correo : 'Este empleado no tiene correo',
+      },
+      {
+        id: 'copiarCelular', texto: 'Copiar el celular', icono: 'fa-copy',
+        deshabilitada: celular === '',
+        ayuda: celular !== '' ? celular : 'Este empleado no tiene celular',
+      },
+      {
+        id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        separadorAntes: true, visible: puedeAuditar,
+        ayuda: 'Quién tocó esta ficha y cuándo',
+      },
+      {
+        id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
+        separadorAntes: true, peligro: true, visible: puedeBorrar,
+        ayuda: 'Se puede recuperar desde la papelera',
+      },
+    ];
+  }
+
+  /** Se eligió una opción del menú. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'ver':       this.viewEmpleado(fila); break;
+      case 'editar':    this.editEmpleado(fila); break;
+      case 'clonar':    this.clonEmpleado(fila); break;
+      case 'rostro':    this.registrarRostro(fila); break;
+      case 'activo':    this.cambiarActivo(fila, this._appAgGridService.nodoDe(this.gridApi, fila.id)); break;
+      case 'correo':    this.escribirCorreo(fila); break;
+      case 'copiarCelular': this.copiarCelular(fila); break;
+      case 'auditoria': this.auditoria(); break;
+      case 'eliminar':  this.deleteEmpleado(fila); break;
+    }
+  }
+
+  /** El correo del empleado, en el cliente de correo de siempre. */
+  private escribirCorreo(fila: any): void {
+    const correo = String(fila?.email ?? '').trim();
+    if (!correo) { return; }
+    window.location.href = `mailto:${correo}`;
+  }
+
+  /**
+   * El celular al portapapeles.
+   *
+   * No se marca desde aquí: los números de esta aplicación son texto, y
+   * llamar se hace desde los botones que lo tienen por oficio.
+   */
+  private copiarCelular(fila: any): void {
+    const celular = String(fila?.celular ?? '').trim();
+    if (!celular) { return; }
+    navigator.clipboard?.writeText(celular)
+      .then(() => this._toastr.success(`Copiado: ${celular}`, 'Celular', { timeOut: 2000 }))
+      .catch(() => this._toastr.warning('No se pudo copiar', 'Celular'));
+  }
+
   /** Historial de auditoría de la fila seleccionada (tabla empleados). */
   auditoria(): void {
     if (!this.selectedRow) { return; }
@@ -828,7 +1087,8 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
 // Simple delegador: toda la lógica de modales vive en AllEmpleadosComponent.
 @Component({
   selector: 'app-button-accion-empleado',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"
@@ -863,9 +1123,14 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
                 (click)="parent.registrarRostro(params.data)">
           <i class="fa fa-user-check"></i>
         </button>
+
+        <!-- La sucursal YA NO está aquí: es un campo de la ficha, al lado
+             del cargo y el departamento (saveEmpleado). La columna
+             «Sucursal» de la rejilla sigue enseñando cuál tiene. -->
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-fila {
       display: flex;
@@ -873,14 +1138,36 @@ export class AllEmpleadosComponent implements OnInit, OnDestroy {
       justify-content: center;
     }
 
-    /* Del mismo tamaño que los de app-action-buttons, en el tono del kiosco */
+    /* IGUAL QUE LOS DEMÁS BOTONES DE LA FILA, en el tono del kiosco.
+       La clase «btn-icon» que lleva en la plantilla vive DENTRO de
+       action-buttons.component.scss, que es CSS con alcance de ese
+       componente: aquí no llega, y por eso este botón salía con el borde y
+       el fondo que pone el navegador. Se repiten sus medidas —sin fondo,
+       sin borde, el mismo relleno, el mismo tamaño de icono y el mismo
+       zoom al pasar— para que se lea como uno más. */
     .acciones-rostro {
+      background: none;
+      border: none;
+      padding: 3px 5px;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: all .3s ease;
       color: var(--bs-app-theme, #00acac);
     }
 
+    .acciones-rostro:hover:not(:disabled) {
+      transform: scale(1.2);
+    }
+
+    .acciones-rostro:active:not(:disabled) {
+      transform: scale(.95);
+    }
+
     .acciones-rostro:disabled {
-      opacity: .45;
+      color: #e0dfdf;
+      opacity: .3;
       cursor: not-allowed;
+      transform: none;
     }
 
     .acciones-desplegar {

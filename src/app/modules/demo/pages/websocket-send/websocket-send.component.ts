@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { WebSocketService } from '../../../../service/websocket.service';
 import { ToastrService } from 'ngx-toastr';
 
@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
   selector: 'app-websocket-send',
   templateUrl: './websocket-send.component.html',
   styleUrls: ['./websocket-send.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone:false
 })
 export class WebsocketSendComponent{

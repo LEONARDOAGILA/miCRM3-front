@@ -1,10 +1,10 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -30,6 +30,12 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
 
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
+
 /**
  * Árbol de categorías (inventarios.categorias).
  *
@@ -53,7 +59,16 @@ import { CampoBusquedaComponent } from '../../../../../components/campos/campoBu
   selector: 'app-allCategorias',
   templateUrl: './allCategorias.component.html',
   styleUrls: ['./allCategorias.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    CampoBusquedaPaginacionComponent,
+    MenuContextualComponent
+],
 })
 export class AllCategoriasComponent implements OnInit, OnDestroy {
 
@@ -355,7 +370,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllCategoriasComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllCategoriasComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -382,6 +397,16 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
 
   /** Los ids de las categorías plegadas (sus descendientes no se pintan). */
   private readonly plegadas = new Set<number>();
+
+  /**
+   * El plegado que había ANTES de filtrar.
+   *
+   * Filtrar abre el árbol entero para que ninguna coincidencia se quede
+   * escondida, pero eso no puede costarle al usuario el árbol que tenía
+   * montado: se aparta aquí y vuelve al quitar el filtro. Lo que se pliegue
+   * CON EL FILTRO PUESTO es del filtro y se descarta con él.
+   */
+  private plegadasFueraDeFiltro = new Set<number>();
 
   /** Lo que de verdad recibe la rejilla: el árbol menos las ramas cerradas. */
   public filasVisibles: CategoriaModel[] = [];
@@ -502,9 +527,8 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   private actualizarBotonesArbol(): void {
     const botones = this.host?.nativeElement?.querySelectorAll?.('[data-arbol]');
     botones?.forEach((b: HTMLButtonElement) => {
-      b.disabled = b.dataset['arbol'] === 'contraer'
-        ? this.plegadoDesactivado                           // buscando o filtrando se ve todo
-        : (this.plegadoDesactivado || !this.hayPlegadas);   // nada que desplegar
+      // Contraer siempre vale; desplegar sólo si hay algo cerrado.
+      b.disabled = b.dataset['arbol'] !== 'contraer' && !this.hayPlegadas;
     });
   }
 
@@ -558,9 +582,9 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   onFiltroColumna(): void {
     if (this.limpiando) { return; }
 
-    const antes = this.cuantasColumnasFiltradas > 0;
+    const habiaFiltro = this.hayFiltro;
     this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
-    if (antes !== (this.cuantasColumnasFiltradas > 0)) { this.recalcularVisibles(); }
+    if (this.plegadoAlCambiarElFiltro(habiaFiltro)) { this.recalcularVisibles(); }
   }
 
   /**
@@ -578,13 +602,15 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     this.searchTerm = '';
     this.filtrosColumna = {};
     if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
 
     // La bandera se baja en la siguiente vuelta: ag-Grid avisa del cambio de
     // filtros DESPUÉS de esta línea (medido), y si se apagara aquí ese aviso
     // entraría con ella ya baja y repintaría otra vez.
     this.programar(() => { this.limpiando = false; }, 0);
 
+    // Sin filtro vuelve el árbol que había antes de ponerlo.
+    this.plegadoAlCambiarElFiltro(true);
     this.recalcularVisibles();
   }
 
@@ -598,9 +624,61 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   }
 
   /** Cierra todas las que tienen hijas. */
+  /**
+   * Aparta o devuelve el plegado cuando el filtro se enciende o se apaga.
+   *
+   * Al EMPEZAR a filtrar se abre el árbol entero, porque una coincidencia
+   * dentro de una rama cerrada no saldría y parecería que el filtro no la
+   * encuentra. Al quitar el filtro vuelve el árbol que había.
+   *
+   * Lo que ya NO se hace es desactivar el plegado mientras se filtra: con el
+   * filtro puesto, el +/- sigue plegando y desplegando.
+   *
+   * Devuelve true si cambió algo, o sea si hay que repintar.
+   */
+  private plegadoAlCambiarElFiltro(habiaFiltro: boolean): boolean {
+    const hayFiltro = this.hayFiltro;
+    if (habiaFiltro === hayFiltro) { return false; }
+
+    if (hayFiltro) {
+      this.plegadasFueraDeFiltro = new Set(this.plegadas);
+      this.plegadas.clear();
+    } else {
+      this.plegadas.clear();
+      this.plegadasFueraDeFiltro.forEach(id => this.plegadas.add(id));
+      this.plegadasFueraDeFiltro.clear();
+    }
+    return true;
+  }
+
+  /**
+   * Los ids que quedan después del filtro, o sea lo que el usuario tiene
+   * delante. `filasVisibles` no sirve para esto: es lo que se le da a la
+   * rejilla ANTES de que ella aplique el filtro.
+   */
+  private idsALaVista(): number[] {
+    const ids: number[] = [];
+    this.gridApi?.forEachNodeAfterFilter((n: any) => {
+      const id = Number(n?.data?.id ?? 0);
+      if (id) { ids.push(id); }
+    });
+    return ids;
+  }
+
+  /**
+   * Cierra todas las ramas.
+   *
+   * Con el filtro puesto se cierra sólo lo que SE ESTÁ VIENDO. Si se plegara
+   * también lo que el filtro esconde, el árbol se quedaría en las raíces,
+   * que casi nunca son las que coinciden, y la rejilla saldría vacía después
+   * de pulsar un botón que no promete eso.
+   */
   contraerTodo(): void {
+    const aLaVista = this.hayFiltro ? new Set(this.idsALaVista()) : null;
     this.plegadas.clear();
-    this.categoriaModel.forEach(c => { if (Number(c.num_hijos ?? 0) > 0) { this.plegadas.add(c.id); } });
+    this.categoriaModel.forEach(c => {
+      if (Number(c.num_hijos ?? 0) > 0 && (!aLaVista || aLaVista.has(c.id))) { this.plegadas.add(c.id); }
+    });
     this.guardarPlegadas();
     this.recalcularVisibles();
   }
@@ -614,8 +692,6 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   /** Para encender o apagar el botón de la barra. */
   get hayPlegadas(): boolean { return this.plegadas.size > 0; }
 
-  /** Con un filtro puesto el árbol se ve entero: plegar no pinta nada. */
-  get plegadoDesactivado(): boolean { return !!this.searchTerm || this.cuantasColumnasFiltradas > 0; }
 
   /** Cuántas ramas están cerradas, para decirlo en el pie. */
   get plegadasCuantas(): number { return this.plegadas.size; }
@@ -630,7 +706,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   private recalcularVisibles(): void {
     // Con texto escrito O con un filtro de columna se abre el árbol entero:
     // si no, lo que coincidiera dentro de una rama cerrada no saldría.
-    if (this.searchTerm || this.cuantasColumnasFiltradas > 0 || this.plegadas.size === 0) {
+    if (this.plegadas.size === 0) {
       this.filasVisibles = [...this.categoriaModel];
     } else {
       // Un mapa id → padre para no recorrer el array por cada antepasado
@@ -646,7 +722,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
         return true;
       });
     }
-    this.gridApi?.setRowData(this.filasVisibles);
+    this.gridApi?.setGridOption('rowData', this.filasVisibles);
     this.actualizarBotonesArbol();
   }
 
@@ -659,11 +735,16 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   private limpiarPlegadas(): void {
     const existen = new Set(this.categoriaModel.map(c => c.id));
     [...this.plegadas].forEach(id => { if (!existen.has(id)) { this.plegadas.delete(id); } });
+    [...this.plegadasFueraDeFiltro].forEach(id => { if (!existen.has(id)) { this.plegadasFueraDeFiltro.delete(id); } });
   }
 
   private guardarPlegadas(): void {
     try {
-      localStorage.setItem(AllCategoriasComponent.CLAVE_PLEGADAS, JSON.stringify([...this.plegadas]));
+      // Mientras se filtra, lo que se recuerda es el árbol de ANTES: lo que
+      // se pliegue con el filtro puesto se descarta al quitarlo, así que
+      // guardarlo dejaría el árbol cerrado en la siguiente visita.
+      const aGuardar = this.hayFiltro ? this.plegadasFueraDeFiltro : this.plegadas;
+      localStorage.setItem(AllCategoriasComponent.CLAVE_PLEGADAS, JSON.stringify([...aGuardar]));
     } catch {
       // Ventana privada o almacenamiento bloqueado: se pierde al salir y ya
     }
@@ -751,7 +832,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -804,7 +885,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     });
   }
 
-  cambiarActivo(fila: CategoriaModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: CategoriaModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -895,15 +976,15 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
   // ================================================================
 
   onFilterTextBoxChanged(term?: string) {
-    const antes = !!this.searchTerm;
+    const habiaFiltro = this.hayFiltro;
     if (term !== undefined) { this.searchTerm = term; }
 
-    // Al empezar o dejar de buscar cambia qué filas se pintan: con búsqueda
+    // Al empezar o dejar de filtrar cambia qué filas se pintan: con filtro
     // se abre todo para que una coincidencia dentro de una rama cerrada no
-    // se quede escondida
-    if (antes !== !!this.searchTerm) { this.recalcularVisibles(); }
+    // se quede escondida, y al quitarlo vuelve el árbol que había.
+    if (this.plegadoAlCambiarElFiltro(habiaFiltro)) { this.recalcularVisibles(); }
 
-    this.gridApi?.setQuickFilter(this.searchTerm);
+    this.gridApi?.setGridOption('quickFilterText', this.searchTerm);
   }
 
   /**
@@ -914,9 +995,11 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
    * aviso—.
    */
   alLimpiarBusqueda() {
+    const habiaFiltro = this.hayFiltro;
     this.searchTerm = '';
+    this.plegadoAlCambiarElFiltro(habiaFiltro);
     this.recalcularVisibles();      // vuelven a cerrarse las ramas plegadas
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
   }
 
   // ================================================================
@@ -1001,6 +1084,15 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     let padreId: number | null;
     let antesDe: number | null;
     if (d.zona === 'dentro') {
+      // Soltar DENTRO de una que admite productos la convertiría en madre, y
+      // eso no se puede: sus productos se quedarían colgando de una rama. Se
+      // dice aquí en lugar de dejar que viaje y vuelva con un 409.
+      if (d.data.es_transaccion) {
+        this._toastr.info(
+          `«${d.data.nombre}» admite productos: quítale «admite productos» en su ficha y entonces podrás meterle categorías dentro`,
+          'Esa categoría no admite subcategorías', { timeOut: 6000 });
+        return;
+      }
       padreId = d.data.id;
       antesDe = null;                                  // al final de sus hijas
     } else {
@@ -1164,6 +1256,14 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       this._toastr.warning('El árbol admite hasta cuatro niveles y ésta ya está en el último', 'Nueva subcategoría');
       return;
     }
+    // UNA CATEGORÍA QUE ADMITE PRODUCTOS NO ADMITE SUBCATEGORÍAS: los
+    // productos cuelgan de las hojas. El servidor lo rechaza igual (P0021).
+    if (sobre.es_transaccion) {
+      this._toastr.info(
+        `«${sobre.nombre}» admite productos: quítale «admite productos» en su ficha y entonces podrás colgarle subcategorías`,
+        'Esa categoría no admite subcategorías', { timeOut: 6000 });
+      return;
+    }
     const modalRef = this.abrirModalCategoria(0, 'add', sobre);
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, () => this.allCategorias());
   }
@@ -1277,17 +1377,22 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
     // El último nivel no admite nada dentro: el árbol llega hasta el 3
     const esUltimoNivel = Number(fila?.nivel ?? 0) >= 3;
     const tieneHijos    = Number(fila?.num_hijos ?? 0) > 0;
+    // Y una que admite productos tampoco: los productos van en las hojas
+    const admiteProductos = fila?.es_transaccion === true;
 
     return [
       {
-        id: 'sub', texto: 'Nuevo subcategoría aquí', icono: 'fa-folder-plus',
+        id: 'sub', texto: 'Nueva subcategoría aquí', icono: 'fa-folder-plus',
         visible: puedeCrear,
-        deshabilitada: esUltimoNivel,
-        ayuda: esUltimoNivel ? 'Éste es el último nivel: no admite nada dentro'
-                             : 'Crear un categoría dentro de éste',
+        deshabilitada: esUltimoNivel || admiteProductos,
+        ayuda: esUltimoNivel
+                 ? 'Éste es el último nivel: no admite nada dentro'
+                 : (admiteProductos
+                     ? 'Admite productos: quítale «admite productos» en su ficha para poder colgarle subcategorías'
+                     : 'Crear una categoría dentro de ésta'),
       },
       {
-        id: 'raiz', texto: 'Nuevo categoría de primer nivel', icono: 'fa-plus',
+        id: 'raiz', texto: 'Nueva categoría de primer nivel', icono: 'fa-plus',
         visible: puedeCrear,
       },
       {
@@ -1311,7 +1416,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       {
         id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
         separadorAntes: true, visible: puedeAuditar,
-        ayuda: 'Quién tocó este categoría y cuándo',
+        ayuda: 'Quién tocó esta categoría y cuándo',
       },
       {
         id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
@@ -1362,7 +1467,8 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
 // la forma natural de ir construyendo el árbol: desde la rama donde va.
 @Component({
   selector: 'app-button-accion-categoria',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"
@@ -1379,8 +1485,11 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
                         ? 'Nueva subcategoría - Desactivado'
                         : (params.data?.nivel >= 3
                             ? 'Nueva subcategoría - ya está en el último nivel'
-                            : 'Nueva subcategoría dentro de ésta')"
-              [disabled]="parent.accesoModel?.crear !== true || params.data?.nivel >= 3"
+                            : (params.data?.es_transaccion
+                                ? 'Admite productos: quítale «admite productos» en su ficha para poder colgarle subcategorías'
+                                : 'Nueva subcategoría dentro de ésta'))"
+              [disabled]="parent.accesoModel?.crear !== true || params.data?.nivel >= 3
+                          || params.data?.es_transaccion"
               (click)="parent.addSubcategoria(params.data)">
         <i class="fa fa-diagram-project"></i>
       </button>
@@ -1397,6 +1506,7 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     :host {
       display: flex;
@@ -1424,18 +1534,8 @@ export class AllCategoriasComponent implements OnInit, OnDestroy {
       border-radius: .25rem;
     }
 
-    /* El mismo botón de icono que trae app-action-buttons: esa clase vive
-       dentro de SU css con alcance, así que aquí hay que repetirla. */
-    .btn-subcategoria {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 3px 5px;
-      font-size: 1.1em;
-      color: var(--bs-app-theme, #00acac);
-      transition: all .3s ease;
-    }
-
+    /* El aspecto de este botón sale de styles.css, con el del resto de
+       la columna ACCIONES. Antes se repetía aquí y se quedó atrás. */
     .btn-subcategoria:hover:not(:disabled) { transform: scale(1.2); }
     .btn-subcategoria:active:not(:disabled) { transform: scale(.95); }
     .btn-subcategoria:disabled { opacity: .35; cursor: not-allowed; }

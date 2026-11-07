@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -14,6 +14,7 @@ import { FileTreeNodeComponent, FileTreeNode } from '../../../../../components/f
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 import { buscarNodo, construirArbolGrupos, filtrarArbol, recorrer } from '../arbolGrupos';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** El nodo «Todos», que no es un grupo de la tabla. */
 const NODO_TODOS = -1;
@@ -39,9 +40,10 @@ const NODO_TODOS = -1;
 @Component({
   selector: 'app-listUsuariosGrupos',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, FileTreeNodeComponent,
+  imports: [CommonModule, FormsModule, AgGridModule, FilasEstirablesDirective, FileTreeNodeComponent,
     CampoBusquedaPaginacionComponent, ModalArrastrableDirective],
   templateUrl: './listUsuariosGrupos.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./listUsuariosGrupos.component.css'],
 })
 export class ListUsuariosGruposComponent implements OnInit {
@@ -195,7 +197,7 @@ export class ListUsuariosGruposComponent implements OnInit {
 
   onGridReady(e: GridReadyEvent): void {
     this.gridApi = e.api;
-    this.gridApi.setRowData(this.filas);
+    this.gridApi.setGridOption('rowData', this.filas);
   }
 
   estaExcluido(id?: number): boolean {
@@ -231,14 +233,14 @@ export class ListUsuariosGruposComponent implements OnInit {
         this.paginaActual = meta.current_page;
         this.ultimaPagina = meta.last_page;
       }
-      this.gridApi?.setRowData(this.filas);
+      this.gridApi?.setGridOption('rowData', this.filas);
     } catch (error) {
       // El AuthInterceptor ya saca el toast del error HTTP
       console.error('Error al cargar los usuarios del grupo:', error);
       this.filas = [];
       this.totalRegistros = 0;
       this.ultimaPagina = 1;
-      this.gridApi?.setRowData(this.filas);
+      this.gridApi?.setGridOption('rowData', this.filas);
     } finally {
       this._loadingService.setLoading(false);
     }

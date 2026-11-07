@@ -1,8 +1,8 @@
 <!-- ===================== SPINNER ===================== -->
-<ng-container *ngIf="(isLoading$ | async)">
+@if ((isLoading$ | async)) {
   <div class="loader1" role="status" aria-label="Cargando"></div>
   <div class="overlay1" aria-hidden="true"></div>
-</ng-container>
+}
 
 <!-- ===================== CABECERA ===================== -->
 <app-modal-header [title]="titulo" (onClose)="activeModal.close('Close click')">
@@ -14,183 +14,192 @@
 
     <!-- ============ COLUMNA IZQUIERDA: AVATAR ============ -->
     <div class="col-lg-4">
-        <panel 
-          headerClass="bg-gray-800"
-          title="Avatar del usuario" 
-          noButton="true" 
-          noBody="true"
-          panelClass="h-100 mb-3 mb-md-0" 
-          icono="usuario" 
-          fondoGris="true">
-          
-          <ng-container outsideBody>
-            <div class="form-card__body">
+      <panel
+        headerClass="bg-gray-800"
+        title="Avatar del usuario"
+        noButton="true"
+        noBody="true"
+        panelClass="h-100 mb-3 mb-md-0"
+        icono="usuario"
+        fondoGris="true">
+
+        <ng-container outsideBody>
+          <div class="form-card__body">
             <!-- ---------- Zona de imagen / drop ---------- -->
             <div class="avatar-dropzone"
-                [class.drag-over]="isDragOver"
-                [class.is-empty]="!imagen_previzualiza"
-                (drop)="onDrop($event)"
-                (dragover)="onDragOver($event)"
-                (dragleave)="onDragLeave($event)">
+              [class.drag-over]="isDragOver"
+              [class.is-empty]="!imagen_previzualiza"
+              (drop)="onDrop($event)"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)">
 
               <!-- Con imagen -->
-              <div class="avatar-preview" *ngIf="imagen_previzualiza">
-                <img [src]="imagen_previzualiza"
+              @if (imagen_previzualiza) {
+                <div class="avatar-preview">
+                  <img [src]="imagen_previzualiza"
                     alt="Avatar del usuario"
                     (error)="handleImageError($event)"
                     (click)="openFullscreen()">
+                    <div class="avatar-preview__overlay">
+                      <button type="button" class="avatar-action" (click)="openFullscreen()" title="Ampliar imagen">
+                        <i class="fa-solid fa-magnifying-glass-plus"></i>
+                      </button>
+                      @if (!esView) {
+                        <button type="button" class="avatar-action" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
+                          <i class="fa-solid fa-paste"></i>
+                        </button>
+                        <button type="button" class="avatar-action avatar-action--danger" (click)="clearImage()" title="Quitar imagen">
+                          <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
 
-                <div class="avatar-preview__overlay">
-                  <button type="button" class="avatar-action" (click)="openFullscreen()" title="Ampliar imagen">
-                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                <!-- Sin imagen -->
+                @if (!imagen_previzualiza) {
+                  <div class="avatar-empty"
+                    [class.is-disabled]="esView"
+                    (click)="openGallery()">
+                    <span class="avatar-empty__icon">
+                      <i class="fa-solid" [ngClass]="esView ? 'fa-user-slash' : 'fa-cloud-arrow-up'"></i>
+                    </span>
+                    <p class="avatar-empty__title">{{ esView ? 'Sin imagen' : 'Seleccionar imagen' }}</p>
+                    @if (!esView) {
+                      <p class="avatar-empty__hint">
+                        Arrastra y suelta una imagen o haz clic para buscarla
+                      </p>
+                    }
+                    @if (!esView) {
+                      <p class="avatar-empty__hint">
+                        También puedes pegarla con <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- ---------- Acciones de imagen ---------- -->
+              @if (!esView) {
+                <div class="avatar-actions mt-2">
+                  <button type="button" class="btn btn-avatar btn-avatar-camera" (click)="openCamera()" title="Tomar foto">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>Cámara</span>
                   </button>
-                  <ng-container *ngIf="!esView">
-                    <button type="button" class="avatar-action" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
-                      <i class="fa-solid fa-paste"></i>
-                    </button>
-                    <button type="button" class="avatar-action avatar-action--danger" (click)="clearImage()" title="Quitar imagen">
-                      <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                  </ng-container>
+                  <button type="button" class="btn btn-avatar btn-avatar-gallery" (click)="openGallery()" title="Buscar en el dispositivo">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Galería</span>
+                  </button>
+                  <button type="button" class="btn btn-avatar btn-avatar-paste" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
+                    <i class="fa-solid fa-paste"></i>
+                    <span>Pegar</span>
+                  </button>
                 </div>
-              </div>
+              }
 
-              <!-- Sin imagen -->
-              <div class="avatar-empty" *ngIf="!imagen_previzualiza"
-                  [class.is-disabled]="esView"
-                  (click)="openGallery()">
-                <span class="avatar-empty__icon">
-                  <i class="fa-solid" [ngClass]="esView ? 'fa-user-slash' : 'fa-cloud-arrow-up'"></i>
-                </span>
-                <p class="avatar-empty__title">{{ esView ? 'Sin imagen' : 'Seleccionar imagen' }}</p>
-                <p class="avatar-empty__hint" *ngIf="!esView">
-                  Arrastra y suelta una imagen o haz clic para buscarla
-                </p>
-                <p class="avatar-empty__hint" *ngIf="!esView">
-                  También puedes pegarla con <kbd>Ctrl</kbd> + <kbd>V</kbd>
-                </p>
-              </div>
+
+
+
+              <!-- ---------- Inputs auxiliares ---------- -->
+              <input #galleryInput type="file" id="gallery-input" class="d-none" accept="image/*" (change)="processFile($event)">
+              <input #pasteInput id="paste-input" class="d-none" [formControl]="form.controls['avatar']" (paste)="onPaste($event)">
             </div>
-
-            <!-- ---------- Acciones de imagen ---------- -->
-            <div class="avatar-actions mt-2" *ngIf="!esView">
-              <button type="button" class="btn btn-avatar btn-avatar-camera" (click)="openCamera()" title="Tomar foto">
-                <i class="fa-solid fa-camera"></i>
-                <span>Cámara</span>
-              </button>
-              <button type="button" class="btn btn-avatar btn-avatar-gallery" (click)="openGallery()" title="Buscar en el dispositivo">
-                <i class="fa-solid fa-image"></i>
-                <span>Galería</span>
-              </button>
-              <button type="button" class="btn btn-avatar btn-avatar-paste" (click)="triggerPaste()" title="Pegar imagen (Ctrl+V)">
-                <i class="fa-solid fa-paste"></i>
-                <span>Pegar</span>
-              </button>
-            </div>
-
-
-
-
-            <!-- ---------- Inputs auxiliares ---------- -->
-            <input #galleryInput type="file" id="gallery-input" class="d-none" accept="image/*" (change)="processFile($event)">
-            <input #pasteInput id="paste-input" class="d-none" [formControl]="form.controls['avatar']" (paste)="onPaste($event)">
-          </div>
           </ng-container>
         </panel>
-    </div>
+      </div>
 
 
 
 
-    <!-- ============ COLUMNA DERECHA: FORMULARIO ============ -->
-    <div class="col-lg-8">
-      <form [formGroup]="form" class="user-details-form" autocomplete="off">
-        <div class="row g-3"> 
-          <!-- -------- Datos de acceso -------- -->
-          <div class="col-md-6">
-              <panel 
+      <!-- ============ COLUMNA DERECHA: FORMULARIO ============ -->
+      <div class="col-lg-8">
+        <form [formGroup]="form" class="user-details-form" autocomplete="off">
+          <div class="row g-3">
+            <!-- -------- Datos de acceso -------- -->
+            <div class="col-md-6">
+              <panel
                 headerClass="bg-gray-800"
-                title="Datos de acceso" 
-                noButton="true" 
+                title="Datos de acceso"
+                noButton="true"
                 noBody="true"
-                panelClass="h-100 mb-3 mb-md-0" 
-                icono="cerrar" 
+                panelClass="h-100 mb-3 mb-md-0"
+                icono="cerrar"
                 fondoGris="true">
-                
+
                 <ng-container outsideBody>
-                    <div class="form-card__body">
+                  <div class="form-card__body">
 
-                      <!-- Estado del usuario -->
-                      <div class="estado-miswitch" [class.is-on]="form.controls['isactive'].value">
-                        <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>
-                        <div class="estado-miswitch__text">
-                          <span class="estado-miswitch__label">Estado del usuario</span>
-                          <span class="estado-miswitch__hint">
-                            {{ form.controls['isactive'].value ? 'Puede iniciar sesión' : 'Acceso bloqueado' }}
-                          </span>
-                        </div>
-                        <app-checkbox class="estado-miswitch__switch"
-                          [control]="form.controls['isactive']"
-                          [label]="form.controls['isactive'].value ? 'Activo' : 'Inactivo'"
-                          [id]="'ck-isactive'">
-                        </app-checkbox>
+                    <!-- Estado del usuario -->
+                    <div class="estado-miswitch" [class.is-on]="form.controls['isactive'].value">
+                      <span class="estado-miswitch__icon"><i class="fa-solid fa-power-off"></i></span>
+                      <div class="estado-miswitch__text">
+                        <span class="estado-miswitch__label">Estado del usuario</span>
+                        <span class="estado-miswitch__hint">
+                          {{ form.controls['isactive'].value ? 'Puede iniciar sesión' : 'Acceso bloqueado' }}
+                        </span>
                       </div>
+                      <app-checkbox class="estado-miswitch__switch"
+                        [control]="form.controls['isactive']"
+                        [label]="form.controls['isactive'].value ? 'Activo' : 'Inactivo'"
+                        [id]="'ck-isactive'">
+                      </app-checkbox>
+                    </div>
 
-                      <!-- Nombre de usuario -->
-                      <!-- sinAutocompletado: al haber un campo de clave al lado, el
-                           navegador tomaba este formulario por un login y desplegaba
-                           las credenciales guardadas del operador. -->
+                    <!-- Nombre de usuario -->
+                    <!-- sinAutocompletado: al haber un campo de clave al lado, el
+                    navegador tomaba este formulario por un login y desplegaba
+                    las credenciales guardadas del operador. -->
+                    <div class="campo">
+                      <app-campoTexto
+                        [control]="form.controls['login_user']"
+                        label="Nombre de Usuario"
+                        placeholder="Nombre de Usuario"
+                        [maxLength]="255"
+                        [trimEspacios]="true"
+                        [mayusculas]="true"
+                        [sinAutocompletado]="true">
+                      </app-campoTexto>
+                    </div>
+
+                    <!-- Clave -->
+                    @if (esNuevo || esClon) {
                       <div class="campo">
-                        <app-campoTexto
-                          [control]="form.controls['login_user']"
-                          label="Nombre de Usuario"
-                          placeholder="Nombre de Usuario"
-                          [maxLength]="255"
-                          [trimEspacios]="true"
-                          [mayusculas]="true"
-                          [sinAutocompletado]="true">
-                        </app-campoTexto>
-                      </div>
-
-                      <!-- Clave -->
-                      <div class="campo" *ngIf="esNuevo || esClon">
-
                         <!-- Generar clave recomendada -->
-                        <button type="button"
-                                *ngIf="!esView"
-                                class="btn btn-primary w-100 d-flex align-items-center justify-content-center clave-generar"
-                                (click)="generarClaveRecomendada()">
-                          <i class="fa fa-magic fa-fw me-1" aria-hidden="true"></i>
-                          Generar contraseña segura
-                        </button>
-
+                        @if (!esView) {
+                          <button type="button"
+                            class="btn btn-primary w-100 d-flex align-items-center justify-content-center clave-generar"
+                            (click)="generarClaveRecomendada()">
+                            <i class="fa fa-magic fa-fw me-1" aria-hidden="true"></i>
+                            Generar contraseña segura
+                          </button>
+                        }
                         <!-- Clave generada -->
-                        <div class="clave-generada" *ngIf="claveGenerada">
-                          <div class="clave-generada__cabecera">
-                            <span class="clave-generada__etiqueta">
-                              <i class="fa fa-key fa-fw" aria-hidden="true"></i> Contraseña generada
-                            </span>
-                            <button type="button"
-                                    class="btn btn-sm clave-generada__copiar"
-                                    (click)="copiarClave()"
-                                    aria-label="Copiar la contraseña al portapapeles"
-                                    title="Copiar">
-                              <i class="fa fa-copy fa-fw" aria-hidden="true"></i>
-                            </button>
+                        @if (claveGenerada) {
+                          <div class="clave-generada">
+                            <div class="clave-generada__cabecera">
+                              <span class="clave-generada__etiqueta">
+                                <i class="fa fa-key fa-fw" aria-hidden="true"></i> Contraseña generada
+                              </span>
+                              <button type="button"
+                                class="btn btn-sm clave-generada__copiar"
+                                (click)="copiarClave()"
+                                aria-label="Copiar la contraseña al portapapeles"
+                                title="Copiar">
+                                <i class="fa fa-copy fa-fw" aria-hidden="true"></i>
+                              </button>
+                            </div>
+                            <code class="clave-generada__valor" aria-live="polite">{{ claveGenerada }}</code>
+                            <div class="clave-generada__aviso">
+                              <i class="fa fa-exclamation-triangle fa-fw" aria-hidden="true"></i>
+                              Cópiela antes de guardar: no vuelve a mostrarse.
+                            </div>
                           </div>
-
-                          <code class="clave-generada__valor" aria-live="polite">{{ claveGenerada }}</code>
-
-                          <div class="clave-generada__aviso">
-                            <i class="fa fa-exclamation-triangle fa-fw" aria-hidden="true"></i>
-                            Cópiela antes de guardar: no vuelve a mostrarse.
+                        }
+                        @if (!claveGenerada && !esView) {
+                          <div class="clave-manual">
+                            o escríbela manualmente
                           </div>
-                        </div>
-
-                        <div class="clave-manual" *ngIf="!claveGenerada && !esView">
-                          o escríbela manualmente
-                        </div>
-
+                        }
                         <app-campoClave
                           [control]="form.controls['password']"
                           label="Clave de Usuario"
@@ -205,222 +214,227 @@
                           [trimEspacios]="true">
                         </app-campoClave>
                       </div>
+                    }
 
-                      <!-- Grupo (unidad organizativa): al elegirlo se proponen
-                           perfil, horario y tipo del grupo -->
-                      <div class="campo campo-lookup">
-                        <div class="row g-2 flex-nowrap">
-                          <div class="col">
-                            <app-campoTexto
-                              [control]="grupoNombreControl"
-                              label="Grupo"
-                              placeholder="Sin grupo">
-                            </app-campoTexto>
+                    <!-- Grupo (unidad organizativa): al elegirlo se proponen
+                    perfil, horario y tipo del grupo -->
+                    <div class="campo campo-lookup">
+                      <div class="row g-2 flex-nowrap">
+                        <div class="col">
+                          <app-campoTexto
+                            [control]="grupoNombreControl"
+                            label="Grupo"
+                            placeholder="Sin grupo">
+                          </app-campoTexto>
+                        </div>
+                        @if (!esView) {
+                          <div class="col-auto">
+                            <button type="button" class="btn btn-lookup" (click)="abrirModalGrupos()" title="Elegir el grupo del usuario">
+                              <i class="fa fa-sitemap"></i>
+                            </button>
                           </div>
-                          @if (!esView) {
+                          @if (form.controls['grupo_id'].value) {
                             <div class="col-auto">
-                              <button type="button" class="btn btn-lookup" (click)="abrirModalGrupos()" title="Elegir el grupo del usuario">
-                                <i class="fa fa-sitemap"></i>
-                              </button>
-                            </div>
-                            @if (form.controls['grupo_id'].value) {
-                              <div class="col-auto">
-                                <button type="button" class="btn btn-lookup btn-lookup--quitar" (click)="limpiarGrupo()" title="Quitar del grupo">
-                                  <i class="fa fa-times"></i>
-                                </button>
-                              </div>
-                            }
-                          }
-                        </div>
-                      </div>
-
-                      <!-- Tipo de usuario -->
-                      <div class="campo campo-combo">
-                        <app-combo
-                          formControlName="type_user"
-                          [items]="tipoUsuario"
-                          [label]="'Tipo de Usuario'"
-                          bindLabel="name"
-                          bindValue="id">
-                        </app-combo>
-                      </div>
-
-                      <!-- Perfil -->
-                      <!-- campo-lookup--pegado: las piezas sin hueco, con el
-                           borde compartido y el redondeo solo en los extremos,
-                           como la marca en saveProducto (ver el .css). -->
-                      <div class="campo campo-lookup campo-lookup--pegado">
-                        <div class="row g-0 flex-nowrap">
-                          <div class="col-4">
-                            <app-campoNumeroEntero
-                              [control]="form.controls['perfil_id']"
-                              label="ID Perfil"
-                              placeholder="ID"
-                              [maxLength]="10"
-                              (blur)="cargarPerfilPorId()">
-                            </app-campoNumeroEntero>
-                          </div>
-                          <div class="col">
-                            <app-campoTexto
-                              [control]="perfilNombreControl"
-                              label="Nombre Perfil"
-                              placeholder="Nombre del perfil">
-                            </app-campoTexto>
-                          </div>
-                          @if (!esView) {
-                            <div class="col-auto shrink-0"> <!-- Agrega flex-shrink-0 -->
-                              <button type="button" class="btn btn-lookup" (click)="abrirModalPerfiles()" title="Buscar perfil">
-                                <i class="fa fa-search"></i>
+                              <button type="button" class="btn btn-lookup btn-lookup--quitar" (click)="limpiarGrupo()" title="Quitar del grupo">
+                                <i class="fa fa-times"></i>
                               </button>
                             </div>
                           }
-                        </div>
+                        }
                       </div>
-
-                      <!-- Horario -->
-                      <div class="campo campo-lookup campo-lookup--pegado">
-                        <!-- flex-nowrap, que aqui faltaba: sin el, en estrecho
-                             la lupa se bajaba a la linea siguiente. -->
-                        <div class="row g-0 flex-nowrap">
-                          <div class="col-4">
-                            <app-campoNumeroEntero
-                              [control]="form.controls['chorario_id']"
-                              label="ID Horario"
-                              placeholder="ID"
-                              [maxLength]="10"
-                              (blur)="cargarHorarioPorId()">
-                            </app-campoNumeroEntero>
-                          </div>
-                          <div class="col">
-                            <app-campoTexto
-                              [control]="horarioNombreControl"
-                              label="Nombre Horario"
-                              placeholder="Nombre del horario">
-                            </app-campoTexto>
-                          </div>
-                          @if (!esView) {
-                            <div class="col-auto">
-                              <button type="button" class="btn btn-lookup" (click)="abrirModalHorarios()" title="Buscar horario">
-                                <i class="fa fa-search"></i>
-                              </button>
-                            </div>
-                          }
-                        </div>
-                      </div>
-
-                    </div>            
-                </ng-container>
-              </panel>
-          </div>
-
-
-          <!-- -------- Información personal -------- -->
-          <div class="col-md-6">
-              <panel 
-                headerClass="bg-gray-800"
-                title="Información personal" 
-                noButton="true" 
-                noBody="true"
-                panelClass="h-100 mb-3 mb-md-0" 
-                icono="file" 
-                fondoGris="true">
-                
-                <ng-container outsideBody>
-                    <div class="form-card__body">
-
-                      <div class="campo">
-                        <app-campoTexto
-                          [control]="form.controls['surname']"
-                          label="Apellidos"
-                          placeholder="Apellidos"
-                          [maxLength]="255"
-                          [trimEspacios]="true"
-                          [mayusculas]="true">
-                        </app-campoTexto>
-                      </div>
-
-                      <div class="campo">
-                        <app-campoTexto
-                          [control]="form.controls['name']"
-                          label="Nombres"
-                          placeholder="Nombres"
-                          [maxLength]="255"
-                          [trimEspacios]="true"
-                          [mayusculas]="true">
-                        </app-campoTexto>
-                      </div>
-
-                      <div class="campo">
-                        <app-campoEmail
-                          [control]="form.controls['email']"
-                          label="Correo Electrónico"
-                          placeholder="ejemplo"
-                          [maxLength]="255"
-                          [required]="true"
-                          [trimEspacios]="true"
-                          [sinEspacios]="true">
-                        </app-campoEmail>
-                      </div>
-
-                      <div class="campo">
-                        <app-campoTelefono
-                          [control]="form.controls['phone']"
-                          label="Teléfono Celular"
-                          placeholder="Ej: 0987654321"
-                          [maxLength]="10"
-                          [required]="true"
-                          [pais]="'ecuador'"
-                          [tipoTelefono]="'celular'">
-                        </app-campoTelefono>
-                        <!-- pais="ninguno" para no validar -->
-                      </div>
-
                     </div>
 
+                    <!-- Tipo de usuario -->
+                    <div class="campo campo-combo">
+                      <app-combo
+                        formControlName="type_user"
+                        [items]="tipoUsuario"
+                        [label]="'Tipo de Usuario'"
+                        bindLabel="name"
+                        bindValue="id">
+                      </app-combo>
+                    </div>
+
+                    <!-- Perfil -->
+                    <!-- campo-lookup--pegado: las piezas sin hueco, con el
+                    borde compartido y el redondeo solo en los extremos,
+                    como la marca en saveProducto (ver el .css). -->
+                    <div class="campo campo-lookup campo-lookup--pegado">
+                      <div class="row g-0 flex-nowrap">
+                        <div class="col-4">
+                          <app-campoNumeroEntero
+                            [control]="form.controls['perfil_id']"
+                            label="ID Perfil"
+                            placeholder="ID"
+                            [maxLength]="10"
+                            (blur)="cargarPerfilPorId()">
+                          </app-campoNumeroEntero>
+                        </div>
+                        <div class="col">
+                          <app-campoTexto
+                            [control]="perfilNombreControl"
+                            label="Nombre Perfil"
+                            placeholder="Nombre del perfil">
+                          </app-campoTexto>
+                        </div>
+                        @if (!esView) {
+                          <div class="col-auto shrink-0"> <!-- Agrega flex-shrink-0 -->
+                            <button type="button" class="btn btn-lookup" (click)="abrirModalPerfiles()" title="Buscar perfil">
+                              <i class="fa fa-search"></i>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Horario -->
+                    <div class="campo campo-lookup campo-lookup--pegado">
+                      <!-- flex-nowrap, que aqui faltaba: sin el, en estrecho
+                      la lupa se bajaba a la linea siguiente. -->
+                      <div class="row g-0 flex-nowrap">
+                        <div class="col-4">
+                          <app-campoNumeroEntero
+                            [control]="form.controls['chorario_id']"
+                            label="ID Horario"
+                            placeholder="ID"
+                            [maxLength]="10"
+                            (blur)="cargarHorarioPorId()">
+                          </app-campoNumeroEntero>
+                        </div>
+                        <div class="col">
+                          <app-campoTexto
+                            [control]="horarioNombreControl"
+                            label="Nombre Horario"
+                            placeholder="Nombre del horario">
+                          </app-campoTexto>
+                        </div>
+                        @if (!esView) {
+                          <div class="col-auto">
+                            <button type="button" class="btn btn-lookup" (click)="abrirModalHorarios()" title="Buscar horario">
+                              <i class="fa fa-search"></i>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                  </div>
                 </ng-container>
-              </panel>        
+              </panel>
+            </div>
+
+
+            <!-- -------- Información personal -------- -->
+            <div class="col-md-6">
+              <panel
+                headerClass="bg-gray-800"
+                title="Información personal"
+                noButton="true"
+                noBody="true"
+                panelClass="h-100 mb-3 mb-md-0"
+                icono="file"
+                fondoGris="true">
+
+                <ng-container outsideBody>
+                  <div class="form-card__body">
+
+                    <div class="campo">
+                      <app-campoTexto
+                        [control]="form.controls['surname']"
+                        label="Apellidos"
+                        placeholder="Apellidos"
+                        [maxLength]="255"
+                        [trimEspacios]="true"
+                        [mayusculas]="true">
+                      </app-campoTexto>
+                    </div>
+
+                    <div class="campo">
+                      <app-campoTexto
+                        [control]="form.controls['name']"
+                        label="Nombres"
+                        placeholder="Nombres"
+                        [maxLength]="255"
+                        [trimEspacios]="true"
+                        [mayusculas]="true">
+                      </app-campoTexto>
+                    </div>
+
+                    <div class="campo">
+                      <app-campoEmail
+                        [control]="form.controls['email']"
+                        label="Correo Electrónico"
+                        placeholder="ejemplo"
+                        [maxLength]="255"
+                        [required]="true"
+                        [trimEspacios]="true"
+                        [sinEspacios]="true">
+                      </app-campoEmail>
+                    </div>
+
+                    <div class="campo">
+                      <app-campoTelefono
+                        [control]="form.controls['phone']"
+                        label="Teléfono Celular"
+                        placeholder="Ej: 0987654321"
+                        [maxLength]="10"
+                        [required]="true"
+                        [pais]="'ecuador'"
+                        [tipoTelefono]="'celular'">
+                      </app-campoTelefono>
+                      <!-- pais="ninguno" para no validar -->
+                    </div>
+
+                  </div>
+
+                </ng-container>
+              </panel>
+            </div>
+
           </div>
+        </form>
+      </div>
 
+    </div>
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <app-modal-footer [isDisabled]="!isdisabled" (onClose)="activeModal.close('Close click')" (onSubmit)="onSubmitForm($event)">
+  </app-modal-footer>
+
+  <!-- ===================== IMAGEN EN PANTALLA COMPLETA ===================== -->
+  @if (showFullscreenImage) {
+    <div class="fullscreen-overlay" (click)="closeFullscreen()">
+      <div class="fullscreen-box">
+        <img [src]="imagen_previzualiza" class="fullscreen-image" alt="Avatar en pantalla completa">
+      </div>
+      <button type="button" class="btn-close-fullscreen" (click)="closeFullscreen()" title="Cerrar (Esc)">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  }
+
+  <!-- ===================== CÁMARA ===================== -->
+  @if (showCameraModal) {
+    <div class="camera-modal-overlay">
+      <div class="camera-container">
+        <div class="camera-preview">
+          <video #cameraPreview id="cameraPreview" autoplay playsinline></video>
         </div>
-      </form>
+        <div class="camera-controls">
+          <button type="button" class="btn-switch-camera" (click)="switchCamera()" title="Cambiar cámara">
+            <i class="fa-solid fa-rotate"></i>
+          </button>
+          <button type="button" class="btn-capture" (click)="capturePhoto()" title="Tomar foto">
+            <i class="fa-solid fa-camera"></i>
+          </button>
+          <button type="button" class="btn-close-camera" (click)="closeCamera()" title="Cerrar cámara">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div class="camera-status">
+        {{ cameraError || 'Cámara ' + (isUsingFrontCamera ? 'frontal' : 'trasera') + ' activa' }}
+      </div>
     </div>
-
-  </div>
-</div>
-
-<!-- ===================== PIE ===================== -->
-<app-modal-footer [isDisabled]="!isdisabled" (onClose)="activeModal.close('Close click')" (onSubmit)="onSubmitForm($event)">
-</app-modal-footer>
-
-<!-- ===================== IMAGEN EN PANTALLA COMPLETA ===================== -->
-<div class="fullscreen-overlay" *ngIf="showFullscreenImage" (click)="closeFullscreen()">
-  <div class="fullscreen-box">
-    <img [src]="imagen_previzualiza" class="fullscreen-image" alt="Avatar en pantalla completa">
-  </div>
-  <button type="button" class="btn-close-fullscreen" (click)="closeFullscreen()" title="Cerrar (Esc)">
-    <i class="fa-solid fa-xmark"></i>
-  </button>
-</div>
-
-<!-- ===================== CÁMARA ===================== -->
-<div class="camera-modal-overlay" *ngIf="showCameraModal">
-  <div class="camera-container">
-    <div class="camera-preview">
-      <video #cameraPreview id="cameraPreview" autoplay playsinline></video>
-    </div>
-    <div class="camera-controls">
-      <button type="button" class="btn-switch-camera" (click)="switchCamera()" title="Cambiar cámara">
-        <i class="fa-solid fa-rotate"></i>
-      </button>
-      <button type="button" class="btn-capture" (click)="capturePhoto()" title="Tomar foto">
-        <i class="fa-solid fa-camera"></i>
-      </button>
-      <button type="button" class="btn-close-camera" (click)="closeCamera()" title="Cerrar cámara">
-        <i class="fa-solid fa-times"></i>
-      </button>
-    </div>
-  </div>
-  <div class="camera-status">
-    {{ cameraError || 'Cámara ' + (isUsingFrontCamera ? 'frontal' : 'trasera') + ' activa' }}
-  </div>
-</div>
+  }

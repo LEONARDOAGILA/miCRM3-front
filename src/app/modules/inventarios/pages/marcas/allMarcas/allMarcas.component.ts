@@ -1,10 +1,10 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -30,6 +30,11 @@ import { PapeleraMarcasComponent } from '../papeleraMarcas/papeleraMarcas.compon
 import { AppDescargaService, PeticionDescarga, AccionDescarga }
   from '../../../../../service/app-descarga.service';
 
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
+
 /**
  * Listado de marcas (inventarios.marcas).
  *
@@ -45,7 +50,16 @@ import { AppDescargaService, PeticionDescarga, AccionDescarga }
   selector: 'app-allMarcas',
   templateUrl: './allMarcas.component.html',
   styleUrls: ['./allMarcas.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    CampoBusquedaPaginacionComponent,
+    MenuContextualComponent
+],
 })
 export class AllMarcasComponent implements OnInit, OnDestroy {
 
@@ -342,7 +356,7 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllMarcasComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllMarcasComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -425,7 +439,7 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -498,7 +512,7 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
    * registro que hoy no cumpliría alguna regla —cargado antes de que
    * existiera— no se podría desactivar hasta arreglarle todo lo demás.
    */
-  cambiarActivo(fila: MarcaModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: MarcaModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -547,7 +561,7 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
         this.marcaModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.marcaModel);
+        this.gridApi?.setGridOption('rowData', this.marcaModel);
         return;
       }
 
@@ -560,7 +574,7 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) this.gridApi.setRowData(this.marcaModel);
+      if (this.gridApi) this.gridApi.setGridOption('rowData', this.marcaModel);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar marcas:', error);
@@ -756,7 +770,7 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.marcaModel = [nuevo, ...this.marcaModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.marcaModel);
+      this.gridApi?.setGridOption('rowData', this.marcaModel);
     });
   }
 
@@ -766,7 +780,7 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.marcaModel = [nuevo, ...this.marcaModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.marcaModel);
+      this.gridApi?.setGridOption('rowData', this.marcaModel);
     });
   }
 
@@ -944,7 +958,8 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
 // Simple delegador: toda la lógica de modales vive en AllMarcasComponent.
 @Component({
   selector: 'app-button-accion-marca',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"
@@ -968,6 +983,7 @@ export class AllMarcasComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

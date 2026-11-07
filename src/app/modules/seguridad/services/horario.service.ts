@@ -57,6 +57,18 @@ deleteHorario(id: number): Observable<any> {
   return this._http.delete(this.URL_SERVICIOS + `deleteHorario/${id}`);
 }
 
+/**
+ * ¿Con este horario se podría entrar en tal momento?
+ *
+ * Es la misma pregunta que responde el middleware en cada petición, pero
+ * para una fecha y hora cualquiera: sirve para probar un horario antes de
+ * ponérselo a nadie. No escribe nada.
+ */
+puedeEntrar(id: number, fechaHora: string): Observable<any> {
+  return this._http.get(this.URL_SERVICIOS + `puedeEntrar/${id}`,
+                        { params: new HttpParams().set('fecha_hora', fechaHora) });
+}
+
 // ================================================================
 // PAPELERA DE RECICLAJE
 // ================================================================

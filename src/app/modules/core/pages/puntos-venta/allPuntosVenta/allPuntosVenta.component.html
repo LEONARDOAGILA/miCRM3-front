@@ -1,0 +1,302 @@
+<!-- ============================================================
+     PUNTOS DE VENTA (las cajas de cada sucursal)
+
+     DOS COLUMNAS, con un divisor que se arrastra:
+
+       IZQUIERDA          DERECHA
+       · las tiendas      · las cajas de la tienda elegida
+         con cuántas
+         cajas tiene y
+         cuántas le
+         faltan
+
+     Un punto de venta no significa nada suelto: significa «la caja 2 de tal
+     tienda». Pulsando la tienda se ve lo suyo y el botón de añadir ya sabe
+     dónde va la caja nueva.
+     ============================================================ -->
+
+<!-- ================= MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Ventas</a></li>
+  <li class="breadcrumb-item active">Puntos de Venta</li>
+</ol>
+
+<!-- ================= PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       [ButtonPrint]="accesoModel?.reporte === true"
+       [ButtonExportExcel]="accesoModel?.reporte === true"
+       [ButtonExportCsv]="accesoModel?.reporte === true"
+       (panelReloaded)="allPuntosVenta()"
+       (panelExpanded)="ajustarTamanoGrid()"
+       (panelPrinted)="printPdf()"
+       (panelExportExceled)="exportExcel()"
+       (panelExportCsved)="exportCsv()"
+       [closeRoute]="'/ventas'"
+       icono="tienda">
+
+  <div class="content-container1 lista-contenido">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <!-- ---------- AVISO: cajas que no pueden asentar ----------
+         No es un adorno. Una caja sin cuenta resuelta no puede hacer su
+         asiento, y eso no se puede descubrir el día del cierre. -->
+    @if (cuantasIncompletas > 0) {
+      <div class="pv-aviso">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <b>{{ cuantasIncompletas }}
+            {{ cuantasIncompletas === 1 ? 'punto de venta tiene' : 'puntos de venta tienen' }}
+            cuentas sin resolver.</b>
+          <span>
+            Mientras no se les ponga cuenta —o se marque que el concepto no aplica—
+            hay asientos que no se van a poder hacer. Ábrelos y mira la parte contable.
+          </span>
+        </div>
+      </div>
+    }
+
+    <div class="pv-dos-columnas"
+         [class.is-redimensionando]="redimensionando"
+         [style.height.px]="altoColumnas"
+         [style.--pv-ancho-izq.px]="anchoIzquierda">
+
+      <!-- ============================================================
+           IZQUIERDA: LAS TIENDAS
+           ============================================================ -->
+      <div class="pv-col pv-col--izq">
+        <div class="pv-caja">
+          <div class="pv-caja__titulo">
+            <i class="fa fa-store fa-fw me-1"></i>Sucursales
+            <!-- Con el buscador puesto se dice «3 de 5»: si no, el número de
+                 arriba y las filas que se ven no cuadran y parece un fallo -->
+            <span class="pv-caja__cuenta">
+              @if (busquedaSucursal && sucursalesVisibles.length !== sucursales.length) {
+                {{ sucursalesVisibles.length }} de {{ sucursales.length }}
+              } @else {
+                {{ sucursales.length }}
+              }
+            </span>
+          </div>
+
+          <!-- Buscador de tiendas. Filtra SÓLO esta lista y en el navegador:
+               están todas cargadas, así que escribir y ver el resultado es
+               instantáneo. Busca por código y por nombre, sin tildes. -->
+          <div class="pv-buscador">
+            <i class="fa fa-search pv-buscador__lupa"></i>
+            <input type="text"
+                   class="form-control form-control-sm"
+                   placeholder="Buscar sucursal…"
+                   [(ngModel)]="busquedaSucursal"
+                   (keydown.escape)="limpiarBusquedaSucursal()">
+            @if (busquedaSucursal) {
+              <button type="button" class="pv-buscador__limpiar"
+                      title="Quitar la búsqueda"
+                      (click)="limpiarBusquedaSucursal()">
+                <i class="fa fa-times"></i>
+              </button>
+            }
+          </div>
+
+          <div class="pv-caja__cuerpo">
+
+            <!-- Todas: para ver el conjunto sin perder el sitio -->
+            <button type="button" class="pv-fila pv-fila--todas"
+                    [class.is-elegida]="sucursalElegida === null"
+                    (click)="elegirSucursal(null)"
+                    (contextmenu)="onContextMenuSucursal($event, null)">
+              <i class="fa fa-layer-group fa-fw me-1"></i>
+              <span class="pv-fila__texto">Todas</span>
+              <span class="pv-fila__dato" title="Puntos de venta en total">
+                {{ puntoVentaModel.length }}
+              </span>
+            </button>
+
+            @for (s of sucursalesVisibles; track s.id) {
+              <button type="button" class="pv-fila"
+                      [class.is-elegida]="sucursalElegida === s.id"
+                      [class.is-inactiva]="s.activo === false"
+                      [title]="s.activo === false ? 'Sucursal inactiva' : s.nombre"
+                      (click)="elegirSucursal(s.id)"
+                      (contextmenu)="onContextMenuSucursal($event, s)">
+                <!-- EL CÓDIGO DELANTE: es por donde se las nombra («la 03»)
+                     y es lo que se lee al recorrer la lista con la vista.
+                     Con el nombre primero había que buscar el número al
+                     final de cada renglón. -->
+                @if (s.codigo) { <span class="pv-fila__codigo">{{ s.codigo }}</span> }
+                <span class="pv-fila__texto">{{ s.nombre }}</span>
+
+                <!-- Cuántas cajas tiene, y cuántas están a medias. Es lo que
+                     contesta «¿dónde me falta trabajo?» sin abrir nada. -->
+                @if (cuantasIncompletasDe(s.id) > 0) {
+                  <span class="pv-fila__dato pv-fila__dato--mal"
+                        [title]="cuantasIncompletasDe(s.id) + ' con cuentas sin resolver'">
+                    {{ cuantasIncompletasDe(s.id) }}
+                  </span>
+                }
+                <span class="pv-fila__dato"
+                      [title]="cuantasCajas(s.id) + ' punto(s) de venta'">
+                  {{ cuantasCajas(s.id) }}
+                </span>
+              </button>
+            }
+
+            <!-- Se buscó algo y no hay nada: se dice qué se buscó, que es lo
+                 que hace falta para darse cuenta del error de tecleo -->
+            @if (sucursales.length && !sucursalesVisibles.length) {
+              <div class="pv-vacio">
+                Ninguna sucursal coincide con <b>«{{ busquedaSucursal }}»</b>.
+                <button type="button" class="pv-vacio__quitar" (click)="limpiarBusquedaSucursal()">
+                  quitar la búsqueda
+                </button>
+              </div>
+            }
+
+            @if (!sucursales.length) {
+              <div class="pv-vacio">
+                No hay sucursales todavía. Créalas en <b>Ventas › Sucursales</b>:
+                un punto de venta siempre es de una tienda.
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= EL DIVISOR ================= -->
+      <div class="pv-divisor"
+           role="separator"
+           aria-orientation="vertical"
+           [attr.aria-valuenow]="anchoIzquierda"
+           title="Arrastra para repartir el espacio (doble clic: ancho por defecto)"
+           (pointerdown)="iniciarRedimension($event)"
+           (dblclick)="anchoIzquierda = ANCHO_IZQ_DEFECTO; guardarAnchoIzquierda(); ajustarTamanoGrid()">
+      </div>
+
+      <!-- ============================================================
+           DERECHA: LAS CAJAS DE ESA TIENDA
+           ============================================================ -->
+      <div class="pv-col pv-col--der">
+
+        <!-- ---------- BARRA DE HERRAMIENTAS ---------- -->
+        <div class="row g-2 align-items-center lista-barra pv-barra">
+
+          <div class="col pe-1">
+            <app-campoBusquedaPaginacion
+              [id]="'filter-text-box'"
+              [placeholder]="'Buscar por código, nombre o sucursal'"
+              [iconClass]="'fa fa-search fa-lg'"
+              [containerClass]="'w-100'"
+              [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiarFiltros)="clearAllFilters()">
+            </app-campoBusquedaPaginacion>
+          </div>
+
+          <!-- Nueva caja EN LA TIENDA ELEGIDA. Apagado mientras no haya
+               ninguna: la ficha ya no pregunta de cuál es la caja, y una
+               caja sin tienda no significa nada.
+               (Las crean los contadores: sin el permiso «crear», también
+               apagado.) -->
+          <div class="col-auto ps-0">
+            <button type="button"
+                    class="inactivo btn btn-primary lista-barra__btn"
+                    [title]="accesoModel?.crear === false
+                              ? 'No tiene permiso para crear puntos de venta'
+                              : (sucursalElegida
+                                  ? 'Agregar un punto de venta en ' + nombreSucursalElegida
+                                  : 'Elija primero una sucursal en la lista de la izquierda')"
+                    [disabled]="accesoModel?.crear === false || sucursalElegida === null"
+                    (click)="addPuntoVenta()">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+
+          @if (accesoModel?.papelera === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-outline-secondary lista-barra__btn"
+                      title="Papelera de reciclaje de puntos de venta"
+                      (click)="abrirPapelera()">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          }
+
+          @if (accesoModel?.auditar === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-warning lista-barra__btn position-relative"
+                      title="Ver historial de auditoría del registro seleccionado"
+                      [disabled]="!selectedRow"
+                      (click)="auditoria()">
+                <i class="fa fa-user-secret"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
+                  <i class="fa fa-search"></i>
+                </span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- De qué se está mirando, para no perder el sitio al desplazar -->
+        <p class="pv-donde">
+          @if (sucursalElegida) {
+            <i class="fa fa-store"></i>
+            Cajas de <b>{{ nombreSucursalElegida }}</b>
+            <button type="button" class="pv-donde__quitar" title="Ver todas las sucursales"
+                    (click)="elegirSucursal(null)">
+              <i class="fa fa-times"></i> ver todas
+            </button>
+          } @else {
+            <i class="fa fa-layer-group"></i>
+            <b>Todas</b> las cajas. Pulsa una sucursal para ver sólo las suyas.
+          }
+          <span class="pv-donde__cuenta">
+            {{ cuantasVisibles }} {{ cuantasVisibles === 1 ? 'punto de venta' : 'puntos de venta' }}
+          </span>
+        </p>
+
+        <!-- ---------- REJILLA ----------
+             El clic derecho se escucha en el contenedor: el evento
+             `cellContextMenu` de ag-Grid no llega (comprobado). -->
+        <div class="pv-grilla-wrap" (contextmenu)="onContextMenuGrilla($event)">
+        <ag-grid-angular
+          class="ag-theme-alpine ag-grid-transparente lista-grilla"
+          [rowData]="puntoVentaModel"
+          [columnDefs]="columnDefs"
+          [enableCellTextSelection]="true"
+          [defaultColDef]="_appAgGridService.defaultColDef"
+          [rowHeight]="_appAgGridService.rowHeight"
+          [headerHeight]="_appAgGridService.headerHeight"
+          [localeText]="_appAgGridService.localeText"
+          [rowSelection]="'single'"
+          [rowClassRules]="rowClassRules"
+          [pagination]="false"
+          [animateRows]="true"
+          [navigateToNextCell]="navegarConTeclado"
+          [isExternalFilterPresent]="hayFiltroExterno"
+          [doesExternalFilterPass]="pasaFiltroExterno"
+          [overlayNoRowsTemplate]="'<span>Aquí todavía no hay puntos de venta. El botón + crea el primero.</span>'"
+          (gridReady)="onGridReady($event)"
+          (cellClicked)="onCellClicked($event)">
+        </ag-grid-angular>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</panel>
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO ================= -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

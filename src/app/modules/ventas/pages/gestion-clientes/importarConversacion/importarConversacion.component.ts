@@ -1,11 +1,11 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
 import { GestionService } from '../../../services/gestion.service';
 import { ClienteModel } from '../../../interfaces/clienteModel';
@@ -39,8 +39,9 @@ import {
 @Component({
   selector: 'app-importarConversacion',
   standalone: true,
-  imports: [CommonModule, FormsModule, PanelModule, ModalFooterComponent],
+  imports: [FormsModule, PanelComponent, ModalFooterComponent],
   templateUrl: './importarConversacion.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./importarConversacion.component.css'],
 })
 export class ImportarConversacionComponent {

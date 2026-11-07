@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { CellPosition, ColDef, GridApi, NavigateToNextCellParams, RowClassParams, RowNode, SideBarDef } from 'ag-grid-community';
+import { CellPosition, ColDef, GridApi, NavigateToNextCellParams, RowClassParams, IRowNode, SideBarDef } from 'ag-grid-community';
 import { Observable, take, takeUntil } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 
@@ -130,7 +130,7 @@ export class AppAgGridService {
    * `alSeleccionar` recibe la fila (data) para que el componente haga lo
    * mismo que en su onCellClicked. Requiere `rowSelection` en la grilla.
    */
-  navegacionConFlechas(alSeleccionar?: (fila: any, nodo: RowNode) => void): (p: NavigateToNextCellParams) => CellPosition | null {
+  navegacionConFlechas(alSeleccionar?: (fila: any, nodo: IRowNode) => void): (p: NavigateToNextCellParams) => CellPosition | null {
     return (params: NavigateToNextCellParams): CellPosition | null => {
       const siguiente = params.nextCellPosition;
       if (!siguiente) { return null; }                                                          // ya en el borde
@@ -148,7 +148,7 @@ export class AppAgGridService {
   }
   
   aplicarFiltro(gridApi: GridApi, filterValue: string): void {
-    gridApi.setQuickFilter(filterValue);
+    gridApi.setGridOption('quickFilterText', filterValue);
   }
 
   limpiarSeleccion(gridApi: GridApi): void {
@@ -253,7 +253,7 @@ export class AppAgGridService {
     /** La fila que se pulsó (el `data` del evento). */
     fila: any;
     /** Su nodo, que lo trae el evento del clic. */
-    nodo?: RowNode | null;
+    nodo?: IRowNode | null;
     /** Cómo se llama la columna: `activo` en casi todas, `isactive` en usuarios. */
     campo: string;
     /** Los ids que se están guardando, los mismos que mira casillaActivo. */
@@ -316,7 +316,7 @@ export class AppAgGridService {
   }
 
   /** Repinta una sola celda: entrar en el giro de «guardando» y salir de él. */
-  repintarCelda(gridApi: GridApi | null | undefined, nodo: RowNode | null | undefined, campo: string): void {
+  repintarCelda(gridApi: GridApi | null | undefined, nodo: IRowNode | null | undefined, campo: string): void {
     if (!gridApi) { return; }
     gridApi.refreshCells(nodo
       ? { rowNodes: [nodo], columns: [campo], force: true }
@@ -352,10 +352,10 @@ export class AppAgGridService {
    * van numerados por posición y ese número no sirve para buscar un registro
    * concreto —ordenando o cambiando de página deja de coincidir—.
    */
-  nodoDe(gridApi: GridApi | null | undefined, id: number): RowNode | null {
-    let encontrado: RowNode | null = null;
+  nodoDe(gridApi: GridApi | null | undefined, id: number): IRowNode | null {
+    let encontrado: IRowNode | null = null;
     gridApi?.forEachNode(nodo => {
-      if ((nodo.data as any)?.id === id) { encontrado = nodo as RowNode; }
+      if ((nodo.data as any)?.id === id) { encontrado = nodo as IRowNode; }
     });
     return encontrado;
   }

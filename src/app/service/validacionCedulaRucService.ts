@@ -183,17 +183,39 @@ export class ValidacionCedulaRucService {
         if (TipoIdentificacionEnum.CEDULA === tipoIdentificacion) {
             return (
                 this.esNumeroIdentificacionValida(identificacion, longitud) &&
+                this.noEsSecuenciaRepetida(identificacion) &&
                 this.esCodigoProvinciaValido(identificacion) &&
                 this.esTercerDigitoValido(identificacion, tipoIdentificacion)
             );
         } else {
             return (
                 this.esNumeroIdentificacionValida(identificacion, longitud) &&
+                this.noEsSecuenciaRepetida(identificacion) &&
                 this.esCodigoProvinciaValido(identificacion) &&
                 this.esTercerDigitoValido(identificacion, tipoIdentificacion) &&
                 this.esCodigoEstablecimientoValido(identificacion)
             );
         }
+    }
+
+    /**
+     * Los diez primeros dígitos no pueden ser todos el mismo.
+     *
+     * POR QUÉ HACE FALTA: 2222222222 cumple TODO lo demás —provincia 22,
+     * tercer dígito 2 y el módulo 10 da 2, que es el que lleva—, así que el
+     * algoritmo la daba por buena. Y no es un error del algoritmo: es un
+     * número que el Registro Civil nunca emitió y que la gente escribe para
+     * salir del paso. De todas las repeticiones (0000000000 … 9999999999)
+     * sólo ésa superaba las demás reglas, de modo que esto no deja fuera
+     * ninguna cédula real.
+     *
+     * Se mira sobre los diez primeros para que valga igual con el RUC, que
+     * lleva la cédula delante.
+     */
+    static noEsSecuenciaRepetida(numeroIdentificacion: string): boolean {
+        const diez = String(numeroIdentificacion ?? '').slice(0, 10);
+        if (diez.length < 10) { return true; }          // de eso se queja otra regla
+        return !/^(\d)\1{9}$/.test(diez);
     }
 
     /**

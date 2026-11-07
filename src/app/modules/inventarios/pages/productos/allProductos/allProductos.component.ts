@@ -1,10 +1,10 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -32,6 +32,17 @@ import { PapeleraProductosComponent } from '../papeleraProductos/papeleraProduct
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
+import { buscarNodo, filtrarArbol, recorrer } from '../../../../seguridad/pages/grupos/arbolGrupos';
+import { NgScrollbarModule } from 'ngx-scrollbar';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { ComboMultiSeleccionComponent } from '../../../../../components/campos/combo-multi-seleccion/combo-multi-seleccion.component';
+
+import { FormsModule } from '@angular/forms';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Catálogo de productos (inventarios.productos).
@@ -55,7 +66,21 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-allProductos',
   templateUrl: './allProductos.component.html',
   styleUrls: ['./allProductos.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    CampoBusquedaPaginacionComponent,
+    MenuContextualComponent,
+    FileTreeNodeComponent,
+    NgScrollbarModule,
+    NgSelectModule,
+    ComboMultiSeleccionComponent
+],
 })
 export class AllProductosComponent implements OnInit, OnDestroy {
 
@@ -79,11 +104,125 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   public ultimaPagina: number = 1;
 
   // ---------- Filtros ----------
-  /** Marcas y categorías para los dos combos de la barra. */
+  /** Las marcas, para el selector de la barra. */
   public marcas: any[] = [];
-  public categorias: any[] = [];
-  public marcaFiltro: number | null = null;
-  public categoriaFiltro: number | null = null;
+  /**
+   * Las marcas elegidas. Lista y no un solo id: «ver las Samsung Y las LG»
+   * es una pregunta normal en un catálogo, y de una en una hay que mirar dos
+   * veces y sumar a mano. Vacía = todas.
+   *
+   * Es un CAMPO y no un getter: ng-select pierde la selección si el array
+   * que recibe es nuevo en cada ciclo de detección de cambios.
+   */
+  public marcaFiltro: number[] = [];
+
+  // ---------- EL ÁRBOL DE CATEGORÍAS ----------
+  // Calcado de allCaracteristicas, que a su vez lo sacó de usuariosGrupos.
+  // La categoría ya no se elige en un combo plano: se trabaja categoría por
+  // categoría, así que el árbol se queda a la vista.
+
+  /** Lo que se pinta (puede venir filtrado por el buscador del árbol). */
+  public nodes: FileTreeNode[] = [];
+  /** El árbol entero, sin filtrar: es el que guarda el estado. */
+  private originalNodes: FileTreeNode[] = [];
+  /** Las categorías tal como las manda el servidor (planas, con ruta). */
+  private categorias: any[] = [];
+  /** Las ramas abiertas. */
+  private readonly abiertos = new Set<number>();
+  public searchQuery = '';
+  public recargandoArbol = false;
+
+  /** El nodo de «todas»: la rejilla sin filtrar por categoría. */
+  public readonly NODO_TODAS = 0;
+  /** Qué categoría se está mirando; 0 = todas. */
+  public seleccionId: number = this.NODO_TODAS;
+  /** La ruta de la elegida, para la cabecera y para el modal de alta. */
+  public categoriaFiltroRuta = '';
+
+  /**
+   * Las categorías elegidas. Vacía = todas.
+   *
+   * EL ÁRBOL Y EL PANEL SON EL MISMO FILTRO, con dos mandos: pulsar una rama
+   * en el árbol mete esa, y el combo del panel deja elegir varias. Si fueran
+   * dos filtros distintos habría que explicar cuál gana.
+   */
+  public categoriaFiltro: number[] = [];
+
+  /** Las categorías en lista plana, con su ruta, para el combo del panel. */
+  public categoriasPlanas: { id: number; ruta: string }[] = [];
+
+  // ---------- LOS DOS RANGOS ----------
+  public precioMin: number | null = null;
+  public precioMax: number | null = null;
+  public costoMin: number | null = null;
+  public costoMax: number | null = null;
+
+  // ---------- QUÉ ESTÁ PLEGADO ----------
+  public lateralPlegado = false;
+  public filtrosPlegados = false;
+  public readonly ANCHO_FILTROS_DEFECTO = 260;
+  private readonly CLAVE_ANCHO_FILTROS = 'miCRM3.allProductos.anchoFiltros';
+  public anchoFiltros = this.leerAnchoFiltros();
+  public redimensionandoFiltros = false;
+
+  /**
+   * Lo que dice el botón de quitar filtros al pasar por encima.
+   *
+   * Cuenta lo MISMO que el botón de al lado del buscador —que limpia todo—,
+   * así que nombra también la búsqueda y las columnas, no sólo el panel.
+   */
+  get tituloQuitarFiltros(): string {
+    if (!this.hayFiltro) { return 'No hay filtros que quitar'; }
+    const partes: string[] = [];
+    if (this.cuantosFiltros) { partes.push(this.cuantosFiltros === 1 ? '1 filtro' : this.cuantosFiltros + ' filtros'); }
+    if (this.searchTerm) { partes.push('la búsqueda'); }
+    if (this.cuantasColumnasFiltradas === 1) { partes.push('1 columna'); }
+    else if (this.cuantasColumnasFiltradas > 1) { partes.push(this.cuantasColumnasFiltradas + ' columnas'); }
+    return 'Quitar ' + partes.join(' y ');
+  }
+
+  /** Cuántos filtros hay puestos, para avisar con el panel plegado. */
+  get cuantosFiltros(): number {
+    return (this.marcaFiltro.length ? 1 : 0)
+         + (this.categoriaFiltro.length ? 1 : 0)
+         + (this.precioMin !== null || this.precioMax !== null ? 1 : 0)
+         + (this.costoMin !== null || this.costoMax !== null ? 1 : 0);
+  }
+
+  /**
+   * Si de la rama abierta pueden colgar productos.
+   *
+   * Las categorías que sólo AGRUPAN (`es_transaccion` en false, las del
+   * icono de capas) son ramas del árbol, no sitios donde poner cosas:
+   * «Línea Blanca» agrupa, «Refrigeradoras» es donde van los productos.
+   * Con una de ésas abierta, el botón de nuevo producto se bloquea.
+   *
+   * Con «Todas» abierto devuelve true: ahí no hay rama impuesta y la
+   * categoría se elige dentro de la ficha.
+   */
+  public get categoriaAdmiteProductos(): boolean {
+    if (this.seleccionId === this.NODO_TODAS) { return true; }
+    const c = this.categorias.find(x => x.id === this.seleccionId);
+    return c ? c.es_transaccion !== false : true;
+  }
+
+  /** Por qué no se puede crear aquí, para decirlo en el botón. */
+  public get motivoSinAlta(): string {
+    if (this.accesoModel?.crear === false) { return 'No tienes permiso para crear productos'; }
+    if (!this.categoriaAdmiteProductos) {
+      return `«${this.categoriaFiltroRuta}» sólo agrupa: no admite productos. Elige una de sus subcategorías.`;
+    }
+    return '';
+  }
+
+  // ---------- El divisor, igual que en allCaracteristicas ----------
+  public mobileSidebarToggled = false;
+  public readonly ANCHO_LATERAL_DEFECTO = 280;
+  private readonly ANCHO_LATERAL_MIN = 180;
+  private readonly ANCHO_LATERAL_MAX = 640;
+  private readonly CLAVE_ANCHO_LATERAL = 'miCRM3.allProductos.anchoLateral';
+  public anchoLateral = this.leerAnchoLateral();
+  public redimensionando = false;
 
   // ---------- ag-Grid ----------
   public gridApi!: GridApi;
@@ -141,6 +280,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.allProductos();
     this.initializeGrid();
     this.cargarFiltros();
+    this.cargarArbol();
   }
 
   ngOnDestroy(): void {
@@ -413,7 +553,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllProductosComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllProductosComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -502,7 +642,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -550,7 +690,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     });
   }
 
-  cambiarActivo(fila: ProductoModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: ProductoModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -584,21 +724,312 @@ export class AllProductosComponent implements OnInit, OnDestroy {
   /** Las marcas y el árbol de categorías para los dos combos de la barra. */
   private async cargarFiltros(): Promise<void> {
     try {
-      const [marcas, categorias]: any[] = await Promise.all([
-        firstValueFrom(this._marcaService.listMarcas(true)),
-        firstValueFrom(this._categoriaService.listCategorias(true)),
-      ]);
+      const marcas: any = await firstValueFrom(this._marcaService.listMarcas(true));
       this.marcas = marcas?.data ?? [];
-      // En el combo se enseña la RUTA, no el nombre: fuera del árbol,
-      // «Accesorios» a secas no dice de qué
-      this.categorias = (categorias?.data ?? []).map((c: any) => ({
-        id: c.id,
-        name: c.ruta || c.nombre,
-      }));
     } catch (error) {
-      // Sin combos la pantalla sigue sirviendo: se busca por texto
-      console.error('Error al cargar los filtros:', error);
+      // Sin el combo la pantalla sigue sirviendo: se busca por texto
+      console.error('Error al cargar las marcas:', error);
     }
+  }
+
+  // ================================================================
+  // EL ÁRBOL DE CATEGORÍAS
+  // ================================================================
+
+  /**
+   * Trae el árbol entero y cuántos productos tiene cada rama.
+   *
+   * Son dos llamadas y no una por categoría: con 28 categorías serían 28
+   * viajes para pintar unos contadores. El recuento se hace aquí porque el
+   * servidor no tiene un endpoint que lo dé; si algún día el catálogo
+   * crece mucho, esto es lo primero que habrá que mover a la base.
+   */
+  async cargarArbol(): Promise<void> {
+    try {
+      this.recargandoArbol = true;
+
+      const [arbol, todos]: any[] = await Promise.all([
+        firstValueFrom(this._categoriaService.allCategorias(false)),
+        firstValueFrom(this._productoService.listProductos(false)),
+      ]);
+
+      this.categorias = arbol?.body?.data ?? [];
+
+      const cuantos = new Map<number, number>();
+      for (const p of (todos?.data ?? [])) {
+        if (p.categoria_id == null) { continue; }
+        cuantos.set(p.categoria_id, (cuantos.get(p.categoria_id) ?? 0) + 1);
+      }
+      // Para el combo del panel: planas y con la RUTA, que fuera del árbol
+      // «Accesorios» a secas no dice de qué.
+      this.categoriasPlanas = this.categorias.map((c: any) => ({ id: c.id, ruta: c.ruta || c.nombre }));
+      this.construirArbol(cuantos);
+    } catch (error) {
+      // El AuthInterceptor ya enseña el error HTTP
+      console.error('Error al cargar el árbol de categorías:', error);
+      this.categorias = [];
+      this.construirArbol(new Map());
+    } finally {
+      this.recargandoArbol = false;
+    }
+  }
+
+  /**
+   * Lo de cada categoría SUBIDO por su rama: lo propio más lo de todo lo
+   * que le cuelga. Es lo que se pinta en la chapita.
+   *
+   * Un nodo que sólo agrupa («Línea Blanca») no tiene productos suyos, y
+   * con la cuenta propia saldría siempre un 0 que hace creer que por ahí
+   * no hay nada.
+   */
+  private sumarALosPadres(cuantos: Map<number, number>): Map<number, number> {
+    const padres = new Map<number, number | null>();
+    for (const c of this.categorias) { padres.set(c.id, c.padre_id ?? null); }
+
+    const totales = new Map<number, number>();
+    for (const c of this.categorias) { totales.set(c.id, cuantos.get(c.id) ?? 0); }
+
+    for (const c of this.categorias) {
+      const propios = cuantos.get(c.id) ?? 0;
+      if (!propios) { continue; }
+
+      // El `vistos` es por si los datos trajeran un ciclo (una categoría
+      // que acabe siendo su propia abuela): subir sin fin colgaría la
+      // pantalla.
+      const vistos = new Set<number>([c.id]);
+      let p = padres.get(c.id) ?? null;
+      while (p !== null && !vistos.has(p)) {
+        vistos.add(p);
+        totales.set(p, (totales.get(p) ?? 0) + propios);
+        p = padres.get(p) ?? null;
+      }
+    }
+    return totales;
+  }
+
+  /** Lista plana (padre antes que hijo) -> árbol, con «Todas» por encima. */
+  private construirArbol(cuantos: Map<number, number>): void {
+    const nodos = new Map<number, FileTreeNode>();
+    const raices: FileTreeNode[] = [];
+    const totales = this.sumarALosPadres(cuantos);
+
+    for (const c of this.categorias) {
+      const propios = cuantos.get(c.id) ?? 0;
+      const rama = totales.get(c.id) ?? 0;
+      const enHijas = rama - propios;
+
+      nodos.set(c.id, {
+        id: c.id,
+        nombre: c.nombre,
+        tipo: 0,
+        escarpeta: true,
+        // Las que sólo agrupan llevan otro icono: ahí no cuelgan productos
+        icono: c.es_transaccion === false ? 'fa fa-layer-group' : 'fa fa-box',
+        color: c.activo === false ? 'var(--bs-secondary-color, #6c757d)' : undefined,
+        badge: rama,
+        titulo: [c.ruta,
+                 enHijas > 0
+                   ? `${rama} en la rama: ${propios} suyo(s) y ${enHijas} en sus subcategorías`
+                   : `${propios} producto(s)`,
+                 c.es_transaccion === false ? 'sólo agrupa: no admite productos' : '',
+                 c.activo === false ? '(inactiva)' : ''].filter(Boolean).join(' — '),
+        isOpen: this.abiertos.has(c.id),
+        isSelected: this.seleccionId === c.id,
+      });
+    }
+
+    for (const c of this.categorias) {
+      const n = nodos.get(c.id)!;
+      const padre = c.padre_id ? nodos.get(c.padre_id) : undefined;
+      if (padre) { (padre.children ??= []).push(n); } else { raices.push(n); }
+    }
+
+    const todas: FileTreeNode = {
+      id: this.NODO_TODAS,
+      nombre: 'Todas las categorías',
+      tipo: 0,
+      escarpeta: true,
+      icono: 'fa fa-list-check',
+      color: 'var(--bs-app-theme, #00acac)',
+      badge: [...cuantos.values()].reduce((a, b) => a + b, 0),
+      titulo: 'Todos los productos, de cualquier categoría',
+      isOpen: this.abiertos.has(this.NODO_TODAS) || this.abiertos.size === 0,
+      isSelected: this.seleccionId === this.NODO_TODAS,
+      children: raices.length ? raices : undefined,
+    };
+
+    this.originalNodes = [todas];
+    this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
+  }
+
+  /** Se pulsó una rama: la rejilla pasa a enseñar lo suyo. */
+  onNodeSelect(node: FileTreeNode): void {
+    this.seleccionar(node.id);
+    this.mobileSidebarToggled = false;
+  }
+
+  seleccionar(id: number): void {
+    this.seleccionId = id;
+    recorrer(this.originalNodes, n => n.isSelected = n.id === id);
+    recorrer(this.nodes, n => n.isSelected = n.id === id);
+
+    // Se abre el camino hasta ella, para que se vea dónde está
+    let c = this.categorias.find(x => x.id === id);
+    while (c) {
+      this.abiertos.add(c.id);
+      c = c.padre_id ? this.categorias.find(x => x.id === c.padre_id) : null;
+    }
+    this.abiertos.add(this.NODO_TODAS);
+    const real = buscarNodo(this.originalNodes, id);
+    if (real?.children) { real.isOpen = true; }
+
+    const cat = this.categorias.find(x => x.id === id);
+    this.categoriaFiltroRuta = cat ? (cat.ruta || cat.nombre) : '';
+
+    // El árbol escribe en la MISMA lista que el combo del panel
+    this.categoriaFiltro = id === this.NODO_TODAS ? [] : [id];
+
+    this.selectedRow = null;
+    this.paginaActual = 1;
+    this.allProductos(1);
+  }
+
+  /**
+   * Cambió el combo de categorías del panel.
+   *
+   * Se refleja en el árbol para que los dos digan lo mismo: con una sola, se
+   * marca esa rama; con ninguna o con varias, no hay UNA rama que marcar, así
+   * que se vuelve a «Todas» en el árbol y manda la lista.
+   */
+  onCategoriasPanelCambiadas(): void {
+    const ids = this.categoriaFiltro ?? [];
+    if (ids.length === 1) {
+      const id = ids[0];
+      this.seleccionId = id;
+      recorrer(this.originalNodes, n => n.isSelected = n.id === id);
+      recorrer(this.nodes, n => n.isSelected = n.id === id);
+      const cat = this.categorias.find(x => x.id === id);
+      this.categoriaFiltroRuta = cat ? (cat.ruta || cat.nombre) : '';
+    } else {
+      this.seleccionId = this.NODO_TODAS;
+      recorrer(this.originalNodes, n => n.isSelected = n.id === this.NODO_TODAS);
+      recorrer(this.nodes, n => n.isSelected = n.id === this.NODO_TODAS);
+      this.categoriaFiltroRuta = ids.length > 1 ? ids.length + ' categorías' : '';
+    }
+    this.onFiltroCambiado();
+  }
+
+  /** Plegar y desplegar las dos columnas. */
+  alternarLateral(): void { this.lateralPlegado = !this.lateralPlegado; this.programar(() => this.ajustarTamanoGrid(), 60); }
+  alternarFiltros(): void { this.filtrosPlegados = !this.filtrosPlegados; this.programar(() => this.ajustarTamanoGrid(), 60); }
+
+  /** El divisor del panel de filtros, igual que el del árbol pero al revés. */
+  iniciarRedimensionFiltros(ev: PointerEvent): void {
+    if (ev.button !== 0) { return; }
+    ev.preventDefault();
+    const divisor = ev.currentTarget as HTMLElement;
+    const xInicial = ev.clientX;
+    const anchoInicial = this.anchoFiltros;
+    this.redimensionandoFiltros = true;
+    divisor.setPointerCapture(ev.pointerId);
+
+    const mover = (e: PointerEvent) => {
+      // Al revés que el del árbol: este panel está a la DERECHA, así que
+      // arrastrar hacia la izquierda lo hace MÁS ancho.
+      const nuevo = anchoInicial - (e.clientX - xInicial);
+      this.anchoFiltros = Math.min(480, Math.max(200, Math.round(nuevo)));
+    };
+    const soltar = (e: PointerEvent) => {
+      divisor.removeEventListener('pointermove', mover);
+      divisor.removeEventListener('pointerup', soltar);
+      divisor.removeEventListener('pointercancel', soltar);
+      divisor.releasePointerCapture(e.pointerId);
+      this.redimensionandoFiltros = false;
+      try { localStorage.setItem(this.CLAVE_ANCHO_FILTROS, String(this.anchoFiltros)); } catch { /* bloqueado */ }
+      this.ajustarTamanoGrid();
+    };
+    divisor.addEventListener('pointermove', mover);
+    divisor.addEventListener('pointerup', soltar);
+    divisor.addEventListener('pointercancel', soltar);
+  }
+
+  private leerAnchoFiltros(): number {
+    try {
+      const g = Number(localStorage.getItem('miCRM3.allProductos.anchoFiltros'));
+      return Number.isFinite(g) && g >= 200 && g <= 480 ? g : 260;
+    } catch { return 260; }
+  }
+
+  onNodeToggle(node: FileTreeNode): void {
+    if (node.isOpen) { this.abiertos.add(node.id); } else { this.abiertos.delete(node.id); }
+    const real = buscarNodo(this.originalNodes, node.id);
+    if (real) { real.isOpen = node.isOpen; }
+  }
+
+  expandirTodo(): void {
+    recorrer(this.originalNodes, n => { if (n.children) { n.isOpen = true; this.abiertos.add(n.id); } });
+    this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
+  }
+
+  contraerTodo(): void {
+    recorrer(this.originalNodes, n => { n.isOpen = false; });
+    this.abiertos.clear();
+    // «Todas» se queda abierta: si no, el árbol desaparece entero
+    const todas = buscarNodo(this.originalNodes, this.NODO_TODAS);
+    if (todas) { todas.isOpen = true; this.abiertos.add(this.NODO_TODAS); }
+    this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
+  }
+
+  filterNodes(): void { this.nodes = filtrarArbol(this.originalNodes, this.searchQuery); }
+
+  limpiarBusquedaArbol(): void { this.searchQuery = ''; this.filterNodes(); }
+
+  toggleMobileSidebar(): void { this.mobileSidebarToggled = !this.mobileSidebarToggled; }
+
+  /**
+   * Arrastrar el divisor cambia el ancho del árbol.
+   *
+   * Con captura del puntero: si no, al mover deprisa el ratón se sale del
+   * divisor y el arrastre se queda a medias.
+   */
+  iniciarRedimension(ev: PointerEvent): void {
+    if (ev.button !== 0) { return; }
+    ev.preventDefault();
+    const divisor = ev.currentTarget as HTMLElement;
+    const xInicial = ev.clientX;
+    const anchoInicial = this.anchoLateral;
+    this.redimensionando = true;
+    divisor.setPointerCapture(ev.pointerId);
+
+    const mover = (e: PointerEvent) => {
+      const nuevo = anchoInicial + (e.clientX - xInicial);
+      this.anchoLateral = Math.min(this.ANCHO_LATERAL_MAX,
+                                   Math.max(this.ANCHO_LATERAL_MIN, Math.round(nuevo)));
+    };
+    const soltar = (e: PointerEvent) => {
+      divisor.removeEventListener('pointermove', mover);
+      divisor.removeEventListener('pointerup', soltar);
+      divisor.removeEventListener('pointercancel', soltar);
+      divisor.releasePointerCapture(e.pointerId);
+      this.redimensionando = false;
+      this.guardarAnchoLateral();
+      this.ajustarTamanoGrid();
+    };
+    divisor.addEventListener('pointermove', mover);
+    divisor.addEventListener('pointerup', soltar);
+    divisor.addEventListener('pointercancel', soltar);
+  }
+
+  guardarAnchoLateral(): void {
+    try { localStorage.setItem(this.CLAVE_ANCHO_LATERAL, String(this.anchoLateral)); }
+    catch { /* ventana privada o almacenamiento bloqueado */ }
+  }
+
+  private leerAnchoLateral(): number {
+    try {
+      const guardado = Number(localStorage.getItem('miCRM3.allProductos.anchoLateral'));
+      return Number.isFinite(guardado) && guardado >= 180 && guardado <= 640 ? guardado : 280;
+    } catch { return 280; }
   }
 
   /** Pide una página al servidor y la vuelca en la rejilla. */
@@ -609,7 +1040,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
       const res = await firstValueFrom(
         this._productoService.allProductos(page, this.registrosPorPagina, this.searchTerm,
                                            this.marcaFiltro, this.categoriaFiltro,
-                                           this.filtrosColumna)
+                                           this.filtrosColumna, this.rangos)
       ) as any;
 
       if (res.body?.status !== 'success') {
@@ -617,7 +1048,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         this.productoModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.productoModel);
+        this.gridApi?.setGridOption('rowData', this.productoModel);
         return;
       }
 
@@ -630,7 +1061,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) { this.gridApi.setRowData(this.productoModel); }
+      if (this.gridApi) { this.gridApi.setGridOption('rowData', this.productoModel); }
     } catch (error) {
       console.error('Error al cargar productos:', error);
     } finally {
@@ -638,16 +1069,21 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Cambió uno de los dos combos: siempre a la página 1. */
+  /** Los cuatro extremos, tal como los quiere el servicio. */
+  private get rangos() {
+    return { precio_min: this.precioMin, precio_max: this.precioMax,
+             costo_min: this.costoMin,  costo_max: this.costoMax };
+  }
+
+  /** Cambió un filtro del panel: siempre a la página 1. */
   onFiltroCambiado(): void {
     this.paginaActual = 1;
     this.allProductos(1);
   }
 
-  /** Si hay algo que quitar: lo de arriba, los combos o un filtro de columna. */
+  /** Si hay algo que quitar: lo de arriba, los filtros o uno de columna. */
   get hayFiltro(): boolean {
-    return !!this.searchTerm || this.marcaFiltro !== null || this.categoriaFiltro !== null
-        || this.cuantasColumnasFiltradas > 0;
+    return !!this.searchTerm || this.cuantosFiltros > 0 || this.cuantasColumnasFiltradas > 0;
   }
 
   /** Trae TODO lo que cumple el filtro actual, para exportar. */
@@ -658,7 +1094,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
       const res = await firstValueFrom(
         this._productoService.allProductos(1, this.totalRegistros, this.searchTerm,
                                            this.marcaFiltro, this.categoriaFiltro,
-                                           this.filtrosColumna)
+                                           this.filtrosColumna, this.rangos)
       ) as any;
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
@@ -718,8 +1154,14 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.limpiando = true;
     this.campoBusquedaPaginacion?.reset();
     this.searchTerm = '';
-    this.marcaFiltro = null;
-    this.categoriaFiltro = null;
+    this.marcaFiltro = [];
+    this.categoriaFiltro = [];
+    this.precioMin = this.precioMax = this.costoMin = this.costoMax = null;
+    // Y el árbol vuelve a «Todas»
+    this.seleccionId = this.NODO_TODAS;
+    this.categoriaFiltroRuta = '';
+    recorrer(this.originalNodes, n => n.isSelected = n.id === this.NODO_TODAS);
+    recorrer(this.nodes, n => n.isSelected = n.id === this.NODO_TODAS);
     this.filtrosColumna = {};
     if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
 
@@ -781,12 +1223,18 @@ export class AllProductosComponent implements OnInit, OnDestroy {
       filtrosColumna: this.filtrosColumna,
       columnDefs: this.columnDefs,
       filtrosExtra: [
-        ...(this.marcaFiltro
-            ? [`Marca: ${this.marcas.find(m => m.id === this.marcaFiltro)?.nombre ?? this.marcaFiltro}`]
+        ...(this.marcaFiltro.length
+            ? [`Marca${this.marcaFiltro.length > 1 ? 's' : ''}: ` +
+               this.marcaFiltro.map(id => this.marcas.find(m => m.id === id)?.nombre ?? id).join(', ')]
             : []),
-        ...(this.categoriaFiltro
-            ? [`Categoría: ${this.categorias.find(c => c.id === this.categoriaFiltro)?.name ?? this.categoriaFiltro}`]
+        ...(this.categoriaFiltro.length
+            ? [`Categoría${this.categoriaFiltro.length > 1 ? 's' : ''}: ` +
+               this.categoriaFiltro.map(id => this.categoriasPlanas.find(c => c.id === id)?.ruta ?? id).join(', ')]
             : []),
+        ...(this.precioMin !== null || this.precioMax !== null
+            ? [`Precio: ${this.precioMin ?? '—'} a ${this.precioMax ?? '—'}`] : []),
+        ...(this.costoMin !== null || this.costoMax !== null
+            ? [`Costo: ${this.costoMin ?? '—'} a ${this.costoMax ?? '—'}`] : []),
       ],
       traerTodo: () => this.obtenerTodosParaExportar(),
     };
@@ -843,6 +1291,10 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     });
     modalRef.componentInstance.registro_selected = registro;
     modalRef.componentInstance.accion = accion;
+    // Si hay una categoría elegida en el árbol, el producto nuevo nace en
+    // ella y con ella BLOQUEADA: se está trabajando esa rama.
+    modalRef.componentInstance.categoriaId = this.categoriaFiltro;
+    modalRef.componentInstance.categoriaRuta = this.categoriaFiltroRuta;
     return modalRef;
   }
 
@@ -852,7 +1304,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.productoModel = [nuevo, ...this.productoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.productoModel);
+      this.gridApi?.setGridOption('rowData', this.productoModel);
     });
   }
 
@@ -862,7 +1314,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.productoModel = [nuevo, ...this.productoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.productoModel);
+      this.gridApi?.setGridOption('rowData', this.productoModel);
     });
   }
 
@@ -1075,7 +1527,8 @@ export class AllProductosComponent implements OnInit, OnDestroy {
 // Simple delegador: toda la lógica de modales vive en AllProductosComponent.
 @Component({
   selector: 'app-button-accion-producto',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"
@@ -1099,6 +1552,7 @@ export class AllProductosComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

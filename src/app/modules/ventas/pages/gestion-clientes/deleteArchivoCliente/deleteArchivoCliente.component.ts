@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
@@ -6,6 +6,7 @@ import { ToastrService } from 'ngx-toastr';
 
 import { ArchivoClienteService } from '../../../services/archivoCliente.service';
 import { ArchivoCliente, formatoTamano } from '../../../interfaces/archivoCliente';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de un archivo del cliente (mismo esquema que
@@ -20,7 +21,9 @@ import { ArchivoCliente, formatoTamano } from '../../../interfaces/archivoClient
   selector: 'app-deleteArchivoCliente',
   templateUrl: './deleteArchivoCliente.component.html',
   styleUrls: ['./deleteArchivoCliente.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [ModalArrastrableDirective],
 })
 export class DeleteArchivoClienteComponent implements OnDestroy {
 

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
@@ -6,13 +6,17 @@ import { ToastrService } from 'ngx-toastr';
 
 import { GrupoService } from '../../../services/grupo.service';
 import { GrupoModel } from '../../../interfaces/grupoModel';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /** Confirmación de borrado de un grupo (mismo esquema que deleteUser). */
 @Component({
   selector: 'app-deleteGrupo',
   templateUrl: './deleteGrupo.component.html',
   styleUrls: ['./deleteGrupo.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteGrupoComponent implements OnDestroy {
 

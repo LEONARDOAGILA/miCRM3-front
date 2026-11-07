@@ -1,14 +1,18 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
 import { HorarioService } from '../../../services/horario.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 @Component({
   selector: 'app-delete-horario',
   templateUrl: './delete-horario.component.html',
   styleUrls: ['./delete-horario.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteHorarioComponent implements OnInit, OnDestroy {
   @Input() registro_selected: any = null;

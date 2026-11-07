@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
@@ -9,6 +9,7 @@ import { ClienteModel } from '../../../../ventas/interfaces/clienteModel';
   selector: 'app-all-clientes',
   templateUrl: './all-clientes.component.html',
   styleUrls: ['./all-clientes.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 

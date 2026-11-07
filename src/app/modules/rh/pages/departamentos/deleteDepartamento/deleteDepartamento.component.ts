@@ -1,10 +1,12 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { DepartamentoService } from '../../../services/departamento.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de un departamento (mismo esquema que deleteUser).
@@ -15,7 +17,9 @@ import { DepartamentoService } from '../../../services/departamento.service';
   selector: 'app-deleteDepartamento',
   templateUrl: './deleteDepartamento.component.html',
   styleUrls: ['./deleteDepartamento.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteDepartamentoComponent implements OnInit, OnDestroy {
 

@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { AppStateService } from '../../../../service/app-state.service';
 
@@ -30,7 +30,9 @@ interface ModuloCard {
   selector: 'app-home-ventas',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [RouterModule],
 })
 export class HomeComponent implements OnInit, OnDestroy {
 
@@ -48,6 +50,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       icon: 'fa-address-book',
       color: 'bg-primary',
       descripcion: 'Ficha del cliente: identificación, contactos, dirección en el mapa y condiciones de crédito'
+    },
+    {
+      url: 'ventas/allGruposClientes',
+      label: 'GRUPOS DE CLIENTES',
+      icon: 'fa-sitemap',
+      color: 'bg-indigo',
+      descripcion: 'Árbol de grupos comerciales: forma de pago, cupo, días de crédito y descuento que heredan sus clientes'
     },
     {
       url: 'ventas/gestionClientes',

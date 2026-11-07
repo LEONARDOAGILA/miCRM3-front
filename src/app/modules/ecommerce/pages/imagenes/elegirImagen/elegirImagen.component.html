@@ -1,0 +1,98 @@
+<!-- ============================================================
+     ELEGIR UNA IMAGEN DE LA TIENDA
+
+     Se elige de las que ya hay o se sube una, en el mismo sitio.
+     ============================================================ -->
+
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-images me-2"></i>Elegir imagen
+    @if (paraQue) {
+      <small class="elegir-para">{{ paraQue }}</small>
+    }
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="activeModal.dismiss()"></button>
+</div>
+
+<div class="modal-body">
+
+  <div class="elegir-barra">
+    <div class="elegir-buscar">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" class="form-control form-control-sm"
+             placeholder="Buscar por nombre…"
+             [value]="filtro" (input)="escribir($event)">
+    </div>
+
+    <!-- El <input type=file> va escondido detrás de la etiqueta: el de serie
+         no se puede estilar y queda de otra época. -->
+    <label class="btn btn-sm btn-primary mb-0" [class.disabled]="subiendo">
+      <i class="fa" [class.fa-upload]="!subiendo" [class.fa-spinner]="subiendo"
+         [class.fa-spin]="subiendo"></i>
+      {{ subiendo ? 'Subiendo…' : 'Subir una imagen' }}
+      <input type="file" class="elegir-fichero"
+             accept="image/jpeg,image/png,image/webp,image/gif"
+             [disabled]="subiendo" (change)="subir($event)">
+    </label>
+
+    <button type="button" class="btn btn-sm btn-outline-secondary"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  <p class="campo-hint">
+    <i class="fa-solid fa-circle-info"></i>
+    Doble clic para elegirla y salir. Se aceptan jpg, png, webp y gif de hasta
+    4 MB; el svg no, porque puede traer código dentro.
+  </p>
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Cargando las imágenes…</p>
+    </div>
+
+  } @else if (visibles.length === 0) {
+    <p class="text-muted text-center py-4 mb-0">
+      @if (filtro) {
+        Ninguna imagen se llama así.
+      } @else {
+        Todavía no hay imágenes: sube la primera.
+      }
+    </p>
+
+  } @else {
+    <div class="elegir-rejilla">
+      @for (i of visibles; track i.nombre) {
+        <button type="button" class="elegir-ficha"
+                [class.is-elegida]="elegida?.nombre === i.nombre"
+                [title]="i.nombre"
+                (click)="marcar(i)" (dblclick)="usarYa(i)">
+          <img class="elegir-ficha__img" [src]="i.url" [alt]="i.nombre" loading="lazy">
+          <span class="elegir-ficha__pie">
+            {{ i.extension }} · {{ peso(i.peso) }}
+          </span>
+          @if (elegida?.nombre === i.nombre) {
+            <span class="elegir-ficha__marca"><i class="fa-solid fa-check"></i></span>
+          }
+        </button>
+      }
+    </div>
+  }
+</div>
+
+<div class="modal-footer">
+  <span class="elegir-cuenta">
+    @if (!cargando) {
+      {{ visibles.length }} de {{ imagenes.length }}
+    }
+  </span>
+  <button type="button" class="btn btn-danger" (click)="activeModal.dismiss()">
+    <i class="fa fa-times"></i> Salir
+  </button>
+  <button type="button" class="btn btn-primary" [disabled]="!elegida" (click)="usar()">
+    <i class="fa fa-check"></i> Usar esta imagen
+  </button>
+</div>

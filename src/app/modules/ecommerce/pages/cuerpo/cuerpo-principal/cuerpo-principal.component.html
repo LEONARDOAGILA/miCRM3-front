@@ -1,0 +1,1041 @@
+<!-- ============================================================
+     LA PORTADA DE LA TIENDA
+
+     No es un formulario: es la lista de secciones en el orden en
+     que se ven. Se arrastra para moverlas y se abre una para
+     configurarla.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
+  <li class="breadcrumb-item active">Inicio de la tienda</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       icono="house"
+       class="flex-1 d-flex flex-column overflow-hidden"
+       bodyClass="p-0 flex-1 overflow-hidden"
+       panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
+
+  <div header class="panel-acciones">
+    <span class="inicio-cuenta">{{ enLaPortada }} de {{ secciones.length }} en la portada</span>
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Cargando las secciones del inicio…</p>
+    </div>
+
+  } @else {
+
+    <!-- ============================================================
+         DOS COLUMNAS, como el catálogo de productos y las características:
+         la lista a la izquierda y lo que se configura a la derecha.
+
+         ANTES ERA UN ACORDEÓN: cada sección desplegaba sus campos debajo, y
+         con quince campos abiertos en medio de la lista no se veía dónde
+         acababa una sección y empezaba la otra.
+         ============================================================ -->
+    <div class="file-manager h-100 inicio"
+         [class.is-redimensionando]="redimensionando"
+         [style.--bs-file-manager-sidebar-width]="(lateralPlegado ? 34 : anchoLateral) + 'px'"
+         [style.--bs-file-manager-mobile-sidebar-margin]="(-(lateralPlegado ? 34 : anchoLateral)) + 'px'">
+
+      <!-- .file-manager es flex en COLUMNA (el tema); la fila de verdad es
+           .file-manager-container -->
+      <div class="file-manager-container">
+
+      <!-- ---------- IZQUIERDA: LAS SECCIONES ---------- -->
+      <div class="file-manager-sidebar inicio-lateral" [class.is-plegado]="lateralPlegado">
+
+        <div class="inicio-lateral__cabecera">
+          <span class="inicio-lateral__titulo">Secciones</span>
+
+          <div class="inicio-lateral__acciones">
+            <!-- Lo único que se crea desde esta pantalla -->
+            @if (puedeCrear && !creandoBanner) {
+              <button type="button" class="btn btn-xs btn-outline-theme"
+                      title="Añadir un banner" [disabled]="!!bannerOcupado"
+                      (click)="abrirNuevoBanner()">
+                <i class="fa fa-plus"></i> Banner
+              </button>
+            }
+            <button type="button" class="btn btn-xs btn-white"
+                    [title]="lateralPlegado ? 'Ver la lista' : 'Plegar la lista'"
+                    (click)="alternarLateral()">
+              <i class="fa-solid" [ngClass]="lateralPlegado ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Plegada se queda una tira con el rótulo de canto, como el árbol
+             del catálogo: ocupa 34 px y se vuelve a abrir desde su botón -->
+        <div class="inicio-lateral__cuerpo">
+
+          <p class="campo-hint inicio-lateral__ayuda">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>
+              En el orden en que se ven en la tienda: arrástralas desde
+              <i class="fa-solid fa-grip-vertical"></i> para moverlas y pulsa
+              una para configurarla a la derecha.
+            </span>
+          </p>
+
+          <!-- ---------- El filtro ----------
+               Cada botón lleva su número: así se sabe cuántas hay de cada clase sin
+               tener que pulsarlo, y un «Inactivas 0» dice que no hay ninguna
+               apagada mejor que una lista vacía. -->
+          <div class="inicio-filtro">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Ver sólo activas o inactivas">
+              @for (f of filtros; track f.valor) {
+                <button type="button" class="btn"
+                        [class.btn-primary]="filtro === f.valor"
+                        [class.btn-white]="filtro !== f.valor"
+                        [attr.aria-pressed]="filtro === f.valor"
+                        (click)="filtro = f.valor">
+                  <i class="fa-solid me-1" [ngClass]="f.icono"></i>{{ f.texto }}
+                  <span class="inicio-filtro__cuantas">{{ cuantasDe(f.valor) }}</span>
+                </button>
+              }
+            </div>
+
+            <!-- Se mueve igual con filtro, pero conviene decir contra qué se mueve:
+                 lo que no se ve no se toca -->
+            @if (filtrando) {
+              <span class="inicio-filtro__aviso">
+                <i class="fa-solid fa-circle-info"></i>
+                Al mover con el filtro puesto, la sección se coloca entre las que
+                ves; las que no salen se quedan donde están.
+              </span>
+            }
+
+            <!-- «Añadir banner» NO está aquí: se fue a la cabecera de la
+                 columna, con el botón de plegar. Es una acción de la lista
+                 entera, no del filtro, y ahí arriba se ve siempre -->
+          </div>
+
+          <!-- El renglón de crear: un campo y dos botones, sin modal. Lo único que
+               hace falta para nacer es el nombre; las imágenes se le meten después,
+               en su propia fila -->
+          @if (creandoBanner) {
+            <div class="inicio-nuevo">
+              <label class="inicio-nuevo__rotulo" for="nuevo-banner">CÓMO SE VA A LLAMAR</label>
+              <input id="nuevo-banner" type="text" class="form-control form-control-sm"
+                     placeholder="Ej.: Banner de Navidad" maxlength="100"
+                     [(ngModel)]="nombreNuevoBanner" [ngModelOptions]="{ standalone: true }"
+                     [disabled]="!!bannerOcupado"
+                     (keydown.enter)="crearBanner()" (keydown.escape)="cerrarNuevoBanner()">
+              <button type="button" class="btn btn-sm btn-primary"
+                      [disabled]="!nombreNuevoBanner.trim() || !!bannerOcupado"
+                      (click)="crearBanner()">
+                {{ bannerOcupado === 'nuevo' ? 'Creando…' : 'Crear' }}
+              </button>
+              <button type="button" class="btn btn-sm btn-white"
+                      [disabled]="!!bannerOcupado" (click)="cerrarNuevoBanner()">
+                Cancelar
+              </button>
+              <span class="inicio-nuevo__pie">
+                Nace apagado y vacío: enciéndelo cuando le metas imágenes.
+              </span>
+            </div>
+          }
+
+          <!-- `cdkDropListData` es la lista DE VERDAD, que es la que se
+               reordena; las posiciones que da el arrastre son las de la lista
+               que se ve y las traduce `soltar()` -->
+          <div class="inicio-lista" cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="secciones"
+               [cdkDropListDisabled]="!puedeEditar || trabajando"
+               (cdkDropListDropped)="soltar($event)">
+
+            @for (s of seccionesVisibles; track s.clave) {
+              <div class="seccion" [class.is-elegida]="elegida === s.clave"
+                   [id]="'seccion-caja-' + s.clave" cdkDrag
+                   role="button" tabindex="0"
+                   [attr.aria-pressed]="elegida === s.clave"
+                   (click)="elegir(s.clave)" (keydown.enter)="elegir(s.clave)">
+
+                <div class="seccion-fantasma" *cdkDragPlaceholder></div>
+
+                @if (puedeEditar) {
+                  <span class="seccion-asa" cdkDragHandle title="Arrastra para cambiar el orden"
+                        (click)="$event.stopPropagation()">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                  </span>
+                }
+
+                <!-- EL INTERRUPTOR, A LA IZQUIERDA DEL NOMBRE: es lo que más se
+                     toca de la lista y lo primero que se mira. Guarda solo y no
+                     cambia de sección.
+                     Dice «activa», no «en la portada»: lo segundo lo decide
+                     además la vigencia, y eso lo cuenta la etiqueta de abajo -->
+                <span class="seccion-palanca" (click)="$event.stopPropagation()">
+                  <label class="form-check form-switch palanca mb-0"
+                         [title]="s.activo ? 'Activa' : 'Inactiva'">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           [id]="'seccion-' + s.clave"
+                           [checked]="s.activo"
+                           [disabled]="!puedeEditar || trabajando"
+                           (change)="alternarActivo(s, $event)">
+                  </label>
+                </span>
+
+                <span class="seccion-icono" [class.seccion-icono--apagado]="s.estado !== 'visible'">
+                  <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+                </span>
+
+                <span class="seccion-textos">
+                  <!-- El nombre que lee el cliente en cuanto se pone uno; debajo,
+                       el de siempre, para seguir reconociendo la sección -->
+                  <b class="seccion-nombre">{{ comoSeLlama(s) }}</b>
+                  @if (renombrada(s)) {
+                    <span class="seccion-de-fabrica">
+                      <i class="fa-solid fa-tag"></i> {{ s.nombre }} en el CRM
+                    </span>
+                  }
+                  <span class="seccion-etiquetas">
+                    <span class="chip" [ngClass]="estados[s.estado].clase">
+                      <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
+                      {{ estados[s.estado].texto }}
+                    </span>
+
+                    <span class="chip" [class.chip-muted]="s.fuente.tipo !== 'pendiente'"
+                          [class.chip-warn]="s.fuente.tipo === 'pendiente'">
+                      @switch (s.fuente.tipo) {
+                        @case ('galeria')    { <i class="fa-solid fa-images"></i> }
+                        @case ('promocion')  { <i class="fa-solid fa-tags"></i> }
+                        @case ('destacadas') { <i class="fa-solid fa-star"></i> }
+                        @case ('marcas')     { <i class="fa-solid fa-award"></i> }
+                        @case ('productos')  { <i class="fa-solid fa-basket-shopping"></i> }
+                        @default             { <i class="fa-solid fa-hammer"></i> }
+                      }
+                      {{ resumen(s) }}
+                    </span>
+
+                    <!-- Encendida y sin nada que enseñar: la tienda se la salta -->
+                    @if (sinContenido(s)) {
+                      <span class="chip chip-warn">
+                        <i class="fa-solid fa-triangle-exclamation"></i> No sale: está vacía
+                      </span>
+                    }
+                  </span>
+                </span>
+              </div>
+            } @empty {
+              <!-- Con el filtro puesto y nada que enseñar. Se dice qué falta y se
+                   ofrece la salida, en vez de dejar un hueco en blanco -->
+              <div class="inicio-vacio">
+                <i class="fa-solid" [ngClass]="filtro === 'activas' ? 'fa-circle-check' : 'fa-circle-minus'"></i>
+                <p class="mb-2">
+                  {{ filtro === 'activas'
+                     ? 'No hay ninguna sección activa.'
+                     : 'No hay ninguna sección inactiva: están todas activas.' }}
+                </p>
+                <button type="button" class="btn btn-sm btn-white" (click)="filtro = 'todas'">
+                  Ver todas
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- EL DIVISOR ---------- -->
+      <div class="inicio-divisor"
+           [class.is-inerte]="lateralPlegado"
+           role="separator"
+           aria-orientation="vertical"
+           title="Arrastra para cambiar el ancho de la lista (doble clic: el de siempre)"
+           (pointerdown)="iniciarRedimension($event)"
+           (dblclick)="anchoPorDefecto()">
+      </div>
+
+      <!-- ---------- DERECHA: LO QUE SE CONFIGURA ---------- -->
+      <div class="file-manager-content inicio-contenido">
+        @if (laElegida; as s) {
+
+          <div class="inicio-contenido__cabecera">
+            <span class="seccion-icono" [class.seccion-icono--apagado]="s.estado !== 'visible'">
+              <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+            </span>
+            <div class="inicio-contenido__textos">
+              <b>{{ comoSeLlama(s) }}</b>
+              <span class="seccion-que-es">{{ vista(s).descripcion }}</span>
+            </div>
+            <span class="chip" [ngClass]="estados[s.estado].clase">
+              <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
+              {{ estados[s.estado].texto }}
+            </span>
+          </div>
+
+          <div class="inicio-campos" [formGroup]="formularios[s.clave]">
+
+              <!-- Qué es esta sección ya lo dice la cabecera de arriba, que se
+                   queda a la vista al desplazar: repetirlo aquí era leerlo dos
+                   veces seguidas -->
+
+              <!-- Rótulo y fechas -->
+              <div class="row g-2">
+                @if (vista(s).rotulo !== 'ninguno') {
+                  <div class="col-12" [class.col-md-6]="vista(s).rotulo === 'titulo_subtitulo'">
+                    <app-campoTexto
+                      [control]="$any(formularios[s.clave].controls['titulo'])"
+                      label="CÓMO SE LLAMA EN LA TIENDA"
+                      [placeholder]="ejemploRotulo(s)"
+                      [maxLength]="80"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Es lo que lee el cliente encima de esta sección en la
+                      página web. {{ rotuloVacio(s) }}
+                    </p>
+                  </div>
+                }
+
+                @if (vista(s).rotulo === 'titulo_subtitulo') {
+                  <div class="col-12 col-md-6">
+                    <app-campoTexto
+                      [control]="$any(formularios[s.clave].controls['subtitulo'])"
+                      label="LA LÍNEA DE ABAJO"
+                      placeholder="Debajo del nombre, más pequeña"
+                      [maxLength]="80"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+                  </div>
+                }
+
+                <!-- ---------- En qué forma salen las categorías ----------
+                     Sólo «Categorías destacadas», que es la única sección con
+                     dos maneras de pintarse. Con dibujos y no con un
+                     desplegable: «en cuadro» se entiende de un vistazo
+                     viéndolo. -->
+                @if (esDestacadas(s)) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo">CÓMO SE PINTAN LAS CATEGORÍAS</label>
+
+                    <div class="disposiciones">
+                      @for (f of formasFicha; track f.valor) {
+                        <button type="button" class="disposicion"
+                                [class.is-activa]="formaDe(s) === f.valor"
+                                [attr.aria-pressed]="formaDe(s) === f.valor"
+                                [disabled]="!puedeEditar"
+                                [title]="f.ayuda"
+                                (click)="ponerForma(s, f.valor)">
+                          <span class="disposicion__dibujo"
+                                [ngClass]="'forma--' + f.valor" aria-hidden="true">
+                            <i></i><i></i><i></i>
+                          </span>
+                          <span class="disposicion__texto">{{ f.texto }}</span>
+                        </button>
+                      }
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      En círculo salen seis por fila con el nombre debajo, como
+                      hasta ahora. En cuadro salen cinco fichas anchas, con la
+                      foto entera y el nombre escrito encima.
+                    </p>
+                  </div>
+                }
+
+                <!-- ---------- El color de los botones de la tarjeta ----------
+                     Sólo las secciones de productos: son las únicas que pintan
+                     tarjetas con botones. Se elige el FONDO; la letra y el
+                     icono los calcula la tienda para que se lean encima. -->
+                @if (conBotones(s)) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo">EL COLOR DE LOS BOTONES</label>
+
+                    <div class="botones-colores">
+                      @for (b of botones; track b.campo) {
+                        <div class="boton-color">
+                          <!-- La muestra ES el botón: con su fondo y con la
+                               letra que la tienda le va a poner encima -->
+                          <span class="boton-color__muestra"
+                                [style.background-color]="colorBoton(s, b)"
+                                [style.color]="textoBoton(s, b)"
+                                [title]="b.ayuda">
+                            <i class="fa-solid" [ngClass]="b.icono"></i>
+                            {{ b.texto }}
+                          </span>
+
+                          <!-- ---------- El fondo ---------- -->
+                          <span class="boton-color__que">Fondo</span>
+                          <app-campoColor [idCampo]="b.campo + '-' + s.clave"
+                                          [valor]="colorBoton(s, b)"
+                                          [propio]="botonPropio(s, b)"
+                                          porDefecto="El de la tienda"
+                                          [etiqueta]="'Fondo del botón ' + b.texto"
+                                          [paleta]="colores"
+                                          [deshabilitado]="!puedeEditar"
+                                          [apilado]="true"
+                                          [compacto]="true"
+                                          (cambia)="ponerColorBoton(s, b, $event)" />
+
+                          <!-- ---------- La letra ----------
+                               Sin elegir ninguna, la tienda pone la que se lea
+                               encima del fondo; por eso la muestra de arriba
+                               ya enseña cuál sería. -->
+                          <span class="boton-color__que">Letra e icono</span>
+                          <app-campoColor [idCampo]="b.campoTexto + '-' + s.clave"
+                                          [valor]="textoBoton(s, b)"
+                                          [propio]="textoPropio(s, b)"
+                                          porDefecto="La que se lea"
+                                          [etiqueta]="'Letra del botón ' + b.texto"
+                                          [paleta]="colores"
+                                          [deshabilitado]="!puedeEditar"
+                                          [apilado]="true"
+                                          [compacto]="true"
+                                          (cambia)="ponerTextoBoton(s, b, $event)" />
+
+                          <!-- Se avisa, no se prohíbe: igual que con el rótulo -->
+                          @if (botonFlojo(s, b)) {
+                            <p class="campo-hint campo-hint--aviso mb-0">
+                              <i class="fa-solid fa-triangle-exclamation"></i>
+                              Así cuesta leerlo ({{ contrasteBotonTexto(s, b) }} a 1, y lo
+                              mínimo son 4,5 a 1). Se guarda igual.
+                            </p>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Se elige el fondo; la letra y el icono los pone la tienda
+                      en blanco o en negro, el que se lea encima. Sin elegir
+                      ninguno, cada botón se queda con el color de siempre.
+                    </p>
+                  </div>
+
+                  <!-- ---------- La tarjeta entera y su cartel ----------
+                       El fondo, el borde y el «-12%» de la esquina. Van con su
+                       muestra: el fondo y el borde por separado no dicen nada,
+                       y juntos en una tarjeta se ve en un vistazo si pegan. -->
+                  <div class="col-12">
+                    <label class="seccion-rotulo">LA TARJETA Y SU CARTEL</label>
+
+                    <div class="tarjeta-colores">
+                      <!-- La muestra es una tarjeta de verdad, en pequeño, con
+                           los mismos colores que va a usar la tienda. Nada de
+                           aquí dentro usa variables del tema del CRM: en el
+                           tema oscuro desaparecerían sobre el fondo elegido -->
+                      <div class="tarjeta-muestra"
+                           [style.background-color]="fondoTarjeta(s)"
+                           [style.border-color]="bordeTarjeta(s)">
+                        <div class="tarjeta-muestra__media">
+                          <!-- Las dos pastillas, en el mismo orden que en la
+                               tienda: la etiqueta encima del descuento. La
+                               etiqueta sólo si hay texto, que es lo que hace
+                               la tienda -->
+                          <div class="tarjeta-muestra__carteles">
+                            @if (textoEtiqueta(s)) {
+                              <span class="tarjeta-muestra__cartel"
+                                    [style.background-color]="colorBoton(s, etiqueta)"
+                                    [style.color]="textoBoton(s, etiqueta)">{{ textoEtiqueta(s) }}</span>
+                            }
+                            <span class="tarjeta-muestra__cartel"
+                                  [style.background-color]="colorBoton(s, cartel)"
+                                  [style.color]="textoBoton(s, cartel)">-12%</span>
+                          </div>
+                          <span class="tarjeta-muestra__foto"></span>
+                        </div>
+
+                        <span class="tarjeta-muestra__nombre" [style.color]="letraTarjeta(s)">
+                          Televisor QLED 55 pulgadas 4K
+                        </span>
+
+                        <div class="tarjeta-muestra__precios" [style.border-color]="lineaTarjeta(s)">
+                          <div class="tarjeta-muestra__precio">
+                            <span class="tarjeta-muestra__rotulo" [style.color]="acentoTarjeta(s)">Tarjeta Crédito</span>
+                            <b [style.color]="letraTarjeta(s)">$160,90</b>
+                            <del [style.color]="letraFlojaTarjeta(s)">$181,82</del>
+                          </div>
+                          <div class="tarjeta-muestra__precio" [style.border-left-color]="lineaTarjeta(s)">
+                            <span class="tarjeta-muestra__rotulo" [style.color]="acentoTarjeta(s)">Crédito Directo</span>
+                            <span [style.color]="letraFlojaTarjeta(s)">Cuotas desde</span>
+                            <b [style.color]="letraTarjeta(s)">$13,41</b>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="tarjeta-colores__campos">
+                        @for (c of coloresTarjeta; track c.campo) {
+                          <div class="tarjeta-color">
+                            <span class="boton-color__que" [title]="c.ayuda">{{ c.texto }}</span>
+
+                            <!-- La etiqueta es la única que lleva palabras: el
+                                 descuento las saca de los precios y el fondo y
+                                 el borde no llevan nada escrito. Va primero
+                                 porque sin texto no hay etiqueta, así que
+                                 elegir color antes no sirve de nada -->
+                            @if (c.campoRotulo) {
+                              <app-campoTexto
+                                [control]="$any(formularios[s.clave].controls[c.campoRotulo])"
+                                label="QUÉ DICE"
+                                placeholder="Ej.: NUEVO, LIQUIDACIÓN"
+                                [maxLength]="30"
+                                [trimEspacios]="true">
+                              </app-campoTexto>
+                              <p class="campo-hint mb-0">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Vacío, no sale la pastilla. Sale en todas las
+                                tarjetas de esta sección.
+                              </p>
+                            }
+
+                            <app-campoColor [idCampo]="c.campo + '-' + s.clave"
+                                            [valor]="colorBoton(s, c)"
+                                            [propio]="botonPropio(s, c)"
+                                            porDefecto="El de la tienda"
+                                            [etiqueta]="c.texto"
+                                            [paleta]="colores"
+                                            [deshabilitado]="!puedeEditar"
+                                            (cambia)="ponerColorBoton(s, c, $event)" />
+
+                            <!-- Sólo el cartel tiene letra: el fondo y el borde
+                                 de la tarjeta no llevan nada escrito -->
+                            @if (c.campoTexto) {
+                              <!-- «Letra» a secas: cada caja ya lleva arriba de
+                                   qué es, y «Letra del cartel» dentro de la de
+                                   la etiqueta decía otra cosa -->
+                              <span class="boton-color__que">Letra</span>
+                              <app-campoColor [idCampo]="c.campoTexto + '-' + s.clave"
+                                              [valor]="textoBoton(s, c)"
+                                              [propio]="textoPropio(s, c)"
+                                              porDefecto="La que se lea"
+                                              [etiqueta]="'Letra del ' + c.texto"
+                                              [paleta]="colores"
+                                              [deshabilitado]="!puedeEditar"
+                                              (cambia)="ponerTextoBoton(s, c, $event)" />
+
+                              @if (botonFlojo(s, c)) {
+                                <p class="campo-hint campo-hint--aviso mb-0">
+                                  <i class="fa-solid fa-triangle-exclamation"></i>
+                                  Así cuesta leerlo ({{ contrasteBotonTexto(s, c) }} a 1, y lo
+                                  mínimo son 4,5 a 1). Se guarda igual.
+                                </p>
+                              }
+                            }
+
+                            <!-- Que no se lea la letra es una cosa; que el
+                                 cartel entero se pierda dentro de la tarjeta,
+                                 otra -->
+                            @if (cartelSeConfunde(s, c)) {
+                              <p class="campo-hint campo-hint--aviso mb-0">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Con ese fondo, el cartel casi no se distingue de
+                                la tarjeta. Se guarda igual.
+                              </p>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      El nombre y los precios no se eligen: la tienda los aclara
+                      o los oscurece sola para que se lean encima del fondo que
+                      pongas. Sin elegir nada, la tarjeta se queda blanca con su
+                      borde gris, como hoy.
+                    </p>
+                  </div>
+
+                  <!-- ---------- Si la fila pasa sola ----------
+                       La fila se mueve con las flechas desde siempre; esto la
+                       hace pasar sola cada tantos segundos. Con palanca y no
+                       sólo con el número en blanco porque son dos preguntas
+                       distintas —si se mueve, y cada cuánto—, y porque
+                       apagarla sin perder el número deja volver atrás. -->
+                  @if (conBotones(s)) {
+                    <div class="col-12">
+                      <label class="seccion-rotulo">CÓMO SE MUEVE LA FILA</label>
+
+                      <div class="segundos-fila">
+                        <label class="form-check form-switch palanca mb-0">
+                          <input class="form-check-input" type="checkbox" role="switch"
+                                 [id]="'mueve-' + s.clave" formControlName="mueve_sola"
+                                 [attr.disabled]="puedeEditar ? null : ''">
+                          <span class="form-check-label">
+                            {{ seMueveSola(s) ? 'Pasa sola' : 'Sólo con las flechas' }}
+                          </span>
+                        </label>
+
+                        @if (seMueveSola(s)) {
+                          <div class="input-group input-group-sm campo-segundos">
+                            <input type="number" class="form-control form-control-sm"
+                                   [id]="'segundos-' + s.clave" formControlName="segundos"
+                                   min="2" max="60" step="1" placeholder="5"
+                                   [attr.disabled]="puedeEditar ? null : ''">
+                            <span class="input-group-text">segundos</span>
+                          </div>
+                        }
+                      </div>
+
+                      <p class="campo-hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Apagada, la fila se queda quieta y el cliente la mueve
+                        con las flechas, como hasta ahora. Encendida, pasa de
+                        tarjeta cada tantos segundos —entre 2 y 60; vacío, 5— y
+                        para mientras él tiene el mouse encima.
+                      </p>
+                    </div>
+                  }
+
+                  <!-- ---------- Cómo se enseña la sección ----------
+                       Sola, o con una imagen a un lado que puede llevar a
+                       otra página. Los cuatro dibujos y no un desplegable:
+                       «imagen a la izquierda» se entiende de un vistazo
+                       viéndolo, y leyéndolo hay que imaginárselo. -->
+                  <div class="col-12">
+                    <label class="seccion-rotulo">CÓMO SE ENSEÑA LA SECCIÓN</label>
+
+                    <div class="disposiciones">
+                      @for (d of disposiciones; track d.valor) {
+                        <button type="button" class="disposicion"
+                                [class.is-activa]="disposicionDe(s) === d.valor"
+                                [attr.aria-pressed]="disposicionDe(s) === d.valor"
+                                [disabled]="!puedeEditar"
+                                [title]="d.ayuda"
+                                (click)="ponerDisposicion(s, d.valor)">
+                          <span class="disposicion__dibujo"
+                                [ngClass]="'disposicion__dibujo--' + d.valor" aria-hidden="true">
+                            <span class="disposicion__banda"></span>
+                            <span class="disposicion__cartas"><i></i><i></i><i></i></span>
+                          </span>
+                          <span class="disposicion__texto">{{ d.texto }}</span>
+                        </button>
+                      }
+                    </div>
+
+                    <!-- Sólo con imagen a un lado: «sólo productos» y «en carteles» no llevan ninguna -->
+                    @if (conImagenAlLado(s)) {
+                      <div class="imagen-lado">
+                        <!-- La imagen tal cual la va a ver el cliente -->
+                        <div class="imagen-lado__foto">
+                          @if (hayImagen(s)) {
+                            <img [src]="s.imagen.url"
+                                 [alt]="s.imagen.alt || 'Imagen de ' + s.nombre">
+                          } @else {
+                            <span class="imagen-lado__hueco">
+                              <i class="fa-solid fa-image"></i>
+                              Todavía sin imagen
+                            </span>
+                          }
+                        </div>
+
+                        <div class="imagen-lado__campos">
+                          <div class="imagen-lado__botones">
+                            <!-- El <input type="file"> va dentro de la etiqueta:
+                                 el nativo no se puede pintar y cambia por
+                                 navegador -->
+                            <label class="btn btn-sm btn-outline-theme imagen-lado__subir"
+                                   [class.disabled]="!puedeEditar || subiendoImagen === s.clave">
+                              @if (subiendoImagen === s.clave) {
+                                <i class="fa-solid fa-spinner fa-spin"></i> Subiendo…
+                              } @else {
+                                <i class="fa-solid fa-upload"></i>
+                                {{ hayImagen(s) ? 'Cambiar imagen' : 'Subir imagen' }}
+                              }
+                              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif"
+                                     [disabled]="!puedeEditar || subiendoImagen === s.clave"
+                                     (change)="elegirImagen(s, $event)" hidden>
+                            </label>
+
+                            @if (hayImagen(s)) {
+                              <button type="button" class="btn btn-sm btn-link rotulo-quitar"
+                                      [disabled]="!puedeEditar || subiendoImagen === s.clave"
+                                      (click)="quitarImagen(s)">
+                                Quitar imagen
+                              </button>
+                            }
+                          </div>
+
+                          <p class="campo-hint mb-0">
+                            <i class="fa-solid fa-circle-info"></i>
+                            jpg, png, webp o gif, hasta 4 MB. Se guarda al
+                            elegirla, sin pulsar «Guardar». Queda del alto de las
+                            tarjetas y recortada por el centro, así que una
+                            imagen más o menos cuadrada es la que mejor cae.
+                          </p>
+
+                          <app-campoTexto
+                            [control]="$any(formularios[s.clave].controls['imagen_alt'])"
+                            label="QUÉ SE VE EN LA IMAGEN"
+                            placeholder="Ej.: Motos con 3 meses de gracia"
+                            [maxLength]="120"
+                            [trimEspacios]="true">
+                          </app-campoTexto>
+                          <p class="campo-hint">
+                            <i class="fa-solid fa-circle-info"></i>
+                            No se lee en pantalla: lo oye quien navega sin ver, y
+                            es lo que sale si la imagen no carga.
+                          </p>
+
+                          <app-campoTexto
+                            [control]="$any(formularios[s.clave].controls['imagen_enlace'])"
+                            label="A DÓNDE LLEVA AL PULSARLA"
+                            placeholder="/motos  o  https://…"
+                            [maxLength]="250"
+                            [trimEspacios]="true">
+                          </app-campoTexto>
+                          <p class="campo-hint">
+                            <i class="fa-solid fa-circle-info"></i>
+                            Una ruta de la tienda (<code>/motos</code>) o una
+                            dirección completa. Vacío, la imagen no lleva a
+                            ningún sitio.
+                          </p>
+
+                          <!-- Sólo decide algo en los https://: lo de casa nunca
+                               abre pestaña y un http:// siempre la abre -->
+                          @if (puedeAbrirPestana(s)) {
+                            <app-checkbox
+                              [control]="$any(formularios[s.clave].controls['imagen_nueva_pestana'])"
+                              [id]="'pestana-' + s.clave"
+                              label="Abrirla en otra pestaña">
+                            </app-checkbox>
+                          }
+                        </div>
+                      </div>
+
+                      <!-- Se avisa y se guarda igual: el lado elegido se
+                           conserva, así que subir la imagen luego lo recupera -->
+                      @if (faltaImagen(s)) {
+                        <p class="campo-hint campo-hint--aviso">
+                          <i class="fa-solid fa-triangle-exclamation"></i>
+                          Hasta que subas la imagen, la tienda enseña esta sección
+                          sola. Lo que elegiste aquí se queda guardado.
+                        </p>
+                      }
+                    }
+                  </div>
+                }
+
+                <!-- ---------- Cómo se ve en la tienda ----------
+                     El alto lo llevan todas; el resto, sólo las que pintan
+                     un rótulo. -->
+                <div class="col-12">
+                  <label class="seccion-rotulo">CÓMO SE VE EN LA TIENDA</label>
+
+                  <div class="rotulo-pinta">
+                    <div class="rotulo-campo">
+                      <label [attr.for]="'alto-' + s.clave">Alto de la sección</label>
+                      <select class="form-select form-select-sm" formControlName="alto"
+                              [id]="'alto-' + s.clave">
+                        @for (a of altos; track a.valor) {
+                          <option [value]="a.valor">{{ a.texto }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    @if (vista(s).rotulo !== 'ninguno') {
+                      <div class="rotulo-campo">
+                        <label [attr.for]="'tamano-' + s.clave">Tamaño de la letra</label>
+                        <select class="form-select form-select-sm" formControlName="tamano"
+                                [id]="'tamano-' + s.clave">
+                          @for (t of tamanos; track t.valor) {
+                            <option [value]="t.valor">{{ t.texto }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      <div class="rotulo-campo rotulo-campo--ancho">
+                        <label [attr.for]="'fuente-' + s.clave">Tipo de letra</label>
+                        <select class="form-select form-select-sm" formControlName="fuente"
+                                [id]="'fuente-' + s.clave">
+                          @for (f of fuentes; track f.valor) {
+                            <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      <!-- La misma paleta del administrador de archivos: el
+                           selector del navegador escondido en una muestra
+                           redonda, el código al lado y los colores de siempre -->
+                      <div class="rotulo-campo rotulo-campo--ancho color-bloque">
+                        <label [attr.for]="'color-' + s.clave">Color</label>
+                        <app-campoColor [idCampo]="'color-' + s.clave"
+                                        [valor]="colorMuestra(s)"
+                                        [propio]="colorPropio(s)"
+                                        porDefecto="El de la tienda"
+                                        etiqueta="Color del rótulo"
+                                        [paleta]="colores"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="elegirColor(s, $event)" />
+                      </div>
+                    }
+                  </div>
+
+                  <!-- La muestra: fondo blanco siempre, porque blanco es el de la
+                       sección en la tienda. Nada de aquí dentro usa los colores del
+                       tema del CRM: en el tema oscuro desaparecerían.
+
+                       El hueco de arriba es el aire de verdad que va a dejar la
+                       sección: «Amplia» no dice nada hasta que se ve al lado de
+                       lo que ya hay. -->
+                  <div class="rotulo-muestra" [style.padding-top.px]="aireMuestra(s)">
+                    @if (vista(s).rotulo !== 'ninguno') {
+                      <span class="rotulo-muestra-texto"
+                            [style.font-size.px]="tamanoMuestra(s)"
+                            [style.color]="colorMuestra(s)"
+                            [style.font-family]="fuenteMuestra(s).css"
+                            [style.font-style]="fuenteMuestra(s).cursiva ? 'italic' : 'normal'"
+                            [style.text-transform]="fuenteMuestra(s).versalitas ? 'uppercase' : 'none'">
+                        {{ textoMuestra(s) }}
+                      </span>
+                    } @else {
+                      <span class="rotulo-muestra-sin">
+                        <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+                        Aquí empieza la sección, sin nada escrito encima
+                      </span>
+                    }
+                    <span class="rotulo-muestra-pie">
+                      Deja {{ aireMuestra(s) }} px de aire encima en computadora.
+                      @if (vista(s).rotulo !== 'ninguno') {
+                        Así se lee el rótulo.
+                      }
+                      En celular la tienda lo encoge todo sola.
+                    </span>
+                  </div>
+
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    El alto es el espacio que ocupa la sección: lo que cambia es el
+                    aire que deja, no el tamaño de las fotos ni de las tarjetas.
+                    @if (vista(s).rotulo === 'ninguno') {
+                      Esta sección no lleva nada escrito encima en la tienda:
+                      {{ vista(s).sinRotulo }}.
+                    }
+                  </p>
+
+                  @if (colorFlojo(s)) {
+                    <p class="campo-hint campo-hint--aviso">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                      Ese color se lee flojo sobre el fondo blanco de la tienda
+                      ({{ contraste(s) }} a 1, y lo mínimo son 3 a 1). Se guarda
+                      igual, pero a un cliente con la pantalla al sol le va a costar.
+                    </p>
+                  }
+                </div>
+
+                <div class="col-12">
+                  <label class="seccion-rotulo">ENTRE QUÉ FECHAS SE VE <span>opcional</span></label>
+                  <div class="row g-2">
+                    <div class="col-6 col-md-3">
+                      <input type="datetime-local" class="form-control form-control-sm"
+                             formControlName="desde" aria-label="Desde">
+                      <small class="seccion-pie">Desde</small>
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <input type="datetime-local" class="form-control form-control-sm"
+                             formControlName="hasta" aria-label="Hasta">
+                      <small class="seccion-pie">Hasta</small>
+                    </div>
+                  </div>
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Para dejar lista la sección de una campaña: se enciende y se
+                    apaga sola. Vacías, se ve siempre.
+                  </p>
+                </div>
+
+                <!-- ---------- Cada cuánto se mueve ----------
+                     Sólo en los banners: el principal y los simples. Rotando
+                     cambia la imagen; en carteles, la página de carteles. -->
+                @if (tieneGaleria(s)) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo" [attr.for]="'segundos-' + s.clave">
+                      CADA CUÁNTO CAMBIA {{ queCambia(s) === 'de imagen' ? 'DE IMAGEN' : 'DE PÁGINA' }}
+                      <span>opcional</span>
+                    </label>
+                    <div class="row g-2">
+                      <div class="col-6 col-md-3">
+                        <div class="input-group input-group-sm">
+                          <input type="number" class="form-control form-control-sm"
+                                 [id]="'segundos-' + s.clave" formControlName="segundos"
+                                 min="2" max="60" step="1" placeholder="5"
+                                 [attr.disabled]="puedeEditar ? null : ''">
+                          <span class="input-group-text">segundos</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Cada cuánto cambia {{ queCambia(s) }}, entre 2 y 60
+                      segundos. Vacío, cada 5, que es como ha ido siempre. Para
+                      mientras el cliente tiene el mouse encima.
+                    </p>
+                  </div>
+                }
+              </div>
+
+              <!-- ---------- Lo que sólo tienen los banners ----------
+                   Su nombre y el botón de borrarlo. El nombre va por su
+                   propia puerta y no con «Guardar la sección»: lo lleva
+                   también a su galería, y mezclarlo con lo demás haría que un
+                   guardado del rótulo pudiera renombrar la galería sin que
+                   nadie lo pidiera. -->
+              @if (s.es_banner) {
+                <!-- ---------- Cómo se enseña este banner ----------
+                     Las mismas imágenes, con sus mismos enlaces, de dos
+                     maneras. Con dibujos y no con un desplegable: «en
+                     carteles» se entiende viéndolo. -->
+                <div class="col-12">
+                  <label class="seccion-rotulo">CÓMO SE ENSEÑAN SUS IMÁGENES</label>
+
+                  <div class="disposiciones">
+                    @for (v of vistasBanner; track v.valor) {
+                      <button type="button" class="disposicion"
+                              [class.is-activa]="vistaDe(s) === v.valor"
+                              [attr.aria-pressed]="vistaDe(s) === v.valor"
+                              [disabled]="!puedeEditar"
+                              [title]="v.ayuda"
+                              (click)="ponerVista(s, v.valor)">
+                        <span class="disposicion__dibujo"
+                              [ngClass]="'vista-banner--' + v.valor" aria-hidden="true">
+                          @if (v.valor === 'rotativo') {
+                            <span class="vista-banner__franja"></span>
+                          } @else {
+                            <span class="vista-banner__carteles"><i></i><i></i><i></i><i></i></span>
+                          }
+                        </span>
+                        <span class="disposicion__texto">{{ v.texto }}</span>
+                      </button>
+                    }
+                  </div>
+
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    En carteles salen todas a la vez, como las categorías en
+                    promoción pero sin texto ni botón: sólo la imagen. Cada una
+                    sigue llevando a donde le pusiste en «A dónde lleva».
+                  </p>
+                </div>
+
+                <div class="banner-propio">
+                  <div class="banner-propio__nombre">
+                    <label class="seccion-rotulo" [attr.for]="'nombre-' + s.clave">
+                      CÓMO SE LLAMA AQUÍ DENTRO
+                    </label>
+                    <div class="banner-propio__fila">
+                      <input type="text" class="form-control form-control-sm"
+                             [id]="'nombre-' + s.clave" formControlName="nombre"
+                             maxlength="100" placeholder="Ej.: Banner de Navidad"
+                             [attr.disabled]="puedeEditar ? null : ''">
+                      <button type="button" class="btn btn-sm btn-white"
+                              [disabled]="!puedeRenombrar(s)"
+                              (click)="renombrarBanner(s)">
+                        {{ bannerOcupado === s.clave ? 'Guardando…' : 'Guardar nombre' }}
+                      </button>
+                    </div>
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Es para reconocerlo en esta lista; el cliente no lo lee.
+                      Encima de un banner no se escribe nada.
+                    </p>
+                  </div>
+
+                  @if (puedeEliminar) {
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            [disabled]="!!bannerOcupado" (click)="borrarBanner(s)">
+                      <i class="fa fa-trash"></i> Borrar este banner
+                    </button>
+                  }
+                </div>
+              }
+
+              @if (puedeEditar) {
+                <div class="d-flex justify-content-end mb-3">
+                  <button type="button" class="btn btn-sm btn-primary"
+                          [disabled]="guardando === s.clave" (click)="guardarSeccion(s)">
+                    <i class="fa fa-save"></i>
+                    {{ guardando === s.clave ? 'Guardando…' : 'Guardar la sección' }}
+                  </button>
+                </div>
+              }
+
+              <!-- Lo que enseña: su galería, dónde se llena, o lo que falta -->
+              <div class="seccion-contenido">
+                @if (s.fuente.tipo === 'galeria') {
+                  <app-galeriaImagenes
+                    [clave]="$any(s.fuente.galeria)"
+                    [puedeCrear]="puedeCrear"
+                    [puedeEditar]="puedeEditar"
+                    [puedeEliminar]="puedeEliminar"
+                    (cambiada)="galeriaCambiada()">
+                  </app-galeriaImagenes>
+
+                } @else if (seLlenaEn(s); as donde) {
+                  <!-- Se llena en otra pantalla, y no es un «falta»: se dice
+                       la regla y se lleva allí, que es lo que se va a hacer. -->
+                  <div class="seccion-enlace">
+                    <i class="fa-solid" [ngClass]="vista(s).icono"></i>
+                    <div>
+                      <b>Esta sección se llena en «{{ donde.pantalla }}».</b>
+                      {{ donde.regla }}
+
+                      <!-- Lo que todavía no hace en la tienda, aparte de la
+                           regla: una cosa es dónde se llena y otra si el
+                           cliente la ve. -->
+                      @if (avisoTienda(s); as aviso) {
+                        <p class="campo-hint campo-hint--aviso mt-2 mb-0">
+                          <i class="fa-solid fa-triangle-exclamation"></i> {{ aviso }}
+                        </p>
+                      }
+
+                      <div class="mt-2">
+                        <!-- Con la sección puesta: llegar a la lista y tener que
+                             buscar la que se estaba mirando es el paso que sobra -->
+                        <a class="btn btn-xs btn-primary"
+                           [routerLink]="donde.ruta"
+                           [queryParams]="donde.params ?? null">
+                          <i class="fa fa-arrow-right"></i> Ir a {{ donde.pantalla }}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                } @else {
+                  <div class="seccion-pendiente">
+                    <i class="fa-solid fa-hammer"></i>
+                    <div>
+                      <b>Todavía no se puede llenar desde aquí.</b>
+                      Falta {{ s.fuente.falta }}. Mientras tanto la tienda se
+                      salta esta sección, así que puede quedarse encendida sin
+                      estropear nada: el orden y las fechas que pongas ahora
+                      valen igual cuando llegue.
+                    </div>
+                  </div>
+                }
+              </div>
+
+              @if (s.updated_at) {
+                <small class="seccion-pie">
+                  Último cambio: {{ s.updated_at }} · {{ s.updated_by || '—' }}
+                </small>
+              }
+          </div>
+
+        } @else {
+          <!-- Sin ninguna elegida: se dice qué hacer, en vez de dejar media
+               pantalla en blanco -->
+          <div class="inicio-elige">
+            <i class="fa-solid fa-hand-pointer"></i>
+            <p class="mb-0">Elige una sección de la izquierda para configurarla.</p>
+          </div>
+        }
+      </div>
+
+      </div>
+    </div>
+  }
+</panel>

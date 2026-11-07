@@ -1,0 +1,399 @@
+/* ============================================================
+   PUNTO DE VENTA (modal)
+
+   Los colores salen de variables Bootstrap para seguir el tema claro y
+   oscuro que app.component.ts pone en <html> con data-bs-theme.
+   ============================================================ */
+
+/* EL CUERPO VA GRIS, como en saveUser y saveCliente. No es un adorno: los
+   paneles usan el gris de componente, y sobre el blanco del modal ese gris
+   casi no se distingue —el panel parecía un trozo de la ventana, no una
+   tarjeta—. Con el fondo un paso más apagado, cada panel se despega. */
+.pv-body {
+  background-color: var(--bs-tertiary-bg, #f5f6f8);
+  padding: 1rem;
+  max-height: calc(100vh - 13rem);
+  overflow-y: auto;
+}
+
+:host ::ng-deep app-campoTexto,
+:host ::ng-deep app-campoTextoArea,
+:host ::ng-deep app-campoNumeroEntero,
+:host ::ng-deep app-combo {
+  display: block;
+}
+
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .25rem;
+}
+
+/* ============================================================
+   LO QUE VALE PARA TODA LA FICHA (una sola fila, arriba)
+   ============================================================
+   La sucursal y el estado no son datos de un lado ni del otro: la caja
+   entera es de esa tienda y está abierta o cerrada. Van arriba, cruzando
+   las dos columnas, y en la misma fila porque entre los dos no llenan ni
+   media. */
+.pv-cabecera {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+
+/* ============================================================
+   LAS DOS COLUMNAS
+   ============================================================
+   A la izquierda cuatro campos, a la derecha diez desplegables. En una
+   sola columna la mitad de la ventana quedaba en blanco y las cuentas
+   —que son lo que de verdad hay que rellenar— caían fuera de la pantalla.
+
+   El reparto lo hace la rejilla de Bootstrap en la plantilla (col-lg-5 /
+   col-lg-7) y los dos paneles llevan `h-100`, como en saveCliente,
+   saveEmpleado y saveUser: así acaban a la misma altura y debajo de los
+   992 px se apilan solos. Por eso aquí no hay ninguna regla: el único
+   apaño es el `h-100` del <form> que hay entre la columna y el panel,
+   porque un alto en porcentaje necesita que su padre también lo tenga. */
+
+/* Los campos de la caja: el número y el código en la misma línea —se leen
+   juntos, uno sale del otro— y el nombre y la descripción a todo lo ancho. */
+.pv-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: .25rem .75rem;
+  align-items: start;
+}
+
+.pv-campos__ancho {
+  grid-column: 1 / -1;
+}
+
+/* EL CÓDIGO ESTÁ APAGADO A PROPÓSITO: se compone con el código de la
+   sucursal y el número de la caja. Que se lea bien —no como un campo roto—
+   pero que se vea que ahí no se escribe. */
+:host ::ng-deep .pv-campos app-campoTexto input:disabled {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  color: var(--bs-component-color, #212529);
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* Debajo de los 992 px el modal ya no da para dos columnas: la cabecera se
+   parte en dos filas (de las columnas ya se encarga col-lg-*). */
+@media (max-width: 991.98px) {
+  .pv-cabecera {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Contenido en la cabecera del panel ----------
+   OJO: esa cabecera lleva bg-gray-800, o sea fondo oscuro EN LOS DOS TEMAS,
+   así que lo de dentro NO puede usar las variables del tema para el color
+   del texto: en tema claro --bs-secondary-color es gris oscuro y sobre ese
+   fondo no se lee. De ahí los colores escritos a mano. */
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+.panel-acciones .chip {
+  background-color: rgba(255, 255, 255, .14);
+  color: rgba(255, 255, 255, .85);
+}
+
+.panel-acciones .chip-info {
+  background-color: rgba(255, 255, 255, .2);
+  color: #fff;
+}
+
+.panel-acciones .chip-peligro {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .9);
+  color: #fff;
+}
+
+.panel-acciones .chip-ok {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .85);
+  color: #fff;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip-muted { background-color: rgba(108, 117, 125, .15); color: var(--bs-secondary-color, #6c757d); }
+.chip-info  { background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12); color: var(--bs-primary-text-emphasis, #0a58ca); }
+
+/* ============================================================
+   ESTADO DE LA CAJA (switch)
+   ============================================================ */
+.pv-estado {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  height: calc(3.5rem + 2px);     /* el alto de un campo flotante */
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  /* El gris de los paneles, no el del cuerpo: estas dos cajas también son
+     tarjetas y tienen que despegarse del fondo igual que ellos */
+  background-color: var(--bs-component-secondary-bg, var(--bs-tertiary-bg, #f8f9fa));
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+/* Encendida se tiñe de verde, PERO SIN PERDER EL GRIS DE TARJETA: un
+   rgba() del 6 % se pinta sobre lo que haya detrás, y detrás está el gris
+   del cuerpo del modal, así que la caja se fundía con el fondo justo en el
+   estado normal. El tinte va como capa encima del color de la tarjeta.
+   (Capa y no color-mix(): el front tiene que andar en un iPhone 7.) */
+.pv-estado.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-image: linear-gradient(rgba(var(--bs-success-rgb, 25, 135, 84), .06),
+                                    rgba(var(--bs-success-rgb, 25, 135, 84), .06));
+}
+
+.pv-estado__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.pv-estado.is-on .pv-estado__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.pv-estado__text { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.pv-estado__label { font-size: .8125rem; font-weight: 600; color: var(--bs-component-color, #212529); }
+.pv-estado__hint {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* EL INTERRUPTOR, COMO EN EL RESTO DE LAS FICHAS (saveCargo, saveSucursal,
+   saveProducto…). Sin estas reglas el app-checkbox se queda en el cuadradito
+   de Bootstrap, y entonces el estado de la caja no se parece al de ninguna
+   otra pantalla: aquí lo que se enseña es una palanca. */
+.pv-estado__switch { margin-left: auto; }
+
+.pv-estado__switch ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.pv-estado__switch ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.pv-estado__switch ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.pv-estado__switch ::ng-deep .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  vertical-align: middle;
+}
+
+/* ============================================================
+   LAS CUENTAS
+   ============================================================ */
+.cuenta-fila {
+  padding: .25rem 0 .25rem .625rem;
+  margin-bottom: .5rem;
+  border-left: 3px solid transparent;
+}
+
+/* Puesta en esta caja */
+.cuenta-fila.es-propia {
+  border-left-color: var(--bs-app-theme, #00acac);
+}
+
+/* «No aplica» se marca con otro color: no es una cuenta puesta, es lo
+   contrario —decir que aquí no hay nada que asentar— */
+.cuenta-fila.es-no-aplica {
+  border-left-color: var(--bs-secondary, #6c757d);
+}
+
+.cuenta-fila.es-no-aplica .campo-hint i {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El desplegable y el botón de «cuenta nueva», en la misma línea */
+.cuenta-fila__campo {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin-bottom: -.25rem;
+}
+
+.cuenta-fila__campo app-combo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+:host ::ng-deep .cuenta-fila__campo .col-md {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Crear la cuenta que falta sin irse al plan: si crear la correcta cuesta
+   tres pantallas y reutilizar una cuesta un clic, se reutiliza la que no
+   toca. Por eso el botón está aquí, a la altura del campo. */
+.btn-nueva-cuenta {
+  flex: 0 0 auto;
+  width: 38px;
+  height: calc(3.5rem + 2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px dashed var(--bs-border-color, #ced4da);
+  border-radius: .375rem;
+  background-color: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.btn-nueva-cuenta:hover,
+.btn-nueva-cuenta:focus {
+  border-style: solid;
+  border-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  background-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  color: #fff;
+}
+
+/* ============================================================
+   LA AYUDA DE CADA CAMPO
+   ============================================================ */
+/* El icono cuelga a la izquierda y el texto fluye normal.
+   NO con flex: un flex container convierte cada trozo del párrafo —cada
+   <b>, cada texto suelto— en un elemento más, y una frase con tres negritas
+   acaba partida en columnas con huecos en medio. Con la posición absoluta
+   del icono se consigue la misma sangría y el texto se lee como un texto. */
+.campo-hint {
+  position: relative;
+  display: block;
+  padding-left: 1.05rem;
+  margin: -.25rem 0 .25rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint > i:first-child {
+  position: absolute;
+  left: 0;
+  top: .15rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* La explicación de arriba del bloque: un párrafo de verdad, con su aire */
+.campo-hint--intro {
+  font-size: .75rem;
+  line-height: 1.45;
+  margin-bottom: .75rem;
+}
+
+/* La segunda línea de ayuda —el para qué sirve la cuenta— más apagada que
+   la primera, que es la que dice de dónde sale */
+.campo-hint--suave {
+  opacity: .75;
+  margin-top: -.1rem;
+}
+
+.campo-hint--suave i {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+@media (max-width: 575.98px) {
+  .pv-body { max-height: calc(100vh - 11rem); }
+  .panel-acciones { flex-wrap: wrap; }
+}
+
+/* ============================================================
+   DE QUÉ SUCURSAL ES (se enseña, no se elige)
+   ============================================================
+   Tiene el mismo alto y el mismo aire que un campo para que la fila no se
+   descuadre, pero se ve que NO es un campo: ni caja de texto ni flecha de
+   desplegable. La tienda se escoge en el listado antes de añadir. */
+.pv-sucursal {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  height: calc(3.5rem + 2px);   /* el mismo que el estado, que va al lado */
+  padding: .55rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-app-theme, #00acac);
+  border-radius: .375rem;
+  background-color: var(--bs-component-secondary-bg, var(--bs-tertiary-bg, #f8f9fa));
+}
+
+.pv-sucursal__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .15);
+}
+
+.pv-sucursal__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.pv-sucursal__label {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pv-sucursal__valor {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

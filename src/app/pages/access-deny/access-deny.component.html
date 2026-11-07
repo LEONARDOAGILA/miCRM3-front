@@ -1,17 +1,28 @@
+<div class="pagina-estado pagina-estado--aviso">
+	<div class="pagina-estado__caja">
+		<div class="pagina-estado__marca" aria-hidden="true">401</div>
 
-<div class="error">
-	<div class="error-code">401</div>
-	<div class="error-content">
-		<div class="error-message">Acceso Denegado</div>
-		<div class="error-desc mb-4">
-			Consulte con el Administrador. 
-            <br>
-            <br>
-			No tienes permiso para recibir ese contenido.
+		<div class="pagina-estado__icono">
+			<i class="fa fa-lock" aria-hidden="true"></i>
 		</div>
-        <br>
-		<div>
-			<a (click)="goInit()" class="btn btn-success px-3">Ir al Inicio</a>
+
+		<div class="pagina-estado__codigo">Acceso denegado</div>
+
+		<h1 class="pagina-estado__titulo">No tienes permiso para abrir esta pantalla</h1>
+
+		<p class="pagina-estado__texto">
+			Tu perfil no incluye el acceso a este contenido. Si lo necesitas para
+			trabajar, pídeselo al administrador.
+		</p>
+
+		<!-- Aquí NO va un botón de «Atrás»: se llega a esta página porque el
+		     resolver rechazó la pantalla anterior, así que volver al historial
+		     la pediría otra vez y rebotaría de nuevo aquí. A cambio, esta página
+		     sí conserva la cabecera y el menú, que es por donde se sale. -->
+		<div class="pagina-estado__acciones">
+			<a routerLink="/" class="btn btn-success">
+				<i class="fa fa-home fa-fw" aria-hidden="true"></i> Ir al inicio
+			</a>
 		</div>
 	</div>
 </div>

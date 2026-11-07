@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } 		 from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } 		 from '@angular/core';
 import { AppSettings } from '../../service/app-settings.service';
 
 declare var slideToggle: any;
@@ -6,6 +6,7 @@ declare var slideToggle: any;
 @Component({
   selector: 'float-sub-menu',
   templateUrl: './float-sub-menu.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 

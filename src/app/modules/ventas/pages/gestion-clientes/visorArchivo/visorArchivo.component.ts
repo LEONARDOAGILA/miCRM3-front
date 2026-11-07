@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, Input, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -31,6 +31,7 @@ import { ArchivoCliente, formatoTamano, pintaDeTipo } from '../../../interfaces/
   standalone: true,
   imports: [CommonModule],
   templateUrl: './visorArchivo.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./visorArchivo.component.css'],
 })
 export class VisorArchivoComponent implements OnInit {

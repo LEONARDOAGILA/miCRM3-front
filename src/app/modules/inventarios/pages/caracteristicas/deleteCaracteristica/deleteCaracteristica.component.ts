@@ -1,10 +1,12 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { CaracteristicaService } from '../../../services/caracteristica.service';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de una característica de la plantilla (mismo
@@ -18,7 +20,9 @@ import { CaracteristicaService } from '../../../services/caracteristica.service'
   selector: 'app-deleteCaracteristica',
   templateUrl: './deleteCaracteristica.component.html',
   styleUrls: ['./deleteCaracteristica.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteCaracteristicaComponent implements OnDestroy {
 

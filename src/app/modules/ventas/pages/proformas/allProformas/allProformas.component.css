@@ -1,0 +1,272 @@
+/* ============================================================
+   LISTADO DE PROFORMAS
+
+   Lo que va aquí es sólo lo propio de esta pantalla. Las clases del
+   spinner (content-container1, overlay1, loader1), .inactivo y
+   .ag-grid-transparente son globales y viven en scss/angular.scss.
+   ============================================================ */
+
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida 20px: el tema deja un hueco entre la
+   cabecera de la aplicación y el primer elemento de la página que aquí
+   sobra, porque el panel ya trae el suyo. */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Cuerpo del panel ----------
+   Compensa el padding superior del panel-body del tema, para que la barra
+   de herramientas quede pegada a la cabecera del panel. */
+.lista-contenido {
+  margin-top: -19px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+/* Botones cuadrados a la altura del buscador (form-control del tema) */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* Lupa pequeña sobre el botón de auditoría */
+.lista-barra__badge {
+  font-size: 8px;
+}
+
+/* ---------- Grilla ----------
+   Altura de arranque; ajustarAlturaGrid() la sustituye en cuanto la grilla
+   está lista. La variable --ag-line-height es la altura de línea de celda
+   que usa el tema alpine. */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- Paginación ---------- */
+.pagination-controls {
+  gap: .5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto":
+   hereda el borde y la altura de los demás y queda alineado con ellos. */
+.pagination-page-badge.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* ---------- Responsive ---------- */
+/* Teléfonos: paginación apilada y centrada, botones más compactos */
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
+  }
+}
+
+/* Tablets: sólo botones un poco más compactos */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .pagination-buttons .btn {
+    padding: .2rem .5rem;
+    font-size: .75rem;
+  }
+}
+
+/* ---------- Modo oscuro ----------
+   btn-white del tema es blanco fijo; en oscuro se pasa a la superficie del
+   tema para que el grupo no destaque como un bloque blanco. */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
+}
+
+/* ---------- Foto en la grilla ---------- */
+:host ::ng-deep .lista-foto {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+}
+
+:host ::ng-deep .lista-foto--vacia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bs-gray-800, #2d353c);
+  color: var(--bs-gray-500, #adb5bd);
+  font-size: 11px;
+}
+
+/* ============================================================
+   LOS BOTONES DE ESTADO (lo primero que se mira al entrar)
+   ============================================================
+   No es un adorno: un vendedor entra a ver qué tiene enviado sin respuesta
+   y qué se le está venciendo. Van en botones y no en un desplegable porque
+   la cuenta de cada estado es parte de la información. */
+.pf-estados {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin: .25rem .5rem .5rem;
+}
+
+.pf-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .1rem;
+  min-width: 92px;
+  padding: .35rem .55rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: transparent;
+  color: inherit;
+  text-align: left;
+  line-height: 1.2;
+  transition: border-color .12s ease, background-color .12s ease;
+}
+
+.pf-estado:hover {
+  border-color: var(--bs-primary, #0d6efd);
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .04);
+}
+
+.pf-estado.is-on {
+  border-color: var(--bs-primary, #0d6efd);
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .10);
+  box-shadow: inset 0 -2px 0 var(--bs-primary, #0d6efd);
+}
+
+.pf-estado__cuenta {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.pf-estado__texto {
+  font-size: .68rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+}
+
+/* Los dos avisos no se pulsan: no son estados, son «llama hoy» */
+.pf-estado--aviso,
+.pf-estado--ojo {
+  cursor: default;
+}
+
+.pf-estado--aviso {
+  border-color: var(--bs-danger-border-subtle, #f1aeb5);
+  background-color: var(--bs-danger-bg-subtle, #f8d7da);
+}
+
+.pf-estado--aviso .pf-estado__cuenta,
+.pf-estado--aviso .pf-estado__texto {
+  color: var(--bs-danger-text-emphasis, #b02a37);
+}
+
+.pf-estado--ojo {
+  border-color: var(--bs-warning-border-subtle, #ffe69c);
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+}
+
+.pf-estado--ojo .pf-estado__cuenta,
+.pf-estado--ojo .pf-estado__texto {
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+.pf-estados__importe {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding: .35rem .55rem;
+}
+
+.pf-estados__importe small {
+  font-size: .65rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pf-estados__importe b { font-size: 1rem; }
+
+/* ============================================================
+   LA REJILLA: lo que hay que ver sin leer fila por fila
+   ============================================================ */
+/* Enviada y pasada de fecha. El estado guardado sigue diciendo «Enviada»
+   —no cambia solo— y es justo la que hay que atender hoy. */
+:host ::ng-deep .lista-grilla .ag-row.fila-vencida .ag-cell {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .05);
+}
+
+/* Anulada: se sigue viendo —queda constancia— pero apagada */
+:host ::ng-deep .lista-grilla .ag-row.fila-anulada .ag-cell {
+  opacity: .55;
+}
+
+/* Los días que quedan, junto a la fecha de vencimiento */
+:host ::ng-deep .pf-aviso {
+  display: inline-block;
+  margin-left: .3rem;
+  padding: .05rem .3rem;
+  border-radius: .25rem;
+  font-size: .62rem;
+  font-weight: 700;
+  vertical-align: 1px;
+}
+
+:host ::ng-deep .pf-aviso--mal {
+  background-color: var(--bs-danger, #dc3545);
+  color: #fff;
+}
+
+:host ::ng-deep .pf-aviso--ojo {
+  background-color: var(--bs-warning, #ffc107);
+  color: #000;
+}
+
+@media (max-width: 575.98px) {
+  .pf-estado { min-width: 78px; padding: .3rem .4rem; }
+  .pf-estado__cuenta { font-size: .9rem; }
+  .pf-estados__importe { align-items: flex-start; }
+}

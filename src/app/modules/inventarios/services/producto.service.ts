@@ -12,6 +12,15 @@ import { environment } from '../../../../environments/environment';
  * cuelga de ella, que es lo que hace falta porque los productos cuelgan de
  * las hojas.
  */
+/** Los extremos de los dos rangos del panel de filtros. Cualquiera puede
+ *  faltar: null es «sin tope por ese lado». */
+export interface RangosProducto {
+  precio_min?: number | null;
+  precio_max?: number | null;
+  costo_min?: number | null;
+  costo_max?: number | null;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -27,14 +36,22 @@ export class ProductoService {
 
   //   ******   LISTADO CON PAGINACIÓN   ******  //
   allProductos(page: number = 1, perPage: number = 10, search: string = '',
-               marcaId: number | null = null, categoriaId: number | null = null,
-               filtros: any = null): Observable<any> {
+               marcaIds: number[] = [], categoriaIds: number[] = [],
+               filtros: any = null, rangos: RangosProducto = {}): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
     if (search)      { params = params.set('search', search); }
-    if (marcaId)     { params = params.set('marca_id', String(marcaId)); }
-    if (categoriaId) { params = params.set('categoria_id', String(categoriaId)); }
+    // Las marcas van separadas por comas; vacío es «todas» y no se manda
+    if (marcaIds?.length) { params = params.set('marca_ids', marcaIds.join(',')); }
+    if (categoriaIds?.length) { params = params.set('categoria_ids', categoriaIds.join(',')); }
+
+    // Los rangos: sólo se mandan los extremos que tengan número, para que
+    // «de 100 en adelante» no tenga que inventarse un máximo.
+    for (const k of ['precio_min', 'precio_max', 'costo_min', 'costo_max'] as const) {
+      const v = (rangos as any)[k];
+      if (v !== null && v !== undefined && v !== '') { params = params.set(k, String(v)); }
+    }
 
     // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
     // servidor, sobre todo el catálogo: la rejilla sólo tiene la página.

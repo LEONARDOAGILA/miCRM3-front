@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, Optional, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, Optional, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -18,7 +18,7 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { ROLES_RESPONSABLE, RolResponsable } from '../../../interfaces/gestionModel';
 
 //   ******   COMPONENTES   ******  //
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.component';
 // El mismo selector que usa la reasignación de uno en uno: usuarios con su
@@ -27,6 +27,7 @@ import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.com
 import { ListUsuariosGruposComponent } from '../../../../seguridad/pages/grupos/listUsuariosGrupos/listUsuariosGrupos.component';
 import { ConfirmarRepartoComponent } from './confirmarReparto/confirmarReparto.component';
 import { nombreDeUsuario } from '../../../../seguridad/services/user.service';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /** Un destino del reparto: a quién van los clientes. */
 interface Destino {
@@ -77,12 +78,13 @@ type Paso = 'elegir' | 'resultado';
   imports: [
     CommonModule,
     FormsModule,
-    AgGridModule,
-    PanelModule,
+    AgGridModule, FilasEstirablesDirective,
+    PanelComponent,
     CampoBusquedaPaginacionComponent,
     AvisoComponent,
   ],
   templateUrl: './asignacionClienteMasiva.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./asignacionClienteMasiva.component.css'],
 })
 export class AsignacionClienteMasivaComponent implements OnInit, OnDestroy {

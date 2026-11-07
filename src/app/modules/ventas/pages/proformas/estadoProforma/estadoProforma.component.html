@@ -1,0 +1,117 @@
+<div class="modal-content border-0 shadow-lg">
+
+  <!-- ===================== CABECERA ===================== -->
+  <div appModalArrastrable class="modal-header">
+    <h5 class="modal-title">
+      <i class="fa fa-arrow-right-arrow-left fa-fw me-1"></i>
+      Cambiar la situación de la proforma
+    </h5>
+    <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+  </div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="modal-body">
+
+    <!-- De dónde partimos -->
+    <div class="est-cabecera">
+      <span class="est-cabecera__numero">{{ registro_selected?.numero }}</span>
+      <span class="badge fs-10px {{ claseEstado(estadoActual) }}">{{ etiquetaEstado(estadoActual) }}</span>
+      <span class="est-cabecera__cliente">{{ registro_selected?.cliente_nombre }}</span>
+    </div>
+
+    <!-- La vencida: lo que casi siempre se quiere es renovarla, así que va
+         primero y aparte, no escondida entre los estados. -->
+    @if (puedeRenovar) {
+      <div class="est-renovar">
+        <div class="est-renovar__texto">
+          <b><i class="fa-solid fa-rotate-right me-1"></i> Renovarla</b>
+          <span>
+            Se le pone <b>fecha de hoy</b> con los mismos precios y vuelve a quedar enviada.
+            Es lo que corresponde cuando se pasó de fecha y el cliente sigue interesado.
+          </span>
+        </div>
+        <div class="est-renovar__dias">
+          <label class="form-label small mb-1">Días de validez</label>
+          <input type="number" class="form-control form-control-sm" min="0" max="365"
+                 [(ngModel)]="validezDias" [disabled]="guardando">
+        </div>
+        <button type="button" class="btn btn-warning" [disabled]="guardando" (click)="renovar()">
+          <i class="fa fa-rotate-right me-1"></i> Renovar
+        </button>
+      </div>
+
+      <p class="est-separador"><span>o pasarla a</span></p>
+    }
+
+    <!-- Las salidas que admite el estado de ahora. Lo que no se puede, no se
+         ofrece: es la misma lista que comprueba la base. -->
+    @if (opciones.length) {
+      <div class="est-opciones">
+        @for (o of opciones; track o.id) {
+          <button type="button"
+                  class="est-opcion"
+                  [class.is-on]="elegido === o.id"
+                  [disabled]="guardando"
+                  (click)="elegido = o.id">
+            <span class="est-opcion__icono badge {{ o.clase }}"><i class="fa-solid {{ o.icono }}"></i></span>
+            <span class="est-opcion__texto">
+              <b>{{ o.name }}</b>
+              <small>{{ o.ayuda }}</small>
+            </span>
+            @if (elegido === o.id) { <i class="fa-solid fa-check est-opcion__check"></i> }
+          </button>
+        }
+      </div>
+    } @else {
+      <p class="est-fin">
+        <i class="fa-solid fa-lock me-1"></i>
+        Esta proforma está <b>{{ etiquetaEstado(estadoActual) | lowercase }}</b> y ahí se queda.
+        Si hay que volver a ofertar, <b>duplíquela</b>: la copia nace en borrador y con su
+        propio número.
+      </p>
+    }
+
+    <!-- El motivo. Obligatorio al rechazar, útil al anular. -->
+    @if (elegido === 'RECHAZADA' || elegido === 'ANULADA') {
+      <div class="est-motivo">
+        <label class="form-label small mb-1">
+          MOTIVO
+          @if (motivoObligatorio) { <span class="text-danger">*</span> }
+        </label>
+        <textarea class="form-control" rows="2" maxlength="2000"
+                  [(ngModel)]="motivo" [disabled]="guardando"
+                  [placeholder]="elegido === 'RECHAZADA'
+                    ? 'Precio, plazo de entrega, compró en otro lado…'
+                    : 'Por qué se da de baja (opcional)'"></textarea>
+        @if (motivoObligatorio && !motivo.trim()) {
+          <p class="campo-hint text-danger mb-0">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Para rechazar hay que decir por qué: dentro de seis meses es lo único que explica
+            por qué se perdió esta venta.
+          </p>
+        }
+      </div>
+    }
+
+    @if (elegido && consecuencia) {
+      <p class="est-consecuencia">
+        <i class="fa-solid fa-circle-info me-1"></i>{{ consecuencia }}
+      </p>
+    }
+
+  </div>
+
+  <!-- ===================== PIE ===================== -->
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">
+      <i class="fa fa-times fa-fw me-1"></i>Cancelar
+    </button>
+    @if (opciones.length) {
+      <button type="button" class="btn btn-primary" [disabled]="!puedeGuardar" (click)="confirmar()">
+        <i class="fa fa-check fa-fw me-1"></i>
+        {{ elegido ? ('Pasar a ' + etiquetaEstado(elegido)) : 'Elija una opción' }}
+      </button>
+    }
+  </div>
+
+</div>

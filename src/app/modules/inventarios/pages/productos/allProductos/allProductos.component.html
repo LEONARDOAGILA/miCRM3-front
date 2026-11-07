@@ -1,17 +1,22 @@
 <!-- ============================================================
-     CATÁLOGO DE PRODUCTOS
+     CATÁLOGO DE PRODUCTOS: ÁRBOL A LA IZQUIERDA, REJILLA A LA DERECHA
 
-     Estructura:
+     Misma estructura que Características (que a su vez la sacó de Usuarios
+     y grupos, y ésa del administrador de archivos):
        1. Miga de pan
-       2. <panel> del tema con imprimir / Excel / CSV / recargar / expandir
-          2a. Barra: buscador, filtro de marca, filtro de categoría, nuevo,
-              auditoría
-          2b. Rejilla ag-Grid (paginación en servidor)
-          2c. Controles de paginación
+       2. <panel> a toda la altura, con imprimir / Excel / CSV / recargar
+          2a. Lateral: el árbol de categorías, con su buscador
+          2b. Divisor arrastrable (doble clic: ancho por defecto)
+          2c. Contenido: ruta de la categoría, barra y rejilla
+
+     Antes la categoría se elegía en un combo plano con la ruta entera
+     («Tecnología > Computadores > Portátiles»). Se trabaja categoría por
+     categoría, así que el árbol se queda a la vista; el combo se fue para
+     no tener dos mandos haciendo lo mismo.
      ============================================================ -->
 
 <!-- ================= 1. MIGA DE PAN ================= -->
-<ol class="breadcrumb lista-breadcrumb">
+<ol class="breadcrumb lista-breadcrumb prod-breadcrumb">
   <li class="breadcrumb-item"><a (click)="fun_home();">Inventarios</a></li>
   <li class="breadcrumb-item active">Productos</li>
 </ol>
@@ -23,112 +28,216 @@
        [ButtonPrint]="accesoModel?.reporte === true"
        [ButtonExportExcel]="accesoModel?.reporte === true"
        [ButtonExportCsv]="accesoModel?.reporte === true"
-       (panelReloaded)="allProductos(paginaActual)"
+       (panelReloaded)="cargarArbol(); allProductos(paginaActual)"
        (panelExpanded)="ajustarTamanoGrid()"
        (panelPrinted)="printPdf()"
        (panelExportExceled)="exportExcel()"
        (panelExportCsved)="exportCsv()"
        [closeRoute]="'/inventarios'"
-       icono="box">
+       icono="box"
+       class="flex-1 d-flex flex-column overflow-hidden"
+       bodyClass="p-0 flex-1 overflow-hidden"
+       panelClass="flex-1 m-0 d-flex flex-column overflow-hidden">
 
-  <div class="content-container1 lista-contenido">
-    @if (isLoading$ | async) {
-      <div class="loader1"></div>
-      <div class="overlay1"></div>
-    }
+  @if (isLoading$ | async) {
+    <div class="loader1"></div>
+    <div class="overlay1"></div>
+  }
 
-    <div class="content2">
-      <div class="example-wrapper">
+  <div class="file-manager h-100 prod"
+       [ngClass]="{ 'file-manager-sidebar-mobile-toggled': mobileSidebarToggled, 'is-redimensionando': redimensionando }"
+       [style.--bs-file-manager-sidebar-width]="(lateralPlegado ? 34 : anchoLateral) + 'px'"
+       [style.--bs-file-manager-mobile-sidebar-margin]="(-(lateralPlegado ? 34 : anchoLateral)) + 'px'"
+       [style.--prod-ancho-filtros]="(filtrosPlegados ? 34 : anchoFiltros) + 'px'">
 
-        <!-- ---------- 2a. BARRA DE HERRAMIENTAS ---------- -->
-        <div class="row g-2 m-2 align-items-center lista-barra">
+    <!-- .file-manager es flex en COLUMNA (el tema); la fila de verdad es
+         .file-manager-container. Sin él, el árbol y la rejilla se apilan
+         uno encima del otro a todo lo ancho. -->
+    <div class="file-manager-container">
 
-          <!-- Buscador con su botón de quitar filtros dentro -->
-          <div class="col-12 col-lg pe-1">
-            <app-campoBusquedaPaginacion
-              [id]="'filter-text-box'"
-              [placeholder]="'Buscar por código, nombre, modelo, marca…'"
-              [iconClass]="'fa fa-search fa-lg'"
-              [containerClass]="'w-100'"
-              [conLimpiarFiltros]="true"
-              [hayFiltro]="hayFiltro"
-              [columnasFiltradas]="cuantasColumnasFiltradas"
-              (buscar)="onFilterTextBoxChanged($event)"
-              (limpiarFiltros)="clearAllFilters()">
-            </app-campoBusquedaPaginacion>
-          </div>
+    <!-- ---------- 2a. LATERAL: EL ÁRBOL ---------- -->
+    <div class="file-manager-sidebar prod-lateral" [class.is-plegado]="lateralPlegado">
 
-          <!-- Filtro por marca. «Ver sólo las Samsung» es la consulta de
-               todos los días y con el buscador de texto es adivinar. -->
-          <div class="col-6 col-lg-auto ps-0">
-            <select class="form-select form-select-sm prod-filtro"
-                    title="Filtrar por marca"
-                    [(ngModel)]="marcaFiltro"
-                    (ngModelChange)="onFiltroCambiado()">
-              <option [ngValue]="null">Todas las marcas</option>
-              @for (m of marcas; track m.id) {
-                <option [ngValue]="m.id">{{ m.nombre }}</option>
-              }
-            </select>
-          </div>
-
-          <!-- Filtro por categoría: baja POR LA RAMA, así que elegir
-               «Línea Blanca» trae también lo que cuelga de ella. -->
-          <div class="col-6 col-lg-auto ps-0">
-            <select class="form-select form-select-sm prod-filtro prod-filtro--ancho"
-                    title="Filtrar por categoría (incluye sus subcategorías)"
-                    [(ngModel)]="categoriaFiltro"
-                    (ngModelChange)="onFiltroCambiado()">
-              <option [ngValue]="null">Todas las categorías</option>
-              @for (c of categorias; track c.id) {
-                <option [ngValue]="c.id">{{ c.name }}</option>
-              }
-            </select>
-          </div>
-
-          <!-- Nuevo producto -->
-          <div class="col-auto ps-0">
-            <button type="button"
-                    class="inactivo btn btn-primary lista-barra__btn"
-                    title="Agregar producto"
-                    [disabled]="accesoModel?.crear === false"
-                    (click)="addProducto()">
-              <i class="fa fa-plus"></i>
-            </button>
-          </div>
-
-          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
-          @if (accesoModel?.papelera === true) {
-            <div class="col-auto">
-              <button type="button"
-                      class="btn btn-outline-secondary lista-barra__btn"
-                      title="Papelera de reciclaje de productos"
-                      (click)="abrirPapelera()">
-                <i class="fa fa-trash-can"></i>
-              </button>
-            </div>
+      <!-- PLEGADO: una tira vertical con el nombre, como en la referencia.
+           Lleva la cuenta de categorías para que no parezca que no hay nada. -->
+      @if (lateralPlegado) {
+        <button type="button" class="prod-tira" (click)="alternarLateral()"
+                title="Mostrar las categorías">
+          <i class="fa fa-angles-right prod-tira__flecha"></i>
+          <span class="prod-tira__texto">Categorías</span>
+          @if (categoriaFiltro.length) {
+            <span class="prod-tira__chapa">{{ categoriaFiltro.length }}</span>
           }
+        </button>
+      } @else {
 
-          <!-- Auditoría de la fila seleccionada -->
-          @if (accesoModel?.auditar === true) {
-            <div class="col-auto">
-              <button type="button"
-                      class="btn btn-warning lista-barra__btn position-relative"
-                      title="Ver historial de auditoría del registro seleccionado"
-                      [disabled]="!selectedRow"
-                      (click)="auditoria()">
-                <i class="fa fa-user-secret"></i>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
-                  <i class="fa fa-search"></i>
-                </span>
-              </button>
-            </div>
+      <div class="file-manager-sidebar-mobile-toggler">
+        <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Categorías">
+          <i class="fa" [ngClass]="mobileSidebarToggled ? 'fa-chevron-left' : 'fa-sitemap'"></i>
+        </button>
+      </div>
+
+      <div class="prod-lateral__cabecera">
+        <span class="prod-lateral__titulo"><i class="fa fa-sitemap me-1"></i> Categorías</span>
+        <div class="btn-group prod-lateral__acciones" role="group" aria-label="Árbol">
+          <button type="button" class="btn btn-xs btn-white" title="Expandir todo" (click)="expandirTodo()">
+            <i class="fa fa-angles-down"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Contraer todo" (click)="contraerTodo()">
+            <i class="fa fa-angles-up"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Todos los productos" (click)="seleccionar(NODO_TODAS)">
+            <i class="fa fa-list-check"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Plegar la columna" (click)="alternarLateral()">
+            <i class="fa fa-angles-left"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="prod-lateral__buscador">
+        <i class="fa fa-search prod-lateral__lupa"></i>
+        <input type="text" class="form-control form-control-sm" placeholder="Buscar categoría…"
+               [(ngModel)]="searchQuery" (input)="filterNodes()">
+        @if (searchQuery) {
+          <button type="button" class="prod-lateral__limpiar" title="Limpiar" (click)="limpiarBusquedaArbol()">&times;</button>
+        }
+      </div>
+
+      <div class="prod-lateral__arbol position-relative">
+        @if (recargandoArbol) {
+          <div class="loader1" role="status" aria-label="Recargando"></div>
+          <div class="overlay1" aria-hidden="true"></div>
+        }
+        <ng-scrollbar class="h-100">
+          <div class="prod-arbol">
+            @for (node of nodes; track node.id) {
+              <app-file-tree-node
+                [node]="node"
+                [isSelected]="node.isSelected"
+                (nodeSelected)="onNodeSelect($event)"
+                (nodeToggled)="onNodeToggle($event)">
+              </app-file-tree-node>
+            } @empty {
+              <div class="prod-arbol__vacio">
+                <i class="fa fa-search"></i>
+                <span>Nada coincide con «{{ searchQuery }}»</span>
+              </div>
+            }
+          </div>
+        </ng-scrollbar>
+      </div>
+
+      <div class="file-manager-sidebar-footer prod-lateral__pie">
+        <span class="prod-lateral__ayuda" title="La chapita de cada categoría dice cuántos productos cuelgan de esa rama">
+          <i class="fa fa-hand-pointer"></i>
+        </span>
+      </div>
+      }
+    </div>
+
+    <!-- ---------- 2b. DIVISOR ARRASTRABLE ---------- -->
+    <div class="prod-divisor"
+         [class.is-inerte]="lateralPlegado"
+         role="separator"
+         aria-orientation="vertical"
+         title="Arrastra para cambiar el ancho del árbol (doble clic: ancho por defecto)"
+         (pointerdown)="iniciarRedimension($event)"
+         (dblclick)="anchoLateral = ANCHO_LATERAL_DEFECTO; guardarAnchoLateral(); ajustarTamanoGrid()">
+    </div>
+
+    <!-- ---------- 2c. CONTENIDO ---------- -->
+    <div class="file-manager-content prod-contenido">
+
+      <!-- Dónde estoy -->
+      <div class="prod-ubicacion">
+        <nav class="prod-ruta" aria-label="Categoría">
+          <button type="button" class="prod-ruta__tramo"
+                  [class.is-actual]="seleccionId === NODO_TODAS"
+                  (click)="seleccionar(NODO_TODAS)">
+            <i class="fa fa-list-check"></i> Todas
+          </button>
+          @if (categoriaFiltroRuta) {
+            <span class="prod-ruta__sep">/</span>
+            <span class="prod-ruta__tramo is-actual" [title]="categoriaFiltroRuta">{{ categoriaFiltroRuta }}</span>
           }
+        </nav>
+      </div>
+
+      <!-- ---------- BARRA DE HERRAMIENTAS ---------- -->
+      <div class="row g-2 m-2 align-items-center lista-barra">
+
+        <!-- Buscador con su botón de quitar filtros dentro -->
+        <div class="col-12 col-lg pe-1">
+          <app-campoBusquedaPaginacion
+            [id]="'filter-text-box'"
+            [placeholder]="'Buscar por código, nombre, modelo, marca…'"
+            [iconClass]="'fa fa-search fa-lg'"
+            [containerClass]="'w-100'"
+            [conLimpiarFiltros]="true"
+            [hayFiltro]="hayFiltro"
+            [columnasFiltradas]="cuantasColumnasFiltradas"
+            (buscar)="onFilterTextBoxChanged($event)"
+            (limpiarFiltros)="clearAllFilters()">
+          </app-campoBusquedaPaginacion>
         </div>
 
-        <!-- ---------- 2b. REJILLA ---------- -->
+        <!-- Los filtros (marcas, categorías y los dos rangos) ya no están
+             aquí: se fueron al panel de la derecha, que se pliega. La barra
+             se queda con lo que se usa a cada rato. -->
+
+        <!-- Nuevo producto. Con una categoría elegida, nace en ella; y si
+             esa categoría sólo AGRUPA, no se puede crear ahí.
+             El title va también en el div: un <button disabled> no recibe
+             eventos de ratón, así que su propio title no se llega a ver y
+             el aviso se perdería justo cuando hace falta. -->
+        <div class="col-auto ps-0" [title]="motivoSinAlta">
+          <button type="button"
+                  class="inactivo btn btn-primary lista-barra__btn"
+                  [title]="motivoSinAlta
+                            ? motivoSinAlta
+                            : (categoriaFiltro
+                                ? 'Agregar un producto a «' + categoriaFiltroRuta + '»'
+                                : 'Agregar producto')"
+                  [disabled]="accesoModel?.crear === false || !categoriaAdmiteProductos"
+                  (click)="addProducto()">
+            <i class="fa fa-plus"></i>
+          </button>
+        </div>
+
+        <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
+        @if (accesoModel?.papelera === true) {
+          <div class="col-auto">
+            <button type="button"
+                    class="btn btn-outline-secondary lista-barra__btn"
+                    title="Papelera de reciclaje de productos"
+                    (click)="abrirPapelera()">
+              <i class="fa fa-trash-can"></i>
+            </button>
+          </div>
+        }
+
+        <!-- Auditoría de la fila seleccionada -->
+        @if (accesoModel?.auditar === true) {
+          <div class="col-auto">
+            <button type="button"
+                    class="btn btn-warning lista-barra__btn position-relative"
+                    title="Ver historial de auditoría del registro seleccionado"
+                    [disabled]="!selectedRow"
+                    (click)="auditoria()">
+              <i class="fa fa-user-secret"></i>
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
+                <i class="fa fa-search"></i>
+              </span>
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- ---------- REJILLA ---------- -->
+      <div class="prod-grilla-caja">
         <ag-grid-angular
-          class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
+          class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla prod-grilla"
           [rowData]="productoModel"
           [columnDefs]="columnDefs"
           [enableCellTextSelection]="true"
@@ -149,40 +258,158 @@
           (filterChanged)="onFiltroColumna()"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>
+      </div>
 
-        <!-- ---------- 2c. PAGINACIÓN ---------- -->
-        <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+      <!-- ---------- PAGINACIÓN ---------- -->
+      <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap px-2 prod-paginacion">
 
-          <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
-            <button type="button" class="btn btn-sm btn-white" title="Primera página"
-                    (click)="firstPage()" [disabled]="paginaActual === 1">
-              <i class="fa fa-angle-double-left"></i>
-            </button>
-            <button type="button" class="btn btn-sm btn-white" title="Página anterior"
-                    (click)="prevPage()" [disabled]="paginaActual === 1">
-              <i class="fa fa-chevron-left"></i>
-            </button>
-            <span class="btn btn-sm btn-white pagination-page-badge disabled">
-              Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
-            </span>
-            <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
-                    (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
-              <i class="fa fa-chevron-right"></i>
-            </button>
-            <button type="button" class="btn btn-sm btn-white" title="Última página"
-                    (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
-              <i class="fa fa-angle-double-right"></i>
-            </button>
-          </div>
+        <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+          <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                  (click)="firstPage()" [disabled]="paginaActual === 1">
+            <i class="fa fa-angle-double-left"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                  (click)="prevPage()" [disabled]="paginaActual === 1">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <span class="btn btn-sm btn-white pagination-page-badge disabled">
+            Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+          </span>
+          <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                  (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-white" title="Última página"
+                  (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
+            <i class="fa fa-angle-double-right"></i>
+          </button>
+        </div>
 
-          <div class="pagination-info small text-muted">
-            Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> productos
-            @if (hayFiltro) { <span class="prod-filtrado">(filtrado)</span> }
-          </div>
-
+        <div class="pagination-info small text-muted">
+          Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> productos
+          @if (hayFiltro) { <span class="prod-filtrado">(filtrado)</span> }
         </div>
 
       </div>
+    </div>
+
+    <!-- ---------- 2d. DIVISOR DEL PANEL DE FILTROS ---------- -->
+    <div class="prod-divisor prod-divisor--filtros"
+         [class.is-inerte]="filtrosPlegados"
+         role="separator"
+         aria-orientation="vertical"
+         title="Arrastra para cambiar el ancho de los filtros"
+         (pointerdown)="iniciarRedimensionFiltros($event)"
+         (dblclick)="anchoFiltros = ANCHO_FILTROS_DEFECTO; ajustarTamanoGrid()">
+    </div>
+
+    <!-- ---------- 2e. PANEL DE FILTROS ----------
+         Misma idea que la columna de la izquierda: se pliega a una tira con
+         su nombre. Plegado enseña CUÁNTOS filtros hay puestos; si no, se
+         quedaría filtrando sin que se vea por qué. -->
+    <div class="prod-filtros" [class.is-plegado]="filtrosPlegados">
+
+      @if (filtrosPlegados) {
+        <button type="button" class="prod-tira" (click)="alternarFiltros()"
+                title="Mostrar los filtros">
+          <i class="fa fa-angles-left prod-tira__flecha"></i>
+          <span class="prod-tira__texto">Filtros</span>
+          @if (cuantosFiltros) {
+            <span class="prod-tira__chapa">{{ cuantosFiltros }}</span>
+          }
+        </button>
+      } @else {
+
+      <div class="prod-filtros__cabecera">
+        <span class="prod-filtros__titulo">
+          <i class="fa fa-filter me-1"></i> Filtros
+          @if (cuantosFiltros) { <span class="prod-filtros__cuantos">{{ cuantosFiltros }}</span> }
+        </span>
+        <div class="btn-group" role="group">
+          <!-- Encendido en rojo cuando hay filtros puestos, igual que el que
+               está junto al buscador: mismas clases y mismo cambio de icono,
+               para que los dos se lean como el mismo mando. -->
+          <button type="button"
+                  class="btn btn-xs"
+                  [class.btn-outline-danger]="hayFiltro"
+                  [class.prod-filtros__limpiar--apagado]="!hayFiltro"
+                  [title]="tituloQuitarFiltros"
+                  [attr.aria-label]="tituloQuitarFiltros"
+                  (click)="clearAllFilters()">
+            <i class="fas" [ngClass]="hayFiltro ? 'fa-filter-circle-xmark' : 'fa-filter'"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-white" title="Plegar el panel" (click)="alternarFiltros()">
+            <i class="fa fa-angles-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <ng-scrollbar class="prod-filtros__cuerpo">
+        <div class="prod-filtros__lista">
+
+          <div class="prod-filtro-grupo">
+            <label class="prod-filtro-grupo__titulo">Marcas</label>
+            <app-combo-multi-seleccion
+              [items]="marcas"
+              bindLabel="nombre"
+              bindValue="id"
+              placeholder="Todas"
+              ayuda="Filtrar por una o varias marcas"
+              [compacto]="true"
+              [(ngModel)]="marcaFiltro"
+              (ngModelChange)="onFiltroCambiado()">
+            </app-combo-multi-seleccion>
+          </div>
+
+          <!-- Las mismas categorías que el árbol: es UN filtro con dos
+               mandos. Aquí se eligen varias; allí se navega por ramas. -->
+          <div class="prod-filtro-grupo">
+            <label class="prod-filtro-grupo__titulo">Categorías</label>
+            <app-combo-multi-seleccion
+              [items]="categoriasPlanas"
+              bindLabel="ruta"
+              bindValue="id"
+              placeholder="Todas"
+              ayuda="Filtrar por varias categorías. Cada una incluye lo que cuelga de ella"
+              [compacto]="true"
+              [(ngModel)]="categoriaFiltro"
+              (ngModelChange)="onCategoriasPanelCambiadas()">
+            </app-combo-multi-seleccion>
+          </div>
+
+          <div class="prod-filtro-grupo">
+            <label class="prod-filtro-grupo__titulo">Precio</label>
+            <div class="prod-rango">
+              <input type="number" class="form-control form-control-sm" placeholder="Desde"
+                     [(ngModel)]="precioMin" (change)="onFiltroCambiado()">
+              <span class="prod-rango__sep">–</span>
+              <input type="number" class="form-control form-control-sm" placeholder="Hasta"
+                     [(ngModel)]="precioMax" (change)="onFiltroCambiado()">
+            </div>
+          </div>
+
+          <div class="prod-filtro-grupo">
+            <label class="prod-filtro-grupo__titulo">Costo</label>
+            <div class="prod-rango">
+              <input type="number" class="form-control form-control-sm" placeholder="Desde"
+                     [(ngModel)]="costoMin" (change)="onFiltroCambiado()">
+              <span class="prod-rango__sep">–</span>
+              <input type="number" class="form-control form-control-sm" placeholder="Hasta"
+                     [(ngModel)]="costoMax" (change)="onFiltroCambiado()">
+            </div>
+          </div>
+
+          <p class="prod-filtros__pista">
+            <i class="fa-solid fa-circle-info"></i>
+            Un rango vale con un solo extremo: «desde 100» trae todo lo que
+            cueste eso o más.
+          </p>
+
+        </div>
+      </ng-scrollbar>
+      }
+    </div>
+
     </div>
   </div>
 

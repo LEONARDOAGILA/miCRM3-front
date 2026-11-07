@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -30,6 +30,7 @@ export interface AjustesDelKiosco {
   standalone: true,
   imports: [CommonModule, FormsModule, ModalHeaderComponent],
   templateUrl: './ajustesKiosco.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./ajustesKiosco.component.css'],
 })
 export class AjustesKioscoComponent {

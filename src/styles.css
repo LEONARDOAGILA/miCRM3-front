@@ -255,6 +255,19 @@ body {
   background: transparent;
 }
 
+/* ============================================================
+   LA PROFORMA (ventas/proformas/saveProforma)
+   Se abre con NgbModal y va en DOS COLUMNAS: a la izquierda el
+   cliente y las condiciones, a la derecha la rejilla de líneas.
+   Con el ancho de un modal-xl (1140px) la rejilla se queda sin
+   sitio y hay que desplazarla para ver el total de cada línea,
+   que es justo lo que se mira. De ahí que este modal sea más
+   ancho que los demás.
+   ============================================================ */
+.proforma-modal .modal-dialog {
+  max-width: min(1600px, 96vw);
+}
+
 /* ================================================================
    NÚMEROS QUE NINGUNA EXTENSIÓN DEBE TOCAR
    ================================================================
@@ -360,4 +373,224 @@ body {
   color: var(--bs-secondary-color, #6c757d);
   text-decoration: line-through;
   opacity: .75;
+}
+
+/* ============================================================================
+   ESTIRAR LAS FILAS DE UN ag-Grid (FilasEstirablesDirective)
+   ============================================================================
+   La directiva vive en core/directives/filasEstirables.directive.ts y marca
+   la rejilla con estas clases. El CSS va AQUI y no en cada componente porque
+   la directiva no esta encapsulada en ninguno: lo pinta para las 74 rejillas
+   de la aplicacion. */
+
+/* El cursor avisa de que ahi se puede agarrar, igual que en las columnas.
+   Con !important porque ag-Grid pone el suyo en cada celda. */
+ag-grid-angular.filas-en-el-borde,
+ag-grid-angular.filas-en-el-borde .ag-row,
+ag-grid-angular.filas-en-el-borde .ag-cell,
+ag-grid-angular.filas-estirando,
+ag-grid-angular.filas-estirando .ag-row,
+ag-grid-angular.filas-estirando .ag-cell {
+  cursor: row-resize !important;
+}
+
+/* Mientras se estira, sin seleccion de texto: arrastrar sobre las celdas
+   seleccionaria su contenido y el gesto se siente roto. */
+ag-grid-angular.filas-estirando,
+ag-grid-angular.filas-estirando .ag-row,
+ag-grid-angular.filas-estirando .ag-cell {
+  user-select: none;
+}
+
+/* La raya del borde que se esta moviendo. */
+ag-grid-angular.filas-estirando .ag-row {
+  border-bottom: 1px solid var(--bs-app-theme, #00acac);
+}
+
+/* PARA QUE ESTIRAR SIRVA DE ALGO: en una fila estirada el texto se parte en
+   varias lineas en vez de cortarse con puntos suspensivos. Sin esto, una fila
+   mas alta solo ensena mas hueco en blanco.
+   Solo en las estiradas: a la altura normal, partir el texto lo dejaria
+   cortado por la mitad, que es peor que los puntos suspensivos. */
+.ag-row.fila-estirada .ag-cell {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: clip;
+  word-break: break-word;
+  line-height: 1.35;
+  /* Arriba y no en medio: con varias lineas, centrado se lee peor */
+  align-items: flex-start;
+  padding-top: 5px;
+}
+
+/* Las columnas que no llevan texto se quedan centradas: botones, casillas,
+   asas de arrastrar y chapitas. */
+.ag-row.fila-estirada .ag-cell:is([col-id='actions'], [col-id='acciones'],
+                                  [col-id='activo'], [col-id='isactive'],
+                                  [col-id='arrastrar'], [col-id='unidad'],
+                                  [col-id='requerido'], [col-id='foto'], [col-id='logo']) {
+  align-items: center;
+  padding-top: 0;
+}
+
+/* ============================================================
+   LOS BOTONES DE LA COLUMNA ACCIONES
+   ============================================================
+   AQUÍ, Y EN NINGÚN OTRO SITIO. Hasta el 31/10/2026 había CINCO
+   aspectos distintos conviviendo —medidos en el navegador, no
+   supuestos—: el ojo salía verde en 29 pantallas y azul en otras
+   tres, el lápiz azul fijo en unas y siguiendo el tema en otras, el
+   icono de clonar cambiaba (fa-clone contra fa-copy), y Tipos de
+   usuario los pintaba como pastillas con borde y fondo.
+
+   Se quedó el aspecto de Características. Para cambiar un color se
+   cambia aquí y cambia en las 32 pantallas.
+
+   VA ACOTADO A .ag-cell A PROPÓSITO. Estos nombres de clase no son
+   sólo de la columna de acciones: allZonas, por ejemplo, tiene un
+   «.btn-editar» en otra parte de su pantalla. Acotándolo a la celda
+   de la rejilla, fuera de ella no se toca nada.
+
+   DOS FAMILIAS DE NOMBRES. Conviven porque el componente compartido
+   (app-action-buttons) usa unos y las pantallas que pintan la celda
+   con una cadena de HTML —para no crear un componente Angular por
+   fila— usan otros. Se listan las dos en vez de renombrar una:
+   renombrar obliga a tocar el marcado de cada pantalla y no se gana
+   nada. */
+.ag-cell .btn-ver,
+.ag-cell .btn-view,
+.ag-cell .btn-editar,
+.ag-cell .btn-edit,
+.ag-cell .btn-clonar,
+.ag-cell .btn-create,
+.ag-cell .btn-borrar,
+.ag-cell .btn-eliminar,
+.ag-cell .btn-delete,
+.ag-cell .btn-add,
+.ag-cell .btn-cambio-clave {
+  padding: .15rem .4rem;
+  font-size: .75rem;
+  line-height: 1;
+  width: auto;
+  height: auto;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  background: none;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+/* El realce al pasar por encima sale del color del TEXTO del tema, no de
+   un negro fijo: sobre el fondo oscuro un rgba(0,0,0,.06) no se vería. */
+.ag-cell .btn-ver:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-view:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-editar:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-edit:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-clonar:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-create:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-borrar:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-eliminar:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-delete:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-add:hover:not(:disabled):not([disabled]),
+.ag-cell .btn-cambio-clave:hover:not(:disabled):not([disabled]) {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  filter: none;
+}
+
+.ag-cell .btn-ver:disabled,
+.ag-cell .btn-view:disabled,
+.ag-cell .btn-editar:disabled,
+.ag-cell .btn-edit:disabled,
+.ag-cell .btn-clonar:disabled,
+.ag-cell .btn-create:disabled,
+.ag-cell .btn-borrar:disabled,
+.ag-cell .btn-eliminar:disabled,
+.ag-cell .btn-delete:disabled,
+.ag-cell .btn-add:disabled,
+.ag-cell .btn-cambio-clave:disabled,
+.ag-cell .btn-ver[disabled],
+.ag-cell .btn-view[disabled],
+.ag-cell .btn-editar[disabled],
+.ag-cell .btn-edit[disabled],
+.ag-cell .btn-clonar[disabled],
+.ag-cell .btn-create[disabled],
+.ag-cell .btn-borrar[disabled],
+.ag-cell .btn-eliminar[disabled],
+.ag-cell .btn-delete[disabled],
+.ag-cell .btn-add[disabled],
+.ag-cell .btn-cambio-clave[disabled] {
+  opacity: .35;
+  cursor: not-allowed;
+  background: none;
+}
+
+/* Los colores. Sólo EDITAR sigue al tema de la aplicación; los demás van
+   fijos a propósito, para que signifiquen siempre lo mismo. */
+.ag-cell .btn-ver,
+.ag-cell .btn-view            { color: #5b9bd5; }
+
+.ag-cell .btn-editar,
+.ag-cell .btn-edit            { color: var(--bs-app-theme, #00acac); }
+
+.ag-cell .btn-clonar,
+.ag-cell .btn-create          { color: #8e7cc3; }
+
+.ag-cell .btn-borrar,
+.ag-cell .btn-eliminar,
+.ag-cell .btn-delete          { color: var(--bs-danger, #ff5b57); }
+
+.ag-cell .btn-subcategoria,
+.ag-cell .btn-subcuenta,
+.ag-cell .btn-subgrupo,
+.ag-cell .btn-subdepartamento {
+  padding: .15rem .4rem;
+  font-size: .75rem;
+  line-height: 1;
+  width: auto;
+  height: auto;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  background: none;
+  cursor: pointer;
+  color: var(--bs-app-theme, #00acac);
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.ag-cell .btn-subcategoria:hover:not(:disabled),
+.ag-cell .btn-subcuenta:hover:not(:disabled),
+.ag-cell .btn-subgrupo:hover:not(:disabled),
+.ag-cell .btn-subdepartamento:hover:not(:disabled) {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.ag-cell .btn-add             { color: #2ecc71; }
+.ag-cell .btn-cambio-clave    { color: #f39c12; }
+
+/* ============================================================================
+   MODALES ALTOS: QUE EL PIE SE VEA SIEMPRE
+   ============================================================================
+   SE SALÍAN DE LA VENTANA. Con la ventana en 658 px, el modal de «Modificar la
+   imagen» dejaba su pie —donde están Guardar y Cancelar— en el píxel 765: fuera
+   de la pantalla y sin forma de llegar. Al alejar el zoom del navegador
+   aparecía, que es como se notó.
+
+   DÓNDE SE ROMPÍA. Al abrir un modal con `scrollable: true`, ng-bootstrap pone
+   el componente dentro de `.modal-content` y le añade `.component-host-scrollable`
+   para que sea una columna flexible; Bootstrap, por su parte, le da al cuerpo
+   `flex: 1 1 auto; min-height: 0; overflow-y: auto`. Entre los dos hay un
+   <form> que envuelve el cuerpo y el pie, y que es `display: block`: ahí se
+   corta la cadena. El cuerpo deja de ser un elemento flexible, crece hasta lo
+   que pida su contenido y empuja el pie fuera.
+
+   Esto lo arregla para TODOS los modales que envuelven en un <form>, que son
+   la mayoría, en vez de repetir la misma regla en la hoja de cada uno. El
+   selector es el exacto: sólo dentro de un modal desplazable de ng-bootstrap.
+
+   `min-height: 0` no es decorativo: sin él, un elemento flexible no encoge por
+   debajo de su contenido y la regla no cambiaría nada. */
+.component-host-scrollable > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }

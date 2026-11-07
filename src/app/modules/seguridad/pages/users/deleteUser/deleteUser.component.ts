@@ -1,16 +1,20 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { UserService } from "../../../../seguridad/services/user.service";
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 @Component({
   selector: 'app-deleteUser',
   templateUrl: './deleteUser.component.html',
   styleUrls: ['./deleteUser.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteUserComponent implements OnInit, OnDestroy {
 

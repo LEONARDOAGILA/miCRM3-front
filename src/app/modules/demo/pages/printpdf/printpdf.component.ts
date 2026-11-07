@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // Importar el plugin para tablas
 import { AppPrintPdfService } from '../../../../service/app-printPdf.service';
@@ -15,6 +15,7 @@ interface Producto {
   selector: 'app-printpdf',
   templateUrl: './printpdf.component.html',
   styleUrls: ['./printpdf.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class PrintpdfComponent implements OnInit {

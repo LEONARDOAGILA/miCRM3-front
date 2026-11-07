@@ -1,11 +1,11 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -30,6 +30,11 @@ import { PapeleraClientesComponent } from '../papeleraClientes/papeleraClientes.
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
+
 /**
  * Listado de clientes (ventas.clientes).
  *
@@ -45,7 +50,16 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-allClientes',
   templateUrl: './allClientes.component.html',
   styleUrls: ['./allClientes.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    MenuContextualComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllClientesComponent implements OnInit, OnDestroy {
 
@@ -496,7 +510,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllClientesComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllClientesComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -596,7 +610,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -674,7 +688,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
    * relación comercial, `activo` dice si el registro está en juego— y en el
    * formulario también se guardan por separado.
    */
-  cambiarActivo(cliente: ClienteModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(cliente: ClienteModel | null, nodo?: IRowNode | null): void {
     if (!cliente) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -714,7 +728,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
         this.clienteModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.clienteModel);
+        this.gridApi?.setGridOption('rowData', this.clienteModel);
         return;
       }
 
@@ -727,7 +741,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) this.gridApi.setRowData(this.clienteModel);
+      if (this.gridApi) this.gridApi.setGridOption('rowData', this.clienteModel);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar clientes:', error);
@@ -943,7 +957,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.clienteModel = [nuevo, ...this.clienteModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.clienteModel);
+      this.gridApi?.setGridOption('rowData', this.clienteModel);
     });
   }
 
@@ -953,7 +967,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.clienteModel = [nuevo, ...this.clienteModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.clienteModel);
+      this.gridApi?.setGridOption('rowData', this.clienteModel);
     });
   }
 
@@ -1028,7 +1042,8 @@ export class AllClientesComponent implements OnInit, OnDestroy {
 // Simple delegador: toda la lógica de modales vive en AllClientesComponent.
 @Component({
   selector: 'app-button-accion-cliente',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"
@@ -1052,6 +1067,7 @@ export class AllClientesComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

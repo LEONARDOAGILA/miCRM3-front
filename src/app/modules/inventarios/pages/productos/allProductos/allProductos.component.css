@@ -143,19 +143,15 @@
   font-size: 11px;
 }
 
-/* ---------- Los dos combos de la barra ----------
-   Anchos fijos para que la barra no se reordene al cambiar de filtro: con
-   ancho automático, elegir una categoría larga empuja los botones de la
-   derecha y hay que volver a buscarlos con la vista. */
+/* ---------- El combo de marca ----------
+   Ancho fijo para que la barra no se reordene al cambiar de filtro: con
+   ancho automático, elegir una marca larga empuja los botones de la
+   derecha y hay que volver a buscarlos con la vista.
+   El de categoría se fue: ahora la categoría se elige en el árbol. */
 .prod-filtro {
   min-width: 150px;
   max-width: 190px;
   font-size: .8125rem;
-}
-
-.prod-filtro--ancho {
-  min-width: 190px;
-  max-width: 260px;
 }
 
 .prod-filtrado {
@@ -163,11 +159,608 @@
   opacity: .8;
 }
 
+/* El selector de marcas. Crece con lo elegido pero con tope: sin él, elegir
+   seis marcas empuja los botones de la derecha fuera de la barra. Pasado el
+   tope la lista de elegidas se desplaza dentro del propio selector. */
+.prod-filtro-marcas {
+  min-width: 190px;
+  max-width: 340px;
+}
+
+.prod-filtro-marcas ::ng-deep .ng-select-container {
+  min-height: 31px;
+  font-size: .8125rem;
+}
+
+.prod-filtro-marcas ::ng-deep .ng-value-container {
+  padding-top: 0;
+  max-height: 58px;
+  overflow-y: auto;
+}
+
 @media (max-width: 991.98px) {
-  .prod-filtro,
-  .prod-filtro--ancho {
+  .prod-filtro-marcas {
     min-width: 0;
     max-width: none;
     width: 100%;
+  }
+
+  .prod-filtro {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   PRODUCTOS: ARBOL A LA IZQUIERDA, REJILLA A LA DERECHA
+   ============================================================
+   El lateral, el divisor arrastrable y el contenido vienen de
+   allCaracteristicas (que a su vez los sacó de usuariosGrupos, y ésa del
+   administrador de archivos): es la misma pantalla de dos columnas con
+   otro árbol y otra rejilla. Sólo cambia el prefijo de las clases.
+
+   OJO: es la CUARTA copia de este armazón. Si hay que tocarlo otra vez,
+   merece la pena sacarlo a un componente compartido antes que copiarlo
+   una quinta. */
+
+:host {
+  display: block;
+}
+
+.prod-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ============================================================
+   BARRA DE HERRAMIENTAS
+   ============================================================ */
+.prod-toolbar {
+  align-items: center;
+  gap: .25rem;
+  padding: .375rem .5rem;
+}
+
+
+/* ============================================================
+   LATERAL: ÁRBOL DE GRUPOS
+   ============================================================ */
+.prod-lateral {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.prod-lateral__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.prod-lateral__titulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.prod-lateral__acciones .btn {
+  padding: .15rem .45rem;
+  font-size: 11px;
+}
+
+.prod-lateral__buscador {
+  position: relative;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.prod-lateral__buscador .form-control {
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+}
+
+.prod-lateral__lupa {
+  position: absolute;
+  top: 50%;
+  left: 1.3rem;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.prod-lateral__limpiar {
+  position: absolute;
+  top: 50%;
+  right: 1.1rem;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.prod-lateral__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+}
+
+.prod-lateral__arbol {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.prod-arbol {
+  min-height: 100%;
+  /* El ancho del lateral, NO el de la rama más larga. usuariosGrupos usa
+     aquí `width: max-content` para que el árbol se desplace a lo ancho; en
+     esta pantalla el dato es la chapita con la cuenta de la rama, y con
+     max-content se quedaba fuera de la vista (un 33 se leía «3»). */
+  width: 100%;
+  padding: .5rem .75rem .5rem .25rem;
+}
+
+/* Soltar un grupo en el fondo del árbol = a la raíz */
+.prod-arbol.is-destino-raiz {
+  outline: 2px dashed var(--bs-app-theme, #00acac);
+  outline-offset: -4px;
+  border-radius: .375rem;
+}
+
+.prod-arbol__vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.prod-arbol__vacio i {
+  font-size: 1.5rem;
+  opacity: .5;
+}
+
+.prod-lateral__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.prod-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0;
+  font-size: 11.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.prod-switch .form-check-input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.prod-lateral__ayuda {
+  color: var(--bs-app-theme, #00acac);
+  font-size: 12px;
+  cursor: help;
+}
+
+/* ============================================================
+   DIVISOR (mismo que el administrador de archivos, estilo VS Code)
+   ============================================================ */
+.prod-divisor {
+  position: relative;
+  flex: 0 0 10px;
+  box-sizing: border-box;
+  background-color: var(--bs-body-bg, #e4e7e8);
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.prod-divisor::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background-color: transparent;
+  transition: background-color .1s ease .25s;
+}
+
+.prod-divisor::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 15px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background-image: radial-gradient(circle, rgba(var(--bs-body-color-rgb, 33, 37, 41), .45) 1.1px, transparent 1.4px);
+  background-size: 3px 5px;
+  background-repeat: repeat-y;
+  background-position: center;
+  transition: opacity .1s ease .25s;
+  pointer-events: none;
+}
+
+.prod-divisor:hover::before,
+.ug.is-redimensionando .prod-divisor::before {
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.ug.is-redimensionando .prod-divisor::before {
+  transition-delay: 0s;
+}
+
+.prod-divisor:hover::after,
+.ug.is-redimensionando .prod-divisor::after {
+  opacity: 0;
+}
+
+.ug.is-redimensionando,
+.ug.is-redimensionando * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.ug.is-redimensionando .file-manager-sidebar {
+  transition: none;
+}
+
+/* ============================================================
+   CONTENIDO: RUTA + GRILLA + PAGINACIÓN
+   ============================================================ */
+.prod-contenido {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-inline-start: 0 !important;
+}
+
+/* La barra de arriba de la columna derecha: ruta + buscador + nuevo, todo
+   en UNA fila. El buscador se estira con el hueco que quede y la ruta se
+   encoge (lleva su propio scroll); el botón nunca se parte. */
+.prod-ubicacion {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: .75rem;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+/* Esto se quedó sin estilo al montar la pantalla: al ser un bloque, el
+   buscador ocupaba el 100% y el botón de nuevo caía a una segunda fila. */
+.prod-ubicacion__acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: .5rem;
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+/* El buscador se come el hueco libre; el botón se queda de su tamaño */
+:host ::ng-deep .prod-ubicacion__acciones app-campoBusquedaPaginacion {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.prod-ubicacion__acciones .lista-barra__btn {
+  flex: 0 0 auto;
+}
+
+/* El aviso de «aquí se puede arrastrar para ordenar». Apagado cuando no se
+   puede, y el título dice por qué (puedeOrdenar / pistaOrden). */
+.prod-ubicacion__pista {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 24px;
+  border-radius: .25rem;
+
+  color: var(--bs-app-theme, #00acac);
+  font-size: 12px;
+  cursor: help;
+}
+
+.prod-ubicacion__pista.is-apagada {
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .45;
+}
+
+/* ---------- Que la chapita nunca se salga del lateral ---------- */
+/* El componente del árbol NO recorta los nombres a propósito: la rama crece
+   a lo ancho y se desplaza, como el Explorador de Windows. Aquí eso dejaba
+   la chapita fuera de la vista en las ramas hondas, y desde que cuenta la
+   rama entera un «33» se leía «3».
+   En esta pantalla la chapita es el dato, así que manda ella: el nombre cede
+   y se recorta con puntos suspensivos. La ruta entera sigue estando en el
+   título del nodo, y el lateral se ensancha con el divisor. */
+/* La caja que ng-scrollbar pone alrededor del contenido se hace tan ancha
+   como la fila más larga (fit-content: 309px con el lateral en 280), y
+   entonces un `max-width: 100%` de las filas se mide contra esos 309 y no
+   recorta nada. Medido: con esto puesto, el árbol ya no desborda. */
+:host ::ng-deep .prod-lateral__arbol .ng-scroll-content {
+  max-width: 100%;
+}
+
+:host ::ng-deep .prod-arbol .file-link {
+  max-width: 100%;
+}
+
+:host ::ng-deep .prod-arbol .file-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- El asa de arrastrar de la rejilla ---------- */
+/* Columna estrecha y sin relleno: dentro sólo cabe el agarre de ag-Grid. */
+:host ::ng-deep .prod-grilla .ag-cell.celda-asa {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+:host ::ng-deep .prod-grilla .ag-drag-handle {
+  color: var(--bs-secondary-color, #adb5bd);
+  cursor: grab;
+}
+
+:host ::ng-deep .prod-grilla .ag-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* La fila mientras se arrastra: el fantasma que sigue al ratón */
+:host ::ng-deep .ag-dnd-ghost {
+  font-size: 12px;
+}
+
+.prod-ruta {
+  display: flex;
+  align-items: center;
+  gap: .125rem;
+  min-width: 0;
+  /* Cede sitio al buscador en vez de empujarlo: la ruta ya lleva su propio
+     scroll horizontal cuando la rama es larga. */
+  flex: 0 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* ============================================================
+   COLUMNAS PLEGABLES Y PANEL DE FILTROS
+   ============================================================
+   Las dos columnas —el árbol a la izquierda, los filtros a la derecha— se
+   pliegan a una tira vertical con su nombre, para dejarle la pantalla a la
+   rejilla. La tira NO es decorativa: es el botón de volver a abrirla, y
+   lleva una chapita con cuántos filtros hay puestos, porque una columna
+   plegada que sigue filtrando sin decirlo es una trampa. */
+
+/* ---------- La tira de cuando está plegada ---------- */
+.prod-lateral.is-plegado,
+.prod-filtros.is-plegado {
+  padding: 0;
+  overflow: hidden;
+}
+
+.prod-tira {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+
+  width: 100%;
+  height: 100%;
+  padding: .5rem 0;
+
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--bs-secondary-color, #6c757d);
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.prod-tira:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+  color: var(--bs-body-color, #212529);
+}
+
+.prod-tira__texto {
+  /* De abajo arriba, como las pestañas laterales de la referencia */
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.prod-tira__flecha {
+  font-size: .75rem;
+}
+
+.prod-tira__chapa {
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: .625rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* ---------- El panel de filtros ---------- */
+.prod-filtros {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 var(--prod-ancho-filtros, 260px);
+  width: var(--prod-ancho-filtros, 260px);
+  min-width: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+  /* Un punto más claro que el cuerpo, para que los campos blancos de dentro
+     se lean como campos. Con --bs-body-bg (un gris en esta plantilla) el
+     panel y los campos eran del mismo color y parecían deshabilitados. */
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* En el panel hay sitio de sobra a lo alto: caben varias filas de chapas
+   antes de tener que desplazar. En una barra estrecha no sería así. */
+.prod-filtros ::ng-deep .cms--compacto .ng-value-container {
+  max-height: 130px;
+}
+
+.prod-filtros__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .5rem .6rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.prod-filtros__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El botón de quitar filtros, APAGADO.
+   No usa btn-outline-secondary porque esa clase lleva el gris COMPILADO
+   (#6c757d) y no sigue al tema: sobre el panel en oscuro daba 2,97:1, que no
+   se lee. Con las variables del tema sube y vale en los dos.
+   El ENCENDIDO sí es btn-outline-danger, el mismo del botón del buscador. */
+.prod-filtros__limpiar--apagado {
+  color: var(--bs-secondary-color, #6c757d);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.prod-filtros__limpiar--apagado:hover {
+  color: var(--bs-body-color, #212529);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.prod-filtros__cuantos {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: .625rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.prod-filtros__cuerpo {
+  flex: 1;
+  min-height: 0;
+}
+
+.prod-filtros__lista {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+  padding: .75rem .6rem;
+}
+
+.prod-filtro-grupo__titulo {
+  display: block;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Los dos extremos de un rango ---------- */
+.prod-rango {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.prod-rango .form-control {
+  min-width: 0;          /* que puedan encoger dentro del flex */
+  font-size: .8125rem;
+}
+
+.prod-rango__sep {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.prod-filtros__pista {
+  margin: 0;
+  font-size: .6875rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- El divisor de la derecha ---------- */
+.prod-divisor--filtros {
+  /* El mismo que el del árbol; lo que cambia es de qué lado está */
+  margin-left: 0;
+}
+
+/* Plegado no hay nada que arrastrar: el divisor deja de responder para que
+   no se pueda estirar una columna que no se ve. */
+.prod-divisor.is-inerte {
+  pointer-events: none;
+  cursor: default;
+  opacity: .4;
+}
+
+/* ---------- En pantallas estrechas ----------
+   Tres columnas no caben: el panel de filtros se va debajo, a lo ancho. */
+@media (max-width: 991.98px) {
+  .prod-filtros {
+    flex: 1 1 100%;
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+  }
+
+  .prod-divisor--filtros {
+    display: none;
   }
 }

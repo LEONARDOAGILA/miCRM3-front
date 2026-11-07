@@ -1,0 +1,259 @@
+/* ============================================================
+   CUENTAS POR CLIENTE
+
+   Lo propio de esta pantalla. Las clases del spinner
+   (content-container1, overlay1, loader1), .inactivo y
+   .ag-grid-transparente son globales y viven en scss/angular.scss.
+   ============================================================ */
+
+/* ---------- Miga de pan ---------- */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Cuerpo del panel ---------- */
+.lista-contenido {
+  margin-top: -19px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* ---------- Grilla ---------- */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* El contenedor no puede tener alto propio: la rejilla de dentro se mide
+   contra la ventana y un wrapper con alto la dejaría cortada. */
+.cta-grilla-wrap {
+  display: block;
+}
+
+/* ============================================================
+   LAS CUENTAS DE CADA CELDA
+   ============================================================
+   Lo que esta pantalla tiene que decir de un vistazo es qué está puesto
+   aquí y qué se hereda. Propio en negro y heredado apagado: no hace falta
+   leer el tooltip para verlo. */
+:host ::ng-deep .cc-cuenta {
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+:host ::ng-deep .cc-cuenta--propia {
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+:host ::ng-deep .cc-cuenta--heredada {
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .75;
+}
+
+/* Sin cuenta: no se podrá asentar ese concepto */
+:host ::ng-deep .cc-sin {
+  color: var(--bs-danger, #dc3545);
+  opacity: .6;
+}
+
+/* «No aplica»: aquí ese concepto no existe. No es un hueco por rellenar, así
+   que no se avisa en rojo; se dice en gris y en cursiva. */
+:host ::ng-deep .cc-na {
+  font-size: .6875rem;
+  font-style: italic;
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .85;
+}
+
+:host ::ng-deep .cc-heredadas {
+  font-size: .6875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .8;
+}
+
+.cc-faltan {
+  white-space: nowrap;
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+.cc-ayuda i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* El botón de configurar de la columna ACCIONES */
+:host ::ng-deep .cc-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 7px;
+  font-size: 1.05em;
+  color: var(--bs-app-theme, #00acac);
+  transition: transform .2s ease;
+}
+
+:host ::ng-deep .cc-btn:hover { transform: scale(1.2); }
+
+/* ============================================================
+   COLOR POR NIVEL
+   ============================================================
+   Con la sangría sola, a partir del segundo nivel cuesta seguir de quién
+   cuelga cada fila. `::ng-deep` porque las celdas las dibuja ag-Grid fuera
+   de la encapsulación del componente. */
+:host ::ng-deep .ag-cell.celda-nivel {
+  font-size: 12px;
+}
+
+:host ::ng-deep .ag-cell.nivel-0 {
+  color: var(--bs-body-color, #212529);
+  font-weight: 600;
+}
+
+:host ::ng-deep .ag-cell.nivel-1 {
+  color: var(--bs-app-theme, var(--bs-primary, #348fe2));
+}
+
+:host ::ng-deep .ag-cell.nivel-2 {
+  color: var(--bs-teal, #00acac);
+}
+
+:host ::ng-deep .ag-cell.nivel-3 {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-cell.nivel-1 {
+  color: color-mix(in srgb, var(--bs-app-theme, #348fe2) 70%, #fff);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-cell.nivel-2 {
+  color: color-mix(in srgb, var(--bs-teal, #00acac) 70%, #fff);
+}
+
+/* ============================================================
+   EL ÁRBOL
+   ============================================================
+   ag-Grid Community no trae `treeData`, así que la sangría y el asa + / −
+   van dentro de la celda del nombre, como en el plan de cuentas. */
+:host ::ng-deep .cta-arbol {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  min-width: 0;
+}
+
+/* La sangría en PÍXELES y no con `&nbsp;`: con espacios el ancho depende de
+   la fuente y las columnas dejan de alinearse al cambiar de tema. */
+:host ::ng-deep .cta-sangria {
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+:host ::ng-deep .cta-asa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 16px;
+  height: 16px;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .2rem;
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+:host ::ng-deep .cta-asa:hover {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Las hojas llevan un hueco del mismo ancho: así los nombres de un mismo
+   nivel quedan alineados tengan hijas o no. */
+:host ::ng-deep .cta-asa--hueco {
+  border-color: transparent;
+  background: none;
+  cursor: default;
+}
+
+.cta-plegadas {
+  white-space: nowrap;
+}
+
+.cta-plegadas i {
+  font-size: .6875rem;
+  opacity: .8;
+}
+
+/* ===================================================================
+   LOS BOTONES +/- DE LA CABECERA DEL ÁRBOL
+   =================================================================== */
+
+/* A LA IZQUIERDA, no centrada: el estándar de la aplicación centra todas las
+   cabeceras y aquí el título va con los botones sobre una columna de texto
+   alineado a la izquierda. */
+:host ::ng-deep .ag-header-cell-label.cabecera-arbol {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: .35rem;
+}
+
+:host ::ng-deep .cabecera-arbol .ag-header-cell-text {
+  text-align: left;
+}
+
+:host ::ng-deep .cabecera-arbol__botones {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .5rem;
+  line-height: 1;
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:disabled {
+  opacity: .45;
+  cursor: default;
+}

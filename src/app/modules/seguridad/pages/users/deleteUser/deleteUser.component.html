@@ -1,13 +1,13 @@
 <!-- ===================== SPINNER ===================== -->
-<ng-container *ngIf="isLoading">
+@if (isLoading) {
   <div class="loader1" role="status" aria-label="Eliminando"></div>
   <div class="overlay1" aria-hidden="true"></div>
-</ng-container>
+}
 
 <div class="modal-content border-0 shadow-lg"
-     role="alertdialog"
-     aria-labelledby="eliminarUsuarioTitulo"
-     aria-describedby="eliminarUsuarioDescripcion">
+  role="alertdialog"
+  aria-labelledby="eliminarUsuarioTitulo"
+  aria-describedby="eliminarUsuarioDescripcion">
 
   <!-- ===================== CABECERA ===================== -->
   <div appModalArrastrable class="modal-header eliminar-header">
@@ -15,9 +15,9 @@
       <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>{{ title }}
     </h5>
     <button type="button"
-            class="btn-close btn-close-white"
-            aria-label="Cerrar"
-            (click)="modal.dismiss('Cross click')"></button>
+      class="btn-close btn-close-white"
+      aria-label="Cerrar"
+    (click)="modal.dismiss('Cross click')"></button>
   </div>
 
   <!-- ===================== CUERPO ===================== -->
@@ -31,7 +31,7 @@
       <div>
         <h6 class="eliminar-aviso__titulo">¿Enviar este usuario a la papelera de reciclaje?</h6>
         <!-- Borrado lógico (deleted_at / deleted_by): el usuario va a la papelera,
-             desde donde se puede restaurar o borrar definitivamente. -->
+        desde donde se puede restaurar o borrar definitivamente. -->
         <p class="eliminar-aviso__texto" id="eliminarUsuarioDescripcion">
           Se cerrarán sus sesiones activas y dejará de poder iniciar sesión ni aparecer en los
           listados. Podrá restaurarlo desde la <b>Papelera de reciclaje</b> o eliminarlo allí definitivamente.
@@ -77,7 +77,7 @@
           <i class="fa fa-circle fa-fw me-1" aria-hidden="true"></i>Estado
         </span>
         <span class="badge fs-10px"
-              [ngClass]="registro_selected?.isactive ? 'bg-teal' : 'bg-danger'">
+          [ngClass]="registro_selected?.isactive ? 'bg-teal' : 'bg-danger'">
           {{ registro_selected?.isactive ? 'ACTIVO' : 'INACTIVO' }}
         </span>
       </div>
@@ -96,14 +96,14 @@
   <!-- ===================== PIE ===================== -->
   <div class="modal-footer eliminar-footer">
     <button type="button"
-            class="btn btn-outline-secondary"
-            (click)="modal.close('Close click')">
+      class="btn btn-outline-secondary"
+      (click)="modal.close('Close click')">
       <i class="fa fa-times fa-fw me-1" aria-hidden="true"></i>Cancelar
     </button>
     <button type="button"
-            class="btn btn-danger"
-            [disabled]="isLoading"
-            (click)="deleteUser()">
+      class="btn btn-danger"
+      [disabled]="isLoading"
+      (click)="deleteUser()">
       <i class="fa fa-trash fa-fw me-1" aria-hidden="true"></i>Sí, enviar a la papelera
     </button>
   </div>

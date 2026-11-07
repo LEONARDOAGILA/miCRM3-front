@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { GridApi, GridReadyEvent, CellClickedEvent } from 'ag-grid-community';
@@ -22,11 +22,12 @@ import { AppDescargaService, PeticionDescarga, AccionDescarga }
   from '../../../../../service/app-descarga.service';
 
 //   ******   COMPONENTES   ******  //
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { SaveTipoUsuarioComponent } from '../saveTipoUsuario/saveTipoUsuario.component';
 import { DeleteTipoUsuarioComponent } from '../deleteTipoUsuario/deleteTipoUsuario.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Tipos de usuario: la clase de cada usuario —del sistema, de la página web,
@@ -43,8 +44,9 @@ import { DeleteTipoUsuarioComponent } from '../deleteTipoUsuario/deleteTipoUsuar
 @Component({
   selector: 'app-allTiposUsuario',
   standalone: true,
-  imports: [CommonModule, AgGridModule, PanelModule, CampoBusquedaPaginacionComponent],
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, PanelComponent, CampoBusquedaPaginacionComponent],
   templateUrl: './allTiposUsuario.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./allTiposUsuario.component.css'],
 })
 export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
@@ -128,7 +130,7 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) { this.gridApi.setRowData(this.tiposUsuario); }
+      if (this.gridApi) { this.gridApi.setGridOption('rowData', this.tiposUsuario); }
       this._loadingService.setLoading(false);
 
     } catch (error: any) {
@@ -260,7 +262,7 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: 120,
         maxWidth: 120,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         // Botones en HTML con data-accion y un único manejador en
@@ -270,7 +272,7 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
             `<button type="button" class="btn-icon btn-ver" data-accion="ver" title="Ver"><i class="fa fa-eye"></i></button>`
           ];
           if (this.accesoModel?.editar) {
-            botones.push(`<button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen"></i></button>`);
+            botones.push(`<button type="button" class="btn-icon btn-editar" data-accion="editar" title="Modificar"><i class="fa fa-pen-to-square"></i></button>`);
           }
           if (this.accesoModel?.eliminar) {
             // Un tipo en uso no se puede borrar (lo rechaza la base): se avisa
@@ -352,7 +354,7 @@ export class AllTiposUsuarioComponent implements OnInit, OnDestroy {
           this.tiposUsuario.unshift(guardado);
           this.totalRegistros++;
         }
-        this.gridApi?.setRowData(this.tiposUsuario);
+        this.gridApi?.setGridOption('rowData', this.tiposUsuario);
       } catch (error) {
         console.error('Error o cancelación al guardar:', error);
       }

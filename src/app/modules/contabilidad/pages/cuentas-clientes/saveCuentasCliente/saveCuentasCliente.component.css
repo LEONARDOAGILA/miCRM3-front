@@ -1,0 +1,149 @@
+/* ============================================================
+   CUENTAS CONTABLES DE UNA GRUPO - Estilos del modal
+   Mismo lenguaje visual que savePlanCuenta: los colores salen de las
+   variables de Bootstrap / Color Admin y valen en los dos temas.
+   ============================================================ */
+
+:host {
+  display: block;
+}
+
+.cuentas-modal-body {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  padding: 1rem;
+}
+
+.form-card__body {
+  flex: 1 1 auto;
+  padding: 1rem .875rem .25rem;
+}
+
+/* Contenido en la cabecera del panel (los chips) */
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+/* ============================================================
+   CHIPS
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* La cabecera es `bg-gray-800`: oscura en los DOS temas. Por eso los chips
+   no pueden tomar su color de las variables del tema —en claro son gris y
+   azul oscuros y se pierden sobre ese fondo— y van fijos claros. */
+.panel-acciones .chip-muted {
+  background-color: rgba(255, 255, 255, .16);
+  color: rgba(255, 255, 255, .88);
+}
+
+.panel-acciones .chip-info {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .38);
+  color: #fff;
+}
+
+/* ============================================================
+   AYUDA DE ARRIBA
+   ============================================================ */
+.cuentas-ayuda {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+
+  margin-bottom: 1rem;
+  padding: .6rem .85rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-app-theme, #00acac);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+
+  font-size: .75rem;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cuentas-ayuda i {
+  margin-top: .15rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* ============================================================
+   UNA FILA POR CONCEPTO
+   ============================================================
+   El borde de la izquierda es lo que separa de un vistazo lo que se ha
+   puesto aquí (en color) de lo que se hereda (apagado). */
+.cuenta-fila {
+  padding: .25rem 0 .25rem .625rem;
+  margin-bottom: .5rem;
+  border-left: 3px solid transparent;
+}
+
+.cuenta-fila.es-propia {
+  border-left-color: var(--bs-app-theme, #00acac);
+}
+
+/* «No aplica» se marca con otro color: no es una cuenta puesta, es lo
+   contrario —decir que aquí no hay nada que asentar— */
+.cuenta-fila.es-no-aplica {
+  border-left-color: var(--bs-secondary, #6c757d);
+}
+
+.cuenta-fila.es-no-aplica .campo-hint i {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cuenta-fila__campo {
+  /* app-combo trae su propio .col-md; aquí no se quiere la rejilla */
+  margin-bottom: -.25rem;
+}
+
+:host ::ng-deep .cuenta-fila__campo .col-md {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ============================================================
+   LA AYUDA DE CADA CAMPO
+   ============================================================ */
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: -.25rem 0 .25rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* La explicación del concepto va un punto más apagada que el «de dónde
+   sale»: esa segunda línea se lee una vez y la primera, siempre. */
+.campo-hint--suave {
+  opacity: .75;
+  font-style: italic;
+}
+
+@media (max-width: 767.98px) {
+  .cuentas-modal-body {
+    padding: .75rem;
+  }
+}

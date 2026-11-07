@@ -1,0 +1,46 @@
+<!-- Sin envoltorio de columna a propósito: quien lo coloca decide si va en
+     una fila de formulario o en una barra. El de una sola selección
+     (app-combo) sí lo trae, y por eso no se puede usar en una barra. -->
+<div class="cms" [class.cms--compacto]="compacto" [title]="ayuda">
+
+  @if (label && !compacto) {
+    <label class="cms__etiqueta">{{ label }}</label>
+  }
+
+  <ng-select
+    class="cms__select"
+    [items]="items"
+    [bindLabel]="bindLabel"
+    [bindValue]="bindValue"
+    [multiple]="true"
+    [closeOnSelect]="cerrarAlElegir"
+    [searchable]="buscable"
+    [clearable]="true"
+    [disabled]="deshabilitado"
+    [placeholder]="placeholder"
+    [notFoundText]="'Sin resultados'"
+    [clearAllText]="'Quitar todo'"
+    [(ngModel)]="valor"
+    (ngModelChange)="seleccionCambiada()">
+
+    <!-- Se enseñan TODAS las elegidas, cada una con su × para quitarla
+         suelta: lo que se está filtrando tiene que poder leerse. Sólo si
+         quien lo coloca pone un tope (maximoVisible) aparece el resumen
+         «+N», y ése no lleva × porque no se sabría cuál quitaría. -->
+    <ng-template ng-multi-label-tmp let-items="items" let-clear="clear">
+      @for (item of visibles(items); track item[bindValue] ?? item) {
+        <div class="ng-value">
+          <span class="ng-value-icon left" (click)="clear(item)" aria-hidden="true">×</span>
+          <span class="ng-value-label">{{ item[bindLabel] ?? item }}</span>
+        </div>
+      }
+      @if (maximoVisible > 0 && items.length > maximoVisible) {
+        <div class="ng-value cms__resumen"
+             [title]="'También: ' + items.slice(maximoVisible).map(i => i[bindLabel] ?? i).join(', ')">
+          <span class="ng-value-label">+{{ items.length - maximoVisible }}</span>
+        </div>
+      }
+    </ng-template>
+
+  </ng-select>
+</div>

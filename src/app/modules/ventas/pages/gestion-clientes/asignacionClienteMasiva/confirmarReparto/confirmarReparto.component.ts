@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
@@ -29,6 +29,7 @@ export interface RepartoPrevisto {
   standalone: true,
   imports: [CommonModule, ModalHeaderComponent],
   templateUrl: './confirmarReparto.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./confirmarReparto.component.css'],
 })
 export class ConfirmarRepartoComponent {

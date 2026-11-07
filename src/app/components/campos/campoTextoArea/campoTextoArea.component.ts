@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { DirectiveModule } from "../../../core/directives/directive.module";
@@ -8,6 +8,7 @@ import { DirectiveModule } from "../../../core/directives/directive.module";
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, DirectiveModule],
   templateUrl: './campoTextoArea.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./campoTextoArea.component.css']
 })
 export class CampoTextoAreaComponent {

@@ -275,3 +275,100 @@
 :host ::ng-deep .ag-cell.celda-ubicacion-dudosa {
   color: var(--bs-warning, #f59c1a);
 }
+
+/* ============================================================
+   LA CELDA DE «ATRASO»
+   El estado es lo que se lee de un vistazo; el número va dentro.
+   ::ng-deep porque la pinta un cellRenderer de ag-Grid, fuera de la
+   encapsulación del componente.
+   ============================================================ */
+:host ::ng-deep .mar-atraso {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+
+  padding: .1rem .45rem;
+  border-radius: 999px;
+
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: default;
+}
+
+/* Llegó a su hora */
+:host ::ng-deep .mar-atraso--bien {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .14);
+  color: var(--bs-success-text-emphasis, #0a3622);
+}
+
+/* Se pasó, pero dentro de la gracia que da su horario */
+:host ::ng-deep .mar-atraso--justo {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .2);
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+/* Atraso de verdad */
+:host ::ng-deep .mar-atraso--mal {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .14);
+  color: var(--bs-danger-text-emphasis, #b02a37);
+}
+
+/* No hay nada que medir: sin horario, o ese día no trabaja */
+:host ::ng-deep .mar-atraso--sin {
+  background-color: rgba(108, 117, 125, .14);
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 500;
+}
+
+/* Una salida: ni se mide ni se pinta */
+:host ::ng-deep .mar-atraso--nada {
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .6;
+}
+/* ============================================================
+   LA REJILLA DE HORAS TRABAJADAS
+   ============================================================ */
+.mar-grilla-resumen {
+  width: 100%;
+  /* Un valor de arranque: ajustarAlturaGridResumen() lo recalcula en cuanto
+     la rejilla está lista y en cada resize. */
+  height: 420px;
+}
+
+/* El aviso del día incompleto, delante del nombre. Antes se teñía la fila
+   entera de ámbar y no se leía nada. */
+:host ::ng-deep .mar-incompleto {
+  margin-right: .35rem;
+  color: var(--bs-warning, #f59c1a);
+  cursor: default;
+}
+
+/* Las horas del día */
+:host ::ng-deep .mar-horas {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cero horas: o no se emparejó nada, o el turno cruzó la medianoche */
+:host ::ng-deep .mar-horas--cero {
+  font-weight: 500;
+  color: var(--bs-secondary-color, #6c757d);
+  cursor: default;
+}
+
+/* El buscador, en su propia línea dentro de los filtros compartidos: ocupa
+   todo el ancho, que es lo que tenía cuando vivía en la barra. */
+.mar-filtros__grupo--buscador {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+/* El componente del buscador es un elemento en línea: sin esto se queda del
+   ancho de su contenido y el campo sale cortado. */
+.mar-filtros__grupo--buscador app-campoBusquedaPaginacion {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}

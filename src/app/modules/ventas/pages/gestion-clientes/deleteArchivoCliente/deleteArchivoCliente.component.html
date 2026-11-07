@@ -62,7 +62,7 @@
         <span class="eliminar-datos__etiqueta">
           <i class="fa fa-weight-hanging fa-fw me-1" aria-hidden="true"></i>Tamaño
         </span>
-        <span class="eliminar-datos__valor">{{ formatoTamano(registro_selected?.tamano) }}</span>
+        <span class="eliminar-datos__valor">{{ formatoTamano($safeNavigationMigration(registro_selected?.tamano)) }}</span>
       </div>
 
       <!-- De dónde salió: es lo que dice si algo más lo está usando -->

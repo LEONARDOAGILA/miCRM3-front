@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Observable } from 'rxjs';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -10,6 +10,7 @@ import { DataService, Person } from '../../services/data.service';
   selector: 'app-formFloatingLabel',
   templateUrl: './formFloatingLabel.component.html',
   styleUrls: ['./formFloatingLabel.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class FormFloatingLabelComponent implements OnInit {

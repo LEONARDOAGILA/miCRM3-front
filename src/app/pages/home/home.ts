@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { NgScrollbarModule } from 'ngx-scrollbar';
@@ -15,7 +15,7 @@ import { AppStateService } from '../../service/app-state.service';
 import { StorageService } from '../../modules/seguridad/services/storage.service';
 import { UserService } from '../../modules/seguridad/services/user.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { BoletinPushService } from '../../modules/config/services/boletinPush.service';
+import { BoletinPushService } from '../../modules/core/services/boletinPush.service';
 
 interface Acceso {
   user_id: number;
@@ -58,6 +58,7 @@ interface ActivityItem {
   templateUrl: './home.html',
   styleUrls: ['./home.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     DatePipe,            // | date del pie
     RouterLink,          // [routerLink] de las tarjetas y los accesos directos

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
@@ -6,6 +6,8 @@ import { ToastrService } from 'ngx-toastr';
 
 import { NotaClienteService } from '../../../services/notaCliente.service';
 import { NotaCliente } from '../../../interfaces/notaCliente';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /**
  * Confirmación de borrado de una nota del cliente (mismo esquema que
@@ -19,7 +21,9 @@ import { NotaCliente } from '../../../interfaces/notaCliente';
   selector: 'app-deleteNotaCliente',
   templateUrl: './deleteNotaCliente.component.html',
   styleUrls: ['./deleteNotaCliente.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteNotaClienteComponent implements OnDestroy {
 

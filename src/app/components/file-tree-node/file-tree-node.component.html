@@ -13,41 +13,52 @@
     (dragover)="onDragOver($event)"
     (dragleave)="onDragLeave($event)"
     (drop)="onDrop($event)"
-  >
+    >
     <!-- Flecha para expandir/colapsar -->
-    <span class="file-arrow" *ngIf="node.children" (click)="toggleNode($event)">
-      <i [class]="node.isOpen ? 'fas fa-minus' : 'fas fa-plus'"></i>
-    </span>
+    @if (node.children) {
+      <span class="file-arrow" (click)="toggleNode($event)">
+        <i [class]="node.isOpen ? 'fas fa-minus' : 'fas fa-plus'"></i>
+      </span>
+    }
 
     <!-- Ícono de archivo o carpeta con color dinámico -->
     <span class="file-icon">
-      <i *ngIf="node.icono" [class]="node.icono" [style.color]="node.color || '#ffc107'"></i>
-      <i *ngIf="!node.icono && !node.escarpeta" class="far fa-file-code fa-lg text-body text-opacity-50"></i>
-      <i *ngIf="!node.icono && node.escarpeta"  class="fa fa-folder" [style.color]="node.color || '#ffc107'"></i>
+      @if (node.icono) {
+        <i [class]="node.icono" [style.color]="node.color || '#ffc107'"></i>
+      }
+      @if (!node.icono && !node.escarpeta) {
+        <i class="far fa-file-code fa-lg text-body text-opacity-50"></i>
+      }
+      @if (!node.icono && node.escarpeta) {
+        <i  class="fa fa-folder" [style.color]="node.color || '#ffc107'"></i>
+      }
     </span>
 
     <!-- Nombre del nodo -->
     <span class="file-text">{{ node.nombre }}</span>
 
     <!-- Contador opcional (usuarios de un grupo, etc.) -->
-    <span class="file-badge" *ngIf="node.badge !== undefined && node.badge !== null && node.badge !== ''">{{ node.badge }}</span>
+    @if (node.badge !== undefined && node.badge !== null && node.badge !== '') {
+      <span class="file-badge">{{ node.badge }}</span>
+    }
   </div>
 
   <!-- Subárbol de nodos hijos -->
   <div class="file-tree" [class.active]="node.isOpen">
-    <ng-container *ngIf="node.children && node.isOpen">
-      <app-file-tree-node
-        *ngFor="let child of node.children"
-        [node]="child"
-        [isSelected]="child.isSelected"
-        [arrastrable]="arrastrable"
-        (nodeSelected)="onChildNodeSelected($event)"
-        (nodeToggled)="nodeToggled.emit($event)"
-        (nodeContextMenu)="nodeContextMenu.emit($event)"
-        (nodeDragStart)="nodeDragStart.emit($event)"
-        (nodeDragEnd)="nodeDragEnd.emit()"
-        (nodeDrop)="nodeDrop.emit($event)"
-      ></app-file-tree-node>
-    </ng-container>
+    @if (node.children && node.isOpen) {
+      @for (child of node.children; track child) {
+        <app-file-tree-node
+          [node]="child"
+          [isSelected]="child.isSelected"
+          [arrastrable]="arrastrable"
+          (nodeSelected)="onChildNodeSelected($event)"
+          (nodeToggled)="nodeToggled.emit($event)"
+          (nodeContextMenu)="nodeContextMenu.emit($event)"
+          (nodeDragStart)="nodeDragStart.emit($event)"
+          (nodeDragEnd)="nodeDragEnd.emit()"
+          (nodeDrop)="nodeDrop.emit($event)"
+        ></app-file-tree-node>
+      }
+    }
   </div>
 </div>

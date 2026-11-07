@@ -500,7 +500,7 @@
                                  [value]="cliente?.numero_identificacion || ''"
                                  [size]="(cliente?.numero_identificacion || '').length || 1"
                                  (focus)="$any($event.target).select()">
-                          <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.numero_identificacion, 'La identificación')">
+                          <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar($safeNavigationMigration(cliente?.numero_identificacion), 'La identificación')">
                             <i class="fa fa-copy"></i>
                           </button>
                         </span>
@@ -518,7 +518,7 @@
                       <div class="gc-campo">
                         <span class="gc-campo__rotulo">Estado:</span>
                         <span class="gc-campo__valor">
-                          <span class="badge fs-10px" [ngClass]="claseEstadoCliente(cliente?.estado)">{{ cliente?.estado }}</span>
+                          <span class="badge fs-10px" [ngClass]="claseEstadoCliente($safeNavigationMigration(cliente?.estado))">{{ cliente?.estado }}</span>
                           @if (!cliente?.activo) { <span class="badge bg-danger fs-10px">INACTIVO</span> }
                         </span>
                       </div>
@@ -554,7 +554,7 @@
                                  (focus)="$any($event.target).select()">
                             <span class="gc-campo__acciones">
                               <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
-                                      (click)="llamarConSoftphone(cliente?.celular, cliente?.nombre_completo)">
+                                      (click)="llamarConSoftphone($safeNavigationMigration(cliente?.celular), $safeNavigationMigration(cliente?.nombre_completo))">
                                 <i class="fa fa-phone"></i>
                               </button>
                               <!-- WhatsApp con mensaje ya escrito: el menú va
@@ -562,14 +562,14 @@
                                    esta tarjeta recorta lo que se salga. Sólo si
                                    el número puede tener cuenta: en Celular a
                                    veces hay un fijo. -->
-                              @if (tieneWhatsapp(cliente?.celular)) {
+                              @if (tieneWhatsapp($safeNavigationMigration(cliente?.celular))) {
                                 <button type="button" class="gc-campo__accion gc-campo__accion--wa"
                                         title="Escribir por WhatsApp"
-                                        (click)="abrirMenuWhatsapp($event, cliente?.celular)">
+                                        (click)="abrirMenuWhatsapp($event, $safeNavigationMigration(cliente?.celular))">
                                   <i class="fab fa-whatsapp"></i>
                                 </button>
                               }
-                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.celular, 'El celular')">
+                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar($safeNavigationMigration(cliente?.celular), 'El celular')">
                                 <i class="fa fa-copy"></i>
                               </button>
                             </span>
@@ -586,11 +586,11 @@
                                  (focus)="$any($event.target).select()">
                             <span class="gc-campo__acciones">
                               <button type="button" class="gc-campo__accion gc-campo__accion--llamar" title="Llamar"
-                                      (click)="llamarConSoftphone(cliente?.telefono, cliente?.nombre_completo)">
+                                      (click)="llamarConSoftphone($safeNavigationMigration(cliente?.telefono), $safeNavigationMigration(cliente?.nombre_completo))">
                                 <i class="fa fa-phone"></i>
                               </button>
                               <!-- Sin WhatsApp: es el fijo, y ahí no hay cuenta -->
-                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.telefono, 'El teléfono')">
+                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar($safeNavigationMigration(cliente?.telefono), 'El teléfono')">
                                 <i class="fa fa-copy"></i>
                               </button>
                             </span>
@@ -612,15 +612,15 @@
                             <input class="gc-campo__texto" readonly
                                    [value]="cliente?.email || ''"
                                    [size]="(cliente?.email || '').length || 1"
-                                   [title]="cliente?.email"
+                                   [title]="$safeNavigationMigration(cliente?.email)"
                                    (focus)="$any($event.target).select()">
                             <span class="gc-campo__acciones">
                               <button type="button" class="gc-campo__accion gc-campo__accion--correo"
                                       title="Escribir un correo con Outlook"
-                                      (click)="escribirCorreo(cliente?.email, cliente?.nombre_completo)">
+                                      (click)="escribirCorreo($safeNavigationMigration(cliente?.email), $safeNavigationMigration(cliente?.nombre_completo))">
                                 <i class="fa fa-envelope"></i>
                               </button>
-                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar(cliente?.email, 'El correo')">
+                              <button type="button" class="gc-campo__accion" title="Copiar" (click)="copiar($safeNavigationMigration(cliente?.email), 'El correo')">
                                 <i class="fa fa-copy"></i>
                               </button>
                             </span>
@@ -634,7 +634,7 @@
                             <input class="gc-campo__texto" readonly
                                    [value]="cliente?.email_alterno || ''"
                                    [size]="(cliente?.email_alterno || '').length || 1"
-                                   [title]="cliente?.email_alterno"
+                                   [title]="$safeNavigationMigration(cliente?.email_alterno)"
                                    (focus)="$any($event.target).select()">
                           </span>
                         </div>
@@ -643,7 +643,7 @@
                         <div class="gc-campo">
                           <span class="gc-campo__rotulo">Web:</span>
                           <span class="gc-campo__valor">
-                            <a [href]="enlaceWeb(cliente?.sitio_web)" target="_blank" rel="noopener noreferrer">{{ cliente?.sitio_web }}</a>
+                            <a [href]="enlaceWeb($safeNavigationMigration(cliente?.sitio_web))" target="_blank" rel="noopener noreferrer">{{ cliente?.sitio_web }}</a>
                           </span>
                         </div>
                       }
@@ -686,7 +686,7 @@
                         <span class="gc-campo__valor">
                           <span [title]="direccionDelCliente">{{ direccionDelCliente || '—' }}</span>
                           @if (cliente?.link_coordenadas) {
-                            <a class="gc-campo__accion gc-campo__accion--mapa" [href]="cliente?.link_coordenadas" target="_blank" rel="noopener noreferrer" title="Ver en Google Maps">
+                            <a class="gc-campo__accion gc-campo__accion--mapa" [href]="$safeNavigationMigration(cliente?.link_coordenadas)" target="_blank" rel="noopener noreferrer" title="Ver en Google Maps">
                               <i class="fa fa-map-location-dot"></i>
                             </a>
                           }
@@ -1294,10 +1294,10 @@
                         (click)="capturarUltimaPantalla()">
                   <i class="fa fa-crop-simple me-1"></i>Capturar última pantalla
                 </button>
-                @if (tieneWhatsapp(cliente?.celular)) {
+                @if (tieneWhatsapp($safeNavigationMigration(cliente?.celular))) {
                   <button type="button" class="btn btn-xs btn-success"
                           title="Escribir por WhatsApp"
-                          (click)="abrirMenuWhatsapp($event, cliente?.celular)">
+                          (click)="abrirMenuWhatsapp($event, $safeNavigationMigration(cliente?.celular))">
                     <i class="fab fa-whatsapp me-1"></i>Escribir
                   </button>
                 }
@@ -1788,7 +1788,7 @@
           </button>
           @if (telefonoDelObjetivo) {
             <button type="button" class="menu-ctx__item" role="menuitem"
-                    (click)="cerrarMenu(); llamarConSoftphone(telefonoDelObjetivo, cliente?.nombre_completo)">
+                    (click)="cerrarMenu(); llamarConSoftphone(telefonoDelObjetivo, $safeNavigationMigration(cliente?.nombre_completo))">
               <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
               <span class="menu-ctx__detalle numero-plano" [attr.data-numero]="telefonoDelObjetivo"></span>
             </button>
@@ -1836,7 +1836,7 @@
           }
           @if (telefonoDelObjetivo && menuCtx.fila.cliente_id !== cliente?.id) {
             <button type="button" class="menu-ctx__item" role="menuitem"
-                    (click)="cerrarMenu(); llamarConSoftphone(telefonoDelObjetivo, cliente?.nombre_completo)">
+                    (click)="cerrarMenu(); llamarConSoftphone(telefonoDelObjetivo, $safeNavigationMigration(cliente?.nombre_completo))">
               <i class="fa fa-phone fa-fw text-secondary"></i> Llamar
               <span class="menu-ctx__detalle numero-plano" [attr.data-numero]="telefonoDelObjetivo"></span>
             </button>
@@ -1909,7 +1909,7 @@
           </button>
           @if (cliente?.celular || cliente?.telefono) {
             <button type="button" class="menu-ctx__item" role="menuitem"
-                    (click)="cerrarMenu(); llamarConSoftphone(cliente?.celular || cliente?.telefono, cliente?.nombre_completo)">
+                    (click)="cerrarMenu(); llamarConSoftphone(cliente?.celular || cliente?.telefono, $safeNavigationMigration(cliente?.nombre_completo))">
               <i class="fa fa-mobile-screen fa-fw text-secondary"></i> Llamar
               <span class="menu-ctx__detalle numero-plano" [attr.data-numero]="cliente?.celular || cliente?.telefono"></span>
             </button>

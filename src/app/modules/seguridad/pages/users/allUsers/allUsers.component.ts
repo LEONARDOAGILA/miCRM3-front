@@ -1,11 +1,11 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -32,6 +32,11 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
 
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
+
 /**
  * Listado de usuarios.
  *
@@ -55,7 +60,16 @@ import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
   selector: 'app-allUsers',
   templateUrl: './allUsers.component.html',
   styleUrls: ['./allUsers.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    MenuContextualComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllUsersComponent implements OnInit, OnDestroy {
 
@@ -514,7 +528,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: 130,
         maxWidth: 130,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -630,7 +644,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
 
     // setColumnDefs recrea la celda de cabecera: hay que volver a enganchar
@@ -716,7 +730,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
    * registro que hoy no cumpliría alguna regla —cargado antes de que
    * existiera— no se podría desactivar hasta arreglarle todo lo demás.
    */
-  cambiarActivo(fila: UserModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: UserModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -772,7 +786,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
         this.userModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.userModel);
+        this.gridApi?.setGridOption('rowData', this.userModel);
         return;
       }
 
@@ -785,7 +799,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) this.gridApi.setRowData(this.userModel);
+      if (this.gridApi) this.gridApi.setGridOption('rowData', this.userModel);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar usuarios:', error);
@@ -1011,7 +1025,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
     const modalRef = this.abrirModalUsuario(0, 'add');
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.userModel = [nuevo, ...this.userModel];
-      this.gridApi?.setRowData(this.userModel);
+      this.gridApi?.setGridOption('rowData', this.userModel);
     });
   }
 
@@ -1021,7 +1035,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
     const modalRef = this.abrirModalUsuario(registro, 'clon');
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.userModel = [nuevo, ...this.userModel];
-      this.gridApi?.setRowData(this.userModel);
+      this.gridApi?.setGridOption('rowData', this.userModel);
     });
   }
 
@@ -1121,7 +1135,8 @@ export class AllUsersComponent implements OnInit, OnDestroy {
 // refresh() devolviendo true la reutiliza al hacer scroll en vez de recrearla.
 @Component({
   selector: 'app-button-accion-user',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"
@@ -1147,6 +1162,7 @@ export class AllUsersComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

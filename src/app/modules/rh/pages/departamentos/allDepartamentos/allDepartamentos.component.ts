@@ -1,10 +1,10 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -30,6 +30,12 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
 
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
+
 /**
  * Árbol de departamentos (rh.departamentos).
  *
@@ -53,7 +59,16 @@ import { CampoBusquedaComponent } from '../../../../../components/campos/campoBu
   selector: 'app-allDepartamentos',
   templateUrl: './allDepartamentos.component.html',
   styleUrls: ['./allDepartamentos.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    MenuContextualComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllDepartamentosComponent implements OnInit, OnDestroy {
 
@@ -343,7 +358,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllDepartamentosComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllDepartamentosComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -370,6 +385,16 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
 
   /** Los ids de los departamentos plegados (sus descendientes no se pintan). */
   private readonly plegados = new Set<number>();
+
+  /**
+   * El plegado que había ANTES de filtrar.
+   *
+   * Filtrar abre el árbol entero para que ninguna coincidencia se quede
+   * escondida, pero eso no puede costarle al usuario el árbol que tenía
+   * montado: se aparta aquí y vuelve al quitar el filtro. Lo que se pliegue
+   * CON EL FILTRO PUESTO es del filtro y se descarta con él.
+   */
+  private plegadosFueraDeFiltro = new Set<number>();
 
   /** Lo que de verdad recibe la rejilla: el árbol menos las ramas cerradas. */
   public filasVisibles: DepartamentoModel[] = [];
@@ -490,9 +515,8 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   private actualizarBotonesArbol(): void {
     const botones = this.host?.nativeElement?.querySelectorAll?.('[data-arbol]');
     botones?.forEach((b: HTMLButtonElement) => {
-      b.disabled = b.dataset['arbol'] === 'contraer'
-        ? this.plegadoDesactivado                           // buscando o filtrando se ve todo
-        : (this.plegadoDesactivado || !this.hayPlegados);   // nada que desplegar
+      // Contraer siempre vale; desplegar sólo si hay algo cerrado.
+      b.disabled = b.dataset['arbol'] !== 'contraer' && !this.hayPlegados;
     });
   }
 
@@ -546,9 +570,9 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   onFiltroColumna(): void {
     if (this.limpiando) { return; }
 
-    const antes = this.cuantasColumnasFiltradas > 0;
+    const habiaFiltro = this.hayFiltro;
     this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
-    if (antes !== (this.cuantasColumnasFiltradas > 0)) { this.recalcularVisibles(); }
+    if (this.plegadoAlCambiarElFiltro(habiaFiltro)) { this.recalcularVisibles(); }
   }
 
   /**
@@ -566,13 +590,15 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     this.searchTerm = '';
     this.filtrosColumna = {};
     if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
 
     // La bandera se baja en la siguiente vuelta: ag-Grid avisa del cambio de
     // filtros DESPUÉS de esta línea (medido), y si se apagara aquí ese aviso
     // entraría con ella ya baja y repintaría otra vez.
     this.programar(() => { this.limpiando = false; }, 0);
 
+    // Sin filtro vuelve el árbol que había antes de ponerlo.
+    this.plegadoAlCambiarElFiltro(true);
     this.recalcularVisibles();
   }
 
@@ -586,9 +612,61 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   }
 
   /** Cierra todas las que tienen hijas. */
+  /**
+   * Aparta o devuelve el plegado cuando el filtro se enciende o se apaga.
+   *
+   * Al EMPEZAR a filtrar se abre el árbol entero, porque una coincidencia
+   * dentro de una rama cerrada no saldría y parecería que el filtro no la
+   * encuentra. Al quitar el filtro vuelve el árbol que había.
+   *
+   * Lo que ya NO se hace es desactivar el plegado mientras se filtra: con el
+   * filtro puesto, el +/- sigue plegando y desplegando.
+   *
+   * Devuelve true si cambió algo, o sea si hay que repintar.
+   */
+  private plegadoAlCambiarElFiltro(habiaFiltro: boolean): boolean {
+    const hayFiltro = this.hayFiltro;
+    if (habiaFiltro === hayFiltro) { return false; }
+
+    if (hayFiltro) {
+      this.plegadosFueraDeFiltro = new Set(this.plegados);
+      this.plegados.clear();
+    } else {
+      this.plegados.clear();
+      this.plegadosFueraDeFiltro.forEach(id => this.plegados.add(id));
+      this.plegadosFueraDeFiltro.clear();
+    }
+    return true;
+  }
+
+  /**
+   * Los ids que quedan después del filtro, o sea lo que el usuario tiene
+   * delante. `filasVisibles` no sirve para esto: es lo que se le da a la
+   * rejilla ANTES de que ella aplique el filtro.
+   */
+  private idsALaVista(): number[] {
+    const ids: number[] = [];
+    this.gridApi?.forEachNodeAfterFilter((n: any) => {
+      const id = Number(n?.data?.id ?? 0);
+      if (id) { ids.push(id); }
+    });
+    return ids;
+  }
+
+  /**
+   * Cierra todas las ramas.
+   *
+   * Con el filtro puesto se cierra sólo lo que SE ESTÁ VIENDO. Si se plegara
+   * también lo que el filtro esconde, el árbol se quedaría en las raíces,
+   * que casi nunca son las que coinciden, y la rejilla saldría vacía después
+   * de pulsar un botón que no promete eso.
+   */
   contraerTodo(): void {
+    const aLaVista = this.hayFiltro ? new Set(this.idsALaVista()) : null;
     this.plegados.clear();
-    this.departamentoModel.forEach(c => { if (Number(c.num_hijos ?? 0) > 0) { this.plegados.add(c.id); } });
+    this.departamentoModel.forEach(c => {
+      if (Number(c.num_hijos ?? 0) > 0 && (!aLaVista || aLaVista.has(c.id))) { this.plegados.add(c.id); }
+    });
     this.guardarPlegados();
     this.recalcularVisibles();
   }
@@ -602,8 +680,6 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   /** Para encender o apagar el botón de la barra. */
   get hayPlegados(): boolean { return this.plegados.size > 0; }
 
-  /** Con un filtro puesto el árbol se ve entero: plegar no pinta nada. */
-  get plegadoDesactivado(): boolean { return !!this.searchTerm || this.cuantasColumnasFiltradas > 0; }
 
   /** Cuántas ramas están cerradas, para decirlo en el pie. */
   get plegadosCuantas(): number { return this.plegados.size; }
@@ -618,7 +694,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   private recalcularVisibles(): void {
     // Con texto escrito O con un filtro de columna se abre el árbol entero:
     // si no, lo que coincidiera dentro de una rama cerrada no saldría.
-    if (this.searchTerm || this.cuantasColumnasFiltradas > 0 || this.plegados.size === 0) {
+    if (this.plegados.size === 0) {
       this.filasVisibles = [...this.departamentoModel];
     } else {
       // Un mapa id → padre para no recorrer el array por cada antepasado
@@ -634,7 +710,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
         return true;
       });
     }
-    this.gridApi?.setRowData(this.filasVisibles);
+    this.gridApi?.setGridOption('rowData', this.filasVisibles);
     this.actualizarBotonesArbol();
   }
 
@@ -647,11 +723,16 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   private limpiarPlegados(): void {
     const existen = new Set(this.departamentoModel.map(c => c.id));
     [...this.plegados].forEach(id => { if (!existen.has(id)) { this.plegados.delete(id); } });
+    [...this.plegadosFueraDeFiltro].forEach(id => { if (!existen.has(id)) { this.plegadosFueraDeFiltro.delete(id); } });
   }
 
   private guardarPlegados(): void {
     try {
-      localStorage.setItem(AllDepartamentosComponent.CLAVE_PLEGADOS, JSON.stringify([...this.plegados]));
+      // Mientras se filtra, lo que se recuerda es el árbol de ANTES: lo que
+      // se pliegue con el filtro puesto se descarta al quitarlo, así que
+      // guardarlo dejaría el árbol cerrado en la siguiente visita.
+      const aGuardar = this.hayFiltro ? this.plegadosFueraDeFiltro : this.plegados;
+      localStorage.setItem(AllDepartamentosComponent.CLAVE_PLEGADOS, JSON.stringify([...aGuardar]));
     } catch {
       // Ventana privada o almacenamiento bloqueado: se pierde al salir y ya
     }
@@ -739,7 +820,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -792,7 +873,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
     });
   }
 
-  cambiarActivo(fila: DepartamentoModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: DepartamentoModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -888,15 +969,15 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
   // ================================================================
 
   onFilterTextBoxChanged(term?: string) {
-    const antes = !!this.searchTerm;
+    const habiaFiltro = this.hayFiltro;
     if (term !== undefined) { this.searchTerm = term; }
 
-    // Al empezar o dejar de buscar cambia qué filas se pintan: con búsqueda
+    // Al empezar o dejar de filtrar cambia qué filas se pintan: con filtro
     // se abre todo para que una coincidencia dentro de una rama cerrada no
-    // se quede escondida
-    if (antes !== !!this.searchTerm) { this.recalcularVisibles(); }
+    // se quede escondida, y al quitarlo vuelve el árbol que había.
+    if (this.plegadoAlCambiarElFiltro(habiaFiltro)) { this.recalcularVisibles(); }
 
-    this.gridApi?.setQuickFilter(this.searchTerm);
+    this.gridApi?.setGridOption('quickFilterText', this.searchTerm);
   }
 
   /**
@@ -907,9 +988,11 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
    * aviso—.
    */
   alLimpiarBusqueda() {
+    const habiaFiltro = this.hayFiltro;
     this.searchTerm = '';
+    this.plegadoAlCambiarElFiltro(habiaFiltro);
     this.recalcularVisibles();      // vuelven a cerrarse las ramas plegados
-    this.gridApi?.setQuickFilter('');
+    this.gridApi?.setGridOption('quickFilterText', '');
   }
 
   // ================================================================
@@ -1355,7 +1438,8 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
 // la forma natural de ir construyendo el árbol: desde la rama donde va.
 @Component({
   selector: 'app-button-accion-departamento',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"
@@ -1390,6 +1474,7 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     :host {
       display: flex;
@@ -1417,18 +1502,8 @@ export class AllDepartamentosComponent implements OnInit, OnDestroy {
       border-radius: .25rem;
     }
 
-    /* El mismo botón de icono que trae app-action-buttons: esa clase vive
-       dentro de SU css con alcance, así que aquí hay que repetirla. */
-    .btn-subdepartamento {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 3px 5px;
-      font-size: 1.1em;
-      color: var(--bs-app-theme, #00acac);
-      transition: all .3s ease;
-    }
-
+    /* El aspecto de este botón sale de styles.css, con el del resto de
+       la columna ACCIONES. Antes se repetía aquí y se quedó atrás. */
     .btn-subdepartamento:hover:not(:disabled) { transform: scale(1.2); }
     .btn-subdepartamento:active:not(:disabled) { transform: scale(.95); }
     .btn-subdepartamento:disabled { opacity: .35; cursor: not-allowed; }

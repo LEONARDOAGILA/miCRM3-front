@@ -1,12 +1,15 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 
 import { GrupoService } from '../../../services/grupo.service';
 import { GrupoModel } from '../../../interfaces/grupoModel';
-import { FileTreeNode } from '../../../../../components/file-tree-node/file-tree-node.component';
+import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
 import { construirArbolGrupos, filtrarArbol } from '../arbolGrupos';
+import { FormsModule } from '@angular/forms';
+import { NgScrollbarModule } from 'ngx-scrollbar';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
 
 /**
  * Selector de grupo (modal): el árbol de grupos, se pulsa uno y se emite.
@@ -21,7 +24,9 @@ import { construirArbolGrupos, filtrarArbol } from '../arbolGrupos';
   selector: 'app-listGrupos',
   templateUrl: './listGrupos.component.html',
   styleUrls: ['./listGrupos.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [FormsModule, NgScrollbarModule, ModalHeaderComponent, FileTreeNodeComponent],
 })
 export class ListGruposComponent implements OnInit {
 

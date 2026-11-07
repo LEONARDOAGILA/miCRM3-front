@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ImportExcelService } from '../../services/import-excel.service';
 import { Router } from '@angular/router';
@@ -10,6 +10,7 @@ import { FileComponent } from '../../../../components/campos/file/file.component
   selector: 'app-import-excel',
   templateUrl: './import-excel.component.html',
   styleUrls: ['./import-excel.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class ImportExcelComponent implements OnInit {

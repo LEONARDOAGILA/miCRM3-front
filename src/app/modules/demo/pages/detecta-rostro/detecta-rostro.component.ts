@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { Camera } from '@capacitor/camera';
 import { ToastrService } from 'ngx-toastr';
@@ -64,6 +64,7 @@ const CLAVE_MARCACIONES = 'miCRM3.marcaciones.registros';
   selector: 'app-detecta-rostro',
   templateUrl: './detecta-rostro.component.html',
   styleUrls: ['./detecta-rostro.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class DetectaRostroComponent implements AfterViewInit, OnDestroy {

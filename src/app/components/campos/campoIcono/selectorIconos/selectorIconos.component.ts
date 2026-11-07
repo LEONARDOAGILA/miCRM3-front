@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
@@ -29,6 +29,7 @@ const TOPE = 240;
   standalone: true,
   imports: [CommonModule, ModalHeaderComponent, CampoBusquedaComponent],
   templateUrl: './selectorIconos.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./selectorIconos.component.css'],
 })
 export class SelectorIconosComponent implements OnInit {

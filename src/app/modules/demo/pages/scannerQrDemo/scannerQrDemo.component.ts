@@ -6,7 +6,7 @@ import { BrowserQRCodeSvgWriter } from '@zxing/library';
 
 import { CodigoLeido, ScannerComponent } from '../../../../components/scanner/scanner.component';
 import { svgCodigoDeBarras } from '../../../../components/scanner/generadorCodigos';
-import { PanelModule } from '../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../components/panel/panel.component';
 
 /** Un artículo del catálogo de mentira. */
 interface Producto {
@@ -40,7 +40,7 @@ interface Linea {
 @Component({
   selector: 'app-scanner-qr-demo',
   standalone: true,
-  imports: [CommonModule, PanelModule, ScannerComponent],
+  imports: [CommonModule, PanelComponent, ScannerComponent],
   templateUrl: './scannerQrDemo.component.html',
   styleUrls: ['./scannerQrDemo.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

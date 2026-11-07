@@ -59,6 +59,8 @@
               [iconClass]="'fa fa-search fa-lg'"
               [containerClass]="'w-100'"
               [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
               (buscar)="onFilterTextBoxChanged($event)"
               (limpiarFiltros)="clearAllFilters()">
             </app-campoBusquedaPaginacion>
@@ -75,6 +77,18 @@
               <i class="fa fa-plus"></i>
             </button>
           </div>
+
+          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
+          @if (accesoModel?.papelera === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-outline-secondary lista-barra__btn"
+                      title="Papelera de reciclaje de empleados"
+                      (click)="abrirPapelera()">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          }
 
           <!-- Auditoría de la fila seleccionada: sólo con permiso de auditar,
                y deshabilitado hasta que se pulse una fila -->
@@ -115,7 +129,11 @@
           [animateRows]="true"
           [navigateToNextCell]="navegarConTeclado"
           [rowClassRules]="rowClassRules"
+          [tooltipShowDelay]="400"
+          [overlayNoRowsTemplate]="'<span>No hay empleados que cumplan el filtro</span>'"
+          (contextmenu)="onContextMenuGrilla($event)"
           (gridReady)="onGridReady($event)"
+          (filterChanged)="onFiltroColumna()"
           (cellClicked)="onCellClicked($event)">
         </ag-grid-angular>
 
@@ -158,3 +176,11 @@
   </div>
 
 </panel>
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO =================
+     Las mismas acciones que la columna ACCIONES, sin tener que llegar al
+     final de la fila ni desplegar la columna cuando está plegada. -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

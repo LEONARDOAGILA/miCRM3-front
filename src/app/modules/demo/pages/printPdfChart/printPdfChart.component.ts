@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import Chart from 'chart.js/auto';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // Importar el plugin para tablas
@@ -9,6 +9,7 @@ import 'jspdf-autotable'; // Importar el plugin para tablas
   selector: 'app-printPdfChart',
   templateUrl: './printPdfChart.component.html',
   styleUrls: ['./printPdfChart.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class PrintPdfChartComponent implements OnInit {

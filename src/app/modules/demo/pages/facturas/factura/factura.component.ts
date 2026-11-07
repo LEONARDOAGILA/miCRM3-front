@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ColDef, GridReadyEvent, GridApi, ColumnApi } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
@@ -27,6 +27,7 @@ import { ClienteService } from '../../../../ventas/services/cliente.service';
   selector: 'app-factura',
   templateUrl: './factura.component.html',
   styleUrls: ['./factura.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class FacturaComponent implements OnInit, OnDestroy {

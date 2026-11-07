@@ -21,12 +21,19 @@ export class CargoService {
   }
 
   //   ******   LISTADO CON PAGINACIÓN   ******  //
-  allCargos(page: number = 1, perPage: number = 10, search: string = ''): Observable<any> {
+  allCargos(page: number = 1, perPage: number = 10, search: string = '',
+            filtros: any = null): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
     if (search) {
       params = params.set('search', search);
+    }
+    // El modelo de filtros de columna de ag-Grid, en JSON. Se aplica en el
+    // SERVIDOR (ver rh.fn_cargos_listar_paginado): la pantalla pagina, así
+    // que la rejilla sólo tiene las filas de la página.
+    if (filtros && Object.keys(filtros).length) {
+      params = params.set('filtros', JSON.stringify(filtros));
     }
     // observe: 'response' como en allUsers: el componente lee res.body
     return this._http.get<any>(this.URL_SERVICIOS + 'allCargos', { params, observe: 'response' });
@@ -69,5 +76,32 @@ export class CargoService {
   //   ******   BUSCAR POR ID   ******  //
   findByIdCargo(id: any): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'findByIdCargo/' + id);
+  }
+
+  // ================================================================
+  // PAPELERA DE RECICLAJE
+  // ================================================================
+  //
+  // `deleteCargo` es un borrado lógico: el cargo sale del listado y del
+  // combo de la ficha del empleado. Desde aquí se saca o se borra de verdad.
+
+  /** Lo que hay en la papelera (más reciente primero). */
+  papelera(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'papelera');
+  }
+
+  /** Saca de la papelera uno o varios cargos. */
+  restaurarCargos(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'restaurarCargos', { ids });
+  }
+
+  /** Borrado real de lo seleccionado (sólo de lo que está en la papelera). */
+  eliminarDefinitivo(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'eliminarDefinitivo', { ids });
+  }
+
+  /** Borrado real de todo lo que hay en la papelera. */
+  vaciarPapelera(): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera');
   }
 }

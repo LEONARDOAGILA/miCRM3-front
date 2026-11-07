@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, Output, EventEmitter, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { GridApi, GridReadyEvent, CellClickedEvent, CellKeyDownEvent, RowClassParams } from 'ag-grid-community';
@@ -7,6 +7,10 @@ import { ProfileService } from '../../../../seguridad/services/profile.service';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Modal de selección de perfil (lo abre saveUser para el campo "Perfil").
@@ -29,7 +33,12 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-listProfile',
   templateUrl: './listProfile.component.html',
   styleUrls: ['./listProfile.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class ListProfileComponent implements OnInit {
 
@@ -132,7 +141,7 @@ export class ListProfileComponent implements OnInit {
         sortable: false,
         resizable: false,
         filter: false,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         cellRenderer: () =>
           `<span class="lista-ir" title="Elegir este perfil">
              <i class="fas fa-arrow-right"></i>
@@ -183,7 +192,7 @@ export class ListProfileComponent implements OnInit {
       }
 
       if (this.gridApi) {
-        this.gridApi.setRowData(this.rowData);
+        this.gridApi.setGridOption('rowData', this.rowData);
       }
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
@@ -191,7 +200,7 @@ export class ListProfileComponent implements OnInit {
       this.rowData = [];
       this.totalRegistros = 0;
       this.ultimaPagina = 1;
-      this.gridApi?.setRowData([]);
+      this.gridApi?.setGridOption('rowData', []);
     } finally {
       this._loadingService.setLoading(false);
     }

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { AppVariablesService } from '../../../service/app-variables.service';
@@ -35,6 +35,7 @@ declare var bootstrap: any;
     NgApexchartsModule,    // <apx-chart>
     NgxDaterangepickerMd   // directiva ngxDaterangepickerMd
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     // Mismo apaño que en auditoria-modal: un standalone no admite
     // NgxDaterangepickerMd.forRoot() en sus imports, y LocaleService no es

@@ -1,5 +1,5 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -10,6 +10,9 @@ import { UbicacionDispositivoService } from '../../../services/ubicacionDisposit
 import { MarcacionModel, RostroEmpleado } from '../../../interfaces/marcacionModel';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { AjustesKioscoComponent, AjustesDelKiosco } from './ajustesKiosco/ajustesKiosco.component';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 
 /** Lo que se ve de cada rostro en el fotograma actual. */
 interface RostroEnPantalla {
@@ -40,7 +43,9 @@ interface RostroEnPantalla {
   selector: 'app-kiosco-marcacion',
   templateUrl: './kioscoMarcacion.component.html',
   styleUrls: ['./kioscoMarcacion.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [CommonModule, FormsModule, RouterModule, PanelComponent],
 })
 export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
 
@@ -568,13 +573,24 @@ export class KioscoMarcacionComponent implements AfterViewInit, OnDestroy {
     } catch (e: any) {
       // 429 = ya marcó hace poco (el back manda el mensaje); el interceptor ya avisa
       const msg = e?.error?.message ?? 'No se pudo registrar la marcación';
-      // Si el servidor dice que ya marcó, se respeta su espera; si fue otro
-      // fallo (red, 500), se reintenta en unos segundos y no en un minuto.
-      if (e?.status === 429) {
+
+      // FUERA DEL PERÍMETRO DE SU SUCURSAL. Llega como 422 y NO es un fallo
+      // pasajero: mientras esa persona siga delante de la cámara, volvería a
+      // fallar igual. Se la enfría como si hubiera marcado, o el kiosco
+      // reintentaría cada pocos segundos contra el mismo muro.
+      //
+      // Se reconoce por el texto porque el sobre de la API no lleva el
+      // SQLSTATE; los dos mensajes los escribe fn_marcaciones_registrar.
+      const fueraDelPerimetro = e?.status === 422
+        && /perímetro|permitir la ubicación/i.test(String(msg));
+
+      if (e?.status === 429 || fueraDelPerimetro) {
         this.esperarHasta.set(empleadoId, Date.now() + this.esperaSegundos * 1000);
       }
       this.aviso = { nombre: this.nombreDe(empleadoId), texto: msg, hora: '', tono: 'error' };
-      setTimeout(() => { if (this.aviso?.tono === 'error') { this.aviso = null; } }, 5000);
+      // El de la sucursal es más largo de leer, y hay que hacer algo con él
+      const cuanto = fueraDelPerimetro ? 9000 : 5000;
+      setTimeout(() => { if (this.aviso?.tono === 'error') { this.aviso = null; } }, cuanto);
     } finally {
       this.enviando = false;
     }

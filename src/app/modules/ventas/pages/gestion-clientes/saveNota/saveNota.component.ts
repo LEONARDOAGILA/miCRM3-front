@@ -1,5 +1,5 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -19,7 +19,7 @@ import {
 } from '../../../interfaces/huecosPlantilla';
 import { firstValueFrom } from 'rxjs';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { HuecosPlantillaComponent } from '../../../../../components/campos/huecosPlantilla/huecosPlantilla.component';
 import { NotaClienteService } from '../../../services/notaCliente.service';
 import { COLORES_NOTA, ColorNota, NotaCliente, tinteDeNota, conTokenLaImagen, conTokenLasImagenes, sinTokenLasImagenes } from '../../../interfaces/notaCliente';
@@ -57,8 +57,9 @@ export type PestanaCinta = 'archivo' | 'inicio' | 'insertar' | 'tabla';
 @Component({
   selector: 'app-saveNota',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgxEditorModule, PanelModule, HuecosPlantillaComponent],
+  imports: [FormsModule, NgxEditorModule, PanelComponent, HuecosPlantillaComponent],
   templateUrl: './saveNota.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./saveNota.component.css'],
 })
 export class SaveNotaComponent implements OnInit, AfterViewInit, OnDestroy {

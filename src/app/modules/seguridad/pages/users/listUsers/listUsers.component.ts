@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { GridApi, GridReadyEvent, CellClickedEvent, CellKeyDownEvent, RowClassParams } from 'ag-grid-community';
@@ -8,6 +8,10 @@ import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Modal de selección de usuario (mismo esquema que listHorarios).
@@ -27,7 +31,12 @@ import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
   selector: 'app-listUsers',
   templateUrl: './listUsers.component.html',
   styleUrls: ['./listUsers.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule, AgGridModule, FilasEstirablesDirective, ModalArrastrableDirective,
+    CampoBusquedaPaginacionComponent,
+  ],
 })
 export class ListUsersComponent implements OnInit {
 
@@ -157,7 +166,7 @@ export class ListUsersComponent implements OnInit {
         sortable: false,
         resizable: false,
         filter: false,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         cellRenderer: (params: any) => this.estaExcluido(params.data?.id)
           ? ''
           : `<span class="lista-ir" title="Elegir este usuario"><i class="fas fa-arrow-right"></i></span>`
@@ -206,7 +215,7 @@ export class ListUsersComponent implements OnInit {
       }
 
       if (this.gridApi) {
-        this.gridApi.setRowData(this.rowData);
+        this.gridApi.setGridOption('rowData', this.rowData);
       }
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP

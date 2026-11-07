@@ -1,10 +1,10 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { ToastrService } from 'ngx-toastr';
 
 ///   SERVICIOS    ///
@@ -27,6 +27,13 @@ import { SaveCargoComponent } from '../saveCargo/saveCargo.component';
 import { DeleteCargoComponent } from '../deleteCargo/deleteCargo.component';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
+import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
+import { PapeleraCargosComponent } from '../papeleraCargos/papeleraCargos.component';
+
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /**
  * Listado de cargos (rh.cargos).
@@ -43,7 +50,16 @@ import { CampoBusquedaPaginacionComponent } from '../../../../../components/camp
   selector: 'app-allCargos',
   templateUrl: './allCargos.component.html',
   styleUrls: ['./allCargos.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    MenuContextualComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllCargosComponent implements OnInit, OnDestroy {
 
@@ -163,8 +179,68 @@ export class AllCargosComponent implements OnInit, OnDestroy {
   // AG-GRID
   // ================================================================
 
+  // ================================================================
+  // FILTROS DE LA CABECERA
+  // ================================================================
+  //
+  // Los aplica el SERVIDOR, no la rejilla: esta pantalla pagina, así que
+  // ag-Grid sólo tiene las filas de la página y filtrar ahí buscaría dentro
+  // de diez. La cabecera sólo recoge lo que el usuario pidió.
+
+  /**
+   * Las columnas que llevan filtro, y de qué tipo.
+   *
+   * Tiene que decir lo mismo que la lista blanca de CargoController: lo que
+   * no esté allí se tira en el servidor, así que ponerlo sólo aquí sería
+   * pintar un filtro que no filtra.
+   *
+   * `activo` se queda fuera a propósito: es una casilla, y escribir texto
+   * para filtrarla no se entiende.
+   */
+  private readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
+    id: 'numero', salario_base: 'numero', num_empleados: 'numero',
+    nombre: 'texto', nivel: 'texto', descripcion: 'texto',
+    created_by: 'texto', updated_by: 'texto',
+    // Las fechas, como texto sobre lo que se ve: «2026-10» busca el mes
+    created_at: 'texto', updated_at: 'texto',
+  };
+
+  /** Lo que haya pedido la cabecera, tal cual lo da ag-Grid. */
+  public filtrosColumna: any = {};
+
+  /** Para no recargar mientras se limpian los filtros de golpe. */
+  private limpiando = false;
+
+  /**
+   * Las columnas con su filtro de cabecera.
+   *
+   * El CÓMO —que la rejilla recoja el filtro pero no lo aplique— vive en
+   * AppAgGridService. Aquí queda sólo el QUÉ.
+   */
+  private conFiltros(columnas: any[]): any[] {
+    return this._appAgGridService.filtrosDeServidor(columnas, this.COLUMNAS_FILTRABLES);
+  }
+
+  /** La cabecera pidió otra cosa. Siempre a la página 1. */
+  onFiltroColumna(): void {
+    if (this.limpiando) { return; }
+    this.filtrosColumna = this.gridApi?.getFilterModel() ?? {};
+    this.paginaActual = 1;
+    this.allCargos(1);
+  }
+
+  /** Cuántas columnas llevan filtro; el buscador lo enseña y se pone rojo. */
+  get cuantasColumnasFiltradas(): number {
+    return Object.keys(this.filtrosColumna || {}).length;
+  }
+
+  /** Si hay algo que quitar: lo escrito arriba o un filtro de columna. */
+  get hayFiltro(): boolean {
+    return !!this.searchTerm || this.cuantasColumnasFiltradas > 0;
+  }
+
   initializeGrid(): void {
-    this.columnDefs = [
+    this.columnDefs = this.conFiltros([
       {
         headerName: 'Id',
         field: 'id',
@@ -260,7 +336,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
         pinned: 'right',
         minWidth: AllCargosComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllCargosComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         resizable: false,
         headerComponentParams: {
@@ -272,7 +348,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
           `
         }
       }
-    ];
+    ]);
   }
 
   /** 1500 → "$ 1.500,00"; vacío si no hay salario. */
@@ -350,7 +426,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => {
       this.gridApi.sizeColumnsToFit();
@@ -423,7 +499,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
    * registro que hoy no cumpliría alguna regla —cargado antes de que
    * existiera— no se podría desactivar hasta arreglarle todo lo demás.
    */
-  cambiarActivo(fila: CargoModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: CargoModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -463,7 +539,8 @@ export class AllCargosComponent implements OnInit, OnDestroy {
       this._loadingService.setLoading(true);
 
       const res = await firstValueFrom(
-        this._cargoService.allCargos(page, this.registrosPorPagina, this.searchTerm)
+        this._cargoService.allCargos(page, this.registrosPorPagina, this.searchTerm,
+                                    this.filtrosColumna)
       ) as any;
 
       if (res.body?.status !== 'success') {
@@ -471,7 +548,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
         this.cargoModel = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.cargoModel);
+        this.gridApi?.setGridOption('rowData', this.cargoModel);
         return;
       }
 
@@ -484,7 +561,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
         this.ultimaPagina = res.body.data.meta.last_page;
       }
 
-      if (this.gridApi) this.gridApi.setRowData(this.cargoModel);
+      if (this.gridApi) this.gridApi.setGridOption('rowData', this.cargoModel);
     } catch (error) {
       // El AuthInterceptor ya muestra el toast del error HTTP
       console.error('Error al cargar cargos:', error);
@@ -499,7 +576,8 @@ export class AllCargosComponent implements OnInit, OnDestroy {
     try {
       this._loadingService.setLoading(true);
       const res = await firstValueFrom(
-        this._cargoService.allCargos(1, this.totalRegistros, this.searchTerm)
+        this._cargoService.allCargos(1, this.totalRegistros, this.searchTerm,
+                                    this.filtrosColumna)
       ) as any;
       if (res.body?.status !== 'success') {
         this._toastr.error(res.body?.message || 'No se pudo obtener el listado completo', 'Error');
@@ -548,17 +626,25 @@ export class AllCargosComponent implements OnInit, OnDestroy {
   }
 
   clearAllFilters() {
+    if (!this.hayFiltro) { return; }
+
+    const habiaColumnas = this.cuantasColumnasFiltradas > 0;
+
+    // `limpiando` corta el (filterChanged) que dispara setFilterModel: sin
+    // esto se recargaría dos veces, y la primera con los filtros a medias.
+    this.limpiando = true;
     this.campoBusquedaPaginacion?.reset();
-    if (this.gridApi) {
-      this.gridApi.setFilterModel(null);
-      this.searchTerm = '';
-      this.gridApi.onFilterChanged();
-      this.allCargos(this.paginaActual).then(() => {
-        if (this.paginaActual > this.ultimaPagina && this.ultimaPagina > 0) {
-          this.goToPage(this.ultimaPagina);
-        }
-      });
-    }
+    this.searchTerm = '';
+    this.filtrosColumna = {};
+    if (habiaColumnas) { this.gridApi?.setFilterModel(null); }
+
+    // LA BANDERA SE BAJA EN LA SIGUIENTE VUELTA, no aquí: medido contra
+    // ag-Grid 28, `setFilterModel` avisa DESPUÉS de esta línea, así que
+    // apagándola aquí ese aviso pediría una segunda carga idéntica.
+    this.programar(() => { this.limpiando = false; }, 0);
+
+    this.paginaActual = 1;
+    this.allCargos(1);
   }
 
   // ================================================================
@@ -605,7 +691,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
       pagina: this.paginaActual,
       ultimaPagina: this.ultimaPagina,
       busqueda: this.searchTerm,
-      // (esta pantalla todavia no tiene filtros de columna)
+      filtrosColumna: this.filtrosColumna,
       columnDefs: this.columnDefs,
       traerTodo: () => this.obtenerTodosParaExportar(),
     };
@@ -671,7 +757,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.cargoModel = [nuevo, ...this.cargoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.cargoModel);
+      this.gridApi?.setGridOption('rowData', this.cargoModel);
     });
   }
 
@@ -681,7 +767,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
     this.escucharModal(modalRef, modalRef.componentInstance.registrosE, (nuevo: any) => {
       this.cargoModel = [nuevo, ...this.cargoModel];
       this.totalRegistros++;
-      this.gridApi?.setRowData(this.cargoModel);
+      this.gridApi?.setGridOption('rowData', this.cargoModel);
     });
   }
 
@@ -723,6 +809,105 @@ export class AllCargosComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * La papelera de reciclaje.
+   *
+   * Lo que se «elimina» no se borra: va aquí, y desde aquí se restaura o se
+   * borra de verdad. Sólo con el acceso «papelera» del perfil.
+   */
+  abrirPapelera(): void {
+    if (this._seguridadService.isexpired()) { return; }
+    const modalRef = this.modal.open(PapeleraCargosComponent, {
+      centered: true, size: 'xl', backdrop: 'static', keyboard: true
+    });
+    // El permiso viaja con el modal: allí también hay auditoría
+    modalRef.componentInstance.puedeAuditar = this.accesoModel?.auditar === true;
+    // Y si puede borrar de verdad, que es otro permiso distinto
+    modalRef.componentInstance.puedeVaciar = this.accesoModel?.vaciar === true;
+    this.escucharModal(modalRef, modalRef.componentInstance.cambio,
+                       () => this.allCargos(this.paginaActual));
+  }
+
+  // ================================================================
+  // EL MENÚ DEL BOTÓN DERECHO
+  // ================================================================
+  //
+  // Las mismas acciones que la columna ACCIONES, sin tener que llegar hasta
+  // el final de la fila ni desplegar la columna cuando está plegada.
+  //
+  // NO SE USA EL EVENTO `cellContextMenu` DE ag-Grid: se probó contra la
+  // librería y no llega. Aquí se escucha el `contextmenu` de la rejilla y la
+  // fila se resuelve con la API pública.
+
+  @ViewChild('menuCtx') menuCtx!: MenuContextualComponent;
+
+  /** Lo que se ofrece para la fila sobre la que se pulsó. */
+  public opcionesContextuales: OpcionContextual[] = [];
+
+  onContextMenuGrilla(e: MouseEvent): void {
+    const fila = this._appAgGridService.filaDeEventoEnGrilla(e, this.gridApi);
+    if (!fila) { return; }          // fuera de las filas: el menú del navegador
+
+    e.preventDefault();
+
+    this.selectedRow = fila;
+    this._appAgGridService.marcarFila(this.gridApi, fila);
+
+    this.opcionesContextuales = this.opcionesPara(fila);
+    this.menuCtx?.abrir(e);
+  }
+
+  /** Qué se puede hacer con este cargo, según el perfil. */
+  private opcionesPara(fila: any): OpcionContextual[] {
+    const puedeCrear   = this.accesoModel?.crear    === true;
+    const puedeEditar  = this.accesoModel?.editar   === true;
+    const puedeBorrar  = this.accesoModel?.eliminar === true;
+    const puedeVer     = this.accesoModel?.ver      === true;
+    const puedeAuditar = this.accesoModel?.auditar  === true;
+
+    const conEmpleados = Number(fila?.num_empleados ?? 0) > 0;
+
+    return [
+      { id: 'ver',    texto: 'Ver',        icono: 'fa-eye',   visible: puedeVer },
+      { id: 'editar', texto: 'Modificar',  icono: 'fa-pen',   visible: puedeEditar },
+      { id: 'clonar', texto: 'Clonar',     icono: 'fa-clone', visible: puedeCrear,
+        ayuda: 'Crear otro cargo partiendo de éste' },
+      {
+        id: 'activo', texto: fila?.activo ? 'Desactivar' : 'Activar',
+        icono: fila?.activo ? 'fa-toggle-off' : 'fa-toggle-on',
+        separadorAntes: true, visible: puedeEditar,
+        ayuda: fila?.activo ? 'Dejar de usarlo, sin borrarlo' : 'Volver a usarlo',
+      },
+      {
+        id: 'auditoria', texto: 'Ver auditoría', icono: 'fa-user-secret',
+        separadorAntes: true, visible: puedeAuditar,
+        ayuda: 'Quién tocó este cargo y cuándo',
+      },
+      {
+        id: 'eliminar', texto: 'Enviar a la papelera', icono: 'fa-trash',
+        separadorAntes: true, peligro: true, visible: puedeBorrar,
+        deshabilitada: conEmpleados,
+        ayuda: conEmpleados ? 'Tiene empleados: desactívelo en lugar de borrarlo'
+                            : 'Se puede recuperar desde la papelera',
+      },
+    ];
+  }
+
+  /** Se eligió una opción del menú. */
+  alElegirContextual(id: string): void {
+    const fila = this.selectedRow as any;
+    if (!fila) { return; }
+
+    switch (id) {
+      case 'ver':       this.viewCargo(fila); break;
+      case 'editar':    this.editCargo(fila); break;
+      case 'clonar':    this.clonCargo(fila); break;
+      case 'activo':    this.cambiarActivo(fila, this._appAgGridService.nodoDe(this.gridApi, fila.id)); break;
+      case 'auditoria': this.auditoria(); break;
+      case 'eliminar':  this.deleteCargo(fila); break;
+    }
+  }
+
   /** Historial de auditoría de la fila seleccionada (tabla cargos). */
   auditoria(): void {
     if (!this.selectedRow) { return; }
@@ -744,7 +929,8 @@ export class AllCargosComponent implements OnInit, OnDestroy {
 // Simple delegador: toda la lógica de modales vive en AllCargosComponent.
 @Component({
   selector: 'app-button-accion-cargo',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button"
@@ -768,6 +954,7 @@ export class AllCargosComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { NgFor } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+
 import { NgScrollbarModule } from 'ngx-scrollbar';
-import { PanelModule } from '../../panel/panel.module';
+import { PanelComponent } from '../../panel/panel.component';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { TrendModule } from 'ngx-trend';
 import { AppVariablesService } from '../../../service/app-variables.service';
@@ -18,13 +18,13 @@ import { AppVariablesService } from '../../../service/app-variables.service';
   templateUrl: './dashboard1.component.html',
   styleUrl: './dashboard1.component.scss',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
-    NgFor,               // *ngFor de la lista de tareas
-    NgScrollbarModule,   // <ng-scrollbar>
-    PanelModule,         // <panel>
-    NgxChartsModule,     // <ngx-charts-line-chart>, <ngx-charts-pie-chart>
-    TrendModule          // <ngx-trend>
-  ]
+    NgScrollbarModule,
+    PanelComponent,
+    NgxChartsModule,
+    TrendModule
+]
 })
 export class Dashboard1Component implements OnInit {
   appVariables = this.appVariablesService.getAppVariables();

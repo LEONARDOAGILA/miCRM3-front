@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Midata } from '../../../interfaces/midata';
 import { MidataService } from '../../../services/midata.service';
@@ -7,6 +7,7 @@ import { MidataService } from '../../../services/midata.service';
   selector: 'app-miobservable',
   templateUrl: './miobservable.component.html',
   styleUrls: ['./miobservable.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class MiobservableComponent implements OnInit {

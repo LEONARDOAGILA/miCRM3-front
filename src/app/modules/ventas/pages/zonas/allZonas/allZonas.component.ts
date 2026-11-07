@@ -1,5 +1,5 @@
-import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
 import { CellClickedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
@@ -9,8 +9,8 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
-import { ActionButtonsModule } from '../../../../../components/botones/action-buttons/action-buttons.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { AvisoComponent } from '../../../../../components/campos/aviso/aviso.component';
 import { AsignacionClienteMasivaComponent } from '../../gestion-clientes/asignacionClienteMasiva/asignacionClienteMasiva.component';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
@@ -19,6 +19,8 @@ import { LugaresGoogleService, SugerenciaLugar } from '../../../../../service/lu
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { ZonaService } from '../../../services/zona.service';
 import { ClienteDeZona, ClienteUbicado, PuntoZona, TipoZona, ZonaModel } from '../../../interfaces/zonaModel';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /** Lo que se está editando en el formulario de la derecha. */
 interface Borrador {
@@ -72,8 +74,10 @@ const RADIO_INICIAL = 1000;
 @Component({
   selector: 'app-allZonas',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, PanelModule, AvisoComponent],
+  imports: [
+    CommonModule,FormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent, AvisoComponent],
   templateUrl: './allZonas.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./allZonas.component.css'],
 })
 export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -525,7 +529,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
         pinned: 'right',
         minWidth: AllZonasComponent.ANCHO_ACCIONES_ABIERTA,
         maxWidth: AllZonasComponent.ANCHO_ACCIONES_ABIERTA,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         filter: false,
         resizable: false,
@@ -582,7 +586,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
           </div>`
     };
 
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     // La cabecera se vuelve a dibujar, así que el oyente de antes se va con
     // ella y hay que ponerlo en la nueva.
     setTimeout(() => this.montarListenerCabecera(), 100);
@@ -610,7 +614,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.gridApi.setRowData(this.zonas);
+    this.gridApi.setGridOption('rowData', this.zonas);
     // Medio segundo: la cabecera no está en el DOM en el mismo momento en que
     // la rejilla avisa de que está lista.
     setTimeout(() => this.montarListenerCabecera(), 500);
@@ -1230,7 +1234,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       const id = elegirId ?? this.elegida?.id ?? null;
       this.elegida = id ? (this.zonas.find(z => z.id === id) ?? null) : null;
 
-      this.gridApi?.setRowData(this.zonas);
+      this.gridApi?.setGridOption('rowData', this.zonas);
       this.pintarZonas();
       if (this.elegida) { this.cargarClientes(this.elegida); } else { this.clientes = []; this.repintarPuntos(); }
     } catch (e) {
@@ -1590,7 +1594,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
 @Component({
   selector: 'app-button-accion-zona',
   standalone: true,
-  imports: [ActionButtonsModule],
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent?.accionesPlegadas) {
       <button type="button"
@@ -1602,7 +1606,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       </button>
     } @else {
       <app-action-buttons
-        [accesoModel]="parent?.accesoModel"
+        [accesoModel]="$safeNavigationMigration(parent?.accesoModel)"
         [buttonEdit]="true"
         [buttonDelete]="true"
         (edit)="parent?.editar(params.data)"
@@ -1610,6 +1614,7 @@ export class AllZonasComponent implements OnInit, AfterViewInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

@@ -1,5 +1,5 @@
 import { Location } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 
 import { environment } from '../../../../../environments/environment';
@@ -78,6 +78,7 @@ interface SugerenciaGm {
   selector: 'app-ubicacion-google-maps',
   templateUrl: './ubicacion-google-maps.component.html',
   styleUrls: ['./ubicacion-google-maps.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class UbicacionGoogleMapsComponent implements AfterViewInit, OnDestroy {

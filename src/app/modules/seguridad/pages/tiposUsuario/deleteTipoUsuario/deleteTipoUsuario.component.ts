@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -21,6 +21,7 @@ import { ModalArrastrableDirective } from '../../../../../components/modal/modal
   standalone: true,
   imports: [CommonModule, ModalArrastrableDirective],
   templateUrl: './deleteTipoUsuario.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./deleteTipoUsuario.component.css'],
 })
 export class DeleteTipoUsuarioComponent implements OnDestroy {

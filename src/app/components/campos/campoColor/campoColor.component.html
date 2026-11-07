@@ -1,0 +1,38 @@
+<div class="color-bloque__fila">
+  <!-- El <input type="color"> nativo es feo y cambia por navegador: se esconde
+       dentro de la muestra redonda y el clic lo abre igual -->
+  <label class="color-muestra" [style.background-color]="valor"
+         [title]="'Elegir cualquier color: ' + etiqueta">
+    <input type="color" [id]="idCampo" [value]="valor"
+           [disabled]="deshabilitado"
+           [attr.aria-label]="etiqueta"
+           (input)="delSelector($event)">
+  </label>
+
+  <!-- Sin color elegido se lee de dónde sale el que se ve, no un código: un
+       «#ffffff» ahí parecería una decisión que nadie tomó -->
+  <code class="color-valor">{{ propio ? valor : porDefecto }}</code>
+
+  @if (propio) {
+    <button type="button" class="btn btn-xs btn-link color-quitar"
+            [disabled]="deshabilitado"
+            (click)="cambia.emit('')">
+      Quitar
+    </button>
+  }
+
+  <!-- La paleta va DENTRO de la fila: con `flex-wrap`, apilada se baja sola a
+       su línea y a la derecha se queda pegada al borde. Así los dos modos son
+       el mismo marcado y no se pueden separar -->
+  <div class="color-paleta">
+    @for (c of paleta; track c) {
+      <button type="button" class="color-paleta__punto"
+              [class.is-activo]="esEste(c)"
+              [style.background-color]="c"
+              [title]="c"
+              [attr.aria-label]="etiqueta + ': ' + c"
+              [disabled]="deshabilitado"
+              (click)="cambia.emit(c)"></button>
+    }
+  </div>
+</div>

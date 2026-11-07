@@ -1,0 +1,91 @@
+<div class="modal-header bg-gray-800 text-white">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-trash-can me-2"></i>Papelera del menú
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Cerrar"
+          (click)="cerrar()"></button>
+</div>
+
+<div class="modal-body">
+
+  @if (cargando) {
+    <div class="text-center py-4 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+    </div>
+  } @else if (vacia) {
+    <p class="text-muted text-center mb-0 py-4">
+      <i class="fa-solid fa-circle-check me-1"></i> La papelera está vacía.
+    </p>
+  } @else {
+
+    @for (principal of principales; track principal.id) {
+      <div class="border rounded mb-2 p-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fa-solid fa-link text-secondary"></i>
+          <span>
+            <b>{{ principal.texto }}</b>
+            @if (principal.detalle) {
+              <small class="text-muted ms-1">{{ principal.detalle }}</small>
+            }
+          </span>
+          <small class="text-muted">
+            eliminado {{ principal.deleted_at }} por {{ principal.deleted_by || '—' }}
+          </small>
+          <button type="button" class="btn btn-xs btn-outline-primary ms-auto"
+                  [disabled]="trabajando" (click)="restaurar(principal)">
+            <i class="fa fa-rotate-left"></i> Restaurar
+          </button>
+        </div>
+
+        @if (hijosDe(principal).length) {
+          <ul class="list-unstyled mt-2 mb-0 ps-4">
+            @for (hijo of hijosDe(principal); track hijo.id) {
+              <li class="small text-muted">
+                <i class="fa-solid fa-turn-up fa-rotate-90 me-1"></i>{{ hijo.texto }}
+              </li>
+            }
+          </ul>
+          <small class="text-muted ps-4">Vuelven con él.</small>
+        }
+      </div>
+    }
+
+    @if (sueltos.length) {
+      @for (suelto of sueltos; track suelto.id) {
+        <div class="border rounded mb-2 p-2 d-flex align-items-center gap-2">
+          <i class="fa-solid fa-turn-up fa-rotate-90 text-secondary"></i>
+          <span>
+            <b>{{ suelto.texto }}</b>
+            @if (suelto.detalle) {
+              <small class="text-muted ms-1">{{ suelto.detalle }}</small>
+            }
+          </span>
+          <small class="text-muted">
+            eliminado {{ suelto.deleted_at }} por {{ suelto.deleted_by || '—' }}
+          </small>
+          <button type="button" class="btn btn-xs btn-outline-primary ms-auto"
+                  [disabled]="trabajando" (click)="restaurar(suelto)">
+            <i class="fa fa-rotate-left"></i> Restaurar
+          </button>
+        </div>
+      }
+      <p class="small text-muted mb-0">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        Estos estaban dentro de un desplegable que ya no está: vuelven como
+        enlaces principales del menú.
+      </p>
+    }
+  }
+</div>
+
+<div class="modal-footer">
+  @if (puedeVaciar && !vacia) {
+    <button type="button" class="btn btn-danger me-auto"
+            [disabled]="trabajando" (click)="vaciar()">
+      <i class="fa fa-trash"></i> Vaciar papelera
+    </button>
+  }
+  <button type="button" class="btn btn-secondary" (click)="cerrar()">
+    <i class="fa fa-times"></i> Cerrar
+  </button>
+</div>

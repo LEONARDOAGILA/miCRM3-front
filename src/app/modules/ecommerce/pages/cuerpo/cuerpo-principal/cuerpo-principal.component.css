@@ -1,0 +1,1103 @@
+/* ============================================================
+   LA PORTADA DE LA TIENDA
+   ============================================================
+   Colores de variables de Bootstrap, para que acompañen al tema claro y al
+   oscuro. */
+
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+.inicio-cuenta {
+  font-size: .75rem;
+  opacity: .9;
+}
+
+/* ---------- Cada sección ---------- */
+/* ---------- La tarjeta de una sección (columna de la izquierda) ----------
+   Es la tarjeta entera la que se pulsa, no una cabecera dentro de ella: lo
+   que se configura vive ahora en la otra columna. */
+.seccion {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .375rem;
+  padding: .45rem .55rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+  cursor: pointer;
+  user-select: none;
+}
+
+.seccion:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .035);
+}
+
+/* La elegida lleva una barra del color del tema a la izquierda: es lo que
+   distingue «ésta es la que estoy viendo» de «aquí está el mouse» */
+.seccion.is-elegida {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: inset .1875rem 0 0 0 var(--bs-app-theme, #00acac),
+              0 0 0 2px rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .06);
+}
+
+.seccion-asa {
+  cursor: grab;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+}
+
+.seccion-asa:active { cursor: grabbing; }
+
+.seccion-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: .375rem;
+  font-size: .8125rem;
+  color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.seccion-icono--apagado {
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.seccion-textos {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.seccion-nombre {
+  font-size: .875rem;
+  line-height: 1.2;
+  color: var(--bs-body-color, #212529);
+}
+
+/* El nombre de siempre, cuando el de la tienda lo tapa. Pequeño y apagado:
+   sirve para reconocer la sección, no para competir con el de arriba. */
+.seccion-de-fabrica {
+  font-size: .72rem;
+  line-height: 1.2;
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seccion-de-fabrica i {
+  margin-right: .2rem;
+  opacity: .8;
+}
+
+.seccion-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.seccion-palanca { flex: 0 0 auto; }
+
+/* La palanca va a la IZQUIERDA del nombre: es lo que más se toca de la lista */
+.seccion-palanca .form-check-label { display: none; }
+
+/* ---------- Los campos (columna de la derecha) ---------- */
+.inicio-campos {
+  padding: .75rem;
+}
+
+.seccion-que-es {
+  margin: 0 0 .75rem;
+  font-size: .75rem;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.seccion-contenido {
+  padding-top: .75rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+/* Se llena en otra pantalla: no es un aviso, es un camino */
+.seccion-enlace {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  padding: .75rem;
+  border-radius: .375rem;
+  font-size: .75rem;
+  line-height: 1.45;
+  color: var(--bs-body-color, #212529);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.seccion-enlace > i {
+  margin-top: .15rem;
+  font-size: 1rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+.seccion-pendiente {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  padding: .75rem;
+  border-radius: .375rem;
+  font-size: .75rem;
+  line-height: 1.45;
+  color: var(--bs-warning-text-emphasis, #997404);
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+}
+
+.seccion-pendiente i { margin-top: .15rem; font-size: 1rem; }
+
+.seccion-rotulo {
+  display: block;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.seccion-rotulo span { font-weight: 400; text-transform: none; opacity: .8; }
+
+.seccion-pie {
+  display: block;
+  font-size: .65rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.seccion-fantasma {
+  min-height: 3.25rem;
+  border: 1px dashed var(--bs-app-theme, #00acac);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+}
+
+/* ---------- Etiquetas ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .1rem .4rem;
+  border-radius: 1rem;
+  font-size: .65rem;
+  font-weight: 600;
+}
+
+.chip-muted {
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.chip-ok {
+  color: var(--bs-success-text-emphasis, #0a3622);
+  background-color: var(--bs-success-bg-subtle, #d1e7dd);
+}
+
+.chip-info {
+  color: var(--bs-info-text-emphasis, #055160);
+  background-color: var(--bs-info-bg-subtle, #cff4fc);
+}
+
+.chip-warn {
+  color: var(--bs-warning-text-emphasis, #997404);
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 .75rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  /* Un gris más flojo se quedaba en 4,35:1 sobre el panel oscuro,
+     por debajo de lo que se lee en letra de .7rem. */
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* Un aviso que no impide guardar: el icono en ámbar en vez del color del tema */
+.campo-hint--aviso i { color: var(--bs-warning, #ffc107); }
+
+/* ============================================================
+   LA PINTA DEL RÓTULO
+   ============================================================
+   Los tres controles en una fila que se parte sola, y debajo la muestra. */
+.rotulo-pinta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  align-items: flex-end;
+}
+
+.rotulo-campo {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 8rem;
+}
+
+.rotulo-campo--ancho { flex: 1 1 14rem; }
+
+.rotulo-campo > label {
+  font-size: .65rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ===== El color =====
+   El selector, el codigo y la paleta viven ahora en app-campoColor
+   (components/campos/campoColor): estaban copiados aqui y en los dos modales
+   de archivos, y hacian falta cuatro copias mas. Lo unico que queda aqui es
+   donde se colocan. */
+
+/* ===== La muestra =====
+   SIEMPRE BLANCA, en los dos temas del CRM: blanco es el fondo de la sección
+   en la tienda, y una muestra sobre el panel oscuro enseñaría un contraste
+   que el cliente no va a ver. Por eso nada de aquí dentro usa variables del
+   tema: en oscuro se volverían invisibles sobre el blanco. */
+.rotulo-muestra {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin: .6rem 0 .25rem;
+  padding: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: .375rem;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.rotulo-muestra-texto {
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+/* La sección que no lleva rótulo: la muestra enseña su aire y dónde empieza */
+.rotulo-muestra-sin {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding-top: .5rem;
+  border-top: 1px dashed #ced4da;
+  font-size: .75rem;
+  color: #6c757d;
+}
+
+.rotulo-muestra-pie {
+  font-size: .65rem;
+  color: #6c757d;
+}
+
+/* ============================================================
+   LA PALANCA
+   ============================================================
+   Aquí va sobre un <label> propio y no sobre app-checkbox: el interruptor
+   guarda solo, sin pasar por un formulario. El dibujo es el mismo. */
+.palanca {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding-left: 0;
+  min-height: auto;
+  cursor: pointer;
+}
+
+.palanca .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin: 0;
+  flex: 0 0 auto;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.palanca .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.palanca .form-check-input:disabled { opacity: .5; }
+
+.palanca .form-check-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+  cursor: pointer;
+}
+
+::ng-deep .cdk-drag-preview {
+  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, .2),
+              0 8px 10px 1px rgba(0, 0, 0, .14),
+              0 3px 14px 2px rgba(0, 0, 0, .12);
+  border-radius: .375rem;
+}
+
+::ng-deep .cdk-drag-animating {
+  transition: transform 180ms cubic-bezier(0, 0, .2, 1);
+}
+
+/* ============================================================
+   EL COLOR DE LOS BOTONES DE LA TARJETA
+   ============================================================
+   Sólo sale en las secciones de productos. Son cuatro bloques
+   iguales —muestra, selector, código y paleta—, así que la
+   plantilla los recorre y aquí sólo se les da sitio.
+
+   SE ELIGE EL FONDO Y NADA MÁS: la letra la calcula la tienda
+   para que se lea encima (colorDeTextoSobre). Por eso la
+   muestra de arriba se pinta con los dos colores: es lo que se
+   va a ver, no una aproximación. */
+.botones-colores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: .75rem;
+  margin-bottom: .5rem;
+}
+
+.boton-color {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  padding: .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* La muestra ES el botón, con el mismo aire y la misma esquina que en la
+   tienda: si aquí saliera redondo y allá cuadrado, el color elegido se
+   vería distinto de como se eligió. */
+.boton-color__muestra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+
+  height: 34px;
+  padding: 0 .6rem;
+  border-radius: 8px;
+  /* Un borde del mismo color: así el botón blanco sobre el panel claro no
+     desaparece, que es justo el caso del de tarjeta y el de favorito */
+  box-shadow: inset 0 0 0 1px rgba(var(--bs-body-color-rgb, 33, 37, 41), .18);
+
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El rótulo de cada mitad del bloque: FONDO y LETRA E ICONO */
+.boton-color__que {
+  font-size: .625rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+
+/* ===== La tarjeta y su cartel =====
+   La muestra a la izquierda y los campos a la derecha. El fondo y el borde
+   por separado no dicen nada: juntos en una tarjeta se ve de un vistazo si
+   pegan, y es lo que decide quien los elige. */
+.tarjeta-colores {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: .5rem;
+}
+
+.tarjeta-colores__campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: .75rem;
+}
+
+.tarjeta-color {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  padding: .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* ===== La muestra de la tarjeta =====
+   Los colores los pone la plantilla, porque son los elegidos. Lo de aquí es
+   sólo la forma, y copia la de la tienda (_seccion-productos.scss): si aquí
+   saliera cuadrada y allá redondeada, el color se elegiría mirando otra cosa.
+
+   NADA DE AQUÍ DENTRO USA VARIABLES DEL TEMA DEL CRM: encima de un fondo
+   elegido, el tema oscuro las volvería invisibles. */
+.tarjeta-muestra {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: .6rem;
+  border: 1px solid transparent;
+  border-radius: .75rem;
+  overflow: hidden;
+}
+
+.tarjeta-muestra__media {
+  position: relative;
+  padding: .6rem .6rem 0;
+}
+
+/* Pegado al borde izquierdo y redondeado sólo por la derecha, como en la
+   tienda: es una etiqueta de la tarjeta, no de la foto */
+/* Las dos pastillas en columna, como en la tienda: la etiqueta encima del
+   descuento. Apiladas aquí y no con un `top` distinto cada una, porque la de
+   arriba puede no estar y entonces el descuento tiene que subir */
+.tarjeta-muestra__carteles {
+  position: absolute;
+  top: .35rem;
+  left: 0;
+  z-index: 1;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .2rem;
+  /* Que no se coma la tarjeta entera si el texto es largo */
+  max-width: 85%;
+}
+
+.tarjeta-muestra__cartel {
+  max-width: 100%;
+  padding: .1rem .4rem;
+  border-radius: 0 999px 999px 0;
+  font-size: .625rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El hueco de la foto, gris siempre: el producto de la muestra no existe, y
+   una foto de verdad aquí distraería de lo único que se está eligiendo */
+.tarjeta-muestra__foto {
+  display: block;
+  height: 64px;
+  border-radius: .25rem;
+  background-color: rgba(128, 128, 128, .22);
+}
+
+.tarjeta-muestra__nombre {
+  padding: .5rem .6rem;
+  font-size: .7rem;
+  line-height: 1.3;
+}
+
+.tarjeta-muestra__precios {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin: 0 .6rem;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+}
+
+.tarjeta-muestra__precio {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: .3rem .35rem;
+  font-size: .625rem;
+  line-height: 1.3;
+}
+
+/* La raya del medio es el borde de la segunda columna, igual que en la
+   tienda: así mide el alto exacto de la caja */
+.tarjeta-muestra__precio + .tarjeta-muestra__precio {
+  border-left: 1px solid transparent;
+}
+
+.tarjeta-muestra__precio b {
+  font-size: .75rem;
+}
+
+.tarjeta-muestra__rotulo {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* En pantallas estrechas la muestra se va arriba y ocupa su ancho: a 200 px
+   de columna, los campos se quedaban sin sitio */
+@media (max-width: 991.98px) {
+  .tarjeta-colores {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tarjeta-muestra {
+    max-width: 220px;
+  }
+}
+
+/* ===== Cómo se enseña la sección =====
+   Tres botones con su dibujo. Un desplegable obligaría a imaginarse qué
+   significa «imagen a la izquierda»; el dibujo lo enseña. */
+.disposiciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-bottom: .75rem;
+}
+
+.disposicion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
+
+  padding: .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  cursor: pointer;
+}
+
+.disposicion.is-activa {
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+.disposicion:disabled { cursor: default; opacity: .6; }
+
+.disposicion__texto {
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+/* El dibujo: una banda que es la imagen y tres rayas que son las tarjetas. El
+   orden lo pone `flex-direction`, así que el de la derecha es el mismo marcado
+   del revés y no hay dos dibujos que mantener. */
+.disposicion__dibujo {
+  display: flex;
+  gap: 3px;
+  width: 96px;
+  height: 40px;
+}
+
+.disposicion__dibujo--derecha { flex-direction: row-reverse; }
+
+.disposicion__banda {
+  flex: 0 0 30%;
+  border-radius: 3px;
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+/* Sin imagen, las tarjetas ocupan todo: la banda no se quita del marcado, se
+   deja sin sitio, y así los cuatro dibujos miden lo mismo */
+.disposicion__dibujo--sola .disposicion__banda,
+.disposicion__dibujo--cartel .disposicion__banda { display: none; }
+
+/* En carteles: tres cuadrados en vez de las rayas altas de «sólo productos».
+   Lo que distingue a los dos dibujos es la FORMA, que es justo lo que cambia
+   en la tienda; el color se queda, porque las dos son las tarjetas */
+.disposicion__dibujo--cartel .disposicion__cartas {
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.disposicion__dibujo--cartel .disposicion__cartas i {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+}
+
+.disposicion__cartas {
+  display: flex;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+}
+
+.disposicion__cartas i {
+  flex: 1;
+  border-radius: 3px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .22);
+}
+
+/* ===== La imagen de al lado ===== */
+.imagen-lado {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: .5rem;
+}
+
+/* El hueco tiene la proporción con la que se va a ver en la tienda —del alto
+   de las tarjetas— para que no sorprenda el recorte */
+.imagen-lado__foto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.imagen-lado__foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagen-lado__hueco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .3rem;
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.imagen-lado__hueco i { font-size: 1.4rem; }
+
+.imagen-lado__campos {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.imagen-lado__botones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+/* El <input type="file"> va escondido dentro: la etiqueta ES el botón */
+.imagen-lado__subir {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.imagen-lado__subir.disabled { cursor: default; opacity: .65; }
+
+@media (max-width: 575.98px) {
+  .imagen-lado {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .imagen-lado__foto {
+    max-width: 160px;
+  }
+}
+
+/* ===== El filtro de la lista =====
+   Los tres botones a la izquierda y, cuando hay filtro puesto, el aviso de que
+   no se puede arrastrar al lado. En una fila que se parte sola: en un teléfono
+   el aviso baja debajo de los botones en vez de estrujarlos. */
+.inicio-filtro {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem .75rem;
+  margin-bottom: .75rem;
+}
+
+/* El número de cada clase, dentro de su botón. Es una pastilla y no texto
+   suelto: así se lee como un dato y no como parte del rótulo */
+.inicio-filtro__cuantas {
+  display: inline-block;
+  min-width: 1.25rem;
+  margin-left: .35rem;
+  padding: 0 .3rem;
+  border-radius: 999px;
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .12);
+  font-size: .7rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Dentro del botón puesto, el fondo del tema se come la pastilla: se aclara
+   con el color del propio botón */
+.btn-primary .inicio-filtro__cuantas {
+  background-color: rgba(255, 255, 255, .25);
+}
+
+.inicio-filtro__aviso {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ===== Cuando el filtro no deja nada ===== */
+.inicio-vacio {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.inicio-vacio i {
+  display: block;
+  margin-bottom: .5rem;
+  font-size: 1.75rem;
+  opacity: .5;
+}
+
+/* El botón de añadir, al final de la fila del filtro */
+.inicio-filtro__nuevo {
+  margin-left: auto;
+}
+
+/* ===== Crear un banner =====
+   Un renglón, no un modal: lo único que hace falta para que exista es el
+   nombre, y abrir una ventana para un campo es más ceremonia que trabajo. */
+.inicio-nuevo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .75rem;
+  padding: .75rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.inicio-nuevo__rotulo {
+  margin: 0;
+  font-size: .625rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.inicio-nuevo input {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
+/* En su propia línea cuando no cabe: el pie explica, no estorba */
+.inicio-nuevo__pie {
+  flex-basis: 100%;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ===== Lo que sólo tienen los banners =====
+   Su nombre a la izquierda y el botón de borrarlo a la derecha, separado del
+   resto: no es un campo más, se lleva las imágenes por delante. */
+.banner-propio {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.banner-propio__nombre {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.banner-propio__fila {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.banner-propio__fila input {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 420px;
+}
+
+/* ===== Cómo se enseña un banner =====
+   Los dos dibujos reusan la caja de .disposicion__dibujo: una franja ancha
+   para el que rota y cuatro carteles verticales para el otro. */
+.vista-banner--rotativo,
+.vista-banner--carteles {
+  display: flex;
+  align-items: center;
+  width: 96px;
+  height: 40px;
+}
+
+.vista-banner__franja {
+  width: 100%;
+  height: 22px;
+  border-radius: 3px;
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.vista-banner__carteles {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Verticales y todos iguales: es lo que los distingue de la franja */
+.vista-banner__carteles i {
+  flex: 1;
+  border-radius: 3px;
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+/* ===== Cada cuánto se mueve sola ===== */
+/* La palanca y el número en la misma línea: son una sola decisión en dos
+   pasos, y en dos líneas parecerían dos campos sin relación */
+.segundos-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.campo-segundos {
+  max-width: 11rem;
+}
+
+/* ===== La forma de las fichas de las categorías destacadas =====
+   Tres redondeles contra dos fichas anchas: lo que distingue a los dibujos es
+   la forma Y cuántas caben, que es justo lo que cambia en la tienda. */
+.forma--circulo,
+.forma--cuadrado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 96px;
+  height: 40px;
+}
+
+.forma--circulo i,
+.forma--cuadrado i {
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.forma--circulo i {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+/* Dos y no tres: en cuadro cada ficha es mucho más ancha */
+.forma--cuadrado i:nth-child(3) { display: none; }
+
+.forma--cuadrado i {
+  width: 42px;
+  height: 26px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   LAS DOS COLUMNAS
+   El mismo esqueleto que el catálogo de productos y las características:
+   .file-manager del tema, con el ancho del lateral en una variable para que
+   el divisor pueda cambiarlo.
+   ============================================================ */
+.inicio.file-manager {
+  --bs-file-manager-sidebar-width: 360px;
+}
+
+/* Mientras se arrastra el divisor no se selecciona texto por toda la pantalla */
+.inicio.file-manager.is-redimensionando {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.inicio-lateral {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.inicio-lateral__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.inicio-lateral__titulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.inicio-lateral__acciones {
+  display: flex;
+  gap: .25rem;
+}
+
+.inicio-lateral__acciones .btn {
+  padding: .15rem .45rem;
+  font-size: 11px;
+}
+
+/* Lo único que se desplaza es la lista: la cabecera y el filtro se quedan */
+.inicio-lateral__cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: .5rem .75rem .75rem;
+  overflow: hidden;
+}
+
+.inicio-lateral__ayuda {
+  margin-bottom: .5rem;
+}
+
+.inicio-lista {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: .125rem .125rem .5rem;
+}
+
+/* Plegada: una tira estrecha. El contenido se esconde en vez de quitarse, así
+   volver a abrirla no vuelve a pedir nada */
+.inicio-lateral.is-plegado .inicio-lateral__cuerpo,
+.inicio-lateral.is-plegado .inicio-lateral__titulo {
+  display: none;
+}
+
+.inicio-lateral.is-plegado .inicio-lateral__cabecera {
+  justify-content: center;
+  padding: .5rem .25rem;
+}
+
+.inicio-lateral.is-plegado .inicio-lateral__acciones .btn-outline-theme {
+  display: none;
+}
+
+/* ---------- El divisor ---------- */
+.inicio-divisor {
+  flex: 0 0 .3125rem;
+  cursor: col-resize;
+  background-color: var(--bs-border-color, #dee2e6);
+  opacity: .6;
+  transition: opacity .15s ease, background-color .15s ease;
+}
+
+.inicio-divisor:hover {
+  opacity: 1;
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+/* Con el lateral plegado no hay nada que redimensionar */
+.inicio-divisor.is-inerte {
+  cursor: default;
+  pointer-events: none;
+  opacity: .35;
+}
+
+/* ---------- La columna de la derecha ---------- */
+.inicio-contenido {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+/* Qué sección se está configurando: se queda arriba al desplazar los campos,
+   que son largos y es fácil perder de vista en cuál se está */
+.inicio-contenido__cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  padding: .625rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.inicio-contenido__textos {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.inicio-contenido__textos b {
+  font-size: .9375rem;
+  line-height: 1.2;
+}
+
+.inicio-contenido__cabecera .seccion-que-es {
+  margin: 0;
+}
+
+/* Sin ninguna elegida */
+.inicio-elige {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: 2rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.inicio-elige i {
+  font-size: 1.75rem;
+  opacity: .5;
+}
+
+/* El filtro, dentro del lateral, se parte en dos líneas si hace falta */
+.inicio-lateral .inicio-filtro {
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin-bottom: .5rem;
+}

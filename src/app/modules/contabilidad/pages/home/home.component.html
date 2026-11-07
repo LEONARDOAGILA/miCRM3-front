@@ -1,0 +1,64 @@
+<!-- ============================================================
+     PORTADA DE CONTABILIDAD
+
+     Misma estructura que la de Inventarios: cabecera con el nombre del módulo
+     y la vuelta al inicio, y debajo una tarjeta por pantalla, sólo las que
+     el perfil puede abrir (ver cargarModulosPermitidos en el .ts).
+     ============================================================ -->
+<div class="cont-home">
+
+  <div class="cont-home__fondo">
+
+    <!-- ===================== CABECERA ===================== -->
+    <div class="cont-header">
+      <div class="cont-header__icono">
+        <i class="fa fa-book" aria-hidden="true"></i>
+      </div>
+
+      <div class="cont-header__texto">
+        <h1 class="cont-header__titulo">Menú Contabilidad</h1>
+        <p class="cont-header__ayuda">
+          El plan de cuentas y, sobre él, los asientos y los informes
+        </p>
+      </div>
+
+      <!-- «Volver» es navegación, no un módulo: va en la cabecera y no
+           mezclado entre las tarjetas. -->
+      <a routerLink="/home" class="btn btn-outline-secondary btn-sm cont-header__volver">
+        <i class="fa fa-circle-left fa-fw me-1" aria-hidden="true"></i>
+        <span class="d-none d-sm-inline">Volver al inicio</span>
+        <span class="d-inline d-sm-none">Volver</span>
+      </a>
+    </div>
+
+    <!-- ===================== PANTALLAS ===================== -->
+    <div class="row g-3">
+      @if (modulosPermitidos.length > 0) {
+        @for (modulo of modulosPermitidos; track modulo.url) {
+          <div class="col-xl-4 col-md-6">
+            <a [routerLink]="['/' + modulo.url]" class="cont-card">
+              <span class="cont-card__icono {{ modulo.color }}">
+                <i class="fa {{ modulo.icon }}" aria-hidden="true"></i>
+              </span>
+              <span class="cont-card__cuerpo">
+                <span class="cont-card__titulo">{{ modulo.label }}</span>
+                <span class="cont-card__descripcion">{{ modulo.descripcion }}</span>
+              </span>
+              <i class="fa fa-arrow-right cont-card__flecha" aria-hidden="true"></i>
+            </a>
+          </div>
+        }
+      } @else {
+        <!-- Sin permisos quedaba una rejilla vacía sin explicación -->
+        <div class="col-12">
+          <div class="cont-vacio">
+            <i class="fa fa-lock" aria-hidden="true"></i>
+            <p>No tiene pantallas de contabilidad asignadas en su perfil</p>
+            <a routerLink="/home" class="btn btn-sm btn-outline-secondary">Volver al inicio</a>
+          </div>
+        </div>
+      }
+    </div>
+
+  </div>
+</div>

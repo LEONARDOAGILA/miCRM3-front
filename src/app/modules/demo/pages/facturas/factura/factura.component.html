@@ -13,10 +13,10 @@
   <div class="content-container1">
 
     <!--    INICIO SPINNER    -->
-    <ng-container *ngIf="(isLoading$ | async)">
+    @if ((isLoading$ | async)) {
       <div class="loader1"></div>
       <div class="overlay1"></div>
-    </ng-container>
+    }
     <!--    FIN SPINNER    -->
 
     <!-- INICIO CABECERA -->
@@ -36,19 +36,23 @@
                   </app-campoTexto>
 
                   <!-- Lista de sugerencias -->
-                  <div *ngIf="showClienteSuggestions" class="position-absolute w-100 bg-white border rounded shadow-sm"
-                    style="top: 100%; left: 0; z-index: 1000; max-height: 200px; overflow-y: auto;">
-                    <ul class="list-group list-group-flush">
-                      <li *ngFor="let cliente of filteredClientes"
-                        class="list-group-item list-group-item-action cursor-pointer py-2"
-                        (click)="selectCliente(cliente)">
-                        <div class="d-flex justify-content-between">
-                          <strong>{{ cliente.identificacion }}</strong>
-                          <span class="text-muted">{{ cliente.nombre_completo }}</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
+                  @if (showClienteSuggestions) {
+                    <div class="position-absolute w-100 bg-white border rounded shadow-sm"
+                      style="top: 100%; left: 0; z-index: 1000; max-height: 200px; overflow-y: auto;">
+                      <ul class="list-group list-group-flush">
+                        @for (cliente of filteredClientes; track cliente) {
+                          <li
+                            class="list-group-item list-group-item-action cursor-pointer py-2"
+                            (click)="selectCliente(cliente)">
+                            <div class="d-flex justify-content-between">
+                              <strong>{{ cliente.identificacion }}</strong>
+                              <span class="text-muted">{{ cliente.nombre_completo }}</span>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
                 </div>
 
                 <div class="flex-shrink-0 d-flex align-items-end" style="padding-bottom: 35px;">
@@ -63,7 +67,7 @@
 
           <div class="row mb-2">
             <app-campoTexto [control]="cabecera.controls['nombre_completo']" label="CLIENTE" placeholder="CLIENTE"
-              [maxLength]="50" [trimEspacios]="true" [mayusculas]="true" [soloLetras]="true"></app-campoTexto>
+            [maxLength]="50" [trimEspacios]="true" [mayusculas]="true" [soloLetras]="true"></app-campoTexto>
           </div>
         </div>
 
@@ -115,7 +119,7 @@
         [localeText]="_appAgGridService.localeText" [rowSelection]="'single'" [pagination]="true" [animateRows]="true"
         [cacheQuickFilter]="true" class="ag-theme-alpine zebra-grid ag-grid-transparente p-2 "
         (gridReady)="onGridReady($event)" (cellValueChanged)="onCellValueChanged($event)"
-        (selectionChanged)="onSelectionChanged($event)"></ag-grid-angular>
+      (selectionChanged)="onSelectionChanged($event)"></ag-grid-angular>
       <!-- FIN AG-GRID -->
 
       <!-- INICIO BOTÓN GUARDAR -->

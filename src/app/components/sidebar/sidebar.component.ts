@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ElementRef, HostListener, ViewChild, OnInit, AfterViewChecked, AfterViewInit } 		 from '@angular/core';
+import { Component, Input, Output, EventEmitter, ElementRef, HostListener, ViewChild, OnInit, AfterViewChecked, AfterViewInit, ChangeDetectionStrategy } 		 from '@angular/core';
 import { firstValueFrom, Subject} from "rxjs";
 import { slideUp } from '../../composables/slideUp.js';
 import { slideToggle } from '../../composables/slideToggle.js';
@@ -17,6 +17,7 @@ import { AppStateService } from './../../service/app-state.service';
 @Component({
   selector: 'sidebar',
   templateUrl: './sidebar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 

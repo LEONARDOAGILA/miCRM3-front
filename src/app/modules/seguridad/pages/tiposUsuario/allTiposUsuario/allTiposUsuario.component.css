@@ -39,48 +39,9 @@
   gap: .25rem;
 }
 
-:host ::ng-deep .tu-acciones .btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 24px;
-  height: 22px;
-  padding: 0;
-  border-radius: .25rem;
-  font-size: .6875rem;
-  line-height: 1;
-  cursor: pointer;
-
-  /* gris por omisión; cada acción pone su tinte debajo */
-  --tinte: #6c757d;
-  border: 1px solid rgba(108, 117, 125, .35);
-  background-color: rgba(108, 117, 125, .08);
-  color: var(--tinte);
-  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
-}
-
-:host ::ng-deep .tu-acciones .btn-ver {
-  --tinte: var(--bs-primary, #0d6efd);
-  border-color: rgba(13, 110, 253, .35);
-  background-color: rgba(13, 110, 253, .08);
-}
-
-:host ::ng-deep .tu-acciones .btn-editar {
-  --tinte: var(--bs-warning-text-emphasis, #997404);
-  border-color: rgba(255, 193, 7, .45);
-  background-color: rgba(255, 193, 7, .12);
-}
-
-:host ::ng-deep .tu-acciones .btn-eliminar {
-  --tinte: var(--bs-danger, #dc3545);
-  border-color: rgba(220, 53, 69, .35);
-  background-color: rgba(220, 53, 69, .08);
-}
-
-:host ::ng-deep .tu-acciones .btn-icon:hover:not([disabled]) {
-  filter: brightness(.92);
-}
+/* Estos botones se pintaban aquí como pastillas con borde y fondo tintado,
+   que era el quinto aspecto distinto de la columna ACCIONES. Ahora salen
+   del bloque de styles.css, como los de las otras 31 pantallas. */
 
 /* Un tipo en uso no se puede borrar: el botón se queda, apagado, para que
    se vea que la acción existe y por qué no está disponible (el title lo

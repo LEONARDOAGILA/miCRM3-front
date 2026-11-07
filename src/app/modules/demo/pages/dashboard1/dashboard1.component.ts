@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { AppVariablesService } from '../../../../service/app-variables.service';
 
 
@@ -7,6 +7,7 @@ import { AppVariablesService } from '../../../../service/app-variables.service';
   selector: 'app-dashboard1',
   templateUrl: './dashboard1.component.html',
   styleUrl: './dashboard1.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class Dashboard1Component implements OnInit {

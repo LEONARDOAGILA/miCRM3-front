@@ -1,11 +1,11 @@
-import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
-import { PanelModule } from '../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../components/panel/panel.component';
 import { AvisoComponent } from '../../../../components/campos/aviso/aviso.component';
 import { GoogleMapsLoaderService } from '../../../../service/google-maps-loader.service';
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
@@ -45,8 +45,9 @@ import {
 @Component({
   selector: 'app-ruta-cobrador',
   standalone: true,
-  imports: [CommonModule, FormsModule, PanelModule, AvisoComponent],
+  imports: [FormsModule, PanelComponent, AvisoComponent],
   templateUrl: './rutaCobrador.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./rutaCobrador.component.css'],
 })
 export class RutaCobradorComponent implements OnInit, AfterViewInit, OnDestroy {

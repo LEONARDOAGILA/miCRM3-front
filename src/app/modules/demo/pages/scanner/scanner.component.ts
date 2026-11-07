@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { BarcodeFormat } from '@zxing/library';
 import * as _ from 'lodash-es';
 import { Subject } from 'rxjs';
@@ -7,6 +7,7 @@ import { Subject } from 'rxjs';
   selector: 'app-scanner',
   templateUrl: './scanner.component.html',
   styleUrls: ['./scanner.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class ScannerComponent implements OnInit, OnDestroy {

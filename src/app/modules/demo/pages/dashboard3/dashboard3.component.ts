@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
 import { AppVariablesService } from '../../../../service/app-variables.service';
 import moment from 'moment';
 import { DaterangepickerComponent, DaterangepickerDirective } from 'ngx-daterangepicker-material';
@@ -15,6 +15,7 @@ declare var bootstrap: any;
   selector: 'app-dashboard3',
   templateUrl: './dashboard3.component.html',
   styleUrl: './dashboard3.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class Dashboard3Component  implements OnInit {

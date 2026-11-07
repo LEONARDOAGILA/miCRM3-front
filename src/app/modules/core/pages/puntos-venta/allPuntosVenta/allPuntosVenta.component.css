@@ -1,0 +1,550 @@
+/* ============================================================
+   PUNTOS DE VENTA (listado)
+
+   Lo que va aquí es sólo lo propio de esta pantalla. Las clases del
+   spinner (content-container1, overlay1, loader1), .inactivo y
+   .ag-grid-transparente son globales y viven en scss/angular.scss.
+   ============================================================ */
+
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida 20px: el tema deja un hueco entre la
+   cabecera de la aplicación y el primer elemento de la página que aquí
+   sobra, porque el panel ya trae el suyo. */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
+}
+
+/* ---------- Cuerpo del panel ----------
+   Compensa el padding superior del panel-body del tema. En las demás
+   listas se le quitan los 19px enteros porque lo primero que va dentro es
+   la barra de herramientas —controles sueltos, sin fondo— y pegarla a la
+   cabecera queda bien.
+
+   AQUÍ NO: lo primero es la tarjeta de las tiendas, con su borde y su
+   fondo, y comiéndose los 19px quedaba montada sobre la barra oscura del
+   panel (medido: empezaba 4px POR ENCIMA de donde acaba la barra). Se le
+   dejan 8px para que la tarjeta se vea apoyada y no encajada. */
+.lista-contenido {
+  margin-top: -11px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+/* Botones cuadrados a la altura del buscador (form-control del tema) */
+.lista-barra__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* Lupa pequeña sobre el botón de auditoría */
+.lista-barra__badge {
+  font-size: 8px;
+}
+
+/* ---------- Grilla ----------
+   Altura de arranque; ajustarAlturaGrid() la sustituye en cuanto la grilla
+   está lista. La variable --ag-line-height es la altura de línea de celda
+   que usa el tema alpine. */
+.lista-grilla {
+  height: 360px;
+  margin-top: -10px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- Paginación ---------- */
+.pagination-controls {
+  gap: .5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto":
+   hereda el borde y la altura de los demás y queda alineado con ellos. */
+.pagination-page-badge.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+/* ---------- Responsive ---------- */
+/* Teléfonos: paginación apilada y centrada, botones más compactos */
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
+  }
+}
+
+/* Tablets: sólo botones un poco más compactos */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .pagination-buttons .btn {
+    padding: .2rem .5rem;
+    font-size: .75rem;
+  }
+}
+
+/* ---------- Modo oscuro ----------
+   btn-white del tema es blanco fijo; en oscuro se pasa a la superficie del
+   tema para que el grupo no destaque como un bloque blanco. */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
+}
+
+/* ---------- Foto en la grilla ---------- */
+:host ::ng-deep .lista-foto {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+}
+
+:host ::ng-deep .lista-foto--vacia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bs-gray-800, #2d353c);
+  color: var(--bs-gray-500, #adb5bd);
+  font-size: 11px;
+}
+
+/* ============================================================
+   EL AVISO DE LAS CAJAS QUE NO PUEDEN ASENTAR
+   ============================================================
+   Va arriba y en rojo a propósito: una caja sin cuenta resuelta parece
+   perfectamente normal en la rejilla hasta el día que alguien intenta
+   facturar desde ella. */
+.pv-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  margin: .25rem .5rem .25rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-danger-border-subtle, #f1aeb5);
+  border-radius: .375rem;
+  background-color: var(--bs-danger-bg-subtle, #f8d7da);
+  color: var(--bs-danger-text-emphasis, #b02a37);
+}
+
+.pv-aviso > i { font-size: 1.1rem; margin-top: .1rem; }
+.pv-aviso b { display: block; font-size: .85rem; }
+.pv-aviso span { font-size: .75rem; opacity: .9; }
+
+/* ============================================================
+   LA COLUMNA DE CUENTAS
+   ============================================================ */
+/* Cuántas tiene puestas ella misma, junto a la etiqueta de estado */
+:host ::ng-deep .pv-propias {
+  margin-left: .35rem;
+  font-size: .65rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* La fila entera, cuando le faltan cuentas: un tinte, no un grito. La
+   etiqueta roja de la columna ya dice qué pasa. */
+:host ::ng-deep .lista-grilla .ag-row.fila-sin-cuentas .ag-cell {
+  background-color: rgba(var(--bs-danger-rgb, 220, 53, 69), .05);
+}
+
+/* ============================================================
+   LAS DOS COLUMNAS: TIENDAS | CAJAS
+   ============================================================
+   Un punto de venta no significa nada suelto: significa «la caja 2 de tal
+   tienda». A la izquierda las tiendas con lo que tiene cada una; a la
+   derecha las cajas de la que esté elegida.
+
+   El ancho de la izquierda lo pone la plantilla en --pv-ancho-izq y lo
+   mueve el divisor; se recuerda por navegador. */
+/* EL ALTO LO PONE EL COMPONENTE, no un calc() con un número a ojo.
+   `calc(100vh - 13.5rem)` sólo acierta cuando lo de encima mide justo esas
+   13.5rem: con el aviso de cuentas sin resolver sobraba sitio abajo, y con
+   el panel EXPANDIDO —que pasa a ocupar la ventana entera— se quedaba corto
+   y dejaba un palmo de panel vacío. El componente mide dónde empieza esta
+   caja y le da lo que queda hasta abajo (ver `ajustarAltoColumnas`). Este
+   valor es sólo el de partida, hasta que se pinta. */
+.pv-dos-columnas {
+  display: flex;
+  align-items: stretch;
+  height: calc(100vh - 13.5rem);
+  min-height: 360px;
+}
+
+.pv-col { min-width: 0; }   /* sin esto, el contenido ancho estira la columna */
+
+.pv-col--izq {
+  flex: 0 0 var(--pv-ancho-izq, 300px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: .25rem .5rem .25rem .25rem;
+}
+
+.pv-col--der {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: .25rem .25rem .25rem .5rem;
+}
+
+/* ---------- El divisor (el mismo del administrador de archivos) ---------- */
+.pv-divisor {
+  position: relative;
+  flex: 0 0 10px;
+  box-sizing: border-box;
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+  border-right: 1px solid var(--bs-border-color, #dee2e6);
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.pv-divisor::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background-color: transparent;
+  transition: background-color .1s ease .25s;
+}
+
+/* El asa: tres puntos verticales en el centro, muy tenues */
+.pv-divisor::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 15px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background-image: radial-gradient(circle, rgba(var(--bs-body-color-rgb, 33, 37, 41), .45) 1.1px, transparent 1.4px);
+  background-size: 3px 5px;
+  background-repeat: repeat-y;
+  background-position: center;
+  transition: opacity .1s ease .25s;
+  pointer-events: none;
+}
+
+.pv-divisor:hover::before,
+.pv-dos-columnas.is-redimensionando .pv-divisor::before {
+  background-color: var(--bs-app-theme, #00acac);
+}
+
+.pv-dos-columnas.is-redimensionando .pv-divisor::before { transition-delay: 0s; }
+
+.pv-divisor:hover::after,
+.pv-dos-columnas.is-redimensionando .pv-divisor::after { opacity: 0; }
+
+.pv-dos-columnas.is-redimensionando,
+.pv-dos-columnas.is-redimensionando * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* ============================================================
+   LA LISTA DE TIENDAS
+   ============================================================ */
+.pv-caja {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  background-color: var(--bs-component-bg, #fff);
+  overflow: hidden;
+}
+
+.pv-caja__titulo {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .5rem .625rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.pv-caja__cuenta {
+  margin-left: auto;
+  padding: .05rem .4rem;
+  border-radius: 999px;
+  background-color: rgba(108, 117, 125, .18);
+  font-size: .68rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- El buscador de tiendas ----------
+   Va dentro de la caja y pegado a su cabecera, no en la barra de
+   arriba: ésa busca cajas y ésta busca tiendas, y dos buscadores que
+   parecen el mismo y hacen cosas distintas se confunden. */
+.pv-buscador {
+  position: relative;
+  padding: .4rem .5rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.pv-buscador .form-control {
+  padding-left: 1.75rem;
+  padding-right: 1.6rem;
+  font-size: .78rem;
+}
+
+.pv-buscador__lupa {
+  position: absolute;
+  left: 1.05rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: .72rem;
+  color: var(--bs-secondary-color, #6c757d);
+  pointer-events: none;
+}
+
+.pv-buscador__limpiar {
+  position: absolute;
+  right: .85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: rgba(108, 117, 125, .18);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .6rem;
+}
+
+.pv-buscador__limpiar:hover {
+  background-color: var(--bs-danger, #dc3545);
+  color: #fff;
+}
+
+.pv-caja__cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ---------- Cada tienda ---------- */
+.pv-fila {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  width: 100%;
+  padding: .45rem .625rem;
+  border: 0;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid transparent;
+  background-color: transparent;
+  color: inherit;
+  text-align: left;
+  font-size: .8rem;
+  line-height: 1.3;
+}
+
+.pv-fila:last-child { border-bottom: 0; }
+
+.pv-fila:hover { background-color: var(--bs-tertiary-bg, #f8f9fa); }
+
+/* La elegida: barra del color del tema, como la fila «actual» de los
+   selectores. Es la que manda sobre lo que se ve a la derecha. */
+.pv-fila.is-elegida {
+  border-left-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+  font-weight: 600;
+}
+
+/* Una tienda inactiva se ve, apagada: puede tener cajas de antes */
+.pv-fila.is-inactiva .pv-fila__texto,
+.pv-fila.is-inactiva .pv-fila__codigo {
+  opacity: .55;
+  text-decoration: line-through;
+}
+
+.pv-fila--todas { border-bottom: 2px solid var(--bs-border-color, #dee2e6); }
+
+.pv-fila__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* EL CÓDIGO VA DELANTE y con ancho fijo: así los nombres empiezan todos
+   en la misma columna y la lista se lee de arriba abajo como una
+   numeración (01, 02, 03…), que es por donde se nombran las tiendas. */
+.pv-fila__codigo {
+  flex: 0 0 auto;
+  min-width: 1.9rem;
+  padding: .05rem .3rem;
+  border-radius: .25rem;
+  background-color: rgba(108, 117, 125, .15);
+  color: var(--bs-body-color, #212529);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-align: center;
+}
+
+/* En la elegida, el código toma el color del tema: es la referencia que
+   se queda mirando mientras se trabaja a la derecha */
+.pv-fila.is-elegida .pv-fila__codigo {
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+}
+
+/* Cuántas cajas tiene. El número en rojo son las que no pueden asentar:
+   ahí es donde hay trabajo pendiente. */
+.pv-fila__dato {
+  flex: 0 0 auto;
+  min-width: 1.4rem;
+  padding: .05rem .35rem;
+  border-radius: 999px;
+  background-color: rgba(108, 117, 125, .15);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .65rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.pv-fila__dato--mal {
+  background-color: var(--bs-danger, #dc3545);
+  color: #fff;
+}
+
+.pv-vacio {
+  padding: .75rem .625rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pv-vacio__quitar {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--bs-primary, #0d6efd);
+  font-size: .72rem;
+  text-decoration: underline;
+}
+
+/* ============================================================
+   LA COLUMNA DE LA DERECHA
+   ============================================================ */
+.pv-barra { margin: 0 0 .4rem; }
+
+/* De qué se está mirando: sin esto, con la rejilla desplazada no se sabe si
+   lo que se ve son todas las cajas o las de una tienda */
+.pv-donde {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+  margin: 0 0 .35rem;
+  padding: 0 .25rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pv-donde i { color: var(--bs-app-theme, var(--bs-primary, #0d6efd)); }
+
+.pv-donde__quitar {
+  padding: 0 .3rem;
+  border: 0;
+  background: transparent;
+  color: var(--bs-primary, #0d6efd);
+  font-size: .7rem;
+  text-decoration: underline;
+}
+
+.pv-donde__cuenta { margin-left: auto; opacity: .85; }
+
+.pv-grilla-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* La rejilla llena su columna. El alto sale de la cadena flex —la caja de
+   dos columnas lo tiene medido— y no de medir la rejilla a mano: dentro de
+   un flex, una medida calculada pelea con el reparto.
+
+   Y SIN EL `margin-top: -10px` DE `.lista-grilla`: ese menos diez está para
+   las pantallas donde la rejilla va pegada bajo la barra de herramientas y
+   cierra el hueco. Aquí encima hay una línea de texto —de qué tienda son
+   las cajas— y lo que hacía era subir la rejilla por encima de ella: el
+   texto quedaba montado sobre la cabecera de la rejilla. */
+.pv-grilla-wrap .lista-grilla {
+  width: 100%;
+  height: 100%;
+  margin-top: 0;
+}
+
+/* ============================================================
+   PANTALLAS ESTRECHAS
+   ============================================================
+   Por debajo de 992px las dos columnas se apilan —las tiendas arriba, con
+   su propia altura— y el divisor desaparece: no hay nada que repartir. */
+@media (max-width: 991.98px) {
+  .pv-dos-columnas {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .pv-col--izq {
+    flex: 0 0 auto;
+    max-height: 220px;
+    padding: .25rem;
+  }
+
+  .pv-col--der { padding: .5rem .25rem .25rem; }
+
+  .pv-divisor { display: none; }
+
+  /* Apilado, el contenedor no tiene alto definido y un 100% daria cero */
+  .pv-grilla-wrap .lista-grilla { height: 420px; }
+}

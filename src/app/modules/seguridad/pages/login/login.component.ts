@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from "@angular/core";
 import { FormBuilder,  FormGroup } from "@angular/forms";
 import { Router } from "@angular/router";
 import { firstValueFrom, Subject, takeUntil} from "rxjs";
@@ -20,12 +20,17 @@ import { AppComponent } from "../../../../app.component";
 import { ChangePasswordLoginComponent } from '../login/change-password-login/change-password-login.component';
 import { OlvideContrasenaComponent } from './olvide-contrasena/olvide-contrasena.component';
 
+import { ReactiveFormsModule } from '@angular/forms';
+import { DirectiveModule } from '../../../../core/directives/directive.module';
+
 
 @Component({
   selector: "app-login",
   templateUrl: "./login.component.html",
   styleUrls: ["./login.component.css"],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [ReactiveFormsModule, DirectiveModule],
 })
 
 

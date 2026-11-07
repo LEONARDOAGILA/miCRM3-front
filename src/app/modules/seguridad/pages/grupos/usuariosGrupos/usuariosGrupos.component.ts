@@ -1,9 +1,9 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, firstValueFrom, from, merge, of } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
-import { CellClickedEvent, GridApi, GridReadyEvent, RowNode } from 'ag-grid-community';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
+import { ICellRendererAngularComp, AgGridModule } from 'ag-grid-angular';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
@@ -19,7 +19,7 @@ import { AppSettings } from '../../../../../service/app-settings.service';
 import { UserModel } from '../../../interfaces/userModel';
 import { GrupoModel } from '../../../interfaces/grupoModel';
 import { AccesoModel } from '../../../interfaces/accesoModel';
-import { FileTreeNode } from '../../../../../components/file-tree-node/file-tree-node.component';
+import { FileTreeNode, FileTreeNodeComponent } from '../../../../../components/file-tree-node/file-tree-node.component';
 import { buscarNodo, construirArbolGrupos, filtrarArbol, recorrer } from '../arbolGrupos';
 
 ///   COMPONENTES    ///
@@ -33,6 +33,13 @@ import { PapeleraUsuariosComponent } from '../papeleraUsuarios/papeleraUsuarios.
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { etiquetaTipoUsuario } from '../../../interfaces/tipoUsuarioModel';
+
+import { FormsModule } from '@angular/forms';
+import { NgScrollbarModule } from 'ngx-scrollbar';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
 
 /** Ids de los dos nodos virtuales del árbol (no son grupos de la tabla). */
 const NODO_TODOS = -1;
@@ -58,7 +65,18 @@ const NODO_SIN_GRUPO = 0;
   selector: 'app-usuariosGrupos',
   templateUrl: './usuariosGrupos.component.html',
   styleUrls: ['./usuariosGrupos.component.css'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    NgScrollbarModule,
+    PanelComponent,
+    FileTreeNodeComponent,
+    CampoBusquedaPaginacionComponent
+],
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     'class': 'd-flex flex-column flex-1 h-100'
   }
@@ -640,7 +658,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
         minWidth: UsuariosGruposComponent.ANCHO_ACCIONES_ABIERTA, maxWidth: UsuariosGruposComponent.ANCHO_ACCIONES_ABIERTA,
         cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
         cellRenderer: ButtonAccionUsuarioGrupo,
-        suppressMenu: true, sortable: false, resizable: false,
+        suppressHeaderMenuButton: true, sortable: false, resizable: false,
         headerComponentParams: { template: this.plantillaCabeceraAcciones(false) },
       },
     ]);
@@ -661,7 +679,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    if (this.usuarios.length) { this.gridApi.setRowData(this.usuarios); }
+    if (this.usuarios.length) { this.gridApi.setGridOption('rowData', this.usuarios); }
     this.programar(() => this.montarListenersCabecera(), 500);
     this._appAgGridService.ajustarTamanoGrid(this.gridApi);
   }
@@ -688,7 +706,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
     actionsCol.minWidth = ancho;
     actionsCol.maxWidth = ancho;
     actionsCol.headerComponentParams = { template: this.plantillaCabeceraAcciones(this.accionesPlegadas) };
-    this.gridApi.setColumnDefs(columnDefs);
+    this.gridApi.setGridOption('columnDefs', columnDefs);
     this.gridApi.sizeColumnsToFit();
     this.programar(() => { this.gridApi.sizeColumnsToFit(); this.montarListenersCabecera(); }, 100);
   }
@@ -740,7 +758,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
    * registro que hoy no cumpliría alguna regla —cargado antes de que
    * existiera— no se podría desactivar hasta arreglarle todo lo demás.
    */
-  cambiarActivo(fila: UserModel | null, nodo?: RowNode | null): void {
+  cambiarActivo(fila: UserModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
 
@@ -787,7 +805,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
         this.usuarios = [];
         this.totalRegistros = 0;
         this.ultimaPagina = 1;
-        this.gridApi?.setRowData(this.usuarios);
+        this.gridApi?.setGridOption('rowData', this.usuarios);
         return;
       }
       this.usuarios = res.body?.data?.data || [];
@@ -798,7 +816,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
         this.paginaActual = meta.current_page;
         this.ultimaPagina = meta.last_page;
       }
-      this.gridApi?.setRowData(this.usuarios);
+      this.gridApi?.setGridOption('rowData', this.usuarios);
       this.selectedRow = null;
     } catch (error) {
       console.error('Error al cargar usuarios:', error);
@@ -994,7 +1012,8 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
 // ================================================================
 @Component({
   selector: 'app-button-accion-usuario-grupo',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (parent.accionesPlegadas) {
       <button type="button" class="btn btn-sm btn-outline-primary acciones-desplegar"
@@ -1017,6 +1036,7 @@ export class UsuariosGruposComponent implements OnInit, OnDestroy {
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar { width: 28px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: .25rem; }
   `],

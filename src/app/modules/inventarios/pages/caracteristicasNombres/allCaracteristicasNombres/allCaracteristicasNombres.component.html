@@ -1,0 +1,186 @@
+<!-- ============================================================
+     EL DICCIONARIO DE NOMBRES DE CARACTERÍSTICA
+
+     Estructura (la misma que allMarcas):
+       1. Miga de pan
+       2. <panel> del tema con los botones de imprimir / Excel / CSV /
+          recargar / expandir en su cabecera
+          2a. Barra de herramientas: buscador, nuevo, papelera, auditoría
+          2b. Grilla ag-Grid (paginación en servidor)
+          2c. Controles de paginación
+     ============================================================ -->
+
+<!-- ================= 1. MIGA DE PAN ================= -->
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a (click)="fun_home();">Inventarios</a></li>
+  <li class="breadcrumb-item active">Nombres de característica</li>
+</ol>
+
+<!-- ================= 2. PANEL ================= -->
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       [ButtonPrint]="accesoModel?.reporte === true"
+       [ButtonExportExcel]="accesoModel?.reporte === true"
+       [ButtonExportCsv]="accesoModel?.reporte === true"
+       (panelReloaded)="allCaracteristicasNombres()"
+       (panelExpanded)="ajustarTamanoGrid()"
+       (panelPrinted)="printPdf()"
+       (panelExportExceled)="exportExcel()"
+       (panelExportCsved)="exportCsv()"
+       [closeRoute]="'/inventarios'"
+       icono="font">
+
+  <!-- content-container1 / overlay1 / loader1 son globales (scss/angular.scss):
+       el spinner y el velo que bloquean el panel mientras carga. -->
+  <div class="content-container1 lista-contenido">
+    @if (isLoading$ | async) {
+      <div class="loader1"></div>
+      <div class="overlay1"></div>
+    }
+
+    <div class="content2">
+      <div class="example-wrapper">
+
+        <!-- ---------- 2a. BARRA DE HERRAMIENTAS ---------- -->
+        <div class="row g-2 m-2 align-items-center lista-barra">
+
+          <!-- Buscador con su botón de quitar filtros dentro: los dos van
+               siempre juntos, así que viven juntos. -->
+          <div class="col pe-1">
+            <app-campoBusquedaPaginacion
+              [id]="'filter-text-box'"
+              [placeholder]="'Buscar'"
+              [iconClass]="'fa fa-search fa-lg'"
+              [containerClass]="'w-100'"
+              [conLimpiarFiltros]="true"
+              [hayFiltro]="hayFiltro"
+              [columnasFiltradas]="cuantasColumnasFiltradas"
+              (buscar)="onFilterTextBoxChanged($event)"
+              (limpiarFiltros)="clearAllFilters()">
+            </app-campoBusquedaPaginacion>
+          </div>
+
+          <!-- Nuevo nombre. .inactivo (global) atenúa el botón cuando está
+               deshabilitado por falta de permiso de crear. -->
+          <div class="col-auto ps-0">
+            <button type="button"
+                    class="inactivo btn btn-primary lista-barra__btn"
+                    title="Agregar un nombre al diccionario"
+                    [disabled]="accesoModel?.crear === false"
+                    (click)="addCaracteristicaNombre()">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+
+          <!-- Papelera de reciclaje: sólo con el acceso «papelera» del perfil -->
+          @if (accesoModel?.papelera === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-outline-secondary lista-barra__btn"
+                      title="Papelera de reciclaje de nombres"
+                      (click)="abrirPapelera()">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          }
+
+          <!-- Auditoría de la fila seleccionada: sólo con permiso de auditar,
+               y deshabilitado hasta que se pulse una fila -->
+          @if (accesoModel?.auditar === true) {
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-warning lista-barra__btn position-relative"
+                      title="Ver historial de auditoría del registro seleccionado"
+                      [disabled]="!selectedRow"
+                      (click)="auditoria()">
+                <i class="fa fa-user-secret"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger lista-barra__badge">
+                  <i class="fa fa-search"></i>
+                </span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- Para qué es esta pantalla, donde se ve: es la que evita que
+             «peso» entre cuatro veces y una de ellas como «pezo». -->
+        <p class="lista-ayuda">
+          <i class="fa fa-circle-info me-1"></i>
+          El nombre se escribe <b>una sola vez aquí</b> y las categorías lo escogen de un combo.
+          La <b>unidad</b> va aparte del nombre («Potencia» + «W») y el <b>tipo de dato</b> es lo que
+          permite que la ficha del producto pida un número cuando toca un número. Las opciones de los
+          de tipo lista las define cada categoría.
+        </p>
+
+        <!-- ---------- 2b. GRILLA ----------
+             La altura inicial es sólo un valor de arranque: ajustarAlturaGrid()
+             la recalcula en cuanto la grilla está lista y en cada resize.
+             [pagination]="false" porque la paginación la hace el servidor. -->
+        <ag-grid-angular
+          class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla"
+          [rowData]="nombreModel"
+          [columnDefs]="columnDefs"
+          [enableCellTextSelection]="true"
+          [defaultColDef]="_appAgGridService.defaultColDef"
+          [sideBar]="_appAgGridService.sideBar"
+          [rowHeight]="_appAgGridService.rowHeight"
+          [headerHeight]="_appAgGridService.headerHeight"
+          [localeText]="_appAgGridService.localeText"
+          [rowSelection]="'single'"
+          [pagination]="false"
+          [animateRows]="true"
+          [navigateToNextCell]="navegarConTeclado"
+          [rowClassRules]="rowClassRules"
+          [tooltipShowDelay]="400"
+          [overlayNoRowsTemplate]="'<span>No hay nombres que cumplan el filtro</span>'"
+          (contextmenu)="onContextMenuGrilla($event)"
+          (gridReady)="onGridReady($event)"
+          (filterChanged)="onFiltroColumna()"
+          (cellClicked)="onCellClicked($event)">
+        </ag-grid-angular>
+
+        <!-- ---------- 2c. PAGINACIÓN ---------- -->
+        <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+
+          <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+            <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                    (click)="firstPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-angle-double-left"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                    (click)="prevPage()" [disabled]="paginaActual === 1">
+              <i class="fa fa-chevron-left"></i>
+            </button>
+            <span class="btn btn-sm btn-white pagination-page-badge disabled">
+              Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+            </span>
+            <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                    (click)="nextPage()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-chevron-right"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-white" title="Última página"
+                    (click)="ultimaPagina2()" [disabled]="paginaActual === ultimaPagina">
+              <i class="fa fa-angle-double-right"></i>
+            </button>
+          </div>
+
+          <div class="pagination-info small text-muted">
+            Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> registros
+            @if (hayFiltro) { <span class="lista-filtrado">(filtrado)</span> }
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</panel>
+
+
+<!-- ================= MENÚ DEL BOTÓN DERECHO ================= -->
+<app-menu-contextual #menuCtx
+                     [opciones]="opcionesContextuales"
+                     (elegida)="alElegirContextual($event)">
+</app-menu-contextual>

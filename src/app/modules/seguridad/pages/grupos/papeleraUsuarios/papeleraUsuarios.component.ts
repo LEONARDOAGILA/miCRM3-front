@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, NgZone, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellClickedEvent, ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
@@ -10,6 +10,10 @@ import { UserModel } from '../../../interfaces/userModel';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { LoadingService } from '../../../../../service/loading.service';
 import { AuditoriaModalComponent } from '../../../../../components/auditoria-modal/auditoria-modal.component';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
 
 /**
  * Papelera de reciclaje de usuarios (modal), calcada de la del administrador
@@ -27,7 +31,9 @@ import { AuditoriaModalComponent } from '../../../../../components/auditoria-mod
   selector: 'app-papeleraUsuarios',
   templateUrl: './papeleraUsuarios.component.html',
   styleUrls: ['./papeleraUsuarios.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [CommonModule, AgGridModule, FilasEstirablesDirective, ModalHeaderComponent],
 })
 export class PapeleraUsuariosComponent implements OnInit, OnDestroy {
 
@@ -172,7 +178,7 @@ export class PapeleraUsuariosComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.gridApi.setRowData(this.items);
+    this.gridApi.setGridOption('rowData', this.items);
   }
 
   navegarConTeclado = this._appAgGridService.navegacionConFlechas(fila => this.seleccionado = fila);
@@ -191,7 +197,7 @@ export class PapeleraUsuariosComponent implements OnInit, OnDestroy {
       const res = await firstValueFrom(this._userService.papelera()) as any;
       this.items = res?.status === 'success' ? (res.data ?? []) : [];
       this.seleccionado = null;
-      this.gridApi?.setRowData(this.items);
+      this.gridApi?.setGridOption('rowData', this.items);
     } catch (error) {
       console.error('Error al cargar la papelera:', error);
       this.items = [];

@@ -1,5 +1,5 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CellValueChangedEvent, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community';
 import { ToastrService } from 'ngx-toastr';
@@ -15,6 +15,8 @@ import { ListCategoriaComponent } from '../../categorias/listCategoria/listCateg
 // plantillas de WhatsApp), pero no es de ventas: es una función suelta.
 import { soloTexto } from '../../../../ventas/interfaces/plantillasWhatsapp';
 import { CaracteristicaService } from '../../../services/caracteristica.service';
+import { CaracteristicaNombreService } from '../../../services/caracteristicaNombre.service';
+import { TipoCaracteristica } from '../../../interfaces/caracteristicaNombreModel';
 import { AlmacenDeImagenes } from '../../../../ventas/interfaces/pegarEnEditor';
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { CategoriaService } from '../../../services/categoria.service';
@@ -22,6 +24,18 @@ import {
   ProductoModel, ImagenProductoModel,
   UNIDADES_PRODUCTO, GARANTIAS_MESES,
 } from '../../../interfaces/productoModel';
+import { CommonModule } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoNgxEditorComponent } from '../../../../../components/campos/campoNgxEditor/campoNgxEditor.component';
+import { CampoNumeroEnteroComponent } from '../../../../../components/campos/campoNumeroEntero/campoNumeroEntero.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { TabPanelComponent, PestanaTab } from '../../../../../components/campos/tabPanel/tabPanel.component';
 
 /** Acciones con las que se abre el modal desde allProductos. */
 type AccionProducto = 'add' | 'edit' | 'clon' | 'view';
@@ -45,14 +59,48 @@ type AccionProducto = 'add' | 'edit' | 'clon' | 'view';
   selector: 'app-saveProducto',
   templateUrl: './saveProducto.component.html',
   styleUrls: ['./saveProducto.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective, PanelComponent,
+    ModalHeaderComponent, ModalFooterComponent, ComboComponent,
+    CampoTextoComponent, CampoNgxEditorComponent, CampoNumeroEnteroComponent,
+    CheckboxComponent, TabPanelComponent,
+  ],
 })
 export class SaveProductoComponent implements OnInit, OnDestroy {
 
   /** Registro a editar / clonar / ver, o 0 al crear. */
   @Input() registro_selected: any = {};
   @Input() accion: AccionProducto = 'add';
+  /**
+   * La categoría de la que se parte al crear desde el árbol de allProductos.
+   *
+   * Cuando viene, el producto nace en ella Y EL CAMPO SE BLOQUEA: se está
+   * trabajando esa rama, no eligiendo categoría. Para crear en otra, se
+   * elige otra rama en el listado.
+   */
+  @Input() categoriaId: number | null = null;
+  /** Su ruta, sólo para explicarlo en la pista de debajo del campo. */
+  @Input() categoriaRuta = '';
   @Output() registrosE: EventEmitter<any> = new EventEmitter();
+
+  /** La pestaña abierta. */
+  public pestana: 'identificacion' | 'caracteristicas' | 'descripcion' | 'imagenes' | 'precio' = 'identificacion';
+
+  /** En qué pestaña se rellena cada campo, para poder llevar allí al que
+   *  no deja guardar: repartido el formulario, el campo en rojo puede estar
+   *  en una pestaña que no se ve, y antes el aviso no llevaba a ninguna parte. */
+  private readonly PESTANA_DEL_CAMPO: Record<string, string> = {
+    codigo: 'identificacion', nombre: 'identificacion', codigo_barras: 'identificacion',
+    codigo2: 'identificacion', codigo3: 'identificacion', codigo4: 'identificacion',
+    modelo: 'identificacion', marca_id: 'identificacion', categoria_id: 'identificacion',
+    activo: 'identificacion', impuesto: 'identificacion',
+    maneja_stock: 'identificacion', maneja_serie: 'identificacion',
+    unidad: 'precio', costo: 'precio', precio: 'precio', garantia_meses: 'precio',
+    stock_minimo: 'precio', stock_maximo: 'precio',
+    descripcion: 'descripcion',
+  };
 
   public form: FormGroup;
   public isLoading$ = this._loadingService.isLoading$;
@@ -94,6 +142,14 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     orden: number;
     en_plantilla: boolean;
     valor: string;
+    /** Del DICCIONARIO: con qué se mide y qué campo hay que pintar. */
+    nombre_id?: number | null;
+    unidad?: string | null;
+    tipo?: TipoCaracteristica;
+    /** Las opciones de ESTA categoría cuando el tipo es LISTA. */
+    valores_lista?: string[] | null;
+    /** De la CATEGORÍA: sin ella no se puede guardar el producto. */
+    requerido?: boolean;
     /** Añadida a mano en este producto, no viene de la lista de la categoría. */
     nueva?: boolean;
     /** Clave interna para ag-Grid. Ver getRowIdCaracteristica. */
@@ -146,7 +202,11 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     'fila-fuera-plantilla': (p: RowClassParams) =>
       (p.data as any)?.en_plantilla === false && (p.data as any)?.nueva !== true,
     'fila-nueva': (p: RowClassParams) => (p.data as any)?.nueva === true,
+    // Requerida y todavía vacía: es la que no va a dejar guardar
+    'fila-requerida-vacia': (p: RowClassParams) =>
+      (p.data as any)?.requerido === true && !String((p.data as any)?.valor ?? '').trim(),
   };
+
 
   /** El contador de claves de fila. */
   private claveCaracteristica = 0;
@@ -193,14 +253,38 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     private _marcaService: MarcaService,
     private _categoriaService: CategoriaService,
     private _caracteristicaService: CaracteristicaService,
+    private _caracteristicaNombreService: CaracteristicaNombreService,
     public _appAgGridService: AppAgGridService,
   ) {}
+
+  /**
+   * Los nombres del diccionario, para la característica SUELTA.
+   *
+   * Era la segunda puerta por la que entraba «pezo»: la lista de la categoría
+   * ya se escoge de un combo, pero el botón «Agregar» dejaba escribir el
+   * nombre a mano. Ahora también se escoge. El servidor lo exige igual
+   * (rechaza lo que no esté en el diccionario): esto es para no tener que
+   * leer un error.
+   */
+  public nombresDiccionario: string[] = [];
+
+  /**
+   * El diccionario entero, para saber de qué TIPO es lo que se acaba de
+   * escoger en una suelta: una fila añadida a mano no viene de ninguna
+   * plantilla, así que su tipo y su unidad salen de aquí.
+   */
+  private diccionario: any[] = [];
 
   // ================================================================
   // ESTADO DERIVADO
   // ================================================================
 
   get esView(): boolean { return this.accion === 'view'; }
+
+  /** La categoría viene impuesta por el árbol del listado y no se toca. */
+  get categoriaBloqueada(): boolean {
+    return this.accion === 'add' && this.categoriaId != null;
+  }
   get esNuevo(): boolean { return this.accion === 'add' || this.accion === 'clon'; }
   get ctrlActivo(): FormControl { return this.form.controls['activo'] as FormControl; }
   /** El editor se ata con [formControl], que es lo que entiende: es un
@@ -248,10 +332,23 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     this.isdisabled = this.esView;
     this.initializeForm();
     this.initializeGridCaracteristicas();
+    // Sin esperarlo: el diccionario sólo hace falta cuando se pulse «Agregar»,
+    // y haciéndolo esperar aquí se retrasaría la apertura del formulario.
+    this.cargarNombresDiccionario();
 
     switch (this.accion) {
       case 'add':
         this.titulo = 'Nuevo Producto';
+        if (this.categoriaId != null) {
+          // Se hereda del árbol. Se pasa por cargarCategoriaPorId para que
+          // ponga la ruta y, de paso, compruebe que no esté en la papelera.
+          this.form.patchValue({ categoria_id: this.categoriaId });
+          await this.cargarCategoriaPorId();
+          // Bloqueada DESPUÉS de cargarla: deshabilitada no se podría leer
+          // el valor desde el formulario. Al guardar no se pierde, porque el
+          // envío usa getRawValue().
+          this.form.get('categoria_id')?.disable();
+        }
         break;
       case 'edit':
         this.titulo = 'Modificar Producto';
@@ -285,6 +382,12 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       // Identificación
       codigo:         [{ value: '', disabled: this.isdisabled }, [Validators.required, Validators.minLength(2), Validators.maxLength(30)]],
       codigo_barras:  [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
+      // Los códigos alternos: la referencia con la que cada proveedor llama a
+      // este mismo producto. Ni obligatorios ni únicos —dos proveedores pueden
+      // usar la misma para cosas distintas—, sólo se buscan.
+      codigo2:        [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
+      codigo3:        [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
+      codigo4:        [{ value: '', disabled: this.isdisabled }, [Validators.maxLength(50)]],
       nombre:         [{ value: '', disabled: this.isdisabled }, [Validators.required, Validators.minLength(3), Validators.maxLength(150)]],
       // 20.000 y no 4.000: ahora lo que se guarda es HTML, y las etiquetas
       // ocupan. Una ficha de media página en texto pasa de 4.000 en cuanto
@@ -314,10 +417,6 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       garantia_meses: [{ value: 0, disabled: this.isdisabled }],
 
       // Despacho
-      peso_kg:        [{ value: null, disabled: this.isdisabled }, [Validators.min(0)]],
-      alto_cm:        [{ value: null, disabled: this.isdisabled }, [Validators.min(0)]],
-      ancho_cm:       [{ value: null, disabled: this.isdisabled }, [Validators.min(0)]],
-      profundidad_cm: [{ value: null, disabled: this.isdisabled }, [Validators.min(0)]],
 
       activo:         [{ value: true, disabled: this.isdisabled }],
     });
@@ -510,7 +609,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     this.categoriaNombreControl.setValue('');
     // Sin categoría no hay plantilla que rellenar
     this.caracteristicas = [];
-    this.gridCaracteristicas?.setRowData([]);
+    this.gridCaracteristicas?.setGridOption('rowData', []);
   }
 
   // ================================================================
@@ -527,6 +626,57 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
   /** Cuántas llevan valor, para decirlo en la cabecera del panel. */
   get caracteristicasRellenas(): number {
     return this.caracteristicas.filter(c => !!(c.valor ?? '').toString().trim()).length;
+  }
+
+  /**
+   * Las obligatorias que siguen vacías.
+   *
+   * Son las que no van a dejar guardar. Se enseñan en la cabecera del panel
+   * para que se vea sin tener que intentarlo.
+   */
+  get obligatoriasVacias(): any[] {
+    return this.caracteristicas.filter(c => c.requerido && !(c.valor ?? '').toString().trim());
+  }
+
+  /**
+   * Las pestañas de la ficha.
+   *
+   * LOS CONTADORES VAN EN EL RÓTULO a propósito: lo que falta por rellenar
+   * hay que verlo desde cualquier pestaña, y eso es justo lo que se pierde al
+   * repartir un formulario. En la de características se enseña lo que falta
+   * en rojo, y si no falta nada, cuántas llevan valor.
+   */
+  get pestanas(): PestanaTab[] {
+    const faltan = this.obligatoriasVacias.length;
+    const total = this.caracteristicas.length;
+
+    return [
+      { id: 'identificacion', texto: 'Identificación', icono: 'fa-box',
+        ayuda: 'Qué es el producto, cómo se clasifica y cómo se controla' },
+
+      { id: 'caracteristicas', texto: 'Características', icono: 'fa-tag',
+        insignia: faltan ? faltan : (total ? `${this.caracteristicasRellenas}/${total}` : null),
+        tonoInsignia: faltan ? 'peligro' : 'apagada',
+        ayuda: faltan
+          ? `Faltan ${faltan} obligatorias por rellenar`
+          : 'Lo que pide la categoría: medidas, materiales, consumo…' },
+
+      { id: 'descripcion', texto: 'Descripción', icono: 'fa-align-left',
+        ayuda: 'La ficha larga, con formato' },
+
+      { id: 'imagenes', texto: 'Imágenes', icono: 'fa-images',
+        insignia: this.totalImagenes || null,
+        ayuda: 'Las fotos del producto' },
+
+      { id: 'precio', texto: 'Precio y existencias', icono: 'fa-dollar-sign',
+        ayuda: 'Costo, precio, garantía y cuánto se quiere tener' },
+    ];
+  }
+
+  /** Abre la pestaña donde está ese campo. */
+  private irAlCampo(campo: string): void {
+    const p = this.PESTANA_DEL_CAMPO[campo];
+    if (p) { this.pestana = p as any; }
   }
 
   /**
@@ -558,8 +708,13 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         orden: k.orden,
         en_plantilla: true,
         valor: escritoAntes.get(String(k.nombre).trim().toUpperCase()) ?? '',
+        nombre_id: k.nombre_id ?? null,
+        unidad: k.unidad ?? null,
+        tipo: k.tipo ?? 'TEXTO',
+        valores_lista: Array.isArray(k.valores_lista) ? k.valores_lista : null,
+        requerido: k.requerido === true,
       }));
-      this.gridCaracteristicas?.setRowData(this.caracteristicas);
+      this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
     } catch (error) {
       // El AuthInterceptor ya enseña el error HTTP. Sin plantilla se puede
       // guardar igual: las características son opcionales.
@@ -581,23 +736,69 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         orden: c.orden ?? 1,
         en_plantilla: c.en_plantilla !== false,
         valor: c.valor ?? '',
+        nombre_id: c.nombre_id ?? null,
+        unidad: c.unidad ?? null,
+        tipo: c.tipo ?? 'TEXTO',
+        valores_lista: Array.isArray(c.valores_lista) ? c.valores_lista : null,
+        requerido: c.requerido === true,
       }));
-      this.gridCaracteristicas?.setRowData(this.caracteristicas);
+      this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
     } catch (error) {
       console.error('Error al cargar las características del producto:', error);
       this.caracteristicas = [];
     }
   }
 
+  /** El diccionario, para el desplegable del nombre de una suelta. */
+  private async cargarNombresDiccionario(): Promise<void> {
+    if (this.esView) { return; }       // viendo no se añade nada
+    try {
+      const res: any = await firstValueFrom(
+        this._caracteristicaNombreService.listCaracteristicasNombres(true));
+      this.diccionario = (res?.data ?? []) as any[];
+      this.nombresDiccionario = this.diccionario
+        .map(n => String(n.nombre ?? ''))
+        .filter(n => n.length > 0);
+    } catch (error) {
+      // El AuthInterceptor ya enseña el error HTTP. Sin diccionario el
+      // desplegable sale vacío y el servidor rechazaría lo que se escribiera,
+      // que es lo correcto: no se puede inventar un nombre desde aquí.
+      console.error('Error al cargar el diccionario de nombres:', error);
+      this.diccionario = [];
+      this.nombresDiccionario = [];
+    }
+  }
+
+  /** La entrada del diccionario que se llama así (sin tildes ni mayúsculas). */
+  private delDiccionario(nombre: string): any | null {
+    const buscado = this.sinAdornos(nombre);
+    return this.diccionario.find(n => this.sinAdornos(String(n.nombre ?? '')) === buscado) ?? null;
+  }
+
+  /** Minúsculas, sin tildes y sin espacios de sobra: igual que en la base. */
+  private sinAdornos(texto: string): string {
+    return (texto ?? '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
   /** Una fila de la lista, con su control (deshabilitado al ver). */
   private filaCaracteristica(d: { caracteristica_id: number | null; nombre: string;
-                                  orden: number; en_plantilla: boolean; valor: string }) {
+                                  orden: number; en_plantilla: boolean; valor: string;
+                                  nombre_id?: number | null; unidad?: string | null;
+                                  tipo?: TipoCaracteristica; valores_lista?: string[] | null;
+                                  requerido?: boolean }) {
     return {
       caracteristica_id: d.caracteristica_id,
       nombre: d.nombre,
       orden: d.orden,
       en_plantilla: d.en_plantilla,
       valor: d.valor ?? '',
+      nombre_id: d.nombre_id ?? null,
+      unidad: d.unidad ?? null,
+      tipo: (d.tipo ?? 'TEXTO') as TipoCaracteristica,
+      valores_lista: d.valores_lista ?? null,
+      requerido: d.requerido === true,
       clave: ++this.claveCaracteristica,
     };
   }
@@ -620,7 +821,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         rowDrag: !this.esView,
         hide: this.esView,
         minWidth: 34, maxWidth: 34,
-        sortable: false, filter: false, resizable: false, suppressMenu: true, editable: false,
+        sortable: false, filter: false, resizable: false, suppressHeaderMenuButton: true, editable: false,
         cellClass: 'celda-asa',
         headerTooltip: 'Arrastre una fila para cambiarla de sitio',
       },
@@ -631,12 +832,26 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         // cambia en Características, no producto a producto. El de una
         // fila añadida a mano sí, que si no no habría cómo llamarla.
         editable: (p: any) => !this.esView && !p.data?.caracteristica_id,
+        // Y se ESCOGE del diccionario, no se escribe: con texto libre, la
+        // suelta era la puerta por la que seguía entrando «pezo». Con
+        // `agSelectCellEditor` (el de Community; el rich select es de
+        // Enterprise) sale un desplegable con los nombres que existen.
+        cellEditor: 'agSelectCellEditor',
+        cellEditorParams: () => ({ values: this.nombresDiccionario }),
         sortable: false, filter: false, resizable: true,
         minWidth: 160, maxWidth: 320,
         cellClass: 'celda-nombre-caracteristica',
         tooltipValueGetter: (p: any) => p.data?.en_plantilla === false
           ? p.value + ' — ya no está en la lista de esta categoría'
-          : p.value,
+          : (p.data?.requerido ? p.value + ' — obligatoria: sin ella no se guarda' : p.value),
+        // El asterisco de toda la vida para lo obligatorio, donde se lee el
+        // nombre y no en una columna aparte.
+        cellRenderer: (p: any) => {
+          const nombre = String(p.value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+          return p.data?.requerido
+            ? `${nombre} <span class="carac-obligatoria" title="Obligatoria">*</span>`
+            : nombre;
+        },
       },
       {
         headerName: 'Valor',
@@ -644,15 +859,47 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         editable: !this.esView,
         sortable: false, filter: false,
         flex: 1, minWidth: 180,
+        // Todo a la izquierda, números incluidos: ver el .css. Se pone aquí
+        // explícito para que no dependa del defaultColDef de la casa.
+        cellStyle: { textAlign: 'left' },
         singleClickEdit: true,
-        cellEditor: 'agTextCellEditor',
-        cellEditorParams: { maxLength: 500 },
-        cellClass: (p: any) => String(p.value ?? '').trim() ? '' : 'celda-vacia',
-        // El hueco vacío dice qué hacer, en vez de quedarse en blanco
-        cellRenderer: (p: any) => String(p.value ?? '').trim()
-          ? String(p.value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-          : (this.esView ? '<span class="carac-sin-valor">—</span>'
-                         : '<span class="carac-sin-valor">Sin especificar</span>'),
+        // CADA FILA SE EDITA COMO DICE SU TIPO. Con una caja de texto para
+        // todo, logística recibía «15», «15 kg» y «15,5» de la misma
+        // característica, y entonces no se puede ni sumar ni ordenar.
+        cellEditorSelector: (p: any) => this.editorDeValor(p.data),
+        cellClass: (p: any) => {
+          const vacia = !String(p.value ?? '').trim();
+          const num = p.data?.tipo === 'NUMERO' ? ' celda-numero' : '';
+          return (vacia ? 'celda-vacia' : '') + num;
+        },
+        // El hueco vacío dice QUÉ hay que poner, que es distinto en cada tipo
+        cellRenderer: (p: any) => {
+          const v = String(p.value ?? '').trim();
+          if (v) { return v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+          if (this.esView) { return '<span class="carac-sin-valor">—</span>'; }
+          return `<span class="carac-sin-valor">${this.pistaDeTipo(p.data)}</span>`;
+        },
+      },
+      {
+        // La unidad, al lado del número: sin ella, «15» no dice si son
+        // pulgadas o kilos. No se edita aquí: es del diccionario.
+        headerName: 'Unidad',
+        field: 'unidad',
+        editable: false,
+        sortable: false, filter: false, resizable: false, suppressHeaderMenuButton: true,
+        minWidth: 86, maxWidth: 110,
+        cellStyle: { textAlign: 'center' },
+        headerTooltip: 'Con qué se mide. Se define en Inventarios → Nombres de característica',
+        cellRenderer: (p: any) => {
+          const u = String(p.value ?? '').trim();
+          if (u) { return `<span class="carac-unidad">${u.replace(/</g, '&lt;')}</span>`; }
+          // Sin unidad, lo que importa es el tipo: así se ve de un vistazo
+          // cuál pide un número y cuál se escoge de una lista.
+          const t = p.data?.tipo;
+          if (t === 'LISTA') { return '<span class="carac-tipo"><i class="fa fa-list-ul"></i></span>'; }
+          if (t === 'SI_NO') { return '<span class="carac-tipo"><i class="fa fa-check"></i></span>'; }
+          return '<span class="carac-tipo">—</span>';
+        },
       },
     ];
 
@@ -664,7 +911,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       field: 'acciones',
       pinned: 'right',
       minWidth: 112, maxWidth: 112,
-      sortable: false, filter: false, resizable: false, suppressMenu: true, editable: false,
+      sortable: false, filter: false, resizable: false, suppressHeaderMenuButton: true, editable: false,
       cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
       // HTML suelto con data-accion, como en el árbol de categorías: son
       // botones sin estado y así no hay un componente por fila.
@@ -686,10 +933,119 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ---------- CADA TIPO SE ESCRIBE COMO TOCA ----------
+  //
+  // El tipo lo pone el diccionario (Inventarios → Nombres de característica)
+  // y las opciones de los de lista, la categoría. Aquí sólo se obedece.
+
+  /** Sí / No, tal como se guarda. */
+  private readonly SI_NO = ['', 'Sí', 'No'];
+
+  /** Con qué editor se rellena esta fila. */
+  private editorDeValor(fila: any): any {
+    const tipo = fila?.tipo ?? 'TEXTO';
+
+    if (tipo === 'SI_NO') {
+      return { component: 'agSelectCellEditor', params: { values: this.SI_NO } };
+    }
+
+    if (tipo === 'LISTA') {
+      const opciones = Array.isArray(fila?.valores_lista) ? fila.valores_lista.filter((v: any) => String(v ?? '').trim()) : [];
+      // Sin opciones definidas en la categoría no hay lista que ofrecer: se
+      // deja escribir, que es mejor que un desplegable vacío. Se avisa en la
+      // ayuda de debajo de la rejilla.
+      if (opciones.length) {
+        return { component: 'agSelectCellEditor', params: { values: ['', ...opciones] } };
+      }
+    }
+
+    // TEXTO y NUMERO: caja de texto. El número se valida al salir de la
+    // celda (ag-Grid 28 no trae editor numérico en la edición Community).
+    return { component: 'agTextCellEditor', params: { maxLength: tipo === 'NUMERO' ? 30 : 500 } };
+  }
+
+  /** Lo que dice el hueco vacío de la columna Valor. */
+  private pistaDeTipo(fila: any): string {
+    // Si es obligatoria se dice primero: es lo que va a impedir guardar
+    if (fila?.requerido) {
+      switch (fila?.tipo) {
+        case 'NUMERO': return fila?.unidad ? `Obligatoria — un número en ${fila.unidad}` : 'Obligatoria — un número';
+        case 'SI_NO':  return 'Obligatoria — Sí o No';
+        case 'LISTA':  return 'Obligatoria — escoja una opción';
+        default:       return 'Obligatoria';
+      }
+    }
+
+    switch (fila?.tipo) {
+      case 'NUMERO': return fila?.unidad ? `Un número en ${fila.unidad}` : 'Un número';
+      case 'SI_NO':  return 'Sí o No';
+      case 'LISTA':  return Array.isArray(fila?.valores_lista) && fila.valores_lista.length
+        ? 'Escoja una opción'
+        : 'Sin opciones definidas: escriba';
+      default:       return 'Sin especificar';
+    }
+  }
+
+  /**
+   * ¿Vale lo que hay escrito para el tipo de esa fila?
+   *
+   * Devuelve null si está bien y el motivo si no. El número admite coma o
+   * punto —se escribe como se escribe— y se guarda siempre con punto: con
+   * «15,5» guardado tal cual, un informe no puede sumarlo.
+   */
+  private motivoInvalido(fila: any): string | null {
+    const valor = String(fila?.valor ?? '').trim();
+    if (!valor) { return null; }                 // vacío es válido: no se guarda
+
+    if (fila?.tipo === 'NUMERO') {
+      return /^-?\d+([.,]\d+)?$/.test(valor) ? null : 'tiene que ser un número';
+    }
+
+    if (fila?.tipo === 'SI_NO') {
+      return ['sí', 'si', 'no'].includes(this.sinAdornos(valor)) ? null : 'tiene que ser Sí o No';
+    }
+
+    if (fila?.tipo === 'LISTA') {
+      const opciones = Array.isArray(fila?.valores_lista) ? fila.valores_lista : [];
+      if (!opciones.length) { return null; }     // la categoría no definió ninguna
+      return opciones.some((o: any) => this.sinAdornos(String(o)) === this.sinAdornos(valor))
+        ? null
+        : 'tiene que ser una de: ' + opciones.join(', ');
+    }
+
+    return null;
+  }
+
+  /** El número, con punto decimal y sin ceros raros. */
+  private normalizarValor(fila: any): string {
+    const valor = String(fila?.valor ?? '').trim();
+    if (fila?.tipo === 'NUMERO' && valor) { return valor.replace(',', '.'); }
+    if (fila?.tipo === 'SI_NO' && valor) {
+      return this.sinAdornos(valor).startsWith('s') ? 'Sí' : 'No';
+    }
+    return valor;
+  }
+
+  /**
+   * Repinta la fila que se acaba de tocar.
+   *
+   * `refreshCells` y NO `setData({...fila})`: con una copia, la rejilla se
+   * queda con un objeto DISTINTO del que está en `this.caracteristicas`, y
+   * como lo que se guarda sale del array, la segunda corrección de la misma
+   * celda ya no llegaba a guardarse. Medido: «16 GB» → se revertía a «16» en
+   * el array y en la rejilla una copia; al escribir luego «15,5» se corregía
+   * sólo la copia y el producto se guardaba con «16».
+   */
+  private repintarFilaCaracteristica(e: CellValueChangedEvent): void {
+    if (!e.node) { return; }
+    e.api.refreshCells({ rowNodes: [e.node], force: true });
+  }
+
   onGridCaracteristicasReady(params: GridReadyEvent): void {
     this.gridCaracteristicas = params.api;
     this._appAgGridService.ajustarTamanoGrid(this.gridCaracteristicas);
   }
+
 
   /**
    * Se escribió en una celda.
@@ -704,8 +1060,43 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
 
     if (typeof fila.valor === 'string') { fila.valor = fila.valor.trim(); }
 
+    // EL VALOR, CONTRA SU TIPO. Se comprueba al salir de la celda y no sólo
+    // al guardar: avisar cinco campos después de «15 kg» obliga a buscar cuál
+    // era. El servidor lo comprueba otra vez, que esto es comodidad, no el
+    // portero.
+    if (e.colDef.field === 'valor') {
+      const motivo = this.motivoInvalido(fila);
+      if (motivo) {
+        this._toastr.warning(`«${fila.nombre}» ${motivo}`, 'Valor no válido', { timeOut: 5000 });
+        fila.valor = String(e.oldValue ?? '').trim();
+        this.repintarFilaCaracteristica(e);
+        return;
+      }
+      // Se guarda normalizado: «15,5» entra como «15.5» y «si» como «Sí»
+      const limpio = this.normalizarValor(fila);
+      if (limpio !== fila.valor) {
+        fila.valor = limpio;
+        this.repintarFilaCaracteristica(e);
+      }
+      return;
+    }
+
     if (e.colDef.field === 'nombre') {
       fila.nombre = (fila.nombre ?? '').toString().trim();
+
+      // Una fila añadida a mano no viene de ninguna plantilla: su tipo y su
+      // unidad salen del diccionario en cuanto se escoge el nombre.
+      const n = this.delDiccionario(fila.nombre);
+      fila.nombre_id = n ? n.id : null;
+      fila.unidad    = n ? (n.unidad ?? null) : null;
+      fila.tipo      = n ? (n.tipo ?? 'TEXTO') : 'TEXTO';
+      // Las opciones son de la CATEGORÍA, y una suelta no está en ninguna:
+      // un nombre de lista añadido a mano se escribe a mano.
+      fila.valores_lista = null;
+
+      // Lo que hubiera escrito antes puede no valer para el tipo nuevo
+      if (this.motivoInvalido(fila)) { fila.valor = ''; }
+      this.repintarFilaCaracteristica(e);
 
       // Dos filas con el mismo nombre acabarían peleándose al guardar (el
       // servidor las distingue por nombre cuando no vienen de la lista),
@@ -717,7 +1108,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         this._toastr.warning(`«${fila.nombre}» ya está en la lista de este producto`,
                              'Característica repetida', { timeOut: 4000 });
         fila.nombre = '';
-        this.gridCaracteristicas?.setRowData(this.caracteristicas);
+        this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
       }
     }
   }
@@ -745,9 +1136,19 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
    *
    * Si va a repetirse en todos los de su categoría, el sitio es
    * Inventarios → Características; así se pide sola en cada producto.
+   *
+   * El NOMBRE se escoge del diccionario, no se escribe: si el que hace falta
+   * no está, se crea en Inventarios → Nombres de característica. El servidor
+   * rechaza lo que no esté allí.
    */
   agregarCaracteristica(): void {
     if (this.esView) { return; }
+
+    if (!this.nombresDiccionario.length) {
+      this._toastr.info('Créelo en Inventarios → Nombres de característica y vuelva aquí',
+                        'El diccionario de nombres está vacío', { timeOut: 5000 });
+      return;
+    }
 
     this.caracteristicas = [...this.caracteristicas, {
       caracteristica_id: null,
@@ -758,7 +1159,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       nueva: true,
       clave: ++this.claveCaracteristica,
     }];
-    this.gridCaracteristicas?.setRowData(this.caracteristicas);
+    this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
 
     // El cursor en el nombre de la fila nueva, que es lo que toca escribir.
     // Hace falta esperar a que ag-Grid pinte la fila: sin el respiro,
@@ -809,7 +1210,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     copia.forEach((c, n) => { c.orden = n + 1; });
 
     this.caracteristicas = copia;
-    this.gridCaracteristicas?.setRowData(this.caracteristicas);
+    this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
   }
 
   /**
@@ -832,13 +1233,13 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       // vaciaba y en pantalla seguia el texto de antes (medido).
       this.caracteristicas = this.caracteristicas.map(c =>
         c === fila ? { ...c, valor: '' } : c);
-      this.gridCaracteristicas?.setRowData(this.caracteristicas);
+      this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
       return;
     }
 
     this.caracteristicas = this.caracteristicas.filter(c => c !== fila);
     this.caracteristicas.forEach((c, n) => { c.orden = n + 1; });
-    this.gridCaracteristicas?.setRowData(this.caracteristicas);
+    this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
   }
 
   /** Vacía la columna de valores de un tirón (no toca la plantilla). */
@@ -846,7 +1247,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     if (this.esView || !this.hayCaracteristicas) { return; }
     // Filas nuevas, por lo mismo que en quitarCaracteristica
     this.caracteristicas = this.caracteristicas.map(c => ({ ...c, valor: '' }));
-    this.gridCaracteristicas?.setRowData(this.caracteristicas);
+    this.gridCaracteristicas?.setGridOption('rowData', this.caracteristicas);
   }
 
   //   ******   CARGA EL REGISTRO   ******  //
@@ -866,6 +1267,14 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         // El código de barras NO se clona: es el EAN del fabricante y es
         // único, así que la copia saldría rechazada al guardar
         codigo_barras:  this.accion === 'clon' ? '' : (m.codigo_barras ?? ''),
+        // Los alternos TAMPOCO se clonan, aunque aquí no haya nada que los
+        // rechace: son la referencia del proveedor para ESTE producto, y la
+        // copia es otro. Arrastrarlos haría que buscar el código del
+        // proveedor devolviese dos productos, que es justo lo que se quiere
+        // evitar teniéndolos.
+        codigo2:        this.accion === 'clon' ? '' : (m.codigo2 ?? ''),
+        codigo3:        this.accion === 'clon' ? '' : (m.codigo3 ?? ''),
+        codigo4:        this.accion === 'clon' ? '' : (m.codigo4 ?? ''),
         nombre:         (m.nombre ?? '') + this.textoClon,
         descripcion:    m.descripcion ?? '',
         marca_id:       m.marca_id ?? null,
@@ -880,10 +1289,6 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         stock_maximo:   m.stock_maximo != null ? Number(m.stock_maximo) : null,
         maneja_serie:   m.maneja_serie === true,
         garantia_meses: Number(m.garantia_meses ?? 0),
-        peso_kg:        m.peso_kg != null ? Number(m.peso_kg) : null,
-        alto_cm:        m.alto_cm != null ? Number(m.alto_cm) : null,
-        ancho_cm:       m.ancho_cm != null ? Number(m.ancho_cm) : null,
-        profundidad_cm: m.profundidad_cm != null ? Number(m.profundidad_cm) : null,
         activo:         m.activo !== false,
       });
 
@@ -1106,6 +1511,10 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     Object.values(this.form.controls).forEach(control => control.markAsTouched());
 
     if (this.form.invalid) {
+      // A la pestaña del primer campo en rojo: con la ficha repartida, el
+      // aviso a secas no dice ni dónde mirar.
+      const primero = Object.keys(this.form.controls).find(k => this.form.controls[k].invalid);
+      if (primero) { this.irAlCampo(primero); }
       this._toastr.error('Revise los campos del formulario.', 'No se puede Guardar', { timeOut: 20000, closeButton: true });
       return;
     }
@@ -1113,7 +1522,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     const payload: any = this.form.getRawValue();
 
     // Los vacíos van como null, no como '': el back los distingue
-    for (const k of ['codigo_barras', 'modelo']) {
+    for (const k of ['codigo_barras', 'codigo2', 'codigo3', 'codigo4', 'modelo']) {
       payload[k] = (payload[k] ?? '').toString().trim() || null;
     }
 
@@ -1123,12 +1532,57 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     // sin valor no es un dato).
     // Una fila añadida y dejada sin nombre no es nada: se tira aquí para
     // no mandar basura (el servidor también la descarta).
+    // Las obligatorias de su categoría, rellenas. El servidor se niega igual
+    // (es el portero), pero decirlo aquí evita perder el viaje y señala
+    // cuáles son.
+    if (this.obligatoriasVacias.length) {
+      const faltan = this.obligatoriasVacias.map(c => `«${c.nombre}»`).join(', ');
+      this._toastr.error(
+        `Falta rellenar: ${faltan}.`,
+        this.obligatoriasVacias.length === 1
+          ? 'Hay una característica obligatoria sin rellenar'
+          : `Hay ${this.obligatoriasVacias.length} características obligatorias sin rellenar`,
+        { timeOut: 20000, closeButton: true });
+
+      // El cursor en la primera que falta, que si no hay que ir a buscarla.
+      // Primero la pestaña: la rejilla se crea al abrirla, así que lo de
+      // dentro espera un ciclo a que exista.
+      this.pestana = 'caracteristicas';
+      const i = this.caracteristicas.indexOf(this.obligatoriasVacias[0]);
+      if (i >= 0) {
+        setTimeout(() => {
+          this.gridCaracteristicas?.ensureIndexVisible(i);
+          this.gridCaracteristicas?.startEditingCell({ rowIndex: i, colKey: 'valor' });
+        });
+      }
+      return;
+    }
+
+    // Antes de nada, que ningún valor contradiga su tipo. Se comprueba al
+    // salir de cada celda, pero una fila puede llegar aquí sin haber pasado
+    // por ahí (al cambiar de categoría se conserva lo escrito, y el tipo
+    // nuevo puede ser otro).
+    const malas = this.caracteristicas
+      .map(c => ({ c, motivo: this.motivoInvalido(c) }))
+      .filter(x => x.motivo);
+
+    if (malas.length) {
+      this.pestana = 'caracteristicas';
+      this._toastr.error(
+        malas.map(x => `«${x.c.nombre}» ${x.motivo}`).join('. '),
+        malas.length === 1 ? 'Una característica no vale' : `${malas.length} características no valen`,
+        { timeOut: 20000, closeButton: true });
+      return;
+    }
+
     payload.caracteristicas = this.caracteristicas
       .filter(c => (c.nombre ?? '').toString().trim())
       .map(c => ({
         caracteristica_id: c.caracteristica_id,
         nombre: (c.nombre ?? '').toString().trim(),
-        valor: (c.valor ?? '').toString().trim(),
+        // Normalizado: el número con punto y el sí/no en su forma, que es
+        // como tiene que quedar guardado para poder sumarlo o agruparlo.
+        valor: this.normalizarValor(c),
         orden: c.orden,
       }));
 
@@ -1138,7 +1592,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     payload.descripcion = soloTexto(payload.descripcion)
       ? (payload.descripcion ?? '').trim()
       : null;
-    for (const k of ['stock_maximo', 'peso_kg', 'alto_cm', 'ancho_cm', 'profundidad_cm']) {
+    for (const k of ['stock_maximo']) {
       payload[k] = (payload[k] === '' || payload[k] === null || payload[k] === undefined) ? null : Number(payload[k]);
     }
     for (const k of ['costo', 'precio', 'stock_minimo', 'garantia_meses']) {

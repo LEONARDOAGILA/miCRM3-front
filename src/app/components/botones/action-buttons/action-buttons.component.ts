@@ -1,10 +1,19 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 
+
+/**
+ * STANDALONE, como el panel: se importa el componente, y el
+ * `action-buttons.module.ts` que sólo servía para re-exportarlo se borró.
+ *
+ * De la plantilla sólo sale *ngIf: con CommonModule basta.
+ */
 @Component({
   selector: 'app-action-buttons',
+  standalone: true,
+  imports: [],
   templateUrl: './action-buttons.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./action-buttons.component.scss'],
-  standalone: false,
 })
 export class ActionButtonsComponent {
 

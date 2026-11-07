@@ -1,13 +1,14 @@
 
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
     selector: 'app-checkbox',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule],
+    imports: [ReactiveFormsModule],
     templateUrl: './checkbox.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
     styleUrls: ['./checkbox.component.css']    
 })
 export class CheckboxComponent {

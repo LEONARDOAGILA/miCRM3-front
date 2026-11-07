@@ -13,6 +13,10 @@ export interface CargoModel {
   updated_at?: string;
   created_by?: string;
   updated_by?: string;
+  /** Cuándo se envió a la papelera; sólo lo traen las filas de la papelera */
+  deleted_at?: string | null;
+  /** Quién lo envió a la papelera */
+  deleted_by?: string | null;
 }
 
 /** Niveles jerárquicos ofrecidos en el combo del formulario (columna rh.cargos.nivel). */

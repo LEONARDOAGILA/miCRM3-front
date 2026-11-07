@@ -1,0 +1,217 @@
+/* ============================================================
+   TABLERO DE VENTAS (DEMO)
+
+   Dos barras apiladas —los filtros y el armador— y debajo el resultado.
+   Todo con variables del tema y ningun color compilado: con un hex, la mitad
+   de la pantalla se queda ilegible en el tema oscuro.
+   ============================================================ */
+
+.rep-contenido {
+  padding: .5rem .25rem 0;
+}
+
+/* ---------- LAS BARRAS ---------- */
+
+.rep-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, .02);
+  margin-bottom: .5rem;
+}
+
+/* La de armar se distingue de la de filtrar: son dos cosas distintas y si se
+   ven iguales hay que leerlas para saber cual es cual. */
+.rep-barra--armado {
+  border-left: 3px solid var(--bs-app-theme, #00acac);
+}
+
+.rep-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 120px;
+}
+
+/* Los filtros de lista se reparten el sitio que sobra */
+.rep-crece {
+  flex: 1 1 150px;
+  min-width: 150px;
+  max-width: 320px;
+}
+
+.rep-etiqueta {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+  margin: 0;
+}
+
+.rep-titulo {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--bs-app-theme, #00acac);
+  align-self: center;
+  white-space: nowrap;
+}
+
+.rep-por {
+  align-self: center;
+  color: var(--bs-secondary-color, #6c757d);
+  font-weight: 700;
+  padding: 0 .1rem;
+}
+
+.rep-fecha {
+  min-width: 130px;
+}
+
+.rep-rangos {
+  align-self: flex-end;
+}
+
+.rep-btn {
+  height: 31px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ng-select dentro de una barra: el alto de serie lo hace mas grande que los
+   demas campos y la barra queda descuadrada. */
+.rep-select ::ng-deep .ng-select-container {
+  min-height: 31px;
+  font-size: 12px;
+}
+
+.rep-select ::ng-deep .ng-value-container {
+  padding-top: 0;
+}
+
+.rep-select ::ng-deep .ng-value {
+  font-size: 11px;
+}
+
+/* ---------- LAS PESTAÑAS ---------- */
+
+.rep-pestanas {
+  margin: .25rem 0 .5rem;
+}
+
+.rep-pestanas .nav-link {
+  cursor: pointer;
+  font-size: 12.5px;
+  padding: .35rem .8rem;
+}
+
+/* ---------- EL RESUMEN ---------- */
+
+.rep-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin: 0 .25rem .5rem;
+}
+
+.rep-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .15rem .55rem;
+  border-radius: 1rem;
+  font-size: 11.5px;
+  background-color: rgba(var(--bs-secondary-rgb, 108, 117, 125), .12);
+  color: var(--bs-component-color, inherit);
+}
+
+.rep-chip--fuerte {
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .14);
+  color: var(--bs-primary-text-emphasis, #0a58ca);
+  font-size: 12.5px;
+}
+
+.rep-chip--suave {
+  background-color: transparent;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+/* Que no se olvide de que esto no son ventas de verdad */
+.rep-chip--demo {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .18);
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
+/* ---------- EL GRÁFICO ---------- */
+
+.rep-grafico {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  padding: .25rem .5rem 0;
+  margin: 0 .25rem .5rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+/* ApexCharts pinta su texto con un color fijo: se le fuerza el del tema o en
+   oscuro se lee a medias. */
+.rep-grafico ::ng-deep text {
+  fill: var(--bs-component-color, #333) !important;
+}
+
+.rep-grafico ::ng-deep .apexcharts-legend-text {
+  color: var(--bs-component-color, #333) !important;
+}
+
+.rep-nota,
+.rep-pie {
+  margin: .25rem .5rem .5rem;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #6c757d);
+  line-height: 1.4;
+}
+
+/* ---------- LAS REJILLAS ---------- */
+
+.rep-grid {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 0 .25rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+/* El detalle no crece con el contenido: pagina, asi que tiene alto fijo y su
+   propio scroll. */
+.rep-grid--detalle {
+  height: calc(100vh - 430px);
+  min-height: 320px;
+}
+
+.rep-grid--detalle ag-grid-angular {
+  height: 100%;
+}
+
+/* La fila de totales, marcada: es la que se mira primero */
+.rep-grid ::ng-deep .ag-floating-bottom .ag-row {
+  font-weight: 700;
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .07);
+}
+
+.rep-grid ::ng-deep .ag-floating-bottom {
+  border-top: 2px solid var(--bs-border-color, #dee2e6);
+}
+
+/* Un margen por debajo del 10 % se ve sin buscarlo */
+.rep-grid ::ng-deep .rep-margen-bajo {
+  color: var(--bs-danger-text-emphasis, #b02a37);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .rep-crece { max-width: none; }
+  .rep-grid--detalle { height: calc(100vh - 480px); }
+}

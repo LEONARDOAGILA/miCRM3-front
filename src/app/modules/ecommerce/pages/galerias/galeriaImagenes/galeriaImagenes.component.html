@@ -1,0 +1,185 @@
+<!-- ============================================================
+     EL CONTENIDO DE UNA GALERÍA
+
+     Se mete dentro de otra pantalla. Se carga sola por su clave.
+     ============================================================ -->
+
+@if (cargando) {
+  <p class="text-muted small mb-0">
+    <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando las imágenes…
+  </p>
+
+} @else if (!galeria) {
+  <p class="text-danger small mb-0">
+    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+    No se pudo cargar la galería <code>{{ clave }}</code>.
+  </p>
+
+} @else {
+
+  <div class="gal-barra">
+    <span class="gal-cuenta">
+      <b>{{ imagenes.length }}</b>
+      @if (galeria.maximo) { de {{ galeria.maximo }} }
+      {{ imagenes.length === 1 ? 'imagen' : 'imágenes' }}
+      @if (imagenes.length) {
+        · <b>{{ visibles }}</b> se {{ visibles === 1 ? 've' : 'ven' }} hoy
+      }
+    </span>
+
+    @if (puedeCrear) {
+      <button type="button" class="btn btn-xs btn-primary"
+              [disabled]="trabajando" (click)="anadir()">
+        <i class="fa fa-plus"></i> Añadir imagen
+      </button>
+    }
+
+    <button type="button" class="btn btn-xs btn-outline-secondary"
+            title="Volver a cargar" [disabled]="trabajando" (click)="cargar()">
+      <i class="fa fa-rotate"></i>
+    </button>
+  </div>
+
+  <!-- La tienda sólo pinta las primeras: decirlo aquí evita el «no sale y no
+       sé por qué», que es el fallo que más tarda en descubrirse. -->
+  @if (recortadas) {
+    <p class="gal-aviso">
+      <i class="fa-solid fa-scissors"></i>
+      Esta galería enseña {{ galeria.mostrar }} a la vez, así que
+      {{ recortadas === 1 ? 'la última no sale' : 'las últimas ' + recortadas + ' no salen' }}.
+      Mueve arriba las que quieras que se vean.
+    </p>
+  }
+
+  @if (imagenes.length === 0) {
+    <p class="text-muted small mb-0">
+      Sin imágenes. La tienda se salta esta sección en vez de dejar un hueco.
+    </p>
+  }
+
+  <div cdkDropList [cdkDropListData]="imagenes"
+       [cdkDropListDisabled]="!puedeEditar || trabajando"
+       (cdkDropListDropped)="soltar($event)">
+
+    @for (i of imagenes; track i.id) {
+      <div class="gal-fila" [class.gal-fila--apagada]="i.estado !== 'visible'" cdkDrag>
+
+        <div class="gal-fantasma" *cdkDragPlaceholder></div>
+
+        @if (puedeEditar) {
+          <span class="gal-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+            <i class="fa-solid fa-grip-vertical"></i>
+          </span>
+        }
+
+        <img class="gal-miniatura" [src]="i.imagen_url" [alt]="i.nombre || 'Imagen'" loading="lazy">
+
+        <div class="gal-datos">
+          <b class="gal-nombre">{{ i.titulo || i.nombre || 'Sin nombre' }}</b>
+
+          <span class="gal-etiquetas">
+            <span class="chip" [ngClass]="estados[i.estado].clase">
+              <i class="fa-solid" [ngClass]="estados[i.estado].icono"></i>
+              {{ estados[i.estado].texto }}
+            </span>
+
+            @if (i.mostrar_en !== 'todos') {
+              <span class="chip chip-muted">
+                <i class="fa-solid" [class.fa-desktop]="i.mostrar_en === 'computadora'"
+                   [class.fa-mobile-screen]="i.mostrar_en === 'celular'"></i>
+                {{ donde(i) }}
+              </span>
+            }
+
+            @if (i.enlace) {
+              <span class="chip chip-muted" [title]="i.enlace">
+                <i class="fa-solid fa-link"></i> {{ i.enlace }}
+              </span>
+            }
+
+            @if (i.imagen_movil) {
+              <span class="chip chip-muted" title="Tiene una versión para celular">
+                <i class="fa-solid fa-mobile-screen"></i> celular
+              </span>
+            }
+
+            @if (i.desde || i.hasta) {
+              <span class="chip chip-muted">
+                <i class="fa-solid fa-calendar"></i>
+                {{ i.desde ? 'desde ' + i.desde.replace('T', ' ') : '' }}
+                {{ i.hasta ? 'hasta ' + i.hasta.replace('T', ' ') : '' }}
+              </span>
+            }
+          </span>
+        </div>
+
+        <span class="gal-botones">
+          @if (puedeEditar) {
+            <button type="button" class="btn btn-xs btn-editar" title="Modificar"
+                    [disabled]="trabajando" (click)="editar(i)">
+              <i class="fa fa-pen"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-ver"
+                    [title]="i.activo ? 'Apagar' : 'Encender'"
+                    [disabled]="trabajando" (click)="alternar(i)">
+              <i class="fa" [class.fa-eye]="!i.activo" [class.fa-eye-slash]="i.activo"></i>
+            </button>
+          }
+          @if (puedeEliminar) {
+            <button type="button" class="btn btn-xs btn-borrar" title="Quitar de la galería"
+                    [disabled]="trabajando" (click)="quitar(i)">
+              <i class="fa fa-trash"></i>
+            </button>
+          }
+        </span>
+      </div>
+    }
+  </div>
+
+  <!-- La papelera DE ESTA GALERÍA -->
+  @if (galeria.en_papelera || papeleraAbierta) {
+    <div class="gal-papelera">
+      <button type="button" class="btn btn-xs btn-outline-secondary" (click)="alternarPapelera()">
+        <i class="fa" [class.fa-chevron-right]="!papeleraAbierta" [class.fa-chevron-down]="papeleraAbierta"></i>
+        Papelera ({{ galeria.en_papelera }})
+      </button>
+
+      @if (papeleraAbierta) {
+        @if (papelera.length === 0) {
+          <p class="text-muted small mt-2 mb-0">La papelera de esta galería está vacía.</p>
+        } @else {
+          <p class="campo-hint mt-2">
+            <i class="fa-solid fa-circle-info"></i>
+            El fichero nunca se borró: sigue en la biblioteca. Lo que se
+            recupera aquí es su enlace, sus textos y sus fechas.
+          </p>
+
+          @for (p of papelera; track p.id) {
+            <div class="gal-fila gal-fila--papelera">
+              <img class="gal-miniatura" [src]="p.imagen_url" [alt]="p.nombre || 'Imagen'" loading="lazy">
+              <div class="gal-datos">
+                <b class="gal-nombre">{{ p.titulo || p.nombre || 'Sin nombre' }}</b>
+                <small class="gal-detalle">Quitada el {{ p.deleted_at }} por {{ p.deleted_by || '—' }}</small>
+              </div>
+              <span class="gal-botones">
+                @if (puedeEditar) {
+                  <button type="button" class="btn btn-xs btn-ver" title="Devolver a la galería"
+                          [disabled]="trabajando" (click)="restaurar(p)">
+                    <i class="fa fa-rotate-left"></i>
+                  </button>
+                }
+              </span>
+            </div>
+          }
+
+          @if (puedeEliminar) {
+            <button type="button" class="btn btn-xs btn-outline-danger mt-2"
+                    [disabled]="trabajando" (click)="vaciar()">
+              <i class="fa fa-trash"></i> Vaciar la papelera de esta galería
+            </button>
+          }
+        }
+      }
+    </div>
+  }
+}

@@ -1,11 +1,11 @@
-import { Component, Input, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuditoriaService } from '../../service/auditoria.service';
 import { FormsModule } from '@angular/forms';
 import { LoadingService } from '../../service/loading.service';
 import { firstValueFrom } from 'rxjs';
-import { PanelModule } from '../../components/panel/panel.module';
+import { PanelComponent } from '../../components/panel/panel.component';
 import moment from 'moment';
 import {
   NgxDaterangepickerMd,
@@ -33,7 +33,7 @@ interface FechaRango {
 @Component({
   selector: 'app-auditoria-modal',
   standalone: true,
-  imports: [CommonModule, NgbModule, FormsModule, PanelModule, NgxDaterangepickerMd],
+  imports: [CommonModule, NgbModule, FormsModule, PanelComponent, NgxDaterangepickerMd],
   providers: [
     // LocaleService no es providedIn:'root'. NgbModal crea este componente
     // standalone con su propio injector, y la directiva del picker lo resuelve
@@ -44,6 +44,7 @@ interface FechaRango {
     { provide: LocaleService, useClass: LocaleService, deps: [LOCALE_CONFIG] },
   ],
   templateUrl: './auditoria-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./auditoria-modal.component.scss']
 })
 export class AuditoriaModalComponent implements OnInit {

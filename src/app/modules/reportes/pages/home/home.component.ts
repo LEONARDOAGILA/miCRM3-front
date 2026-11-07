@@ -1,5 +1,6 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, Input, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+
+import { Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 
 interface MenuItem {
@@ -15,7 +16,12 @@ interface MenuItem {
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
-  standalone: false,
+  standalone: true,
+  // La plantilla usa *ngFor (no @for), asi que SI necesita CommonModule,
+  // y [routerLink] para los botones del menu. Nada mas: ni ag-Grid, ni
+  // formularios, ni campos, que era lo que arrastraba el NgModule.
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [RouterModule],
 })
 export class HomeComponent implements OnInit, OnDestroy{
 

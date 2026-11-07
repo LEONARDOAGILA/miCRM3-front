@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /** Con qué color se dice. */
@@ -36,6 +36,7 @@ export type TonoAviso = 'tema' | 'info' | 'exito' | 'alerta' | 'peligro';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './aviso.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./aviso.component.css'],
 })
 export class AvisoComponent {

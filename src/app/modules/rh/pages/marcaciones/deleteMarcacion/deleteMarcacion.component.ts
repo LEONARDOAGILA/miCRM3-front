@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoadingBarService } from '@ngx-loading-bar/core';
@@ -6,13 +6,17 @@ import { ToastrService } from 'ngx-toastr';
 
 import { MarcacionService } from '../../../services/marcacion.service';
 import { MarcacionModel } from '../../../interfaces/marcacionModel';
+import { CommonModule } from '@angular/common';
+import { ModalArrastrableDirective } from '../../../../../components/modal/modal-arrastrable.directive';
 
 /** Confirmación de borrado de una marcación (mismo esquema que deleteCargo). */
 @Component({
   selector: 'app-deleteMarcacion',
   templateUrl: './deleteMarcacion.component.html',
   styleUrls: ['./deleteMarcacion.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [CommonModule, ModalArrastrableDirective],
 })
 export class DeleteMarcacionComponent implements OnDestroy {
 

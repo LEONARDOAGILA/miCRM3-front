@@ -1,0 +1,202 @@
+/* ============================================================
+   EL CONTENIDO DE UNA GALERÍA
+   ============================================================
+   Colores de variables de Bootstrap, para que acompañen al tema claro y al
+   oscuro. */
+
+.gal-barra {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+.gal-cuenta {
+  flex: 1 1 auto;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gal-cuenta b { color: var(--bs-body-color, #212529); }
+
+.gal-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: 0 0 .5rem;
+  padding: .4rem .6rem;
+  border-radius: .375rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--bs-warning-text-emphasis, #997404);
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+}
+
+/* ---------- Cada imagen ---------- */
+.gal-fila {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .375rem .5rem;
+  margin-bottom: .375rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.gal-fila--apagada { opacity: .7; }
+
+.gal-fila--papelera {
+  border-style: dashed;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.gal-miniatura {
+  flex: 0 0 auto;
+  width: 4.5rem;
+  height: 2.75rem;
+  /* `contain`: estas imágenes son banners y logos, y recortarlos para que
+     cuadren esconde justo lo que hay que reconocer. */
+  object-fit: contain;
+  border-radius: .25rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.gal-datos {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.gal-nombre {
+  font-size: .8125rem;
+  line-height: 1.2;
+  color: var(--bs-body-color, #212529);
+}
+
+.gal-detalle {
+  font-size: .65rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.gal-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.gal-botones {
+  margin-left: auto;
+  display: flex;
+  gap: .125rem;
+}
+
+.gal-asa {
+  cursor: grab;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+}
+
+.gal-asa:active { cursor: grabbing; }
+
+.gal-fantasma {
+  min-height: 3.5rem;
+  border: 1px dashed var(--bs-app-theme, #00acac);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+}
+
+.gal-papelera {
+  margin-top: .75rem;
+  padding-top: .5rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+/* ---------- Etiquetas ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  max-width: 16rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: .1rem .4rem;
+  border-radius: 1rem;
+  font-size: .65rem;
+  font-weight: 600;
+}
+
+.chip-muted {
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.chip-ok {
+  color: var(--bs-success-text-emphasis, #0a3622);
+  background-color: var(--bs-success-bg-subtle, #d1e7dd);
+}
+
+.chip-info {
+  color: var(--bs-info-text-emphasis, #055160);
+  background-color: var(--bs-info-bg-subtle, #cff4fc);
+}
+
+.chip-warn {
+  color: var(--bs-warning-text-emphasis, #997404);
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+}
+
+/* ---------- Botones ---------- */
+.btn-editar,
+.btn-ver,
+.btn-borrar {
+  padding: .15rem .4rem;
+  font-size: .75rem;
+  line-height: 1.2;
+  border: 0;
+  background: transparent;
+}
+
+.btn-editar { color: var(--bs-app-theme, #00acac); }
+.btn-ver    { color: #5b9bd5; }
+.btn-borrar { color: var(--bs-danger, #dc3545); }
+
+.btn-editar:hover,
+.btn-ver:hover,
+.btn-borrar:hover { background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08); }
+
+.btn-editar:disabled,
+.btn-ver:disabled,
+.btn-borrar:disabled { opacity: .45; }
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 .75rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  /* Un gris más flojo se quedaba en 4,35:1 sobre el panel oscuro,
+     por debajo de lo que se lee en letra de .7rem. */
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+::ng-deep .cdk-drag-preview {
+  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, .2),
+              0 8px 10px 1px rgba(0, 0, 0, .14),
+              0 3px 14px 2px rgba(0, 0, 0, .12);
+  border-radius: .375rem;
+}
+
+::ng-deep .cdk-drag-animating {
+  transition: transform 180ms cubic-bezier(0, 0, .2, 1);
+}

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, NgZone, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation, type Position } from '@capacitor/geolocation';
 import { ToastrService } from 'ngx-toastr';
@@ -60,6 +60,7 @@ interface Lugar {
   selector: 'app-ubicacion-gps',
   templateUrl: './ubicacion-gps.component.html',
   styleUrls: ['./ubicacion-gps.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class UbicacionGpsComponent implements AfterViewInit, OnDestroy {

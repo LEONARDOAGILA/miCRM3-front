@@ -3,14 +3,18 @@
 
   <div class="card shadow p-3">
     <ul class="list-group">
-      <li *ngFor="let msg of mensajes" class="list-group-item">
-        📡 {{ msg }}
-      </li>
+      @for (msg of mensajes; track msg) {
+        <li class="list-group-item">
+          📡 {{ msg }}
+        </li>
+      }
     </ul>
 
-    <div *ngIf="mensajes.length === 0" class="text-center text-muted mt-3">
-      Aún no hay mensajes...
-    </div>
+    @if (mensajes.length === 0) {
+      <div class="text-center text-muted mt-3">
+        Aún no hay mensajes...
+      </div>
+    }
   </div>
 </div>
 

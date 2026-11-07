@@ -19,6 +19,18 @@ export interface ProductoModel {
   codigo: string;
   /** EAN/UPC de fábrica; único cuando existe, pero la mayoría de accesorios no traen */
   codigo_barras?: string | null;
+  /**
+   * Códigos alternos: la referencia con la que cada proveedor llama a este
+   * mismo producto, para reconocerlo cuando llega su lista de precios.
+   *
+   * NO son únicos, a diferencia de `codigo` y `codigo_barras`: dos
+   * proveedores distintos pueden usar la misma referencia para cosas
+   * distintas, y como no se guarda de QUÉ proveedor es cada uno, no hay
+   * forma de distinguirlas. El buscador del listado sí los mira.
+   */
+  codigo2?: string | null;
+  codigo3?: string | null;
+  codigo4?: string | null;
   nombre: string;
   descripcion?: string | null;
 
@@ -51,12 +63,6 @@ export interface ProductoModel {
   /** true cuando cada unidad se controla por número de serie o IMEI (garantías) */
   maneja_serie: boolean;
   garantia_meses: number;
-
-  // ---------- Para el despacho ----------
-  peso_kg?: number | null;
-  alto_cm?: number | null;
-  ancho_cm?: number | null;
-  profundidad_cm?: number | null;
 
   activo: boolean;
 

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
@@ -52,6 +52,7 @@ export interface DatosAlcanceDescarga {
   standalone: true,
   imports: [CommonModule, ModalHeaderComponent],
   templateUrl: './alcanceDescarga.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./alcanceDescarga.component.css'],
 })
 export class AlcanceDescargaComponent {

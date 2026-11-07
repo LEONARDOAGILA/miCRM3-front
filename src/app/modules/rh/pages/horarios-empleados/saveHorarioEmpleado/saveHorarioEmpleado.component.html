@@ -1,0 +1,337 @@
+<!-- ===================== SPINNER ===================== -->
+@if (isLoading$ | async) {
+  <div class="loader1" role="status" aria-label="Cargando"></div>
+  <div class="overlay1" aria-hidden="true"></div>
+}
+
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header
+  [title]="titulo"
+  (onClose)="modal.close('Close click')">
+</app-modal-header>
+
+<!-- ===================== CUERPO ===================== -->
+<div class="modal-body horario-modal-body">
+  <form [formGroup]="form" class="form-validate" novalidate>
+
+    <!-- ---------- Datos del horario ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Datos del horario"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-3"
+      icono="clock"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        @if (isdisabled) {
+          <span class="chip chip-muted"><i class="fa-solid fa-eye"></i> Solo lectura</span>
+        }
+      </div>
+
+      <ng-container outsideBody>
+        <div class="form-card__body">
+          <div class="row g-3 align-items-start">
+
+            <div class="col-12 col-md-5">
+              <app-campoTexto
+                [control]="form.controls['nombre']"
+                label="NOMBRE"
+                placeholder="ADMINISTRATIVO 8-5"
+                [maxLength]="100"
+                [trimEspacios]="true"
+                [mayusculas]="true">
+              </app-campoTexto>
+            </div>
+
+            <!-- La tolerancia: para lo que existe este horario -->
+            <div class="col-12 col-md-3">
+              <app-campoNumeroEntero
+                [control]="form.controls['tolerancia_min']"
+                label="TOLERANCIA (MIN)"
+                placeholder="0"
+                [maxLength]="3">
+              </app-campoNumeroEntero>
+              <small class="campo-ayuda">
+                <i class="fa fa-circle-info"></i>
+                Minutos de gracia desde la hora de entrada antes de contar atraso
+              </small>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <div class="estado-horario" [class.is-on]="form.controls['activo'].value">
+                <span class="estado-horario__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-horario__text">
+                  <span class="estado-horario__label">Estado</span>
+                  <span class="estado-horario__hint">
+                    {{ form.controls['activo'].value ? 'Se puede asignar' : 'No se puede asignar' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-horario__switch"
+                  [control]="form.controls['activo']"
+                  [label]="form.controls['activo'].value ? 'Activo' : 'Inactivo'"
+                  [id]="'ck-activo-horario'">
+                </app-checkbox>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <app-campoTexto
+                [control]="form.controls['descripcion']"
+                label="DESCRIPCIÓN"
+                placeholder="Para qué sirve este horario y a quién se le pone"
+                [maxLength]="250"
+                [trimEspacios]="true">
+              </app-campoTexto>
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Días y jornadas ---------- -->
+    <panel
+      headerClass="bg-gray-800"
+      title="Días y jornadas"
+      noButton="true"
+      noBody="true"
+      panelClass="mb-0"
+      icono="calendar"
+      fondoGris="true">
+
+      <div header class="panel-acciones">
+        <span class="chip chip-info">{{ totalJornadas }} jornada{{ totalJornadas === 1 ? '' : 's' }}</span>
+        <span class="chip" [ngClass]="dias.length >= 7 ? 'chip-muted' : 'chip-info'">
+          {{ dias.length }} de 7 días
+        </span>
+        <span class="chip chip-muted">{{ horasSemana }} h/semana</span>
+
+        @if (!isdisabled) {
+          <button type="button"
+                  class="btn btn-sm btn-primary"
+                  [disabled]="dias.length >= 7"
+                  [title]="dias.length >= 7 ? 'Ya están los 7 días de la semana' : 'Agregar un día al horario'"
+                  (click)="agregarDia()">
+            <i class="fa fa-plus"></i> Agregar día
+          </button>
+        }
+      </div>
+
+      <ng-container outsideBody>
+        <div formArrayName="dias">
+
+          @if (dias.length > 0) {
+            <div class="tabla-dias">
+
+              <!-- `track diaCtrl` (identidad), NO $index: al reordenar los días o
+                   sustituir sus jornadas, con $index el nodo se queda con el control
+                   viejo y el campo enseña la hora anterior. -->
+              @for (diaCtrl of dias.controls; track diaCtrl; let i = $index) {
+                <div class="dia-fila" [formGroupName]="i"
+                     [class.fila-invalida]="diaCtrl.invalid && diaCtrl.touched"
+                     [class.fila-duplicada]="esDiaDuplicado(i)"
+                     [class.fila-apagada]="diaCtrl.get('activo')?.value === false">
+
+                  <!-- Cabecera de la fila: el día y lo que se hace con él -->
+                  <div class="dia-cabecera">
+                    <select class="form-select form-select-sm dia-select" formControlName="dia"
+                            [class.is-invalid]="esDiaDuplicado(i)">
+                      @for (d of diasSemana; track d.id) {
+                        <option [ngValue]="d.id">{{ d.nombre }}</option>
+                      }
+                    </select>
+
+                    <div class="form-check form-switch dia-switch">
+                      <input type="checkbox" formControlName="activo" class="form-check-input" role="switch"
+                             id="dia-activo-{{i}}">
+                      <label class="form-check-label" for="dia-activo-{{i}}">
+                        {{ diaCtrl.get('activo')?.value ? 'Se trabaja' : 'No se trabaja' }}
+                      </label>
+                    </div>
+
+                    <span class="dia-resumen">
+                      {{ jornadasDe(i).length }} de {{ maxJornadas }} jornadas
+                    </span>
+
+                    @if (!isdisabled) {
+                      <div class="dia-acciones">
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                [disabled]="jornadasDe(i).length >= maxJornadas"
+                                [title]="jornadasDe(i).length >= maxJornadas
+                                          ? 'Cada día admite hasta ' + maxJornadas + ' jornadas'
+                                          : 'Agregar otra jornada a este día'"
+                                (click)="agregarJornada(i)">
+                          <i class="fa fa-plus"></i> Jornada
+                        </button>
+
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                [disabled]="dias.length <= 1"
+                                title="Poner estas mismas jornadas en los demás días de la lista"
+                                (click)="copiarADemasDias(i)">
+                          <i class="fa fa-copy"></i>
+                          <span class="d-none d-md-inline"> Copiar a los demás</span>
+                        </button>
+
+                        <button class="btn-quitar" type="button" (click)="quitarDia(i)"
+                                title="Quitar este día" [disabled]="dias.length <= 1">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Las jornadas del día -->
+                  <div class="jornadas" formArrayName="jornadas">
+                    @for (jorCtrl of jornadasDe(i).controls; track jorCtrl; let j = $index) {
+                      <div class="jornada" [formGroupName]="j"
+                           [class.jornada-invalida]="jorCtrl.invalid && jorCtrl.touched">
+
+                        <span class="jornada-num" [title]="'Jornada ' + (j + 1)">J{{ j + 1 }}</span>
+
+                        <input type="time" class="form-control form-control-sm" formControlName="hora_inicio"
+                               aria-label="Hora de inicio"
+                               [class.is-invalid]="jorCtrl.get('hora_inicio')?.invalid && jorCtrl.get('hora_inicio')?.touched">
+
+                        <span class="jornada-sep"><i class="fa fa-arrow-right-long"></i></span>
+
+                        <input type="time" class="form-control form-control-sm" formControlName="hora_fin"
+                               aria-label="Hora de fin"
+                               [class.is-invalid]="(jorCtrl.get('hora_fin')?.invalid && jorCtrl.get('hora_fin')?.touched) || jorCtrl.hasError('horaIgual')">
+
+                        <span class="jornada-dura">{{ duracion(i, j) }}</span>
+
+                        <!-- Cruzar la medianoche no es un error: es el turno de noche -->
+                        @if (cruzaMedianoche(i, j)) {
+                          <span class="chip chip-noche" title="Esta jornada termina al día siguiente">
+                            <i class="fa fa-moon"></i> +1 día
+                          </span>
+                        }
+
+                        @if (jorCtrl.hasError('horaIgual')) {
+                          <small class="campo-error">Empieza y termina a la misma hora</small>
+                        }
+
+                        @if (!isdisabled) {
+                          <button class="btn-quitar" type="button" (click)="quitarJornada(i, j)"
+                                  title="Quitar esta jornada" [disabled]="jornadasDe(i).length <= 1">
+                            <i class="fa fa-xmark"></i>
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    @if (jornadasDe(i).hasError('jornadasSolapadas')) {
+                      <div class="aviso aviso--danger">
+                        <i class="fa fa-triangle-exclamation"></i>
+                        Las jornadas de este día se pisan entre ellas.
+                      </div>
+                    }
+                  </div>
+
+                </div>
+              }
+
+            </div>
+          } @else {
+            <div class="dias-vacio">
+              <i class="fa-regular fa-calendar-xmark"></i>
+              <p>Todavía no hay días en este horario</p>
+              @if (!isdisabled) {
+                <button type="button" class="btn btn-sm btn-primary" (click)="agregarDia()">
+                  <i class="fa fa-plus"></i> Agregar el primer día
+                </button>
+              }
+            </div>
+          }
+
+          <!-- Avisos del conjunto -->
+          @if (dias.errors?.['diasDuplicados']) {
+            <div class="aviso aviso--danger">
+              <i class="fa fa-triangle-exclamation"></i>
+              No se puede repetir el mismo día de la semana.
+            </div>
+          }
+
+          <p class="dias-ayuda">
+            <i class="fa fa-circle-info me-1"></i>
+            Cada día admite hasta <b>{{ maxJornadas }} jornadas</b> (mañana y tarde, turnos partidos).
+            Si la hora de fin es menor que la de inicio, la jornada <b>termina al día siguiente</b>
+            <i class="fa fa-moon mx-1"></i> y sirve para el turno de noche.
+          </p>
+
+        </div>
+      </ng-container>
+    </panel>
+
+    <!-- ---------- Probar el horario ----------
+         Para lo que existe todo esto: ver qué jornada le tocaría a una
+         marcación y de cuántos minutos sería el atraso. Se mide sobre lo
+         GUARDADO, así que no sale mientras el horario es nuevo. -->
+    @if (puedeProbar) {
+      <panel
+        headerClass="bg-gray-800"
+        title="Probar el atraso"
+        noButton="true"
+        noBody="true"
+        panelClass="mt-3 mb-0"
+        icono="clock"
+        fondoGris="true">
+
+        <ng-container outsideBody>
+          <div class="form-card__body">
+            <div class="prueba-barra">
+              <input type="datetime-local" class="form-control form-control-sm prueba-fecha"
+                     [(ngModel)]="pruebaFecha" [ngModelOptions]="{ standalone: true }"
+                     aria-label="Fecha y hora de la marcación">
+              <button type="button" class="btn btn-sm btn-primary"
+                      [disabled]="probando || !pruebaFecha"
+                      (click)="probar()">
+                <i class="fa fa-stopwatch"></i> Probar
+              </button>
+              <small class="prueba-ayuda">
+                Con una fecha y hora de marcación, dice qué jornada tocaba y cuánto atraso hubo.
+                Se mide sobre lo <b>ya guardado</b>.
+              </small>
+            </div>
+
+            @if (prueba) {
+              <div class="prueba-resultado" [ngClass]="colorPrueba">
+                <div class="prueba-estado">
+                  <i class="fa"
+                     [ngClass]="prueba.estado === 'ATRASO' ? 'fa-triangle-exclamation'
+                              : prueba.estado === 'SIN JORNADA' ? 'fa-calendar-xmark' : 'fa-circle-check'"></i>
+                  {{ prueba.estado }}
+                </div>
+                @if (prueba.jornada) {
+                  <div class="prueba-detalle">
+                    {{ prueba.dia_nombre }}, jornada {{ prueba.jornada }}
+                    ({{ prueba.hora_inicio }} – {{ prueba.hora_fin }}) ·
+                    marcó a las <b>{{ prueba.hora_marcada }}</b> ·
+                    tolerancia {{ prueba.tolerancia_min }} min
+                    @if (prueba.atraso_min > 0) {
+                      · <b>{{ prueba.atraso_min }} min de atraso</b>
+                    }
+                  </div>
+                } @else {
+                  <div class="prueba-detalle">
+                    El {{ prueba.dia_nombre }} este horario no tiene jornadas.
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </ng-container>
+      </panel>
+    }
+
+  </form>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<app-modal-footer
+  [isDisabled]="!isdisabled"
+  (onClose)="modal.close('Close click')"
+  (onSubmit)="onSubmitForm($event)">
+</app-modal-footer>

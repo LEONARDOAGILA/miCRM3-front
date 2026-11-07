@@ -4,7 +4,7 @@ import { Subject, Subscription, firstValueFrom } from 'rxjs';
 
 import { GestionService } from './gestion.service';
 import { GestionModel } from '../interfaces/gestionModel';
-import { AvisoCampanaService } from '../../config/services/avisoCampana.service';
+import { AvisoCampanaService } from '../../core/services/avisoCampana.service';
 import { PresenciaService } from '../../seguridad/services/presencia.service';
 import {
   RecordatorioGestionComponent, RespuestaRecordatorio,

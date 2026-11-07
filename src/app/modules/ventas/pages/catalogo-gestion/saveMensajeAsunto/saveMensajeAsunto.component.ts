@@ -1,5 +1,5 @@
-import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, OnInit, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -11,7 +11,7 @@ import {
   GRUPOS_HUECOS, aplicarHuecos, datosDeHuecos,
 } from '../../../interfaces/huecosPlantilla';
 import { imprimirNota } from '../../../interfaces/notaDocumento';
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoNgxEditorComponent } from '../../../../../components/campos/campoNgxEditor/campoNgxEditor.component';
 import { HuecosPlantillaComponent } from '../../../../../components/campos/huecosPlantilla/huecosPlantilla.component';
 import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
@@ -34,10 +34,14 @@ import { ModalFooterComponent } from '../../../../../components/modal/modal-foot
   selector: 'app-saveMensajeAsunto',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, PanelModule,
-    CampoNgxEditorComponent, HuecosPlantillaComponent, ModalFooterComponent,
-  ],
+    FormsModule,
+    PanelComponent,
+    CampoNgxEditorComponent,
+    HuecosPlantillaComponent,
+    ModalFooterComponent
+],
   templateUrl: './saveMensajeAsunto.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./saveMensajeAsunto.component.css'],
 })
 export class SaveMensajeAsuntoComponent implements OnInit {

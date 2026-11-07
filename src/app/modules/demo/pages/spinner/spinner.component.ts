@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { LoadingBarService } from '@ngx-loading-bar/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -11,6 +11,7 @@ import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
   selector: 'app-spinner',
   templateUrl: './spinner.component.html',
   styleUrls: ['./spinner.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class SpinnerComponentimplements implements OnInit, OnDestroy{

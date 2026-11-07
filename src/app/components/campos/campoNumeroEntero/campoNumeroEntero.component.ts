@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { DirectiveModule } from "../../../core/directives/directive.module";
@@ -9,6 +9,7 @@ import { ValidacionCedulaRucService } from "../../../service/validacionCedulaRuc
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, DirectiveModule],  
   templateUrl: './campoNumeroEntero.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./campoNumeroEntero.component.css']
 })
 export class CampoNumeroEnteroComponent {

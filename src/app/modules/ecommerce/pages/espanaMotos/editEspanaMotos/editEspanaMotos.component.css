@@ -1,0 +1,298 @@
+/* ============================================================
+   ESPAÑA MOTOS
+   ============================================================
+   Colores de variables de Bootstrap, para que acompañen al tema claro y al
+   oscuro. */
+
+.form-card__body {
+  padding: 1rem .875rem .25rem;
+}
+
+/* ---------- Publicar: va arriba y aparte del resto ---------- */
+.motos-publicar {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  padding: .625rem .875rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-secondary, #6c757d);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+
+.motos-publicar.is-on {
+  border-left-color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .06);
+}
+
+.motos-publicar__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 50%;
+  font-size: .875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(108, 117, 125, .15);
+}
+
+.motos-publicar.is-on .motos-publicar__icon {
+  color: var(--bs-success, #198754);
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
+}
+
+.motos-publicar__text { display: flex; flex-direction: column; line-height: 1.3; }
+
+.motos-publicar__label {
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+}
+
+.motos-publicar__hint {
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.motos-publicar__switch { margin-left: auto; }
+
+/* ---------- Cada pieza de la portada ---------- */
+.motos-pieza {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .5rem .75rem;
+  margin-bottom: .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-left: 3px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.motos-pieza.is-on { border-left-color: var(--bs-success, #198754); }
+
+.motos-pieza__texto { display: flex; flex-direction: column; line-height: 1.3; flex: 1 1 auto; }
+
+.motos-pieza__texto b { font-size: .875rem; color: var(--bs-body-color, #212529); }
+
+.motos-pieza__texto small {
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- El fondo ---------- */
+.motos-fondo {
+  padding: .75rem;
+  margin: 0 0 .75rem;
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.motos-fondo__imagen {
+  display: block;
+  width: 100%;
+  max-height: 11rem;
+  object-fit: cover;
+  border-radius: .375rem;
+}
+
+.motos-fondo__botones {
+  display: flex;
+  gap: .375rem;
+  margin-top: .5rem;
+}
+
+.motos-fondo__sin {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  padding: .75rem;
+  border-radius: .375rem;
+  font-size: .75rem;
+  line-height: 1.4;
+  color: var(--bs-warning-text-emphasis, #997404);
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+}
+
+/* ---------- Pestañas y marcas ---------- */
+.motos-fila {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  margin-bottom: .375rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+.motos-fila--oculta { opacity: .65; }
+
+.motos-fila__icono { color: var(--bs-secondary-color, #6c757d); font-size: .8125rem; }
+
+.motos-fila__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+  font-size: .875rem;
+  color: var(--bs-body-color, #212529);
+}
+
+.motos-fila__detalle {
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.motos-fila__cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin-top: .15rem;
+}
+
+.motos-fila__botones { margin-left: auto; display: flex; gap: .25rem; }
+
+.motos-fila__fantasma {
+  min-height: 2.5rem;
+  border: 1px dashed var(--bs-app-theme, #00acac);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+}
+
+/* ---------- Añadir una marca ---------- */
+.motos-anadir {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  margin-bottom: .75rem;
+}
+
+.motos-anadir__combo { flex: 1 1 auto; min-width: 0; }
+
+.motos-anadir .btn { margin-top: 1rem; }
+
+/* ---------- El asa ---------- */
+.motos-asa {
+  cursor: grab;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .8125rem;
+}
+
+.motos-asa:active { cursor: grabbing; }
+
+::ng-deep .cdk-drag-preview {
+  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, .2),
+              0 8px 10px 1px rgba(0, 0, 0, .14),
+              0 3px 14px 2px rgba(0, 0, 0, .12);
+  border-radius: .375rem;
+}
+
+::ng-deep .cdk-drag-animating {
+  transition: transform 180ms cubic-bezier(0, 0, .2, 1);
+}
+
+/* ============================================================
+   LA PALANCA
+   ============================================================
+   Copiada de la ficha de producto: el estilo vive mitad en el HTML y mitad
+   aquí, y llevarse sólo el HTML deja un cuadrado. */
+.palanca ::ng-deep .form-check {
+  margin: 0;
+  padding-left: 3rem;
+  min-height: auto;
+}
+
+.palanca ::ng-deep .form-check-input {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-top: 0;
+  margin-left: -3rem;
+  background-color: rgba(108, 117, 125, .35);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border: none;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+.palanca ::ng-deep .form-check-input:checked {
+  background-color: var(--bs-success, #198754);
+  background-position: right center;
+}
+
+.palanca ::ng-deep .form-check-label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-component-color, #212529);
+  vertical-align: middle;
+}
+
+/* ---------- Botones y etiquetas ---------- */
+.btn-editar,
+.btn-ver,
+.btn-borrar {
+  padding: .15rem .4rem;
+  font-size: .75rem;
+  line-height: 1.2;
+  border: 0;
+  background: transparent;
+}
+
+.btn-editar { color: var(--bs-app-theme, #00acac); }
+.btn-ver    { color: #5b9bd5; }
+.btn-borrar { color: var(--bs-danger, #dc3545); }
+
+.btn-editar:hover,
+.btn-ver:hover,
+.btn-borrar:hover { background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08); }
+
+.btn-editar:disabled,
+.btn-ver:disabled,
+.btn-borrar:disabled { opacity: .45; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .1rem .4rem;
+  border-radius: 1rem;
+  font-size: .6875rem;
+  font-weight: 600;
+}
+
+.chip-muted {
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 .75rem;
+  font-size: .7rem;
+  line-height: 1.35;
+  /* Un gris más flojo se quedaba en 4,35:1 sobre el panel oscuro,
+     por debajo de lo que se lee en letra de .7rem. */
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.panel-acciones {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  margin-left: auto;
+}

@@ -147,7 +147,7 @@
         @switch (estado) {
           @case ('sin') { Sin ubicación. Pulsa <b>Obtener ubicación</b> o <b>Seguir en vivo</b>. }
           @case ('obteniendo') { Obteniendo la posición del dispositivo… }
-          @case ('ubicado') { Ubicado a las {{ actual?.fecha | date:'HH:mm:ss' }} }
+          @case ('ubicado') { Ubicado a las {{ $safeNavigationMigration(actual?.fecha) | date:'HH:mm:ss' }} }
           @case ('siguiendo') { Siguiendo en vivo · {{ recorrido.length }} punto(s) · {{ distanciaTexto }} recorridos }
         }
         @if (!esNativo) {

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -36,6 +36,7 @@ export interface RespuestaRecordatorio {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './recordatorioGestion.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./recordatorioGestion.component.css'],
 })
 export class RecordatorioGestionComponent implements OnInit {

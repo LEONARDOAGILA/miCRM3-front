@@ -1,16 +1,16 @@
 <!-- ===================== SPINNER ===================== -->
-<ng-container *ngIf="(isLoading$ | async)">
+@if ((isLoading$ | async)) {
   <div class="loader1" role="status" aria-label="Cargando"></div>
   <div class="overlay1" aria-hidden="true"></div>
-</ng-container>
+}
 
 <panel title="Historial de Auditoría"
-       headerClass="bg-cyan-700"
-       [noButtonCollapse]="true"
-       [noButtonRemove]="true"
-       ButtonRemoveModal="true"
-       (panelRemovedModal)="activeModal.dismiss()"
-       (panelReloaded)="cargarAuditoria(paginaActual)">
+  headerClass="bg-cyan-700"
+  [noButtonCollapse]="true"
+  [noButtonRemove]="true"
+  ButtonRemoveModal="true"
+  (panelRemovedModal)="activeModal.dismiss()"
+  (panelReloaded)="cargarAuditoria(paginaActual)">
 
   <div class="audit-modal">
 
@@ -22,217 +22,246 @@
         <div class="ngx-daterangepicker-action date-range-input">
           <i class="fa fa-calendar fa-fw" aria-hidden="true"></i>
           <input id="audit-rango"
-                 type="text"
-                 class="form-control form-control-sm shadow-none"
-                 readonly
-                 placeholder="Todo el historial"
-                 ngxDaterangepickerMd
-                 [locale]="locale"
-                 [ranges]="ranges"
-                 [opens]="'right'"
-                 [alwaysShowCalendars]="alwaysShowCalendars"
-                 [showDropdowns]="true"
-                 [showCustomRangeLabel]="true"
-                 [showClearButton]="true"
-                 [showCancel]="true"
-                 [(ngModel)]="selected"
-                 (ngModelChange)="onRangoChange($event)" />
+            type="text"
+            class="form-control form-control-sm shadow-none"
+            readonly
+            placeholder="Todo el historial"
+            ngxDaterangepickerMd
+            [locale]="locale"
+            [ranges]="ranges"
+            [opens]="'right'"
+            [alwaysShowCalendars]="alwaysShowCalendars"
+            [showDropdowns]="true"
+            [showCustomRangeLabel]="true"
+            [showClearButton]="true"
+            [showCancel]="true"
+            [(ngModel)]="selected"
+            (ngModelChange)="onRangoChange($event)" />
+          </div>
         </div>
-      </div>
 
-      <div class="audit-filters__field audit-filters__field--operacion">
-        <label class="audit-label" for="audit-f-operacion">Operación</label>
-        <select id="audit-f-operacion" class="form-select form-select-sm" [(ngModel)]="filtro.tipoOperacion">
-          <option value="">Todas</option>
-          <option value="INSERT">Creación</option>
-          <option value="UPDATE">Actualización</option>
-          <option value="DELETE">Eliminación</option>
-        </select>
-      </div>
+        <div class="audit-filters__field audit-filters__field--operacion">
+          <label class="audit-label" for="audit-f-operacion">Operación</label>
+          <select id="audit-f-operacion" class="form-select form-select-sm" [(ngModel)]="filtro.tipoOperacion">
+            <option value="">Todas</option>
+            <option value="INSERT">Creación</option>
+            <option value="UPDATE">Actualización</option>
+            <option value="DELETE">Eliminación</option>
+          </select>
+        </div>
 
-      <div class="audit-filters__actions">
-        <button type="button" class="btn btn-sm btn-primary" (click)="aplicarFiltros()">
-          <i class="fa-solid fa-filter" aria-hidden="true"></i> Filtrar
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()"
-                aria-label="Limpiar filtros" title="Limpiar filtros">
-          <i class="fa-solid fa-eraser" aria-hidden="true"></i>
-        </button>
-      </div>
-
-
-    </div>
-
-    <!-- ===================== CONTENIDO ===================== -->
-    <div class="audit-body">
-
-      <!-- ---------- Movimientos ---------- -->
-      <section class="audit-panel audit-panel--lista">
-        <header class="audit-panel__head">
-          <i class="fa-solid fa-clock-rotate-left"></i>
-          <span>Movimientos</span>
-          <span class="audit-chip audit-chip--muted ms-auto">
-            {{ totalRegistros }} {{ totalRegistros === 1 ? 'registro' : 'registros' }}
-          </span>
-        </header>
-
-        <div class="audit-lista" *ngIf="auditoriaData.length > 0; else sinMovimientos">
-          <button type="button" class="movimiento"
-                  *ngFor="let registro of auditoriaData; let i = index"
-                  [class.activo]="selectedIndex === i"
-                  [ngClass]="'op-' + (registro.operacion || '').toLowerCase()"
-                  (click)="seleccionarRegistro(registro, i)">
-            <span class="movimiento__icono">
-              <i [class]="operacionInfo(registro.operacion).icono"></i>
-            </span>
-            <span class="movimiento__cuerpo">
-              <span class="movimiento__titulo">
-                {{ operacionInfo(registro.operacion).texto }}
-                <span class="movimiento__id">#{{ registro.id }}</span>
-              </span>
-              <span class="movimiento__dato" *ngIf="registro.fecha_operacion">
-                <i class="fa-regular fa-clock"></i> {{ registro.fecha_operacion }}
-              </span>
-              <span class="movimiento__dato" *ngIf="registro.usuario_login || registro.usuario_nombre">
-                <i class="fa-regular fa-user"></i>
-                {{ registro.usuario_login || 'N/A' }}{{ registro.usuario_nombre ? ' · ' + registro.usuario_nombre : '' }}
-              </span>
-              <span class="movimiento__dato" *ngIf="registro.ip_address">
-                <i class="fa-solid fa-network-wired"></i> {{ registro.ip_address }}
-              </span>
-            </span>
-            <i class="fa-solid fa-chevron-right movimiento__flecha"></i>
+        <div class="audit-filters__actions">
+          <button type="button" class="btn btn-sm btn-primary" (click)="aplicarFiltros()">
+            <i class="fa-solid fa-filter" aria-hidden="true"></i> Filtrar
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()"
+            aria-label="Limpiar filtros" title="Limpiar filtros">
+            <i class="fa-solid fa-eraser" aria-hidden="true"></i>
           </button>
         </div>
 
-        <ng-template #sinMovimientos>
-          <div class="audit-empty">
-            <i class="fa-regular fa-folder-open"></i>
-            <p>No hay movimientos para los filtros aplicados</p>
-          </div>
-        </ng-template>
 
-        <footer class="audit-pagination">
-          <div class="audit-pagination__info">
-            <ng-container *ngIf="totalRegistros > 0; else sinRegistros">
-              <strong>{{ (paginaActual - 1) * registrosPorPagina + 1 }}</strong> -
-              <strong>{{ paginaActual * registrosPorPagina > totalRegistros ? totalRegistros : paginaActual * registrosPorPagina }}</strong>
-              de <strong>{{ totalRegistros }}</strong>
-            </ng-container>
-            <ng-template #sinRegistros>Sin registros</ng-template>
-          </div>
-          <div class="audit-pagination__buttons">
-            <button type="button" class="pag-btn" (click)="firstPage()" [disabled]="paginaActual === 1" title="Primera página">
-              <i class="fa fa-angle-double-left"></i>
-            </button>
-            <button type="button" class="pag-btn" (click)="prevPage()" [disabled]="paginaActual === 1" title="Anterior">
-              <i class="fa fa-chevron-left"></i>
-            </button>
-            <span class="audit-pagination__page">{{ paginaActual }} / {{ ultimaPagina }}</span>
-            <button type="button" class="pag-btn" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina" title="Siguiente">
-              <i class="fa fa-chevron-right"></i>
-            </button>
-            <button type="button" class="pag-btn" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina" title="Última página">
-              <i class="fa fa-angle-double-right"></i>
-            </button>
-          </div>
-        </footer>
-      </section>
+      </div>
 
-      <!-- ---------- Detalle ---------- -->
-      <section class="audit-panel audit-panel--detalle">
-        <ng-container *ngIf="selectedAuditoria; else sinSeleccion">
+      <!-- ===================== CONTENIDO ===================== -->
+      <div class="audit-body">
+
+        <!-- ---------- Movimientos ---------- -->
+        <section class="audit-panel audit-panel--lista">
           <header class="audit-panel__head">
-            <i class="fa-solid fa-code-compare"></i>
-            <span>Detalle de cambios</span>
-            <div class="audit-panel__chips ms-auto"
-                 *ngIf="obtenerCambiosFormateados(selectedAuditoria) as cambiosInfo">
-              <span class="audit-chip audit-chip--added" *ngIf="cambiosInfo.added > 0" title="Campos agregados">
-                <i class="fa-solid fa-plus"></i> {{ cambiosInfo.added }}
-              </span>
-              <span class="audit-chip audit-chip--modified" *ngIf="cambiosInfo.modified > 0" title="Campos modificados">
-                <i class="fa-solid fa-pen"></i> {{ cambiosInfo.modified }}
-              </span>
-              <span class="audit-chip audit-chip--removed" *ngIf="cambiosInfo.removed > 0" title="Campos eliminados">
-                <i class="fa-solid fa-minus"></i> {{ cambiosInfo.removed }}
-              </span>
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Movimientos</span>
+            <span class="audit-chip audit-chip--muted ms-auto">
+              {{ totalRegistros }} {{ totalRegistros === 1 ? 'registro' : 'registros' }}
+            </span>
+          </header>
+
+          @if (auditoriaData.length > 0) {
+            <div class="audit-lista">
+              @for (registro of auditoriaData; track registro; let i = $index) {
+                <button type="button" class="movimiento"
+                  [class.activo]="selectedIndex === i"
+                  [ngClass]="'op-' + (registro.operacion || '').toLowerCase()"
+                  (click)="seleccionarRegistro(registro, i)">
+                  <span class="movimiento__icono">
+                    <i [class]="operacionInfo(registro.operacion).icono"></i>
+                  </span>
+                  <span class="movimiento__cuerpo">
+                    <span class="movimiento__titulo">
+                      {{ operacionInfo(registro.operacion).texto }}
+                      <span class="movimiento__id">#{{ registro.id }}</span>
+                    </span>
+                    @if (registro.fecha_operacion) {
+                      <span class="movimiento__dato">
+                        <i class="fa-regular fa-clock"></i> {{ registro.fecha_operacion }}
+                      </span>
+                    }
+                    @if (registro.usuario_login || registro.usuario_nombre) {
+                      <span class="movimiento__dato">
+                        <i class="fa-regular fa-user"></i>
+                        {{ registro.usuario_login || 'N/A' }}{{ registro.usuario_nombre ? ' · ' + registro.usuario_nombre : '' }}
+                      </span>
+                    }
+                    @if (registro.ip_address) {
+                      <span class="movimiento__dato">
+                        <i class="fa-solid fa-network-wired"></i> {{ registro.ip_address }}
+                      </span>
+                    }
+                  </span>
+                  <i class="fa-solid fa-chevron-right movimiento__flecha"></i>
+                </button>
+              }
             </div>
-          </header>
-
-          <div class="audit-meta">
-            <span class="audit-chip" [ngClass]="operacionInfo(selectedAuditoria.operacion).clase">
-              <i [class]="operacionInfo(selectedAuditoria.operacion).icono"></i>
-              {{ operacionInfo(selectedAuditoria.operacion).texto }}
-            </span>
-            <span class="audit-meta__item" *ngIf="selectedAuditoria.fecha_operacion">
-              <i class="fa-regular fa-clock"></i> {{ selectedAuditoria.fecha_operacion }}
-            </span>
-            <span class="audit-meta__item" *ngIf="selectedAuditoria.usuario_login">
-              <i class="fa-regular fa-user"></i>
-              {{ selectedAuditoria.usuario_login }}{{ selectedAuditoria.usuario_nombre ? ' · ' + selectedAuditoria.usuario_nombre : '' }}
-            </span>
-            <span class="audit-meta__item" *ngIf="selectedAuditoria.ip_address">
-              <i class="fa-solid fa-network-wired"></i> {{ selectedAuditoria.ip_address }}
-            </span>
-          </div>
-
-          <div class="audit-detail__body">
-            <ng-container *ngIf="obtenerCambiosFormateados(selectedAuditoria) as cambiosInfo">
-              <ng-container *ngIf="cambiosInfo.cambios.length > 0; else sinCambios">
-                <div class="audit-table-wrap">
-                  <table class="diff-table">
-                    <thead>
-                      <tr>
-                        <th class="diff-table__th-campo">Campo</th>
-                        <th>Valor anterior</th>
-                        <th>Valor nuevo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let cambio of cambiosInfo.cambios" [ngClass]="'is-' + cambio.estado">
-                        <td class="diff-field" data-label="Campo">
-                          <span class="diff-dot" [attr.title]="etiquetaEstado(cambio.estado)"></span>
-                          <!-- <span class="diff-field__name">{{ cambio.campo }}</span> -->
-                          <pre class="diff-code diff-code--text" >{{ cambio.campo }}</pre>
-                        </td>
-                        <td class="diff-value" data-label="Antes">
-                          <span class="diff-empty" *ngIf="cambio.estado === 'added'">—</span>
-                          <pre class="diff-code diff-code--old" *ngIf="cambio.estado !== 'added'">{{ cambio.valorAnterior }}</pre>
-                        </td>
-                        <td class="diff-value" data-label="Después">
-                          <span class="diff-empty" *ngIf="cambio.estado === 'removed'">—</span>
-                          <pre class="diff-code diff-code--new" *ngIf="cambio.estado !== 'removed'">{{ cambio.valorNuevo }}</pre>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </ng-container>
-              <ng-template #sinCambios>
-                <div class="audit-empty">
-                  <i class="fa-regular fa-circle-check"></i>
-                  <p>No se detectaron cambios en este registro</p>
-                </div>
-              </ng-template>
-            </ng-container>
-          </div>
-        </ng-container>
-
-        <ng-template #sinSeleccion>
-          <header class="audit-panel__head">
-            <i class="fa-solid fa-code-compare"></i>
-            <span>Detalle de cambios</span>
-          </header>
-          <div class="audit-detail__body">
+          } @else {
             <div class="audit-empty">
-              <i class="fa-regular fa-hand-pointer"></i>
-              <p>Selecciona un movimiento de la lista para ver qué cambió</p>
+              <i class="fa-regular fa-folder-open"></i>
+              <p>No hay movimientos para los filtros aplicados</p>
             </div>
-          </div>
-        </ng-template>
-      </section>
+          }
 
+
+          <footer class="audit-pagination">
+            <div class="audit-pagination__info">
+              @if (totalRegistros > 0) {
+                <strong>{{ (paginaActual - 1) * registrosPorPagina + 1 }}</strong> -
+                <strong>{{ paginaActual * registrosPorPagina > totalRegistros ? totalRegistros : paginaActual * registrosPorPagina }}</strong>
+                de <strong>{{ totalRegistros }}</strong>
+              } @else {
+                Sin registros
+              }
+            </div>
+            <div class="audit-pagination__buttons">
+              <button type="button" class="pag-btn" (click)="firstPage()" [disabled]="paginaActual === 1" title="Primera página">
+                <i class="fa fa-angle-double-left"></i>
+              </button>
+              <button type="button" class="pag-btn" (click)="prevPage()" [disabled]="paginaActual === 1" title="Anterior">
+                <i class="fa fa-chevron-left"></i>
+              </button>
+              <span class="audit-pagination__page">{{ paginaActual }} / {{ ultimaPagina }}</span>
+              <button type="button" class="pag-btn" (click)="nextPage()" [disabled]="paginaActual === ultimaPagina" title="Siguiente">
+                <i class="fa fa-chevron-right"></i>
+              </button>
+              <button type="button" class="pag-btn" (click)="lastPage()" [disabled]="paginaActual === ultimaPagina" title="Última página">
+                <i class="fa fa-angle-double-right"></i>
+              </button>
+            </div>
+          </footer>
+        </section>
+
+        <!-- ---------- Detalle ---------- -->
+        <section class="audit-panel audit-panel--detalle">
+          @if (selectedAuditoria) {
+            <header class="audit-panel__head">
+              <i class="fa-solid fa-code-compare"></i>
+              <span>Detalle de cambios</span>
+              @if (obtenerCambiosFormateados(selectedAuditoria); as cambiosInfo) {
+                <div class="audit-panel__chips ms-auto"
+                  >
+                  @if (cambiosInfo.added > 0) {
+                    <span class="audit-chip audit-chip--added" title="Campos agregados">
+                      <i class="fa-solid fa-plus"></i> {{ cambiosInfo.added }}
+                    </span>
+                  }
+                  @if (cambiosInfo.modified > 0) {
+                    <span class="audit-chip audit-chip--modified" title="Campos modificados">
+                      <i class="fa-solid fa-pen"></i> {{ cambiosInfo.modified }}
+                    </span>
+                  }
+                  @if (cambiosInfo.removed > 0) {
+                    <span class="audit-chip audit-chip--removed" title="Campos eliminados">
+                      <i class="fa-solid fa-minus"></i> {{ cambiosInfo.removed }}
+                    </span>
+                  }
+                </div>
+              }
+            </header>
+            <div class="audit-meta">
+              <span class="audit-chip" [ngClass]="operacionInfo(selectedAuditoria.operacion).clase">
+                <i [class]="operacionInfo(selectedAuditoria.operacion).icono"></i>
+                {{ operacionInfo(selectedAuditoria.operacion).texto }}
+              </span>
+              @if (selectedAuditoria.fecha_operacion) {
+                <span class="audit-meta__item">
+                  <i class="fa-regular fa-clock"></i> {{ selectedAuditoria.fecha_operacion }}
+                </span>
+              }
+              @if (selectedAuditoria.usuario_login) {
+                <span class="audit-meta__item">
+                  <i class="fa-regular fa-user"></i>
+                  {{ selectedAuditoria.usuario_login }}{{ selectedAuditoria.usuario_nombre ? ' · ' + selectedAuditoria.usuario_nombre : '' }}
+                </span>
+              }
+              @if (selectedAuditoria.ip_address) {
+                <span class="audit-meta__item">
+                  <i class="fa-solid fa-network-wired"></i> {{ selectedAuditoria.ip_address }}
+                </span>
+              }
+            </div>
+            <div class="audit-detail__body">
+              @if (obtenerCambiosFormateados(selectedAuditoria); as cambiosInfo) {
+                @if (cambiosInfo.cambios.length > 0) {
+                  <div class="audit-table-wrap">
+                    <table class="diff-table">
+                      <thead>
+                        <tr>
+                          <th class="diff-table__th-campo">Campo</th>
+                          <th>Valor anterior</th>
+                          <th>Valor nuevo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (cambio of cambiosInfo.cambios; track cambio) {
+                          <tr [ngClass]="'is-' + cambio.estado">
+                            <td class="diff-field" data-label="Campo">
+                              <span class="diff-dot" [attr.title]="etiquetaEstado(cambio.estado)"></span>
+                              <!-- <span class="diff-field__name">{{ cambio.campo }}</span> -->
+                              <pre class="diff-code diff-code--text" >{{ cambio.campo }}</pre>
+                            </td>
+                            <td class="diff-value" data-label="Antes">
+                              @if (cambio.estado === 'added') {
+                                <span class="diff-empty">—</span>
+                              }
+                              @if (cambio.estado !== 'added') {
+                                <pre class="diff-code diff-code--old">{{ cambio.valorAnterior }}</pre>
+                              }
+                            </td>
+                            <td class="diff-value" data-label="Después">
+                              @if (cambio.estado === 'removed') {
+                                <span class="diff-empty">—</span>
+                              }
+                              @if (cambio.estado !== 'removed') {
+                                <pre class="diff-code diff-code--new">{{ cambio.valorNuevo }}</pre>
+                              }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                } @else {
+                  <div class="audit-empty">
+                    <i class="fa-regular fa-circle-check"></i>
+                    <p>No se detectaron cambios en este registro</p>
+                  </div>
+                }
+              }
+            </div>
+          } @else {
+            <header class="audit-panel__head">
+              <i class="fa-solid fa-code-compare"></i>
+              <span>Detalle de cambios</span>
+            </header>
+            <div class="audit-detail__body">
+              <div class="audit-empty">
+                <i class="fa-regular fa-hand-pointer"></i>
+                <p>Selecciona un movimiento de la lista para ver qué cambió</p>
+              </div>
+            </div>
+          }
+
+        </section>
+
+      </div>
     </div>
-  </div>
 
-</panel>
+  </panel>

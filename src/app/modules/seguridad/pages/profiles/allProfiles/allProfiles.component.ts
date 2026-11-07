@@ -1,10 +1,10 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MenuContextualComponent, OpcionContextual } from '../../../../../components/menuContextual/menuContextual.component';
 import { Subject, firstValueFrom } from 'rxjs';
-import { CellClickedEvent, GridApi,  GridReadyEvent, RowNode } from 'ag-grid-community';
+import { CellClickedEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AgGridAngular } from 'ag-grid-angular';
+import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 
 ///   SERVICIOS    ///
 import { SeguridadService } from '../../../services/seguridad.service';
@@ -28,13 +28,27 @@ import { PapeleraPerfilesComponent } from '../papeleraPerfiles/papeleraPerfiles.
 import { AppDescargaService, PeticionDescarga, AccionDescarga }
   from '../../../../../service/app-descarga.service';
 
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
+import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
+import { CommonModule } from '@angular/common';
+
 
 
 @Component({
   selector: 'app-allProfiles',
   templateUrl: './allProfiles.component.html',
   styleUrls: ['./allProfiles.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    AgGridModule,
+    FilasEstirablesDirective,
+    PanelComponent,
+    MenuContextualComponent,
+    CampoBusquedaPaginacionComponent
+],
 })
 export class AllProfilesComponent implements OnInit, OnDestroy{
 
@@ -290,7 +304,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
           pinned: 'right',
           minWidth: 110,
           maxWidth: 110,
-          suppressMenu: true,
+          suppressHeaderMenuButton: true,
           sortable: false,
           resizable: false,
           suppressSizeToFit: false,
@@ -386,7 +400,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
           actionsCol.maxWidth = isCollapsed ? 110 : 50;
         }
         
-        this.gridApi.setColumnDefs(columnDefs);
+        this.gridApi.setGridOption('columnDefs', columnDefs);
         this.gridApi.sizeColumnsToFit();
         
         // Asegurar redimensionado en móviles
@@ -474,7 +488,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
      * registro que hoy no cumpliría alguna regla —cargado antes de que
      * existiera— no se podría desactivar hasta arreglarle todo lo demás.
      */
-    cambiarActivo(fila: PerfilModel | null, nodo?: RowNode | null): void {
+    cambiarActivo(fila: PerfilModel | null, nodo?: IRowNode | null): void {
       if (!fila) { return; }
       if (this._seguridadService.isexpired()) { return; }
 
@@ -536,7 +550,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
       }
       
       // Si el grid ya está inicializado, actualiza los datos mostrados
-      if (this.gridApi) this.gridApi.setRowData(this.perfilModel);
+      if (this.gridApi) this.gridApi.setGridOption('rowData', this.perfilModel);
       
       // Oculta el indicador de carga
       this._loadingService.setLoading(false);
@@ -767,7 +781,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
           this.perfilModel.unshift(nuevoPerfil);
 
           // Refresca el grid con el nuevo arreglo completo
-          this.gridApi.setRowData(this.perfilModel);
+          this.gridApi.setGridOption('rowData', this.perfilModel);
         } catch (error) {
           // Captura cualquier error o la cancelación del usuario (cierra sin guardar)
           console.error('Error o cancelación en creación:', error);
@@ -818,7 +832,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 
         // Refresca el grid con el nuevo arreglo completo (setRowData es simple y garantiza consistencia)
         // También se podría usar applyTransaction para añadir solo la fila, pero setRowData es más claro y menos propenso a errores
-        this.gridApi.setRowData(this.perfilModel);
+        this.gridApi.setGridOption('rowData', this.perfilModel);
       } catch (error) {
         // Captura cualquier error o la cancelación del usuario (cierra sin guardar)
         console.error('Error o cancelación en clonación:', error);
@@ -1049,7 +1063,8 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
 // saber que la cabecera también responde.
 @Component({
   selector: 'app-button-accion',
-  standalone: false,
+  standalone: true,
+  imports: [ActionButtonsComponent],
   template: `
     @if (AllProfilesComponent.accionesPlegadas) {
       <button type="button"
@@ -1073,6 +1088,7 @@ export class AllProfilesComponent implements OnInit, OnDestroy{
       </app-action-buttons>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .acciones-desplegar {
       width: 28px;

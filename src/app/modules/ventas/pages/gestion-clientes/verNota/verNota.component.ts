@@ -1,9 +1,9 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
-import { CommonModule } from '@angular/common';
+
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
-import { PanelModule } from '../../../../../components/panel/panel.module';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { NotaCliente, conTokenLasImagenes, nombreDeColor, tinteDeNota } from '../../../interfaces/notaCliente';
 import { DatosDocumentoNota, descargarNotaWord, imprimirNota } from '../../../interfaces/notaDocumento';
 import { ClienteModel } from '../../../interfaces/clienteModel';
@@ -34,8 +34,9 @@ import {
 @Component({
   selector: 'app-verNota',
   standalone: true,
-  imports: [CommonModule, PanelModule],
+  imports: [PanelComponent],
   templateUrl: './verNota.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./verNota.component.css'],
 })
 export class VerNotaComponent {

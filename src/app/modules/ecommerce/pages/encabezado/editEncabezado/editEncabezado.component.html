@@ -1,0 +1,443 @@
+<!-- ============================================================
+     EL ENCABEZADO DE LA TIENDA
+
+     Dos pestañas porque son dos cosas con ritmos distintos: el contenido
+     se revisa junto y se guarda con un botón; el menú se arrastra y se
+     guarda al momento.
+     ============================================================ -->
+
+<ol class="breadcrumb lista-breadcrumb">
+  <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
+  <li class="breadcrumb-item active">Encabezado</li>
+</ol>
+
+<panel [title]="titulo"
+       [noButton]="false"
+       [noButtonCollapse]="true"
+       icono="window-maximize">
+
+  <div header class="panel-acciones">
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Papelera del menú" (click)="abrirPapelera()">
+      <i class="fa fa-trash-can"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-light"
+            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
+      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
+    </button>
+  </div>
+
+  @if (cargando) {
+    <div class="text-center py-5 text-muted">
+      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2 mb-0">Cargando el encabezado…</p>
+    </div>
+  } @else {
+
+    <app-tab-panel
+      [pestanas]="pestanas"
+      [activa]="pestana"
+      [conPanel]="true"
+      (cambiada)="pestana = $any($event)">
+
+      <!-- ================= CONTENIDO ================= -->
+      @if (pestana === 'contenido') {
+        <form [formGroup]="form" novalidate>
+          <div class="row g-3">
+
+            <!-- ---------- La franja de arriba ---------- -->
+            <div class="col-12 col-xl-6">
+              <panel headerClass="bg-gray-800" title="Franja de arriba" noButton="true"
+                     noBody="true" panelClass="mb-0" icono="bullhorn" fondoGris="true">
+                <ng-container outsideBody>
+                  <div class="form-card__body" formGroupName="barra_superior">
+
+                    <div class="enc-estado mb-3" [class.is-on]="ctrlBarraActiva.value">
+                      <span class="enc-estado__icon"><i class="fa-solid fa-power-off"></i></span>
+                      <div class="enc-estado__text">
+                        <span class="enc-estado__label">Franja</span>
+                        <span class="enc-estado__hint">
+                          {{ ctrlBarraActiva.value ? 'Se ve arriba del todo' : 'Oculta' }}
+                        </span>
+                      </div>
+                      <app-checkbox class="enc-estado__switch palanca"
+                        [control]="ctrlBarraActiva"
+                        [label]="ctrlBarraActiva.value ? 'Visible' : 'Oculta'"
+                        [id]="'ck-barra-activa'">
+                      </app-checkbox>
+                    </div>
+
+                    <app-campoTexto
+                      [control]="$any(barra.controls['texto'])"
+                      label="TEXTO"
+                      placeholder="Difiere tus compras hasta"
+                      [maxLength]="80">
+                    </app-campoTexto>
+
+                    <app-campoTexto
+                      [control]="$any(barra.controls['destacado'])"
+                      label="DESTACADO"
+                      placeholder="18 MESES SIN INTERESES"
+                      [maxLength]="60">
+                    </app-campoTexto>
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Es la parte que sale resaltada, que es la que se mira.
+                    </p>
+
+                    <div class="row g-2">
+                      <div class="col-12 col-md-5">
+                        <app-campoTexto
+                          [control]="$any(barra.controls['boton_texto'])"
+                          label="BOTÓN"
+                          placeholder="+ MESES DE GRACIA"
+                          [maxLength]="40">
+                        </app-campoTexto>
+                      </div>
+                      <div class="col-12 col-md-7">
+                        <app-campoTexto
+                          [control]="$any(barra.controls['boton_enlace'])"
+                          label="DIRECCIÓN DEL BOTÓN"
+                          placeholder="/shop"
+                          [maxLength]="250">
+                        </app-campoTexto>
+                      </div>
+                    </div>
+
+                  </div>
+                </ng-container>
+              </panel>
+            </div>
+
+            <!-- ---------- El aviso de crédito ---------- -->
+            <div class="col-12 col-xl-6">
+              <panel headerClass="bg-gray-800" title="Aviso de crédito" noButton="true"
+                     noBody="true" panelClass="mb-0" icono="credit-card" fondoGris="true">
+                <ng-container outsideBody>
+                  <div class="form-card__body" formGroupName="credito">
+
+                    <div class="enc-estado mb-3" [class.is-on]="ctrlCreditoActivo.value">
+                      <span class="enc-estado__icon"><i class="fa-solid fa-power-off"></i></span>
+                      <div class="enc-estado__text">
+                        <span class="enc-estado__label">Aviso</span>
+                        <span class="enc-estado__hint">
+                          {{ ctrlCreditoActivo.value ? 'Se ve a la derecha del menú' : 'Oculto' }}
+                        </span>
+                      </div>
+                      <app-checkbox class="enc-estado__switch palanca"
+                        [control]="ctrlCreditoActivo"
+                        [label]="ctrlCreditoActivo.value ? 'Visible' : 'Oculto'"
+                        [id]="'ck-credito-activo'">
+                      </app-checkbox>
+                    </div>
+
+                    <app-campoTexto
+                      [control]="$any(credito.controls['texto'])"
+                      label="TEXTO"
+                      placeholder="ACTIVA TU CRÉDITO DIRECTO"
+                      [maxLength]="60">
+                    </app-campoTexto>
+
+                    <div class="row g-2">
+                      <div class="col-12 col-md-5">
+                        <app-campoTexto
+                          [control]="$any(credito.controls['boton_texto'])"
+                          label="BOTÓN"
+                          placeholder="APLICA AQUÍ"
+                          [maxLength]="30">
+                        </app-campoTexto>
+                      </div>
+                      <div class="col-12 col-md-7">
+                        <app-campoTexto
+                          [control]="$any(credito.controls['boton_enlace'])"
+                          label="DIRECCIÓN DEL BOTÓN"
+                          placeholder="/shop"
+                          [maxLength]="250">
+                        </app-campoTexto>
+                      </div>
+                    </div>
+
+                    <p class="campo-hint mb-0">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Con el aviso visible, el texto, el botón y su dirección
+                      son obligatorios.
+                    </p>
+
+                  </div>
+                </ng-container>
+              </panel>
+            </div>
+
+            <!-- ---------- Las frases del buscador ---------- -->
+            <div class="col-12">
+              <panel headerClass="bg-gray-800"
+                     [title]="'Frases del buscador (' + frases.length + ' de 5)'"
+                     noButton="true" noBody="true" panelClass="mb-0"
+                     icono="magnifying-glass" fondoGris="true">
+
+                <div header class="panel-acciones">
+                  @if (puedeAnadirFrase) {
+                    <button type="button" class="btn btn-xs btn-outline-light"
+                            (click)="anadirFrase()">
+                      <i class="fa fa-plus"></i> Añadir
+                    </button>
+                  }
+                </div>
+
+                <ng-container outsideBody>
+                  <div class="form-card__body">
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Van rotando dentro del buscador. Hace falta al menos una,
+                      y más de cinco no llegan a verse.
+                    </p>
+
+                    <!-- Se sigue el CONTROL, no la posición: con track $index,
+                         al quitar una los campos enseñan el valor de la vecina. -->
+                    @for (frase of frases.controls; track frase; let i = $index) {
+                      <div class="enc-frase">
+                        <span class="enc-frase__numero">{{ i + 1 }}</span>
+                        <app-campoTexto
+                          class="enc-frase__campo"
+                          [control]="controlFrase(i)"
+                          label="FRASE"
+                          placeholder="¿Qué estás buscando?"
+                          [maxLength]="60">
+                        </app-campoTexto>
+                        @if (puedeQuitarFrase) {
+                          <button type="button" class="btn btn-xs btn-borrar"
+                                  title="Quitar esta frase" (click)="quitarFrase(i)">
+                            <i class="fa fa-trash"></i>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </ng-container>
+              </panel>
+            </div>
+
+            <!-- ---------- El color de la tienda ---------- -->
+            <div class="col-12">
+              <panel headerClass="bg-gray-800" title="El color de la tienda" noButton="true"
+                     noBody="true" panelClass="mb-0" icono="palette" fondoGris="true">
+
+                <ng-container outsideBody>
+                  <div class="form-card__body">
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      No es sólo del encabezado: es el color de TODA la tienda.
+                      Cambia la barra de categorías, los botones, los carteles de
+                      descuento, los círculos de las categorías, las flechas y el
+                      pie, todo a la vez. Sin elegir ninguno se queda el rojo de
+                      siempre.
+                    </p>
+
+                    <div class="color-tienda">
+                      <app-campoColor idCampo="color-tienda"
+                                      [valor]="colorQueSeVe" [propio]="hayColorPropio"
+                                      porDefecto="El rojo de siempre"
+                                      etiqueta="Color de la tienda"
+                                      [paleta]="paletaTienda"
+                                      [deshabilitado]="!puedeEditar"
+                                      (cambia)="ponerColor($event)" />
+
+                      <!-- La muestra: la barra tal como se va a ver, y los dos
+                           tonos que salen solos del color elegido -->
+                      <div class="color-tienda__muestra" aria-hidden="true">
+                        <span class="color-tienda__barra" [style.background-color]="colorQueSeVe">
+                          <b>CATEGORÍAS</b>
+                          <span class="color-tienda__pastilla" [style.color]="colorQueSeVe">APLICA AQUÍ</span>
+                        </span>
+
+                        <span class="color-tienda__tonos">
+                          <i [style.background-color]="colorQueSeVe" title="El que elegiste"></i>
+                          <i [style.background-color]="tonos.oscuro" title="Con el mouse encima (sale solo)"></i>
+                          <i [style.background-color]="tonos.claro" title="Fondos suaves (sale solo)"></i>
+                        </span>
+                      </div>
+                    </div>
+
+                    @if (colorIlegible) {
+                      <p class="color-tienda__aviso">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        La letra blanca encima de este color se lee a
+                        {{ contrasteTexto }}:1, por debajo del 4,5:1 que hace
+                        falta. Los textos de la barra y de los botones son
+                        blancos: con un color tan claro se van a perder. Se
+                        guarda igual, pero mira la muestra antes.
+                      </p>
+                    }
+                  </div>
+                </ng-container>
+              </panel>
+            </div>
+
+            @if (puedeEditar) {
+              <div class="col-12 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-primary"
+                        [disabled]="guardando" (click)="guardarContenido()">
+                  <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar contenido' }}
+                </button>
+              </div>
+            }
+
+          </div>
+        </form>
+      }
+
+      <!-- ================= MENÚ ================= -->
+      @if (pestana === 'menu') {
+        <panel headerClass="bg-gray-800" title="Menú de la tienda" noButton="true"
+               noBody="true" panelClass="mb-0" icono="bars" fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (puedeCrear) {
+              <button type="button" class="btn btn-xs btn-outline-light"
+                      [disabled]="trabajando" (click)="nuevoPrincipal()">
+                <i class="fa fa-plus"></i> Nuevo enlace
+              </button>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                Se arrastra para cambiar el orden y se guarda solo. Un enlace
+                con desplegable no lleva dirección propia: en la tienda sólo lo
+                abre.
+              </p>
+
+              @if (enlaces.length === 0) {
+                <p class="text-muted mb-0">El menú está vacío.</p>
+              }
+
+              <div cdkDropList [cdkDropListData]="enlaces"
+                   [cdkDropListDisabled]="!puedeEditar || trabajando"
+                   (cdkDropListDropped)="soltarPrincipal($event)">
+
+                @for (enlace of enlaces; track enlace.id) {
+                  <div class="enc-enlace" cdkDrag>
+
+                    <div class="enc-enlace__fantasma" *cdkDragPlaceholder></div>
+
+                    <div class="enc-enlace__fila" [class.enc-enlace__fila--oculto]="!enlace.activo">
+                      @if (puedeEditar) {
+                        <span class="enc-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                          <i class="fa-solid fa-grip-vertical"></i>
+                        </span>
+                      }
+
+                      <span class="enc-enlace__texto">
+                        <b>{{ enlace.texto }}</b>
+                        <code class="enc-enlace__destino">{{ destinoDe(enlace) }}</code>
+                      </span>
+
+                      @if (enlace.icono) {
+                        <span class="chip chip-muted">{{ enlace.icono }}</span>
+                      }
+                      @if (!enlace.activo) {
+                        <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculto</span>
+                      }
+
+                      <span class="enc-enlace__botones">
+                        @if (puedeCrear) {
+                          <button type="button" class="btn btn-xs btn-ver"
+                                  title="Añadir un enlace a su desplegable"
+                                  [disabled]="trabajando" (click)="nuevoHijo(enlace)">
+                            <i class="fa fa-plus"></i>
+                          </button>
+                        }
+                        @if (puedeEditar) {
+                          <button type="button" class="btn btn-xs btn-editar"
+                                  title="Modificar" (click)="editarEnlace(enlace, false)">
+                            <i class="fa fa-pen"></i>
+                          </button>
+                          <button type="button" class="btn btn-xs"
+                                  [class.btn-ver]="!enlace.activo"
+                                  [class.btn-borrar]="enlace.activo"
+                                  [title]="enlace.activo ? 'Ocultar del menú' : 'Mostrar en el menú'"
+                                  [disabled]="trabajando" (click)="alternarEnlace(enlace)">
+                            <i class="fa" [ngClass]="enlace.activo ? 'fa-eye-slash' : 'fa-eye'"></i>
+                          </button>
+                        }
+                        @if (puedeEliminar) {
+                          <button type="button" class="btn btn-xs btn-borrar"
+                                  title="Enviar a la papelera"
+                                  [disabled]="trabajando" (click)="borrarEnlace(enlace)">
+                            <i class="fa fa-trash"></i>
+                          </button>
+                        }
+                      </span>
+                    </div>
+
+                    <!-- El desplegable. Se arrastra dentro de él; para pasar un
+                         enlace a otro desplegable hay que rehacerlo. -->
+                    @if (enlace.hijos?.length) {
+                      <div class="enc-hijos" cdkDropList [cdkDropListData]="enlace.hijos"
+                           [cdkDropListDisabled]="!puedeEditar || trabajando"
+                           (cdkDropListDropped)="soltarHijo(enlace, $event)">
+
+                        @for (hijo of enlace.hijos; track hijo.id) {
+                          <div class="enc-enlace__fila enc-enlace__fila--hijo"
+                               [class.enc-enlace__fila--oculto]="!hijo.activo" cdkDrag>
+
+                            <div class="enc-enlace__fantasma" *cdkDragPlaceholder></div>
+
+                            @if (puedeEditar) {
+                              <span class="enc-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                                <i class="fa-solid fa-grip-vertical"></i>
+                              </span>
+                            }
+
+                            <i class="fa-solid fa-turn-up fa-rotate-90 enc-enlace__hijo-icono"></i>
+
+                            <span class="enc-enlace__texto">
+                              {{ hijo.texto }}
+                              <code class="enc-enlace__destino">{{ hijo.enlace }}</code>
+                            </span>
+
+                            @if (!hijo.activo) {
+                              <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculto</span>
+                            }
+
+                            <span class="enc-enlace__botones">
+                              @if (puedeEditar) {
+                                <button type="button" class="btn btn-xs btn-editar"
+                                        title="Modificar" (click)="editarEnlace(hijo, true)">
+                                  <i class="fa fa-pen"></i>
+                                </button>
+                                <button type="button" class="btn btn-xs"
+                                        [class.btn-ver]="!hijo.activo"
+                                        [class.btn-borrar]="hijo.activo"
+                                        [title]="hijo.activo ? 'Ocultar' : 'Mostrar'"
+                                        [disabled]="trabajando" (click)="alternarEnlace(hijo)">
+                                  <i class="fa" [ngClass]="hijo.activo ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                </button>
+                              }
+                              @if (puedeEliminar) {
+                                <button type="button" class="btn btn-xs btn-borrar"
+                                        title="Enviar a la papelera"
+                                        [disabled]="trabajando" (click)="borrarEnlace(hijo)">
+                                  <i class="fa fa-trash"></i>
+                                </button>
+                              }
+                            </span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+            </div>
+          </ng-container>
+        </panel>
+      }
+
+    </app-tab-panel>
+  }
+</panel>

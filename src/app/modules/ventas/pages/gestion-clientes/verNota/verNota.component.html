@@ -65,8 +65,8 @@
            un documento -->
       <div class="nota-ver__membrete">
         <div class="nota-ver__membrete__izq">
-          <span class="nota-ver__color" [style.background-color]="tinteDeNota(nota?.color)"></span>
-          <span class="nota-ver__etiqueta">{{ nombreDeColor(nota?.color) }}</span>
+          <span class="nota-ver__color" [style.background-color]="tinteDeNota($safeNavigationMigration(nota?.color))"></span>
+          <span class="nota-ver__etiqueta">{{ nombreDeColor($safeNavigationMigration(nota?.color)) }}</span>
           @if (nota?.fijada) {
             <span class="nota-ver__fijada"><i class="fa fa-thumbtack me-1"></i>Fijada</span>
           }
@@ -75,7 +75,7 @@
         <div class="nota-ver__membrete__der">
           <span><i class="fa fa-user fa-fw"></i>{{ nota?.registrado_por_nombre || nota?.created_by }} · {{ nota?.created_at }}</span>
           @if (nota?.editada) {
-            <span [title]="'Editada por ' + nota?.updated_by">
+            <span [title]="'Editada por ' + $safeNavigationMigration(nota?.updated_by)">
               <i class="fa fa-pen fa-fw"></i>editada el {{ nota?.updated_at }}
             </span>
           }

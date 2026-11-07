@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -24,6 +24,7 @@ import { ModalFooterComponent } from '../modal/modal-footer/modal-footer.compone
   standalone: true,
   imports: [CommonModule, FormsModule, ModalHeaderComponent, ModalFooterComponent],
   templateUrl: './selector-iconos.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./selector-iconos.component.css'],
 })
 export class SelectorIconosComponent {

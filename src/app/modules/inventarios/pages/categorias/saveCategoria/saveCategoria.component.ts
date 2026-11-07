@@ -1,5 +1,5 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { Subject, firstValueFrom } from 'rxjs';
@@ -8,6 +8,14 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import { LoadingService } from '../../../../../service/loading.service';
 import { CategoriaService } from '../../../services/categoria.service';
 import { CategoriaModel } from '../../../interfaces/categoriaModel';
+import { CommonModule } from '@angular/common';
+import { PanelComponent } from '../../../../../components/panel/panel.component';
+import { ModalHeaderComponent } from '../../../../../components/modal/modal-header/modal-header.component';
+import { ModalFooterComponent } from '../../../../../components/modal/modal-footer/modal-footer.component';
+import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
+import { CampoTextoAreaComponent } from '../../../../../components/campos/campoTextoArea/campoTextoArea.component';
+import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
+import { CampoIconoComponent } from '../../../../../components/campos/campoIcono/campoIcono.component';
 
 /** Acciones con las que se abre el modal desde allCategorias. */
 type AccionCategoria = 'add' | 'edit' | 'clon' | 'view';
@@ -27,7 +35,13 @@ type AccionCategoria = 'add' | 'edit' | 'clon' | 'view';
   selector: 'app-saveCategoria',
   templateUrl: './saveCategoria.component.html',
   styleUrls: ['./saveCategoria.component.css'],
-  standalone: false,
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule, ReactiveFormsModule, PanelComponent, ModalHeaderComponent,
+    ModalFooterComponent, CampoTextoComponent, CampoTextoAreaComponent,
+    CheckboxComponent, CampoIconoComponent,
+  ],
 })
 export class SaveCategoriaComponent implements OnInit, OnDestroy {
 
@@ -111,6 +125,11 @@ export class SaveCategoriaComponent implements OnInit, OnDestroy {
     switch (this.accion) {
       case 'add':
         this.titulo = this.padre ? 'Nueva Subcategoría' : 'Nueva Categoría';
+        // Una categoría RAÍZ nace agrupando: encabeza una línea y de ésas
+        // cuelgan categorías, no productos. Además, una que admite productos
+        // no admite subcategorías, así que dejarla marcada obligaría a
+        // volver a entrar en su ficha para desmarcarla antes de la primera.
+        if (!this.padre) { this.ctrlEsTransaccion.setValue(false); }
         break;
       case 'edit':
         this.titulo = 'Modificar Categoría';
@@ -169,6 +188,14 @@ export class SaveCategoriaComponent implements OnInit, OnDestroy {
       // rechaza al guardar (fn_categorias_modificar lo corta con P0021).
       // Se apaga aquí para no ofrecer algo que va a fallar.
       if (this.accion === 'edit' && this.numProductos > 0) {
+        this.ctrlEsTransaccion.disable();
+      }
+
+      // Y CON SUBCATEGORÍAS NO SE PUEDE MARCAR: los productos cuelgan de las
+      // hojas, y tenerlos aquí dejaría productos y subcategorías colgando de
+      // lo mismo. El servidor lo corta igual.
+      if (this.accion === 'edit' && this.numHijos > 0) {
+        this.ctrlEsTransaccion.setValue(false);
         this.ctrlEsTransaccion.disable();
       }
     } catch (error) {

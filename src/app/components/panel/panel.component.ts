@@ -1,9 +1,20 @@
     
-import { Component, ViewChild, AfterViewInit, EventEmitter, Output, Input } from '@angular/core';
+import { Component, ViewChild, AfterViewInit, EventEmitter, Output, Input, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
+/**
+ * STANDALONE. Lo importa medio proyecto —42 ficheros— y se importa ÉL:
+ * había un `panel.module.ts` que no hacía más que declararlo y volverlo a
+ * exportar, y se borró. Los NgModules que quedan lo importan igual, porque
+ * un NgModule puede importar un componente standalone.
+ *
+ * De la plantilla sólo salen *ngIf y ngClass: con CommonModule basta.
+ */
 @Component({
   selector: 'panel',
+  standalone: true,
+  imports: [CommonModule],
   inputs: [
     'title', 'variant', 'noBody', 'noButton', 'headerClass', 
     'bodyClass', 'footerClass', 'panelClass', 'noButtonExpand', 
@@ -13,8 +24,8 @@ import { Router } from '@angular/router';
     'fondoGris'
   ],
   templateUrl: './panel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./panel.component.css'],
-  standalone: false
 })
 
 export class PanelComponent implements AfterViewInit {  
