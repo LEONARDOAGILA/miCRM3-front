@@ -7,13 +7,11 @@ import { environment } from '../../../../environments/environment';
  * Las páginas de texto de la tienda (ecommerce.paginas_informativas).
  *
  * SIN PAGINACIÓN, a diferencia de casi todos los listados de la casa: son
- * diez páginas en dos carpetas y no van a ser cien. Paginarlas obligaría a
- * traer las carpetas aparte y a pintar la lista a medias mientras llega la
- * segunda petición, para ahorrar unos pocos kilobytes.
+ * diez páginas y no van a ser mil. Vienen todas de una vez y la rejilla
+ * pagina, filtra y ordena en el navegador, que con esta cantidad va más
+ * rápido que pedirle al servidor una página de diez filas.
  *
- * `allPaginasInformativas` trae las páginas Y las carpetas de un tirón por lo
- * mismo: la pantalla no sirve de nada con la mitad, porque las páginas se
- * pintan DENTRO de su carpeta.
+ * NO HAY CARPETAS: se quitaron el 07/11/2026. Esto es un CRUD de páginas.
  */
 @Injectable({
   providedIn: 'root',
@@ -32,7 +30,7 @@ export class PaginaInformativaService {
   // PÁGINAS
   // ================================================================
 
-  /** Las páginas (sin su contenido) y las carpetas, en una sola respuesta. */
+  /** Las páginas, sin su contenido (son cientos de kB de HTML que la lista no enseña). */
   allPaginasInformativas(): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'allPaginasInformativas');
   }
@@ -71,13 +69,13 @@ export class PaginaInformativaService {
     return this._http.post(this.URL_SERVICIOS + 'ordenarPaginasInformativas', { ids });
   }
 
-  /** A la papelera. El servidor se niega si la página es fija. */
+  /** A la papelera. Se puede restaurar desde ahí. */
   deletePaginaInformativa(id: any): Observable<any> {
     return this._http.delete(this.URL_SERVICIOS + 'deletePaginaInformativa/' + id);
   }
 
   // ================================================================
-  // PAPELERA (un solo cesto para páginas y carpetas)
+  // PAPELERA
   // ================================================================
 
   papelera(): Observable<any> {
@@ -88,37 +86,34 @@ export class PaginaInformativaService {
     return this._http.post(this.URL_SERVICIOS + 'restaurar', { ids });
   }
 
-  restaurarGrupo(id: any): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'restaurarGrupo/' + id, {});
-  }
-
   /** No tiene vuelta atrás; el servidor exige el permiso «vaciar». */
   vaciarPapelera(): Observable<any> {
     return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera');
   }
 
   // ================================================================
-  // CARPETAS
+  // LA IMAGEN
   // ================================================================
 
-  grupos(): Observable<any> {
-    return this._http.get(this.URL_SERVICIOS + 'grupos');
+  /**
+   * Sube la imagen y devuelve su nombre y su dirección.
+   *
+   * NO LA PEGA A NINGUNA PÁGINA: sólo deja el fichero en el servidor. Quién
+   * la lleva lo decide el guardado normal, con el contenido entero. Así una
+   * imagen que se elige y luego se descarta no cambia nada.
+   */
+  addImagen(datos: FormData): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'addImagenPaginaInformativa', datos);
   }
 
-  addGrupo(nombre: string): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'addGrupo', { nombre });
-  }
-
-  editGrupo(id: any, nombre: string): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'editGrupo/' + id, { nombre });
-  }
-
-  ordenarGrupos(ids: number[]): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'ordenarGrupos', { ids });
-  }
-
-  /** Se lleva sus páginas; restaurarla las devuelve. */
-  deleteGrupo(id: any): Observable<any> {
-    return this._http.delete(this.URL_SERVICIOS + 'deleteGrupo/' + id);
+  /**
+   * Sube el PDF y devuelve su nombre en el disco, su dirección y cómo se
+   * llamaba el fichero que eligieron (`pdf_nombre`).
+   *
+   * Igual que la imagen: no lo pega a ninguna página. Hasta el 08/11/2026 el
+   * PDF venía heredado del CRM viejo y no se podía ni cambiar ni quitar.
+   */
+  addPdf(datos: FormData): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'addPdfPaginaInformativa', datos);
   }
 }

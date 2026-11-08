@@ -43,6 +43,13 @@ export class SavePiePiezaComponent implements OnInit {
   @Input() columnaId: number | null = null;
   /** El título de esa columna, para decirlo en la cabecera. */
   @Input() columnaTitulo = '';
+  /**
+   * En qué franja del pie nace la columna.
+   *
+   * Sólo al CREAR: modificar una columna no la cambia de sitio, y por eso no
+   * se manda al editar. Sin esto, todas nacerían arriba.
+   */
+  @Input() zona: 'arriba' | 'abajo' | null = null;
 
   public form!: FormGroup;
   public guardando = false;
@@ -215,13 +222,15 @@ export class SavePiePiezaComponent implements OnInit {
           : this._pieService.editEnlace((this.pieza as EnlacePieModel).id, payload));
 
       } else {
-        const payload = {
+        const payload: any = {
           titulo: v.texto.trim(),
           activo: v.activo !== false,
           // El fichero NO va aquí: ya se subió por su puerta
           imagen_alt: (v.imagen_alt ?? '').trim() || null,
           imagen_enlace: (v.imagen_enlace ?? '').trim() || null,
         };
+        // Sólo al crear: cambiar de franja no es cosa de esta ventana
+        if (this.esNuevo && this.zona) { payload.zona = this.zona; }
         res = await firstValueFrom(this.esNuevo
           ? this._pieService.addColumna(payload)
           : this._pieService.editColumna((this.pieza as ColumnaPieModel).id, payload));

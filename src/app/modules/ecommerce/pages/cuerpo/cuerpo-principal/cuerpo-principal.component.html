@@ -18,6 +18,7 @@
 <panel [title]="titulo"
        [noButton]="false"
        [noButtonCollapse]="true"
+       [closeRoute]="'/ecommerce/home'"
        icono="layer-group"
        class="flex-1 d-flex flex-column overflow-hidden"
        bodyClass="p-0 flex-1 overflow-hidden"
@@ -852,6 +853,23 @@
                           mientras queden, y la dirección va contando las páginas
                           —así el botón «atrás» del navegador funciona y se puede
                           compartir una página concreta—.
+                        </span>
+                      </p>
+
+                      <!-- Dónde se arman los filtros, que es lo primero que se
+                           busca aquí: la columna sale sola y no hay nada que
+                           elegir en esta pantalla -->
+                      <p class="campo-hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>
+                          <b>La columna de filtros no se arma aquí</b>: sale de
+                          la ficha de los productos. La categoría, la marca y
+                          cada característica que esté llena filtran solas, y el
+                          precio siempre. Las que el diccionario marca como
+                          <b>NÚMERO</b> —el kilometraje, el año de fabricación—
+                          salen con una barra de «desde–hasta» cuando tienen
+                          muchos valores distintos; con pocos, con casillas, y
+                          con su unidad detrás.
                         </span>
                       </p>
                     </div>

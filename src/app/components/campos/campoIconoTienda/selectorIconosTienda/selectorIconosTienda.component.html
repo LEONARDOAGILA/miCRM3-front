@@ -1,0 +1,77 @@
+<!-- ===================== CABECERA ===================== -->
+<app-modal-header title="Elegir icono de la tienda" (onClose)="modal.dismiss('Cross click')">
+</app-modal-header>
+
+<div class="modal-body selt-cuerpo">
+
+  <!-- Los dibujos son los de la tienda, no los del CRM: se dice, porque son
+       otros y porque explica por qué aquí no está todo Font Awesome. -->
+  <p class="campo-hint selt-aviso">
+    <i class="fa-solid fa-circle-info"></i>
+    Éstos son los dibujos que la tienda sabe pintar. Elige mirando; el buscador
+    es por si ya sabes el nombre.
+  </p>
+
+  <div class="selt-barra">
+    <app-campoBusqueda
+      [id]="'buscar-icono-tienda'"
+      [placeholder]="'Buscar: telefono, correo, camion…'"
+      [containerClass]="'w-100'"
+      [valorInicial]="termino"
+      (searchChange)="buscar($event)">
+    </app-campoBusqueda>
+  </div>
+
+  <div class="selt-grupo__titulo">
+    @if (encontrados.length === 0) {
+      <i class="fa fa-face-frown fa-fw me-1"></i>Nada con «{{ termino }}»
+    } @else {
+      <i class="fa fa-list fa-fw me-1"></i>{{ encontrados.length }}
+      {{ encontrados.length === 1 ? 'icono' : 'iconos' }}
+    }
+  </div>
+
+  @if (encontrados.length === 0) {
+    <p class="selt-vacio">
+      Prueba con otra palabra. Los nombres están en castellano y sin tildes:
+      «ubicacion», «camion», «telefono».
+    </p>
+  }
+
+  <div class="selt-rejilla">
+    @for (nombre of encontrados; track nombre) {
+      <button type="button" class="selt-icono"
+              [class.is-elegido]="elegido === nombre"
+              [title]="nombre"
+              (click)="marcar(nombre)" (dblclick)="confirmar(nombre)">
+        <app-iconoTienda class="selt-icono__dibujo" [nombre]="nombre" />
+        <span class="selt-icono__nombre">{{ nombre }}</span>
+      </button>
+    }
+  </div>
+</div>
+
+<!-- ===================== PIE ===================== -->
+<div class="modal-footer selt-pie">
+
+  <div class="selt-elegido">
+    @if (elegido) {
+      <app-iconoTienda class="selt-elegido__dibujo" [nombre]="elegido" />
+      <span class="selt-elegido__nombre">{{ elegido }}</span>
+    } @else {
+      <span class="selt-elegido__nada">Nada elegido todavía</span>
+    }
+  </div>
+
+  <div class="selt-pie__botones">
+    <button type="button" class="btn btn-sm btn-white" (click)="sinIcono()">
+      <i class="fa fa-ban me-1"></i>Sin icono
+    </button>
+    <button type="button" class="btn btn-sm btn-white" (click)="modal.dismiss('cancelar')">
+      Cancelar
+    </button>
+    <button type="button" class="btn btn-sm btn-primary" [disabled]="!elegido" (click)="confirmar()">
+      <i class="fa fa-check me-1"></i>Usar este icono
+    </button>
+  </div>
+</div>

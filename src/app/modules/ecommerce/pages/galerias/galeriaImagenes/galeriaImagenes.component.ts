@@ -42,7 +42,7 @@ import { SaveImagenGaleriaComponent } from '../saveImagenGaleria/saveImagenGaler
 })
 export class GaleriaImagenesComponent implements OnInit {
 
-  /** La clave de la galería: `inicio_banner`, `espana_motos_tarjetas`… */
+  /** La clave de la galería: `inicio_banner`, `pagos_tarjetas`… */
   @Input({ required: true }) clave!: string;
 
   @Input() puedeCrear = false;

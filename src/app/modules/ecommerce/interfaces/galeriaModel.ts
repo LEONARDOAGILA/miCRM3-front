@@ -1,6 +1,6 @@
 /**
  * Una GALERÍA de la tienda: un sitio del diseño con su clave fija
- * —`inicio_banner`, `pagos_tarjetas`, `espana_motos_tarjetas`— y las imágenes
+ * —`inicio_banner`, `pagos_tarjetas`, `beneficios_fotos`— y las imágenes
  * que van ahí.
  *
  * Las galerías no se crean ni se borran desde el CRM: cada una existe porque

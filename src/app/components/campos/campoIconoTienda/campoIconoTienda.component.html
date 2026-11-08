@@ -1,0 +1,41 @@
+<!-- El dibujo elegido y su nombre, en un botón: pulsar el icono es lo primero
+     que se intenta, así que el botón entero abre la rejilla. -->
+<button type="button"
+        class="campo-icono-tienda"
+        [class.is-apagado]="deshabilitado"
+        [class.is-roto]="!seEntiende"
+        [disabled]="deshabilitado"
+        [title]="valor
+                  ? (seEntiende
+                      ? 'Icono «' + valor + '». Pulsa para cambiarlo'
+                      : 'La tienda ya no tiene un icono llamado «' + valor + '»')
+                  : 'Elegir un icono'"
+        [attr.aria-label]="valor ? 'Cambiar el icono' : 'Elegir un icono'"
+        (click)="abrirSelector()">
+
+  <app-iconoTienda class="campo-icono-tienda__dibujo"
+                   [class.campo-icono-tienda__dibujo--vacio]="!valor"
+                   [nombre]="vistaPrevia" />
+
+  <span class="campo-icono-tienda__nombre">
+    @if (!valor) {
+      Elegir
+    } @else if (seEntiende) {
+      {{ valor }}
+    } @else {
+      <i class="fa fa-triangle-exclamation" aria-hidden="true"></i> {{ valor }}
+    }
+  </span>
+</button>
+
+<!-- Sólo cuando hay algo que quitar, como la × del resto de los campos -->
+@if (valor && !deshabilitado) {
+  <button type="button"
+          class="campo-icono-tienda__limpiar"
+          tabindex="-1"
+          title="Quitar el icono"
+          aria-label="Quitar el icono"
+          (click)="limpiar()">
+    <span aria-hidden="true">&times;</span>
+  </button>
+}

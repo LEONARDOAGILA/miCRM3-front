@@ -7,10 +7,6 @@
   overflow-y: auto;
 }
 
-.form-card__body {
-  padding: 1rem .875rem .25rem;
-}
-
 /* ---------- La dirección de la tienda (no se toca) ---------- */
 .pag-direccion {
   display: flex;
@@ -139,18 +135,19 @@
   vertical-align: middle;
 }
 
-/* ---------- Los adjuntos que todavía no se editan ---------- */
-.pag-adjuntos {
+/* ---------- La imagen de la página ---------- */
+.pag-imagen {
   display: flex;
   flex-direction: column;
-  gap: .35rem;
+  gap: .5rem;
   padding: .625rem .75rem;
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: .375rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
 }
 
-.pag-adjuntos__titulo {
+.pag-imagen__titulo,
+.pag-imagen__rotulo {
   font-size: .6875rem;
   font-weight: 600;
   letter-spacing: .02em;
@@ -158,41 +155,228 @@
   color: var(--bs-secondary-color, #6c757d);
 }
 
-.pag-adjunto {
+.pag-imagen__rotulo {
+  margin-top: .25rem;
+}
+
+/* La caja mide lo mismo haya imagen o no: así el panel no pega un salto al
+   subir la primera ni al quitarla */
+.pag-imagen__caja {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 140px;
+  overflow: hidden;
+
+  border-radius: .375rem;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.pag-imagen__caja.is-vacia {
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+/* `contain` y no `cover`: aquí se mira si la imagen es la que se quería, y
+   una recortada por el medio no se reconoce */
+.pag-imagen__foto {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Mientras sube, encima de la copia local */
+.pag-imagen__subiendo {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: rgba(0, 0, 0, .35);
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+.pag-imagen__vacia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+
+  padding: 0 .75rem;
+
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .75rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.pag-imagen__vacia i {
+  font-size: 1.5rem;
+  opacity: .5;
+}
+
+.pag-imagen__botones {
+  display: flex;
+  gap: .375rem;
+}
+
+/* La etiqueta se comporta como el botón que parece */
+.pag-imagen__subir {
+  cursor: pointer;
+}
+
+/* ---------- De qué lado sale la imagen ----------
+   Dos dibujos en miniatura: un cuadro gris por la foto y unas rayas por el
+   texto, cada uno en su sitio. Se entiende antes de leer la palabra. */
+.pag-lado {
+  display: flex;
+  gap: .5rem;
+}
+
+.pag-lado__opcion {
+  flex: 1 1 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+
+  padding: .5rem .25rem;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+
+  font-size: .75rem;
+  font-weight: 600;
+
+  transition: border-color .15s ease, color .15s ease, background-color .15s ease;
+}
+
+.pag-lado__opcion:disabled {
+  cursor: default;
+  opacity: .7;
+}
+
+.pag-lado__opcion:not(:disabled):hover {
+  border-color: var(--bs-app-theme, #00acac);
+}
+
+.pag-lado__opcion.is-on {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .1);
+  color: var(--bs-app-theme, #00acac);
+}
+
+.pag-lado__dibujo {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+
+  width: 100%;
+  max-width: 76px;
+  height: 30px;
+}
+
+.pag-lado__foto {
+  flex: 0 0 34%;
+  border-radius: 2px;
+  background-color: currentColor;
+  opacity: .55;
+}
+
+/* Las rayas del texto: tres líneas hechas con un degradado repetido, que es
+   menos marcado que tres elementos para algo que sólo se mira */
+.pag-lado__texto {
+  flex: 1 1 auto;
+  border-radius: 2px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    currentColor 0, currentColor 3px,
+    transparent 3px, transparent 8px);
+  opacity: .45;
+}
+
+/* ---------- El documento adjunto ----------
+   Misma caja que la imagen: son las dos cosas que se adjuntan a la página y
+   se leen como un par. */
+.pag-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .625rem .75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.pag-pdf__titulo {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pag-pdf__ficha {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  padding: .4rem .5rem;
+  border-radius: .375rem;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.pag-pdf__icono {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  color: #d9534f;
+}
+
+/* El nombre viene de un fichero y puede no tener un solo espacio donde
+   partirse: antes de desbordar la caja, puntos suspensivos */
+.pag-pdf__nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
   font-size: .8125rem;
   color: var(--bs-app-theme, #00acac);
   text-decoration: none;
 }
 
-.pag-adjunto:hover { text-decoration: underline; }
+.pag-pdf__nombre:hover { text-decoration: underline; }
 
-/* ---------- Los desplegables ---------- */
-.pag-desplegable {
-  padding: .75rem;
-  margin-bottom: 1rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .375rem;
-  background-color: var(--bs-component-bg, #fff);
+.pag-pdf__quitar {
+  flex: 0 0 auto;
+  padding: 0 .25rem;
 }
 
-.pag-desplegable__barra {
+.pag-pdf__vacio {
+  font-size: .75rem;
+  line-height: 1.3;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pag-pdf__botones {
   display: flex;
-  align-items: center;
-  gap: .25rem;
-  margin-bottom: .5rem;
+  gap: .375rem;
 }
 
-.pag-desplegable__numero {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  font-size: .6875rem;
-  font-weight: 600;
-  color: var(--bs-body-color, #212529);
-  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+/* La etiqueta se comporta como el botón que parece */
+.pag-pdf__subir {
+  cursor: pointer;
 }
 
 .campo-hint {
@@ -211,4 +395,84 @@
   flex: 0 0 auto;
   margin-top: .1rem;
   color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ============================================================
+   LA COLUMNA DEL TEXTO
+   ============================================================
+   En pantalla ancha las dos columnas son hermanas de la misma fila, así que
+   la fila ya mide lo que mide la más alta —la ficha, con su imagen puesta—.
+   Lo que falta es decirle al panel del texto que llene ese alto; si no se
+   queda en sus 22rem y deja un hueco gris debajo.
+
+   Los 22rem de [alto] siguen siendo el suelo: el editor nunca es más bajo
+   que eso, aunque la ficha de al lado esté sin imagen y quepa en poco.
+
+   Va encadenado porque cada eslabón es un flex con `min-height: 0`: sin el
+   min-height un hijo flexible no baja de su contenido y la cadena se rompe
+   en el primer nivel.
+
+   ::ng-deep para el panel y el editor, que son de otro componente y no
+   llevan el atributo de encapsulado de éste. */
+@media (min-width: 1200px) {
+  .pag-col-texto {
+    display: flex;
+  }
+
+  :host ::ng-deep .pag-col-texto > .panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :host ::ng-deep .pag-col-texto > .panel > .panel-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :host ::ng-deep .pag-editor,
+  :host ::ng-deep .pag-editor .cne {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :host ::ng-deep .pag-editor .cne__fondo {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+/* ---------- El panel del texto, expandido ----------
+   .panel-expand lo pone el tema: fixed, inset 0, flex en columna, y a su
+   .panel-body le da flex: 1. Falta la misma cadena de dentro, porque el
+   editor trae su alto en `--cne-alto` —en línea, desde [alto]— y se
+   quedaría de 22rem arriba de una pantalla vacía.
+
+   --cne-alto y no min-height: 100%: lo segundo no resuelve contra un padre
+   de alto automático. Los 190px que se descuentan son la cabecera del
+   panel, la cinta y el aire de la hoja. */
+:host ::ng-deep .panel.panel-expand > .panel-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:host ::ng-deep .panel.panel-expand .pag-editor,
+:host ::ng-deep .panel.panel-expand .pag-editor .cne {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .panel.panel-expand .pag-editor .cne__fondo {
+  flex: 1 1 auto;
+  min-height: 0;
+  --cne-alto: calc(100vh - 190px) !important;
 }

@@ -1,183 +1,219 @@
 /* ============================================================
-   LAS PÁGINAS DE TEXTO DE LA TIENDA
-   ============================================================
-   Carpetas con sus páginas dentro, arrastrables. Todos los colores salen de
-   variables de Bootstrap para que acompañen al tema claro y al oscuro: un
-   gris compilado aquí se vuelve ilegible en modo oscuro. */
+   LISTADO DE PÁGINAS INFORMATIVAS
 
-/* ---------- Una carpeta ---------- */
-.pag-bloque {
-  margin-bottom: 1rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: .375rem;
-  background-color: var(--bs-component-bg, #fff);
+   Lo que va aquí es sólo lo propio de esta pantalla. Las clases del
+   spinner (content-container1, overlay1, loader1), .inactivo y
+   .ag-grid-transparente son globales y viven en scss/angular.scss.
+
+   Calcado del listado de marcas (inventarios): las dos son la misma
+   pantalla con otras columnas, y si se separan los estilos acaban
+   pareciéndose sólo de lejos.
+   ============================================================ */
+
+/* ---------- Miga de pan ----------
+   Alineada a la derecha y subida 20px: el tema deja un hueco entre la
+   cabecera de la aplicación y el primer elemento de la página que aquí
+   sobra, porque el panel ya trae el suyo. */
+.lista-breadcrumb {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: -20px 0 0;
 }
 
-.pag-bloque__cabecera {
+.lista-breadcrumb a {
+  cursor: pointer;
+}
+
+/* ---------- Cuerpo del panel ----------
+   Compensa el padding superior del panel-body del tema, para que la barra
+   de herramientas quede pegada a la cabecera del panel. */
+.lista-contenido {
+  margin-top: -19px;
+}
+
+/* ---------- Barra de herramientas ---------- */
+/* Botones cuadrados a la altura del buscador (form-control del tema) */
+.lista-barra__btn {
   display: flex;
   align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: .375rem;
+}
+
+/* Lupa pequeña sobre el botón de auditoría */
+.lista-barra__badge {
+  font-size: 8px;
+}
+
+/* ---------- La línea de ayuda ----------
+   Lo único de esta pantalla que no se adivina: que el orden de las filas es
+   el de la tienda y que se arrastra. */
+.lista-ayuda {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+
+  font-size: .75rem;
+  line-height: 1.35;
+  /* Un gris más flojo se queda por debajo de 4,5:1 sobre el panel oscuro */
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.lista-ayuda i {
+  flex: 0 0 auto;
+  margin-top: .15rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ---------- Rejilla ----------
+   Altura de arranque; ajustarAlturaGrid() la sustituye en cuanto la rejilla
+   está lista. La variable --ag-line-height es la altura de línea de celda
+   que usa el tema alpine. */
+.lista-grilla {
+  height: 360px;
+  margin-top: -4px;
+  --ag-line-height: 30px;
+}
+
+/* ---------- Paginación ---------- */
+.pagination-controls {
   gap: .5rem;
-  padding: .5rem .75rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-radius: .375rem .375rem 0 0;
 }
 
-.pag-bloque__icono { color: var(--bs-warning, #ffc107); }
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
 
-.pag-bloque__nombre {
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón "muerto":
+   hereda el borde y la altura de los demás y queda alineado con ellos. */
+.pagination-page-badge.disabled {
+  opacity: 1;                    /* .disabled de Bootstrap lo atenuaría */
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
   font-weight: 600;
-  font-size: .875rem;
-  color: var(--bs-body-color, #212529);
 }
 
-/* Cuántas páginas tiene dentro */
-.pag-bloque__cuenta {
+/* El aviso del pie cuando el total no es el de todas las páginas, sino el
+   de las que pasan el filtro. Sin esto el número engaña. */
+.lista-filtrado {
+  margin-left: .35rem;
+  font-style: italic;
+  color: var(--bs-danger, #dc3545);
+}
+
+/* ---------- Responsive ---------- */
+/* Teléfonos: paginación apilada y centrada, botones más compactos */
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
+  }
+}
+
+/* Tablets: sólo botones un poco más compactos */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .pagination-buttons .btn {
+    padding: .2rem .5rem;
+    font-size: .75rem;
+  }
+}
+
+/* ---------- Modo oscuro ----------
+   btn-white del tema es blanco fijo; en oscuro se pasa a la superficie del
+   tema para que el grupo no destaque como un bloque blanco. */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
+}
+
+/* ---------- La imagen en la rejilla ----------
+   `::ng-deep` porque las celdas las dibuja ag-Grid fuera de la encapsulación
+   del componente: una regla normal nunca las alcanzaría.
+
+   El hueco gris de las páginas sin imagen mide lo mismo que la imagen: así
+   la fila no cambia de alto según tenga imagen o no. */
+:host ::ng-deep .lista-foto {
+  width: 34px;
+  height: 26px;
+  border-radius: .25rem;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--bs-border-color, #dee2e6);
+}
+
+:host ::ng-deep .lista-foto--vacia {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding: 0 .35rem;
-  border-radius: 1rem;
-  font-size: .6875rem;
-  font-weight: 600;
-  color: var(--bs-secondary-color, #6c757d);
-  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  width: 34px;
+  height: 26px;
+  border-radius: .25rem;
+  background-color: var(--bs-gray-800, #2d353c);
+  color: var(--bs-gray-500, #adb5bd);
+  font-size: 11px;
 }
 
-.pag-bloque__botones { margin-left: auto; display: flex; gap: .25rem; }
+/* ---------- Arrastrar para ordenar ----------
+   LAS MISMAS MARCAS QUE «MENÚS» (seguridad/pages/menus/allMenus). Allí hay
+   además un resaltado para soltar DENTRO de otro menú; aquí no, porque la
+   lista es plana: una página no cuelga de otra.
 
-.pag-bloque__ayuda,
-.pag-bloque__vacia {
-  margin: 0;
-  padding: .5rem .75rem;
-  font-size: .7rem;
-  line-height: 1.35;
-  color: var(--bs-secondary-color, #6c757d);
-}
+   ::ng-deep porque las filas las genera ag-Grid fuera de la encapsulación
+   del componente. */
 
-/* ---------- La lista de páginas ---------- */
-.pag-lista {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.pag-fila {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .45rem .75rem;
-  border-top: 1px solid var(--bs-border-color, #dee2e6);
-  background-color: var(--bs-component-bg, #fff);
-}
-
-.pag-fila:first-child { border-top: 0; }
-
-/* Una página oculta se ve, pero apagada: hay que notar que no está publicada
-   sin tener que leer la etiqueta. */
-.pag-fila--oculta { opacity: .65; }
-
-.pag-fila__icono { color: var(--bs-secondary-color, #6c757d); }
-
-.pag-fila__texto {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: .5rem;
-  min-width: 0;
-  font-size: .875rem;
-  color: var(--bs-body-color, #212529);
-}
-
-.pag-fila__clave {
-  font-size: .75rem;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.pag-fila__botones { margin-left: auto; display: flex; gap: .25rem; }
-
-/* ---------- El asa de arrastrar ---------- */
-.pag-asa {
+/* El asa (⋮⋮), que se vea pulsable */
+:host ::ng-deep .ag-row .ag-drag-handle {
   cursor: grab;
-  color: var(--bs-secondary-color, #6c757d);
-  font-size: .8125rem;
+  opacity: .55;
 }
 
-.pag-asa:active { cursor: grabbing; }
-
-/* Lo que se queda en el hueco mientras se arrastra. Sin esto el CDK deja un
-   bloque del alto del elemento con su contenido, y la lista da saltos. */
-.pag-bloque__fantasma,
-.pag-fila__fantasma {
-  border: 1px dashed var(--bs-app-theme, #00acac);
-  border-radius: .375rem;
-  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
+:host ::ng-deep .ag-row:hover .ag-drag-handle {
+  opacity: 1;
 }
 
-.pag-bloque__fantasma { min-height: 3rem; }
-.pag-fila__fantasma   { min-height: 2.25rem; }
-
-/* Mientras va por el aire */
-::ng-deep .cdk-drag-preview {
-  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, .2),
-              0 8px 10px 1px rgba(0, 0, 0, .14),
-              0 3px 14px 2px rgba(0, 0, 0, .12);
-  border-radius: .375rem;
+/* Dónde va a caer: línea de inserción en el borde de arriba o el de abajo.
+   box-shadow y no border: un borde cambia el alto de la fila y la lista
+   entera da un salto al pasar por encima. */
+:host ::ng-deep .ag-row.fila-insertar-antes .ag-cell {
+  box-shadow: inset 0 3px 0 0 var(--bs-primary, #348fe2);
 }
 
-::ng-deep .cdk-drag-animating {
-  transition: transform 180ms cubic-bezier(0, 0, .2, 1);
+:host ::ng-deep .ag-row.fila-insertar-despues .ag-cell {
+  box-shadow: inset 0 -3px 0 0 var(--bs-primary, #348fe2);
 }
 
-/* ---------- Los botones ----------
-   La columna ACCIONES de las rejillas tiene su estilo en styles.css, pero
-   acotado a `.ag-cell`: aquí no hay rejilla, así que las clases se repiten. */
-.btn-editar,
-.btn-ver,
-.btn-borrar {
-  padding: .15rem .4rem;
-  font-size: .75rem;
-  line-height: 1.2;
-  border: 0;
-  background: transparent;
-}
-
-.btn-editar { color: var(--bs-app-theme, #00acac); }
-.btn-ver    { color: #5b9bd5; }
-.btn-borrar { color: var(--bs-danger, #dc3545); }
-
-.btn-editar:hover,
-.btn-ver:hover,
-.btn-borrar:hover { background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08); }
-
-.btn-editar:disabled,
-.btn-ver:disabled,
-.btn-borrar:disabled { opacity: .45; }
-
-/* ---------- La etiqueta de «oculta» ---------- */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: .25rem;
-  padding: .1rem .4rem;
-  border-radius: 1rem;
-  font-size: .6875rem;
-  font-weight: 600;
-}
-
-/* Con variables del tema, no con un gris compilado: dentro de una caja
-   oscura, el gris de Bootstrap no se lee. */
-.chip-muted {
-  color: var(--bs-secondary-color, #6c757d);
-  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
-}
-
-/* ---------- La barra del panel ---------- */
-.panel-acciones {
-  display: flex;
-  align-items: center;
-  gap: .375rem;
-  margin-left: auto;
+/* Mientras hay una fila en el aire no se selecciona texto. Esta rejilla deja
+   seleccionar el de las celdas (enableCellTextSelection), y arrastrar es
+   también apretar y mover: sin esto, al llevarse una fila se iba pintando de
+   azul media lista. «Menús» no lo necesita porque allí esa opción no está. */
+:host ::ng-deep .lista-arrastrando .ag-root-wrapper {
+  user-select: none;
 }

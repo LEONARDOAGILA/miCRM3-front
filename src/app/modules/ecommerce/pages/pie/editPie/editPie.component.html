@@ -13,6 +13,7 @@
 <panel [title]="titulo"
        [noButton]="false"
        [noButtonCollapse]="true"
+       [closeRoute]="'/ecommerce/home'"
        icono="window-minimize">
 
   <div header class="panel-acciones">
@@ -41,27 +42,157 @@
 
       <!-- ================= REDES ================= -->
       @if (pestana === 'redes') {
-        <panel headerClass="bg-gray-800" title="Redes sociales" noButton="true"
+        <panel headerClass="bg-gray-800"
+               [title]="'Redes sociales (' + redes.length + ')'" noButton="true"
                noBody="true" panelClass="mb-0" icono="share-nodes" fondoGris="true">
+
+          <!-- Añadir: las siete de siempre de un clic, y «Otro» en blanco -->
+          @if (puedeEditar) {
+            <div header class="panel-acciones">
+              <div class="btn-group btn-group-sm" ngbDropdown placement="bottom-end">
+                <button type="button" class="btn btn-xs btn-outline-light" ngbDropdownToggle>
+                  <i class="fa fa-plus"></i> Añadir
+                </button>
+                <div ngbDropdownMenu class="pie-red-menu">
+                  @for (s of sugeridas; track s.icono) {
+                    <button type="button" ngbDropdownItem (click)="anadirRed(s)">
+                      <app-iconoTienda class="pie-red-menu__dibujo" [nombre]="s.icono" />
+                      {{ s.nombre }}
+                    </button>
+                  }
+                  <div class="dropdown-divider"></div>
+                  <button type="button" ngbDropdownItem (click)="anadirRed()">
+                    <i class="fa fa-pen-to-square fa-fw"></i> Otro…
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+
           <ng-container outsideBody>
             <div class="form-card__body">
 
+              <!-- El texto va dentro de UN <span>: `.campo-hint` es flex, así
+                   que cada trozo suelto sería un item distinto -->
               <p class="campo-hint">
                 <i class="fa-solid fa-circle-info"></i>
-                La lista es cerrada: la tienda tiene el dibujo de cada una.
-                Enciende la que uses y ponle su dirección; una apagada puede
-                quedarse a medias.
+                <span>
+                  El <b>título</b> sale en la tienda encima de los iconos, en el
+                  sitio donde antes iba el logotipo. Cada fila elige su dibujo
+                  de entre los que la tienda sabe pintar, y se arrastra por el
+                  asa para cambiar el orden. Una fila <b>apagada</b> puede
+                  quedarse a medias; encendida se le pide todo, porque va a
+                  salir.
+                </span>
               </p>
 
               <form [formGroup]="form" novalidate>
-                <div formArrayName="redes">
+
+                <!-- ---------- El título de la sección y cómo se ve ---------- -->
+                <div class="pie-titulo-redes">
+
+                  <div class="pie-titulo-redes__campos">
+                    <app-campoTexto
+                      class="pie-titulo-redes__texto"
+                      [control]="$any(form.controls['titulo_redes'])"
+                      label="TÍTULO DE LA SECCIÓN"
+                      placeholder="Síguenos"
+                      [maxLength]="60"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+
+                    <app-campoNumeroEntero
+                      class="pie-titulo-redes__tamano"
+                      [control]="ctrlTamano"
+                      label="TAMAÑO (px)"
+                      placeholder="16"
+                      [maxLength]="2">
+                    </app-campoNumeroEntero>
+
+                    <app-campoColor class="pie-titulo-redes__color"
+                                    idCampo="color-titulo-redes"
+                                    [valor]="colorTitulo"
+                                    [propio]="hayColorTitulo"
+                                    porDefecto="El blanco del pie"
+                                    etiqueta="COLOR"
+                                    [paleta]="paletaTitulo"
+                                    [deshabilitado]="!puedeEditar"
+                                    [apilado]="true"
+                                    (cambia)="ponerColorTitulo($event)" />
+                  </div>
+
+                  <!-- La letra: las tres que la tienda carga, cada botón
+                       escrito con la suya para que se elija mirando -->
+                  <div class="pie-titulo-redes__letra">
+                    <span class="pie-titulo-redes__etiqueta">LETRA</span>
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn"
+                              [ngClass]="!ctrlFuente.value ? 'btn-primary' : 'btn-white'"
+                              [disabled]="!puedeEditar"
+                              (click)="ponerFuente(null)">
+                        La del pie
+                      </button>
+                      @for (f of fuentes; track f.id) {
+                        <button type="button" class="btn"
+                                [ngClass]="ctrlFuente.value === f.id ? 'btn-primary' : 'btn-white'"
+                                [style.font-family]="f.css"
+                                [disabled]="!puedeEditar"
+                                (click)="ponerFuente(f.id)">
+                          {{ f.nombre }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- La muestra, sobre el fondo del pie: un título claro
+                       sobre blanco no dice nada de cómo se va a leer -->
+                  <div class="pie-titulo-redes__muestra">
+                    <span class="pie-titulo-redes__muestra-etiqueta">Así se verá</span>
+                    <span class="pie-titulo-redes__muestra-texto"
+                          [style.font-size.px]="ctrlTamano.value || 16"
+                          [style.color]="colorTitulo"
+                          [style.font-family]="cssFuente">
+                      {{ form.controls['titulo_redes'].value || 'Síguenos' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- ---------- Los enlaces ---------- -->
+                @if (redes.length === 0) {
+                  <p class="text-muted mb-0">
+                    No hay ningún enlace todavía. Añade el primero con el botón de arriba.
+                  </p>
+                }
+
+                <div formArrayName="redes"
+                     cdkDropList
+                     [cdkDropListDisabled]="!puedeEditar"
+                     (cdkDropListDropped)="soltarRed($event)">
+
                   @for (red of redes.controls; track red; let i = $index) {
-                    <div class="pie-red" [formGroupName]="i"
+                    <div class="pie-red" [formGroupName]="i" cdkDrag
                          [class.pie-red--on]="ctrlRedActivo(i).value">
 
-                      <span class="pie-red__nombre">
-                        {{ controlRed(i).controls['nombre'].value }}
-                      </span>
+                      <div class="pie-red__fantasma" *cdkDragPlaceholder></div>
+
+                      @if (puedeEditar) {
+                        <span class="pie-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                          <i class="fa-solid fa-grip-vertical"></i>
+                        </span>
+                      }
+
+                      <app-campoIconoTienda class="pie-red__icono"
+                        [formControlName]="'icono'">
+                      </app-campoIconoTienda>
+
+                      <app-campoTexto
+                        class="pie-red__nombre-campo"
+                        [control]="$any(controlRed(i).controls['nombre'])"
+                        label="NOMBRE"
+                        placeholder="Facebook"
+                        [maxLength]="40"
+                        [trimEspacios]="true">
+                      </app-campoTexto>
 
                       <app-campoTexto
                         class="pie-red__campo"
@@ -75,8 +206,16 @@
                       <app-checkbox class="pie-red__switch palanca"
                         [control]="ctrlRedActivo(i)"
                         [label]="ctrlRedActivo(i).value ? 'Visible' : 'Oculta'"
-                        [id]="'ck-red-' + controlRed(i).controls['tipo'].value">
+                        [id]="'ck-red-' + i">
                       </app-checkbox>
+
+                      @if (puedeEditar) {
+                        <button type="button" class="btn btn-xs btn-borrar pie-red__quitar"
+                                title="Quitar este enlace"
+                                (click)="quitarRed(i)">
+                          <i class="fa fa-trash-can"></i>
+                        </button>
+                      }
                     </div>
                   }
                 </div>
@@ -133,11 +272,144 @@
                 <p class="text-muted mb-0">El pie no tiene columnas todavía.</p>
               }
 
-              <div cdkDropList [cdkDropListData]="columnas"
-                   [cdkDropListDisabled]="!puedeEditar || trabajando"
-                   (cdkDropListDropped)="soltarColumna($event)">
+              <ng-container [ngTemplateOutlet]="bloqueColumnas"
+                            [ngTemplateOutletContext]="{ lista: columnas, zona: 'arriba' }" />
 
-                @for (columna of columnas; track columna.id) {
+            </div>
+          </ng-container>
+        </panel>
+      }
+
+
+      <!-- ================= LA FRANJA DE ABAJO =================
+           Lo que va debajo de las columnas y encima del borde del pie. Hasta
+           el 08/11/2026 eran dos galerías de medios de pago escritas en el
+           código de la tienda, y no había forma de tocarlas desde aquí. -->
+      @if (pestana === 'abajo') {
+
+        <!-- ---------- Los derechos reservados ---------- -->
+        <panel headerClass="bg-gray-800"
+               title="Derechos reservados"
+               noButton="true" noBody="true" panelClass="mb-3"
+               icono="editar" fondoGris="true">
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+              <form [formGroup]="formDerechos" novalidate>
+                <div class="row g-3">
+
+                  <div class="col-12 col-lg-6">
+                    <app-campoTexto
+                      [control]="$any(formDerechos.controls['texto'])"
+                      label="LA LÍNEA DE ABAJO DEL TODO"
+                      placeholder="Todos los derechos reservados Almacenes España © {anio}"
+                      [maxLength]="200"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      <span>
+                        Donde escribas <code>&#123;anio&#125;</code> la tienda pone el año que
+                        sea, así que no hay que volver cada enero a corregirlo.
+                      </span>
+                    </p>
+                  </div>
+
+                  <div class="col-12 col-lg-3">
+                    <app-campoTexto
+                      [control]="$any(formDerechos.controls['enlace_texto'])"
+                      label="ENLACE DE LA DERECHA (TEXTO)"
+                      placeholder="Términos y condiciones"
+                      [maxLength]="60"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+                  </div>
+
+                  <div class="col-12 col-lg-3">
+                    <app-campoTexto
+                      [control]="$any(formDerechos.controls['enlace'])"
+                      label="Y A DÓNDE LLEVA"
+                      placeholder="/paginas/terminos-y-condiciones"
+                      [maxLength]="250"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+
+                    <p class="campo-hint mb-0">
+                      <i class="fa-solid fa-circle-info"></i>
+                      <span>Sin los dos, a la derecha no sale nada.</span>
+                    </p>
+                  </div>
+
+                </div>
+              </form>
+            </div>
+          </ng-container>
+
+          <ng-container footer>
+            @if (puedeEditar) {
+              <button type="button" class="btn btn-primary"
+                      [disabled]="guardando || trabajando" (click)="guardarDerechos()">
+                <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar' }}
+              </button>
+            }
+          </ng-container>
+        </panel>
+
+        <!-- ---------- Las columnas de la franja ---------- -->
+        <panel headerClass="bg-gray-800"
+               [title]="'Columnas de la franja (' + columnasAbajo.length + ')'"
+               noButton="true" noBody="true" panelClass="mb-0"
+               icono="table-columns" fondoGris="true">
+
+          <div header class="panel-acciones">
+            @if (puedeCrear) {
+              <button type="button" class="btn btn-xs btn-outline-light"
+                      [disabled]="trabajando" (click)="nuevaColumna('abajo')">
+                <i class="fa fa-plus"></i> Nueva columna
+              </button>
+            }
+          </div>
+
+          <ng-container outsideBody>
+            <div class="form-card__body">
+
+              <p class="campo-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>
+                  Son columnas iguales que las de la pestaña <b>Columnas</b>, pero
+                  salen en la franja de abajo, encima de los derechos. Ahí los
+                  enlaces van <b>en fila</b> y no uno debajo de otro, que es una
+                  franja ancha y baja. Sin columnas, la franja no se pinta.
+                </span>
+              </p>
+
+              @if (columnasAbajo.length === 0) {
+                <p class="text-muted mb-0">La franja de abajo está vacía.</p>
+              }
+
+              <ng-container [ngTemplateOutlet]="bloqueColumnas"
+                            [ngTemplateOutletContext]="{ lista: columnasAbajo, zona: 'abajo' }" />
+
+            </div>
+          </ng-container>
+        </panel>
+      }
+    </app-tab-panel>
+  }
+</panel>
+
+
+<!-- ===== Una franja de columnas =====
+     Lo usan las dos pestañas: «Columnas» con las de arriba y «Franja de abajo»
+     con las suyas. Es el MISMO bloque porque es la misma columna; lo único que
+     cambia es la lista que recorre y la zona que se manda al reordenar. -->
+<ng-template #bloqueColumnas let-lista="lista" let-zona="zona">
+              <div cdkDropList [cdkDropListData]="lista"
+                   [cdkDropListDisabled]="!puedeEditar || trabajando"
+                   (cdkDropListDropped)="soltarColumna($event, zona)">
+
+                @for (columna of lista; track columna.id) {
                   <div class="pie-columna" cdkDrag>
 
                     <div class="pie-columna__fantasma" *cdkDragPlaceholder></div>
@@ -225,6 +497,15 @@
                           @if (!enlace.activo) {
                             <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculto</span>
                           }
+                          <!-- Apagado desde la OTRA punta: el enlace está encendido, pero
+                               la página a la que lleva no se puede ver, así que la tienda
+                               no lo saca. Se dice aquí para no tener que adivinarlo. -->
+                          @if (enlace.pagina_oculta) {
+                            <span class="chip chip-aviso"
+                                  title="Mientras la página esté oculta, este enlace no sale en la tienda">
+                              <i class="fa-solid fa-triangle-exclamation"></i> Su página está oculta
+                            </span>
+                          }
 
                           <span class="pie-columna__botones">
                             @if (puedeEditar) {
@@ -247,12 +528,4 @@
                   </div>
                 }
               </div>
-
-            </div>
-          </ng-container>
-        </panel>
-      }
-
-    </app-tab-panel>
-  }
-</panel>
+</ng-template>

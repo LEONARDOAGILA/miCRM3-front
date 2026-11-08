@@ -8,10 +8,104 @@
   padding: 1rem .875rem .25rem;
 }
 
-/* ---------- Una red social ---------- */
+/* ---------- El título de la sección de redes ----------
+   Separado de las filas con una línea: no es uno más de la lista, es lo que
+   sale encima de todas ellas en la tienda. */
+.pie-titulo-redes {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.pie-titulo-redes__campos {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.pie-titulo-redes__texto  { flex: 1 1 14rem; min-width: 11rem; }
+.pie-titulo-redes__tamano { flex: 0 0 7rem; }
+.pie-titulo-redes__color  { flex: 0 0 auto; }
+
+/* ---------- La letra ---------- */
+.pie-titulo-redes__letra {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+/* La misma etiqueta que la de los campos de al lado, que la pintan ellos */
+.pie-titulo-redes__etiqueta {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- La muestra ----------
+   SOBRE EL FONDO DEL PIE y no sobre el blanco de la pantalla: un título claro
+   sobre blanco no dice nada de cómo se va a leer. El rojo es el de fábrica de
+   la tienda; si se le cambió el color en el encabezado, el de verdad será
+   aquél y éste se parecerá nada más. */
+.pie-titulo-redes__muestra {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+
+  flex: 1 1 16rem;
+  min-width: 0;
+  padding: .6rem .85rem;
+
+  border-radius: .375rem;
+  background-color: #df1122;
+}
+
+.pie-titulo-redes__muestra-etiqueta {
+  flex: 0 0 auto;
+  font-size: .625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: rgba(255, 255, 255, .7);
+}
+
+/* El tamaño, el color y la letra los pone la plantilla: son los que se eligen */
+.pie-titulo-redes__muestra-texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* ---------- El menú de «Añadir» ---------- */
+.pie-red-menu {
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.pie-red-menu__dibujo {
+  width: 1.25rem;          /* el fa-fw de los iconos de al lado */
+  margin-right: .25rem;
+  font-size: 1rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Un enlace de redes ----------
+   EN DOS FILAS EN PANTALLA ESTRECHA (ver abajo): son cinco piezas y el
+   nombre y la dirección necesitan sitio para leerse. */
 .pie-red {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: .75rem;
   padding: .5rem .75rem;
   margin-bottom: .5rem;
@@ -26,16 +120,32 @@
   border-left-color: var(--bs-success, #198754);
 }
 
-.pie-red__nombre {
-  flex: 0 0 7.5rem;
-  font-size: .8125rem;
-  font-weight: 600;
-  color: var(--bs-body-color, #212529);
+/* El hueco mientras se arrastra: sin esto la lista da saltos */
+.pie-red__fantasma {
+  min-height: 3rem;
+  border: 1px dashed var(--bs-app-theme, #00acac);
+  border-radius: .375rem;
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .08);
 }
 
-.pie-red__campo { flex: 1 1 auto; min-width: 0; }
+/* El dibujo: ancho fijo, que es lo que lo mantiene en columna de arriba abajo */
+.pie-red__icono { flex: 0 0 8.5rem; }
+
+/* El nombre no necesita tanto como la dirección, pero tampoco se encoge hasta
+   desaparecer: con un basis chico y un mínimo, los dos reparten lo que haya */
+.pie-red__nombre-campo { flex: 1 1 9rem; min-width: 7rem; }
+
+.pie-red__campo { flex: 3 1 14rem; min-width: 0; }
 
 .pie-red__switch { flex: 0 0 auto; }
+
+.pie-red__quitar { flex: 0 0 auto; }
+
+/* Debajo de los 900 el renglón no da para cinco piezas: el dibujo y el nombre
+   se quedan arriba y la dirección se lleva el renglón entero. */
+@media (max-width: 900px) {
+  .pie-red__campo { flex-basis: 100%; }
+}
 
 /* ============================================================
    LA PALANCA
@@ -228,6 +338,14 @@
 .chip-muted {
   color: var(--bs-secondary-color, #6c757d);
   background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+/* El enlace está encendido pero su página no se puede ver: la tienda no lo
+   saca. Amarillo y no rojo, que es lo mismo que usan las listas de categorías
+   y de marcas para esto: no es un error, es algo que hay que saber. */
+.chip-aviso {
+  color: var(--bs-warning-text-emphasis, #997404);
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
 }
 
 .campo-hint {

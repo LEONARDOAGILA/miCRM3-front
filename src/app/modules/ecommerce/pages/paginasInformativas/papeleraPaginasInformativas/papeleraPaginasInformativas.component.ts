@@ -10,19 +10,13 @@ import { FilaPapeleraPagina } from '../../../interfaces/paginaInformativaModel';
 /**
  * La papelera de las páginas informativas.
  *
- * ES UN SOLO CESTO para carpetas y páginas, a diferencia del resto de la casa,
- * donde va una papelera por entidad. El motivo es que aquí lo borrado viene
- * encadenado: al tirar una carpeta se van con ella sus páginas, y restaurarla
- * las devuelve. Partirlo en dos cestos obligaría a mirar en dos sitios para
- * entender por qué una página desapareció.
+ * Una lista de páginas y nada más. Tuvo dos niveles mientras hubo carpetas
+ * —la carpeta arriba y debajo las páginas que se habían ido con ella— y eso
+ * se fue con ellas el 07/11/2026.
  *
- * Por eso cada fila dice de qué tipo es, y las páginas que se fueron con una
- * carpeta se pintan debajo de ella.
- *
- * RESTAURAR UNA PÁGINA SUELTA cuya carpeta sigue aquí la devuelve SIN carpeta:
- * lo decide el servidor, y es lo razonable —restaurarla a una carpeta que no
- * se ve sería restaurarla a ninguna parte—, pero conviene que la pantalla lo
- * cuente antes y no después.
+ * VACIAR BORRA LOS FICHEROS. Las imágenes y los PDF de lo que se va se
+ * quitan del disco, y eso no se deshace: por eso se pregunta y por eso el
+ * permiso lo comprueba también el servidor.
  */
 @Component({
   selector: 'app-papeleraPaginasInformativas',
@@ -46,20 +40,6 @@ export class PapeleraPaginasInformativasComponent implements OnInit {
   private _toastr = inject(ToastrService);
   public activeModal = inject(NgbActiveModal);
 
-  get carpetas(): FilaPapeleraPagina[] {
-    return this.filas.filter(f => f.tipo === 'carpeta');
-  }
-
-  /** Las páginas que no venían de ninguna carpeta que esté también aquí. */
-  get sueltas(): FilaPapeleraPagina[] {
-    const enCesto = new Set(this.carpetas.map(c => c.id));
-    return this.filas.filter(f => f.tipo === 'pagina' && !enCesto.has(f.grupo_id ?? -1));
-  }
-
-  paginasDe(carpeta: FilaPapeleraPagina): FilaPapeleraPagina[] {
-    return this.filas.filter(f => f.tipo === 'pagina' && f.grupo_id === carpeta.id);
-  }
-
   get vacia(): boolean { return !this.cargando && this.filas.length === 0; }
 
   ngOnInit(): void { this.cargar(); }
@@ -80,10 +60,8 @@ export class PapeleraPaginasInformativasComponent implements OnInit {
     if (this.trabajando) { return; }
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(
-        fila.tipo === 'carpeta' ? this._paginaService.restaurarGrupo(fila.id)
-                                : this._paginaService.restaurar([fila.id]));
-      this._toastr.success(res?.message ?? 'Restaurado', 'Listo');
+      const res: any = await firstValueFrom(this._paginaService.restaurar([fila.id]));
+      this._toastr.success(res?.message ?? 'Restaurada', 'Listo');
       this.hubocambios = true;
       await this.cargar();
     } catch (e: any) {
@@ -101,7 +79,7 @@ export class PapeleraPaginasInformativasComponent implements OnInit {
    */
   async vaciar(): Promise<void> {
     if (this.trabajando || !this.puedeVaciar) { return; }
-    if (!confirm('Se borrarán definitivamente todas las páginas y carpetas de la papelera, '
+    if (!confirm('Se borrarán definitivamente todas las páginas de la papelera, '
                  + 'con sus imágenes y sus PDF. Esto no se puede deshacer.\n\n¿Seguir?')) {
       return;
     }

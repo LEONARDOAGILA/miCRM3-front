@@ -1,0 +1,123 @@
+/* ============================================================
+   CAMPO DE ICONO DE LA TIENDA
+
+   Un solo botón —dibujo y nombre— con la × encima, a la derecha. No lleva
+   caja de texto como app-campoIcono porque aquí no se escribe: la lista es
+   corta y cerrada, y un nombre inventado no avisaría en ninguna parte.
+
+   Los colores salen de las variables de Bootstrap que ya usa la plantilla,
+   así acompaña al tema y al modo oscuro sin reglas aparte.
+   ============================================================ */
+
+/* En bloque y encogible: quien lo usa le pone el ancho desde su propia fila,
+   y un host en línea no lo respetaría. La × se ancla a este host. */
+:host {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.campo-icono-tienda {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+
+  width: 100%;
+  min-width: 0;
+  padding: .28rem .5rem;
+
+  border: 1px solid var(--bs-border-color, #ced4da);
+  border-radius: .375rem;
+
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-body-color, #212529);
+  cursor: pointer;
+
+  transition: border-color .12s ease, background-color .12s ease;
+}
+
+.campo-icono-tienda:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+}
+
+.campo-icono-tienda:focus-visible {
+  outline: none;
+  border-color: var(--bs-app-theme, #00acac);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-app-theme-rgb, 0, 172, 172), .18);
+}
+
+/* ---------- El dibujo ---------- */
+.campo-icono-tienda__dibujo {
+  font-size: 1.1rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Sin icono puesto se enseña el de por defecto, pero apagado: se ve qué
+   saldría sin que parezca que ya hay uno elegido. */
+.campo-icono-tienda__dibujo--vacio {
+  color: var(--bs-secondary-color, #adb5bd);
+  opacity: .55;
+}
+
+/* ---------- El nombre ---------- */
+.campo-icono-tienda__nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+
+  /* Sitio para la × */
+  padding-right: .9rem;
+
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- El icono que la tienda ya no tiene ---------- */
+.campo-icono-tienda.is-roto {
+  border-color: var(--bs-danger, #dc3545);
+}
+
+.campo-icono-tienda.is-roto .campo-icono-tienda__nombre {
+  color: var(--bs-danger, #dc3545);
+}
+
+/* ---------- La × ---------- */
+.campo-icono-tienda__limpiar {
+  position: absolute;
+  top: 50%;
+  right: .3rem;
+  transform: translateY(-50%);
+  z-index: 3;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+
+  border: none;
+  border-radius: .25rem;
+  background: none;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.campo-icono-tienda__limpiar:hover {
+  color: var(--bs-danger, #dc3545);
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+}
+
+/* ---------- Apagado ---------- */
+.campo-icono-tienda.is-apagado {
+  opacity: .65;
+  cursor: not-allowed;
+}

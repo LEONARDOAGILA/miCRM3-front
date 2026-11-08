@@ -1,0 +1,392 @@
+/* ============================================================
+   PORTADA DE LA PÁGINA WEB
+   ============================================================
+   Calcado del de Inventarios, cambiando el prefijo de las clases: las dos
+   portadas son la misma pantalla con otras tarjetas, y si se separan los
+   estilos acaban pareciendose solo de lejos.
+
+   Los colores salen de variables Bootstrap para que funcione en claro y en
+   oscuro (data-bs-theme en <html>). */
+
+.eco-home__fondo {
+  min-height: 100vh;
+  background: url(/assets/img/cover/cover-scrum-board.png) no-repeat fixed;
+  background-size: 360px;
+  background-position: right bottom;
+}
+
+:host {
+  display: block;
+  padding: 1.25rem;
+
+  min-height: 100%;
+}
+
+// En pantallas pequeñas la ilustración se come el contenido
+@media (max-width: 767.98px) {
+  :host {
+    padding: 1rem;
+    background-image: none;
+  }
+}
+
+// ============================================================
+// CABECERA
+// ============================================================
+
+.eco-header {
+  display: flex;
+  align-items: center;
+  gap: .875rem;
+  flex-wrap: wrap;
+
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.eco-header__icono {
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 46px;
+  height: 46px;
+
+  border-radius: .75rem;
+
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .12);
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  font-size: 1.25rem;
+}
+
+.eco-header__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.eco-header__titulo {
+  margin: 0;
+
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--bs-emphasis-color, #212529);
+}
+
+.eco-header__ayuda {
+  margin: .15rem 0 0;
+
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.eco-header__accion {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+// ============================================================
+// AVISO DE QUE NO LLEGARON LAS CUENTAS
+// ============================================================
+
+.eco-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+
+  margin-bottom: 1rem;
+  padding: .625rem .875rem;
+
+  border: 1px solid var(--bs-warning-border-subtle, #ffe69c);
+  border-radius: .5rem;
+
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+  color: var(--bs-warning-text-emphasis, #664d03);
+  font-size: .8125rem;
+  line-height: 1.4;
+
+  i {
+    flex: 0 0 auto;
+    margin-top: .1rem;
+  }
+}
+
+// ============================================================
+// TARJETAS DE MÓDULO
+// ============================================================
+
+.eco-card {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  gap: .875rem;
+
+  height: 100%;
+  padding: 1rem;
+
+  // --bs-component-bg, no `bg-white`: la utilidad de Bootstrap es blanco fijo
+  // y dejaba tarjetas blancas sobre fondo oscuro en el tema oscuro.
+  background-color: var(--bs-component-bg, #fff);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .75rem;
+
+  text-decoration: none;
+  overflow: hidden;
+
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+
+  // Franja de color que aparece al pasar el ratón
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+
+    background-color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+
+    opacity: 0;
+    transition: opacity .18s ease;
+  }
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-2px);
+    border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .45);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .1);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bs-app-theme, var(--bs-primary, #0d6efd));
+    outline-offset: 2px;
+  }
+}
+
+// La que todavía no tiene pantalla se ve, pero no invita: ni se levanta, ni
+// saca franja, ni lleva flecha. Es una ficha informativa, no un botón.
+.eco-card--pendiente {
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  cursor: default;
+
+  &:hover {
+    transform: none;
+    border-color: var(--bs-border-color, #dee2e6);
+    box-shadow: none;
+
+    &::before {
+      opacity: 0;
+    }
+  }
+}
+
+.eco-card__icono {
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 44px;
+  height: 44px;
+
+  border-radius: .625rem;
+
+  color: #fff;
+  font-size: 1.0625rem;
+
+  // LOS TONOS QUE BOOTSTRAP NO TRAE. `bg-primary`, `bg-success` y compañía
+  // son utilidades suyas y funcionan solas; `bg-indigo` y `bg-teal` no
+  // existen fuera de `.module-icon-compact` (scss/angular.scss), y sin esto
+  // la pastilla se queda sin fondo: ícono blanco sobre tarjeta blanca.
+  &.bg-indigo { background-color: #6366f1; }
+  &.bg-teal   { background-color: #14b8a6; }
+  &.bg-purple { background-color: #8b5cf6; }
+
+  // El amarillo de Bootstrap con letra blanca se queda en 1,7:1. Su propio
+  // color de texto para ese fondo sí se lee.
+  &.bg-warning { color: var(--bs-warning-text-emphasis, #664d03); }
+}
+
+.eco-card--pendiente .eco-card__icono {
+  // Apagada: el color es para distinguir familias entre las que se usan, y
+  // ésta todavía no se puede usar
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08) !important;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.eco-card__cuerpo {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.eco-card__titulo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+
+  font-size: .9375rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--bs-emphasis-color, #212529);
+}
+
+.eco-card__descripcion {
+  font-size: .75rem;
+  line-height: 1.4;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+// Lo que hay dentro del área. Va en el color del tema y en negrita porque es
+// el dato que se viene a mirar; la descripción de arriba sólo explica qué es.
+.eco-card__resumen {
+  margin-top: .25rem;
+
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.eco-card--pendiente .eco-card__resumen {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.eco-card__flecha {
+  flex: 0 0 auto;
+
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #adb5bd);
+
+  transition: transform .18s ease, color .18s ease;
+}
+
+.eco-card:hover .eco-card__flecha {
+  transform: translateX(3px);
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+.eco-chip {
+  padding: .1rem .4rem;
+
+  border-radius: 1rem;
+
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+  color: var(--bs-secondary-color, #6c757d);
+
+  font-size: .625rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+// ============================================================
+// LA NOTA DEL FINAL
+// ============================================================
+
+.eco-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+
+  margin: 1rem 0 0;
+
+  font-size: .75rem;
+  line-height: 1.4;
+  // Un gris más flojo se quedaba en 4,35:1 sobre el panel oscuro, por debajo
+  // de lo que se lee en letra de este tamaño
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+
+  i {
+    flex: 0 0 auto;
+    margin-top: .15rem;
+    color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+  }
+}
+
+// ============================================================
+// SIN MÓDULOS
+// ============================================================
+
+.eco-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .625rem;
+
+  padding: 3rem 1rem;
+
+  text-align: center;
+  color: var(--bs-secondary-color, #6c757d);
+
+  i {
+    font-size: 2rem;
+    opacity: .4;
+  }
+
+  p {
+    margin: 0;
+    font-size: .875rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eco-card,
+  .eco-card__flecha,
+  .eco-card::before {
+    transition: none;
+  }
+
+  .eco-card:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  :host {
+    padding: 1rem;
+    background-image: none;
+  }
+
+  // ---------- Cabecera compacta ----------
+  // En móvil la cabecera se comía casi un tercio de la pantalla antes de
+  // enseñar la primera tarjeta: entre icono, título y subtítulo sumaba
+  // ~110px, y los dos botones se iban a una segunda línea.
+  .eco-header {
+    gap: .625rem;
+
+    margin-top: 12px;
+    margin-bottom: 1rem;
+    padding-bottom: .75rem;
+  }
+
+  .eco-header__icono {
+    width: 34px;
+    height: 34px;
+
+    border-radius: .5rem;
+    font-size: .9375rem;
+  }
+
+  .eco-header__titulo {
+    font-size: 1rem;
+  }
+
+  // El subtítulo sólo explica lo que las propias tarjetas ya dicen: en
+  // pantalla pequeña el espacio vale más.
+  .eco-header__ayuda {
+    display: none;
+  }
+}

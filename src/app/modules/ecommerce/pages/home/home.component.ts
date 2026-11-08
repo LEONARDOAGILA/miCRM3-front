@@ -1,98 +1,243 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { Subject, firstValueFrom, takeUntil } from 'rxjs';
 
 import { environment } from '../../../../../environments/environment';
-import { PanelComponent } from '../../../../components/panel/panel.component';
+import { AppStateService } from '../../../../service/app-state.service';
 
-/** Una tarjeta de la portada: un área de la página web. */
-interface TarjetaArea {
-  clave: string;
-  titulo: string;
+/** Una fila de `accesos` en localStorage: lo que el perfil puede abrir. */
+interface Acceso {
+  user_id: number;
+  nombre: string;
+  url: string;
+  perfil_nombre: string;
   icono: string;
+  padre_id: number | null;
+  orden: number;
+}
+
+interface ModuloCard {
+  /** La ruta como está escrita en el menú; null mientras la pantalla no exista. */
+  url: string | null;
+  label: string;
+  icon: string;
+  color: string;
   descripcion: string;
-  /** La ruta dentro del módulo; null mientras la pantalla no exista. */
-  ruta: string | null;
-  /** Lo que se lee debajo: «4 enlaces, 1 oculto». Lo arma `resumir`. */
-  resumen?: string;
+  /** Con qué nombre manda el servidor la cuenta de esta área. */
+  clave: string;
 }
 
 /**
- * LA PORTADA DEL MÓDULO ECOMMERCE.
+ * Portada del módulo de la Página web: las pantallas que el perfil puede
+ * abrir, en tarjetas.
  *
- * Una rejilla con las áreas de la página web, cada una con lo que hay
- * dentro —«3 columnas con 12 enlaces», «33 categorías, todas visibles»— y su
- * enlace. Sirve para ver de un vistazo qué está configurado y qué está vacío
- * sin entrar en diez pantallas.
+ * Mismo esquema que la portada de Inventarios. Las tarjetas NO son una lista
+ * fija: se cruzan con los `accesos` que el login dejó en localStorage, así
+ * que quien no tenga una pantalla no la ve aquí tampoco. La URL se compara
+ * letra a letra con la del menú, de modo que una mal escrita no da error: la
+ * tarjeta simplemente no sale.
  *
- * LAS QUE AÚN NO ESTÁN TRASLADADAS SE ENSEÑAN IGUAL, marcadas y sin enlace,
- * en vez de esconderlas. Esconderlas daría la impresión de que la página web
- * son seis cosas; enseñarlas dice la verdad —esto es lo que hay y esto es lo
- * que falta— y además sigue contando lo que ya tienen dentro, que se lee de
- * las tablas viejas mientras existan.
+ * DOS COSAS QUE LAS DEMÁS PORTADAS NO TIENEN:
  *
- * EL CONTEO VIENE EN UNA SOLA LLAMADA. El CRM viejo pedía uno por tarjeta: la
- * portada parpadeaba mientras llegaban y una sola caída dejaba su tarjeta en
- * «No se pudo cargar» para siempre.
+ * 1. CADA TARJETA DICE LO QUE HAY DENTRO —«3 columnas con 12 enlaces», «33
+ *    categorías, todas visibles»—, que es lo que se viene a mirar aquí: qué
+ *    está configurado y qué está vacío, sin entrar en diez pantallas. Las
+ *    cuentas llegan TODAS EN UNA LLAMADA; el CRM viejo pedía una por tarjeta
+ *    y la portada parpadeaba mientras llegaban.
+ *
+ * 2. LAS ÁREAS QUE AÚN NO ESTÁN TRASLADADAS SE ENSEÑAN IGUAL, marcadas y sin
+ *    enlace. Esconderlas daría la impresión de que la página web son nueve
+ *    cosas; enseñarlas dice la verdad —esto es lo que hay y esto es lo que
+ *    falta— y además sigue contando lo que tienen dentro, que se lee de las
+ *    tablas viejas mientras existan. Como no tienen pantalla, tampoco tienen
+ *    acceso que cruzar: salen siempre.
  */
 @Component({
   selector: 'app-ecommerceHome',
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css'],
+  styleUrls: ['./home.component.scss'],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
-  imports: [CommonModule, PanelComponent],
+  imports: [RouterModule, NgTemplateOutlet],
 })
-export class EcommerceHomeComponent implements OnInit {
+export class EcommerceHomeComponent implements OnInit, OnDestroy {
 
-  public titulo = 'Página web';
+  public modulosPermitidos: ModuloCard[] = [];
   public cargando = true;
   public error = false;
 
   private datos: any = {};
+  private destroy$ = new Subject<void>();
 
   /**
-   * El orden es el de la tienda de arriba abajo: primero lo que se ve al
-   * entrar, luego lo que cuelga del menú, y al final el catálogo.
+   * Las pantallas del módulo, en el orden de la tienda de arriba abajo:
+   * primero lo que se ve al entrar, luego lo que cuelga del menú y al final
+   * el catálogo.
+   *
+   * EL COLOR VA POR FAMILIAS, no uno distinto por tarjeta: con trece, un
+   * color cada una es un arcoíris en el que no se distingue nada. Las que se
+   * tocan juntas comparten color, y así se ven los cuatro grupos de un
+   * vistazo.
    */
-  public readonly areas: TarjetaArea[] = [
-    { clave: 'inicio', titulo: 'Cuerpos de la tienda', icono: 'fa-layer-group', ruta: 'editInicio',
-      descripcion: 'La página de entrada y las de cada categoría o marca: banner, categorías, '
-                 + 'marcas y tus secciones de productos.' },
-    { clave: 'modelado', titulo: 'Modelado de la portada', icono: 'fa-object-group', ruta: 'modelado',
-      descripcion: 'La página de entrada dibujada a escala: arrastra las secciones y estíralas para ver cómo queda.' },
-    { clave: 'encabezado', titulo: 'Encabezado', icono: 'fa-window-maximize', ruta: 'editEncabezado',
-      descripcion: 'La franja de arriba, el buscador, el menú y el aviso de crédito.' },
-    { clave: 'pie', titulo: 'Pie de página', icono: 'fa-table-columns', ruta: 'editPie',
-      descripcion: 'Las redes sociales y las columnas de enlaces del pie.' },
-    { clave: 'paginas', titulo: 'Páginas informativas', icono: 'fa-file-lines', ruta: 'allPaginasInformativas',
-      descripcion: 'Términos, políticas y garantías: el texto que se lee en la tienda.' },
-    { clave: 'sucursales', titulo: 'Nuestras tiendas', icono: 'fa-store', ruta: null,
-      descripcion: 'Ciudades y sucursales con su dirección, horario y ubicación.' },
-    { clave: 'categorias', titulo: 'Categorías de la tienda', icono: 'fa-tags', ruta: 'allCategoriasWeb',
-      descripcion: 'Cuáles salen en el menú y en el inicio, con su nombre para la web.' },
-    { clave: 'galerias', titulo: 'Galerías', icono: 'fa-images', ruta: null,
-      descripcion: 'Los bloques de imágenes: banners, tarjetas y logos de pago.' },
-    { clave: 'marcas_tienda', titulo: 'Marcas de la tienda', icono: 'fa-award', ruta: 'allMarcasWeb',
-      descripcion: 'El logo de cada marca y cuáles salen en «Nuestras marcas».' },
-    { clave: 'paginas_marca', titulo: 'Páginas de marca', icono: 'fa-copyright', ruta: null,
-      descripcion: 'Una página por marca: banner, fotos y contacto.' },
-    { clave: 'espana_motos', titulo: 'España Motos', icono: 'fa-motorcycle', ruta: 'editEspanaMotos',
-      descripcion: 'Banner, pestañas del catálogo, marcas y tarjetas.' },
-    { clave: 'productos', titulo: 'Productos de la tienda', icono: 'fa-box-open', ruta: null,
-      descripcion: 'Ficha técnica, imágenes y franjas del detalle de cada producto.' },
-    { clave: 'producto_secciones', titulo: 'Productos por sección', icono: 'fa-basket-shopping',
-      ruta: 'producto-por-seccion',
-      descripcion: 'Escaparates armados a mano: «Los más vendidos», «Ofertas de navidad».' },
+  private readonly MODULOS_CONFIG: ModuloCard[] = [
+    // ---------- La portada, y la portada dibujada ----------
+    {
+      url: 'ecommerce/editInicio',
+      clave: 'inicio',
+      label: 'CUERPOS DE LA TIENDA',
+      icon: 'fa-layer-group',
+      color: 'bg-primary',
+      descripcion: 'La página de entrada y las de cada categoría o marca: banner, categorías, marcas y tus secciones de productos',
+    },
+    {
+      url: 'ecommerce/modelado',
+      clave: 'modelado',
+      label: 'MODELADO DE LA PORTADA',
+      icon: 'fa-object-group',
+      color: 'bg-primary',
+      descripcion: 'La página de entrada dibujada a escala: arrastra las secciones y estíralas para ver cómo queda',
+    },
+
+    // ---------- El marco que sale en todas las páginas ----------
+    {
+      url: 'ecommerce/editEncabezado',
+      clave: 'encabezado',
+      label: 'ENCABEZADO',
+      icon: 'fa-window-maximize',
+      color: 'bg-indigo',
+      descripcion: 'La franja de arriba, el buscador, el menú y el aviso de crédito',
+    },
+    {
+      url: 'ecommerce/editPie',
+      clave: 'pie',
+      label: 'PIE DE PÁGINA',
+      icon: 'fa-table-columns',
+      color: 'bg-indigo',
+      descripcion: 'Las redes sociales y las columnas de enlaces del pie',
+    },
+
+    // ---------- Lo que se lee y dónde estamos ----------
+    {
+      url: 'ecommerce/allPaginasInformativas',
+      clave: 'paginas',
+      label: 'PÁGINAS INFORMATIVAS',
+      icon: 'fa-file-lines',
+      color: 'bg-teal',
+      descripcion: 'Términos, políticas y garantías: el texto que se lee en la tienda',
+    },
+    {
+      url: null,
+      clave: 'sucursales',
+      label: 'NUESTRAS TIENDAS',
+      icon: 'fa-store',
+      color: 'bg-teal',
+      descripcion: 'Ciudades y sucursales con su dirección, horario y ubicación',
+    },
+
+    // ---------- El catálogo ----------
+    {
+      url: 'ecommerce/allCategoriasWeb',
+      clave: 'categorias',
+      label: 'CATEGORÍAS DE LA TIENDA',
+      icon: 'fa-tags',
+      color: 'bg-success',
+      descripcion: 'Cuáles salen en el menú y en el inicio, con su nombre para la web',
+    },
+    {
+      url: null,
+      clave: 'galerias',
+      label: 'GALERÍAS',
+      icon: 'fa-images',
+      color: 'bg-success',
+      descripcion: 'Los bloques de imágenes: banners, tarjetas y logos de pago',
+    },
+    {
+      url: 'ecommerce/allMarcasWeb',
+      clave: 'marcas_tienda',
+      label: 'MARCAS DE LA TIENDA',
+      icon: 'fa-award',
+      color: 'bg-success',
+      descripcion: 'El logo de cada marca y cuáles salen en «Nuestras marcas»',
+    },
+    {
+      url: null,
+      clave: 'paginas_marca',
+      label: 'PÁGINAS DE MARCA',
+      icon: 'fa-copyright',
+      color: 'bg-success',
+      descripcion: 'Una página por marca: banner, fotos y contacto',
+    },
+    {
+      url: null,
+      clave: 'productos',
+      label: 'PRODUCTOS DE LA TIENDA',
+      icon: 'fa-box-open',
+      color: 'bg-success',
+      descripcion: 'Ficha técnica, imágenes y franjas del detalle de cada producto',
+    },
+
+    // ---------- Escaparates ----------
+    {
+      url: 'ecommerce/producto-por-seccion',
+      clave: 'producto_secciones',
+      label: 'PRODUCTOS POR SECCIÓN',
+      icon: 'fa-basket-shopping',
+      color: 'bg-warning',
+      descripcion: 'Escaparates armados a mano: «Los más vendidos», «Ofertas de navidad»',
+    },
   ];
 
-  private http = inject(HttpClient);
-  private router = inject(Router);
+  constructor(
+    private http: HttpClient,
+    private appStateService: AppStateService,
+  ) {}
 
-  ngOnInit(): void { this.cargar(); }
+  ngOnInit(): void {
+    this.cargarModulosPermitidos();
+    this.cargar();
 
+    // Si cambian los accesos sin recargar la página (otro perfil, permisos
+    // retocados), las tarjetas se rehacen solas.
+    this.appStateService.accesosActualizados$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.cargarModulosPermitidos());
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /**
+   * Deja sólo las pantallas que el perfil tiene concedidas.
+   *
+   * Las que todavía no tienen pantalla (`url` en null) no se cruzan con nada
+   * —no hay acceso que conceder a algo que no existe— y salen siempre.
+   */
+  cargarModulosPermitidos(): void {
+    const guardado = localStorage.getItem('accesos');
+
+    if (!guardado) { this.cargarModulosPorDefecto(); return; }
+
+    try {
+      const accesos: Acceso[] = JSON.parse(guardado);
+      this.modulosPermitidos = this.MODULOS_CONFIG.filter(
+        modulo => modulo.url === null || accesos.some(acceso => acceso.url === modulo.url));
+    } catch (error) {
+      // Si eso no se puede leer, mejor enseñarlo todo que una pantalla vacía:
+      // el guardia de cada ruta sigue estando, así que nadie entra donde no debe
+      console.error('Error al leer los accesos:', error);
+      this.cargarModulosPorDefecto();
+    }
+  }
+
+  private cargarModulosPorDefecto(): void {
+    this.modulosPermitidos = [...this.MODULOS_CONFIG];
+  }
+
+  /** Las cuentas de todas las áreas, en una sola llamada. */
   async cargar(): Promise<void> {
     this.cargando = true;
     this.error = false;
@@ -110,31 +255,28 @@ export class EcommerceHomeComponent implements OnInit {
     }
   }
 
-  /** ¿Esta área ya tiene su pantalla? */
-  lista(area: TarjetaArea): boolean { return area.ruta !== null; }
-
-  abrir(area: TarjetaArea): void {
-    if (!area.ruta) { return; }
-    this.router.navigate(['/ecommerce', area.ruta]);
+  /** Si de las que quedan hay alguna que se pueda abrir. */
+  get hayAlgunaAbrible(): boolean {
+    return this.modulosPermitidos.some(modulo => modulo.url !== null);
   }
 
   /**
-   * Lo que se lee debajo del título.
+   * Lo que se lee debajo de la descripción.
    *
    * Cada área cuenta cosas distintas, así que no hay una fórmula: se escribe
    * una frase por área. Es más código que un «{{ n }} elementos», pero «3
    * columnas con 12 enlaces» dice algo y «15 elementos» no dice nada.
    */
-  resumen(area: TarjetaArea): string {
+  resumen(modulo: ModuloCard): string {
     // El modelado y el inicio son la misma portada vista de dos maneras, así
     // que cuentan lo mismo y el servidor no manda dos veces la cuenta
-    const d = this.datos?.[area.clave === 'modelado' ? 'inicio' : area.clave];
+    const d = this.datos?.[modulo.clave === 'modelado' ? 'inicio' : modulo.clave];
     if (!d) { return this.error ? 'No se pudo cargar' : '—'; }
 
     const plural = (n: number, uno: string, varios: string) =>
       `${n} ${n === 1 ? uno : varios}`;
 
-    switch (area.clave) {
+    switch (modulo.clave) {
       case 'inicio':
       case 'modelado':
         return `${plural(d.visibles, 'sección visible', 'secciones visibles')} de ${d.total}`;
@@ -158,8 +300,6 @@ export class EcommerceHomeComponent implements OnInit {
         return plural(d.marcas, 'marca', 'marcas');
       case 'paginas_marca':
         return plural(d.paginas, 'página', 'páginas');
-      case 'espana_motos':
-        return `${plural(d.marcas, 'marca', 'marcas')}, ${plural(d.pestanas, 'pestaña', 'pestañas')}`;
       case 'productos':
         return plural(d.productos, 'producto', 'productos');
       case 'producto_secciones':

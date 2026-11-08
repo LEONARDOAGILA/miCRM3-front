@@ -18,9 +18,11 @@
     <form [formGroup]="form" novalidate>
       <div class="row g-3">
 
-        <!-- ================= LO QUE IDENTIFICA LA PÁGINA ================= -->
-        <div class="col-12 col-xl-8">
-
+        <!-- ================= IZQUIERDA: LA FICHA =================
+             Lo que identifica la página y la imagen que la acompaña.
+             Todo cabe de sobra en media pantalla; lo que necesita sitio
+             es el texto, y el texto está a la derecha. -->
+        <div class="col-12 col-xl-5">
           <div class="row g-3 align-items-start">
 
             <div class="col-12">
@@ -47,205 +49,225 @@
               </div>
             }
 
+            <!-- ================= ESTADO ================= -->
             <div class="col-12">
-              <app-combo
-                formControlName="grupo_id"
-                [items]="opcionesGrupo"
-                [label]="'Carpeta'"
-                bindLabel="name"
-                bindValue="id">
-              </app-combo>
-
-              @if (carpetaBloqueada) {
-                <p class="campo-hint mb-0">
-                  <i class="fa-solid fa-circle-info"></i>
-                  La tienda tiene una dirección propia para esta página, así que
-                  no va en ninguna carpeta.
-                </p>
-              } @else {
-                <p class="campo-hint mb-0">
-                  <i class="fa-solid fa-circle-info"></i>
-                  Las páginas de una carpeta salen agrupadas bajo su nombre en
-                  «Documentos» de la tienda.
-                </p>
-              }
+              <div class="estado-pagina" [class.is-on]="ctrlActivo.value">
+                <span class="estado-pagina__icon"><i class="fa-solid fa-power-off"></i></span>
+                <div class="estado-pagina__text">
+                  <span class="estado-pagina__label">Estado</span>
+                  <span class="estado-pagina__hint">
+                    {{ ctrlActivo.value ? 'Se ve en la tienda' : 'Oculta en la tienda' }}
+                  </span>
+                </div>
+                <app-checkbox class="estado-pagina__switch palanca"
+                  [control]="ctrlActivo"
+                  [label]="ctrlActivo.value ? 'Publicada' : 'Oculta'"
+                  [id]="'ck-pagina-activa'">
+                </app-checkbox>
+              </div>
             </div>
 
-          </div>
-        </div>
+            <!-- ================= LA IMAGEN =================
+                 Opcional: sin ella la página sale sólo con su texto, como
+                 hasta ahora. Con ella, el texto se reparte a un lado y la
+                 foto al otro, y cuál es cuál se elige aquí. -->
+            <div class="col-12">
+              <div class="pag-imagen">
+                <span class="pag-imagen__titulo">
+                  <i class="fa-regular fa-image"></i> Imagen de la página
+                </span>
 
-        <!-- ================= ESTADO ================= -->
-        <div class="col-12 col-xl-4">
-          <div class="estado-pagina" [class.is-on]="ctrlActivo.value">
-            <span class="estado-pagina__icon"><i class="fa-solid fa-power-off"></i></span>
-            <div class="estado-pagina__text">
-              <span class="estado-pagina__label">Estado</span>
-              <span class="estado-pagina__hint">
-                {{ ctrlActivo.value ? 'Se ve en la tienda' : 'Oculta en la tienda' }}
-              </span>
-            </div>
-            <app-checkbox class="estado-pagina__switch palanca"
-              [control]="ctrlActivo"
-              [label]="ctrlActivo.value ? 'Publicada' : 'Oculta'"
-              [id]="'ck-pagina-activa'">
-            </app-checkbox>
-          </div>
-
-          <!-- La imagen y el PDF se conservan; cambiarlos llega con el
-               traslado de los ficheros. Se enseñan para que no parezca que
-               se han perdido. -->
-          @if (hayImagen || hayPdf) {
-            <div class="pag-adjuntos mt-3">
-              <span class="pag-adjuntos__titulo">
-                <i class="fa-solid fa-paperclip"></i> Adjuntos de la página
-              </span>
-
-              @if (hayImagen) {
-                <a class="pag-adjunto" [href]="urlImagen" target="_blank" rel="noopener">
-                  <i class="fa-regular fa-image"></i> Ver la imagen
-                </a>
-              }
-              @if (hayPdf) {
-                <a class="pag-adjunto" [href]="urlPdf" target="_blank" rel="noopener">
-                  <i class="fa-regular fa-file-pdf"></i> {{ nombrePdf }}
-                </a>
-              }
-
-              <p class="campo-hint mb-0">
-                <i class="fa-solid fa-circle-info"></i>
-                Se conservan tal cual. Cambiarlos llega con el traslado de los
-                ficheros de la página web.
-              </p>
-            </div>
-          }
-        </div>
-
-        <!-- ================= EL CONTENIDO ================= -->
-        <div class="col-12">
-          <app-tab-panel
-            [pestanas]="pestanas"
-            [activa]="pestana"
-            [conPanel]="true"
-            (cambiada)="pestana = $any($event)">
-
-            @if (pestana === 'texto') {
-              <panel
-                headerClass="bg-gray-800"
-                title="Texto de la página"
-                noButton="true"
-                noBody="true"
-                panelClass="mb-0"
-                icono="align-left"
-                fondoGris="true">
-
-                <ng-container outsideBody>
-                  <div class="form-card__body">
-                    <app-campoNgxEditor
-                      class="pag-editor"
-                      [formControl]="ctrlTexto"
-                      [placeholder]="'El texto de la página, con sus títulos y sus listas…'"
-                      [cinta]="true"
-                      [hoja]="true"
-                      [cintaEnMovil]="false"
-                      [soloLectura]="esView"
-                      alto="22rem">
-                    </app-campoNgxEditor>
-                  </div>
-                </ng-container>
-              </panel>
-            }
-
-            @if (pestana === 'desplegables') {
-              <panel
-                headerClass="bg-gray-800"
-                [title]="'Desplegables (' + desplegables.length + ' de 6)'"
-                noButton="true"
-                noBody="true"
-                panelClass="mb-0"
-                icono="chevron-down"
-                fondoGris="true">
-
-                <div header class="panel-acciones">
-                  @if (puedeAnadirDesplegable) {
-                    <button type="button" class="btn btn-xs btn-outline-light"
-                            (click)="anadirDesplegable()">
-                      <i class="fa fa-plus"></i> Añadir
-                    </button>
+                <div class="pag-imagen__caja" [class.is-vacia]="!hayImagen">
+                  @if (hayImagen) {
+                    <img [src]="imagenVista" alt="" class="pag-imagen__foto">
+                    @if (subiendoImagen) {
+                      <span class="pag-imagen__subiendo" title="Subiendo…">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                      </span>
+                    }
+                  } @else {
+                    <span class="pag-imagen__vacia">
+                      <i class="fa-regular fa-image"></i>
+                      <span>Sin imagen: la página sale sólo con su texto</span>
+                    </span>
                   }
                 </div>
 
-                <ng-container outsideBody>
-                  <div class="form-card__body">
+                @if (!esView) {
+                  <div class="pag-imagen__botones">
+                    <!-- El <input type=file> va escondido dentro de la etiqueta:
+                         el de fábrica no se puede dar forma y en cada navegador
+                         dice una cosa distinta -->
+                    <label class="btn btn-sm btn-outline-primary mb-0 pag-imagen__subir">
+                      <i class="fa fa-upload"></i>
+                      {{ hayImagen ? 'Cambiar' : 'Subir imagen' }}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" hidden
+                             [disabled]="subiendoImagen"
+                             (change)="onImagenElegida($event)">
+                    </label>
 
-                    @if (desplegables.length === 0) {
-                      <p class="text-muted mb-0">
-                        <i class="fa-solid fa-circle-info me-1"></i>
-                        Sin desplegables. Son los bloques que se abren al pinchar
-                        al final de la página, del tipo «preguntas frecuentes».
-                        Caben seis.
-                      </p>
+                    @if (hayImagen) {
+                      <button type="button" class="btn btn-sm btn-outline-danger"
+                              [disabled]="subiendoImagen" (click)="quitarImagen()">
+                        <i class="fa fa-trash"></i> Quitar
+                      </button>
                     }
-
-                    <!-- OJO: se sigue el CONTROL, no la posición. Con track
-                         $index, al mover o quitar uno los campos enseñan el
-                         valor del que estaba antes en ese sitio. -->
-                    @for (grupo of desplegables.controls; track grupo; let i = $index) {
-                      <div class="pag-desplegable" [formGroup]="controlDesplegable(i)">
-
-                        <div class="pag-desplegable__barra">
-                          <span class="pag-desplegable__numero">{{ i + 1 }}</span>
-
-                          @if (!esView) {
-                            <button type="button" class="btn btn-xs btn-link"
-                                    [disabled]="i === 0"
-                                    title="Subir" (click)="moverDesplegable(i, -1)">
-                              <i class="fa fa-arrow-up"></i>
-                            </button>
-                            <button type="button" class="btn btn-xs btn-link"
-                                    [disabled]="i === desplegables.length - 1"
-                                    title="Bajar" (click)="moverDesplegable(i, 1)">
-                              <i class="fa fa-arrow-down"></i>
-                            </button>
-                            <button type="button" class="btn btn-xs btn-link text-danger ms-auto"
-                                    title="Quitar este desplegable" (click)="quitarDesplegable(i)">
-                              <i class="fa fa-trash"></i>
-                            </button>
-                          }
-                        </div>
-
-                        <app-campoTexto
-                          [control]="$any(controlDesplegable(i).controls['titulo'])"
-                          label="TÍTULO DEL DESPLEGABLE"
-                          placeholder="¿Qué cubre la garantía?"
-                          [maxLength]="100"
-                          [trimEspacios]="true">
-                        </app-campoTexto>
-
-                        <app-campoNgxEditor
-                          [formControl]="$any(controlDesplegable(i).controls['texto'])"
-                          [placeholder]="'Lo que se ve al abrirlo…'"
-                          [cinta]="true"
-                          [cintaEnMovil]="false"
-                          [barraCorta]="true"
-                          [soloLectura]="esView"
-                          alto="9rem">
-                        </app-campoNgxEditor>
-
-                        @if (controlDesplegable(i).controls['pdf'].value) {
-                          <p class="campo-hint mb-0">
-                            <i class="fa-solid fa-paperclip"></i>
-                            Lleva un PDF adjunto, que se conserva.
-                          </p>
-                        }
-                      </div>
-                    }
-
                   </div>
-                </ng-container>
-              </panel>
-            }
 
-          </app-tab-panel>
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    jpg, png o webp, hasta 10 MB.
+                  </p>
+                }
+
+                @if (hayImagen) {
+                  <span class="pag-imagen__rotulo">DE QUÉ LADO SALE</span>
+
+                  <!-- Dos dibujos y no un desplegable: lo que se elige es dónde
+                       queda la foto, y eso se ve antes de leerlo -->
+                  <div class="pag-lado" role="group" aria-label="De qué lado sale la imagen">
+                    <button type="button" class="pag-lado__opcion"
+                            [class.is-on]="lado === 'izquierda'"
+                            [disabled]="esView"
+                            [attr.aria-pressed]="lado === 'izquierda'"
+                            (click)="ponerLado('izquierda')">
+                      <span class="pag-lado__dibujo">
+                        <span class="pag-lado__foto"></span>
+                        <span class="pag-lado__texto"></span>
+                      </span>
+                      Izquierda
+                    </button>
+
+                    <button type="button" class="pag-lado__opcion"
+                            [class.is-on]="lado === 'derecha'"
+                            [disabled]="esView"
+                            [attr.aria-pressed]="lado === 'derecha'"
+                            (click)="ponerLado('derecha')">
+                      <span class="pag-lado__dibujo">
+                        <span class="pag-lado__texto"></span>
+                        <span class="pag-lado__foto"></span>
+                      </span>
+                      Derecha
+                    </button>
+                  </div>
+
+                  <app-campoTexto
+                    [control]="$any(form.controls['imagen_alt'])"
+                    label="QUÉ SE LEE SI LA IMAGEN NO CARGA"
+                    placeholder="Taller de garantía de Almacenes España"
+                    [maxLength]="150"
+                    [trimEspacios]="true">
+                  </app-campoTexto>
+                }
+
+              </div>
+            </div>
+
+            <!-- ================= EL DOCUMENTO =================
+                 Opcional, y aparte de la imagen: no es una foto, y estaba
+                 metido dentro de su caja. En la tienda sale como un botón
+                 de descarga que abre el PDF en otra pestaña. -->
+            <div class="col-12">
+              <div class="pag-pdf">
+                <span class="pag-pdf__titulo">
+                  <i class="fa-regular fa-file-pdf"></i> Documento adjunto
+                </span>
+
+                @if (hayPdf) {
+                  <div class="pag-pdf__ficha">
+                    <span class="pag-pdf__icono">
+                      @if (subiendoPdf) {
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                      } @else {
+                        <i class="fa-regular fa-file-pdf"></i>
+                      }
+                    </span>
+                    <!-- El nombre del fichero puede ser largo y no se parte por
+                         un espacio: se recorta con puntos suspensivos -->
+                    <a class="pag-pdf__nombre" [href]="urlPdf" target="_blank" rel="noopener"
+                       [title]="nombrePdf + ' — abrir en otra pestaña'">{{ nombrePdf }}</a>
+
+                    @if (!esView) {
+                      <button type="button" class="btn btn-xs btn-link text-danger pag-pdf__quitar"
+                              [disabled]="subiendoPdf" title="Quitar el documento"
+                              (click)="quitarPdf()">
+                        <i class="fa fa-trash"></i>
+                      </button>
+                    }
+                  </div>
+                  <!-- Lo que se lee al lado del icono en la tienda. Sólo con
+                       documento: sin él no acompaña a nada. -->
+                  <app-campoTexto
+                    [control]="$any(form.controls['pdf_texto'])"
+                    label="QUÉ SE LEE JUNTO AL DOCUMENTO"
+                    placeholder="Para mayor información, ver el PDF"
+                    [maxLength]="150"
+                    [trimEspacios]="true">
+                  </app-campoTexto>
+
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Con texto, en la tienda sale esa frase y un icono de PDF que
+                    abre el documento. En blanco sale el botón «Descargar PDF».
+                  </p>
+                } @else {
+                  <span class="pag-pdf__vacio">
+                    Sin documento: en la tienda no sale el botón de descarga
+                  </span>
+                }
+
+                @if (!esView) {
+                  <div class="pag-pdf__botones">
+                    <!-- El <input type=file> va escondido dentro de la etiqueta,
+                         igual que el de la imagen -->
+                    <label class="btn btn-sm btn-outline-primary mb-0 pag-pdf__subir">
+                      <i class="fa fa-paperclip"></i>
+                      {{ hayPdf ? 'Cambiar documento' : 'Adjuntar PDF' }}
+                      <input type="file" accept="application/pdf,.pdf" hidden
+                             [disabled]="subiendoPdf"
+                             (change)="onPdfElegido($event)">
+                    </label>
+                  </div>
+
+                  <p class="campo-hint mb-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Sólo PDF, hasta 15 MB. Se guarda al guardar la página.
+                  </p>
+                }
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ================= DERECHA: EL TEXTO =================
+             En su propio panel, y el panel se puede expandir: una política
+             de datos son varias pantallas de texto y se escribe mejor sin
+             el resto del formulario alrededor. El botón de expandir es el
+             único que se deja; recargar, minimizar y cerrar no tienen
+             sentido dentro de un formulario. -->
+        <div class="col-12 col-xl-7 pag-col-texto">
+          <panel
+            title="Texto de la página"
+            headerClass="bg-gray-800"
+            icono="editar"
+            fondoGris="true"
+            panelClass="mb-0 pag-panel-texto"
+            [noButtonReload]="true"
+            [noButtonCollapse]="true"
+            [noButtonRemove]="true">
+
+            <app-campoNgxEditor
+              class="pag-editor"
+              [formControl]="ctrlTexto"
+              [placeholder]="'El texto de la página, con sus títulos y sus listas…'"
+              [cinta]="true"
+              [hoja]="true"
+              [cintaEnMovil]="false"
+              [soloLectura]="esView"
+              alto="22rem">
+            </app-campoNgxEditor>
+          </panel>
         </div>
 
       </div>

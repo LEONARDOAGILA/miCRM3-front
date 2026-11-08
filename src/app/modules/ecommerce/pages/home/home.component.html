@@ -1,80 +1,131 @@
 <!-- ============================================================
-     LA PORTADA DEL MÓDULO ECOMMERCE
+     PORTADA DE LA PÁGINA WEB
 
-     Una tarjeta por área de la página web, con lo que hay dentro. Las
-     que aún no están trasladadas salen igual, marcadas: esconderlas
-     daría la impresión de que la página web son cuatro cosas.
+     Misma estructura que la de Inventarios: cabecera con el nombre del
+     módulo y la vuelta al inicio, y debajo una tarjeta por pantalla, sólo
+     las que el perfil puede abrir (ver cargarModulosPermitidos en el .ts).
+
+     Lo que aquí se añade es lo que hay DENTRO de cada área, que es a lo que
+     se viene: «33 categorías, todas visibles».
      ============================================================ -->
+<div class="eco-home">
 
-<ol class="breadcrumb lista-breadcrumb">
-  <li class="breadcrumb-item active">Página web</li>
-</ol>
+  <div class="eco-home__fondo">
 
-<panel [title]="titulo"
-       [noButton]="false"
-       [noButtonCollapse]="true"
-       icono="globe">
+    <!-- ===================== CABECERA ===================== -->
+    <div class="eco-header">
+      <div class="eco-header__icono">
+        <i class="fa fa-globe" aria-hidden="true"></i>
+      </div>
 
-  <div header class="panel-acciones">
-    <button type="button" class="btn btn-sm btn-outline-light"
-            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
-      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
-    </button>
-  </div>
+      <div class="eco-header__texto">
+        <h1 class="eco-header__titulo">Menú Página web</h1>
+        <p class="eco-header__ayuda">
+          Los cuerpos de la tienda, el encabezado, el pie, las páginas y el catálogo
+        </p>
+      </div>
 
-  @if (error) {
-    <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      <span>
-        No se pudo leer el resumen, así que las tarjetas salen sin sus
-        cantidades. Las pantallas funcionan igual.
-      </span>
+      <!-- Volver a contar: lo que cambia no son las pantallas sino sus
+           cantidades, y quien acaba de tocar una quiere ver el número nuevo
+           sin recargar -->
+      <button type="button" class="btn btn-outline-secondary btn-sm eco-header__accion"
+              title="Volver a contar" [disabled]="cargando" (click)="cargar()">
+        <i class="fa fa-rotate fa-fw" [class.fa-spin]="cargando" aria-hidden="true"></i>
+        <span class="d-none d-sm-inline ms-1">Actualizar</span>
+      </button>
+
+      <!-- «Volver» es navegación, no un módulo: va en la cabecera y no
+           mezclado entre las tarjetas. -->
+      <a routerLink="/home" class="btn btn-outline-secondary btn-sm eco-header__accion">
+        <i class="fa fa-circle-left fa-fw me-1" aria-hidden="true"></i>
+        <span class="d-none d-sm-inline">Volver al inicio</span>
+        <span class="d-inline d-sm-none">Volver</span>
+      </a>
     </div>
-  }
 
-  <div class="eco-rejilla">
-    @for (area of areas; track area.clave) {
-      <div class="eco-tarjeta"
-           [class.eco-tarjeta--lista]="lista(area)"
-           [class.eco-tarjeta--pendiente]="!lista(area)"
-           [attr.role]="lista(area) ? 'button' : null"
-           [attr.tabindex]="lista(area) ? 0 : null"
-           (click)="abrir(area)"
-           (keydown.enter)="abrir(area)">
-
-        <span class="eco-tarjeta__icono">
-          <i class="fa-solid" [ngClass]="area.icono"></i>
+    <!-- Las pantallas funcionan igual sin las cuentas, así que esto avisa y
+         no corta: sería peor dejar la portada vacía por un número -->
+    @if (error) {
+      <div class="eco-aviso">
+        <i class="fa fa-triangle-exclamation" aria-hidden="true"></i>
+        <span>
+          No se pudo leer el resumen, así que las tarjetas salen sin sus
+          cantidades. Las pantallas se abren igual.
         </span>
-
-        <div class="eco-tarjeta__texto">
-          <span class="eco-tarjeta__titulo">
-            {{ area.titulo }}
-            @if (!lista(area)) {
-              <span class="chip chip-pendiente">Pendiente</span>
-            }
-          </span>
-
-          <span class="eco-tarjeta__descripcion">{{ area.descripcion }}</span>
-
-          <span class="eco-tarjeta__resumen">
-            @if (cargando) {
-              <i class="fa-solid fa-spinner fa-spin"></i>
-            } @else {
-              {{ resumen(area) }}
-            }
-          </span>
-        </div>
-
-        @if (lista(area)) {
-          <i class="fa-solid fa-chevron-right eco-tarjeta__flecha"></i>
-        }
       </div>
     }
-  </div>
 
-  <p class="campo-hint mt-3 mb-0">
-    <i class="fa-solid fa-circle-info"></i>
-    Las áreas marcadas como pendientes siguen administrándose en el CRM
-    anterior; sus cantidades son reales y se trasladan una a una.
-  </p>
-</panel>
+    <!-- ===================== PANTALLAS ===================== -->
+    <div class="row g-3">
+      @if (modulosPermitidos.length > 0) {
+        @for (modulo of modulosPermitidos; track modulo.clave) {
+          <div class="col-xl-4 col-md-6">
+            <!-- La que tiene pantalla es un ENLACE —se abre en otra pestaña,
+                 se copia la dirección, la rueda del ratón funciona—; la que
+                 no, una caja. El dentro es el mismo y se escribe una vez
+                 (#tarjeta), que si se escribe dos acaban siendo distintas. -->
+            @if (modulo.url) {
+              <a [routerLink]="['/' + modulo.url]" class="eco-card">
+                <ng-container [ngTemplateOutlet]="tarjeta"
+                              [ngTemplateOutletContext]="{ $implicit: modulo }"></ng-container>
+                <i class="fa fa-arrow-right eco-card__flecha" aria-hidden="true"></i>
+              </a>
+            } @else {
+              <div class="eco-card eco-card--pendiente">
+                <ng-container [ngTemplateOutlet]="tarjeta"
+                              [ngTemplateOutletContext]="{ $implicit: modulo }"></ng-container>
+              </div>
+            }
+          </div>
+        }
+      } @else {
+        <!-- Sin permisos quedaba una rejilla vacía sin explicación -->
+        <div class="col-12">
+          <div class="eco-vacio">
+            <i class="fa fa-lock" aria-hidden="true"></i>
+            <p>No tiene pantallas de la página web asignadas en su perfil</p>
+            <a routerLink="/home" class="btn btn-sm btn-outline-secondary">Volver al inicio</a>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (hayAlgunaAbrible) {
+      <p class="eco-nota">
+        <i class="fa fa-circle-info" aria-hidden="true"></i>
+        <span>
+          Las áreas marcadas como <b>pendientes</b> siguen administrándose en el
+          CRM anterior; sus cantidades son reales y se trasladan una a una.
+        </span>
+      </p>
+    }
+
+  </div>
+</div>
+
+<!-- El cuerpo de la tarjeta, que es igual lleve enlace o no -->
+<ng-template #tarjeta let-modulo>
+  <span class="eco-card__icono {{ modulo.color }}">
+    <i class="fa {{ modulo.icon }}" aria-hidden="true"></i>
+  </span>
+
+  <span class="eco-card__cuerpo">
+    <span class="eco-card__titulo">
+      {{ modulo.label }}
+      @if (!modulo.url) {
+        <span class="eco-chip">Pendiente</span>
+      }
+    </span>
+
+    <span class="eco-card__descripcion">{{ modulo.descripcion }}</span>
+
+    <!-- Lo que hay dentro: es el dato, así que se lee más que la descripción -->
+    <span class="eco-card__resumen">
+      @if (cargando) {
+        <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+      } @else {
+        {{ resumen(modulo) }}
+      }
+    </span>
+  </span>
+</ng-template>

@@ -1,0 +1,148 @@
+/* ============================================================
+   SELECTOR DE ICONOS DE LA TIENDA
+
+   El hermano de selectorIconos (el de Font Awesome) con dos diferencias: los
+   dibujos son SVG de la tienda y son ochenta, no dos mil, así que no hace
+   falta recortar la lista ni filtrar por estilo.
+
+   Los colores salen de las variables de Bootstrap que ya usa la plantilla,
+   así acompaña al tema y al modo oscuro sin reglas aparte.
+   ============================================================ */
+
+/* Alto fijo: el modal no puede crecer con lo que se busque, o al escribir
+   «a» saltaría a ocupar la pantalla entera y volvería a encogerse. */
+.selt-cuerpo {
+  max-height: min(62vh, 30rem);
+  overflow-y: auto;
+}
+
+.selt-aviso {
+  margin-bottom: .75rem;
+}
+
+.selt-barra {
+  margin-bottom: .75rem;
+}
+
+.selt-grupo__titulo {
+  display: flex;
+  align-items: center;
+
+  margin-bottom: .4rem;
+  padding-bottom: .25rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.selt-vacio {
+  margin: .5rem 0 0;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- La rejilla ----------
+   `auto-fill` y no un número de columnas: el modal se abre a tamaño grande en
+   un escritorio y estrecho en un portátil, y así caben los que quepan. */
+.selt-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: .35rem;
+}
+
+.selt-icono {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+
+  padding: .55rem .25rem;
+
+  border: 1px solid transparent;
+  border-radius: .375rem;
+
+  background: none;
+  color: inherit;
+  cursor: pointer;
+
+  transition: background-color .12s ease, border-color .12s ease;
+}
+
+.selt-icono:hover {
+  border-color: var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-secondary-bg, #f1f3f5);
+}
+
+/* El marcado, con el color del tema de la aplicación */
+.selt-icono.is-elegido {
+  border-color: var(--bs-app-theme, #00acac);
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+}
+
+.selt-icono__dibujo {
+  font-size: 1.35rem;
+}
+
+.selt-icono.is-elegido .selt-icono__dibujo {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Hay nombres que no caben («chevron-izquierda»): se cortan con puntos y el
+   entero queda en el title del botón. */
+.selt-icono__nombre {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: .625rem;
+  line-height: 1.2;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- Pie ---------- */
+.selt-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.selt-elegido {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.selt-elegido__dibujo {
+  font-size: 1.5rem;
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* El nombre tal cual se guarda, en monoespaciada: es texto para copiar */
+.selt-elegido__nombre {
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selt-elegido__nada {
+  font-size: .8125rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.selt-pie__botones {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  margin-left: auto;
+}

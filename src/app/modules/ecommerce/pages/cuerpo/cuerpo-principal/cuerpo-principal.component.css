@@ -1412,11 +1412,8 @@
   cursor: pointer;
 }
 
-/* Verde y no el azul de Bootstrap: aquí marcado significa «se ve en la
-   tienda», que es lo mismo que dice en verde la etiqueta de estado */
-.check-lista .form-check-input:checked {
-  background-color: var(--bs-success, #198754);
-  border-color: var(--bs-success, #198754);
-}
+/* Marcado se queda del color del tema (el verde azulado de la casa): lo pone
+   el propio tema sobre .form-check-input:checked y aquí no hay nada que
+   añadir, que es el mismo color del filtro «Activas» de al lado */
 
 .check-lista .form-check-input:disabled { opacity: .5; }

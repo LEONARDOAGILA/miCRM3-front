@@ -7,7 +7,8 @@
     "start": "ng serve",
     "build": "ng build --prod",
     "test": "ng test",
-    "iconos": "node scripts/generar-iconos-fa.js"
+    "iconos": "node scripts/generar-iconos-fa.js",
+    "iconos:tienda": "node scripts/copiar-iconos-tienda.js"
   },
   "private": true,
   "dependencies": {
