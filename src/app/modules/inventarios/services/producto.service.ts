@@ -85,6 +85,17 @@ export class ProductoService {
                            activo === undefined ? {} : { activo });
   }
 
+  /**
+   *   ******   PUBLICAR / ESCONDER EN LA TIENDA WEB   ******
+   *
+   * NO toca `activo`: el producto sigue vendiéndose en el mostrador aunque no
+   * salga en internet. Sin el segundo argumento, alterna.
+   */
+  enPaginaWebProducto(id: any, enPaginaweb?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'enPaginaWebProducto/' + id,
+                           enPaginaweb === undefined ? {} : { en_paginaweb: enPaginaweb });
+  }
+
   //   ******   EDITAR   ******  //
   editProducto(id: any, data: any): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'editProducto/' + id, data);

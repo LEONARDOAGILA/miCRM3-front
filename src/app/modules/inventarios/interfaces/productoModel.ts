@@ -48,6 +48,20 @@ export interface ProductoModel {
   costo: number;
   precio: number;
   /**
+   * LOS TRES QUE ENSEÑA LA TIENDA en la tarjeta del producto. Vacío quiere
+   * decir «no tiene», no cero:
+   *
+   *   · sin precio_anterior no se tacha nada ni sale el cartel del descuento;
+   *   · sin precio_tarjeta se enseña el precio normal;
+   *   · sin cuota_credito_directo no sale la celda del crédito directo.
+   *
+   * El PORCENTAJE del descuento no está: lo calcula la tienda de los dos
+   * precios, para que el cartel y los importes no cuenten cosas distintas.
+   */
+  precio_anterior?: number | null;
+  precio_tarjeta?: number | null;
+  cuota_credito_directo?: number | null;
+  /**
    * Si el producto grava impuesto. Sólo eso: el PORCENTAJE no vive en la
    * ficha, saldrá de las tablas de impuestos (antes era `iva_porcentaje`,
    * un número escrito a mano producto por producto).
@@ -65,6 +79,19 @@ export interface ProductoModel {
   garantia_meses: number;
 
   activo: boolean;
+
+  /**
+   * SI EL PRODUCTO SE PUBLICA EN LA TIENDA WEB. Aparte de `activo` a
+   * propósito, porque son dos preguntas distintas:
+   *
+   *   · `activo`        ¿existe y se puede vender? (local, caja, stock)
+   *   · `en_paginaweb`  ¿sale en internet?
+   *
+   * Antes sólo había `activo`, y esconder de la web algo que se seguía
+   * vendiendo en el mostrador era imposible: apagarlo lo quitaba de los dos
+   * sitios. Nace encendido, igual que `activo`.
+   */
+  en_paginaweb: boolean;
 
   // ---------- Galería ----------
   /** El fichero de la imagen principal; sirve para saber si hay foto */

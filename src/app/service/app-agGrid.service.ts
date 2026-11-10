@@ -205,7 +205,22 @@ export class AppAgGridService {
    * Sin permiso de modificar sale `disabled`: se sigue viendo el dato, que es
    * para lo que servía esta columna antes, pero no se puede tocar.
    */
-  casillaActivo(params: any, op: { puede: boolean; enVuelo: Set<number>; que: string }): string {
+  casillaActivo(params: any, op: {
+    puede: boolean;
+    enVuelo: Set<number>;
+    que: string;
+    /**
+     * El `data-accion` de la casilla, que es por donde el `onCellClicked` de
+     * la pantalla la reconoce. Por defecto `activo`, que es el de siempre.
+     *
+     * Hace falta cuando una misma rejilla tiene DOS columnas de casilla: en
+     * productos están «Activo» —se puede vender— y «Web» —sale en internet—,
+     * y con el mismo nombre un clic en una movería la otra.
+     */
+    accion?: string;
+    /** Los verbos del título, cuando «Activar / Desactivar» no es lo que pasa. */
+    textos?: { marcar: string; desmarcar: string; si: string; no: string };
+  }): string {
     if (op.enVuelo.has(params.data?.id)) {
       return `<div class="celda-activo">
                 <span class="spinner-border spinner-border-sm text-secondary"
@@ -216,14 +231,16 @@ export class AppAgGridService {
     const marcada = params.value === true;
     const que     = op.que;
     const Que     = que.charAt(0).toUpperCase() + que.slice(1);
-    const titulo  = op.puede ? `${marcada ? 'Desactivar' : 'Activar'} este ${que}`
-                             : `${Que} ${marcada ? 'activo' : 'inactivo'}`;
+    const t       = op.textos ?? { marcar: 'Activar', desmarcar: 'Desactivar',
+                                   si: 'activo', no: 'inactivo' };
+    const titulo  = op.puede ? `${marcada ? t.desmarcar : t.marcar} este ${que}`
+                             : `${Que} ${marcada ? t.si : t.no}`;
 
     return `<div class="celda-activo" title="${titulo}">
               <input type="checkbox"
                      class="form-check-input${op.puede ? ' celda-activo__check' : ''}"
                      ${marcada ? 'checked' : ''}
-                     ${op.puede ? 'data-accion="activo"' : 'disabled'}
+                     ${op.puede ? `data-accion="${op.accion ?? 'activo'}"` : 'disabled'}
                      aria-label="${titulo}" />
             </div>`;
   }

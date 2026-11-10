@@ -91,6 +91,24 @@ export const ECOMMERCE_ROUTES: Routes = [
         resolve: { access: AccessResolver },
       },
 
+      // LA TIENDA (/shop). Es la MISMA pantalla que «Cuerpo», abierta ya en la
+      // página de la tienda en vez de en la de entrada.
+      //
+      // Tiene ruta propia y no `editInicio?ruta=shop` porque el menú pinta sus
+      // enlaces con `[routerLink]="menu.url"` y un string con «?» no se parte
+      // en dirección y parámetros: se escapa entero y la ruta no existe.
+      //
+      // Por tener ruta propia necesita su programa (EDITTIENDA) en
+      // `seguridad.menus` y su fila en `accesos`, o el guard la manda al 404
+      // aunque el componente esté perfecto.
+      {
+        path: 'editTienda',
+        component: CuerpoPrincipalComponent,
+        data: { ruta: 'shop' },
+        canActivate: [AuthGuard],
+        resolve: { access: AccessResolver },
+      },
+
       // La misma portada, vista por fuera: dibujada a escala, para arrastrar
       // las secciones y estirarlas
       {

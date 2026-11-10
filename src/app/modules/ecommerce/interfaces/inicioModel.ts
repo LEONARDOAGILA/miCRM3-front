@@ -593,13 +593,14 @@ export const ALTOS_SECCION: { valor: AltoSeccion; texto: string; escala: number 
  *   promocion   las tarjetas grandes: las categorías marcadas «En promoción»
  *   destacadas  los círculos de arriba: las marcadas «Destacada»
  *   marcas      «Nuestras marcas»: las encendidas para la tienda, en su orden
+ *   catalogo    todos los productos publicados, con sus filtros: es /shop
  *   pendiente   todavía no tiene fuente, y `falta` dice cuál
  *
  * Lo decide el servidor —la tienda, la portada pública y el CRM tienen que
  * estar de acuerdo en esto— y la pantalla sólo lo enseña.
  */
 export interface FuenteSeccion {
-  tipo: 'galeria' | 'promocion' | 'destacadas' | 'marcas' | 'productos' | 'pendiente';
+  tipo: 'galeria' | 'promocion' | 'destacadas' | 'marcas' | 'productos' | 'catalogo' | 'pendiente';
   /** Con `galeria`: su clave. */
   galeria?: string;
   /** Con `promocion`, `destacadas` y `productos`: la pantalla donde se llena. */
@@ -675,6 +676,18 @@ export const VISTA_SECCIONES: Record<string, VistaSeccion> = {
     icono: 'fa-copyright',
     descripcion: 'Los logos de las marcas, en el orden de Marcas de la tienda.',
     rotulo: 'titulo',
+    rotuloDeFabrica: null,
+  },
+  // El catálogo: es lo que convierte /shop en una página como las demás. En una
+  // página de categoría o de marca sale acotado a lo suyo; en /shop, entero.
+  //
+  // NO LLEVA RÓTULO DE FÁBRICA: la página ya tiene su título («Nuestros
+  // productos») y encima del catálogo no se repite. Cuando alguien filtra, el
+  // propio catálogo saca su cabecera con la categoría y la miga de pan.
+  catalogo: {
+    icono: 'fa-store',
+    descripcion: 'Todos los productos publicados en la web, con sus filtros, su buscador y su paginación.',
+    rotulo: 'titulo_subtitulo',
     rotuloDeFabrica: null,
   },
   // Los MISMOS carteles que «Categorías en promoción», con marcas. Son dos

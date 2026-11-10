@@ -687,6 +687,80 @@
                           </div>
                         </div>
 
+                        <!-- ===== LO QUE ENSEÑA LA TIENDA =====
+                             Los tres van juntos y separados del precio de
+                             arriba a propósito: ése es el del sistema —con él
+                             se factura y se saca el margen— y éstos son de
+                             escaparate. Vacíos no es cero: es «este producto
+                             no tiene eso», y entonces la tarjeta no lo pinta. -->
+                        <div class="col-12">
+                          <hr class="prod-separador">
+                          <span class="prod-grupo">
+                            <i class="fa-solid fa-store"></i> Lo que enseña la tienda
+                          </span>
+                        </div>
+
+                        <!-- Precio anterior -->
+                        <div class="col-6 col-md-4 col-xxl-6">
+                          <app-campoTexto
+                            [control]="form.controls['precio_anterior']"
+                            label="PRECIO ANTERIOR"
+                            placeholder="Vacío: sin oferta"
+                            type="number"
+                            [maxLength]="14"
+                            icono="fa-dollar-sign">
+                          </app-campoTexto>
+                          <!-- El texto va dentro de UN <span>: `.campo-hint` es
+                               flex, así que un <b> suelto partiría la frase en
+                               columnas (pasó al escribirlo sin él) -->
+                          <p class="campo-hint mb-0">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>
+                              El que sale <b>tachado</b>. Con él, la tienda calcula
+                              sola el «-30 %» de la esquina.
+                            </span>
+                          </p>
+                        </div>
+
+                        <!-- Precio con tarjeta de crédito -->
+                        <div class="col-6 col-md-4 col-xxl-6">
+                          <app-campoTexto
+                            [control]="form.controls['precio_tarjeta']"
+                            label="PRECIO TARJETA"
+                            placeholder="Vacío: el mismo precio"
+                            type="number"
+                            [maxLength]="14"
+                            icono="fa-credit-card">
+                          </app-campoTexto>
+                          <p class="campo-hint mb-0">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>
+                              Lo que cuesta pagando con <b>tarjeta de crédito</b>.
+                              Sólo si es distinto del precio de arriba.
+                            </span>
+                          </p>
+                        </div>
+
+                        <!-- Cuota del crédito directo -->
+                        <div class="col-6 col-md-4 col-xxl-6">
+                          <app-campoTexto
+                            [control]="form.controls['cuota_credito_directo']"
+                            label="CUOTA CRÉDITO"
+                            placeholder="Vacío: no se ofrece"
+                            type="number"
+                            [maxLength]="14"
+                            icono="fa-dollar-sign">
+                          </app-campoTexto>
+                          <p class="campo-hint mb-0">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>
+                              La cuota del <b>crédito directo</b>, lo que se lee
+                              como «Cuotas desde». No se calcula del precio: el
+                              plazo lo pone el negocio.
+                            </span>
+                          </p>
+                        </div>
+
                       </div>
                     </div>
                   </ng-container>
@@ -755,6 +829,43 @@
             [id]="'ck-producto-activo'">
           </app-checkbox>
         </div>
+
+        <!-- ===== ¿SALE EN LA TIENDA WEB? =====
+             Va PEGADA a Estado y con la misma forma porque son la misma clase
+             de pregunta, pero son dos preguntas distintas:
+
+               · Estado        ¿se puede vender? (mostrador, caja, stock)
+               · Página web    ¿sale en internet?
+
+             Antes sólo existía Estado, y esconder de la web un producto que
+             se seguía vendiendo en el local era imposible: apagarlo lo
+             quitaba de los dos sitios a la vez. -->
+        <div class="estado-producto estado-producto--web mb-3" [class.is-on]="ctrlEnPaginaWeb.value">
+          <span class="estado-producto__icon"><i class="fa-solid fa-globe"></i></span>
+          <div class="estado-producto__text">
+            <span class="estado-producto__label">Página web</span>
+            <span class="estado-producto__hint">
+              {{ ctrlEnPaginaWeb.value ? 'Se ve en la tienda' : 'Sólo en el local' }}
+            </span>
+          </div>
+          <app-checkbox class="estado-producto__switch palanca"
+            [control]="ctrlEnPaginaWeb"
+            [label]="ctrlEnPaginaWeb.value ? 'Publicado' : 'Sin publicar'"
+            [id]="'ck-producto-en-paginaweb'">
+          </app-checkbox>
+        </div>
+
+        <!-- Apagado, el aviso: es un cambio que no se ve desde el CRM y
+             conviene decir dónde deja de aparecer el producto -->
+        @if (!ctrlEnPaginaWeb.value) {
+        <p class="campo-hint prod-aviso-web mb-3">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>
+            No saldrá en el catálogo, ni en el buscador, ni en los escaparates,
+            y su ficha dejará de abrirse. <b>Se sigue vendiendo en el local.</b>
+          </span>
+        </p>
+        }
 
         <!-- Los otros tres interruptores de la ficha, debajo de Estado.
              Estaban repartidos por los paneles de la columna de datos

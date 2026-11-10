@@ -95,9 +95,10 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
     codigo: 'identificacion', nombre: 'identificacion', codigo_barras: 'identificacion',
     codigo2: 'identificacion', codigo3: 'identificacion', codigo4: 'identificacion',
     modelo: 'identificacion', marca_id: 'identificacion', categoria_id: 'identificacion',
-    activo: 'identificacion', impuesto: 'identificacion',
+    activo: 'identificacion', en_paginaweb: 'identificacion', impuesto: 'identificacion',
     maneja_stock: 'identificacion', maneja_serie: 'identificacion',
     unidad: 'precio', costo: 'precio', precio: 'precio', garantia_meses: 'precio',
+    precio_anterior: 'precio', precio_tarjeta: 'precio', cuota_credito_directo: 'precio',
     stock_minimo: 'precio', stock_maximo: 'precio',
     descripcion: 'descripcion',
   };
@@ -287,6 +288,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
   }
   get esNuevo(): boolean { return this.accion === 'add' || this.accion === 'clon'; }
   get ctrlActivo(): FormControl { return this.form.controls['activo'] as FormControl; }
+  get ctrlEnPaginaWeb(): FormControl { return this.form.controls['en_paginaweb'] as FormControl; }
   /** El editor se ata con [formControl], que es lo que entiende: es un
    *  ControlValueAccessor, no tiene @Input() control. */
   get ctrlDescripcion(): FormControl { return this.form.controls['descripcion'] as FormControl; }
@@ -404,6 +406,12 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       unidad:         [{ value: 'UNIDAD', disabled: this.isdisabled }],
       costo:          [{ value: 0, disabled: this.isdisabled }, [Validators.min(0)]],
       precio:         [{ value: 0, disabled: this.isdisabled }, [Validators.min(0)]],
+      // LOS TRES DE LA TIENDA. Arrancan VACÍOS y no en 0: aquí vacío significa
+      // «este producto no tiene eso», y un 0 en la tarjeta se leería como
+      // gratis. El servidor rechaza el 0 por lo mismo.
+      precio_anterior:       [{ value: null as number | null, disabled: this.isdisabled }, [Validators.min(0)]],
+      precio_tarjeta:        [{ value: null as number | null, disabled: this.isdisabled }, [Validators.min(0)]],
+      cuota_credito_directo: [{ value: null as number | null, disabled: this.isdisabled }, [Validators.min(0)]],
       // Sólo SI grava; el porcentaje vendrá de las tablas de impuestos
       impuesto:       [{ value: true, disabled: this.isdisabled }],
 
@@ -419,6 +427,11 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
       // Despacho
 
       activo:         [{ value: true, disabled: this.isdisabled }],
+
+      // NACE ENCENDIDO, como `activo`: el producto nuevo se publica, y
+      // esconderlo de la web es la excepción que se marca a mano. Al revés
+      // habría que acordarse en cada producto, y se olvidaría.
+      en_paginaweb:   [{ value: true, disabled: this.isdisabled }],
     });
   }
 
@@ -1283,6 +1296,11 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         unidad:         m.unidad ?? 'UNIDAD',
         costo:          Number(m.costo ?? 0),
         precio:         Number(m.precio ?? 0),
+        // Los de la tienda se copian también al CLONAR: son del producto, no
+        // de su identidad, y una copia se vende igual que el original
+        precio_anterior:       m.precio_anterior != null ? Number(m.precio_anterior) : null,
+        precio_tarjeta:        m.precio_tarjeta != null ? Number(m.precio_tarjeta) : null,
+        cuota_credito_directo: m.cuota_credito_directo != null ? Number(m.cuota_credito_directo) : null,
         impuesto:       m.impuesto !== false,
         maneja_stock:   m.maneja_stock !== false,
         stock_minimo:   Number(m.stock_minimo ?? 0),
@@ -1290,6 +1308,7 @@ export class SaveProductoComponent implements OnInit, OnDestroy {
         maneja_serie:   m.maneja_serie === true,
         garantia_meses: Number(m.garantia_meses ?? 0),
         activo:         m.activo !== false,
+        en_paginaweb:   m.en_paginaweb !== false,
       });
 
       // El nombre de la marca, al lado de su id: lo trae el propio producto

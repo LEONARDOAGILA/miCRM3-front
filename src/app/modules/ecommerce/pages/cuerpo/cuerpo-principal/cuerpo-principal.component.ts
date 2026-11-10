@@ -176,6 +176,12 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
    * SE MANTIENE EL ELEGIDO si sigue estando: guardar un cuerpo o cambiar de
    * principal recarga la lista, y saltar al principal cada vez sacaría de la
    * página que se estaba montando.
+   *
+   * LA RUTA PUEDE PEDIR UNA PÁGINA CONCRETA. Es lo que hace el menú «Tienda»:
+   * misma pantalla, abierta en /shop en vez de en la de entrada. Lo dice el
+   * `data: { ruta: 'shop' }` de la ruta —no un parámetro en la dirección,
+   * porque el menú no sabe pintar un «?»— y sólo manda la primera vez; a
+   * partir de ahí decide quien esté mirando.
    */
   async cargarCuerpos(): Promise<void> {
     this.cargandoCuerpos = true;
@@ -183,7 +189,12 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
       const res: any = await firstValueFrom(this._cuerpoService.allCuerpos());
       this.cuerpos = res?.data ?? [];
 
-      if (!this.cuerpos.some(c => c.id === this.cuerpoElegido)) {
+      const pedida = String(this.activeRoute.snapshot.data?.['ruta'] ?? '').trim().toLowerCase();
+      const porRuta = pedida ? this.cuerpos.find(c => (c.ruta ?? '').toLowerCase() === pedida) : undefined;
+
+      if (porRuta && this.cuerpoElegido === null) {
+        this.cuerpoElegido = porRuta.id;
+      } else if (!this.cuerpos.some(c => c.id === this.cuerpoElegido)) {
         this.cuerpoElegido = (this.cuerpos.find(c => c.principal) ?? this.cuerpos[0])?.id ?? null;
       }
     } catch (e: any) {
@@ -686,6 +697,24 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
                              ?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
   }
 
+  /**
+   * El botón «Recargar» del panel.
+   *
+   * LOS DOS LADOS: la lista de cuerpos y las secciones del elegido, que es lo
+   * mismo que se pide al abrir la pantalla. Recargando sólo las secciones, la
+   * columna de la izquierda se quedaría con los cuerpos de hace un rato.
+   *
+   * HASTA EL 09/11/2026 ESTO ERA UN BOTÓN PUESTO A MANO al lado del de la
+   * papelera, y el del panel —que se pinta siempre y avisa con
+   * `(panelReloaded)`— no estaba enchufado a nada: dos botones de recargar,
+   * uno de ellos muerto.
+   */
+  async recargar(): Promise<void> {
+    if (this.cargando || this.cargandoCuerpos) { return; }
+    await this.cargarCuerpos();
+    await this.cargar();
+  }
+
   /** Las secciones del cuerpo elegido. */
   async cargar(): Promise<void> {
     this.cargando = true;
@@ -975,8 +1004,27 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
     return (this.formularios[s.id]?.value?.[campo] ?? '').toString().trim();
   }
 
-  /** Si esta sección pinta tarjetas con botones: sólo las de productos. */
+  /**
+   * Si esta sección pinta TARJETAS DE PRODUCTO, y entonces se le pueden elegir
+   * sus colores: los escaparates y el catálogo.
+   *
+   * El catálogo entró el 09/11/2026, cuando la tienda pasó a usar una sola
+   * tarjeta en todas sus pantallas: hasta entonces /shop tenía otra más pobre y
+   * estos colores no habrían pintado nada.
+   */
   conBotones(s: SeccionInicioModel): boolean {
+    return s.fuente.tipo === 'productos' || s.fuente.tipo === 'catalogo';
+  }
+
+  /**
+   * Si es UN ESCAPARATE, de los que se arman a mano.
+   *
+   * Se pregunta aparte de `conBotones` para lo que es de la FILA —cómo se
+   * mueve, cuántas salen antes del botón—: el catálogo lleva las mismas
+   * tarjetas pero no es una fila, trae sus propios filtros y su propio «cuántos
+   * por página», así que esas dos perillas ahí no mandarían nada.
+   */
+  esEscaparate(s: SeccionInicioModel): boolean {
     return s.fuente.tipo === 'productos';
   }
 
@@ -1376,6 +1424,13 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
       if (!s.cuantas) { return 'Sin productos todavía'; }
       return s.cuantas + (s.cuantas === 1 ? ' producto' : ' productos');
     }
+    // El catálogo no se llena a mano: son todos los publicados. Por eso dice
+    // «en la web» y no un número a secas: el número no se elige aquí, y
+    // quien lo lea tiene que saber de dónde sale.
+    if (s.fuente.tipo === 'catalogo') {
+      if (!s.cuantas) { return 'Ningún producto en la web'; }
+      return s.cuantas + (s.cuantas === 1 ? ' producto en la web' : ' productos en la web');
+    }
     return 'Falta ' + (s.fuente.falta ?? 'su fuente');
   }
 
@@ -1417,6 +1472,19 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
         regla: 'Salen aquí las marcas encendidas para la tienda, en su orden, con su '
              + 'imagen programada o, si no tienen, con el logo del catálogo. La tienda '
              + 'sólo enseña las que tienen una de las dos.',
+      };
+    }
+    // El catálogo no se llena: sale solo. Aun así se manda a Productos, que es
+    // donde se decide qué entra —la palanca «Página web» de cada ficha—, y
+    // decirlo evita la pregunta de «¿y esto dónde se arma?».
+    if (s.fuente.tipo === 'catalogo') {
+      return {
+        ruta: '/inventarios/' + (s.fuente.pantalla ?? 'allProductos'),
+        pantalla: 'Productos',
+        regla: 'Esta sección NO se arma a mano: salen todos los productos activos que '
+             + 'tengan encendida su palanca «Página web», con sus filtros, su buscador y '
+             + 'su paginación. Lo que aquí se decide es dónde va en la página, qué se lee '
+             + 'encima y cómo se ven sus tarjetas.',
       };
     }
     return null;
@@ -1669,7 +1737,7 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
         // no enseña nadie
         por_pagina:           this.esPaginadaLa(s) ? enteroDe(v.por_pagina) : null,
         segundos:             this.tieneGaleria(s) ? enteroDe(v.segundos)
-                            : this.conBotones(s)   ? (v.mueve_sola ? (enteroDe(v.segundos) ?? 5) : null)
+                            : this.esEscaparate(s) ? (v.mueve_sola ? (enteroDe(v.segundos) ?? 5) : null)
                             : null,
         imagen_alt:           this.conBotones(s) ? limpio(v.imagen_alt)    : null,
         imagen_enlace:        this.conBotones(s) ? limpio(v.imagen_enlace) : null,

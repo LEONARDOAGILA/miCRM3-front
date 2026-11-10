@@ -133,6 +133,35 @@
   background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .15);
 }
 
+/* ---------- La misma tarjeta, para la tienda web ----------
+   Verde es «se puede vender»; esto es otra cosa —«sale en internet»— y
+   lleva el azul del tema para que no se lean como la misma palanca.
+
+   VA DESPUÉS de las reglas de arriba a propósito: tiene la misma
+   especificidad que ellas (dos y tres clases), así que lo que decide es el
+   orden en el fichero. Movida arriba, el verde volvería a ganar. */
+.estado-producto--web.is-on {
+  border-left-color: var(--bs-primary, #0d6efd);
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .06);
+}
+
+.estado-producto--web.is-on .estado-producto__icon {
+  color: var(--bs-primary, #0d6efd);
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .15);
+}
+
+/* El aviso de cuando está apagada. No es la ayuda de un campo, así que no
+   lleva el margen negativo de `.campo-hint` —ése existe para meterse en el
+   hueco que cada campo reserva para su mensaje de validación, y aquí no hay
+   ningún campo encima.
+
+   LLEVA LAS DOS CLASES en el selector para ganar por especificidad, no por
+   orden: `.campo-hint` declara el margen con el atajo `margin` y está más
+   abajo en el fichero, así que un `.prod-aviso-web` a secas perdería. */
+.campo-hint.prod-aviso-web {
+  margin-top: 0;
+}
+
 .estado-producto__text {
   display: flex;
   flex-direction: column;
@@ -913,4 +942,30 @@
   padding: 0 .5rem;
   font-size: .8125rem;
   color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ---------- El grupo de «Lo que enseña la tienda» ----------
+   Una raya y un rótulo dentro del mismo panel: los tres precios de abajo son
+   de escaparate, y el de arriba es con el que se factura. Separarlos en otro
+   panel los habría alejado de su precio, que es con el que se comparan. */
+.prod-separador {
+  margin: .25rem 0 .75rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  opacity: 1;
+}
+
+.prod-grupo {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.prod-grupo i {
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
 }

@@ -19,6 +19,7 @@
        [noButton]="false"
        [noButtonCollapse]="true"
        [closeRoute]="'/ecommerce/home'"
+       (panelReloaded)="recargar()"
        icono="layer-group"
        class="flex-1 d-flex flex-column overflow-hidden"
        bodyClass="p-0 flex-1 overflow-hidden"
@@ -34,10 +35,6 @@
     <button type="button" class="btn btn-sm btn-outline-light"
             title="Papelera de cuerpos" (click)="abrirPapelera()">
       <i class="fa fa-trash-can"></i>
-    </button>
-    <button type="button" class="btn btn-sm btn-outline-light"
-            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
-      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
     </button>
   </div>
 
@@ -426,6 +423,7 @@
                         @case ('destacadas') { <i class="fa-solid fa-star"></i> }
                         @case ('marcas')     { <i class="fa-solid fa-award"></i> }
                         @case ('productos')  { <i class="fa-solid fa-basket-shopping"></i> }
+                        @case ('catalogo')   { <i class="fa-solid fa-store"></i> }
                         @default             { <i class="fa-solid fa-hammer"></i> }
                       }
                       {{ resumen(s) }}
@@ -625,9 +623,11 @@
                 }
 
                 <!-- ---------- El color de los botones de la tarjeta ----------
-                     Sólo las secciones de productos: son las únicas que pintan
-                     tarjetas con botones. Se elige el FONDO; la letra y el
-                     icono los calcula la tienda para que se lean encima. -->
+                     Las secciones que pintan tarjetas de producto: los
+                     escaparates y el catálogo (desde el 09/11/2026 la tienda
+                     usa UNA sola tarjeta en todas sus pantallas). Se elige el
+                     FONDO; la letra y el icono los calcula la tienda para que
+                     se lean encima. -->
                 @if (conBotones(s)) {
                   <div class="col-12">
                     <label class="seccion-rotulo">EL COLOR DE LOS BOTONES</label>
@@ -831,7 +831,7 @@
                   <!-- ---------- Cuántas antes del botón ----------
                        Sólo la paginada: las otras cuatro son una fila, y en una
                        fila «cuántas salen» lo decide el ancho de la pantalla. -->
-                  @if (conBotones(s) && esPaginadaLa(s)) {
+                  @if (esEscaparate(s) && esPaginadaLa(s)) {
                     <div class="col-12">
                       <label class="seccion-rotulo" [attr.for]="'por-pagina-' + s.id">
                         CUÁNTAS SALEN ANTES DEL BOTÓN
@@ -883,7 +883,7 @@
                        apagarla sin perder el número deja volver atrás.
 
                        La paginada no se mueve: se baja. -->
-                  @if (conBotones(s) && !esPaginadaLa(s)) {
+                  @if (esEscaparate(s) && !esPaginadaLa(s)) {
                     <div class="col-12">
                       <label class="seccion-rotulo">CÓMO SE MUEVE LA FILA</label>
 

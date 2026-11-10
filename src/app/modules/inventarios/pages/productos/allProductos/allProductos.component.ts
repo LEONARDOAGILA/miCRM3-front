@@ -393,6 +393,19 @@ export class AllProductosComponent implements OnInit, OnDestroy {
         cellRenderer: (params: any) => this.casillaActivo(params),
       },
       {
+        // PULSABLE como la de al lado, y pegada a ella porque se leen juntas:
+        // «Activo» es si se puede vender y «Web» si sale en internet. Son dos
+        // cosas distintas —un producto se vende en el mostrador y no se
+        // publica—, y antes no había manera de decirlo.
+        headerName: 'Web',
+        field: 'en_paginaweb',
+        headerTooltip: 'Si el producto sale en la tienda web. Apagado se sigue vendiendo en el local',
+        cellStyle: { textAlign: 'center' },
+        minWidth: 70,
+        maxWidth: 70,
+        cellRenderer: (params: any) => this.casillaWeb(params),
+      },
+      {
         // La imagen principal de la galería. El hueco gris mide lo mismo que
         // la foto: así la columna no baila entre filas con y sin imagen.
         headerName: 'Foto',
@@ -690,6 +703,26 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Los ids que se están guardando en la columna de la web.
+   *
+   * ES UN CONJUNTO APARTE del de «Activo» a propósito: con uno solo, pulsar
+   * la web de una fila pondría también su casilla de Activo a dar vueltas.
+   */
+  private readonly webEnVuelo = new Set<number>();
+
+  private casillaWeb(params: any): string {
+    return this._appAgGridService.casillaActivo(params, {
+      puede: this.accesoModel?.editar === true,
+      enVuelo: this.webEnVuelo,
+      que: 'producto',
+      // Otro `data-accion`: con el mismo, un clic aquí movería «Activo»
+      accion: 'en_paginaweb',
+      textos: { marcar: 'Publicar en la web', desmarcar: 'Quitar de la web',
+                si: 'publicado en la web', no: 'fuera de la web' },
+    });
+  }
+
   cambiarActivo(fila: ProductoModel | null, nodo?: IRowNode | null): void {
     if (!fila) { return; }
     if (this._seguridadService.isexpired()) { return; }
@@ -708,12 +741,38 @@ export class AllProductosComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Publicar o quitar de la tienda web desde la casilla, sin tocar «Activo».
+   *
+   * Mismo mecanismo que `cambiarActivo` —el servidor manda y la celda se
+   * repinta con lo que contesta—, sólo que escribiendo la otra columna.
+   */
+  cambiarEnPaginaWeb(fila: ProductoModel | null, nodo?: IRowNode | null): void {
+    if (!fila) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    this._appAgGridService.alternarActivo({
+      gridApi: this.gridApi,
+      filas: this.productoModel,
+      fila, nodo,
+      campo: 'en_paginaweb',
+      enVuelo: this.webEnVuelo,
+      puede: this.accesoModel?.editar === true,
+      que: 'producto',
+      llamar: (id, enWeb) => this._productoService.enPaginaWebProducto(id, enWeb),
+      nombre: (f: any) => f.nombre,
+      hasta: this.unsubscribe$,
+    });
+  }
+
   onCellClicked(e: CellClickedEvent): void {
     this.selectedRow = e.data;
 
     const origen = e.event?.target as HTMLElement | null;
     if (origen?.closest('[data-accion="activo"]')) {
       this.cambiarActivo(e.data, e.node);
+    } else if (origen?.closest('[data-accion="en_paginaweb"]')) {
+      this.cambiarEnPaginaWeb(e.data, e.node);
     }
   }
 
