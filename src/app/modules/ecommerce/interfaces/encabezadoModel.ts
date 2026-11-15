@@ -20,20 +20,10 @@ export interface BarraSuperior {
   boton_nueva_pestana?: boolean;
 }
 
-/** El aviso de crédito directo, a la derecha de la barra roja del menú. */
-export interface AvisoCredito {
-  activo: boolean;
-  texto?: string | null;
-  boton_texto?: string | null;
-  boton_enlace?: string | null;
-  boton_nueva_pestana?: boolean;
-}
-
 export interface ConfigEncabezado {
   barra_superior: BarraSuperior;
   /** Las que van rotando dentro del buscador. Entre 1 y 5. */
   buscador_frases: string[];
-  credito: AvisoCredito;
 
   /**
    * EL COLOR DE TODA LA TIENDA, no sólo del encabezado.
@@ -49,6 +39,36 @@ export interface ConfigEncabezado {
    * la tienda a partir de éste (`tonosDelColor`), no se guardan.
    */
   color_principal?: string | null;
+
+  /**
+   * EL FONDO Y LA LETRA DE LOS DESPLEGABLES de la barra.
+   *
+   * Los tres se pintan igual —el de categorías, el de marcas y los que cuelgan
+   * de un enlace del menú—, así que son dos colores y no seis.
+   *
+   * null = blanco con la letra de siempre. Los dos tonos de al lado —el del
+   * mouse encima y el del borde— los calcula la tienda a partir del fondo, como
+   * con el color principal: guardarlos sería acertar cuatro colores que van
+   * juntos, y es donde se acaba viendo un hover que no pega.
+   */
+  desplegable_fondo?: string | null;
+  desplegable_texto?: string | null;
+
+  /**
+   * EL FONDO Y LA LETRA DE LAS DOS FRANJAS DEL ENCABEZADO: la de arriba —la
+   * del aviso— y la del logo con el buscador.
+   *
+   * Son dos franjas distintas porque se usan para cosas distintas: la de
+   * arriba es una cinta de promoción, que es donde apetece un color fuerte, y
+   * la del logo es la que tiene que dejar leer el buscador.
+   *
+   * null = los blancos de siempre. LA BARRA ROJA NO ESTÁ AQUÍ: ésa va del
+   * color de la tienda, junto con los botones y el pie.
+   */
+  franja_fondo?: string | null;
+  franja_texto?: string | null;
+  encabezado_fondo?: string | null;
+  encabezado_texto?: string | null;
 }
 
 /** Un enlace del menú. Los principales traen sus `hijos`; los hijos, no. */
@@ -62,6 +82,17 @@ export interface EnlaceEncabezadoModel {
   enlace?: string | null;
   icono?: string | null;
   nueva_pestana: boolean;
+  /**
+   * Sale como píldora blanca al final de la barra roja, separado del resto.
+   *
+   * SÓLO LOS PRINCIPALES SIN DESPLEGABLE: dentro de un desplegable no hay
+   * barra donde ponerla, y uno que abre desplegable no lleva a ningún sitio.
+   * Lo apaga la base en los dos casos, no haga falta acordarse aquí.
+   *
+   * Sustituye al «aviso de crédito» que el encabezado tenía aparte hasta el
+   * 13/11/2026: era un segundo sitio para poner un enlace con otro nombre.
+   */
+  destacado: boolean;
   orden: number;
   activo: boolean;
   hijos?: EnlaceEncabezadoModel[];
@@ -70,6 +101,18 @@ export interface EnlaceEncabezadoModel {
 export interface EncabezadoModel {
   config: ConfigEncabezado;
   enlaces: EnlaceEncabezadoModel[];
+  /**
+   * EL LOGO DE LA TIENDA: el fichero, tal como está guardado.
+   *
+   * VIVE EN SU COLUMNA Y NO EN EL `config`, y por eso se sube por su propia
+   * puerta: guardar la pantalla reescribe el `config` entero, así que un logo
+   * metido ahí se borraría al cambiar cualquier otra cosa.
+   *
+   * null = el que la tienda trae dibujado.
+   */
+  logo?: string | null;
+  /** Y su dirección, que la arma el servidor: es la que se enseña. */
+  logo_url?: string | null;
   updated_at?: string;
   updated_by?: string | null;
 }

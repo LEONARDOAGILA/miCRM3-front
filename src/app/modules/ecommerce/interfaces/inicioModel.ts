@@ -157,7 +157,7 @@ export interface SeccionInicioModel {
 export type LadoImagen = 'sola' | 'izquierda' | 'derecha' | 'cartel' | 'paginada';
 
 /** Y de qué manera se enseña un banner. */
-export type VistaBanner = 'rotativo' | 'carteles';
+export type VistaBanner = 'rotativo' | 'carteles' | 'completo';
 
 /** En qué forma se pintan las fichas de una sección. Hoy sólo las destacadas. */
 export type FormaFicha = 'circulo' | 'cuadrado';
@@ -183,7 +183,9 @@ export interface VistaDeBanner {
 
 export const VISTAS_BANNER: VistaDeBanner[] = [
   { valor: 'rotativo', texto: 'Una que rota',
-    ayuda: 'Una imagen a la vez, de borde a borde, cambiando sola. Es como se ve hoy' },
+    ayuda: 'Una imagen a la vez, del ancho del contenido y con las esquinas redondeadas, cambiando sola. Es como se ve hoy' },
+  { valor: 'completo', texto: 'Una a todo el ancho',
+    ayuda: 'Igual que la anterior pero DE BORDE A BORDE, como el banner principal del inicio: sin márgenes a los lados ni esquinas redondeadas. Para una imagen ancha que tiene que llenar la pantalla' },
   { valor: 'carteles', texto: 'Todas en carteles',
     ayuda: 'Todas a la vez, en carteles verticales como las categorías en promoción. Sin texto ni botón: sólo la imagen, y cada una lleva a su enlace' },
 ];
@@ -481,6 +483,24 @@ export function tonosDelColor(principal: string): { oscuro: string; claro: strin
     oscuro: '#' + hex(r * 0.82) + hex(g * 0.82) + hex(b * 0.82),
     claro: '#' + hex(r + (255 - r) * 0.92) + hex(g + (255 - g) * 0.92) + hex(b + (255 - b) * 0.92),
   };
+}
+
+/**
+ * Si encima de ese color va letra oscura (claro) o clara (oscuro).
+ *
+ * LA TIENDA HACE ESTA MISMA CUENTA (shared/utils/color-tienda.util.ts) y tiene
+ * que dar lo mismo: con ella decide si la píldora negra del aviso se queda
+ * negra o se le da la vuelta, y aquí es la muestra de lo que se va a ver.
+ *
+ * No es la luminancia de la WCAG —ésa es para contrastes—, sino el brillo que
+ * se ve, que para esto es lo que acierta.
+ */
+export function esColorClaro(color: string): boolean {
+  const n = parseInt((color || '').replace('#', ''), 16);
+  if (isNaN(n)) { return true; }
+
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6;
 }
 
 export type EstadoSeccion = 'visible' | 'oculta' | 'programada' | 'terminada';

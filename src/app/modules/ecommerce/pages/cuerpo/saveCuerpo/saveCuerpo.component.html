@@ -181,24 +181,79 @@
         }
       </div>
 
-      <!-- ---------- Las dos palancas ---------- -->
-      @if (destino !== 'libre' && !esPrincipal) {
-        <div class="col-12">
-          <app-checkbox class="palanca"
-            [control]="ctrlCatalogo"
-            [label]="ctrlCatalogo.value
-                      ? 'Debajo de las secciones va el catálogo'
-                      : 'Sin catálogo: sólo las secciones'"
-            [id]="'ck-cuerpo-catalogo'">
-          </app-checkbox>
-          <p class="campo-hint mb-0">
-            <i class="fa-solid fa-circle-info"></i>
+      <!-- ---------- Qué productos enseña ----------
+           Con categoría o marca, la casilla nace encendida: una página de
+           «Línea Blanca» sin un producto de línea blanca no es lo que nadie
+           quería. Sin categoría ni marca el catálogo es el ENTERO —eso es
+           /shop— y además se ofrece empezar con un escaparate. -->
+      <div class="col-12">
+        <label class="seccion-rotulo">QUÉ PRODUCTOS ENSEÑA</label>
+
+        <app-checkbox class="palanca"
+          [control]="ctrlCatalogo"
+          [label]="rotuloCatalogo"
+          [id]="'ck-cuerpo-catalogo'"
+          (valueChange)="catalogoTocado()">
+        </app-checkbox>
+
+        <p class="campo-hint mb-0">
+          <i class="fa-solid fa-circle-info"></i>
+          @if (destino === 'libre') {
             <span>
-              La rejilla de productos de su categoría o su marca, con filtros, orden
-              y paginación, igual que en la tienda. Va al final, después de lo que
-              hayas montado arriba.
+              La rejilla con <b>todos</b> los productos de la tienda, con filtros,
+              orden y paginación. Es lo que es la página <code>/shop</code>. Va al
+              final, después de lo que montes arriba.
             </span>
-          </p>
+          } @else {
+            <span>
+              La rejilla de productos de su categoría o su marca —con los de las
+              subcategorías—, con filtros, orden y paginación, igual que en la
+              tienda. Va al final, después de lo que montes arriba. Apagarla no
+              borra nada: los colores que le pongas se quedan.
+            </span>
+          }
+        </p>
+      </div>
+
+      <!-- ---------- Con qué escaparate nace ----------
+           Sólo al CREAR una página suelta: ahí no hay categoría de la que
+           sacar productos, y entrar después al editor a añadir el escaparate
+           es el paso que se olvida. En una página que ya existe no sale: los
+           escaparates se ponen y se quitan en el editor de la página, y
+           tenerlo en dos sitios es tener dos sitios donde mirar. -->
+      @if (ofreceEscaparate) {
+        <div class="col-12">
+          @if (cargandoListas) {
+            <p class="text-muted mb-0">
+              <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando los escaparates…
+            </p>
+          } @else if (escaparates.length) {
+            <app-combo
+              formControlName="escaparate_id"
+              label="EMPIEZA CON UN ESCAPARATE (OPCIONAL)"
+              [items]="escaparates"
+              bindLabel="etiqueta"
+              bindValue="id">
+            </app-combo>
+            <p class="campo-hint mb-0">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>
+                Un escaparate es una lista armada a mano en <b>Productos por
+                sección</b> («Los más vendidos», «Ofertas»). La página nace con
+                él dentro, encendido. Después puedes añadirle más desde el
+                editor de la página.
+              </span>
+            </p>
+          } @else {
+            <p class="campo-hint mb-0">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>
+                Todavía no hay escaparates. Se arman en <b>Productos por
+                sección</b>, y desde ahí o desde el editor de esta página se le
+                pueden añadir después.
+              </span>
+            </p>
+          }
         </div>
       }
 

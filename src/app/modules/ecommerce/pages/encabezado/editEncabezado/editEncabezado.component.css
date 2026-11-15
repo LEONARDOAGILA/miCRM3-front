@@ -331,3 +331,178 @@
 .color-tienda__aviso i {
   margin-right: .35rem;
 }
+
+/* La muestra de los desplegables: el panel con los colores elegidos, para
+   verlos juntos antes de guardar. El borde y la sombra son los mismos que les
+   pone la tienda. */
+.menu-muestra {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 220px;
+  margin-top: 14px;
+  padding: 8px;
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, .18);
+}
+
+.menu-muestra__item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* El rótulo pequeño de un bloque, el mismo de «Inicio de la tienda» y del pie.
+   Aquí hace falta porque el panel de los colores lleva DOS bloques —la franja
+   y la fila del logo— y sin rótulo se leen como uno solo. */
+.seccion-rotulo {
+  display: block;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.seccion-rotulo span { font-weight: 400; text-transform: none; opacity: .8; }
+
+/* ===== El logo de la tienda ===== */
+.enc-logo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.enc-logo__foto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 14rem;
+  height: 5.5rem;
+  padding: .5rem;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .5rem;
+  /* A CUADROS, no blanco: lo que hay que subir es un PNG con el fondo
+     transparente, y encima de un recuadro blanco no hay manera de distinguir
+     uno transparente de uno con el fondo pintado de blanco —que es el que
+     luego sale como un ladrillo sobre un encabezado oscuro—. */
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, rgba(0, 0, 0, .06) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, .06) 75%),
+    linear-gradient(45deg, rgba(0, 0, 0, .06) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, .06) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+
+/* Entero y sin recortar: es la marca, y recortarla por el centro se come justo
+   lo que hay que leer */
+.enc-logo__foto img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.enc-logo__hueco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .25rem;
+  font-size: 1.5rem;
+  color: var(--bs-secondary-color, #6c757d);
+  opacity: .6;
+}
+
+.enc-logo__hueco small { font-size: .7rem; }
+
+.enc-logo__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+/* El <input type="file"> va escondido dentro de la etiqueta: el nativo es feo
+   y cambia en cada navegador, y el clic en la etiqueta lo abre igual */
+.enc-logo__acciones label { cursor: pointer; }
+
+/* ===== Las muestras de las dos franjas ===== */
+/* La franja tal como va a quedar, para verla antes de guardar. Enseña TAMBIÉN
+   lo que no cambia —la caja de buscar y el carrito—, que es de lo que si no se
+   queda uno con la duda. */
+.enc-muestra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin: .75rem 0 .5rem;
+  padding: .5rem .75rem;
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: .5rem;
+  font-size: .78rem;
+}
+
+.enc-muestra__texto b { font-weight: 700; }
+
+.enc-muestra__pildora {
+  padding: .15rem .6rem;
+  border-radius: 999px;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.enc-muestra--logo {
+  gap: 1rem;
+  padding: .75rem;
+}
+
+.enc-muestra__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.6rem;
+  min-width: 4.5rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.enc-muestra__logo img {
+  max-height: 100%;
+  max-width: 7rem;
+  object-fit: contain;
+}
+
+/* Gris y con su letra gris SIEMPRE, como en la tienda: la caja de buscar no
+   sigue a estos colores */
+.enc-muestra__buscador {
+  flex: 1 1 8rem;
+  padding: .3rem .7rem;
+  border: 1px solid #dee2e6;
+  border-radius: 999px;
+  background-color: #f4f5f7;
+  color: #6c757d;
+}
+
+.enc-muestra__cuenta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.enc-muestra__cuenta small {
+  font-size: .62rem;
+  opacity: .72;
+}
+
+/* Del color de la tienda, que es de donde lo toma de verdad */
+.enc-muestra__carrito {
+  padding: .3rem .7rem;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.enc-muestra__rotulo { margin-top: 1rem; }

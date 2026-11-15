@@ -40,6 +40,29 @@ export class EncabezadoService {
   }
 
   // ================================================================
+  // EL LOGO
+  // ================================================================
+  //
+  // VA POR SU PROPIA PUERTA y no con `editEncabezado`: aquélla reescribe el
+  // `config` entero, así que guardar los textos de la franja se llevaría por
+  // delante el logo. En la base vive en su columna.
+  //
+  // Como con el resto de imágenes: se manda en un FormData y NO se le pone el
+  // Content-Type a mano —el navegador tiene que poner el suyo con el
+  // `boundary`—. Las dos devuelven el encabezado entero.
+
+  subirLogo(archivo: File): Observable<any> {
+    const datos = new FormData();
+    datos.append('logo', archivo);
+    return this._http.post(this.URL_SERVICIOS + 'logo', datos);
+  }
+
+  /** Lo quita: la tienda vuelve a pintar el que trae dibujado. */
+  quitarLogo(): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'logo');
+  }
+
+  // ================================================================
   // EL MENÚ
   // ================================================================
 

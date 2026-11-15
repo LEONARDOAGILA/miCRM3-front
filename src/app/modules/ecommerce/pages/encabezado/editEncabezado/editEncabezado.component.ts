@@ -15,7 +15,7 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { EncabezadoService } from '../../../services/encabezado.service';
 import { EncabezadoModel, EnlaceEncabezadoModel } from '../../../interfaces/encabezadoModel';
-import { COLOR_TIENDA, contrasteEntre, tonosDelColor } from '../../../interfaces/inicioModel';
+import { COLOR_TIENDA, contrasteEntre, esColorClaro, tonosDelColor } from '../../../interfaces/inicioModel';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { TabPanelComponent, PestanaTab } from '../../../../../components/campos/tabPanel/tabPanel.component';
@@ -95,7 +95,6 @@ export class EditEncabezadoComponent implements OnInit {
   get enlaces(): EnlaceEncabezadoModel[] { return this.modelo?.enlaces ?? []; }
 
   get barra(): FormGroup { return this.form.controls['barra_superior'] as FormGroup; }
-  get credito(): FormGroup { return this.form.controls['credito'] as FormGroup; }
   get frases(): FormArray { return this.form.controls['buscador_frases'] as FormArray; }
 
   // ================================================================
@@ -122,6 +121,201 @@ export class EditEncabezadoComponent implements OnInit {
 
   /** Colores de arranque: el de la casa y cinco que sí aguantan letra blanca. */
   public readonly paletaTienda = [COLOR_TIENDA, '#0A58CA', '#0F766E', '#7C3AED', '#B45309', '#1D1D1F'];
+
+  // ===== Los desplegables de la barra =====
+  //
+  // El fondo del panel y su letra, para los tres iguales. De fábrica, blanco
+  // con la letra de siempre, que es lo que hay en la hoja de estilos.
+  public readonly MENU_FONDO_FABRICA = '#ffffff';
+  public readonly MENU_TEXTO_FABRICA = '#1d1d1f';
+
+  /** Fondos de arranque: el blanco, dos grises de papel y tres oscuros. */
+  public readonly paletaMenuFondo = ['#ffffff', '#f7f7f7', '#1d1d1f', '#102a43', '#0f3d3a', '#2b1b3d'];
+  /** Y letras: la de siempre, blanca y cuatro tonos que se leen sobre fondo claro. */
+  public readonly paletaMenuTexto = ['#1d1d1f', '#ffffff', '#374151', '#0a58ca', '#0f766e', '#7c3aed'];
+
+  get ctrlMenuFondo(): FormControl { return this.form.controls['desplegable_fondo'] as FormControl; }
+  get ctrlMenuTexto(): FormControl { return this.form.controls['desplegable_texto'] as FormControl; }
+
+  get hayMenuFondoPropio(): boolean { return !!(this.ctrlMenuFondo?.value ?? ''); }
+  get hayMenuTextoPropio(): boolean { return !!(this.ctrlMenuTexto?.value ?? ''); }
+
+  get menuFondoQueSeVe(): string { return (this.ctrlMenuFondo?.value ?? '') || this.MENU_FONDO_FABRICA; }
+  get menuTextoQueSeVe(): string { return (this.ctrlMenuTexto?.value ?? '') || this.MENU_TEXTO_FABRICA; }
+
+  ponerMenuFondo(color: string): void {
+    if (!this.puedeEditar) { return; }
+    this.ctrlMenuFondo.setValue(color || '');
+    this.ctrlMenuFondo.markAsDirty();
+  }
+
+  ponerMenuTexto(color: string): void {
+    if (!this.puedeEditar) { return; }
+    this.ctrlMenuTexto.setValue(color || '');
+    this.ctrlMenuTexto.markAsDirty();
+  }
+
+  /** Cuánto contrasta la letra elegida sobre el fondo elegido (WCAG, de 1 a 21). */
+  get contrasteMenu(): number { return contrasteEntre(this.menuFondoQueSeVe, this.menuTextoQueSeVe); }
+
+  get contrasteMenuTexto(): string { return this.contrasteMenu.toFixed(1).replace('.', ','); }
+
+  /** Por debajo del 4,5:1 de la WCAG el nombre de una categoría no se lee. */
+  get menuIlegible(): boolean { return this.contrasteMenu < 4.5; }
+
+  // ================================================================
+  // LOS COLORES DEL ENCABEZADO
+  // ================================================================
+  //
+  // DOS FRANJAS, cada una con su fondo y su letra: la DE ARRIBA —la del aviso—
+  // y la DEL LOGO con el buscador. Son dos y no una porque se usan para cosas
+  // distintas: la de arriba es una cinta de promoción, que es donde apetece un
+  // color fuerte, y la del logo es la que tiene que dejar leer el buscador.
+  //
+  // LA BARRA ROJA NO ESTÁ AQUÍ: ésa va del color de la tienda, que la pinta
+  // junto con los botones y el pie.
+  //
+  // CUATRO COLORES, UNOS CUANTOS CAMPOS IGUALES: en vez de ocho getters
+  // copiados, los campos se piden por su nombre. Así añadir un color es una
+  // línea en la lista de abajo y no cuatro métodos más.
+  //
+  // LO QUE NO SIGUE A ESTOS COLORES: la caja de buscar es una píldora gris con
+  // su propio fondo, el círculo de la cuenta es blanco y el carrito va del
+  // color de la tienda. Los tres se leen igual sobre un encabezado claro y
+  // sobre uno oscuro; teñirlos dejaría la caja de buscar invisible en la mitad
+  // de los casos. La píldora del aviso sí se da la vuelta sola en la tienda
+  // cuando la franja es oscura, porque es negra y desaparecería.
+
+  /** Los de fábrica, los que tiene escritos la hoja de estilos de la tienda. */
+  public readonly coloresDeFabrica: Record<string, string> = {
+    franja_fondo:     '#ffffff',
+    franja_texto:     '#374151',
+    encabezado_fondo: '#ffffff',
+    encabezado_texto: '#1d1d1f',
+  };
+
+  /** Fondos de arranque: el blanco, un gris de papel, tres oscuros y un crema. */
+  public readonly paletaFondoEncabezado = ['#ffffff', '#f7f7f7', '#1d1d1f', '#102a43', '#0f3d3a', '#fdf6e3'];
+  /** Y letras: la de siempre, la de los títulos, blanca y tres tonos oscuros. */
+  public readonly paletaLetraEncabezado = ['#374151', '#1d1d1f', '#ffffff', '#0a58ca', '#0f766e', '#7c2d12'];
+
+  ctrlColorDe(campo: string): FormControl { return this.form.controls[campo] as FormControl; }
+
+  hayColorPropioDe(campo: string): boolean { return !!(this.ctrlColorDe(campo)?.value ?? ''); }
+
+  /** El que se va a ver: el elegido, o el de fábrica. */
+  colorQueSeVeDe(campo: string): string {
+    return (this.ctrlColorDe(campo)?.value ?? '') || this.coloresDeFabrica[campo];
+  }
+
+  ponerColorDe(campo: string, color: string): void {
+    if (!this.puedeEditar) { return; }
+    const control = this.ctrlColorDe(campo);
+    control.setValue(color || '');
+    control.markAsDirty();
+  }
+
+  /** Cuánto contrasta la letra de una franja sobre su propio fondo (WCAG, de 1 a 21). */
+  contrasteDe(campoFondo: string, campoTexto: string): number {
+    return contrasteEntre(this.colorQueSeVeDe(campoFondo), this.colorQueSeVeDe(campoTexto));
+  }
+
+  contrasteTextoDe(campoFondo: string, campoTexto: string): string {
+    return this.contrasteDe(campoFondo, campoTexto).toFixed(1).replace('.', ',');
+  }
+
+  /** Por debajo del 4,5:1 de la WCAG ese texto no se lee. */
+  ilegible(campoFondo: string, campoTexto: string): boolean {
+    return this.contrasteDe(campoFondo, campoTexto) < 4.5;
+  }
+
+  /**
+   * La píldora del botón de la franja: negra con letra blanca mientras la
+   * franja sea clara, y al revés cuando es oscura.
+   *
+   * LA VUELTA LA DA LA TIENDA SOLA, no se guarda: una píldora negra sobre una
+   * franja negra no se ve, y pedir un quinto color para eso sería un color más
+   * que acertar. Aquí sale la misma cuenta para que la muestra no mienta.
+   */
+  get pildoraDeLaFranja(): { fondo: string; texto: string } {
+    const fondo = this.colorQueSeVeDe('franja_fondo');
+    return esColorClaro(fondo)
+      ? { fondo: '#1d1d1f', texto: '#ffffff' }
+      : { fondo: '#ffffff', texto: fondo };
+  }
+
+  // ================================================================
+  // EL LOGO DE LA TIENDA
+  // ================================================================
+  //
+  // Hasta el 14/11/2026 iba dibujado dentro de la tienda y cambiarlo era
+  // cambiar código. Ahora se sube aquí.
+  //
+  // SE SUBE AL MOMENTO y no con «Guardar contenido»: es un fichero, vive en su
+  // columna y no en el `config`, y aquel botón reescribe el `config` entero.
+  //
+  // QUITARLO NO DEJA LA TIENDA SIN MARCA: vuelve el que trae dibujado, así que
+  // probar no cuesta nada.
+
+  /** La dirección del que hay subido, o null para el de la tienda. */
+  public logoUrl: string | null = null;
+  public subiendoLogo = false;
+
+  get hayLogo(): boolean { return !!this.logoUrl; }
+
+  async elegirLogo(evento: Event): Promise<void> {
+    const entrada = evento.target as HTMLInputElement;
+    const archivo = entrada.files?.[0];
+    // Se limpia siempre: sin esto, elegir DOS VECES el mismo fichero no
+    // dispara el evento y parece que la pantalla se quedó colgada
+    entrada.value = '';
+    if (!archivo || this.subiendoLogo || !this.puedeEditar) { return; }
+
+    this.subiendoLogo = true;
+    try {
+      const res: any = await firstValueFrom(this._encabezadoService.subirLogo(archivo));
+      this._toastr.success(res?.message ?? 'Logo guardado', 'Listo');
+      this.recogerLogo(res);
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo subir el logo', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.subiendoLogo = false;
+    }
+  }
+
+  async quitarLogo(): Promise<void> {
+    if (this.subiendoLogo || !this.hayLogo || !this.puedeEditar) { return; }
+    if (!confirm('¿Quitar el logo? La tienda vuelve a enseñar el que trae dibujado.')) { return; }
+
+    this.subiendoLogo = true;
+    try {
+      const res: any = await firstValueFrom(this._encabezadoService.quitarLogo());
+      this._toastr.success(res?.message ?? 'Logo quitado', 'Listo');
+      this.recogerLogo(res);
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo quitar el logo', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.subiendoLogo = false;
+    }
+  }
+
+  /**
+   * De la respuesta del logo, SÓLO el logo.
+   *
+   * Las dos puertas devuelven el encabezado entero, como todas, pero aquí no
+   * se vuelve a pintar el formulario: quien sube un logo puede llevar un rato
+   * cambiando los colores sin haberle dado a «Guardar contenido», y pintar lo
+   * guardado le borraría lo que lleva escrito.
+   */
+  private recogerLogo(res: any): void {
+    this.logoUrl = res?.data?.logo_url ?? null;
+    if (this.modelo) {
+      this.modelo.logo = res?.data?.logo ?? null;
+      this.modelo.logo_url = this.logoUrl;
+    }
+  }
 
   get ctrlColor(): FormControl { return this.form.controls['color_principal'] as FormControl; }
 
@@ -151,7 +345,6 @@ export class EditEncabezadoComponent implements OnInit {
   get colorIlegible(): boolean { return this.contrasteConBlanco < 4.5; }
 
   get ctrlBarraActiva(): FormControl { return this.barra.controls['activo'] as FormControl; }
-  get ctrlCreditoActivo(): FormControl { return this.credito.controls['activo'] as FormControl; }
 
   /** Entre una y cinco: con ninguna el buscador se queda mudo; más no se ven. */
   get puedeAnadirFrase(): boolean { return this.puedeEditar && this.frases.length < 5; }
@@ -175,12 +368,14 @@ export class EditEncabezadoComponent implements OnInit {
       buscador_frases: this.fb.array([]),
       // El color de TODA la tienda. Vacío = el rojo de siempre
       color_principal: [''],
-      credito: this.fb.group({
-        activo:       [true],
-        texto:        ['', [Validators.maxLength(60)]],
-        boton_texto:  ['', [Validators.maxLength(30)]],
-        boton_enlace: ['', [Validators.maxLength(250)]],
-      }),
+      // Los desplegables de la barra. Vacíos = blanco y la letra de siempre
+      desplegable_fondo: [''],
+      desplegable_texto: [''],
+      // Y las dos franjas del encabezado, por lo mismo
+      franja_fondo: [''],
+      franja_texto: [''],
+      encabezado_fondo: [''],
+      encabezado_texto: [''],
     });
   }
 
@@ -216,13 +411,17 @@ export class EditEncabezadoComponent implements OnInit {
         boton_enlace: c.barra_superior?.boton_enlace ?? '',
       },
       color_principal: c.color_principal ?? '',
-      credito: {
-        activo:       c.credito?.activo !== false,
-        texto:        c.credito?.texto ?? '',
-        boton_texto:  c.credito?.boton_texto ?? '',
-        boton_enlace: c.credito?.boton_enlace ?? '',
-      },
+      desplegable_fondo: c.desplegable_fondo ?? '',
+      desplegable_texto: c.desplegable_texto ?? '',
+      franja_fondo: c.franja_fondo ?? '',
+      franja_texto: c.franja_texto ?? '',
+      encabezado_fondo: c.encabezado_fondo ?? '',
+      encabezado_texto: c.encabezado_texto ?? '',
     });
+
+    // El logo no está en el `config`: va en su columna y la dirección la arma
+    // el servidor
+    this.logoUrl = data.logo_url ?? null;
 
     this.frases.clear();
     for (const f of (c.buscador_frases ?? [])) {
@@ -274,12 +473,12 @@ export class EditEncabezadoComponent implements OnInit {
       },
       buscador_frases: (v.buscador_frases ?? []).map((f: string) => (f ?? '').trim()).filter(Boolean),
       color_principal: limpio(v.color_principal),
-      credito: {
-        activo:       v.credito.activo !== false,
-        texto:        limpio(v.credito.texto),
-        boton_texto:  limpio(v.credito.boton_texto),
-        boton_enlace: limpio(v.credito.boton_enlace),
-      },
+      desplegable_fondo: limpio(v.desplegable_fondo),
+      desplegable_texto: limpio(v.desplegable_texto),
+      franja_fondo: limpio(v.franja_fondo),
+      franja_texto: limpio(v.franja_texto),
+      encabezado_fondo: limpio(v.encabezado_fondo),
+      encabezado_texto: limpio(v.encabezado_texto),
     };
 
     this.guardando = true;

@@ -47,7 +47,10 @@
           <div class="row g-3">
 
             <!-- ---------- La franja de arriba ---------- -->
-            <div class="col-12 col-xl-6">
+            <!-- A lo ancho desde el 13/11/2026: al lado estaba el «aviso de crédito», que se fue. Lo que hacía
+                 —un texto y un botón a la derecha del menú— lo hace ahora un enlace del menú marcado como
+                 destacado, que es donde se administran los enlaces -->
+            <div class="col-12">
               <panel headerClass="bg-gray-800" title="Franja de arriba" noButton="true"
                      noBody="true" panelClass="mb-0" icono="bullhorn" fondoGris="true">
                 <ng-container outsideBody>
@@ -110,65 +113,6 @@
               </panel>
             </div>
 
-            <!-- ---------- El aviso de crédito ---------- -->
-            <div class="col-12 col-xl-6">
-              <panel headerClass="bg-gray-800" title="Aviso de crédito" noButton="true"
-                     noBody="true" panelClass="mb-0" icono="credit-card" fondoGris="true">
-                <ng-container outsideBody>
-                  <div class="form-card__body" formGroupName="credito">
-
-                    <div class="enc-estado mb-3" [class.is-on]="ctrlCreditoActivo.value">
-                      <span class="enc-estado__icon"><i class="fa-solid fa-power-off"></i></span>
-                      <div class="enc-estado__text">
-                        <span class="enc-estado__label">Aviso</span>
-                        <span class="enc-estado__hint">
-                          {{ ctrlCreditoActivo.value ? 'Se ve a la derecha del menú' : 'Oculto' }}
-                        </span>
-                      </div>
-                      <app-checkbox class="enc-estado__switch palanca"
-                        [control]="ctrlCreditoActivo"
-                        [label]="ctrlCreditoActivo.value ? 'Visible' : 'Oculto'"
-                        [id]="'ck-credito-activo'">
-                      </app-checkbox>
-                    </div>
-
-                    <app-campoTexto
-                      [control]="$any(credito.controls['texto'])"
-                      label="TEXTO"
-                      placeholder="ACTIVA TU CRÉDITO DIRECTO"
-                      [maxLength]="60">
-                    </app-campoTexto>
-
-                    <div class="row g-2">
-                      <div class="col-12 col-md-5">
-                        <app-campoTexto
-                          [control]="$any(credito.controls['boton_texto'])"
-                          label="BOTÓN"
-                          placeholder="APLICA AQUÍ"
-                          [maxLength]="30">
-                        </app-campoTexto>
-                      </div>
-                      <div class="col-12 col-md-7">
-                        <app-campoTexto
-                          [control]="$any(credito.controls['boton_enlace'])"
-                          label="DIRECCIÓN DEL BOTÓN"
-                          placeholder="/shop"
-                          [maxLength]="250">
-                        </app-campoTexto>
-                      </div>
-                    </div>
-
-                    <p class="campo-hint mb-0">
-                      <i class="fa-solid fa-circle-info"></i>
-                      Con el aviso visible, el texto, el botón y su dirección
-                      son obligatorios.
-                    </p>
-
-                  </div>
-                </ng-container>
-              </panel>
-            </div>
-
             <!-- ---------- Las frases del buscador ---------- -->
             <div class="col-12">
               <panel headerClass="bg-gray-800"
@@ -213,6 +157,74 @@
                         }
                       </div>
                     }
+                  </div>
+                </ng-container>
+              </panel>
+            </div>
+
+            <!-- ---------- El logo de la tienda ----------
+                 Hasta el 14/11/2026 iba dibujado dentro de la tienda y
+                 cambiarlo era cambiar código. Va por su puerta y no con
+                 «Guardar contenido»: es un fichero, y aquel botón reescribe
+                 la configuración entera. -->
+            <div class="col-12">
+              <panel headerClass="bg-gray-800" title="El logo de la tienda" noButton="true"
+                     noBody="true" panelClass="mb-0" icono="image" fondoGris="true">
+
+                <ng-container outsideBody>
+                  <div class="form-card__body">
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      <span>
+                        Sale arriba a la izquierda, en la fila del buscador, y en
+                        el menú del celular. <b>Se guarda al subirlo</b>, sin
+                        darle a «Guardar contenido». Sin logo subido la tienda
+                        enseña el que trae dibujado, así que quitarlo no la deja
+                        sin marca.
+                      </span>
+                    </p>
+
+                    <div class="enc-logo">
+                      <div class="enc-logo__foto">
+                        @if (hayLogo) {
+                          <img [src]="logoUrl" alt="Logo de la tienda">
+                        } @else {
+                          <span class="enc-logo__hueco">
+                            <i class="fa-solid fa-image"></i>
+                            <small>El de la tienda</small>
+                          </span>
+                        }
+                      </div>
+
+                      @if (puedeEditar) {
+                        <div class="enc-logo__acciones">
+                          <label class="btn btn-sm btn-white mb-0">
+                            <i class="fa fa-upload"></i>
+                            {{ subiendoLogo ? 'Subiendo…' : (hayLogo ? 'Cambiar el logo' : 'Subir el logo') }}
+                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden
+                                   [disabled]="subiendoLogo" (change)="elegirLogo($event)">
+                          </label>
+
+                          @if (hayLogo) {
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    [disabled]="subiendoLogo" (click)="quitarLogo()">
+                              <i class="fa fa-trash"></i> Quitar
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      <span>
+                        En la tienda se ve con <b>76 px de alto</b> —unos 60 al
+                        bajar la página— y el ancho que le toque, sin pasar de
+                        320. Un <b>PNG con el fondo transparente</b> es el que
+                        queda bien, y más si el encabezado deja de ser blanco.
+                        Jpg, png, webp o gif; hasta 4 MB.
+                      </span>
+                    </p>
                   </div>
                 </ng-container>
               </panel>
@@ -274,6 +286,211 @@
               </panel>
             </div>
 
+            <!-- ---------- Los colores del encabezado ----------
+                 Dos franjas y no una: la de arriba es una cinta de promoción
+                 —ahí apetece un color fuerte— y la del logo es la que tiene
+                 que dejar leer el buscador. -->
+            <div class="col-12">
+              <panel headerClass="bg-gray-800" title="Los colores del encabezado" noButton="true"
+                     noBody="true" panelClass="mb-0" icono="fill-drip" fondoGris="true">
+
+                <ng-container outsideBody>
+                  <div class="form-card__body">
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      <span>
+                        Las dos franjas de arriba, cada una con su fondo y su
+                        letra: la <b>del aviso</b> y la <b>del logo con el
+                        buscador</b>. La barra roja no está aquí: ésa va del
+                        color de la tienda. Sin elegir nada, las dos blancas.
+                      </span>
+                    </p>
+
+                    <!-- ----- La franja de arriba ----- -->
+                    <label class="seccion-rotulo">LA FRANJA DE ARRIBA <span>la del aviso</span></label>
+
+                    <div class="row g-3">
+                      <div class="col-12 col-md-6">
+                        <app-campoColor idCampo="franja-fondo"
+                                        [valor]="colorQueSeVeDe('franja_fondo')"
+                                        [propio]="hayColorPropioDe('franja_fondo')"
+                                        porDefecto="Blanco"
+                                        etiqueta="Fondo de la franja"
+                                        [paleta]="paletaFondoEncabezado"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerColorDe('franja_fondo', $event)" />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <app-campoColor idCampo="franja-texto"
+                                        [valor]="colorQueSeVeDe('franja_texto')"
+                                        [propio]="hayColorPropioDe('franja_texto')"
+                                        porDefecto="La letra de siempre"
+                                        etiqueta="Letra de la franja"
+                                        [paleta]="paletaLetraEncabezado"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerColorDe('franja_texto', $event)" />
+                      </div>
+                    </div>
+
+                    <!-- La muestra: la franja tal como va a quedar. El botón se
+                         da la vuelta solo cuando el fondo es oscuro, igual que
+                         en la tienda -->
+                    <div class="enc-muestra" aria-hidden="true"
+                         [style.background-color]="colorQueSeVeDe('franja_fondo')"
+                         [style.color]="colorQueSeVeDe('franja_texto')">
+                      <span class="enc-muestra__texto">
+                        Difiere tus compras hasta <b>18 MESES SIN INTERESES</b>
+                      </span>
+                      <span class="enc-muestra__pildora"
+                            [style.background-color]="pildoraDeLaFranja.fondo"
+                            [style.color]="pildoraDeLaFranja.texto">+ MESES DE GRACIA</span>
+                    </div>
+
+                    @if (ilegible('franja_fondo', 'franja_texto')) {
+                      <p class="color-tienda__aviso">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Esa letra encima de ese fondo se lee a
+                        {{ contrasteTextoDe('franja_fondo', 'franja_texto') }}:1, por
+                        debajo del 4,5:1 que hace falta. El aviso es lo primero
+                        que se ve al entrar. Se guarda igual, pero mira la
+                        muestra antes.
+                      </p>
+                    }
+
+                    <!-- ----- La fila del logo ----- -->
+                    <label class="seccion-rotulo enc-muestra__rotulo">
+                      LA FILA DEL LOGO <span>donde está el buscador</span>
+                    </label>
+
+                    <div class="row g-3">
+                      <div class="col-12 col-md-6">
+                        <app-campoColor idCampo="encabezado-fondo"
+                                        [valor]="colorQueSeVeDe('encabezado_fondo')"
+                                        [propio]="hayColorPropioDe('encabezado_fondo')"
+                                        porDefecto="Blanco"
+                                        etiqueta="Fondo del encabezado"
+                                        [paleta]="paletaFondoEncabezado"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerColorDe('encabezado_fondo', $event)" />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <app-campoColor idCampo="encabezado-texto"
+                                        [valor]="colorQueSeVeDe('encabezado_texto')"
+                                        [propio]="hayColorPropioDe('encabezado_texto')"
+                                        porDefecto="La de los títulos"
+                                        etiqueta="Letra del encabezado"
+                                        [paleta]="paletaLetraEncabezado"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerColorDe('encabezado_texto', $event)" />
+                      </div>
+                    </div>
+
+                    <!-- La muestra enseña TAMBIÉN lo que no cambia: la caja de
+                         buscar es gris y el carrito va del color de la tienda,
+                         así que se ven igual sobre un encabezado claro y sobre
+                         uno oscuro -->
+                    <div class="enc-muestra enc-muestra--logo" aria-hidden="true"
+                         [style.background-color]="colorQueSeVeDe('encabezado_fondo')"
+                         [style.color]="colorQueSeVeDe('encabezado_texto')">
+                      <span class="enc-muestra__logo">
+                        @if (hayLogo) {
+                          <img [src]="logoUrl" alt="">
+                        } @else {
+                          LOGO
+                        }
+                      </span>
+                      <span class="enc-muestra__buscador">¿Qué estás buscando?</span>
+                      <span class="enc-muestra__cuenta">
+                        <small>Bienvenido</small>
+                        <b>Inicia sesión</b>
+                      </span>
+                      <span class="enc-muestra__carrito" [style.background-color]="colorQueSeVe">$ 0</span>
+                    </div>
+
+                    @if (ilegible('encabezado_fondo', 'encabezado_texto')) {
+                      <p class="color-tienda__aviso">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Esa letra encima de ese fondo se lee a
+                        {{ contrasteTextoDe('encabezado_fondo', 'encabezado_texto') }}:1,
+                        por debajo del 4,5:1 que hace falta. Es la letra del
+                        saludo y de «Inicia sesión». Se guarda igual, pero mira
+                        la muestra antes.
+                      </p>
+                    }
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      <span>
+                        La <b>caja de buscar</b> se queda gris y el
+                        <b>carrito</b> va del color de la tienda: los dos se
+                        leen igual sobre un encabezado claro y sobre uno oscuro.
+                        Y el botón del aviso se da la vuelta solo cuando la
+                        franja es oscura, que si no desaparecería.
+                      </span>
+                    </p>
+                  </div>
+                </ng-container>
+              </panel>
+            </div>
+
+            <!-- ---------- El color de los desplegables ---------- -->
+            <div class="col-12">
+              <panel headerClass="bg-gray-800" title="Los desplegables del menú" noButton="true"
+                     noBody="true" panelClass="mb-0" icono="swatchbook" fondoGris="true">
+
+                <ng-container outsideBody>
+                  <div class="form-card__body">
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      El panel que se abre al pulsar «Categorías», «Marcas» o un
+                      enlace con desplegable. Los tres se pintan igual. Sin
+                      elegir nada, fondo blanco y la letra de siempre.
+                    </p>
+
+                    <div class="row g-3">
+                      <div class="col-12 col-md-6">
+                        <app-campoColor idCampo="menu-fondo"
+                                        [valor]="menuFondoQueSeVe" [propio]="hayMenuFondoPropio"
+                                        porDefecto="Blanco"
+                                        etiqueta="Fondo del desplegable"
+                                        [paleta]="paletaMenuFondo"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerMenuFondo($event)" />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <app-campoColor idCampo="menu-texto"
+                                        [valor]="menuTextoQueSeVe" [propio]="hayMenuTextoPropio"
+                                        porDefecto="La letra de siempre"
+                                        etiqueta="Letra del desplegable"
+                                        [paleta]="paletaMenuTexto"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerMenuTexto($event)" />
+                      </div>
+                    </div>
+
+                    <!-- La muestra: el panel tal como va a quedar -->
+                    <div class="menu-muestra" aria-hidden="true"
+                         [style.background-color]="menuFondoQueSeVe"
+                         [style.color]="menuTextoQueSeVe">
+                      <span class="menu-muestra__item">Línea Blanca</span>
+                      <span class="menu-muestra__item">Tecnología</span>
+                      <span class="menu-muestra__item">Audio y Video</span>
+                    </div>
+
+                    @if (menuIlegible) {
+                      <p class="color-tienda__aviso">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Esa letra encima de ese fondo se lee a
+                        {{ contrasteMenuTexto }}:1, por debajo del 4,5:1 que hace
+                        falta. Los nombres de las categorías se van a perder. Se
+                        guarda igual, pero mira la muestra antes.
+                      </p>
+                    }
+                  </div>
+                </ng-container>
+              </panel>
+            </div>
+
             @if (puedeEditar) {
               <div class="col-12 d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-primary"
@@ -308,7 +525,8 @@
                 <i class="fa-solid fa-circle-info"></i>
                 Se arrastra para cambiar el orden y se guarda solo. Un enlace
                 con desplegable no lleva dirección propia: en la tienda sólo lo
-                abre.
+                abre. Y uno marcado como <b>destacado</b> sale como botón blanco
+                al final de la barra.
               </p>
 
               @if (enlaces.length === 0) {
@@ -336,6 +554,11 @@
                         <code class="enc-enlace__destino">{{ destinoDe(enlace) }}</code>
                       </span>
 
+                      @if (enlace.destacado) {
+                        <span class="chip chip-primary" title="Sale como botón al final de la barra">
+                          <i class="fa-solid fa-star"></i> Destacado
+                        </span>
+                      }
                       @if (enlace.icono) {
                         <span class="chip chip-muted">{{ enlace.icono }}</span>
                       }

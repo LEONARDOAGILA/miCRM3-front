@@ -58,6 +58,24 @@
         </div>
       }
 
+      <!-- Sólo en los principales: una píldora dentro de un desplegable no se puede pintar -->
+      @if (!esDesplegable) {
+        <div class="col-12">
+          <div class="form-check form-switch">
+            <app-checkbox class="palanca"
+              [control]="ctrlDestacado"
+              [label]="ctrlDestacado.value ? 'Destacado: sale como botón' : 'Destacado'"
+              [id]="'ck-enlace-destacado'">
+            </app-checkbox>
+          </div>
+          <p class="campo-hint mb-0">
+            <i class="fa-solid fa-circle-info"></i>
+            Sale al final de la barra roja, como botón blanco y separado del
+            resto. Es el sitio del antiguo «aviso de crédito».
+          </p>
+        </div>
+      }
+
       <div class="col-12">
         <div class="form-check form-switch">
           <app-checkbox class="palanca"

@@ -74,6 +74,7 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
   }
 
   get ctrlActivo(): FormControl { return this.form.controls['activo'] as FormControl; }
+  get ctrlDestacado(): FormControl { return this.form.controls['destacado'] as FormControl; }
 
   /** Lo que va a pasar al pincharlo, para no esconderlo detrás de una casilla. */
   get avisoPestana(): string {
@@ -93,6 +94,9 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
                                   : [Validators.maxLength(250)]],
       icono:  [this.enlace?.icono ?? ''],
       activo: [this.enlace?.activo !== false],
+      // Sólo tiene sentido en los principales; en un hijo el campo ni se pinta
+      // y va en false, que es lo que la base guardaría de todas formas
+      destacado: [this.enlace?.destacado === true],
     });
   }
 
@@ -107,6 +111,7 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
       enlace: (v.enlace ?? '').trim() || null,
       icono:  v.icono || null,
       activo: v.activo !== false,
+      destacado: !this.esDesplegable && v.destacado === true,
     };
     if (this.esNuevo && this.padreId !== null) { payload.padre_id = this.padreId; }
 

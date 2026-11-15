@@ -8,7 +8,8 @@
     "build": "ng build --prod",
     "test": "ng test",
     "iconos": "node scripts/generar-iconos-fa.js",
-    "iconos:tienda": "node scripts/copiar-iconos-tienda.js"
+    "iconos:tienda": "node scripts/copiar-iconos-tienda.js",
+    "iconos:trazos": "node scripts/generar-trazos-fa.js"
   },
   "private": true,
   "dependencies": {

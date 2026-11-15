@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { CuerpoService } from '../../../services/cuerpo.service';
 import { CategoriaWebService } from '../../../services/categoriaWeb.service';
 import { MarcaWebService } from '../../../services/marcaWeb.service';
+import { ProductoSeccionService } from '../../../services/productoSeccion.service';
 import { CuerpoModel, DESTINOS, DestinoCuerpo } from '../../../interfaces/cuerpoModel';
 import { contrasteEntre } from '../../../interfaces/inicioModel';
 
@@ -19,6 +20,9 @@ import { CampoColorComponent } from '../../../../../components/campos/campoColor
 
 /** Una categoría o una marca, ya aplanada para el desplegable. */
 interface Opcion { id: number; nombre: string; }
+
+/** Un escaparate de «Productos por sección», con lo que hace falta decir de él. */
+interface OpcionEscaparate extends Opcion { etiqueta: string; }
 
 /**
  * UN CUERPO DE LA TIENDA: crear y modificar, en el mismo diálogo.
@@ -38,9 +42,23 @@ interface Opcion { id: number; nombre: string; }
  * dice en la pantalla y además lo prohíbe la base, así que aquí se esconden
  * los dos campos en vez de enseñarlos y rechazarlos luego.
  *
- * EL CATÁLOGO AL FINAL sólo tiene sentido con categoría o marca: es la rejilla
- * filtrada por ella. En una página suelta no hay por qué filtrar, así que la
- * palanca no sale.
+ * QUÉ PRODUCTOS ENSEÑA, y que no haya que acordarse después:
+ *
+ *  · Apuntando a una categoría o a una marca, el CATÁLOGO nace ENCENDIDO: una
+ *    página de «Línea Blanca» sin un solo producto de línea blanca no es lo
+ *    que nadie quería, y hasta el 15/11/2026 había que acordarse de bajar
+ *    hasta la casilla. Se puede apagar, y apagarlo no borra lo que se le haya
+ *    puesto a esa sección.
+ *  · Sin categoría ni marca no hay nada que filtrar, así que ahí lo que se
+ *    ofrece es un ESCAPARATE —una lista armada a mano en «Productos por
+ *    sección»— con el que la página nace. Sólo al crearla: después, los
+ *    escaparates se ponen y se quitan en el editor de la página, y tenerlo en
+ *    dos sitios es tener dos sitios donde mirar.
+ *
+ * EL CATÁLOGO DE UNA PÁGINA SUELTA es el catálogo ENTERO, no uno filtrado: es
+ * lo que es /shop, que es una página suelta con su catálogo encendido. Por eso
+ * la casilla sale también ahí y no sólo con categoría o marca: esconderla hacía
+ * que guardar /shop desde este formulario apagara su catálogo sin avisar.
  */
 @Component({
   selector: 'app-saveCuerpo',
@@ -76,7 +94,18 @@ export class SaveCuerpoComponent implements OnInit {
   /** Campos y no getters: con `[items]` de un getter, ng-select pierde lo elegido. */
   public categorias: Opcion[] = [];
   public marcas: Opcion[] = [];
+  /** Los de «Productos por sección», para que la página pueda nacer con uno. */
+  public escaparates: OpcionEscaparate[] = [];
   public cargandoListas = true;
+
+  /**
+   * Mientras no se toque la casilla del catálogo, la pone el destino.
+   *
+   * Es lo mismo que hace la dirección con el nombre: se propone sola hasta que
+   * alguien decide. Quien apaga el catálogo y luego cambia de categoría no
+   * quiere que se le vuelva a encender a su espalda.
+   */
+  private catalogoAMano = false;
 
   /** Mientras no se toque, la dirección se propone del nombre. */
   private rutaAMano = false;
@@ -85,6 +114,7 @@ export class SaveCuerpoComponent implements OnInit {
   private _cuerpoService = inject(CuerpoService);
   private _categoriaService = inject(CategoriaWebService);
   private _marcaService = inject(MarcaWebService);
+  private _seccionService = inject(ProductoSeccionService);
   private _toastr = inject(ToastrService);
   public activeModal = inject(NgbActiveModal);
 
@@ -98,6 +128,46 @@ export class SaveCuerpoComponent implements OnInit {
 
   get ctrlCatalogo(): FormControl { return this.form.controls['catalogo'] as FormControl; }
   get ctrlActivo(): FormControl { return this.form.controls['activo'] as FormControl; }
+
+  // ================================================================
+  // QUÉ PRODUCTOS ENSEÑA
+  // ================================================================
+
+  /** El nombre de a lo que apunta, para decirlo en la casilla. */
+  get nombreDelDestino(): string {
+    if (this.destino === 'categoria') {
+      const id = this.form?.value?.categoria_id;
+      return (this.categorias.find(c => c.id === id)?.nombre ?? '').trim();
+    }
+    if (this.destino === 'marca') {
+      const id = this.form?.value?.marca_id;
+      return (this.marcas.find(m => m.id === id)?.nombre ?? '').trim();
+    }
+    return '';
+  }
+
+  /** Lo que dice la casilla, que no es lo mismo con categoría que sin ella. */
+  get rotuloCatalogo(): string {
+    const encendido = this.ctrlCatalogo?.value === true;
+
+    if (this.destino === 'libre') {
+      return encendido ? 'Enseña el catálogo entero de la tienda'
+                       : 'Sin catálogo: sólo las secciones';
+    }
+
+    const nombre = this.nombreDelDestino;
+    if (!encendido) { return 'Sin productos: sólo las secciones'; }
+    return nombre ? 'Enseña todos los productos de «' + nombre + '»'
+                  : 'Enseña todos sus productos';
+  }
+
+  /** El escaparate sólo se ofrece al crear una página suelta. */
+  get ofreceEscaparate(): boolean {
+    return this.esNuevo && this.destino === 'libre';
+  }
+
+  /** Alguien tocó la casilla: a partir de ahí manda él, no el destino. */
+  catalogoTocado(): void { this.catalogoAMano = true; }
 
   get destino(): DestinoCuerpo {
     return (this.form?.value?.destino ?? 'libre') as DestinoCuerpo;
@@ -179,7 +249,12 @@ export class SaveCuerpoComponent implements OnInit {
       descripcion:  [c?.descripcion ?? '', [Validators.maxLength(4000)]],
       // El fondo de ESTA página; vacío, blanco
       fondo:        [c?.fondo ?? ''],
-      catalogo:     [c?.catalogo ?? false],
+      // UNA PÁGINA NUEVA DE UNA CATEGORÍA O DE UNA MARCA NACE CON SUS
+      // PRODUCTOS: es a lo que va. Una suelta no, que ahí el catálogo es el
+      // entero y eso se pide a propósito
+      catalogo:     [c?.catalogo ?? (destino !== 'libre')],
+      // Con el que nace, si se elige. Sólo al crear una página suelta
+      escaparate_id: [null],
       activo:       [c?.activo ?? true],
     });
 
@@ -206,9 +281,11 @@ export class SaveCuerpoComponent implements OnInit {
    */
   private async cargarListas(): Promise<void> {
     try {
-      const [cats, marcas]: any[] = await Promise.all([
+      // Los escaparates sólo hacen falta al crear: es cuando se ofrecen
+      const [cats, marcas, escaparates]: any[] = await Promise.all([
         firstValueFrom(this._categoriaService.allCategoriasWeb()),
         firstValueFrom(this._marcaService.allMarcasWeb()),
+        this.esNuevo ? firstValueFrom(this._seccionService.allSecciones()) : Promise.resolve(null),
       ]);
 
       // El árbol llega plano y en su orden: la sangría de `nivel` es lo que
@@ -223,6 +300,16 @@ export class SaveCuerpoComponent implements OnInit {
       this.marcas = (marcas?.data ?? [])
         .filter((m: any) => !m.oculta && m.activo)
         .map((m: any) => ({ id: m.id, nombre: m.nombre }));
+
+      // Con cuántos productos tiene cada uno y si está apagado: uno vacío se
+      // puede elegir, pero la tienda se lo salta y no se vería nada
+      this.escaparates = (escaparates?.data ?? []).map((s: any) => ({
+        id: s.id,
+        nombre: s.nombre,
+        etiqueta: s.nombre
+          + ' · ' + ((s.productos ?? 0) === 1 ? '1 producto' : (s.productos ?? 0) + ' productos')
+          + (s.visible === false ? ' · apagado' : ''),
+      }));
 
       this.proponerNombre();
 
@@ -268,6 +355,13 @@ export class SaveCuerpoComponent implements OnInit {
 
   ponerDestino(valor: DestinoCuerpo): void {
     this.form.patchValue({ destino: valor });
+
+    // Mientras nadie haya tocado la casilla, la pone el destino: con categoría
+    // o con marca, encendida. Es lo mismo que hace la dirección con el nombre
+    if (this.esNuevo && !this.catalogoAMano) {
+      this.ctrlCatalogo.setValue(valor !== 'libre');
+    }
+
     this.form.markAsDirty();
   }
 
@@ -298,8 +392,13 @@ export class SaveCuerpoComponent implements OnInit {
       descripcion:  (v.descripcion ?? '').trim() || null,
       // Vacío es blanco: el que no elige nada no cambia nada
       fondo:        (v.fondo ?? '').trim() || null,
-      // Sin categoría ni marca no hay catálogo que filtrar
-      catalogo:     destino === 'libre' ? false : v.catalogo === true,
+      // En una página suelta el catálogo es el ENTERO, que es lo que es
+      // /shop: por eso se manda lo que diga la casilla y no un false fijo,
+      // que apagaba el catálogo de /shop con sólo abrir y guardar
+      catalogo:     v.catalogo === true,
+      // El escaparate con el que nace. Sólo al crear una página suelta: en una
+      // que ya existe, los escaparates se ponen en el editor de la página
+      escaparate_id: this.ofreceEscaparate ? (v.escaparate_id ?? null) : null,
       activo:       this.esPrincipal ? true : v.activo !== false,
     };
 
