@@ -82,9 +82,27 @@ export class EncabezadoService {
                            activo === undefined ? {} : { activo });
   }
 
-  /** La lista entera en el orden nuevo, no sólo el que se movió. */
+  /**
+   * La lista entera en el orden nuevo, no sólo el que se movió.
+   *
+   * La rejilla usa `moverEnlace`, que dice padre y sitio de una vez; ésta
+   * sigue aquí porque renumera una rama entera en una sola llamada, que es
+   * otra cosa y el servidor la mantiene.
+   */
   ordenarEnlaces(ids: number[]): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'ordenarEnlaces', { ids });
+  }
+
+  /**
+   * Lo cuelga de otro y lo pone en su sitio: es el arrastre de la rejilla.
+   *
+   * `padreId` null lo saca a principal; `antesDe` null lo deja el último de
+   * sus hermanos. EL MENÚ NO TIENE LÍMITE DE NIVELES; lo único que el
+   * servidor no admite es meterlo dentro de su propia rama.
+   */
+  moverEnlace(id: number, padreId: number | null, antesDe: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'moverEnlace/' + id,
+                           { padre_id: padreId, antes_de: antesDe });
   }
 
   /** A la papelera; un principal se lleva sus desplegables. */

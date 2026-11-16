@@ -1,0 +1,48 @@
+/* ============================================================
+   UN ENLACE DEL MENÚ
+
+   El diálogo no tenía hoja propia, así que sus textos de ayuda —que
+   ya se escribían con `.campo-hint`— se leían como párrafos sueltos,
+   del mismo tamaño que los campos. Son los mismos estilos que usan
+   el pie y el inicio, ni uno nuevo.
+   ============================================================ */
+
+.seccion-rotulo {
+  display: block;
+  margin-bottom: .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.seccion-rotulo span { font-weight: 400; text-transform: none; opacity: .8; }
+
+.campo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  margin: .35rem 0 0;
+  font-size: .7rem;
+  line-height: 1.35;
+  color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .85);
+}
+
+.campo-hint i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+  color: var(--bs-app-theme, var(--bs-primary, #0d6efd));
+}
+
+/* ===== El icono =====
+   El dibujo y su explicación en la misma línea: se elige mirándolo, y el
+   texto de al lado dice de dónde sale la lista */
+.enlace-icono {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.enlace-icono .campo-hint {
+  margin-top: 0;
+}

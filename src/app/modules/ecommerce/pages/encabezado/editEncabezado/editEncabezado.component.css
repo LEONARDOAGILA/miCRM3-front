@@ -506,3 +506,292 @@
 }
 
 .enc-muestra__rotulo { margin-top: 1rem; }
+
+/* ===================================================================
+   LA REJILLA DEL MENÚ
+
+   Los mismos gestos y las mismas marcas que en Seguridad → Menús: el
+   árbol con su sangría y su +/-, y el arrastre con su línea de
+   inserción. `::ng-deep` porque las filas y las cabeceras las pinta
+   ag-Grid fuera de la encapsulación del componente.
+   =================================================================== */
+
+/* Alto fijo: la rejilla vive dentro de una pestaña, así que no puede
+   medir lo que el contenido ni estirarse hasta el pie de la pantalla */
+.enlaces-grilla-wrap {
+  height: clamp(280px, 52vh, 560px);
+}
+
+.enlaces-grilla-wrap ag-grid-angular {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- El árbol ---------- */
+:host ::ng-deep .menu-nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  min-width: 0;
+}
+
+/* La sangría en PÍXELES y no con espacios: con espacios el ancho depende de
+   la letra y los niveles dejan de alinearse al cambiar de tema */
+:host ::ng-deep .menu-sangria {
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+:host ::ng-deep .menu-asa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 16px;
+  height: 16px;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .2rem;
+  background-color: var(--bs-body-bg, #fff);
+  color: inherit;
+  font-size: .625rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+:host ::ng-deep .menu-asa:hover {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* Los que no tienen nada colgando llevan un hueco del mismo ancho: así los
+   textos de un mismo nivel quedan alineados tengan hijos o no */
+:host ::ng-deep .menu-asa--hueco {
+  border-color: transparent;
+  background: none;
+  cursor: default;
+}
+
+/* ---------- Color del texto por nivel ----------
+   Variables del tema y no colores fijos: en modo oscuro cambian solos */
+:host ::ng-deep .ag-cell.nivel-0 {
+  color: var(--bs-body-color, #212529);
+  font-weight: 600;
+}
+
+:host ::ng-deep .ag-cell.nivel-1 {
+  color: var(--bs-app-theme, var(--bs-primary, #348fe2));
+}
+
+:host ::ng-deep .ag-cell.nivel-2 {
+  color: var(--bs-teal, #00acac);
+}
+
+:host ::ng-deep .ag-cell.nivel-3 {
+  color: var(--bs-purple, #727cb6);
+}
+
+/* ---------- Los botones +/- de la cabecera ----------
+   A LA IZQUIERDA, no centrada: el estándar centra todas las cabeceras y aquí
+   el título comparte sitio con los botones sobre una columna de texto */
+:host ::ng-deep .ag-header-cell-label.cabecera-arbol {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: .35rem;
+}
+
+:host ::ng-deep .cabecera-arbol .ag-header-cell-text {
+  text-align: left;
+}
+
+:host ::ng-deep .cabecera-arbol__botones {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+  padding: 0;
+
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-body-bg, #fff);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .5rem;
+  line-height: 1;
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:hover:not(:disabled) {
+  border-color: var(--bs-app-theme, #00acac);
+  color: var(--bs-app-theme, #00acac);
+}
+
+:host ::ng-deep .cabecera-arbol__botones .btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+/* ---------- Arrastrar y soltar ---------- */
+:host ::ng-deep .ag-row .ag-drag-handle {
+  cursor: grab;
+  opacity: .55;
+}
+
+:host ::ng-deep .ag-row:hover .ag-drag-handle {
+  opacity: 1;
+}
+
+/* Centro de una fila = dentro de ese enlace */
+:host ::ng-deep .ag-row.fila-destino .ag-cell {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .16) !important;
+  box-shadow: inset 0 0 0 1px var(--bs-app-theme, #00acac);
+}
+
+/* Borde de arriba o de abajo = línea de inserción (antes / después) */
+:host ::ng-deep .ag-row.fila-insertar-antes .ag-cell {
+  box-shadow: inset 0 3px 0 0 var(--bs-primary, #348fe2);
+}
+
+:host ::ng-deep .ag-row.fila-insertar-despues .ag-cell {
+  box-shadow: inset 0 -3px 0 0 var(--bs-primary, #348fe2);
+}
+
+.menus-ayuda-dnd i {
+  color: var(--bs-app-theme, #00acac);
+}
+
+/* ---------- Lo que dice cada fila ---------- */
+:host ::ng-deep .enc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .05rem .45rem;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .enc-chip--abre {
+  background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .12);
+  color: var(--bs-app-theme, #00acac);
+}
+
+:host ::ng-deep .enc-chip--aviso {
+  background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .18);
+  color: #b54708;
+}
+
+:host ::ng-deep .enc-chip--si {
+  background-color: rgba(var(--bs-success-rgb, 25, 135, 84), .14);
+  color: var(--bs-success, #198754);
+}
+
+:host ::ng-deep .enc-chip--no {
+  background-color: rgba(var(--bs-secondary-rgb, 108, 117, 125), .16);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+:host ::ng-deep .enc-destino {
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El icono de la fila: el dibujo de la tienda y, al lado, su nombre */
+:host ::ng-deep .enc-icono {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: .35rem;
+  vertical-align: -3px;
+}
+
+:host ::ng-deep .enc-icono svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+:host ::ng-deep .enc-icono__nombre {
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* La estrella del destacado, al lado de su texto */
+:host ::ng-deep .enc-estrella {
+  color: var(--bs-warning, #ffc107);
+  font-size: .7rem;
+}
+
+/* ---------- Paginación, calcada de las otras pantallas ---------- */
+.pagination-controls {
+  gap: .5rem;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-buttons .btn {
+  min-width: 32px;
+}
+
+/* El indicador de página va dentro del btn-group como un botón «muerto»:
+   hereda el borde y la altura de los demás y queda alineado con ellos */
+.pagination-page-badge.disabled {
+  opacity: 1;
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.pagination-info b {
+  font-weight: 600;
+}
+
+.menus-plegados {
+  white-space: nowrap;
+}
+
+.menus-plegados i {
+  font-size: .6875rem;
+  opacity: .8;
+}
+
+/* btn-white del tema es blanco fijo; en oscuro se pasa a la superficie del
+   tema para que el grupo no destaque como un bloque blanco */
+[data-bs-theme="dark"] .pagination-buttons .btn-white {
+  background-color: var(--bs-component-bg, #1e293b);
+  border-color: var(--bs-border-color, #334155);
+  color: var(--bs-body-color, #e2e8f0);
+}
+
+@media (max-width: 575.98px) {
+  .pagination-controls {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-buttons {
+    justify-content: center;
+  }
+
+  .pagination-buttons .btn {
+    padding: .2rem .4rem;
+    font-size: .7rem;
+  }
+
+  .pagination-info {
+    font-size: .7rem;
+  }
+}

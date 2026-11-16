@@ -6,10 +6,10 @@ import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
 import { EncabezadoService } from '../../../services/encabezado.service';
-import { EnlaceEncabezadoModel, ICONOS_MENU } from '../../../interfaces/encabezadoModel';
+import { EnlaceEncabezadoModel } from '../../../interfaces/encabezadoModel';
 
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
-import { ComboComponent } from '../../../../../components/campos/combo/combo.component';
+import { CampoIconoTiendaComponent } from '../../../../../components/campos/campoIconoTienda/campoIconoTienda.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 
 /**
@@ -33,28 +33,22 @@ import { CheckboxComponent } from '../../../../../components/campos/checkbox/che
 @Component({
   selector: 'app-saveEnlaceEncabezado',
   templateUrl: './saveEnlaceEncabezado.component.html',
+  styleUrls: ['./saveEnlaceEncabezado.component.css'],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
-  imports: [CommonModule, ReactiveFormsModule, CampoTextoComponent, ComboComponent, CheckboxComponent],
+  imports: [CommonModule, ReactiveFormsModule, CampoTextoComponent, CampoIconoTiendaComponent, CheckboxComponent],
 })
 export class SaveEnlaceEncabezadoComponent implements OnInit {
 
   /** El enlace que se modifica; sin él, se crea uno nuevo. */
   @Input() enlace: EnlaceEncabezadoModel | null = null;
-  /** De qué principal cuelga el nuevo. Null = será principal. */
+  /** De qué enlace cuelga el nuevo. Null = será uno de los principales. */
   @Input() padreId: number | null = null;
-  /** El texto del principal, para decirlo en el título. */
+  /** El texto de ese padre, para decirlo en el título. */
   @Input() padreTexto = '';
-  /**
-   * Al MODIFICAR hace falta saber de qué nivel es, y el enlace que llega no lo
-   * dice: el árbol mete a los hijos dentro de `hijos` de su padre, así que la
-   * fila por sí sola es igual en los dos niveles. Lo pone quien abre.
-   */
-  @Input() esHijo = false;
 
   public form!: FormGroup;
   public guardando = false;
-  public readonly iconos = ICONOS_MENU;
 
   private fb = inject(FormBuilder);
   private _encabezadoService = inject(EncabezadoService);
@@ -63,9 +57,16 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
 
   get esNuevo(): boolean { return this.enlace === null; }
 
-  /** Es de segundo nivel: el que se crea dentro de un principal, o el que ya lo era. */
+  /**
+   * Cuelga de otro enlace, en vez de estar en la barra.
+   *
+   * YA NO HACE FALTA QUE SE LO DIGAN: la fila que llega trae su `padre_id`,
+   * porque el menú viaja como una lista plana. Mientras fue un árbol anidado,
+   * una fila sola era igual en los dos niveles y había que pasarle un
+   * `esHijo` desde fuera.
+   */
   get esDesplegable(): boolean {
-    return this.esNuevo ? this.padreId !== null : this.esHijo;
+    return this.esNuevo ? this.padreId !== null : this.enlace!.padre_id !== null;
   }
 
   get titulo(): string {
@@ -88,10 +89,10 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
   ngOnInit(): void {
     this.form = this.fb.group({
       texto:  [this.enlace?.texto ?? '', [Validators.required, Validators.maxLength(60)]],
-      // Obligatorio sólo en los desplegables (ver la cabecera)
-      enlace: [this.enlace?.enlace ?? '',
-               this.esDesplegable ? [Validators.required, Validators.maxLength(250)]
-                                  : [Validators.maxLength(250)]],
+      // OPCIONAL EN TODOS LOS NIVELES desde que el menú no tiene límite: un
+      // enlace que va a tener hijos no la usa, y hasta que los tenga está a
+      // medio montar. La rejilla avisa de los que se quedan sin dirección
+      enlace: [this.enlace?.enlace ?? '', [Validators.maxLength(250)]],
       icono:  [this.enlace?.icono ?? ''],
       activo: [this.enlace?.activo !== false],
       // Sólo tiene sentido en los principales; en un hijo el campo ni se pinta

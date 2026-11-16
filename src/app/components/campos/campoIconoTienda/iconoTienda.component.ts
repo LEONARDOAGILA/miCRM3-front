@@ -28,6 +28,25 @@ const ATRIBUTOS: Record<TipoIcono, string> = {
   rt: `fill="currentColor" ${TRAZO} stroke-width="2"`,
 };
 
+/**
+ * El SVG de un icono de la tienda, como texto.
+ *
+ * Lo usa el componente de aquí abajo y también quien tenga que pintar uno
+ * FUERA de una plantilla de Angular —una celda de ag-Grid, por ejemplo, que
+ * se arma con una cadena de HTML—. Está aquí para que los atributos del
+ * <svg> vivan en un solo sitio: con dos copias, el día que la tienda cambie
+ * el grosor del trazo una de las dos se queda vieja.
+ *
+ * Sin nombre, o con uno que la tienda no tenga, devuelve cadena vacía.
+ */
+export function svgDeIconoTienda(nombre: string | null | undefined): string {
+  const icono = existeIconoTienda(nombre) ? ICONOS[(nombre as string)] : undefined;
+  if (!icono) { return ''; }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${icono.viewBox ?? '0 0 24 24'}" `
+       + `${ATRIBUTOS[icono.tipo]} focusable="false">${icono.contenido}</svg>`;
+}
+
 @Component({
   selector: 'app-iconoTienda',
   standalone: true,
@@ -61,14 +80,10 @@ export class IconoTiendaComponent {
   /** Sin nombre, o con uno que la tienda no tiene, no se pinta nada. */
   @Input()
   set nombre(valor: string | null | undefined) {
-    const icono = existeIconoTienda(valor) ? ICONOS[valor] : undefined;
+    const svg = svgDeIconoTienda(valor);
     // El SVG sale del catálogo —contenido nuestro y fijo—, por eso se marca
     // como seguro: no hay forma de que entre aquí nada escrito por un usuario.
-    this.svg = icono
-      ? this._sanitizer.bypassSecurityTrustHtml(
-          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${icono.viewBox ?? '0 0 24 24'}" `
-          + `${ATRIBUTOS[icono.tipo]} focusable="false">${icono.contenido}</svg>`)
-      : '';
+    this.svg = svg ? this._sanitizer.bypassSecurityTrustHtml(svg) : '';
   }
 
   public svg: SafeHtml = '';

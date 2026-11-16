@@ -33,30 +33,38 @@
           <p class="campo-hint mb-0">
             <i class="fa-solid fa-arrow-up-right-from-square"></i> {{ avisoPestana }}
           </p>
-        } @else if (!esDesplegable) {
+        } @else {
           <p class="campo-hint mb-0">
             <i class="fa-solid fa-circle-info"></i>
-            Déjala vacía si este enlace sólo va a abrir un desplegable.
+            Déjala vacía si este enlace sólo va a abrir un desplegable. Sin
+            dirección y sin nada colgando, no se verá en la tienda.
           </p>
         }
       </div>
 
-      <!-- Sólo en los principales: los desplegables se pintan sin icono -->
-      @if (!esDesplegable) {
-        <div class="col-12">
-          <app-combo
-            formControlName="icono"
-            [items]="iconos"
-            [label]="'Icono'"
-            bindLabel="name"
-            bindValue="id">
-          </app-combo>
+      <!-- En cualquier nivel: desde que el menú es un árbol sin límite, un
+           enlace de dentro de un desplegable puede llevar su icono igual que
+           uno de la barra.
+
+           EL SELECTOR DE LA TIENDA, el mismo del pie: se elige viéndolos, no
+           escribiendo un nombre. Son los 83 que la tienda lleva dibujados, que
+           son los únicos que puede pintar -->
+      <div class="col-12">
+        <label class="seccion-rotulo">ICONO <span>opcional</span></label>
+
+        <div class="enlace-icono">
+          <app-campoIconoTienda formControlName="icono" iconoPorDefecto="etiqueta">
+          </app-campoIconoTienda>
+
           <p class="campo-hint mb-0">
             <i class="fa-solid fa-circle-info"></i>
-            La lista es cerrada: la tienda los tiene dibujados uno a uno.
+            <span>
+              Pulsa el dibujo para elegirlo de la lista. Son los que la tienda
+              tiene dibujados: cualquier otro dejaría el hueco vacío.
+            </span>
           </p>
         </div>
-      }
+      </div>
 
       <!-- Sólo en los principales: una píldora dentro de un desplegable no se puede pintar -->
       @if (!esDesplegable) {

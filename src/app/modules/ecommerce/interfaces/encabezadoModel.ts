@@ -71,13 +71,34 @@ export interface ConfigEncabezado {
   encabezado_texto?: string | null;
 }
 
-/** Un enlace del menú. Los principales traen sus `hijos`; los hijos, no. */
+/**
+ * Un enlace del menú, EN UNA LISTA PLANA.
+ *
+ * Y no un árbol anidado, que es como venía hasta el 15/11/2026: lo pinta una
+ * rejilla, y una rejilla come filas. El servidor manda el árbol aplanado y en
+ * su orden —cada rama detrás de su padre—, y cada fila trae su `nivel` para la
+ * sangría y cuántos `hijos` cuelgan de ella para el +/-.
+ *
+ * EL ÁRBOL NO TIENE LÍMITE DE NIVELES. Lo tuvo —dos— mientras el menú de la
+ * tienda se pintaba a dos niveles escritos a mano; ahora la tienda lo recorre
+ * como venga.
+ */
 export interface EnlaceEncabezadoModel {
   id: number;
+  /** De quién cuelga. null = es uno de los principales de la barra. */
+  padre_id: number | null;
+  /** Y su texto, para decir de dónde cuelga sin ir a buscarlo. */
+  padre?: string | null;
+  /** 0 los principales, 1 sus hijos, 2 los nietos… Lo calcula el servidor. */
+  nivel: number;
+  /** CUÁNTOS cuelgan de él, no quiénes: es lo que necesita la rejilla. */
+  hijos: number;
   texto: string;
   /**
-   * Un principal CON desplegables no lleva dirección: en la tienda sólo
-   * abre el desplegable. Un hijo siempre la necesita.
+   * LA DIRECCIÓN ES OPCIONAL EN CUALQUIER NIVEL: un enlace con hijos no la
+   * usa —sólo abre su desplegable— y uno que todavía no tiene hijos puede
+   * estar a medio montar. Sin hijos y sin dirección no se enseña en la
+   * tienda, y la rejilla lo dice en su fila.
    */
   enlace?: string | null;
   icono?: string | null;
@@ -95,7 +116,6 @@ export interface EnlaceEncabezadoModel {
   destacado: boolean;
   orden: number;
   activo: boolean;
-  hijos?: EnlaceEncabezadoModel[];
 }
 
 export interface EncabezadoModel {
@@ -130,19 +150,15 @@ export interface FilaPapeleraEnlace {
 }
 
 /**
- * Los iconos que la tienda sabe pintar al lado de un enlace del menú.
+ * LOS ICONOS DEL MENÚ NO SE ESCRIBEN NI SE ELIGEN DE UNA LISTA DE SIETE.
  *
- * ES UNA LISTA CERRADA y tiene que serlo: la tienda los tiene dibujados uno a
- * uno (no es Font Awesome), así que escribir aquí un nombre que ella no
- * conozca deja el enlace sin icono y sin aviso.
+ * Aquí había una lista cerrada con siete nombres, que era lo que ofrecía el
+ * desplegable de este CRUD. Desde el 15/11/2026 se eligen con
+ * `app-campoIconoTienda` —el mismo selector que usa el pie—, que los enseña
+ * DIBUJADOS y ofrece los 83 que la tienda lleva dentro.
+ *
+ * La lista sigue siendo cerrada, y tiene que serlo: la tienda los tiene
+ * dibujados uno a uno (no carga Font Awesome), así que un nombre que ella no
+ * conozca dejaría el enlace sin icono y sin aviso. Lo que cambió es que ya no
+ * hay dos listas que mantener de acuerdo: la del selector es la única.
  */
-export const ICONOS_MENU: { id: string; name: string }[] = [
-  { id: '',         name: 'Sin icono' },
-  { id: 'oferta',   name: 'Oferta' },
-  { id: 'camion',   name: 'Camión' },
-  { id: 'tienda',   name: 'Tienda' },
-  { id: 'moto',     name: 'Moto' },
-  { id: 'etiqueta', name: 'Etiqueta' },
-  { id: 'estrella', name: 'Estrella' },
-  { id: 'regalo',   name: 'Regalo' },
-];

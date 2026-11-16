@@ -504,164 +504,134 @@
         </form>
       }
 
-      <!-- ================= MENÚ ================= -->
+      <!-- ================= MENÚ =================
+           Una rejilla con el árbol, como el resto de listados de la casa
+           (Seguridad → Menús es el modelo). Hasta el 15/11/2026 era una lista
+           arrastrable hecha a mano, que sabía pintar dos niveles y ni uno más.
+
+           EL ÁRBOL NO TIENE LÍMITE: el menú de la tienda se despliega hacia
+           un lado, así que lo hondo que pueda ir es cosa del diseño. -->
       @if (pestana === 'menu') {
         <panel headerClass="bg-gray-800" title="Menú de la tienda" noButton="true"
                noBody="true" panelClass="mb-0" icono="bars" fondoGris="true">
-
-          <div header class="panel-acciones">
-            @if (puedeCrear) {
-              <button type="button" class="btn btn-xs btn-outline-light"
-                      [disabled]="trabajando" (click)="nuevoPrincipal()">
-                <i class="fa fa-plus"></i> Nuevo enlace
-              </button>
-            }
-          </div>
 
           <ng-container outsideBody>
             <div class="form-card__body">
 
               <p class="campo-hint">
                 <i class="fa-solid fa-circle-info"></i>
-                Se arrastra para cambiar el orden y se guarda solo. Un enlace
-                con desplegable no lleva dirección propia: en la tienda sólo lo
-                abre. Y uno marcado como <b>destacado</b> sale como botón blanco
-                al final de la barra.
+                <span>
+                  Un enlace con algo colgando no lleva a ningún sitio: sólo
+                  abre su desplegable. Uno sin nada colgando y sin dirección
+                  no se ve en la tienda. Y el marcado como <b>destacado</b>
+                  sale como botón blanco al final de la barra.
+                </span>
               </p>
 
-              @if (enlaces.length === 0) {
-                <p class="text-muted mb-0">El menú está vacío.</p>
-              }
+              <!-- La barra: buscar y añadir, como en las demás pantallas -->
+              <div class="row g-2 mb-2 align-items-center">
+                <div class="col position-relative pe-1">
+                  <app-campoBusqueda
+                    [id]="'filtro-enlaces'"
+                    [placeholder]="'Buscar'"
+                    [iconClass]="'fa fa-search fa-lg'"
+                    [containerClass]="'position-relative w-100'"
+                    (searchChange)="onFilterTextBoxChanged()">
+                  </app-campoBusqueda>
+                </div>
 
-              <div cdkDropList [cdkDropListData]="enlaces"
-                   [cdkDropListDisabled]="!puedeEditar || trabajando"
-                   (cdkDropListDropped)="soltarPrincipal($event)">
-
-                @for (enlace of enlaces; track enlace.id) {
-                  <div class="enc-enlace" cdkDrag>
-
-                    <div class="enc-enlace__fantasma" *cdkDragPlaceholder></div>
-
-                    <div class="enc-enlace__fila" [class.enc-enlace__fila--oculto]="!enlace.activo">
-                      @if (puedeEditar) {
-                        <span class="enc-asa" cdkDragHandle title="Arrastra para cambiar el orden">
-                          <i class="fa-solid fa-grip-vertical"></i>
-                        </span>
-                      }
-
-                      <span class="enc-enlace__texto">
-                        <b>{{ enlace.texto }}</b>
-                        <code class="enc-enlace__destino">{{ destinoDe(enlace) }}</code>
-                      </span>
-
-                      @if (enlace.destacado) {
-                        <span class="chip chip-primary" title="Sale como botón al final de la barra">
-                          <i class="fa-solid fa-star"></i> Destacado
-                        </span>
-                      }
-                      @if (enlace.icono) {
-                        <span class="chip chip-muted">{{ enlace.icono }}</span>
-                      }
-                      @if (!enlace.activo) {
-                        <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculto</span>
-                      }
-
-                      <span class="enc-enlace__botones">
-                        @if (puedeCrear) {
-                          <button type="button" class="btn btn-xs btn-ver"
-                                  title="Añadir un enlace a su desplegable"
-                                  [disabled]="trabajando" (click)="nuevoHijo(enlace)">
-                            <i class="fa fa-plus"></i>
-                          </button>
-                        }
-                        @if (puedeEditar) {
-                          <button type="button" class="btn btn-xs btn-editar"
-                                  title="Modificar" (click)="editarEnlace(enlace, false)">
-                            <i class="fa fa-pen"></i>
-                          </button>
-                          <button type="button" class="btn btn-xs"
-                                  [class.btn-ver]="!enlace.activo"
-                                  [class.btn-borrar]="enlace.activo"
-                                  [title]="enlace.activo ? 'Ocultar del menú' : 'Mostrar en el menú'"
-                                  [disabled]="trabajando" (click)="alternarEnlace(enlace)">
-                            <i class="fa" [ngClass]="enlace.activo ? 'fa-eye-slash' : 'fa-eye'"></i>
-                          </button>
-                        }
-                        @if (puedeEliminar) {
-                          <button type="button" class="btn btn-xs btn-borrar"
-                                  title="Enviar a la papelera"
-                                  [disabled]="trabajando" (click)="borrarEnlace(enlace)">
-                            <i class="fa fa-trash"></i>
-                          </button>
-                        }
-                      </span>
-                    </div>
-
-                    <!-- El desplegable. Se arrastra dentro de él; para pasar un
-                         enlace a otro desplegable hay que rehacerlo. -->
-                    @if (enlace.hijos?.length) {
-                      <div class="enc-hijos" cdkDropList [cdkDropListData]="enlace.hijos"
-                           [cdkDropListDisabled]="!puedeEditar || trabajando"
-                           (cdkDropListDropped)="soltarHijo(enlace, $event)">
-
-                        @for (hijo of enlace.hijos; track hijo.id) {
-                          <div class="enc-enlace__fila enc-enlace__fila--hijo"
-                               [class.enc-enlace__fila--oculto]="!hijo.activo" cdkDrag>
-
-                            <div class="enc-enlace__fantasma" *cdkDragPlaceholder></div>
-
-                            @if (puedeEditar) {
-                              <span class="enc-asa" cdkDragHandle title="Arrastra para cambiar el orden">
-                                <i class="fa-solid fa-grip-vertical"></i>
-                              </span>
-                            }
-
-                            <i class="fa-solid fa-turn-up fa-rotate-90 enc-enlace__hijo-icono"></i>
-
-                            <span class="enc-enlace__texto">
-                              {{ hijo.texto }}
-                              <code class="enc-enlace__destino">{{ hijo.enlace }}</code>
-                            </span>
-
-                            @if (!hijo.activo) {
-                              <span class="chip chip-muted"><i class="fa-solid fa-eye-slash"></i> Oculto</span>
-                            }
-
-                            <span class="enc-enlace__botones">
-                              @if (puedeEditar) {
-                                <button type="button" class="btn btn-xs btn-editar"
-                                        title="Modificar" (click)="editarEnlace(hijo, true)">
-                                  <i class="fa fa-pen"></i>
-                                </button>
-                                <button type="button" class="btn btn-xs"
-                                        [class.btn-ver]="!hijo.activo"
-                                        [class.btn-borrar]="hijo.activo"
-                                        [title]="hijo.activo ? 'Ocultar' : 'Mostrar'"
-                                        [disabled]="trabajando" (click)="alternarEnlace(hijo)">
-                                  <i class="fa" [ngClass]="hijo.activo ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                </button>
-                              }
-                              @if (puedeEliminar) {
-                                <button type="button" class="btn btn-xs btn-borrar"
-                                        title="Enviar a la papelera"
-                                        [disabled]="trabajando" (click)="borrarEnlace(hijo)">
-                                  <i class="fa fa-trash"></i>
-                                </button>
-                              }
-                            </span>
-                          </div>
-                        }
-                      </div>
-                    }
+                @if (puedeCrear) {
+                  <div class="col-auto ps-0">
+                    <button type="button"
+                            class="btn btn-primary d-flex align-items-center justify-content-center square-btn rounded-3"
+                            title="Nuevo enlace de la barra"
+                            [disabled]="trabajando" (click)="nuevoPrincipal()">
+                      <i class="fa fa-plus"></i>
+                    </button>
                   </div>
                 }
+              </div>
+
+              <!-- Arrastrar y soltar: el asa ⋮⋮ de la columna «Enlace» empieza
+                   el arrastre y aquí se resuelve dónde se suelta (tercio de
+                   arriba o de abajo = antes o después; centro = dentro). -->
+              <div class="enlaces-grilla-wrap"
+                   (click)="alClicarCabecera($event)"
+                   (dragover)="onDragOverGrilla($event)"
+                   (dragleave)="onDragLeaveGrilla($event)"
+                   (drop)="onDropGrilla($event)">
+                <ag-grid-angular
+                  [rowData]="filasVisibles"
+                  [columnDefs]="columnDefs"
+                  [defaultColDef]="_appAgGridService.defaultColDef"
+                  [sideBar]="_appAgGridService.sideBar"
+                  [rowHeight]="_appAgGridService.rowHeight"
+                  [headerHeight]="_appAgGridService.headerHeight"
+                  [localeText]="_appAgGridService.localeText"
+                  [rowSelection]="'single'"
+                  [pagination]="true"
+                  [suppressPaginationPanel]="true"
+                  [animateRows]="true"
+                  [cacheQuickFilter]="true"
+                  class="ag-theme-alpine ag-grid-transparente p-2"
+                  [navigateToNextCell]="navegarConTeclado"
+                  (gridReady)="onGridReady($event)"
+                  (cellClicked)="onCellClicked($event)"
+                  (paginationChanged)="onPaginationChanged()">
+                </ag-grid-angular>
+              </div>
+
+              @if (puedeEditar) {
+                <p class="menus-ayuda-dnd small text-muted mb-0 mt-1 px-2">
+                  <i class="fa fa-hand-pointer me-1"></i>
+                  Arrastra una fila desde <b>⋮⋮</b>: suéltala en el <b>borde superior o inferior</b>
+                  de otra para cambiar el orden, o <b>en el centro</b> de otra para meterla dentro.
+                  Los niveles no tienen tope.
+                </p>
+              }
+
+              <!-- Paginación: la hace ag-Grid en cliente (todas las filas están
+                   cargadas); se esconde su panel y se pintan los botones de la
+                   casa, moviendo la página con la API de la rejilla. -->
+              <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+
+                <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+                  <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                          (click)="firstPage()" [disabled]="paginaActual <= 1">
+                    <i class="fa fa-angle-double-left"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                          (click)="prevPage()" [disabled]="paginaActual <= 1">
+                    <i class="fa fa-chevron-left"></i>
+                  </button>
+                  <span class="btn btn-sm btn-white pagination-page-badge disabled">
+                    Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+                  </span>
+                  <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                          (click)="nextPage()" [disabled]="paginaActual >= ultimaPagina">
+                    <i class="fa fa-chevron-right"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" title="Última página"
+                          (click)="lastPage()" [disabled]="paginaActual >= ultimaPagina">
+                    <i class="fa fa-angle-double-right"></i>
+                  </button>
+                </div>
+
+                <div class="pagination-info small text-muted">
+                  Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> enlaces
+                  @if (hayPlegados) {
+                    <span class="menus-plegados" title="Hay ramas contraídas">
+                      · <i class="fa fa-minus-square"></i> {{ plegadosCuantos }} contraída{{ plegadosCuantos === 1 ? '' : 's' }}
+                    </span>
+                  }
+                </div>
+
               </div>
 
             </div>
           </ng-container>
         </panel>
       }
-
     </app-tab-panel>
   }
 </panel>
