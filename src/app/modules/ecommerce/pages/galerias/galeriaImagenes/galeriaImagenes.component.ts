@@ -1,5 +1,5 @@
 import {
-  Component, EventEmitter, Input, OnInit, Output, inject, ChangeDetectionStrategy,
+  Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -24,9 +24,15 @@ import { SaveImagenGaleriaComponent } from '../saveImagenGaleria/saveImagenGaler
  * sitio del diseño— y repetirlo tres veces es la forma de que acaben
  * comportándose distinto.
  *
- * SE CARGA SOLA al abrirse, por su clave. Quien la mete dentro no tiene que
- * saber nada de galerías: le pasa la clave y escucha `cambiada` para
- * refrescar su propia cuenta.
+ * SE CARGA SOLA POR SU CLAVE, Y SE VUELVE A CARGAR SI SE LA CAMBIAN. Quien la
+ * mete dentro no tiene que saber nada de galerías: le pasa la clave y escucha
+ * `cambiada` para refrescar su propia cuenta.
+ *
+ * LO SEGUNDO NO ES UN ADORNO. En el editor de cuerpos el panel de la derecha
+ * es UNO SOLO para todas las secciones: al pasar de un banner a otro, Angular
+ * no crea otra galería, le cambia la clave a la que ya está. Cargando sólo al
+ * nacer, el segundo banner enseñaba las imágenes del primero —y daba igual
+ * cuántas veces se cambiara de sección: siempre las del que se abrió primero.
  *
  * EL ORDEN SE GUARDA AL SOLTAR, sin botón: es un gesto, y pedir que además se
  * confirme convierte un gesto en dos pasos. Lo demás —encender, apagar,
@@ -40,7 +46,7 @@ import { SaveImagenGaleriaComponent } from '../saveImagenGaleria/saveImagenGaler
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder],
 })
-export class GaleriaImagenesComponent implements OnInit {
+export class GaleriaImagenesComponent implements OnChanges {
 
   /** La clave de la galería: `inicio_banner`, `pagos_tarjetas`… */
   @Input({ required: true }) clave!: string;
@@ -90,7 +96,24 @@ export class GaleriaImagenesComponent implements OnInit {
     return mostrar !== null && this.visibles > mostrar ? this.visibles - mostrar : 0;
   }
 
-  async ngOnInit(): Promise<void> {
+  /**
+   * Al nacer y cada vez que le cambian la clave.
+   *
+   * Se mira SÓLO la clave: los tres permisos son entradas como ella y
+   * cambian por su cuenta —al llegar los accesos del usuario, por ejemplo—,
+   * y volver a pedir la galería por eso serían dos llamadas en vez de una.
+   */
+  async ngOnChanges(cambios: SimpleChanges): Promise<void> {
+    const clave = cambios['clave'];
+    if (!clave || clave.previousValue === clave.currentValue) { return; }
+
+    // Lo de la galería anterior se va YA: si se deja puesto mientras llega la
+    // otra, se ven un instante las imágenes del banner de al lado, que es
+    // justo lo que se está arreglando
+    this.galeria = null;
+    this.papelera = [];
+    this.papeleraAbierta = false;
+
     await this.cargar();
   }
 

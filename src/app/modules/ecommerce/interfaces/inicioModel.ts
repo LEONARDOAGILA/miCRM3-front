@@ -37,6 +37,15 @@ export interface SeccionInicioModel {
   estilo: EstiloRotulo;
   /** Cuánto espacio ocupa la sección en la portada. */
   alto: AltoSeccion;
+
+  /**
+   * Y QUÉ ALTO TIENE SU FRANJA DE IMÁGENES, si es un banner.
+   *
+   * Llega siempre resuelto, nunca null, como `banner_vista`: «imagen» es
+   * «el que traiga cada foto». Sólo lo miran las secciones con galería; en
+   * las demás se recibe y no lo usa nadie.
+   */
+  alto_imagen: AltoImagenBanner;
   orden: number;
   activo: boolean;
   /** 'YYYY-MM-DDTHH:mm', como lo quiere un <input type="datetime-local">. */
@@ -604,6 +613,37 @@ export const ALTOS_SECCION: { valor: AltoSeccion; texto: string; escala: number 
   { valor: 'normal',   texto: 'Normal',   escala: 1 },
   { valor: 'amplia',   texto: 'Amplia',   escala: 1.5 },
   { valor: 'extra',    texto: 'Muy amplia', escala: 2 },
+];
+
+/**
+ * EL ALTO DE LAS IMÁGENES DE UN BANNER: la franja que ocupan.
+ *
+ * NO ES LO MISMO QUE EL ALTO DE LA SECCIÓN. Aquél es el aire de alrededor y
+ * no toca el contenido; éste es el contenido: cuánto mide la franja de fotos
+ * del banner. Existe porque sin él el alto lo decidía la proporción con la
+ * que se hubiera exportado cada imagen, y dos banners seguidos salían de dos
+ * altos distintos.
+ *
+ * CON UN ALTO ELEGIDO LA FOTO SE RECORTA desde el centro para llenar la
+ * franja, como un fondo. Por eso «Como la imagen» sigue siendo lo de fábrica:
+ * es la única que no recorta nada.
+ *
+ * Los píxeles son los de la tienda (_banner-rotativo.scss, QUE ES QUIEN
+ * MANDA) y están aquí sólo para poder decirlos en la pantalla y dibujar la
+ * muestra. En celular la tienda los encoge sola.
+ */
+export type AltoImagenBanner = 'imagen' | 'bajo' | 'medio' | 'alto' | 'extra';
+
+/** Lo que encoge la tienda en celular, para poder decirlo en la pantalla. */
+export const ALTO_BANNER_CELULAR = 0.65;
+
+export const ALTOS_IMAGEN_BANNER: { valor: AltoImagenBanner; texto: string; px: number | null; pista: string }[] = [
+  { valor: 'imagen', texto: 'Como la imagen', px: null,
+    pista: 'cada foto con el alto que traiga, sin recortar nada. Es como se ve hoy' },
+  { valor: 'bajo',   texto: 'Bajo',   px: 200, pista: 'una franja fina, para un aviso entre dos secciones' },
+  { valor: 'medio',  texto: 'Medio',  px: 320, pista: 'el alto corriente de un banner' },
+  { valor: 'alto',   texto: 'Alto',   px: 440, pista: 'grande, para una imagen con texto dibujado encima' },
+  { valor: 'extra',  texto: 'Muy alto', px: 560, pista: 'media pantalla en computadora' },
 ];
 
 /**

@@ -1064,6 +1064,24 @@
                       </select>
                     </div>
 
+                    <!-- Y el alto de la FRANJA DE IMÁGENES, que es otra cosa: el de
+                         arriba es el aire de alrededor y éste lo que miden las fotos.
+                         Sólo en los banners: en una sección de productos no hay
+                         ninguna franja que medir. -->
+                    @if (tieneGaleria(s)) {
+                      <div class="rotulo-campo rotulo-campo--ancho">
+                        <label [attr.for]="'altoimg-' + s.id">Alto de las imágenes</label>
+                        <select class="form-select form-select-sm" formControlName="alto_imagen"
+                                [id]="'altoimg-' + s.id">
+                          @for (a of altosImagen; track a.valor) {
+                            <option [value]="a.valor">
+                              {{ a.texto }}@if (a.px) { — {{ a.px }} px } — {{ a.pista }}
+                            </option>
+                          }
+                        </select>
+                      </div>
+                    }
+
                     @if (vista(s).rotulo !== 'ninguno') {
                       <div class="rotulo-campo">
                         <label [attr.for]="'tamano-' + s.id">Tamaño de la letra</label>
@@ -1134,6 +1152,31 @@
                     </span>
                   </div>
 
+                  <!-- La franja de un banner, a un tercio: a tamaño real una de
+                       560 px taparía el formulario entero. Dice los dos números,
+                       porque el de celular no se puede ver aquí. -->
+                  @if (tieneGaleria(s)) {
+                    <div class="franja-muestra">
+                      @if (pxImagen(s); as px) {
+                        <div class="franja-muestra__caja" [style.height.px]="altoMuestraImagen(s)">
+                          <span class="franja-muestra__texto">Aquí va la imagen</span>
+                        </div>
+                        <span class="rotulo-muestra-pie">
+                          {{ px }} px de alto en computadora y {{ pxImagenCelular(s) }} en celular.
+                          Lo que no entre en esa franja se recorta desde el centro.
+                        </span>
+                      } @else {
+                        <div class="franja-muestra__caja franja-muestra__caja--libre">
+                          <span class="franja-muestra__texto">El alto lo pone cada imagen</span>
+                        </div>
+                        <span class="rotulo-muestra-pie">
+                          No se recorta nada, y dos imágenes de distinta proporción se
+                          ven de distinto alto.
+                        </span>
+                      }
+                    </div>
+                  }
+
                   <p class="campo-hint">
                     <i class="fa-solid fa-circle-info"></i>
                     El alto es el espacio que ocupa la sección: lo que cambia es el
@@ -1141,6 +1184,10 @@
                     @if (vista(s).rotulo === 'ninguno') {
                       Esta sección no lleva nada escrito encima en la tienda:
                       {{ vista(s).sinRotulo }}.
+                    }
+                    @if (tieneGaleria(s)) {
+                      El de las imágenes sí las mide: es el alto de la franja, y vale
+                      igual rotando, de borde a borde y en carteles.
                     }
                   </p>
 

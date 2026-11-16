@@ -311,6 +311,40 @@
   color: #6c757d;
 }
 
+/* ===== La franja de un banner =====
+   La muestra va a UN TERCIO del alto de verdad: a tamaño real una franja de
+   560 px taparía el resto del formulario, y lo que hay que ver es si es una
+   tira fina o media pantalla. Los píxeles exactos se dicen debajo, con letra.
+   Blanca como la otra muestra, en los dos temas del CRM. */
+.franja-muestra {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin: 0 0 .5rem;
+}
+
+.franja-muestra__caja {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .375rem;
+  /* El gris de una foto que todavía no está, no un color del tema */
+  background: repeating-linear-gradient(45deg, #e9ecef, #e9ecef 10px, #dee2e6 10px, #dee2e6 20px);
+}
+
+/* Sin alto elegido no hay franja que dibujar: una caja baja y punteada */
+.franja-muestra__caja--libre {
+  height: 2.25rem;
+  border: 1px dashed #ced4da;
+  background: #fff;
+}
+
+.franja-muestra__texto {
+  font-size: .7rem;
+  font-weight: 600;
+  color: #6c757d;
+}
+
 /* ============================================================
    LA PALANCA
    ============================================================

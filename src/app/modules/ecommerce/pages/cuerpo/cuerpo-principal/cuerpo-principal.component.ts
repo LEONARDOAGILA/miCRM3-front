@@ -29,6 +29,7 @@ import {
   VISTAS_BANNER, VistaBanner,
   FORMAS_FICHA, FormaFicha,
   ALTOS_SECCION, AIRE_BASE_PX,
+  ALTOS_IMAGEN_BANNER, ALTO_BANNER_CELULAR, AltoImagenBanner,
 } from '../../../interfaces/inicioModel';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
@@ -792,6 +793,8 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
       disposicion:          [s.imagen?.elegido ?? 'sola'],
       // Sólo lo usan los banners. Viaja con el resto porque es un campo más
       banner_vista:         [s.banner_vista ?? 'rotativo'],
+      // Y de qué alto es su franja de imágenes. También sólo los banners
+      alto_imagen:          [s.alto_imagen ?? 'imagen'],
       segundos:             [s.segundos ?? null],
       // Cuántas tarjetas antes del botón «Ver más productos». Sólo la paginada
       por_pagina:           [s.por_pagina ?? null],
@@ -1145,6 +1148,37 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
 
   ponerVista(s: SeccionInicioModel, valor: VistaBanner): void {
     this.ponerCampo(s, 'banner_vista', valor);
+  }
+
+  // ---------- El alto de la franja de imágenes ----------
+
+  /** Los cinco altos que puede tener la franja de imágenes de un banner. */
+  public readonly altosImagen = ALTOS_IMAGEN_BANNER;
+
+  /** El elegido en el formulario para ese banner. */
+  altoImagenDe(s: SeccionInicioModel): AltoImagenBanner {
+    return (this.formularios[s.id]?.value?.alto_imagen ?? 'imagen') as AltoImagenBanner;
+  }
+
+  /** Cuántos píxeles mide esa franja en computadora, o null si manda la imagen. */
+  pxImagen(s: SeccionInicioModel): number | null {
+    return ALTOS_IMAGEN_BANNER.find(a => a.valor === this.altoImagenDe(s))?.px ?? null;
+  }
+
+  /** Y en celular, que la tienda los encoge sola. */
+  pxImagenCelular(s: SeccionInicioModel): number {
+    return Math.round((this.pxImagen(s) ?? 0) * ALTO_BANNER_CELULAR);
+  }
+
+  /**
+   * El alto de la muestra de la pantalla.
+   *
+   * Es el de la tienda dividido para tres: la muestra tiene el ancho de un
+   * panel y no el de la pantalla del cliente, y a tamaño real una franja de
+   * 560 px taparía el resto del formulario.
+   */
+  altoMuestraImagen(s: SeccionInicioModel): number {
+    return Math.round((this.pxImagen(s) ?? 150) / 3);
   }
 
   /**
@@ -1725,6 +1759,9 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
         disposicion:          this.conBotones(s) ? (limpio(v.disposicion) || 'sola') : null,
         // Y la vista sólo donde hay un banner que enseñar
         banner_vista:         s.es_banner ? (limpio(v.banner_vista) || 'rotativo') : null,
+        // El alto de la franja va en los DOS banners, también en el
+        // principal, que no es `es_banner` —ése dice «se puede borrar aquí»—
+        alto_imagen:          this.tieneGaleria(s) ? (limpio(v.alto_imagen) || 'imagen') : null,
         // Vacío se manda como null, que es «lo que hace de siempre»: un banner
         // rota a su ritmo y una sección de productos se queda quieta. En las de
         // productos manda la palanca: apagada, null aunque haya un número
