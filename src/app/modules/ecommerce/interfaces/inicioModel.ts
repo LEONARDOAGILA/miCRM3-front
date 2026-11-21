@@ -148,8 +148,8 @@ export interface SeccionInicioModel {
   botones: BotonesColores;
 
   /**
-   * El fondo y el borde de la tarjeta, y el cartel del descuento de su
-   * esquina. Sólo lo usan las de productos, como los botones.
+   * El fondo, el borde y LA SOMBRA de la tarjeta, y el cartel del descuento
+   * de su esquina. Sólo lo usan las de productos, como los botones.
    */
   tarjeta: TarjetaColores;
 
@@ -293,6 +293,8 @@ export interface BotonesColores {
  * cambiar uno.
  */
 export interface TarjetaColores {
+  /** Cuánta sombra lleva. Llega siempre resuelta, nunca null: 'ninguna' es «plana». */
+  sombra: SombraTarjeta;
   fondo: string | null;
   borde: string | null;
   descuento: BotonColores;
@@ -393,6 +395,31 @@ export const BOTONES_TARJETA: BotonTarjeta[] = [
  * EL FONDO Y EL BORDE NO TIENEN LETRA (`campoTexto` en null): la de la
  * tarjeta la calcula la tienda para que se lea encima del fondo.
  */
+/**
+ * CUÁNTA SOMBRA LLEVA LA TARJETA DE PRODUCTO.
+ *
+ * Hasta ahora era plana y sólo se levantaba al pasar el mouse por encima.
+ * Sobre un fondo claro eso deja una rejilla de rectángulos sin relieve, y
+ * sobre uno oscuro apenas se distinguen unas de otras.
+ *
+ * ES UNA CLAVE Y NO UNA MEDIDA, como el alto de la sección: los píxeles de
+ * cada una están en la tienda (boton-color.util.ts), que es quien manda, y
+ * de ahí sale también la versión levantada que se usa al pasar el mouse.
+ * Aquí están sólo para poder dibujarlas en la vista previa.
+ */
+export type SombraTarjeta = 'ninguna' | 'suave' | 'media' | 'fuerte';
+
+export const SOMBRAS_TARJETA: { valor: SombraTarjeta; texto: string; css: string; pista: string }[] = [
+  { valor: 'ninguna', texto: 'Sin sombra', css: 'none',
+    pista: 'plana, y se levanta sólo al pasar el mouse. Es como se ve hoy' },
+  { valor: 'suave',   texto: 'Suave',  css: '0 1px 3px rgba(0, 0, 0, 0.10)',
+    pista: 'se nota que está despegada del fondo' },
+  { valor: 'media',   texto: 'Media',  css: '0 2px 8px rgba(0, 0, 0, 0.14)',
+    pista: 'la de una tarjeta de verdad' },
+  { valor: 'fuerte',  texto: 'Fuerte', css: '0 6px 18px rgba(0, 0, 0, 0.20)',
+    pista: 'bien levantada, para pocas tarjetas grandes' },
+];
+
 export const COLORES_TARJETA: ColorDeTarjeta[] = [
   { campo: 'tarjeta_fondo_color', campoTexto: null, texto: 'Fondo de la tarjeta', icono: null,
     deLaTienda: '#ffffff', textoDeLaTienda: '#374151',

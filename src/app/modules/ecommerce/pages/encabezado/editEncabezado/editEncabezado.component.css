@@ -126,6 +126,57 @@
 
 .enc-frase .btn { margin-top: 1rem; }
 
+/* ---------- Los botones de la franja superior ---------- */
+.enc-botones {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  margin-bottom: 1rem;
+}
+
+.enc-botones__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.enc-boton {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+}
+
+/* El número y la papelera se alinean con los campos, no con sus rótulos */
+.enc-boton__numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1rem;
+  flex: 0 0 22px;
+  border-radius: 50%;
+  font-size: .6875rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .08);
+}
+
+.enc-boton__campos { flex: 1 1 auto; min-width: 0; }
+
+/* La pinta de un botón va DEBAJO de lo que dice y sangrada, para que se lea
+   como algo suyo y no como una fila más de la lista */
+.enc-boton__pinta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .75rem;
+  margin: -.5rem 0 .75rem 1.9rem;
+}
+
+.enc-boton > .btn { margin-top: 1rem; }
+
 /* ---------- El menú ---------- */
 .enc-enlace {
   margin-bottom: .5rem;
@@ -271,44 +322,6 @@
   margin-left: auto;
 }
 
-/* ===== El color de la tienda ===== */
-/* El selector y la muestra en la misma línea: se elige mirando cómo queda, no
-   leyendo un código hexadecimal */
-.color-tienda {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1.25rem;
-  margin-bottom: .5rem;
-}
-
-.color-tienda__muestra {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-}
-
-/* La barra de categorías de la tienda, en pequeño */
-.color-tienda__barra {
-  display: inline-flex;
-  align-items: center;
-  gap: .6rem;
-  padding: .35rem .6rem;
-  border-radius: .35rem;
-  color: #fff;
-  font-size: .7rem;
-  font-weight: 700;
-  letter-spacing: .04em;
-}
-
-.color-tienda__pastilla {
-  padding: .15rem .5rem;
-  border-radius: 999px;
-  background-color: #fff;
-  font-size: .65rem;
-  font-weight: 700;
-}
-
 /* Los tres tonos: el elegido y los dos que salen de él */
 .color-tienda__tonos {
   display: inline-flex;
@@ -330,27 +343,6 @@
 
 .color-tienda__aviso i {
   margin-right: .35rem;
-}
-
-/* La muestra de los desplegables: el panel con los colores elegidos, para
-   verlos juntos antes de guardar. El borde y la sombra son los mismos que les
-   pone la tienda. */
-.menu-muestra {
-  display: inline-flex;
-  flex-direction: column;
-  min-width: 220px;
-  margin-top: 14px;
-  padding: 8px;
-  border: 1px solid rgba(0, 0, 0, .12);
-  border-radius: 10px;
-  box-shadow: 0 10px 24px rgba(17, 24, 39, .18);
-}
-
-.menu-muestra__item {
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
 }
 
 /* El rótulo pequeño de un bloque, el mismo de «Inicio de la tienda» y del pie.
@@ -427,85 +419,6 @@
 /* El <input type="file"> va escondido dentro de la etiqueta: el nativo es feo
    y cambia en cada navegador, y el clic en la etiqueta lo abre igual */
 .enc-logo__acciones label { cursor: pointer; }
-
-/* ===== Las muestras de las dos franjas ===== */
-/* La franja tal como va a quedar, para verla antes de guardar. Enseña TAMBIÉN
-   lo que no cambia —la caja de buscar y el carrito—, que es de lo que si no se
-   queda uno con la duda. */
-.enc-muestra {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .75rem;
-  margin: .75rem 0 .5rem;
-  padding: .5rem .75rem;
-  border: 1px solid rgba(0, 0, 0, .12);
-  border-radius: .5rem;
-  font-size: .78rem;
-}
-
-.enc-muestra__texto b { font-weight: 700; }
-
-.enc-muestra__pildora {
-  padding: .15rem .6rem;
-  border-radius: 999px;
-  font-size: .65rem;
-  font-weight: 700;
-  letter-spacing: .04em;
-}
-
-.enc-muestra--logo {
-  gap: 1rem;
-  padding: .75rem;
-}
-
-.enc-muestra__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 1.6rem;
-  min-width: 4.5rem;
-  font-weight: 800;
-  letter-spacing: .08em;
-}
-
-.enc-muestra__logo img {
-  max-height: 100%;
-  max-width: 7rem;
-  object-fit: contain;
-}
-
-/* Gris y con su letra gris SIEMPRE, como en la tienda: la caja de buscar no
-   sigue a estos colores */
-.enc-muestra__buscador {
-  flex: 1 1 8rem;
-  padding: .3rem .7rem;
-  border: 1px solid #dee2e6;
-  border-radius: 999px;
-  background-color: #f4f5f7;
-  color: #6c757d;
-}
-
-.enc-muestra__cuenta {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-}
-
-.enc-muestra__cuenta small {
-  font-size: .62rem;
-  opacity: .72;
-}
-
-/* Del color de la tienda, que es de donde lo toma de verdad */
-.enc-muestra__carrito {
-  padding: .3rem .7rem;
-  border-radius: 999px;
-  color: #fff;
-  font-weight: 700;
-}
-
-.enc-muestra__rotulo { margin-top: 1rem; }
 
 /* ===================================================================
    LA REJILLA DEL MENÚ
@@ -794,4 +707,685 @@
   .pagination-info {
     font-size: .7rem;
   }
+}
+
+/* Las fechas de un enlace, en la rejilla del menú */
+:host ::ng-deep .enc-fechas {
+  font-size: .72rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+:host ::ng-deep .enc-chip--info {
+  background-color: rgba(var(--bs-info-rgb, 13, 202, 240), .16);
+  color: #0b7285;
+}
+
+/* ============================================================
+   EL TABLERO DE TRES COLUMNAS
+   ============================================================
+   La lista a la izquierda, los estilos en medio y lo que se mira a la
+   derecha, que es donde se edita. La de la izquierda se pliega a una tira.
+
+   HUBO UNA TERCERA, «Estilos», de 26rem. Se fue el 20/11/2026: lo suyo se
+   edita tocando el boceto, y su ancho es ahora del boceto.
+
+   EL ANCHO SOBRANTE ES PARA LA ÚLTIMA: la lista no mejora por ser más ancha
+   y el boceto —y la rejilla del menú— sí. `minmax(0, 1fr)` y no `1fr` a
+   secas: dentro va la rejilla, y sin eso una fila larga estira la columna y
+   desborda el panel. */
+.enc-tablero {
+  display: grid;
+  grid-template-columns: 19rem minmax(0, 1fr);
+  gap: .75rem;
+  align-items: start;
+}
+
+.enc-tablero--sin-lista {
+  grid-template-columns: 34px minmax(0, 1fr);
+}
+
+/* De tablet para abajo se apilan: en 900 px la lista dejaría el boceto del
+   ancho de un móvil */
+@media (max-width: 1199.98px) {
+  .enc-tablero,
+  .enc-tablero--sin-lista {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.enc-col {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.enc-col--lista {
+  padding: .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  background-color: var(--bs-component-bg, #fff);
+}
+
+/* ---------- La tira de cuando está plegada ----------
+   ES LA MISMA QUE LA DE PRODUCTOS (allProductos): una tira vertical con el
+   nombre escrito de abajo arriba, su flecha y una chapita. Quien plegó la
+   columna de categorías allá reconoce ésta sin tener que mirarla dos veces.
+
+   La tira NO es decorativa: es el botón de volver a abrir, y la chapa dice
+   cuántos hay —o que queda algo sin guardar—, porque una columna plegada
+   que esconde algo sin decirlo es una trampa. */
+.enc-col--lista.is-plegada {
+  padding: 0;
+  overflow: hidden;
+}
+
+.enc-tira {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+
+  width: 100%;
+  height: 100%;
+  padding: .5rem 0;
+
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--bs-secondary-color, #6c757d);
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.enc-tira:hover {
+  background-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .06);
+  color: var(--bs-body-color, #212529);
+}
+
+.enc-tira__texto {
+  /* De abajo arriba, como las pestañas laterales de la referencia */
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.enc-tira__flecha {
+  font-size: .75rem;
+}
+
+.enc-tira__chapa {
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background-color: var(--bs-app-theme, #00acac);
+  color: #fff;
+  font-size: .625rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.enc-col__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.enc-col__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.enc-col__titulo b {
+  padding: 0 .35rem;
+  border-radius: 999px;
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background-color: var(--bs-tertiary-bg, #f1f3f5);
+}
+
+.enc-col__botones {
+  display: inline-flex;
+  gap: .25rem;
+}
+
+.enc-col__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* ----- Una ficha de la lista ----- */
+.enc-ficha {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  padding: .5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .375rem;
+  cursor: pointer;
+  transition: border-color .15s ease-out;
+}
+
+.enc-ficha:hover {
+  border-color: var(--bs-primary, #348fe2);
+}
+
+.enc-ficha.is-elegida {
+  border-color: var(--bs-primary, #348fe2);
+  box-shadow: 0 0 0 1px var(--bs-primary, #348fe2) inset;
+}
+
+.enc-ficha.is-apagada .enc-ficha__textos {
+  opacity: .6;
+}
+
+.enc-ficha--nueva {
+  flex-direction: column;
+  align-items: stretch;
+  border-style: dashed;
+  cursor: default;
+}
+
+.enc-ficha__botones {
+  display: flex;
+  gap: .25rem;
+  margin-top: .3rem;
+}
+
+.enc-ficha__textos {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.enc-ficha__nombre {
+  font-size: .82rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.enc-ficha__cuando {
+  font-size: .68rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* La estrella: apagada es gris y se puede pulsar; puesta es amarilla y no */
+.enc-ficha__estrella {
+  padding: 0;
+  border: 0;
+  font-size: .8rem;
+  color: var(--bs-border-color, #dee2e6);
+  background: none;
+}
+
+.enc-ficha__estrella:hover:not(:disabled) {
+  color: #f0b13b;
+}
+
+.enc-ficha__estrella.is-puesta {
+  color: #f0b13b;
+}
+
+.enc-ficha__acciones {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+.enc-ficha__palanca {
+  padding: 0;
+  border: 0;
+  font-size: 1rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background: none;
+}
+
+.enc-ficha__palanca.is-on {
+  color: var(--bs-success, #198754);
+}
+
+.enc-ficha__candado {
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* ============================================================
+   EL CENTRO: LA CABECERA Y LA VISTA PREVIA
+   ============================================================ */
+.enc-centro__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.enc-centro__quien {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.enc-centro__nombre {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+/* El nombre se escribe donde se lee: un campo sin caja, que sólo se dibuja
+   al pasar por encima. Es un título, no un formulario. */
+.enc-centro__campo {
+  min-width: 12rem;
+  padding: .1rem .35rem;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--bs-body-color, #212529);
+  background-color: transparent;
+}
+
+.enc-centro__campo:hover {
+  border-color: var(--bs-border-color, #dee2e6);
+}
+
+.enc-centro__campo:focus {
+  outline: none;
+  border-color: var(--bs-primary, #348fe2);
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.enc-centro__campo:disabled {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Las fechas, en la misma línea y estrechas: son dos datos, no una sección */
+.enc-centro__fechas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem;
+}
+
+.enc-centro__fechas label {
+  margin: 0;
+  font-size: .625rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.enc-centro__fechas input {
+  width: auto;
+  min-width: 11rem;
+}
+
+.enc-centro__pista {
+  flex: 1 1 14rem;
+  font-size: .68rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.enc-centro__botones {
+  display: flex;
+  gap: .35rem;
+}
+
+.enc-centro__pestanas {
+  display: flex;
+  gap: .25rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.enc-centro__pestana {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin-bottom: -1px;
+  padding: .4rem .7rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  background: none;
+}
+
+.enc-centro__pestana.is-activa {
+  color: var(--bs-primary, #348fe2);
+  border-bottom-color: var(--bs-primary, #348fe2);
+}
+
+.enc-centro__cuenta {
+  padding: 0 .35rem;
+  border-radius: 999px;
+  font-size: .68rem;
+  background-color: var(--bs-tertiary-bg, #f1f3f5);
+}
+
+/* ----- El boceto de la tienda -----
+   Los colores vienen del formulario por [style], así que aquí NO se pone
+   ninguno de los del tema del CRM: lo que se mira es la tienda, no el CRM. */
+.enc-previa {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding-top: .5rem;
+}
+
+/* UN ANCHO MÁXIMO: el centro se lleva ahora todo el panel, y una franja de
+   1.800 px no se parece a ninguna tienda. */
+.enc-previa__marco {
+  max-width: 1100px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+  border-radius: .375rem;
+  background-color: #fff;
+}
+
+/* ----- CADA PARTE SE TOCA -----
+   Los botones de dentro del boceto no se ven como botones del CRM: se ven
+   como lo que pintan. `:where` para que este reset no le gane a las reglas
+   de cada parte, que van después y dicen su fondo y su letra. */
+.enc-previa :where(button) {
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.enc-previa [role="button"] {
+  cursor: pointer;
+}
+
+.enc-previa button:hover,
+.enc-previa button:focus-visible,
+.enc-previa [role="button"]:hover,
+.enc-previa [role="button"]:focus-visible {
+  outline: 2px solid #348fe2;
+  outline-offset: 1px;
+}
+
+/* La que se está tocando se queda marcada mientras el mando esté abierto */
+.enc-previa .is-tocada {
+  outline: 2px solid #348fe2;
+  outline-offset: 1px;
+}
+
+/* El texto y el destacado: se pulsan y se escriben ahí mismo */
+.enc-previa__pieza {
+  border-radius: .2rem;
+}
+
+.enc-previa__pieza--fuerte {
+  font-weight: 700;
+}
+
+.enc-previa__escribir {
+  min-width: 10rem;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px dashed #348fe2;
+  font: inherit;
+  color: inherit;
+  background: none;
+}
+
+.enc-previa__escribir--fuerte {
+  font-weight: 700;
+}
+
+.enc-previa__escribir:focus {
+  outline: none;
+  border-bottom-style: solid;
+}
+
+/* Lo que todavía no existe —un destacado, otro botón— no se ve en la tienda,
+   pero aquí hace falta poder pulsarlo: un hueco de puntos, en gris */
+.enc-previa__hueco {
+  padding: .05rem .45rem;
+  border: 1px dashed currentColor !important;
+  border-radius: 999px;
+  font-size: .62rem;
+  opacity: .55;
+}
+
+.enc-previa__hueco:hover {
+  opacity: 1;
+}
+
+/* Apagada sigue estando: si desapareciera no habría dónde pulsar para
+   encenderla otra vez */
+.enc-previa__apagada {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  width: 100%;
+  padding: .4rem;
+  border-bottom: 1px dashed #dee2e6 !important;
+  font-size: .72rem;
+  color: #95999d !important;
+  background-color: #f8f9fa !important;
+}
+
+.enc-previa__franja {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+  padding: .35rem .5rem;
+  font-size: .68rem;
+}
+
+.enc-previa__boton {
+  padding: .05rem .5rem;
+  border-radius: 999px;
+  font-size: .62rem;
+  font-weight: 700;
+}
+
+.enc-previa__media {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .6rem .75rem;
+}
+
+.enc-previa__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 4.5rem;
+  height: 2.4rem;
+  overflow: hidden;
+  border-radius: .2rem;
+  background-color: #fff;
+}
+
+.enc-previa__logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.enc-previa__buscador {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: .25rem .25rem .25rem .75rem;
+  overflow: hidden;
+  border-radius: 999px;
+  font-size: .72rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #95999d;
+  background-color: #fff;
+}
+
+.enc-previa__buscador i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: .6rem;
+  color: #fff;
+}
+
+.enc-previa__cuenta {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .62rem;
+}
+
+.enc-previa__carrito {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  font-size: .62rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.enc-previa__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .9rem;
+  padding: .45rem .75rem;
+  font-size: .68rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.enc-previa__item {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  text-transform: uppercase;
+}
+
+/* El destacado va al final y en píldora blanca, como en la tienda */
+.enc-previa__item.is-destacado {
+  margin-left: auto;
+  padding: .05rem .5rem;
+  border-radius: 999px;
+  color: inherit;
+  background-color: rgba(255, 255, 255, .25);
+}
+
+.enc-previa__desplegable {
+  display: block;
+  width: 100%;
+  padding: .6rem .75rem;
+  border-top: 1px solid rgba(0, 0, 0, .08) !important;
+  font-size: .68rem;
+}
+
+/* ============================================================
+   EL MANDO DE LA PARTE QUE SE ESTÁ TOCANDO
+   ============================================================
+   Debajo del boceto y no flotando encima: lo que se está mirando es justo lo
+   que taparía un cuadro flotante. Éste SÍ se viste del tema del CRM: es parte
+   del panel, no de la muestra de la tienda.
+
+   LLEVA TODO LO DE ESA PARTE, no un atajo: desde que la columna de estilos se
+   fue, no hay otro sitio donde esté. */
+.mando {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-width: 1100px;
+  padding: .6rem .75rem .75rem;
+  border: 1px solid var(--bs-primary, #348fe2);
+  border-radius: .375rem;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.mando__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  font-size: .8rem;
+}
+
+.mando__cerrar {
+  padding: 0 .25rem;
+  border: 0;
+  border-radius: .25rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background: none;
+}
+
+.mando__cerrar:hover {
+  color: var(--bs-body-color, #212529);
+}
+
+.mando__cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .75rem;
+}
+
+/* Lo que no es un campo suelto —la palanca, la lista de botones, un aviso—
+   se lleva la fila entera: partido en dos columnas no se lee */
+.mando__ancho {
+  flex: 1 1 100%;
+}
+
+.mando__nota {
+  flex: 1 1 100%;
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.mando__ir {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--bs-primary, #348fe2);
+  background: none;
+}
+
+.mando__ir:hover {
+  text-decoration: underline;
+}
+
+/* Las frases del buscador, dentro del mando: la misma caja que los botones */
+.enc-frases {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
 }

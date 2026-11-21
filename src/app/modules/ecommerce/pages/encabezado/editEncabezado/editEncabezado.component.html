@@ -1,9 +1,21 @@
 <!-- ============================================================
-     EL ENCABEZADO DE LA TIENDA
+     EL ENCABEZADO DE LA TIENDA, EN TRES COLUMNAS
 
-     Dos pestañas porque son dos cosas con ritmos distintos: el contenido
-     se revisa junto y se guarda con un botón; el menú se arrastra y se
-     guarda al momento.
+     A la IZQUIERDA los encabezados que hay: uno por campaña, con sus
+     fechas. EN MEDIO los estilos del que esté elegido, y A LA DERECHA lo
+     que se está mirando: la vista previa de cómo va a quedar, o el menú.
+
+     La previa va a la derecha y es la que se lleva el ancho sobrante: es
+     lo único que crece con la pantalla —los campos no mejoran por ser más
+     anchos— y la rejilla del menú lo agradece.
+
+     POR QUÉ ASÍ Y NO EN PESTAÑAS: lo que se hace aquí es mirar y tocar.
+     Con el formulario arriba y la tienda en otra pantalla, cada color se
+     elegía a ciegas y se comprobaba después; con la previa en medio se ve
+     al escribirlo, y la lista de al lado dice cuál se está tocando.
+
+     El MENÚ es uno solo y vale para todos los encabezados: no cuelga de
+     ninguno, y lo que se programa ahí es cada enlace con sus fechas.
      ============================================================ -->
 
 <ol class="breadcrumb lista-breadcrumb">
@@ -15,16 +27,13 @@
        [noButton]="false"
        [noButtonCollapse]="true"
        [closeRoute]="'/ecommerce/home'"
-       icono="window-maximize">
+       icono="window-maximize"
+       (panelReloaded)="cargar()">
 
   <div header class="panel-acciones">
     <button type="button" class="btn btn-sm btn-outline-light"
             title="Papelera del menú" (click)="abrirPapelera()">
       <i class="fa fa-trash-can"></i>
-    </button>
-    <button type="button" class="btn btn-sm btn-outline-light"
-            title="Volver a cargar" [disabled]="cargando" (click)="cargar()">
-      <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
     </button>
   </div>
 
@@ -35,282 +44,445 @@
     </div>
   } @else {
 
-    <app-tab-panel
-      [pestanas]="pestanas"
-      [activa]="pestana"
-      [conPanel]="true"
-      (cambiada)="pestana = $any($event)">
+    <div class="enc-tablero"
+         [class.enc-tablero--sin-lista]="listaPlegada">
 
-      <!-- ================= CONTENIDO ================= -->
-      @if (pestana === 'contenido') {
-        <form [formGroup]="form" novalidate>
-          <div class="row g-3">
+      <!-- ================= IZQUIERDA: LOS ENCABEZADOS ================= -->
+      <aside class="enc-col enc-col--lista" [class.is-plegada]="listaPlegada">
+        <!-- PLEGADA: una tira vertical con su nombre, la misma de la pantalla
+             de productos (allProductos). La tira NO es decorativa: es el botón
+             de volver a abrirla, y lleva la cuenta para que una columna plegada
+             no parezca una columna vacía. -->
+        @if (listaPlegada) {
+          <button type="button" class="enc-tira" title="Ver los encabezados"
+                  (click)="listaPlegada = false">
+            <i class="fa fa-angles-right enc-tira__flecha"></i>
+            <span class="enc-tira__texto">Encabezados</span>
+            @if (encabezados.length) {
+              <span class="enc-tira__chapa">{{ encabezados.length }}</span>
+            }
+          </button>
+        } @else {
+          <div class="enc-col__cabecera">
+            <span class="enc-col__titulo">
+              <i class="fa-solid fa-list"></i> Encabezados
+              <b>{{ encabezados.length }}</b>
+            </span>
+            <span class="enc-col__botones">
+              @if (puedeCrear) {
+                <button type="button" class="btn btn-xs btn-white" title="Nuevo encabezado"
+                        [disabled]="trabajando" (click)="nombreNuevo = ''">
+                  <i class="fa fa-plus"></i>
+                </button>
+              }
+              <button type="button" class="btn btn-xs btn-white" title="Plegar la columna"
+                      (click)="listaPlegada = true">
+                <i class="fa fa-angles-left"></i>
+              </button>
+            </span>
+          </div>
 
-            <!-- ---------- La franja de arriba ---------- -->
-            <!-- A lo ancho desde el 13/11/2026: al lado estaba el «aviso de crédito», que se fue. Lo que hacía
-                 —un texto y un botón a la derecha del menú— lo hace ahora un enlace del menú marcado como
-                 destacado, que es donde se administran los enlaces -->
-            <div class="col-12">
-              <panel headerClass="bg-gray-800" title="Franja de arriba" noButton="true"
-                     noBody="true" panelClass="mb-0" icono="bullhorn" fondoGris="true">
-                <ng-container outsideBody>
-                  <div class="form-card__body" formGroupName="barra_superior">
+          <!-- Con dos o tres no hace falta, pero una tienda con campañas de
+               todo el año acaba teniendo quince -->
+          @if (encabezados.length > 4) {
+            <input type="text" class="form-control form-control-sm enc-col__buscar"
+                   [(ngModel)]="buscarHeader" [ngModelOptions]="{ standalone: true }"
+                   placeholder="Buscar encabezado…">
+          }
 
-                    <div class="enc-estado mb-3" [class.is-on]="ctrlBarraActiva.value">
-                      <span class="enc-estado__icon"><i class="fa-solid fa-power-off"></i></span>
-                      <div class="enc-estado__text">
-                        <span class="enc-estado__label">Franja</span>
-                        <span class="enc-estado__hint">
-                          {{ ctrlBarraActiva.value ? 'Se ve arriba del todo' : 'Oculta' }}
-                        </span>
-                      </div>
-                      <app-checkbox class="enc-estado__switch palanca"
-                        [control]="ctrlBarraActiva"
-                        [label]="ctrlBarraActiva.value ? 'Visible' : 'Oculta'"
-                        [id]="'ck-barra-activa'">
-                      </app-checkbox>
-                    </div>
-
-                    <app-campoTexto
-                      [control]="$any(barra.controls['texto'])"
-                      label="TEXTO"
-                      placeholder="Difiere tus compras hasta"
-                      [maxLength]="80">
-                    </app-campoTexto>
-
-                    <app-campoTexto
-                      [control]="$any(barra.controls['destacado'])"
-                      label="DESTACADO"
-                      placeholder="18 MESES SIN INTERESES"
-                      [maxLength]="60">
-                    </app-campoTexto>
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      Es la parte que sale resaltada, que es la que se mira.
-                    </p>
-
-                    <div class="row g-2">
-                      <div class="col-12 col-md-5">
-                        <app-campoTexto
-                          [control]="$any(barra.controls['boton_texto'])"
-                          label="BOTÓN"
-                          placeholder="+ MESES DE GRACIA"
-                          [maxLength]="40">
-                        </app-campoTexto>
-                      </div>
-                      <div class="col-12 col-md-7">
-                        <app-campoTexto
-                          [control]="$any(barra.controls['boton_enlace'])"
-                          label="DIRECCIÓN DEL BOTÓN"
-                          placeholder="/shop"
-                          [maxLength]="250">
-                        </app-campoTexto>
-                      </div>
-                    </div>
-
-                  </div>
-                </ng-container>
-              </panel>
+          <!-- El que se está creando: nace copiando la pinta del que está
+               abierto, porque uno en blanco sale sin colores y sin logo -->
+          @if (nombreNuevo !== null) {
+            <div class="enc-ficha enc-ficha--nueva">
+              <input type="text" class="form-control form-control-sm"
+                     [(ngModel)]="nombreNuevo" [ngModelOptions]="{ standalone: true }"
+                     maxlength="60" placeholder="Ej.: Navidad"
+                     (keydown.enter)="crearEncabezado()" (keydown.escape)="nombreNuevo = null">
+              <div class="enc-ficha__botones">
+                <button type="button" class="btn btn-xs btn-primary"
+                        [disabled]="trabajando || !nombreNuevo?.trim()" (click)="crearEncabezado()">Crear</button>
+                <button type="button" class="btn btn-xs btn-white"
+                        [disabled]="trabajando" (click)="nombreNuevo = null">Cancelar</button>
+              </div>
             </div>
+          }
 
-            <!-- ---------- Las frases del buscador ---------- -->
-            <div class="col-12">
-              <panel headerClass="bg-gray-800"
-                     [title]="'Frases del buscador (' + frases.length + ' de 5)'"
-                     noButton="true" noBody="true" panelClass="mb-0"
-                     icono="magnifying-glass" fondoGris="true">
+          <div class="enc-col__cuerpo">
+            @for (e of encabezadosFiltrados; track e.id) {
+              <div class="enc-ficha"
+                   [class.is-elegida]="esElQueEdito(e)"
+                   [class.is-apagada]="!e.activo"
+                   role="button" tabindex="0"
+                   (click)="elegirEncabezado(e)" (keydown.enter)="elegirEncabezado(e)">
 
-                <div header class="panel-acciones">
-                  @if (puedeAnadirFrase) {
-                    <button type="button" class="btn btn-xs btn-outline-light"
-                            (click)="anadirFrase()">
-                      <i class="fa fa-plus"></i> Añadir
-                    </button>
+                <!-- La estrella marca el predeterminado Y sirve para nombrarlo:
+                     es el mismo gesto que en la lista de cuerpos -->
+                <button type="button" class="enc-ficha__estrella"
+                        [class.is-puesta]="e.principal"
+                        [title]="e.principal ? 'Es el predeterminado' : 'Hacerlo predeterminado'"
+                        [disabled]="!puedeEditar || trabajando || e.principal"
+                        (click)="hacerPredeterminado(e); $event.stopPropagation()">
+                  <i class="fa-solid fa-star"></i>
+                </button>
+
+                <div class="enc-ficha__textos">
+                  <span class="enc-ficha__nombre">{{ e.nombre }}</span>
+                  <span class="enc-ficha__cuando">{{ cuandoSeVe(e) }}</span>
+                  @if (e.manda) {
+                    <span class="enc-chip enc-chip--si"><i class="fa fa-eye"></i> En la tienda ahora</span>
+                  } @else if (e.estado === 'programado') {
+                    <span class="enc-chip enc-chip--info"><i class="fa fa-clock"></i> Programado</span>
+                  } @else if (e.estado === 'terminado') {
+                    <span class="enc-chip enc-chip--aviso"><i class="fa fa-hourglass-end"></i> Terminado</span>
+                  } @else if (!e.activo) {
+                    <span class="enc-chip enc-chip--no"><i class="fa fa-eye-slash"></i> Apagado</span>
                   }
                 </div>
 
-                <ng-container outsideBody>
-                  <div class="form-card__body">
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      Van rotando dentro del buscador. Hace falta al menos una,
-                      y más de cinco no llegan a verse.
-                    </p>
-
-                    <!-- Se sigue el CONTROL, no la posición: con track $index,
-                         al quitar una los campos enseñan el valor de la vecina. -->
-                    @for (frase of frases.controls; track frase; let i = $index) {
-                      <div class="enc-frase">
-                        <span class="enc-frase__numero">{{ i + 1 }}</span>
-                        <app-campoTexto
-                          class="enc-frase__campo"
-                          [control]="controlFrase(i)"
-                          label="FRASE"
-                          placeholder="¿Qué estás buscando?"
-                          [maxLength]="60">
-                        </app-campoTexto>
-                        @if (puedeQuitarFrase) {
-                          <button type="button" class="btn btn-xs btn-borrar"
-                                  title="Quitar esta frase" (click)="quitarFrase(i)">
-                            <i class="fa fa-trash"></i>
-                          </button>
-                        }
-                      </div>
+                <span class="enc-ficha__acciones" (click)="$event.stopPropagation()">
+                  @if (e.principal) {
+                    <!-- Cerrado con llave, no escondido: así se sabe que no es
+                         que falte el botón, es que ése no se toca -->
+                    <span class="enc-ficha__candado"
+                          title="El predeterminado no se apaga ni se borra: nombra predeterminado a otro primero">
+                      <i class="fa-solid fa-lock"></i>
+                    </span>
+                  } @else {
+                    @if (puedeEditar) {
+                      <button type="button" class="enc-ficha__palanca"
+                              [class.is-on]="e.activo"
+                              [title]="e.activo ? 'Encendido' : 'Apagado'"
+                              [disabled]="trabajando" (click)="alternarEncabezado(e)">
+                        <i class="fa-solid" [ngClass]="e.activo ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                      </button>
                     }
-                  </div>
-                </ng-container>
-              </panel>
+                    @if (puedeEliminar) {
+                      <button type="button" class="btn btn-xs btn-borrar" title="Borrar este encabezado"
+                              [disabled]="trabajando" (click)="borrarEncabezado(e)">
+                        <i class="fa fa-trash-can"></i>
+                      </button>
+                    }
+                  }
+                </span>
+              </div>
+            } @empty {
+              <p class="text-muted small mb-0 px-2">Ningún encabezado con ese nombre.</p>
+            }
+          </div>
+        }
+      </aside>
+
+      <!-- ================= Y LO QUE SE ESTÁ MIRANDO, QUE ES DONDE SE EDITA ================= -->
+      <section class="enc-col enc-col--centro">
+
+        <!-- ===== LA CABECERA: QUIÉN ES Y CUÁNDO SE VE =====
+             El nombre y las fechas viven aquí desde el 20/11/2026, cuando la
+             columna de estilos se fue a la previa: son lo único del encabezado
+             que no se puede dibujar —no se ven en la tienda—, así que no
+             tienen pieza que tocar y se quedan siempre a la vista. -->
+        <div class="enc-centro__cabecera">
+          <div class="enc-centro__quien" [formGroup]="datosForm">
+            <div class="enc-centro__nombre">
+              <input class="enc-centro__campo" formControlName="nombre" maxlength="60"
+                     placeholder="Ej.: Navidad" title="Cómo se llama aquí dentro"
+                     [attr.aria-label]="'Cómo se llama aquí dentro'">
+              @if (modelo?.principal) {
+                <span class="enc-chip enc-chip--abre"><i class="fa-solid fa-star"></i> Predeterminado</span>
+              }
+              @if (modelo?.manda) {
+                <span class="enc-chip enc-chip--si"><i class="fa fa-eye"></i> En la tienda ahora</span>
+              } @else {
+                <span class="enc-chip enc-chip--no">{{ cuandoSeVe($any(modelo)) }}</span>
+              }
             </div>
 
-            <!-- ---------- El logo de la tienda ----------
-                 Hasta el 14/11/2026 iba dibujado dentro de la tienda y
-                 cambiarlo era cambiar código. Va por su puerta y no con
-                 «Guardar contenido»: es un fichero, y aquel botón reescribe
-                 la configuración entera. -->
-            <div class="col-12">
-              <panel headerClass="bg-gray-800" title="El logo de la tienda" noButton="true"
-                     noBody="true" panelClass="mb-0" icono="image" fondoGris="true">
+            <div class="enc-centro__fechas">
+              <label for="enc-desde">DESDE</label>
+              <input id="enc-desde" type="datetime-local" class="form-control form-control-sm"
+                     formControlName="desde">
+              <label for="enc-hasta">HASTA</label>
+              <input id="enc-hasta" type="datetime-local" class="form-control form-control-sm"
+                     formControlName="hasta">
+              <span class="enc-centro__pista">
+                <i class="fa-solid fa-circle-info"></i>
+                Vacías se ve siempre; con fechas se enciende y se apaga solo. El encendido y
+                la estrella se cambian en la lista de la izquierda.
+              </span>
+            </div>
+          </div>
 
-                <ng-container outsideBody>
-                  <div class="form-card__body">
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      <span>
-                        Sale arriba a la izquierda, en la fila del buscador, y en
-                        el menú del celular. <b>Se guarda al subirlo</b>, sin
-                        darle a «Guardar contenido». Sin logo subido la tienda
-                        enseña el que trae dibujado, así que quitarlo no la deja
-                        sin marca.
-                      </span>
-                    </p>
+          <div class="enc-centro__botones">
+            <!-- Descartar vuelve a pedir lo guardado: es lo que hace «volver a
+                 cargar», dicho con las palabras de quien está editando -->
+            <button type="button" class="btn btn-sm btn-white"
+                    [disabled]="guardando || !(form.dirty || datosForm.dirty)" (click)="cargar()">
+              <i class="fa fa-rotate-left"></i> Descartar
+            </button>
+            @if (puedeEditar) {
+              <button type="button" class="btn btn-sm btn-primary"
+                      [disabled]="guardando" (click)="guardarContenido()">
+                <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar cambios' }}
+              </button>
+            }
+          </div>
+        </div>
 
-                    <div class="enc-logo">
-                      <div class="enc-logo__foto">
-                        @if (hayLogo) {
-                          <img [src]="logoUrl" alt="Logo de la tienda">
-                        } @else {
-                          <span class="enc-logo__hueco">
-                            <i class="fa-solid fa-image"></i>
-                            <small>El de la tienda</small>
+        <div class="enc-centro__pestanas">
+          <button type="button" class="enc-centro__pestana"
+                  [class.is-activa]="vistaCentro === 'previa'"
+                  (click)="vistaCentro = 'previa'">
+            <i class="fa-solid fa-eye"></i> Vista previa
+          </button>
+          <button type="button" class="enc-centro__pestana"
+                  [class.is-activa]="vistaCentro === 'menu'"
+                  (click)="vistaCentro = 'menu'">
+            <i class="fa-solid fa-bars"></i> Menú
+            <span class="enc-centro__cuenta">{{ enlaces.length }}</span>
+          </button>
+        </div>
+
+        @if (vistaCentro === 'previa') {
+          <!-- ===== LA VISTA PREVIA, QUE ES EL EDITOR =====
+               Las tres franjas de la tienda dibujadas con lo que hay EN EL
+               FORMULARIO, así que se mueve mientras se escribe y antes de
+               guardar. Es un boceto: el ancho es el del panel, no el de la
+               pantalla del cliente, y los productos no están.
+
+               Y SE TOCA. Hasta el 20/11/2026 esto era un dibujo y todo se
+               cambiaba en una tercera columna llamada «Estilos», con siete
+               paneles donde había que acordarse de en cuál estaba cada cosa.
+               Ahora cada parte del boceto se pulsa y debajo sale su mando, con
+               lo suyo y nada más: el color del texto de la franja se elige
+               pulsando ese texto, igual que en un editor de documentos.
+
+               EL MANDO VA DEBAJO Y NO FLOTANDO ENCIMA: lo que se está mirando
+               es justo lo que taparía un cuadro flotante.
+
+               Lo que NO se puede dibujar —el nombre y las fechas, que no se
+               ven en la tienda— está arriba, siempre a la vista. -->
+          <form [formGroup]="form" novalidate class="enc-previa">
+            <div class="enc-previa__marco">
+
+              @if (ctrlBarraActiva.value) {
+                <!-- LA FRANJA. El div de fuera es su fondo (y su tamaño y su
+                     letra, que son de la franja entera); dentro, cada trozo con
+                     lo suyo. Los hijos paran el clic para que pulsar el texto no
+                     abra el mando del fondo. -->
+                <div class="enc-previa__franja" role="button" tabindex="0"
+                     [class.is-tocada]="tocando('franja')"
+                     title="La franja: su fondo, su tamaño y su letra"
+                     (click)="tocar('franja', 'La franja superior')"
+                     (keydown.enter)="tocar('franja', 'La franja superior')"
+                     [style.background-color]="colorQueSeVeDe('franja_fondo')"
+                     [style.color]="colorQueSeVeDe('franja_texto')"
+                     [style.font-family]="fuenteDeLaFranja().css"
+                     [style.font-style]="fuenteDeLaFranja().cursiva ? 'italic' : 'normal'"
+                     [style.font-size.px]="tamanoDeLaFranja()">
+
+                  <!-- El texto se escribe AQUÍ MISMO, con su letra y su color:
+                       lo que se escribe se ve ya como se va a leer -->
+                  @if (tocando('franjaTexto')) {
+                    <input class="enc-previa__escribir" maxlength="80"
+                           placeholder="Texto de la franja"
+                           [formControl]="$any(barra.controls['texto'])"
+                           (click)="$event.stopPropagation()"
+                           (keydown.enter)="cerrarPieza()">
+                  } @else {
+                    <button type="button" class="enc-previa__pieza"
+                            title="El texto de la franja: pulsa para escribirlo y elegir su color"
+                            (click)="$event.stopPropagation(); tocar('franjaTexto', 'El texto de la franja')">
+                      {{ barra.value.texto || 'Texto de la franja' }}
+                    </button>
+                  }
+
+                  @if (tocando('franjaDestacado')) {
+                    <input class="enc-previa__escribir enc-previa__escribir--fuerte" maxlength="60"
+                           placeholder="Lo que va resaltado"
+                           [formControl]="$any(barra.controls['destacado'])"
+                           [style.color]="colorQueSeVeDe('franja_destacado')"
+                           (click)="$event.stopPropagation()"
+                           (keydown.enter)="cerrarPieza()">
+                  } @else if (barra.value.destacado) {
+                    <button type="button" class="enc-previa__pieza enc-previa__pieza--fuerte"
+                            title="El destacado: pulsa para escribirlo y elegir su color"
+                            [style.color]="colorQueSeVeDe('franja_destacado')"
+                            (click)="$event.stopPropagation(); tocar('franjaDestacado', 'El destacado')">
+                      {{ barra.value.destacado }}
+                    </button>
+                  } @else if (puedeEditar) {
+                    <!-- Sin destacado no hay nada que pulsar, y entonces no habría
+                         forma de ponerlo: un hueco de puntos que sólo se ve aquí -->
+                    <button type="button" class="enc-previa__hueco"
+                            title="Poner un texto destacado"
+                            (click)="$event.stopPropagation(); tocar('franjaDestacado', 'El destacado')">
+                      + destacado
+                    </button>
+                  }
+
+                  <!-- Cada una con SU pinta: la suya si la tiene, y si no la de la
+                       franja, que es lo que va a ver el cliente -->
+                  @for (boton of botonesDeLaPrevia(); track $index) {
+                    <button type="button" class="enc-previa__boton"
+                            [class.is-tocada]="tocando('franjaBotones')"
+                            title="Los botones de la franja: su texto, su URL y su pinta"
+                            [style.background-color]="boton.fondo"
+                            [style.color]="boton.letra"
+                            [style.font-size.px]="boton.tamano"
+                            (click)="$event.stopPropagation(); tocar('franjaBotones', 'Los botones de la franja')">
+                      {{ boton.texto }}
+                    </button>
+                  }
+
+                  @if (puedeAnadirBoton) {
+                    <button type="button" class="enc-previa__hueco"
+                            title="Añadir un botón"
+                            (click)="$event.stopPropagation(); tocar('franjaBotones', 'Los botones de la franja')">
+                      + botón
+                    </button>
+                  }
+                </div>
+              } @else {
+                <!-- APAGADA SIGUE ESTANDO: si desapareciera del boceto no habría
+                     dónde pulsar para volver a encenderla -->
+                <button type="button" class="enc-previa__apagada"
+                        [class.is-tocada]="tocando('franja')"
+                        (click)="tocar('franja', 'La franja superior')">
+                  <i class="fa-solid fa-eye-slash"></i> La franja está oculta — pulsa para encenderla
+                </button>
+              }
+
+              <!-- LA FILA DEL LOGO: el fondo es suyo; el logo, el buscador y el
+                   carrito tienen cada uno lo suyo -->
+              <div class="enc-previa__media" role="button" tabindex="0"
+                   [class.is-tocada]="tocando('filaLogo')"
+                   title="La fila del logo: su fondo y su letra"
+                   (click)="tocar('filaLogo', 'La fila del logo')"
+                   (keydown.enter)="tocar('filaLogo', 'La fila del logo')"
+                   [style.background-color]="colorQueSeVeDe('encabezado_fondo')"
+                   [style.color]="colorQueSeVeDe('encabezado_texto')">
+
+                <button type="button" class="enc-previa__logo"
+                        [class.is-tocada]="tocando('logo')"
+                        title="El logo de la tienda"
+                        (click)="$event.stopPropagation(); tocar('logo', 'El logo de la tienda')">
+                  @if (logoUrl) {
+                    <img [src]="logoUrl" alt="">
+                  } @else {
+                    <i class="fa-solid fa-store"></i>
+                  }
+                </button>
+
+                <button type="button" class="enc-previa__buscador"
+                        [class.is-tocada]="tocando('buscador')"
+                        title="El buscador: las frases que van rotando dentro"
+                        (click)="$event.stopPropagation(); tocar('buscador', 'Las frases del buscador')">
+                  <span>{{ frases.length ? frases.at(0).value : '¿Qué estás buscando?' }}</span>
+                  <i class="fa-solid fa-magnifying-glass"
+                     [style.background-color]="colorQueSeVe"></i>
+                </button>
+
+                <!-- El saludo no se cambia: lo escribe la tienda. Va con el fondo
+                     de la fila, que es lo que sí se elige -->
+                <span class="enc-previa__cuenta">
+                  <i class="fa-solid fa-user"></i>
+                  <span>Inicia sesión</span>
+                </span>
+
+                <button type="button" class="enc-previa__carrito"
+                        [class.is-tocada]="tocando('tienda')"
+                        title="El carrito va del color de la tienda"
+                        [style.background-color]="colorQueSeVe"
+                        (click)="$event.stopPropagation(); tocar('tienda', 'El color de la tienda')">
+                  <i class="fa-solid fa-cart-shopping"></i> $0,00
+                </button>
+              </div>
+
+              <!-- LA BARRA: el fondo es el color de la tienda; los enlaces, el menú,
+                   con la letra, el tamaño y la tipografía que se elijan -->
+              <div class="enc-previa__barra" role="button" tabindex="0"
+                   [class.is-tocada]="tocando('tienda')"
+                   title="La barra va del color de la tienda"
+                   (click)="tocar('tienda', 'El color de la tienda')"
+                   (keydown.enter)="tocar('tienda', 'El color de la tienda')"
+                   [style.background-color]="colorQueSeVe"
+                   [style.color]="colorQueSeVeDe('menu_texto')"
+                   [style.font-size.px]="tamanoDelMenu()"
+                   [style.font-family]="fuenteDelMenu().css"
+                   [style.font-style]="fuenteDelMenu().cursiva ? 'italic' : 'normal'">
+                <!-- CATEGORÍAS Y MARCAS NO SON ENLACES DEL CRM: los pone la tienda y
+                     van siempre con la letra del menú, así que pulsarlos abre la de
+                     todos. (Marcas no se dibuja aquí: el boceto es más estrecho.) -->
+                <button type="button" class="enc-previa__item"
+                        [class.is-tocada]="tocando('menu')"
+                        title="La letra de toda la barra"
+                        (click)="$event.stopPropagation(); tocar('menu', 'La letra del menú')">
+                  <i class="fa-solid fa-bars"></i> CATEGORÍAS
+                </button>
+
+                <!-- Y CADA ENLACE CON LO SUYO: el que no eligió nada sale con la
+                     letra del menú, que es lo normal -->
+                @for (e of enlacesDeLaPrevia; track e.id) {
+                  <button type="button" class="enc-previa__item"
+                          [class.is-destacado]="e.destacado"
+                          [class.is-tocada]="tocandoEnlace(e.id)"
+                          [title]="'«' + e.texto + '»: su color, su tamaño y su letra'"
+                          [style.background-color]="estiloDelEnlace(e.id).fondo"
+                          [style.color]="estiloDelEnlace(e.id).color"
+                          [style.font-size.px]="estiloDelEnlace(e.id).tamano"
+                          [style.font-family]="estiloDelEnlace(e.id).fuente"
+                          [style.font-style]="estiloDelEnlace(e.id).cursiva ? 'italic' : null"
+                          (click)="$event.stopPropagation(); tocarEnlace(e)">
+                    {{ e.texto }}
+                  </button>
+                }
+              </div>
+
+              <!-- El desplegable, para ver sus dos colores sin tener que abrirlo
+                   en la tienda -->
+              <button type="button" class="enc-previa__desplegable"
+                      [class.is-tocada]="tocando('desplegable')"
+                      title="El desplegable que se abre al pulsar «Categorías»"
+                      (click)="tocar('desplegable', 'Los desplegables del menú')"
+                      [style.background-color]="colorQueSeVeDe('desplegable_fondo')"
+                      [style.color]="colorQueSeVeDe('desplegable_texto')">
+                <span>Lo que se abre al pulsar «Categorías»</span>
+              </button>
+            </div>
+
+            <!-- ============ EL MANDO DE LA PIEZA QUE SE ESTÁ TOCANDO ============
+                 Lleva TODO lo de esa parte, no un atajo: desde que la columna de
+                 estilos se fue, esto es el único sitio donde está. -->
+            @if (pieza) {
+              <div class="mando">
+                <div class="mando__cabecera">
+                  <b>{{ piezaNombre }}</b>
+                  <button type="button" class="mando__cerrar" title="Cerrar (Esc)" (click)="cerrarPieza()">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <div class="mando__cuerpo">
+                  @switch (pieza) {
+
+                    <!-- ---------- La franja: su fondo, su tamaño y su letra ---------- -->
+                    @case ('franja') {
+                      <div class="enc-estado mando__ancho" [class.is-on]="ctrlBarraActiva.value">
+                        <span class="enc-estado__icon"><i class="fa-solid fa-power-off"></i></span>
+                        <div class="enc-estado__text">
+                          <span class="enc-estado__label">Franja</span>
+                          <span class="enc-estado__hint">
+                            {{ ctrlBarraActiva.value ? 'Se ve arriba del todo' : 'Oculta' }}
                           </span>
-                        }
-                      </div>
-
-                      @if (puedeEditar) {
-                        <div class="enc-logo__acciones">
-                          <label class="btn btn-sm btn-white mb-0">
-                            <i class="fa fa-upload"></i>
-                            {{ subiendoLogo ? 'Subiendo…' : (hayLogo ? 'Cambiar el logo' : 'Subir el logo') }}
-                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden
-                                   [disabled]="subiendoLogo" (change)="elegirLogo($event)">
-                          </label>
-
-                          @if (hayLogo) {
-                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                    [disabled]="subiendoLogo" (click)="quitarLogo()">
-                              <i class="fa fa-trash"></i> Quitar
-                            </button>
-                          }
                         </div>
-                      }
-                    </div>
-
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      <span>
-                        En la tienda se ve con <b>76 px de alto</b> —unos 60 al
-                        bajar la página— y el ancho que le toque, sin pasar de
-                        320. Un <b>PNG con el fondo transparente</b> es el que
-                        queda bien, y más si el encabezado deja de ser blanco.
-                        Jpg, png, webp o gif; hasta 4 MB.
-                      </span>
-                    </p>
-                  </div>
-                </ng-container>
-              </panel>
-            </div>
-
-            <!-- ---------- El color de la tienda ---------- -->
-            <div class="col-12">
-              <panel headerClass="bg-gray-800" title="El color de la tienda" noButton="true"
-                     noBody="true" panelClass="mb-0" icono="palette" fondoGris="true">
-
-                <ng-container outsideBody>
-                  <div class="form-card__body">
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      No es sólo del encabezado: es el color de TODA la tienda.
-                      Cambia la barra de categorías, los botones, los carteles de
-                      descuento, los círculos de las categorías, las flechas y el
-                      pie, todo a la vez. Sin elegir ninguno se queda el rojo de
-                      siempre.
-                    </p>
-
-                    <div class="color-tienda">
-                      <app-campoColor idCampo="color-tienda"
-                                      [valor]="colorQueSeVe" [propio]="hayColorPropio"
-                                      porDefecto="El rojo de siempre"
-                                      etiqueta="Color de la tienda"
-                                      [paleta]="paletaTienda"
-                                      [deshabilitado]="!puedeEditar"
-                                      (cambia)="ponerColor($event)" />
-
-                      <!-- La muestra: la barra tal como se va a ver, y los dos
-                           tonos que salen solos del color elegido -->
-                      <div class="color-tienda__muestra" aria-hidden="true">
-                        <span class="color-tienda__barra" [style.background-color]="colorQueSeVe">
-                          <b>CATEGORÍAS</b>
-                          <span class="color-tienda__pastilla" [style.color]="colorQueSeVe">APLICA AQUÍ</span>
-                        </span>
-
-                        <span class="color-tienda__tonos">
-                          <i [style.background-color]="colorQueSeVe" title="El que elegiste"></i>
-                          <i [style.background-color]="tonos.oscuro" title="Con el mouse encima (sale solo)"></i>
-                          <i [style.background-color]="tonos.claro" title="Fondos suaves (sale solo)"></i>
-                        </span>
+                        <app-checkbox class="enc-estado__switch palanca"
+                          [control]="ctrlBarraActiva"
+                          [label]="ctrlBarraActiva.value ? 'Visible' : 'Oculta'"
+                          [id]="'ck-barra-activa'">
+                        </app-checkbox>
                       </div>
-                    </div>
 
-                    @if (colorIlegible) {
-                      <p class="color-tienda__aviso">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        La letra blanca encima de este color se lee a
-                        {{ contrasteTexto }}:1, por debajo del 4,5:1 que hace
-                        falta. Los textos de la barra y de los botones son
-                        blancos: con un color tan claro se van a perder. Se
-                        guarda igual, pero mira la muestra antes.
-                      </p>
-                    }
-                  </div>
-                </ng-container>
-              </panel>
-            </div>
-
-            <!-- ---------- Los colores del encabezado ----------
-                 Dos franjas y no una: la de arriba es una cinta de promoción
-                 —ahí apetece un color fuerte— y la del logo es la que tiene
-                 que dejar leer el buscador. -->
-            <div class="col-12">
-              <panel headerClass="bg-gray-800" title="Los colores del encabezado" noButton="true"
-                     noBody="true" panelClass="mb-0" icono="fill-drip" fondoGris="true">
-
-                <ng-container outsideBody>
-                  <div class="form-card__body">
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      <span>
-                        Las dos franjas de arriba, cada una con su fondo y su
-                        letra: la <b>del aviso</b> y la <b>del logo con el
-                        buscador</b>. La barra roja no está aquí: ésa va del
-                        color de la tienda. Sin elegir nada, las dos blancas.
-                      </span>
-                    </p>
-
-                    <!-- ----- La franja de arriba ----- -->
-                    <label class="seccion-rotulo">LA FRANJA DE ARRIBA <span>la del aviso</span></label>
-
-                    <div class="row g-3">
-                      <div class="col-12 col-md-6">
+                      <div class="rotulo-campo color-bloque">
+                        <label for="franja-fondo">Fondo</label>
                         <app-campoColor idCampo="franja-fondo"
                                         [valor]="colorQueSeVeDe('franja_fondo')"
                                         [propio]="hayColorPropioDe('franja_fondo')"
@@ -320,50 +492,298 @@
                                         [deshabilitado]="!puedeEditar"
                                         (cambia)="ponerColorDe('franja_fondo', $event)" />
                       </div>
-                      <div class="col-12 col-md-6">
-                        <app-campoColor idCampo="franja-texto"
+
+                      <!-- EL TAMAÑO Y LA LETRA SON DE LA FRANJA ENTERA: es una sola
+                           línea de texto, y tres tipografías en una línea no es una
+                           opción, es un accidente. -->
+                      <div class="rotulo-campo">
+                        <label for="franja-tamano">Tamaño (px)</label>
+                        <input id="franja-tamano" type="number" class="form-control form-control-sm"
+                               min="8" max="48" step="1" placeholder="14"
+                               [formControl]="$any(form.controls['franja_tamano'])">
+                        <small class="seccion-pie">Entre 8 y 48 (toda la frase).</small>
+                      </div>
+
+                      <div class="rotulo-campo rotulo-campo--ancho">
+                        <label for="franja-fuente">Tipo de letra</label>
+                        <select id="franja-fuente" class="form-select form-select-sm"
+                                [formControl]="$any(form.controls['franja_fuente'])">
+                          @for (f of fuentesFranja; track f.valor) {
+                            <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      @if (ilegible('franja_fondo', 'franja_texto')) {
+                        <p class="color-tienda__aviso mando__ancho">
+                          <i class="fa-solid fa-triangle-exclamation"></i>
+                          Esa letra encima de ese fondo se lee a
+                          {{ contrasteTextoDe('franja_fondo', 'franja_texto') }}:1, por
+                          debajo del 4,5:1 que hace falta. El aviso es lo primero
+                          que se ve al entrar. Se guarda igual, pero mira el boceto antes.
+                        </p>
+                      }
+                    }
+
+                    <!-- ---------- El texto de la franja ---------- -->
+                    @case ('franjaTexto') {
+                      <div class="rotulo-campo color-bloque">
+                        <label for="franja-texto-color">Color del texto</label>
+                        <app-campoColor idCampo="franja-texto-color"
                                         [valor]="colorQueSeVeDe('franja_texto')"
                                         [propio]="hayColorPropioDe('franja_texto')"
-                                        porDefecto="La letra de siempre"
-                                        etiqueta="Letra de la franja"
+                                        porDefecto="La de siempre"
+                                        etiqueta="Color del texto"
                                         [paleta]="paletaLetraEncabezado"
                                         [deshabilitado]="!puedeEditar"
                                         (cambia)="ponerColorDe('franja_texto', $event)" />
                       </div>
-                    </div>
-
-                    <!-- La muestra: la franja tal como va a quedar. El botón se
-                         da la vuelta solo cuando el fondo es oscuro, igual que
-                         en la tienda -->
-                    <div class="enc-muestra" aria-hidden="true"
-                         [style.background-color]="colorQueSeVeDe('franja_fondo')"
-                         [style.color]="colorQueSeVeDe('franja_texto')">
-                      <span class="enc-muestra__texto">
-                        Difiere tus compras hasta <b>18 MESES SIN INTERESES</b>
-                      </span>
-                      <span class="enc-muestra__pildora"
-                            [style.background-color]="pildoraDeLaFranja.fondo"
-                            [style.color]="pildoraDeLaFranja.texto">+ MESES DE GRACIA</span>
-                    </div>
-
-                    @if (ilegible('franja_fondo', 'franja_texto')) {
-                      <p class="color-tienda__aviso">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        Esa letra encima de ese fondo se lee a
-                        {{ contrasteTextoDe('franja_fondo', 'franja_texto') }}:1, por
-                        debajo del 4,5:1 que hace falta. El aviso es lo primero
-                        que se ve al entrar. Se guarda igual, pero mira la
-                        muestra antes.
+                      <p class="mando__nota mb-0">
+                        Se escribe arriba, en el boceto. El tamaño y la letra son de la
+                        franja entera: se eligen pulsando su fondo.
                       </p>
                     }
 
-                    <!-- ----- La fila del logo ----- -->
-                    <label class="seccion-rotulo enc-muestra__rotulo">
-                      LA FILA DEL LOGO <span>donde está el buscador</span>
-                    </label>
+                    <!-- ---------- El destacado ---------- -->
+                    @case ('franjaDestacado') {
+                      <div class="rotulo-campo color-bloque">
+                        <label for="franja-destacado-color">Color del destacado</label>
+                        <app-campoColor idCampo="franja-destacado-color"
+                                        [valor]="colorQueSeVeDe('franja_destacado')"
+                                        [propio]="hayColorPropioDe('franja_destacado')"
+                                        porDefecto="El de la tienda"
+                                        etiqueta="Color del destacado"
+                                        [paleta]="colores"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerColorDe('franja_destacado', $event)" />
+                      </div>
 
-                    <div class="row g-3">
-                      <div class="col-12 col-md-6">
+                      <p class="mando__nota mb-0">
+                        Se escribe arriba, en el boceto. Es la parte que sale resaltada, que es
+                        la que se mira: sin color propio lleva el de la tienda, con el brillo que
+                        se mueve; con uno elegido, se queda quieto en ese color.
+                      </p>
+                    }
+
+                    <!-- ---------- Los botones ---------- -->
+                    @case ('franjaBotones') {
+                      <!-- LOS BOTONES: hasta cuatro, cada uno con su URL. Los
+                           colores son de todos: son píldoras de la misma franja,
+                           y una de cada color sería un semáforo. -->
+                      <div class="enc-botones mando__ancho">
+                        <div class="enc-botones__cabecera">
+                          <span class="seccion-rotulo mb-0">
+                            BOTONES <span>{{ botones.length }} de 4</span>
+                          </span>
+                          @if (puedeAnadirBoton) {
+                            <button type="button" class="btn btn-xs btn-outline-theme"
+                                    (click)="anadirBoton()">
+                              <i class="fa fa-plus"></i> Añadir
+                            </button>
+                          }
+                        </div>
+
+                        @if (!botones.length) {
+                          <p class="campo-hint mb-0">
+                            <i class="fa-solid fa-circle-info"></i>
+                            Sin botones la franja es sólo el aviso. Se pueden añadir hasta
+                            cuatro, y cada uno lleva su propia URL.
+                          </p>
+                        }
+
+                        <!-- Se sigue el GRUPO, no la posición: con track $index, al
+                             quitar uno los campos enseñan los del vecino. -->
+                        @for (boton of botones.controls; track boton; let i = $index) {
+                          <div class="enc-boton">
+                            <span class="enc-boton__numero">{{ i + 1 }}</span>
+                            <div class="row g-2 enc-boton__campos">
+                              <div class="col-12 col-md-5">
+                                <app-campoTexto
+                                  [control]="$any(grupoBoton(i).controls['texto'])"
+                                  label="BOTÓN"
+                                  placeholder="+ MESES DE GRACIA"
+                                  [maxLength]="40">
+                                </app-campoTexto>
+                              </div>
+                              <div class="col-12 col-md-7">
+                                <app-campoTexto
+                                  [control]="$any(grupoBoton(i).controls['enlace'])"
+                                  label="URL"
+                                  placeholder="/shop"
+                                  [maxLength]="250">
+                                </app-campoTexto>
+                              </div>
+                            </div>
+                            @if (puedeEditar) {
+                              <button type="button" class="btn btn-xs btn-borrar"
+                                      title="Quitar este botón" (click)="quitarBoton(i)">
+                                <i class="fa fa-trash"></i>
+                              </button>
+                            }
+                          </div>
+
+                          <!-- Y LA PINTA DE ESTE BOTÓN, debajo de lo que dice: vacía
+                               —lo normal— manda la de la franja, que está más abajo.
+                               Se llena cuando uno tiene que destacar sobre el otro. -->
+                          <div class="enc-boton__pinta">
+                            <div class="rotulo-campo color-bloque">
+                              <label [attr.for]="'boton-fondo-' + i">Su fondo</label>
+                              <app-campoColor [idCampo]="'boton-fondo-' + i"
+                                              [valor]="colorDelBoton(i, 'fondo')"
+                                              [propio]="hayColorPropioDelBoton(i, 'fondo')"
+                                              porDefecto="El de la franja"
+                                              etiqueta="Fondo del botón"
+                                              [paleta]="paletaFondoEncabezado"
+                                              [deshabilitado]="!puedeEditar"
+                                              (cambia)="ponerColorDelBoton(i, 'fondo', $event)" />
+                            </div>
+
+                            <div class="rotulo-campo color-bloque">
+                              <label [attr.for]="'boton-letra-' + i">Su letra</label>
+                              <app-campoColor [idCampo]="'boton-letra-' + i"
+                                              [valor]="colorDelBoton(i, 'letra')"
+                                              [propio]="hayColorPropioDelBoton(i, 'letra')"
+                                              porDefecto="La de la franja"
+                                              etiqueta="Letra del botón"
+                                              [paleta]="paletaLetraEncabezado"
+                                              [deshabilitado]="!puedeEditar"
+                                              (cambia)="ponerColorDelBoton(i, 'letra', $event)" />
+                            </div>
+
+                            <div class="rotulo-campo">
+                              <label [attr.for]="'boton-tamano-' + i">Su tamaño (px)</label>
+                              <input [id]="'boton-tamano-' + i" type="number"
+                                     class="form-control form-control-sm"
+                                     min="8" max="48" step="1" placeholder="11"
+                                     [formControl]="$any(grupoBoton(i).controls['tamano'])">
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <!-- LOS DE TODOS, los de la franja: mandan en el botón que no
+                           tenga el suyo. Sin elegir nada, la tienda los saca del fondo
+                           de la franja —negra sobre claro, blanca sobre oscuro— para
+                           que la píldora no desaparezca. -->
+                      <label class="seccion-rotulo mando__ancho mb-0">
+                        LOS DE TODOS <span>para el que no lleve el suyo</span>
+                      </label>
+
+                      <div class="rotulo-campo color-bloque">
+                        <label for="franja-boton-fondo">Fondo del botón</label>
+                        <app-campoColor idCampo="franja-boton-fondo"
+                                        [valor]="colorQueSeVeDe('franja_boton_fondo')"
+                                        [propio]="hayColorPropioDe('franja_boton_fondo')"
+                                        porDefecto="El que calcula la tienda"
+                                        etiqueta="Fondo del botón"
+                                        [paleta]="paletaFondoEncabezado"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerColorDe('franja_boton_fondo', $event)" />
+                      </div>
+
+                      <div class="rotulo-campo color-bloque">
+                        <label for="franja-boton-texto">Letra del botón</label>
+                        <app-campoColor idCampo="franja-boton-texto"
+                                        [valor]="colorQueSeVeDe('franja_boton_texto')"
+                                        [propio]="hayColorPropioDe('franja_boton_texto')"
+                                        porDefecto="La que calcula la tienda"
+                                        etiqueta="Letra del botón"
+                                        [paleta]="paletaLetraEncabezado"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerColorDe('franja_boton_texto', $event)" />
+                      </div>
+                    }
+
+                    <!-- ---------- El logo ---------- -->
+                    @case ('logo') {
+                      <div class="enc-logo mando__ancho">
+                        <div class="enc-logo__foto">
+                          @if (hayLogo) {
+                            <img [src]="logoUrl" alt="Logo de la tienda">
+                          } @else {
+                            <span class="enc-logo__hueco">
+                              <i class="fa-solid fa-image"></i>
+                              <small>El de la tienda</small>
+                            </span>
+                          }
+                        </div>
+
+                        @if (puedeEditar) {
+                          <div class="enc-logo__acciones">
+                            <label class="btn btn-sm btn-white mb-0">
+                              <i class="fa fa-upload"></i>
+                              {{ subiendoLogo ? 'Subiendo…' : (hayLogo ? 'Cambiar el logo' : 'Subir el logo') }}
+                              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden
+                                     [disabled]="subiendoLogo" (change)="elegirLogo($event)">
+                            </label>
+
+                            @if (hayLogo) {
+                              <button type="button" class="btn btn-sm btn-outline-danger"
+                                      [disabled]="subiendoLogo" (click)="quitarLogo()">
+                                <i class="fa fa-trash"></i> Quitar
+                              </button>
+                            }
+                          </div>
+                        }
+                      </div>
+
+                      <p class="mando__nota mb-0">
+                        <b>Se guarda al subirlo</b>, sin darle a «Guardar cambios». Sin logo
+                        subido la tienda enseña el que trae dibujado, así que quitarlo no la
+                        deja sin marca. Se ve con <b>76 px de alto</b> y el ancho que le toque,
+                        sin pasar de 320: un <b>PNG con el fondo transparente</b> es el que
+                        queda bien. Jpg, png, webp o gif; hasta 4 MB.
+                      </p>
+                    }
+
+                    <!-- ---------- Las frases del buscador ---------- -->
+                    @case ('buscador') {
+                      <div class="enc-frases mando__ancho">
+                        <div class="enc-botones__cabecera">
+                          <span class="seccion-rotulo mb-0">
+                            FRASES <span>{{ frases.length }} de 5</span>
+                          </span>
+                          @if (puedeAnadirFrase) {
+                            <button type="button" class="btn btn-xs btn-outline-theme"
+                                    (click)="anadirFrase()">
+                              <i class="fa fa-plus"></i> Añadir
+                            </button>
+                          }
+                        </div>
+
+                        <!-- Se sigue el CONTROL, no la posición: con track $index,
+                             al quitar una los campos enseñan el valor de la vecina. -->
+                        @for (frase of frases.controls; track frase; let i = $index) {
+                          <div class="enc-frase">
+                            <span class="enc-frase__numero">{{ i + 1 }}</span>
+                            <app-campoTexto
+                              class="enc-frase__campo"
+                              [control]="controlFrase(i)"
+                              label="FRASE"
+                              placeholder="¿Qué estás buscando?"
+                              [maxLength]="60">
+                            </app-campoTexto>
+                            @if (puedeQuitarFrase) {
+                              <button type="button" class="btn btn-xs btn-borrar"
+                                      title="Quitar esta frase" (click)="quitarFrase(i)">
+                                <i class="fa fa-trash"></i>
+                              </button>
+                            }
+                          </div>
+                        }
+                      </div>
+
+                      <p class="mando__nota mb-0">
+                        Van rotando dentro del buscador. Hace falta al menos una, y más de
+                        cinco no llegan a verse. La caja es gris en la tienda y no se
+                        cambia: así se lee sobre un encabezado claro y sobre uno oscuro.
+                      </p>
+                    }
+
+                    <!-- ---------- La fila del logo ---------- -->
+                    @case ('filaLogo') {
+                      <div class="rotulo-campo color-bloque">
+                        <label for="encabezado-fondo">Fondo</label>
                         <app-campoColor idCampo="encabezado-fondo"
                                         [valor]="colorQueSeVeDe('encabezado_fondo')"
                                         [propio]="hayColorPropioDe('encabezado_fondo')"
@@ -373,7 +793,9 @@
                                         [deshabilitado]="!puedeEditar"
                                         (cambia)="ponerColorDe('encabezado_fondo', $event)" />
                       </div>
-                      <div class="col-12 col-md-6">
+
+                      <div class="rotulo-campo color-bloque">
+                        <label for="encabezado-texto">Letra</label>
                         <app-campoColor idCampo="encabezado-texto"
                                         [valor]="colorQueSeVeDe('encabezado_texto')"
                                         [propio]="hayColorPropioDe('encabezado_texto')"
@@ -383,72 +805,192 @@
                                         [deshabilitado]="!puedeEditar"
                                         (cambia)="ponerColorDe('encabezado_texto', $event)" />
                       </div>
-                    </div>
 
-                    <!-- La muestra enseña TAMBIÉN lo que no cambia: la caja de
-                         buscar es gris y el carrito va del color de la tienda,
-                         así que se ven igual sobre un encabezado claro y sobre
-                         uno oscuro -->
-                    <div class="enc-muestra enc-muestra--logo" aria-hidden="true"
-                         [style.background-color]="colorQueSeVeDe('encabezado_fondo')"
-                         [style.color]="colorQueSeVeDe('encabezado_texto')">
-                      <span class="enc-muestra__logo">
-                        @if (hayLogo) {
-                          <img [src]="logoUrl" alt="">
-                        } @else {
-                          LOGO
-                        }
-                      </span>
-                      <span class="enc-muestra__buscador">¿Qué estás buscando?</span>
-                      <span class="enc-muestra__cuenta">
-                        <small>Bienvenido</small>
-                        <b>Inicia sesión</b>
-                      </span>
-                      <span class="enc-muestra__carrito" [style.background-color]="colorQueSeVe">$ 0</span>
-                    </div>
+                      @if (ilegible('encabezado_fondo', 'encabezado_texto')) {
+                        <p class="color-tienda__aviso mando__ancho">
+                          <i class="fa-solid fa-triangle-exclamation"></i>
+                          Esa letra encima de ese fondo se lee a
+                          {{ contrasteTextoDe('encabezado_fondo', 'encabezado_texto') }}:1,
+                          por debajo del 4,5:1 que hace falta. Es la letra del saludo y de
+                          «Inicia sesión». Se guarda igual, pero mira el boceto antes.
+                        </p>
+                      }
 
-                    @if (ilegible('encabezado_fondo', 'encabezado_texto')) {
-                      <p class="color-tienda__aviso">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        Esa letra encima de ese fondo se lee a
-                        {{ contrasteTextoDe('encabezado_fondo', 'encabezado_texto') }}:1,
-                        por debajo del 4,5:1 que hace falta. Es la letra del
-                        saludo y de «Inicia sesión». Se guarda igual, pero mira
-                        la muestra antes.
+                      <p class="mando__nota mb-0">
+                        La <b>caja de buscar</b> se queda gris y el <b>carrito</b> va del color
+                        de la tienda: los dos se leen igual sobre un encabezado claro y sobre
+                        uno oscuro.
                       </p>
                     }
 
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      <span>
-                        La <b>caja de buscar</b> se queda gris y el
-                        <b>carrito</b> va del color de la tienda: los dos se
-                        leen igual sobre un encabezado claro y sobre uno oscuro.
-                        Y el botón del aviso se da la vuelta solo cuando la
-                        franja es oscura, que si no desaparecería.
-                      </span>
-                    </p>
-                  </div>
-                </ng-container>
-              </panel>
-            </div>
+                    <!-- ---------- El color de toda la tienda ---------- -->
+                    @case ('tienda') {
+                      <div class="rotulo-campo color-bloque">
+                        <label for="color-tienda">Color de la tienda</label>
+                        <app-campoColor idCampo="color-tienda"
+                                        [valor]="colorQueSeVe" [propio]="hayColorPropio"
+                                        porDefecto="El rojo de siempre"
+                                        etiqueta="Color de la tienda"
+                                        [paleta]="paletaTienda"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerColor($event)" />
+                      </div>
 
-            <!-- ---------- El color de los desplegables ---------- -->
-            <div class="col-12">
-              <panel headerClass="bg-gray-800" title="Los desplegables del menú" noButton="true"
-                     noBody="true" panelClass="mb-0" icono="swatchbook" fondoGris="true">
+                      <!-- Los dos tonos de al lado salen solos del elegido, con la
+                           misma cuenta que hace la tienda -->
+                      <div class="color-tienda__tonos">
+                        <i [style.background-color]="colorQueSeVe" title="El que elegiste"></i>
+                        <i [style.background-color]="tonos.oscuro" title="Con el mouse encima (sale solo)"></i>
+                        <i [style.background-color]="tonos.claro" title="Fondos suaves (sale solo)"></i>
+                      </div>
 
-                <ng-container outsideBody>
-                  <div class="form-card__body">
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      El panel que se abre al pulsar «Categorías», «Marcas» o un
-                      enlace con desplegable. Los tres se pintan igual. Sin
-                      elegir nada, fondo blanco y la letra de siempre.
-                    </p>
+                      @if (colorIlegible) {
+                        <p class="color-tienda__aviso mando__ancho">
+                          <i class="fa-solid fa-triangle-exclamation"></i>
+                          La letra blanca encima de este color se lee a
+                          {{ contrasteTexto }}:1, por debajo del 4,5:1 que hace falta. Los
+                          textos de la barra y de los botones son blancos: con un color tan
+                          claro se van a perder. Se guarda igual, pero mira el boceto antes.
+                        </p>
+                      }
 
-                    <div class="row g-3">
-                      <div class="col-12 col-md-6">
+                      <p class="mando__nota mb-0">
+                        No es sólo del encabezado: es el color de TODA la tienda. Cambia la
+                        barra de categorías, los botones, los carteles de descuento, los
+                        círculos de las categorías, las flechas y el pie, todo a la vez.
+                      </p>
+                    }
+
+                    <!-- ---------- Los enlaces del menú ---------- -->
+                    @case ('menu') {
+                      <!-- EL FONDO NO ESTÁ AQUÍ: la barra va del color de la tienda,
+                           junto con los botones y el pie. Lo que se elige es cómo se
+                           lee encima. -->
+                      <div class="rotulo-campo color-bloque">
+                        <label for="menu-letra">Color de la letra</label>
+                        <app-campoColor idCampo="menu-letra"
+                                        [valor]="colorQueSeVeDe('menu_texto')"
+                                        [propio]="hayColorPropioDe('menu_texto')"
+                                        porDefecto="Blanca"
+                                        etiqueta="Letra del menú"
+                                        [paleta]="paletaLetraEncabezado"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="ponerColorDe('menu_texto', $event)" />
+                      </div>
+
+                      <div class="rotulo-campo">
+                        <label for="menu-tamano">Tamaño (px)</label>
+                        <input id="menu-tamano" type="number" class="form-control form-control-sm"
+                               min="8" max="48" step="1" placeholder="12"
+                               [formControl]="$any(form.controls['menu_tamano'])">
+                        <small class="seccion-pie">Entre 8 y 48 (toda la barra).</small>
+                      </div>
+
+                      <div class="rotulo-campo rotulo-campo--ancho">
+                        <label for="menu-fuente">Tipo de letra</label>
+                        <select id="menu-fuente" class="form-select form-select-sm"
+                                [formControl]="$any(form.controls['menu_fuente'])">
+                          @for (f of fuentesFranja; track f.valor) {
+                            <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      <p class="mando__nota mb-0">
+                        Esto es <b>lo de todos</b>: para que uno destaque sobre los demás,
+                        se pulsa ese enlace en el boceto y se le pone lo suyo. Los enlaces se
+                        crean y se ordenan en la pestaña «Menú», arrastrándolos: no son un
+                        color, son una lista. El <b>fondo</b> de la barra es el color de la
+                        tienda —va con los botones y el pie—, y el <b>panel</b> que se abre al
+                        pulsarlos tiene el suyo, ahí abajo en el boceto.
+                      </p>
+                      <button type="button" class="mando__ir" (click)="verMenu()">
+                        Ver todo en «Menú»
+                        <i class="fa-solid fa-arrow-right"></i>
+                      </button>
+                    }
+
+                    <!-- ---------- UN enlace de la barra ---------- -->
+                    @case ('menuEnlace') {
+                      <!-- LO SUYO, cuando tiene que destacar sobre los de al lado.
+                           En blanco —lo normal— manda la letra del menú, que es la
+                           que mantiene la barra pareja. El fondo no está aquí por lo
+                           mismo que no está en el menú: la barra va del color de la
+                           tienda. -->
+                      @if (enlaceTocado; as idEnlace) {
+                        <div class="rotulo-campo color-bloque">
+                          <label for="enlace-fondo">Su fondo</label>
+                          <app-campoColor idCampo="enlace-fondo"
+                                          [valor]="fondoDelEnlace(idEnlace)"
+                                          [propio]="hayFondoPropioDelEnlace(idEnlace)"
+                                          [porDefecto]="porDefectoDelFondo"
+                                          etiqueta="Fondo del enlace"
+                                          [paleta]="paletaFondoEncabezado"
+                                          [deshabilitado]="!puedeEditar"
+                                          (cambia)="ponerFondoDelEnlace(idEnlace, $event)" />
+                        </div>
+
+                        <div class="rotulo-campo color-bloque">
+                          <label for="enlace-color">Su color</label>
+                          <app-campoColor idCampo="enlace-color"
+                                          [valor]="colorDelEnlace(idEnlace)"
+                                          [propio]="hayColorPropioDelEnlace(idEnlace)"
+                                          [porDefecto]="porDefectoDelEnlace"
+                                          etiqueta="Color del enlace"
+                                          [paleta]="paletaLetraEncabezado"
+                                          [deshabilitado]="!puedeEditar"
+                                          (cambia)="ponerColorDelEnlace(idEnlace, $event)" />
+                        </div>
+
+                        <div class="rotulo-campo">
+                          <label for="enlace-tamano">Su tamaño (px)</label>
+                          <input id="enlace-tamano" type="number" class="form-control form-control-sm"
+                                 min="8" max="48" step="1" [placeholder]="tamanoDelMenu()"
+                                 [formControl]="$any(grupoEnlace(idEnlace).controls['tamano'])">
+                          <small class="seccion-pie">Entre 8 y 48. Vacío, el del menú.</small>
+                        </div>
+
+                        <div class="rotulo-campo rotulo-campo--ancho">
+                          <label for="enlace-fuente">Su tipo de letra</label>
+                          <select id="enlace-fuente" class="form-select form-select-sm"
+                                  [formControl]="$any(grupoEnlace(idEnlace).controls['fuente'])">
+                            <option value="">La del menú</option>
+                            @for (f of fuentesFranja; track f.valor) {
+                              <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+                            }
+                          </select>
+                        </div>
+
+                        @if (ilegibleElEnlace(idEnlace)) {
+                          <p class="color-tienda__aviso mando__ancho">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            Esa letra encima de ese fondo se lee a
+                            {{ contrasteTextoDelEnlace(idEnlace) }}:1, por debajo del 4,5:1
+                            que hace falta. Se guarda igual, pero míralo en el boceto.
+                          </p>
+                        }
+
+                        <p class="mando__nota mb-0">
+                          Lo que se deje vacío lo pone el menú, que es lo que mantiene la barra
+                          pareja: esto es para el que tiene que destacar en una campaña.
+                          @if (textoDelEnlaceTocado) {
+                            Sólo se ve <b>en la barra</b>: «{{ textoDelEnlaceTocado }}» dentro del
+                            desplegable «MÁS» o del menú del celular va con los colores del panel,
+                            que son blancos y se tragarían un color elegido para la barra.
+                          }
+                        </p>
+                        <button type="button" class="mando__ir"
+                                (click)="tocar('menu', 'La letra del menú')">
+                          Lo de todos, en «La letra del menú»
+                          <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                      }
+                    }
+
+                    <!-- ---------- Los desplegables ---------- -->
+                    @case ('desplegable') {
+                      <div class="rotulo-campo color-bloque">
+                        <label for="menu-fondo">Fondo</label>
                         <app-campoColor idCampo="menu-fondo"
                                         [valor]="menuFondoQueSeVe" [propio]="hayMenuFondoPropio"
                                         porDefecto="Blanco"
@@ -457,7 +999,9 @@
                                         [deshabilitado]="!puedeEditar"
                                         (cambia)="ponerMenuFondo($event)" />
                       </div>
-                      <div class="col-12 col-md-6">
+
+                      <div class="rotulo-campo color-bloque">
+                        <label for="menu-texto">Letra</label>
                         <app-campoColor idCampo="menu-texto"
                                         [valor]="menuTextoQueSeVe" [propio]="hayMenuTextoPropio"
                                         porDefecto="La letra de siempre"
@@ -466,172 +1010,156 @@
                                         [deshabilitado]="!puedeEditar"
                                         (cambia)="ponerMenuTexto($event)" />
                       </div>
-                    </div>
 
-                    <!-- La muestra: el panel tal como va a quedar -->
-                    <div class="menu-muestra" aria-hidden="true"
-                         [style.background-color]="menuFondoQueSeVe"
-                         [style.color]="menuTextoQueSeVe">
-                      <span class="menu-muestra__item">Línea Blanca</span>
-                      <span class="menu-muestra__item">Tecnología</span>
-                      <span class="menu-muestra__item">Audio y Video</span>
-                    </div>
+                      @if (menuIlegible) {
+                        <p class="color-tienda__aviso mando__ancho">
+                          <i class="fa-solid fa-triangle-exclamation"></i>
+                          Esa letra encima de ese fondo se lee a {{ contrasteMenuTexto }}:1,
+                          por debajo del 4,5:1 que hace falta. Los nombres de las categorías
+                          se van a perder. Se guarda igual, pero mira el boceto antes.
+                        </p>
+                      }
 
-                    @if (menuIlegible) {
-                      <p class="color-tienda__aviso">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        Esa letra encima de ese fondo se lee a
-                        {{ contrasteMenuTexto }}:1, por debajo del 4,5:1 que hace
-                        falta. Los nombres de las categorías se van a perder. Se
-                        guarda igual, pero mira la muestra antes.
+                      <p class="mando__nota mb-0">
+                        El panel que se abre al pulsar «Categorías», «Marcas» o un enlace con
+                        desplegable. Los tres se pintan igual.
                       </p>
                     }
-                  </div>
-                </ng-container>
-              </panel>
-            </div>
-
-            @if (puedeEditar) {
-              <div class="col-12 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-primary"
-                        [disabled]="guardando" (click)="guardarContenido()">
-                  <i class="fa fa-save"></i> {{ guardando ? 'Guardando…' : 'Guardar contenido' }}
-                </button>
+                  }
+                </div>
               </div>
-            }
-
-          </div>
-        </form>
-      }
-
-      <!-- ================= MENÚ =================
-           Una rejilla con el árbol, como el resto de listados de la casa
-           (Seguridad → Menús es el modelo). Hasta el 15/11/2026 era una lista
-           arrastrable hecha a mano, que sabía pintar dos niveles y ni uno más.
-
-           EL ÁRBOL NO TIENE LÍMITE: el menú de la tienda se despliega hacia
-           un lado, así que lo hondo que pueda ir es cosa del diseño. -->
-      @if (pestana === 'menu') {
-        <panel headerClass="bg-gray-800" title="Menú de la tienda" noButton="true"
-               noBody="true" panelClass="mb-0" icono="bars" fondoGris="true">
-
-          <ng-container outsideBody>
-            <div class="form-card__body">
-
-              <p class="campo-hint">
-                <i class="fa-solid fa-circle-info"></i>
-                <span>
-                  Un enlace con algo colgando no lleva a ningún sitio: sólo
-                  abre su desplegable. Uno sin nada colgando y sin dirección
-                  no se ve en la tienda. Y el marcado como <b>destacado</b>
-                  sale como botón blanco al final de la barra.
-                </span>
+            } @else {
+              <p class="campo-hint mb-0">
+                <i class="fa-solid fa-hand-pointer"></i>
+                Pulsa cualquier parte del boceto —la franja, su texto, un botón, el logo, el
+                buscador, la barra— y aquí abajo sale lo suyo para cambiarlo. Es un boceto con
+                lo que hay escrito ahora mismo, antes de guardar: el ancho es el de este panel,
+                no el de la pantalla del cliente, y los productos no salen aquí.
               </p>
+            }
+          </form>
+        } @else {
+          <panel headerClass="bg-gray-800" title="Menú de la tienda" noButton="true"
+                 noBody="true" panelClass="mb-0" icono="bars" fondoGris="true">
 
-              <!-- La barra: buscar y añadir, como en las demás pantallas -->
-              <div class="row g-2 mb-2 align-items-center">
-                <div class="col position-relative pe-1">
-                  <app-campoBusqueda
-                    [id]="'filtro-enlaces'"
-                    [placeholder]="'Buscar'"
-                    [iconClass]="'fa fa-search fa-lg'"
-                    [containerClass]="'position-relative w-100'"
-                    (searchChange)="onFilterTextBoxChanged()">
-                  </app-campoBusqueda>
-                </div>
+            <ng-container outsideBody>
+              <div class="form-card__body">
 
-                @if (puedeCrear) {
-                  <div class="col-auto ps-0">
-                    <button type="button"
-                            class="btn btn-primary d-flex align-items-center justify-content-center square-btn rounded-3"
-                            title="Nuevo enlace de la barra"
-                            [disabled]="trabajando" (click)="nuevoPrincipal()">
-                      <i class="fa fa-plus"></i>
-                    </button>
-                  </div>
-                }
-              </div>
-
-              <!-- Arrastrar y soltar: el asa ⋮⋮ de la columna «Enlace» empieza
-                   el arrastre y aquí se resuelve dónde se suelta (tercio de
-                   arriba o de abajo = antes o después; centro = dentro). -->
-              <div class="enlaces-grilla-wrap"
-                   (click)="alClicarCabecera($event)"
-                   (dragover)="onDragOverGrilla($event)"
-                   (dragleave)="onDragLeaveGrilla($event)"
-                   (drop)="onDropGrilla($event)">
-                <ag-grid-angular
-                  [rowData]="filasVisibles"
-                  [columnDefs]="columnDefs"
-                  [defaultColDef]="_appAgGridService.defaultColDef"
-                  [sideBar]="_appAgGridService.sideBar"
-                  [rowHeight]="_appAgGridService.rowHeight"
-                  [headerHeight]="_appAgGridService.headerHeight"
-                  [localeText]="_appAgGridService.localeText"
-                  [rowSelection]="'single'"
-                  [pagination]="true"
-                  [suppressPaginationPanel]="true"
-                  [animateRows]="true"
-                  [cacheQuickFilter]="true"
-                  class="ag-theme-alpine ag-grid-transparente p-2"
-                  [navigateToNextCell]="navegarConTeclado"
-                  (gridReady)="onGridReady($event)"
-                  (cellClicked)="onCellClicked($event)"
-                  (paginationChanged)="onPaginationChanged()">
-                </ag-grid-angular>
-              </div>
-
-              @if (puedeEditar) {
-                <p class="menus-ayuda-dnd small text-muted mb-0 mt-1 px-2">
-                  <i class="fa fa-hand-pointer me-1"></i>
-                  Arrastra una fila desde <b>⋮⋮</b>: suéltala en el <b>borde superior o inferior</b>
-                  de otra para cambiar el orden, o <b>en el centro</b> de otra para meterla dentro.
-                  Los niveles no tienen tope.
-                </p>
-              }
-
-              <!-- Paginación: la hace ag-Grid en cliente (todas las filas están
-                   cargadas); se esconde su panel y se pintan los botones de la
-                   casa, moviendo la página con la API de la rejilla. -->
-              <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
-
-                <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
-                  <button type="button" class="btn btn-sm btn-white" title="Primera página"
-                          (click)="firstPage()" [disabled]="paginaActual <= 1">
-                    <i class="fa fa-angle-double-left"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm btn-white" title="Página anterior"
-                          (click)="prevPage()" [disabled]="paginaActual <= 1">
-                    <i class="fa fa-chevron-left"></i>
-                  </button>
-                  <span class="btn btn-sm btn-white pagination-page-badge disabled">
-                    Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span>
+                    Un enlace con algo colgando no lleva a ningún sitio: sólo
+                    abre su desplegable. Uno sin nada colgando y sin dirección
+                    no se ve en la tienda. Y el marcado como <b>destacado</b>
+                    sale como botón blanco al final de la barra.
                   </span>
-                  <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
-                          (click)="nextPage()" [disabled]="paginaActual >= ultimaPagina">
-                    <i class="fa fa-chevron-right"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm btn-white" title="Última página"
-                          (click)="lastPage()" [disabled]="paginaActual >= ultimaPagina">
-                    <i class="fa fa-angle-double-right"></i>
-                  </button>
-                </div>
+                </p>
 
-                <div class="pagination-info small text-muted">
-                  Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> enlaces
-                  @if (hayPlegados) {
-                    <span class="menus-plegados" title="Hay ramas contraídas">
-                      · <i class="fa fa-minus-square"></i> {{ plegadosCuantos }} contraída{{ plegadosCuantos === 1 ? '' : 's' }}
-                    </span>
+                <!-- La barra: buscar y añadir, como en las demás pantallas -->
+                <div class="row g-2 mb-2 align-items-center">
+                  <div class="col position-relative pe-1">
+                    <app-campoBusqueda
+                      [id]="'filtro-enlaces'"
+                      [placeholder]="'Buscar'"
+                      [iconClass]="'fa fa-search fa-lg'"
+                      [containerClass]="'position-relative w-100'"
+                      (searchChange)="onFilterTextBoxChanged()">
+                    </app-campoBusqueda>
+                  </div>
+
+                  @if (puedeCrear) {
+                    <div class="col-auto ps-0">
+                      <button type="button"
+                              class="btn btn-primary d-flex align-items-center justify-content-center square-btn rounded-3"
+                              title="Nuevo enlace de la barra"
+                              [disabled]="trabajando" (click)="nuevoPrincipal()">
+                        <i class="fa fa-plus"></i>
+                      </button>
+                    </div>
                   }
                 </div>
 
-              </div>
+                <!-- Arrastrar y soltar: el asa ⋮⋮ de la columna «Enlace» empieza
+                     el arrastre y aquí se resuelve dónde se suelta (tercio de
+                     arriba o de abajo = antes o después; centro = dentro). -->
+                <div class="enlaces-grilla-wrap"
+                     (click)="alClicarCabecera($event)"
+                     (dragover)="onDragOverGrilla($event)"
+                     (dragleave)="onDragLeaveGrilla($event)"
+                     (drop)="onDropGrilla($event)">
+                  <ag-grid-angular
+                    [rowData]="filasVisibles"
+                    [columnDefs]="columnDefs"
+                    [defaultColDef]="_appAgGridService.defaultColDef"
+                    [sideBar]="_appAgGridService.sideBar"
+                    [rowHeight]="_appAgGridService.rowHeight"
+                    [headerHeight]="_appAgGridService.headerHeight"
+                    [localeText]="_appAgGridService.localeText"
+                    [rowSelection]="'single'"
+                    [pagination]="true"
+                    [suppressPaginationPanel]="true"
+                    [animateRows]="true"
+                    [cacheQuickFilter]="true"
+                    class="ag-theme-alpine ag-grid-transparente p-2"
+                    [navigateToNextCell]="navegarConTeclado"
+                    (gridReady)="onGridReady($event)"
+                    (cellClicked)="onCellClicked($event)"
+                    (paginationChanged)="onPaginationChanged()">
+                  </ag-grid-angular>
+                </div>
 
-            </div>
-          </ng-container>
-        </panel>
-      }
-    </app-tab-panel>
+                @if (puedeEditar) {
+                  <p class="menus-ayuda-dnd small text-muted mb-0 mt-1 px-2">
+                    <i class="fa fa-hand-pointer me-1"></i>
+                    Arrastra una fila desde <b>⋮⋮</b>: suéltala en el <b>borde superior o inferior</b>
+                    de otra para cambiar el orden, o <b>en el centro</b> de otra para meterla dentro.
+                    Los niveles no tienen tope.
+                  </p>
+                }
+
+                <!-- Paginación: la hace ag-Grid en cliente (todas las filas están
+                     cargadas); se esconde su panel y se pintan los botones de la
+                     casa, moviendo la página con la API de la rejilla. -->
+                <div class="pagination-controls d-flex justify-content-between align-items-center flex-wrap mt-2 px-2">
+
+                  <div class="btn-group pagination-buttons" role="group" aria-label="Paginación">
+                    <button type="button" class="btn btn-sm btn-white" title="Primera página"
+                            (click)="firstPage()" [disabled]="paginaActual <= 1">
+                      <i class="fa fa-angle-double-left"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-white" title="Página anterior"
+                            (click)="prevPage()" [disabled]="paginaActual <= 1">
+                      <i class="fa fa-chevron-left"></i>
+                    </button>
+                    <span class="btn btn-sm btn-white pagination-page-badge disabled">
+                      Página <b>{{ paginaActual }}</b> de <b>{{ ultimaPagina }}</b>
+                    </span>
+                    <button type="button" class="btn btn-sm btn-white" title="Página siguiente"
+                            (click)="nextPage()" [disabled]="paginaActual >= ultimaPagina">
+                      <i class="fa fa-chevron-right"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-white" title="Última página"
+                            (click)="lastPage()" [disabled]="paginaActual >= ultimaPagina">
+                      <i class="fa fa-angle-double-right"></i>
+                    </button>
+                  </div>
+
+                  <div class="pagination-info small text-muted">
+                    Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> enlaces
+                    @if (hayPlegados) {
+                      <span class="menus-plegados" title="Hay ramas contraídas">
+                        · <i class="fa fa-minus-square"></i> {{ plegadosCuantos }} contraída{{ plegadosCuantos === 1 ? '' : 's' }}
+                      </span>
+                    }
+                  </div>
+
+                </div>
+
+              </div>
+            </ng-container>
+          </panel>
+        }
+      </section>
+    </div>
   }
 </panel>

@@ -2,22 +2,64 @@
  * El encabezado de la tienda (ecommerce.encabezado + encabezado_enlaces).
  *
  * Dos cosas distintas bajo el mismo techo: la CONFIGURACIÓN —lo que se lee en
- * la franja de arriba— y el MENÚ, que es un árbol de dos niveles.
+ * la franja superior— y el MENÚ, que es un árbol de dos niveles.
  */
 
-/** La franja de arriba del todo, la del aviso de los meses sin intereses. */
+/** Un botón de la franja superior, con su propia URL y su propia pinta. */
+export interface BotonFranja {
+  texto?: string | null;
+  enlace?: string | null;
+  /**
+   * LO SUYO, cuando tiene que destacar sobre los de al lado («COMPRAR» junto
+   * a «Ver condiciones»). Vacío —lo normal— y manda lo de la franja.
+   *
+   * `texto` es lo que DICE el botón y `letra` el color con el que se lee. El
+   * TIPO de letra no está aquí: es de la franja entera.
+   */
+  fondo?: string | null;
+  letra?: string | null;
+  tamano?: number | null;
+  /**
+   * NO SE ESCRIBE A MANO: lo decide el servidor. Un enlace a otro sitio se
+   * abre fuera; uno de la propia tienda, nunca.
+   */
+  nueva_pestana?: boolean;
+}
+
+/** La franja superior del todo, la del aviso de los meses sin intereses. */
 export interface BarraSuperior {
   activo: boolean;
   texto?: string | null;
   /** La parte en rojo, que es la que se mira */
   destacado?: string | null;
-  boton_texto?: string | null;
-  boton_enlace?: string | null;
   /**
-   * NO SE ESCRIBE A MANO: lo decide el servidor. Un enlace a otro sitio se
-   * abre fuera; uno de la propia tienda, nunca.
+   * LOS BOTONES, en el orden en que se ven. Hasta el 20/11/2026 había uno
+   * solo (`boton_texto` y `boton_enlace`); ahora se pueden crear hasta
+   * cuatro, cada uno con su URL, y lo que había guardado ya viene convertido
+   * en el primero de la lista.
+   *
+   * SIN TEXTO NO HAY BOTÓN: el servidor quita los que vayan en blanco, porque
+   * una píldora vacía no se puede pulsar y deja un hueco en la franja.
    */
-  boton_nueva_pestana?: boolean;
+  botones?: BotonFranja[];
+}
+
+/**
+ * LA PINTA DE UN ENLACE DE LA BARRA, cuando tiene que destacar sobre los
+ * de al lado («MOTOS» en campaña, al lado de «PRODUCTOS»).
+ *
+ * Vacíos —lo normal— y manda la letra del menú entero.
+ *
+ * EL FONDO ES DE ESTE ENLACE, no de la barra: la barra entera va del color
+ * de la tienda, junto con los botones y el pie. Vacío, el enlace no lleva
+ * píldora y se lee directamente sobre ella. El tono del mouse encima no se
+ * guarda: lo calcula la tienda a partir de éste.
+ */
+export interface PintaEnlaceMenu {
+  fondo?: string | null;
+  color?: string | null;
+  tamano?: number | null;
+  fuente?: 'titulos' | 'texto' | 'deportiva' | 'serif' | null;
 }
 
 export interface ConfigEncabezado {
@@ -66,9 +108,51 @@ export interface ConfigEncabezado {
    * color de la tienda, junto con los botones y el pie.
    */
   franja_fondo?: string | null;
+  /**
+   * Y CADA TROZO DE LA FRANJA: el destacado —la parte que se mira— y la
+   * píldora del botón, con su fondo y su letra. null = lo de siempre, que
+   * es el color de la tienda en el destacado y la píldora que la tienda
+   * calcula del fondo de la franja.
+   */
+  franja_destacado?: string | null;
+  franja_boton_fondo?: string | null;
+  franja_boton_texto?: string | null;
+  /**
+   * El tamaño y la letra de la franja ENTERA, no de cada trozo: es una sola
+   * línea, y tres tipografías en una línea no es una opción.
+   *
+   * EL TAMAÑO VA EN PÍXELES, entre 8 y 48, al revés que el rótulo de una
+   * sección: la franja es una frase y se elige mirándola, así que se escribe
+   * el número. Vacío = los 14 de siempre.
+   */
+  franja_tamano?: number | null;
+  franja_fuente?: 'titulos' | 'texto' | 'deportiva' | 'serif' | null;
   franja_texto?: string | null;
   encabezado_fondo?: string | null;
   encabezado_texto?: string | null;
+
+  /**
+   * LA LETRA DEL MENÚ: la barra de enlaces entera. El fondo no está, por lo
+   * mismo que la barra roja no está en `franja_fondo`: va del color de la
+   * tienda. null en los tres = blanco, 12 px y la letra de siempre.
+   */
+  menu_texto?: string | null;
+  menu_tamano?: number | null;
+  menu_fuente?: 'titulos' | 'texto' | 'deportiva' | 'serif' | null;
+
+  /**
+   * Y LA DE CADA ENLACE, POR ID: { "12": { color, tamano, fuente } }.
+   *
+   * VIVE AQUÍ Y NO EN LA TABLA DE ENLACES a propósito. El menú es UNO SOLO
+   * para todos los encabezados, pero la pinta es de la campaña: el de
+   * Navidad pinta «REGALOS» de dorado y el de siempre lo deja como los
+   * demás. En una columna del enlace, el dorado saldría también en enero.
+   *
+   * Casi siempre está vacío: lo normal es que todos vayan con la letra del
+   * menú. Un enlace borrado deja su entrada, y eso se quiere: si vuelve de
+   * la papelera, vuelve con su color.
+   */
+  menu_enlaces?: Record<string, PintaEnlaceMenu> | null;
 }
 
 /**
@@ -116,9 +200,68 @@ export interface EnlaceEncabezadoModel {
   destacado: boolean;
   orden: number;
   activo: boolean;
+  /**
+   * ENTRE QUÉ FECHAS SALE EN EL MENÚ.
+   *
+   * El menú es UNO SOLO para todos los encabezados —añadir una categoría se
+   * hace una vez—, y lo que se programa es cada enlace: «Regalos» aparece el
+   * 1 de diciembre y se va solo el 6 de enero. Vacías, sale siempre.
+   */
+  desde?: string | null;
+  hasta?: string | null;
+  /** Resuelto por el servidor, como en las secciones de la portada. */
+  estado: EstadoProgramado;
+}
+
+/**
+ * EL ESTADO DE UN ENCABEZADO O DE UN ENLACE, resuelto por el servidor.
+ *
+ * Se calcula allá y no aquí a propósito: comparar fechas con el reloj del
+ * navegador es la manera de que la pantalla diga «se ve» cuando el servidor
+ * cree que no.
+ */
+export type EstadoProgramado = 'visible' | 'oculto' | 'programado' | 'terminado';
+
+/**
+ * UNO DE LOS ENCABEZADOS, en la lista de arriba.
+ *
+ * Hay los que hagan falta, cada uno con sus fechas: uno de Navidad, uno de
+ * Black Friday y el de siempre debajo. Se encienden y se apagan solos.
+ *
+ * EL PREDETERMINADO (`principal`) es el que se ve cuando no hay ninguna
+ * campaña en fecha. Hay exactamente uno, no se apaga ni se borra, y sólo se
+ * cambia por otro.
+ *
+ * `manda` es otra cosa: es el que se está viendo AHORA MISMO en la tienda.
+ * Con cuatro campañas, esa pregunta no se contesta mirando fechas.
+ */
+export interface EncabezadoDeLaLista {
+  id: number;
+  nombre: string;
+  /** 'YYYY-MM-DDTHH:mm', como lo quiere un <input type="datetime-local">. */
+  desde?: string | null;
+  hasta?: string | null;
+  activo: boolean;
+  principal: boolean;
+  manda: boolean;
+  estado: EstadoProgramado;
+  logo?: string | null;
+  logo_url?: string | null;
+  updated_at?: string | null;
+  updated_by?: string | null;
 }
 
 export interface EncabezadoModel {
+  /** El que se está editando. */
+  id: number;
+  nombre: string;
+  desde?: string | null;
+  hasta?: string | null;
+  activo: boolean;
+  principal: boolean;
+  manda: boolean;
+  /** TODOS, para poder cambiar de uno a otro sin otra llamada. */
+  encabezados: EncabezadoDeLaLista[];
   config: ConfigEncabezado;
   enlaces: EnlaceEncabezadoModel[];
   /**

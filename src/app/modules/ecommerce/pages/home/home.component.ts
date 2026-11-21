@@ -107,7 +107,7 @@ export class EcommerceHomeComponent implements OnInit, OnDestroy {
       label: 'ENCABEZADO',
       icon: 'fa-window-maximize',
       color: 'bg-indigo',
-      descripcion: 'La franja de arriba, el buscador, el menú y el aviso de crédito',
+      descripcion: 'La franja superior, el buscador, el menú y el aviso de crédito',
     },
     {
       url: 'ecommerce/editPie',

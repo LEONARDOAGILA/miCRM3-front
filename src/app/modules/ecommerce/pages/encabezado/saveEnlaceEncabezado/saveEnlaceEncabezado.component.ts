@@ -98,6 +98,11 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
       // Sólo tiene sentido en los principales; en un hijo el campo ni se pinta
       // y va en false, que es lo que la base guardaría de todas formas
       destacado: [this.enlace?.destacado === true],
+      // ENTRE QUÉ FECHAS SALE. El menú es uno solo para todos los
+      // encabezados, así que lo que se programa es cada enlace: «Regalos»
+      // del 1 de diciembre al 6 de enero, y se apaga solo
+      desde: [this.enlace?.desde ?? ''],
+      hasta: [this.enlace?.hasta ?? ''],
     });
   }
 
@@ -113,6 +118,8 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
       icono:  v.icono || null,
       activo: v.activo !== false,
       destacado: !this.esDesplegable && v.destacado === true,
+      desde: (v.desde ?? '').trim() || null,
+      hasta: (v.hasta ?? '').trim() || null,
     };
     if (this.esNuevo && this.padreId !== null) { payload.padre_id = this.padreId; }
 

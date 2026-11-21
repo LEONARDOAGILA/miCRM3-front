@@ -4,7 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
-  FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators,
+  FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators,
 } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
@@ -15,11 +15,10 @@ import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { EncabezadoService } from '../../../services/encabezado.service';
-import { EncabezadoModel, EnlaceEncabezadoModel } from '../../../interfaces/encabezadoModel';
-import { COLOR_TIENDA, contrasteEntre, esColorClaro, tonosDelColor } from '../../../interfaces/inicioModel';
+import { BotonFranja, EncabezadoDeLaLista, EncabezadoModel, EnlaceEncabezadoModel } from '../../../interfaces/encabezadoModel';
+import { COLOR_TIENDA, FUENTES_ROTULO, contrasteEntre, esColorClaro, tonosDelColor } from '../../../interfaces/inicioModel';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
-import { TabPanelComponent, PestanaTab } from '../../../../../components/campos/tabPanel/tabPanel.component';
 import { CampoColorComponent } from '../../../../../components/campos/campoColor/campoColor.component';
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
@@ -30,6 +29,26 @@ import { FilasEstirablesDirective } from '../../../../../core/directives/filasEs
 import { AppAgGridService } from '../../../../../service/app-agGrid.service';
 import { SaveEnlaceEncabezadoComponent } from '../saveEnlaceEncabezado/saveEnlaceEncabezado.component';
 import { PapeleraEncabezadoComponent } from '../papeleraEncabezado/papeleraEncabezado.component';
+
+/**
+ * LAS PARTES DEL BOCETO QUE SE PUEDEN TOCAR.
+ *
+ * Cada una abre su mando debajo de la previa. Son las partes que se VEN en
+ * la tienda: lo que no se ve —el nombre y las fechas— no tiene pieza y vive
+ * en la cabecera, siempre a la vista.
+ */
+export type PiezaEncabezado =
+  | 'franja'          // su fondo, su tamaño y su letra (y encenderla)
+  | 'franjaTexto'     // el texto y su color
+  | 'franjaDestacado' // lo resaltado y su color
+  | 'franjaBotones'   // los botones, su URL y sus dos colores
+  | 'logo'            // subirlo o quitarlo
+  | 'buscador'        // las frases que van rotando
+  | 'filaLogo'        // el fondo y la letra de esa fila
+  | 'tienda'          // el color de TODA la tienda
+  | 'menu'            // la letra de TODA la barra
+  | 'menuEnlace'      // y la de UN enlace suyo, si tiene que destacar
+  | 'desplegable';    // el panel que se abre al pulsarlos
 
 /**
  * EL ENCABEZADO DE LA TIENDA (ecommerce.encabezado + encabezado_enlaces).
@@ -63,8 +82,13 @@ import { PapeleraEncabezadoComponent } from '../papeleraEncabezado/papeleraEncab
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
-    CommonModule, RouterLink, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective,
-    PanelComponent, TabPanelComponent, CampoColorComponent, CampoTextoComponent, CheckboxComponent,
+    // FormsModule ADEMÁS de ReactiveFormsModule: el nombre del encabezado nuevo
+    // y el buscador de la lista son [(ngModel)] sueltos, sin formulario detrás.
+    // Sin él NO falla al compilar —NgControlStatus, que viene con el reactivo,
+    // casa con [ngModel]— y revienta al pintar con NG0201: el bloque se queda
+    // vacío y parece que el botón no hace nada
+    CommonModule, RouterLink, FormsModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective,
+    PanelComponent, CampoColorComponent, CampoTextoComponent, CheckboxComponent,
     CampoBusquedaComponent,
   ],
 })
@@ -80,11 +104,45 @@ export class EditEncabezadoComponent implements OnInit {
   public guardando = false;
   public trabajando = false;
 
-  public readonly pestanas: PestanaTab[] = [
-    { id: 'contenido', texto: 'Contenido', icono: 'fa-solid fa-bullhorn' },
-    { id: 'menu',      texto: 'Menú',      icono: 'fa-solid fa-bars' },
-  ];
-  public pestana: 'contenido' | 'menu' = 'contenido';
+  // ================================================================
+  // EL TABLERO: DOS COLUMNAS
+  // ================================================================
+  //
+  // A la izquierda los encabezados y en el centro el que se está editando.
+  // La lista se pliega a una tira: en una pantalla de portátil, el boceto
+  // agradece el ancho.
+  //
+  // HUBO UNA TERCERA, «Estilos», con siete paneles. Se fue el 20/11/2026:
+  // todo lo que tenía se ve en el boceto, y buscar en cuál de los siete
+  // paneles estaba el color de un texto era más trabajo que pulsar el texto.
+
+  public listaPlegada = false;
+
+  /** Qué se mira en el centro: la previa o el menú (que es uno solo). */
+  public vistaCentro: 'previa' | 'menu' = 'previa';
+
+  /** Para encontrar uno cuando ya hay quince campañas. */
+  public buscarHeader = '';
+
+  get encabezadosFiltrados(): EncabezadoDeLaLista[] {
+    const busca = this.buscarHeader.trim().toLowerCase();
+    return busca
+      ? this.encabezados.filter(e => e.nombre.toLowerCase().includes(busca))
+      : this.encabezados;
+  }
+
+  /**
+   * LOS ENLACES QUE SALEN EN LA PREVIA: los de la barra, nada más.
+   *
+   * Los de dentro de un desplegable no se pintan en la barra, así que
+   * enseñarlos aquí dibujaría una barra que la tienda no tiene. Los
+   * apagados y los que están fuera de fecha tampoco: la previa enseña lo
+   * que va a ver el cliente, no lo que hay guardado.
+   */
+  get enlacesDeLaPrevia(): EnlaceEncabezadoModel[] {
+    return this.enlaces.filter(e => e.padre_id === null && e.estado === 'visible').slice(0, 6);
+  }
+
 
   private _encabezadoService = inject(EncabezadoService);
   private _seguridadService = inject(SeguridadService);
@@ -105,6 +163,8 @@ export class EditEncabezadoComponent implements OnInit {
 
   get barra(): FormGroup { return this.form.controls['barra_superior'] as FormGroup; }
   get frases(): FormArray { return this.form.controls['buscador_frases'] as FormArray; }
+  get botones(): FormArray { return this.barra.controls['botones'] as FormArray; }
+  get pintaEnlaces(): FormGroup { return this.form.controls['menu_enlaces'] as FormGroup; }
 
   // ================================================================
   // EL COLOR DE LA TIENDA
@@ -199,8 +259,18 @@ export class EditEncabezadoComponent implements OnInit {
   public readonly coloresDeFabrica: Record<string, string> = {
     franja_fondo:     '#ffffff',
     franja_texto:     '#374151',
+    // Los tres de dentro de la franja: el destacado va con el color de la
+    // tienda, y la píldora, negra sobre claro (la tienda la da la vuelta sola
+    // cuando la franja es oscura)
+    franja_destacado:   COLOR_TIENDA,
+    franja_boton_fondo: '#1d1d1f',
+    franja_boton_texto: '#ffffff',
     encabezado_fondo: '#ffffff',
     encabezado_texto: '#1d1d1f',
+    // El menú: su letra es blanca en la hoja de estilos de la tienda. El
+    // fondo no está aquí porque no se elige: la barra va del color de la
+    // tienda, junto con los botones y el pie.
+    menu_texto: '#ffffff',
   };
 
   /** Fondos de arranque: el blanco, un gris de papel, tres oscuros y un crema. */
@@ -282,7 +352,7 @@ export class EditEncabezadoComponent implements OnInit {
 
     this.subiendoLogo = true;
     try {
-      const res: any = await firstValueFrom(this._encabezadoService.subirLogo(archivo));
+      const res: any = await firstValueFrom(this._encabezadoService.subirLogo(archivo, this.encabezadoId));
       this._toastr.success(res?.message ?? 'Logo guardado', 'Listo');
       this.recogerLogo(res);
     } catch (e: any) {
@@ -299,7 +369,7 @@ export class EditEncabezadoComponent implements OnInit {
 
     this.subiendoLogo = true;
     try {
-      const res: any = await firstValueFrom(this._encabezadoService.quitarLogo());
+      const res: any = await firstValueFrom(this._encabezadoService.quitarLogo(this.encabezadoId));
       this._toastr.success(res?.message ?? 'Logo quitado', 'Listo');
       this.recogerLogo(res);
     } catch (e: any) {
@@ -359,6 +429,13 @@ export class EditEncabezadoComponent implements OnInit {
   get puedeAnadirFrase(): boolean { return this.puedeEditar && this.frases.length < 5; }
   get puedeQuitarFrase(): boolean { return this.puedeEditar && this.frases.length > 1; }
 
+  /**
+   * CUATRO BOTONES COMO MUCHO, y es el mismo límite que mira el servidor: la
+   * franja es una línea, y en un teléfono cinco píldoras no caben. Ninguno
+   * también vale: la franja es una frase y el botón es la excepción.
+   */
+  get puedeAnadirBoton(): boolean { return this.puedeEditar && this.botones.length < 4; }
+
   ngOnInit(): void {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
     this.construirFormulario();
@@ -373,8 +450,9 @@ export class EditEncabezadoComponent implements OnInit {
         activo:       [true],
         texto:        ['', [Validators.maxLength(80)]],
         destacado:    ['', [Validators.maxLength(60)]],
-        boton_texto:  ['', [Validators.maxLength(40)]],
-        boton_enlace: ['', [Validators.maxLength(250)]],
+        // Los botones, hasta cuatro. Se llenan en `pintarFormulario`, como las
+        // frases: son una lista y no un campo.
+        botones:      this.fb.array([]),
       }),
       buscador_frases: this.fb.array([]),
       // El color de TODA la tienda. Vacío = el rojo de siempre
@@ -384,7 +462,22 @@ export class EditEncabezadoComponent implements OnInit {
       desplegable_texto: [''],
       // Y las dos franjas del encabezado, por lo mismo
       franja_fondo: [''],
+      franja_destacado: [''],
+      franja_boton_fondo: [''],
+      franja_boton_texto: [''],
+      // En píxeles, entre 8 y 48. Vacío = los 14 de la tienda
+      franja_tamano: [null, [Validators.min(8), Validators.max(48)]],
+      franja_fuente: ['titulos'],
       franja_texto: [''],
+      // El menú: color, tamaño (en píxeles) y tipo de letra. El fondo no se
+      // elige: la barra va del color de la tienda
+      menu_texto: [''],
+      menu_tamano: [null, [Validators.min(8), Validators.max(48)]],
+      menu_fuente: [''],
+      // Y LA PINTA DE CADA ENLACE, por id. Vacío casi siempre: un grupo se
+      // crea la primera vez que se toca ese enlace, no al cargar, porque lo
+      // normal es que ninguno lleve nada suyo.
+      menu_enlaces: this.fb.group({}),
       encabezado_fondo: [''],
       encabezado_texto: [''],
     });
@@ -394,10 +487,23 @@ export class EditEncabezadoComponent implements OnInit {
   // CARGA
   // ================================================================
 
-  async cargar(): Promise<void> {
+  /**
+   * CUÁL SE ESTÁ EDITANDO. null mientras no ha llegado nada: entonces el
+   * servidor manda el predeterminado, que es el que abre la pantalla.
+   */
+  public encabezadoId: number | null = null;
+
+  /** Todos, para la tira de arriba. */
+  public encabezados: EncabezadoDeLaLista[] = [];
+
+  /** Si se está creando uno: el nombre que se está escribiendo, o null. */
+  public nombreNuevo: string | null = null;
+
+  async cargar(id?: number | null): Promise<void> {
     this.cargando = true;
     try {
-      const res: any = await firstValueFrom(this._encabezadoService.getEncabezado());
+      const res: any = await firstValueFrom(
+        this._encabezadoService.getEncabezado(id === undefined ? this.encabezadoId : id));
       this.pintar(res?.data);
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo cargar el encabezado', 'Error',
@@ -407,10 +513,198 @@ export class EditEncabezadoComponent implements OnInit {
     }
   }
 
+  // ================================================================
+  // LOS ENCABEZADOS DE CAMPAÑA
+  // ================================================================
+  //
+  // Hay los que hagan falta, cada uno con sus fechas. El PREDETERMINADO es
+  // el que se ve cuando no hay ninguna campaña en fecha; no se apaga ni se
+  // borra, y aquí ni se ofrece: la base lo impide y repetir la regla en dos
+  // sitios es la manera de que un día digan cosas distintas.
+
+  /** Su nombre y sus fechas. La pinta va por su propio botón. */
+  public datosForm: FormGroup = this.fb.group({
+    nombre: ['', [Validators.required, Validators.maxLength(60)]],
+    desde:  [''],
+    hasta:  [''],
+    activo: [true],
+  });
+
+  /** El de la tira que se está editando. */
+  esElQueEdito(e: EncabezadoDeLaLista): boolean {
+    return e.id === this.encabezadoId;
+  }
+
+  /** Cómo se lee su estado, con sus fechas. */
+  cuandoSeVe(e: EncabezadoDeLaLista): string {
+    if (!e.activo) { return 'Apagado'; }
+    if (!e.desde && !e.hasta) { return e.principal ? 'Siempre, si no hay campaña' : 'Siempre'; }
+    const desde = e.desde ? e.desde.replace('T', ' ') : null;
+    const hasta = e.hasta ? e.hasta.replace('T', ' ') : null;
+    if (desde && hasta) { return 'Del ' + desde + ' al ' + hasta; }
+    return desde ? 'Desde el ' + desde : 'Hasta el ' + hasta;
+  }
+
+  /** Cambiar de encabezado: se piden sus cosas y se pinta. */
+  async elegirEncabezado(e: EncabezadoDeLaLista): Promise<void> {
+    if (e.id === this.encabezadoId || this.cargando) { return; }
+
+    // Lo que haya a medio escribir en la pinta se perdería sin avisar
+    if (this.form.dirty && !confirm('Tienes cambios sin guardar en este encabezado. ¿Cambiar de todas formas?')) {
+      return;
+    }
+
+    await this.cargar(e.id);
+  }
+
+  /** Uno nuevo, copiando la pinta del que se está editando. */
+  async crearEncabezado(): Promise<void> {
+    if (this._seguridadService.isexpired() || !this.puedeCrear || this.trabajando) { return; }
+
+    const nombre = (this.nombreNuevo ?? '').trim();
+    if (!nombre) { return; }
+
+    this.trabajando = true;
+    try {
+      const res: any = await firstValueFrom(
+        this._encabezadoService.addEncabezado(nombre, this.encabezadoId));
+      this._toastr.success(res?.message ?? 'Encabezado creado', 'Listo');
+      this.nombreNuevo = null;
+      this.pintar(res?.data);
+    } catch (e: any) {
+      this._toastr.error(e?.error?.message ?? 'No se pudo crear el encabezado', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.trabajando = false;
+    }
+  }
+
+  /** Encenderlo o apagarlo desde la tira. */
+  async alternarEncabezado(e: EncabezadoDeLaLista): Promise<void> {
+    if (this._seguridadService.isexpired() || !this.puedeEditar || this.trabajando) { return; }
+
+    this.trabajando = true;
+    try {
+      const res: any = await firstValueFrom(this._encabezadoService.activarEncabezado(e.id));
+      this._toastr.success(res?.message ?? 'Listo', 'Listo');
+      await this.cargar();
+    } catch (err: any) {
+      this._toastr.error(err?.error?.message ?? 'No se pudo cambiar el estado', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.trabajando = false;
+    }
+  }
+
+  /** Éste pasa a ser el predeterminado. */
+  async hacerPredeterminado(e: EncabezadoDeLaLista): Promise<void> {
+    if (this._seguridadService.isexpired() || !this.puedeEditar || this.trabajando || e.principal) { return; }
+
+    if (!confirm('«' + e.nombre + '» pasará a ser el predeterminado: el que se ve cuando no hay '
+                 + 'ninguna campaña en fecha. ¿Seguir?')) { return; }
+
+    this.trabajando = true;
+    try {
+      const res: any = await firstValueFrom(this._encabezadoService.predeterminado(e.id));
+      this._toastr.success(res?.message ?? 'Listo', 'Listo');
+      await this.cargar();
+    } catch (err: any) {
+      this._toastr.error(err?.error?.message ?? 'No se pudo cambiar el predeterminado', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.trabajando = false;
+    }
+  }
+
+  async borrarEncabezado(e: EncabezadoDeLaLista): Promise<void> {
+    if (this._seguridadService.isexpired() || !this.puedeEliminar || this.trabajando || e.principal) { return; }
+
+    if (!confirm('¿Borrar «' + e.nombre + '»?' + String.fromCharCode(10) + String.fromCharCode(10)
+                 + 'No hay papelera: sus colores y su logo se pierden. El menú no se toca, '
+                 + 'que es uno solo para todos.')) { return; }
+
+    this.trabajando = true;
+    try {
+      const res: any = await firstValueFrom(this._encabezadoService.deleteEncabezado(e.id));
+      this._toastr.success(res?.message ?? 'Encabezado borrado', 'Listo');
+      // Si se borró el que se estaba editando, el servidor devuelve el predeterminado
+      this.encabezadoId = null;
+      this.pintar(res?.data);
+    } catch (err: any) {
+      this._toastr.error(err?.error?.message ?? 'No se pudo borrar', 'Error',
+                         { timeOut: 20000, closeButton: true });
+    } finally {
+      this.trabajando = false;
+    }
+  }
+
+  // ---------- El tamaño y la letra de la franja ----------
+  //
+  // Las mismas cuatro letras que ofrece el rótulo de una sección de la
+  // portada: quien eligió «deportiva» allá sabe lo que va a ver aquí. Los
+  // píxeles no están: los pone la tienda.
+
+
+  public readonly fuentesFranja = FUENTES_ROTULO;
+
+  /** La letra elegida para la franja, para dibujarla en la previa. */
+  fuenteDeLaFranja() {
+    const elegida = this.form.controls['franja_fuente']?.value;
+    return this.fuentesFranja.find(f => f.valor === elegida) ?? this.fuentesFranja[0];
+  }
+
+  /**
+   * Y lo que mide: LOS PÍXELES DE VERDAD.
+   *
+   * La previa es más estrecha que la tienda, así que una frase larga con 30
+   * px aquí se parte antes que allá; el tamaño de la letra, en cambio, es el
+   * mismo, y es lo que se está eligiendo. Vacío o fuera de rango, los 14 de
+   * la tienda.
+   */
+  tamanoDeLaFranja(): number {
+    const px = Number(this.form.controls['franja_tamano']?.value);
+    return Number.isFinite(px) && px >= 8 && px <= 48 ? px : 14;
+  }
+
+  /** La letra elegida para el menú, para dibujarlo en el boceto. */
+  fuenteDelMenu() {
+    const elegida = this.form.controls['menu_fuente']?.value;
+    return this.fuentesFranja.find(f => f.valor === elegida) ?? this.fuentesFranja[0];
+  }
+
+  /** Y lo que mide: los píxeles de verdad. Vacío, los 12 de la tienda. */
+  tamanoDelMenu(): number {
+    const px = Number(this.form.controls['menu_tamano']?.value);
+    return Number.isFinite(px) && px >= 8 && px <= 48 ? px : 12;
+  }
+
   /** Lo que llega del servidor, al formulario y al árbol. */
-  private pintar(data: EncabezadoModel | null | undefined): void {
+  private pintar(data: any): void {
     if (!data) { return; }
+
+    // LAS LLAMADAS DEL MENÚ DEVUELVEN SÓLO { enlaces }, y es a propósito: el
+    // menú es uno solo y los encabezados son varios, así que repintar «el
+    // encabezado» con lo que devuelve un enlace le cambiaría los colores a
+    // quien está editando el de Navidad.
+    if (!data.config) {
+      this.modelo = { ...this.modelo, enlaces: data.enlaces ?? [] } as EncabezadoModel;
+      this.refrescarArbol();
+      return;
+    }
+
     this.modelo = data;
+    this.encabezadoId = data.id ?? null;
+    this.encabezados = data.encabezados ?? [];
+
+    // Su nombre y sus fechas, que van en su propio formulario: se guardan
+    // con su botón y no con el de la pinta, porque son dos decisiones
+    this.datosForm.patchValue({
+      nombre: data.nombre ?? '',
+      desde:  data.desde ?? '',
+      hasta:  data.hasta ?? '',
+      activo: data.activo !== false,
+    }, { emitEvent: false });
+    this.datosForm.markAsPristine();
 
     // El menú viene aplanado: la rejilla pinta las filas que no estén dentro
     // de una rama plegada
@@ -422,14 +716,20 @@ export class EditEncabezadoComponent implements OnInit {
         activo:       c.barra_superior?.activo !== false,
         texto:        c.barra_superior?.texto ?? '',
         destacado:    c.barra_superior?.destacado ?? '',
-        boton_texto:  c.barra_superior?.boton_texto ?? '',
-        boton_enlace: c.barra_superior?.boton_enlace ?? '',
       },
       color_principal: c.color_principal ?? '',
       desplegable_fondo: c.desplegable_fondo ?? '',
       desplegable_texto: c.desplegable_texto ?? '',
       franja_fondo: c.franja_fondo ?? '',
+      franja_destacado: c.franja_destacado ?? '',
+      franja_boton_fondo: c.franja_boton_fondo ?? '',
+      franja_boton_texto: c.franja_boton_texto ?? '',
+      franja_tamano: c.franja_tamano ?? null,
+      franja_fuente: c.franja_fuente ?? 'titulos',
       franja_texto: c.franja_texto ?? '',
+      menu_texto: c.menu_texto ?? '',
+      menu_tamano: c.menu_tamano ?? null,
+      menu_fuente: c.menu_fuente ?? '',
       encabezado_fondo: c.encabezado_fondo ?? '',
       encabezado_texto: c.encabezado_texto ?? '',
     });
@@ -438,11 +738,41 @@ export class EditEncabezadoComponent implements OnInit {
     // el servidor
     this.logoUrl = data.logo_url ?? null;
 
+    // LOS BOTONES, uno por grupo. Igual que las frases: `patchValue` no toca
+    // una lista que no tiene los mismos elementos, hay que rehacerla.
+    this.botones.clear();
+    for (const b of (c.barra_superior?.botones ?? [])) {
+      this.botones.push(this.grupoDeBoton(b));
+    }
+
     this.frases.clear();
     for (const f of (c.buscador_frases ?? [])) {
       this.frases.push(this.fb.control(f, [Validators.required, Validators.maxLength(60)]));
     }
     if (this.frases.length === 0) { this.anadirFrase(); }
+
+    // LA PINTA DE CADA ENLACE: se rehace entera. Los controles se llaman
+    // como el id del enlace, así que los del encabezado anterior serían de
+    // otra campaña.
+    for (const clave of Object.keys(this.pintaEnlaces.controls)) {
+      this.pintaEnlaces.removeControl(clave);
+    }
+    for (const [clave, p] of Object.entries((c.menu_enlaces ?? {}) as Record<string, any>)) {
+      this.grupoNuevoDeEnlace(clave).patchValue({
+        fondo:  p?.fondo ?? '',
+        color:  p?.color ?? '',
+        tamano: p?.tamano ?? null,
+        fuente: p?.fuente ?? '',
+      });
+    }
+
+    // Y si el enlace que se estaba tocando ya no está en la barra —se borró,
+    // se apagó, se cambió de campaña—, el mando se cierra: estaría mandando
+    // sobre algo que no se ve.
+    if (this.pieza === 'menuEnlace'
+        && !this.enlacesDeLaPrevia.some(e => e.id === this.enlaceTocado)) {
+      this.cerrarPieza();
+    }
 
     if (!this.puedeEditar) { this.form.disable(); }
   }
@@ -464,13 +794,369 @@ export class EditEncabezadoComponent implements OnInit {
   /** El control, no la posición: con track $index los campos enseñan el valor del vecino. */
   controlFrase(indice: number): FormControl { return this.frases.at(indice) as FormControl; }
 
+  /**
+   * UN BOTÓN DE LA FRANJA: lo que dice, a dónde lleva y su pinta.
+   *
+   * Los tres de la pinta vacíos —lo normal— y manda la de la franja. Se
+   * llenan cuando uno tiene que destacar sobre los otros.
+   */
+  private grupoDeBoton(b: BotonFranja = {}): FormGroup {
+    return this.fb.group({
+      texto:  [b.texto ?? '', [Validators.maxLength(40)]],
+      enlace: [b.enlace ?? '', [Validators.maxLength(250)]],
+      fondo:  [b.fondo ?? ''],
+      letra:  [b.letra ?? ''],
+      tamano: [b.tamano ?? null, [Validators.min(8), Validators.max(48)]],
+    });
+  }
+
+  /** El color de un botón, o el de la franja si no tiene el suyo. */
+  colorDelBoton(indice: number, campo: 'fondo' | 'letra'): string {
+    const propio = (this.grupoBoton(indice).controls[campo]?.value ?? '') as string;
+    return propio || this.colorQueSeVeDe(campo === 'fondo' ? 'franja_boton_fondo' : 'franja_boton_texto');
+  }
+
+  hayColorPropioDelBoton(indice: number, campo: 'fondo' | 'letra'): boolean {
+    return !!(this.grupoBoton(indice).controls[campo]?.value ?? '');
+  }
+
+  ponerColorDelBoton(indice: number, campo: 'fondo' | 'letra', color: string): void {
+    if (!this.puedeEditar) { return; }
+    const control = this.grupoBoton(indice).controls[campo];
+    control.setValue(color || '');
+    control.markAsDirty();
+  }
+
+  anadirBoton(): void {
+    if (!this.puedeAnadirBoton) { return; }
+    this.botones.push(this.grupoDeBoton());
+  }
+
+  quitarBoton(indice: number): void {
+    if (!this.puedeEditar) { return; }
+    this.botones.removeAt(indice);
+  }
+
+  /** El grupo, no la posición, por lo mismo que en las frases. */
+  grupoBoton(indice: number): FormGroup { return this.botones.at(indice) as FormGroup; }
+
+  // ================================================================
+  // TOCAR EL BOCETO PARA CAMBIARLO
+  // ================================================================
+  //
+  // EL BOCETO ES EL EDITOR. Se pulsa una parte y debajo sale su mando, con
+  // lo suyo y nada más: el color del texto de la franja se elige pulsando
+  // ese texto, no buscándolo entre siete paneles de una columna aparte.
+  //
+  // DEBAJO Y NO FLOTANDO ENCIMA: lo que se está mirando es justo lo que
+  // taparía un cuadro flotante.
+  //
+  // Y EL MANDO LO LLEVA TODO, no es un atajo: desde que la columna de
+  // estilos se fue, no hay otro sitio donde esté.
+
+  /** Qué parte se está tocando, o null. */
+  public pieza: PiezaEncabezado | null = null;
+
+  /** Cómo se llama, para la cabecera del mando. */
+  public piezaNombre = "";
+
+  /** Abre (o cierra, si ya estaba) el mando de una parte. */
+  tocar(cual: PiezaEncabezado, nombre: string): void {
+    if (this.pieza === cual) { this.cerrarPieza(); return; }
+    this.pieza = cual;
+    this.piezaNombre = nombre;
+
+    // El texto y el destacado se escriben EN el boceto: el campo aparece
+    // donde estaba el texto y hay que llevarle el cursor, o habría que
+    // pulsar dos veces para escribir en lo que se acaba de pulsar
+    if (cual === 'franjaTexto' || cual === 'franjaDestacado') {
+      setTimeout(() => {
+        const campo = this.host.nativeElement.querySelector('.enc-previa__escribir') as HTMLInputElement | null;
+        campo?.focus();
+        campo?.select();
+      });
+    }
+  }
+
+  /**
+   * QUÉ ENLACE DE LA BARRA se está tocando, o null.
+   *
+   * Va aparte de `pieza` porque la pieza es la misma para todos —son enlaces
+   * de la misma barra— y lo que cambia es cuál.
+   */
+  public enlaceTocado: number | null = null;
+
+  /**
+   * SE PULSA UN ENLACE DE LA BARRA y abajo sale lo suyo: su color, su tamaño
+   * y su letra, para cuando uno tiene que destacar sobre los de al lado.
+   *
+   * Pulsar OTRO con el mando abierto cambia de enlace en vez de cerrarlo,
+   * que es lo que hace falta para ir comparando dos vecinos. Cerrar se
+   * cierra pulsando el mismo otra vez, como el resto de piezas.
+   */
+  tocarEnlace(e: EnlaceEncabezadoModel): void {
+    if (this.pieza === 'menuEnlace' && this.enlaceTocado === e.id) { this.cerrarPieza(); return; }
+    this.grupoNuevoDeEnlace(String(e.id));   // la primera vez no existe todavía
+    this.enlaceTocado = e.id;
+    this.pieza = 'menuEnlace';
+    this.piezaNombre = '«' + e.texto + '», en la barra';
+  }
+
+  /** Si ES ESE el enlace que se está tocando. */
+  tocandoEnlace(id: number): boolean {
+    return this.pieza === 'menuEnlace' && this.enlaceTocado === id;
+  }
+
+  /**
+   * EL GRUPO DE UN ENLACE, creándolo si no estaba.
+   *
+   * SE LLAMA DESDE UN CLIC Y DESDE LA CARGA, nunca desde la plantilla: crear
+   * un control mientras Angular pinta deja el formulario cambiando durante
+   * su propia comprobación (NG0100). Para leer está `grupoEnlace`.
+   */
+  private grupoNuevoDeEnlace(clave: string): FormGroup {
+    let grupo = this.pintaEnlaces.controls[clave] as FormGroup | undefined;
+    if (!grupo) {
+      grupo = this.fb.group({
+        fondo:  [''],
+        color:  [''],
+        tamano: [null as number | null, [Validators.min(8), Validators.max(48)]],
+        fuente: [''],
+      });
+      this.pintaEnlaces.addControl(clave, grupo);
+      // El `disable()` de la carga no alcanza a los que nacen después
+      if (!this.puedeEditar) { grupo.disable(); }
+    }
+    return grupo;
+  }
+
+  /** El de un enlace que ya se tocó: es el que lee el mando. */
+  grupoEnlace(id: number): FormGroup {
+    return this.pintaEnlaces.controls[String(id)] as FormGroup;
+  }
+
+  /** Lo que lleva puesto, sin crear nada: para el boceto. */
+  private pintaDeEnlace(id: number): { fondo: string; color: string; tamano: number | null; fuente: string } {
+    const p = (this.pintaEnlaces.getRawValue() as Record<string, any>)[String(id)] ?? {};
+    return { fondo: p.fondo ?? '', color: p.color ?? '', tamano: p.tamano ?? null, fuente: p.fuente ?? '' };
+  }
+
+  /**
+   * SI ESE ENLACE SALE COMO PÍLDORA BLANCA al final de la barra.
+   *
+   * Importa para el color: un destacado no lleva la letra del menú —que es
+   * blanca— porque encima de su píldora blanca no se vería. Lleva el color
+   * de la tienda, igual que cualquier botón, hasta que se le elija uno.
+   */
+  private esDestacado(id: number): boolean {
+    return this.enlaces.find(e => e.id === id)?.destacado === true;
+  }
+
+  /**
+   * CÓMO SE VE UN ENLACE EN LA BARRA: lo suyo, y lo que no tenga, lo del
+   * menú entero. Es la misma cuenta que hace la tienda.
+   *
+   * El color sale en null cuando es un destacado sin color propio: así la
+   * píldora se queda con el suyo en vez de recibir el blanco del menú.
+   */
+  estiloDelEnlace(id: number): { fondo: string | null; color: string | null; tamano: number; fuente: string; cursiva: boolean } {
+    const propio = this.pintaDeEnlace(id);
+    const fuente = this.fuentesFranja.find(f => f.valor === propio.fuente) ?? this.fuenteDelMenu();
+    const px = Number(propio.tamano);
+    return {
+      // Sin fondo propio no se pinta ninguno: el enlace se lee sobre la barra,
+      // y el destacado se queda con su píldora blanca
+      fondo:   propio.fondo || null,
+      color:   propio.color || (this.esDestacado(id) ? null : this.colorQueSeVeDe('menu_texto')),
+      tamano:  Number.isFinite(px) && px >= 8 && px <= 48 ? px : this.tamanoDelMenu(),
+      fuente:  fuente.css,
+      cursiva: !!fuente.cursiva,
+    };
+  }
+
+  /**
+   * SU FONDO, o el que lleva hoy si no eligió ninguno: la píldora blanca si
+   * es destacado y, si no, el de la barra, que es el color de la tienda.
+   */
+  fondoDelEnlace(id: number): string {
+    return this.pintaDeEnlace(id).fondo
+        || (this.esDestacado(id) ? '#ffffff' : this.colorQueSeVe);
+  }
+
+  hayFondoPropioDelEnlace(id: number): boolean {
+    return !!this.pintaDeEnlace(id).fondo;
+  }
+
+  ponerFondoDelEnlace(id: number, color: string): void {
+    if (!this.puedeEditar) { return; }
+    const control = this.grupoEnlace(id)?.controls['fondo'];
+    if (!control) { return; }
+    control.setValue(color || '');
+    control.markAsDirty();
+  }
+
+  /** Y cómo se llama su fondo de hoy en el mando. */
+  get porDefectoDelFondo(): string {
+    return this.enlaceTocado !== null && this.esDestacado(this.enlaceTocado)
+      ? 'La píldora blanca' : 'El de la barra';
+  }
+
+  /**
+   * SI ESE ENLACE NO SE VA A LEER encima de lo que tiene debajo.
+   *
+   * Sólo se avisa cuando se eligió algo —el fondo, el color o los dos—: la
+   * barra de siempre con la letra de siempre no la decidió nadie aquí, y un
+   * aviso por algo que no se ha tocado es ruido.
+   */
+  ilegibleElEnlace(id: number): boolean {
+    const propio = this.pintaDeEnlace(id);
+    if (!propio.fondo && !propio.color) { return false; }
+    return this.contrasteDelEnlace(id) < 4.5;
+  }
+
+  contrasteDelEnlace(id: number): number {
+    return contrasteEntre(this.fondoDelEnlace(id), this.colorDelEnlace(id));
+  }
+
+  contrasteTextoDelEnlace(id: number): string {
+    return this.contrasteDelEnlace(id).toFixed(1).replace('.', ',');
+  }
+
+  /** Su color, o el que lleva hoy: el del menú, o el de la tienda si es destacado. */
+  colorDelEnlace(id: number): string {
+    return this.pintaDeEnlace(id).color
+        || (this.esDestacado(id) ? this.colorQueSeVe : this.colorQueSeVeDe('menu_texto'));
+  }
+
+  /** Y cómo se llama eso en el mando, que no es lo mismo en los dos casos. */
+  get porDefectoDelEnlace(): string {
+    return this.enlaceTocado !== null && this.esDestacado(this.enlaceTocado)
+      ? 'El de la tienda' : 'El del menú';
+  }
+
+  hayColorPropioDelEnlace(id: number): boolean {
+    return !!this.pintaDeEnlace(id).color;
+  }
+
+  ponerColorDelEnlace(id: number, color: string): void {
+    if (!this.puedeEditar) { return; }
+    const control = this.grupoEnlace(id)?.controls['color'];
+    if (!control) { return; }
+    control.setValue(color || '');
+    control.markAsDirty();
+  }
+
+  /** Y el texto del que se está tocando, para nombrarlo en el mando. */
+  get textoDelEnlaceTocado(): string {
+    return this.enlaces.find(e => e.id === this.enlaceTocado)?.texto ?? '';
+  }
+
+  cerrarPieza(): void {
+    this.pieza = null;
+    this.piezaNombre = "";
+    this.enlaceTocado = null;
+  }
+
+  /** Si esa parte es la que se está tocando. */
+  tocando(cual: PiezaEncabezado): boolean { return this.pieza === cual; }
+
+  /** Escape cierra el mando, como cualquier cuadro de esta casa. */
+  @HostListener('document:keydown.escape')
+  alPulsarEscape(): void {
+    if (this.pieza) { this.cerrarPieza(); }
+  }
+
+  /** Los enlaces no son un color: viven en su pestaña. */
+  verMenu(): void {
+    this.vistaCentro = 'menu';
+    this.cerrarPieza();
+  }
+
+  /**
+   * QUÉ PARTE DEL BOCETO TIENE EL CAMPO QUE ESTÁ MAL.
+   *
+   * Al guardar con algo inválido hay que abrirla: el campo está dentro de un
+   * mando cerrado, y un aviso que manda a revisar algo que no se ve es peor
+   * que no avisar. Devuelve también cómo se llama, para decirlo en el aviso.
+   */
+  private dondeEstaLoQueFalla(): { pieza: PiezaEncabezado; nombre: string } | null {
+    if (this.barra.controls['texto']?.invalid) { return { pieza: 'franjaTexto', nombre: 'el texto de la franja' }; }
+    if (this.barra.controls['destacado']?.invalid) { return { pieza: 'franjaDestacado', nombre: 'el destacado' }; }
+    if (this.botones.invalid) { return { pieza: 'franjaBotones', nombre: 'los botones de la franja' }; }
+    if (this.frases.invalid) { return { pieza: 'buscador', nombre: 'las frases del buscador' }; }
+    if (this.form.controls['franja_tamano']?.invalid || this.form.controls['franja_fuente']?.invalid) {
+      return { pieza: 'franja', nombre: 'el tamaño de la franja' };
+    }
+    if (this.form.controls['menu_tamano']?.invalid) {
+      return { pieza: 'menu', nombre: 'el tamaño del menú' };
+    }
+    // Y el de un enlace suelto: hay que decir DE CUÁL, que es lo que no se
+    // ve con el mando cerrado
+    if (this.pintaEnlaces.invalid) {
+      const clave = Object.keys(this.pintaEnlaces.controls)
+        .find(k => this.pintaEnlaces.controls[k].invalid);
+      if (clave) {
+        this.enlaceTocado = Number(clave);
+        const enlace = this.enlaces.find(e => e.id === Number(clave));
+        return { pieza: 'menuEnlace', nombre: 'el tamaño de «' + (enlace?.texto ?? 'ese enlace') + '»' };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * LOS BOTONES QUE SE VEN EN LA PREVIA: los que tienen texto, que son los que
+   * va a guardar el servidor. Uno en blanco se está escribiendo todavía y
+   * pintarlo dejaría una píldora vacía moviéndose en el boceto.
+   */
+  botonesDeLaPrevia(): { texto: string; fondo: string; letra: string; tamano: number | null }[] {
+    return (this.botones.getRawValue() as any[])
+      .map(b => ({
+        texto: (b.texto ?? '').trim(),
+        // Lo suyo, o lo de la franja: es lo que va a ver el cliente
+        fondo: (b.fondo ?? '') || this.colorQueSeVeDe('franja_boton_fondo'),
+        letra: (b.letra ?? '') || this.colorQueSeVeDe('franja_boton_texto'),
+        tamano: b.tamano ? Number(b.tamano) : null,
+      }))
+      .filter(b => !!b.texto);
+  }
+
+  /**
+   * UN SOLO BOTÓN GUARDA TODO: el nombre, las fechas y la pinta.
+   *
+   * Por dentro son dos llamadas —el nombre y las fechas viven en columnas de
+   * la tabla y la pinta en el `config`, y el servidor las escribe por puertas
+   * distintas—, pero eso es cosa suya: quien administra toca una pantalla y
+   * le da a guardar una vez. Dos botones obligaban a acordarse de cuál
+   * guardaba qué, y a descubrirlo perdiendo lo escrito en el otro.
+   *
+   * El de los datos va PRIMERO: si falla —fechas al revés, nombre vacío— no
+   * se guarda nada, y la pantalla sigue enseñando lo que se intentó.
+   */
   async guardarContenido(): Promise<void> {
     if (!this.puedeEditar || this.guardando) { return; }
 
     this.form.markAllAsTouched();
+    this.datosForm.markAllAsTouched();
+
+    if (this.datosForm.invalid) {
+      this._toastr.error('Ponle un nombre al encabezado.', 'No se puede guardar',
+                         { timeOut: 20000, closeButton: true });
+      return;
+    }
+
     if (this.form.invalid) {
-      this.pestana = 'contenido';
-      this._toastr.error('Revise los campos del formulario.', 'No se puede guardar',
+      // SE ABRE LA PARTE QUE FALLA: el campo vive dentro de un mando, y
+      // cerrado no se ve. Un aviso que manda a revisar algo invisible es
+      // peor que no avisar.
+      const falla = this.dondeEstaLoQueFalla();
+      if (falla) {
+        this.vistaCentro = 'previa';
+        this.pieza = null;           // para que `tocar` no lo cierre si ya estaba abierto
+        this.tocar(falla.pieza, falla.nombre.charAt(0).toUpperCase() + falla.nombre.slice(1));
+      }
+      this._toastr.error(falla ? 'Revisa ' + falla.nombre + '.' : 'Revise los campos del formulario.',
+                         'No se puede guardar',
                          { timeOut: 20000, closeButton: true });
       return;
     }
@@ -483,24 +1169,60 @@ export class EditEncabezadoComponent implements OnInit {
         activo:       v.barra_superior.activo !== false,
         texto:        limpio(v.barra_superior.texto),
         destacado:    limpio(v.barra_superior.destacado),
-        boton_texto:  limpio(v.barra_superior.boton_texto),
-        boton_enlace: limpio(v.barra_superior.boton_enlace),
+        // SIN TEXTO NO HAY BOTÓN: el servidor los quita igual, pero mandarlos
+        // haría que una fila a medio escribir gastara uno de los cuatro sitios
+        botones: ((v.barra_superior.botones ?? []) as any[])
+          .map(b => ({
+            texto: limpio(b.texto), enlace: limpio(b.enlace),
+            // Su pinta, si la tiene. El 0 y el vacío son lo mismo: «el de la franja»
+            fondo: limpio(b.fondo), letra: limpio(b.letra),
+            tamano: b.tamano ? Number(b.tamano) : null,
+          }))
+          .filter(b => !!b.texto),
       },
       buscador_frases: (v.buscador_frases ?? []).map((f: string) => (f ?? '').trim()).filter(Boolean),
       color_principal: limpio(v.color_principal),
       desplegable_fondo: limpio(v.desplegable_fondo),
       desplegable_texto: limpio(v.desplegable_texto),
       franja_fondo: limpio(v.franja_fondo),
+      franja_destacado: limpio(v.franja_destacado),
+      franja_boton_fondo: limpio(v.franja_boton_fondo),
+      franja_boton_texto: limpio(v.franja_boton_texto),
+      // Un número o nada: el 0 y el vacío son lo mismo aquí, «el de siempre»
+      franja_tamano: v.franja_tamano ? Number(v.franja_tamano) : null,
+      franja_fuente: limpio(v.franja_fuente),
       franja_texto: limpio(v.franja_texto),
+      menu_texto: limpio(v.menu_texto),
+      // Un número o nada: el 0 y el vacío son lo mismo aquí, «el de siempre»
+      menu_tamano: v.menu_tamano ? Number(v.menu_tamano) : null,
+      menu_fuente: limpio(v.menu_fuente),
+      // LA PINTA DE CADA ENLACE: sólo los que llevan algo. Abrir el mando de
+      // uno y no tocar nada no tiene por qué dejarle una entrada.
+      menu_enlaces: Object.fromEntries(
+        (Object.entries(v.menu_enlaces ?? {}) as [string, any][])
+          .map(([id, p]) => [id, {
+            fondo:  limpio(p?.fondo),
+            color:  limpio(p?.color),
+            tamano: p?.tamano ? Number(p.tamano) : null,
+            fuente: limpio(p?.fuente),
+          }])
+          .filter(([, p]: any) => p.fondo || p.color || p.tamano || p.fuente)),
       encabezado_fondo: limpio(v.encabezado_fondo),
       encabezado_texto: limpio(v.encabezado_texto),
     };
 
     this.guardando = true;
     try {
-      const res: any = await firstValueFrom(this._encabezadoService.editEncabezado(config));
+      // Sólo si cambió algo: guardar el nombre y las fechas que ya estaban
+      // dejaría una línea en la auditoría cada vez que se toca un color
+      if (this.datosForm.dirty) {
+        await firstValueFrom(this._encabezadoService.editDatos(this.encabezadoId!, this.datosForm.value));
+      }
+
+      const res: any = await firstValueFrom(this._encabezadoService.editEncabezado(config, this.encabezadoId));
       this._toastr.success(res?.message ?? 'Encabezado guardado', 'Listo');
       this.pintar(res?.data);
+      this.form.markAsPristine();
     } catch (e: any) {
       // El servidor valida de verdad: que la franja encendida tenga texto, que
       // las direcciones sean direcciones. Aquí no se repite para que no divagen.
@@ -603,6 +1325,14 @@ export class EditEncabezadoComponent implements OnInit {
         minWidth: 80, maxWidth: 80, sortable: false,
       },
       {
+        // ENTRE QUÉ FECHAS SALE. El menú es uno solo para todos los
+        // encabezados, así que lo que se programa es cada enlace
+        headerName: 'Cuándo se ve', field: 'desde',
+        cellStyle: { textAlign: 'center' },
+        cellRenderer: (params: any) => this.celdaFechas(params),
+        minWidth: 150, sortable: false,
+      },
+      {
         headerName: 'Estado', field: 'activo',
         cellStyle: { textAlign: 'center' },
         cellRenderer: (params: any) => this.celdaEstado(params),
@@ -693,11 +1423,43 @@ export class EditEncabezadoComponent implements OnInit {
         + `<i class="fa fa-triangle-exclamation"></i> ${this.escapar(nombre)}</span>`;
   }
 
+  /**
+   * CUÁNDO SE VE ESE ENLACE, con sus fechas.
+   *
+   * Sin fechas no se escribe «siempre» en cada fila: serían veinte filas
+   * diciendo lo mismo. Se deja en blanco, que es lo que significa.
+   */
+  private celdaFechas(params: any): string {
+    const d = params.data as EnlaceEncabezadoModel;
+    const desde = (d?.desde ?? '').replace('T', ' ');
+    const hasta = (d?.hasta ?? '').replace('T', ' ');
+    if (!desde && !hasta) { return ''; }
+
+    const texto = desde && hasta ? desde + ' → ' + hasta
+                : desde ? 'desde ' + desde
+                : 'hasta ' + hasta;
+    return `<span class="enc-fechas">${this.escapar(texto)}</span>`;
+  }
+
+  /**
+   * EL ESTADO LO RESUELVE EL SERVIDOR (`estado`), no esta pantalla: comparar
+   * fechas con el reloj del navegador es la manera de decir «se ve» cuando el
+   * servidor cree que no. Aquí sólo se elige el chip.
+   */
   private celdaEstado(params: any): string {
     const d = params.data as EnlaceEncabezadoModel;
-    return d?.activo
-      ? `<span class="enc-chip enc-chip--si"><i class="fa fa-eye"></i> Se ve</span>`
-      : `<span class="enc-chip enc-chip--no"><i class="fa fa-eye-slash"></i> Oculto</span>`;
+    const estado = d?.estado ?? (d?.activo ? 'visible' : 'oculto');
+
+    switch (estado) {
+      case 'programado':
+        return `<span class="enc-chip enc-chip--info"><i class="fa fa-clock"></i> Programado</span>`;
+      case 'terminado':
+        return `<span class="enc-chip enc-chip--aviso"><i class="fa fa-hourglass-end"></i> Terminado</span>`;
+      case 'oculto':
+        return `<span class="enc-chip enc-chip--no"><i class="fa fa-eye-slash"></i> Oculto</span>`;
+      default:
+        return `<span class="enc-chip enc-chip--si"><i class="fa fa-eye"></i> Se ve</span>`;
+    }
   }
 
   /**

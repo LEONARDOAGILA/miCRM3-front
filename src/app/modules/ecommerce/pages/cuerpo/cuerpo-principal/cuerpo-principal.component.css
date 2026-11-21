@@ -272,79 +272,6 @@
    de archivos, y hacian falta cuatro copias mas. Lo unico que queda aqui es
    donde se colocan. */
 
-/* ===== La muestra =====
-   SIEMPRE BLANCA, en los dos temas del CRM: blanco es el fondo de la sección
-   en la tienda, y una muestra sobre el panel oscuro enseñaría un contraste
-   que el cliente no va a ver. Por eso nada de aquí dentro usa variables del
-   tema: en oscuro se volverían invisibles sobre el blanco. */
-.rotulo-muestra {
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
-  margin: .6rem 0 .25rem;
-  padding: 1rem;
-  border: 1px solid #dee2e6;
-  border-radius: .375rem;
-  background-color: #fff;
-  overflow: hidden;
-}
-
-.rotulo-muestra-texto {
-  font-weight: 700;
-  line-height: 1.2;
-  overflow-wrap: break-word;
-}
-
-/* La sección que no lleva rótulo: la muestra enseña su aire y dónde empieza */
-.rotulo-muestra-sin {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  padding-top: .5rem;
-  border-top: 1px dashed #ced4da;
-  font-size: .75rem;
-  color: #6c757d;
-}
-
-.rotulo-muestra-pie {
-  font-size: .65rem;
-  color: #6c757d;
-}
-
-/* ===== La franja de un banner =====
-   La muestra va a UN TERCIO del alto de verdad: a tamaño real una franja de
-   560 px taparía el resto del formulario, y lo que hay que ver es si es una
-   tira fina o media pantalla. Los píxeles exactos se dicen debajo, con letra.
-   Blanca como la otra muestra, en los dos temas del CRM. */
-.franja-muestra {
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
-  margin: 0 0 .5rem;
-}
-
-.franja-muestra__caja {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: .375rem;
-  /* El gris de una foto que todavía no está, no un color del tema */
-  background: repeating-linear-gradient(45deg, #e9ecef, #e9ecef 10px, #dee2e6 10px, #dee2e6 20px);
-}
-
-/* Sin alto elegido no hay franja que dibujar: una caja baja y punteada */
-.franja-muestra__caja--libre {
-  height: 2.25rem;
-  border: 1px dashed #ced4da;
-  background: #fff;
-}
-
-.franja-muestra__texto {
-  font-size: .7rem;
-  font-weight: 600;
-  color: #6c757d;
-}
-
 /* ============================================================
    LA PALANCA
    ============================================================
@@ -1158,6 +1085,13 @@
   margin: 0;
 }
 
+/* El botón de guardar, en la cabecera pegajosa: no se encoge aunque el
+   nombre de la sección sea largo, que es lo que pasa con los escaparates */
+.inicio-contenido__guardar {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 /* Sin ninguna elegida */
 .inicio-elige {
   flex: 1 1 auto;
@@ -1451,3 +1385,468 @@
    añadir, que es el mismo color del filtro «Activas» de al lado */
 
 .check-lista .form-check-input:disabled { opacity: .5; }
+
+/* ============================================================
+   LA VISTA PREVIA
+   ============================================================
+   SIEMPRE BLANCA, en los dos temas del CRM: blanco es el fondo de la
+   sección en la tienda, y una muestra sobre el panel oscuro enseñaría un
+   contraste que el cliente no va a ver. Por eso aquí NO se usa ninguna
+   variable del tema: los grises van escritos.
+
+   Es un BOCETO: el aire de encima y el rótulo van a tamaño real —son los
+   dos números que hay que poder comparar con lo que ya hay en la portada—
+   y el contenido va a un tercio, porque una franja de 560 px no cabe en un
+   panel. El pie lo dice, para que nadie mida la foto aquí. */
+.previa {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-bottom: .75rem;
+}
+
+.previa__papel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .5rem;
+  /* Sin relleno arriba: ese hueco es el botón del aire, que se toca */
+  padding: 0 1rem 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: .375rem;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.previa__titulo {
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.previa__subtitulo {
+  margin-top: -.3rem;
+  font-size: .8rem;
+  color: #55585b;
+}
+
+.previa__pie {
+  font-size: .65rem;
+  color: #6c757d;
+}
+
+/* ----- Las piezas del boceto ----- */
+/* El gris rayado es «aquí va una foto que todavía no está» */
+.previa__franja,
+.previa__cartel,
+.previa__circulo,
+.previa__cuadro,
+.previa__promo,
+.previa__logo,
+.previa__foto,
+.previa__lateral {
+  background: repeating-linear-gradient(45deg, #e9ecef, #e9ecef 10px, #dee2e6 10px, #dee2e6 20px);
+}
+
+.previa__franja {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 3.5rem;
+  border-radius: .375rem;
+  font-size: .7rem;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+/* Sin alto elegido no hay franja que dibujar: una caja baja y punteada */
+.previa__franja--libre {
+  height: 2.25rem;
+  border: 1px dashed #ced4da;
+  background: #fff;
+}
+
+.previa__fila {
+  display: flex;
+  gap: .5rem;
+  width: 100%;
+}
+
+.previa__cartel {
+  flex: 1 1 0;
+  height: 4.5rem;
+  border-radius: .375rem;
+}
+
+/* En carteles sin alto elegido, el cuadrado de siempre */
+.previa__cartel--cuadrado {
+  aspect-ratio: 1 / 1;
+  height: auto;
+}
+
+.previa__circulo {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+}
+
+.previa__cuadro {
+  flex: 1 1 0;
+  aspect-ratio: 4 / 3;
+  border-radius: .375rem;
+}
+
+.previa__promo {
+  flex: 1 1 0;
+  aspect-ratio: 5 / 8;
+  max-height: 6rem;
+  border-radius: .375rem;
+}
+
+.previa__logo {
+  flex: 1 1 0;
+  height: 1.75rem;
+  border-radius: .25rem;
+}
+
+/* ----- Las tarjetas de producto, con los colores elegidos ----- */
+.previa__conjunto {
+  display: flex;
+  gap: .5rem;
+  width: 100%;
+}
+
+.previa__conjunto--derecha {
+  flex-direction: row-reverse;
+}
+
+.previa__lateral {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 25%;
+  border-radius: .375rem;
+  font-size: .65rem;
+  color: #6c757d;
+}
+
+.previa__fila--tarjetas {
+  flex-wrap: wrap;
+}
+
+.previa__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  flex: 1 1 0;
+  min-width: 3.5rem;
+  padding: .35rem;
+  border: 1px solid #dee2e6;
+  border-radius: .375rem;
+}
+
+.previa__foto {
+  height: 2.5rem;
+  border-radius: .25rem;
+}
+
+.previa__linea {
+  height: .3rem;
+  border-radius: .15rem;
+  opacity: .75;
+}
+
+.previa__linea--corta {
+  width: 60%;
+}
+
+.previa__puntos {
+  display: flex;
+  gap: .2rem;
+}
+
+.previa__punto {
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+}
+
+.previa__barra {
+  width: 100%;
+  padding: .3rem .5rem;
+  border-radius: .25rem;
+  font-size: .65rem;
+  color: #6c757d;
+  background-color: #f8f9fa;
+}
+
+/* ============================================================
+   LAS PESTAÑAS
+   ============================================================
+   Éstas SÍ se visten del tema del CRM: son parte del panel, no de la
+   muestra de la tienda. */
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin-bottom: .85rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.pestanas__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin-bottom: -1px;
+  padding: .4rem .7rem;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: .375rem .375rem 0 0;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color, #6c757d);
+  background: none;
+  transition: color .15s ease-out, background-color .15s ease-out;
+}
+
+.pestanas__boton i {
+  font-size: .72rem;
+}
+
+.pestanas__boton:hover {
+  color: var(--bs-body-color, #212529);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.pestanas__boton.is-activa {
+  color: var(--bs-primary, #348fe2);
+  border-bottom-color: var(--bs-primary, #348fe2);
+  background: none;
+}
+
+/* ============================================================
+   LAS PIEZAS QUE SE TOCAN
+   ============================================================
+   Cada parte del boceto es un <button> de verdad: se llega con el tabulador
+   y se abre con Enter, no sólo con el ratón. Lo que las hace parecer botones
+   es el contorno al pasar por encima; en reposo tienen que seguir pareciendo
+   el dibujo de la sección, no una botonera. */
+.previa button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.previa button:focus-visible,
+.previa button:hover {
+  outline: 2px solid #348fe2;
+  outline-offset: 2px;
+}
+
+/* La que se está tocando se queda marcada mientras el mando esté abierto */
+.previa .is-tocada {
+  outline: 2px solid #348fe2;
+  outline-offset: 2px;
+}
+
+/* ----- El aire de encima ----- */
+/* Vacío no se ve nada, y hay que poder pulsarlo: una raya de puntos que
+   sólo aparece al pasar por encima, con los píxeles escritos */
+.previa__aire {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 1.25rem;
+  border-radius: .25rem;
+}
+
+.previa__aire-marca {
+  font-size: .6rem;
+  color: #adb5bd;
+  opacity: 0;
+  transition: opacity .15s ease-out;
+}
+
+.previa__aire:hover .previa__aire-marca,
+.previa__aire:focus-visible .previa__aire-marca,
+.previa__aire.is-tocada .previa__aire-marca {
+  opacity: 1;
+}
+
+/* ----- Escribir el rótulo en la propia previa ----- */
+/* El campo se pone donde estaba el texto y con SU MISMA letra: lo que se
+   escribe se ve ya como se va a leer en la tienda */
+.previa__escribir {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px dashed #348fe2;
+  font-weight: 700;
+  line-height: 1.2;
+  background: none;
+}
+
+.previa__escribir:focus {
+  outline: none;
+  border-bottom-style: solid;
+}
+
+.previa__escribir--chico {
+  font-size: .8rem;
+  font-weight: 400;
+  color: #55585b;
+}
+
+/* Sin línea de abajo escrita, el hueco se insinúa para poder pulsarlo */
+.previa__subtitulo:empty::after {
+  content: "La línea de abajo";
+  color: #adb5bd;
+}
+
+/* ----- El cartel del descuento y el fondo de la tarjeta ----- */
+/* La foto de la tarjeta es la referencia del cartel, que va en su esquina */
+.previa__foto {
+  position: relative;
+}
+
+.previa__descuento {
+  position: absolute;
+  top: .15rem;
+  left: .15rem;
+  padding: 0 .2rem;
+  border-radius: .2rem;
+  font-size: .5rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* El cuerpo de la tarjeta: ocupa toda la tarjeta y se queda DEBAJO de los
+   puntos y del cartel, para que cada cosa abra lo suyo */
+.previa__tarjeta {
+  position: relative;
+}
+
+.previa__tarjeta-fondo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: .375rem;
+}
+
+.previa__foto,
+.previa__linea,
+.previa__puntos {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   EL MANDO DE LA PIEZA
+   ============================================================
+   Debajo de la previa y no flotando encima: el panel es estrecho y un cuadro
+   flotante taparía justo lo que se está mirando. Éste SÍ se viste del tema
+   del CRM: es parte del panel, no de la muestra de la tienda. */
+.mando {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .6rem .75rem .75rem;
+  border: 1px solid var(--bs-primary, #348fe2);
+  border-radius: .375rem;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+.mando__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  font-size: .8rem;
+}
+
+.mando__cerrar {
+  padding: 0 .25rem;
+  border: 0;
+  border-radius: .25rem;
+  color: var(--bs-secondary-color, #6c757d);
+  background: none;
+}
+
+.mando__cerrar:hover {
+  color: var(--bs-body-color, #212529);
+}
+
+.mando__cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .75rem;
+}
+
+/* Cada color va con su letra al lado, los dos juntos */
+.mando__color {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .75rem;
+}
+
+.mando__nota {
+  flex: 1 1 100%;
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Las opciones (rotando / en carteles, círculo / cuadro, el lado de la
+   imagen) van en texto: los dibujos grandes están en su pestaña, y aquí lo
+   que hace falta es cambiar de una a otra sin perder de vista la previa */
+.mando__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+}
+
+.mando__opcion {
+  padding: .25rem .6rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius-pill, 50rem);
+  font-size: .72rem;
+  color: var(--bs-body-color, #212529);
+  background: none;
+}
+
+.mando__opcion:hover:not(:disabled) {
+  border-color: var(--bs-primary, #348fe2);
+}
+
+.mando__opcion.is-activa {
+  color: #fff;
+  border-color: var(--bs-primary, #348fe2);
+  background-color: var(--bs-primary, #348fe2);
+}
+
+.mando__opcion:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.mando__ir {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--bs-primary, #348fe2);
+  background: none;
+}
+
+.mando__ir:hover {
+  text-decoration: underline;
+}

@@ -84,6 +84,29 @@
         </div>
       }
 
+      <!-- ---------- Entre qué fechas sale ----------
+           El menú es UNO SOLO para todos los encabezados —añadir una
+           categoría se hace una vez—, y lo que se programa es cada enlace.
+           Vacías, sale siempre, que es como ha ido hasta hoy. -->
+      <div class="col-6">
+        <label class="form-label" for="enl-desde">DESDE <span class="text-muted">opcional</span></label>
+        <input id="enl-desde" type="datetime-local" class="form-control form-control-sm"
+               formControlName="desde">
+      </div>
+
+      <div class="col-6">
+        <label class="form-label" for="enl-hasta">HASTA <span class="text-muted">opcional</span></label>
+        <input id="enl-hasta" type="datetime-local" class="form-control form-control-sm"
+               formControlName="hasta">
+      </div>
+
+      <div class="col-12">
+        <p class="campo-hint mb-0">
+          <i class="fa-solid fa-circle-info"></i>
+          Para un enlace de campaña: se enciende y se apaga solo. Vacías, sale siempre.
+        </p>
+      </div>
+
       <div class="col-12">
         <div class="form-check form-switch">
           <app-checkbox class="palanca"

@@ -25,6 +25,7 @@ import {
   vistaDeProductos, vistaDeBanner,
   TAMANOS_ROTULO, FUENTES_ROTULO, COLORES_ROTULO, ROTULO_BASE_PX, ROTULO_COLOR_TIENDA,
   BOTONES_TARJETA, COLORES_TARJETA, ColorDeTarjeta, colorDeTextoSobre, contrasteEntre,
+  SOMBRAS_TARJETA, SombraTarjeta,
   DISPOSICIONES, LadoImagen, llevaImagenAlLado, esPaginada, POR_PAGINA_DEFECTO,
   VISTAS_BANNER, VistaBanner,
   FORMAS_FICHA, FormaFicha,
@@ -70,6 +71,55 @@ import { GaleriaImagenesComponent } from '../../galerias/galeriaImagenes/galeria
  * decisión. El rótulo y las fechas llevan botón: son varios campos a la vez y
  * guardar a cada tecla sería guardar lo que se está escribiendo a medias.
  */
+/**
+ * LAS CUATRO PREGUNTAS del panel de la derecha, en pestañas.
+ *
+ * No son «apartados plegados»: son cuatro cosas distintas que se deciden
+ * en momentos distintos. El contenido se elige al crear la sección, el
+ * texto cuando se escribe la campaña, el diseño cuando se afina y las
+ * fechas cuando se programa.
+ */
+export type ClavePestana = 'contenido' | 'texto' | 'diseno' | 'cuando';
+
+export interface PestanaDelPanel {
+  valor: ClavePestana;
+  texto: string;
+  icono: string;
+  /** Lo que se contesta en ella, para el title del botón. */
+  pista: string;
+}
+
+export const PESTANAS: PestanaDelPanel[] = [
+  { valor: 'contenido', texto: 'Contenido', icono: 'fa-layer-group',
+    pista: 'Qué enseña esta sección y de dónde sale' },
+  { valor: 'texto',     texto: 'Texto',     icono: 'fa-font',
+    pista: 'Lo que el cliente lee encima de la sección' },
+  { valor: 'diseno',    texto: 'Diseño',    icono: 'fa-wand-magic-sparkles',
+    pista: 'Cómo se ve: su alto, su forma y sus colores' },
+  { valor: 'cuando',    texto: 'Cuándo se ve', icono: 'fa-clock',
+    pista: 'Entre qué fechas sale en la tienda' },
+];
+
+/**
+ * QUÉ PIEZA DE LA VISTA PREVIA SE ESTÁ TOCANDO.
+ *
+ * La previa no es sólo un dibujo: cada parte se pulsa y debajo sale su
+ * mando, con lo justo para cambiarla. Es como se edita una tarjeta en un
+ * editor de los de siempre —se toca lo que se quiere cambiar, no se busca
+ * en una lista de campos— y es la diferencia entre «¿dónde estaba el color
+ * del botón de WhatsApp?» y pulsar el punto verde.
+ *
+ * «color» vale para los seis colores de la tarjeta (los cuatro botones, el
+ * fondo y el borde) y para el cartel del descuento: el mando es el mismo
+ * —una paleta y, si lo lleva, la de su letra—, así que lo que cambia es la
+ * lista de colores que se le pasa, no el mando.
+ */
+export type PiezaPrevia = 'titulo' | 'subtitulo' | 'aire' | 'franja' | 'forma' | 'imagen' | 'color';
+
+/** Qué dibujo le toca a una sección en la vista previa. */
+export type FormaDePrevia = 'banner_franja' | 'banner_carteles' | 'circulos' | 'cuadros'
+                          | 'promos' | 'logos' | 'productos' | 'catalogo' | 'ninguna';
+
 @Component({
   selector: 'app-cuerpo-principal',
   templateUrl: './cuerpo-principal.component.html',
@@ -781,6 +831,8 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
       // está aquí porque no se elige: la calcula la tienda
       tarjeta_fondo_color:  [s.tarjeta?.fondo ?? ''],
       tarjeta_borde_color:  [s.tarjeta?.borde ?? ''],
+      // Cuánta sombra lleva la tarjeta. Resuelta desde el servidor, nunca null
+      tarjeta_sombra:       [s.tarjeta?.sombra ?? 'ninguna'],
       descuento_color:      [s.tarjeta?.descuento?.fondo ?? ''],
       descuento_texto:      [s.tarjeta?.descuento?.texto ?? ''],
       // La etiqueta: sus palabras y sus dos colores
@@ -1118,6 +1170,21 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
   cartelSeConfunde(s: SeccionInicioModel, b: ColorDeTarjeta): boolean {
     if (b.campo !== 'descuento_color' || !this.botonPropio(s, b)) { return false; }
     return this.contrasteEntre(this.colorBoton(s, b), this.fondoTarjeta(s)) < 3;
+  }
+
+  // ---------- La sombra de la tarjeta ----------
+
+  /** Las cuatro sombras que puede llevar. */
+  public readonly sombras = SOMBRAS_TARJETA;
+
+  /** La elegida en el formulario. */
+  sombraDe(s: SeccionInicioModel): SombraTarjeta {
+    return (this.formularios[s.id]?.value?.tarjeta_sombra ?? 'ninguna') as SombraTarjeta;
+  }
+
+  /** Y cómo se dibuja en la vista previa: el mismo box-shadow que la tienda. */
+  sombraMuestra(s: SeccionInicioModel): string {
+    return SOMBRAS_TARJETA.find(x => x.valor === this.sombraDe(s))?.css ?? 'none';
   }
 
   /** Un «#rrggbb» con transparencia, para los textos apagados de la muestra. */
@@ -1563,6 +1630,192 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
    */
   elegir(id: number): void {
     this.elegida = id;
+    // El mando era de una pieza de la sección anterior
+    this.cerrarPieza();
+    // La pestaña vuelve a la primera: quedarse en «Diseño» al abrir otra
+    // sección enseña media pantalla de colores de algo que no se ha mirado
+    this.pestana = 'contenido';
+  }
+
+  // ================================================================
+  // LAS PESTAÑAS DEL PANEL
+  // ================================================================
+  //
+  // El panel tenía diez apartados seguidos y había que bajar por todos
+  // para llegar a las fechas. Son cuatro preguntas distintas y cada una
+  // se responde una vez: QUÉ enseña, QUÉ SE LEE encima, CÓMO se ve y
+  // CUÁNDO se ve. La vista previa de arriba no se va con la pestaña: es
+  // lo que contesta «¿y cómo va a salir?», y eso se pregunta en las cuatro.
+  //
+  // Las que no tienen nada que enseñar en esa sección no se pintan: un
+  // banner no lee ningún rótulo, así que su pestaña «Texto» estaría vacía.
+
+  public pestana: ClavePestana = 'contenido';
+
+  public readonly pestanas = PESTANAS;
+
+  /** Las que tienen algo que configurar en ESTA sección. */
+  pestanasDe(s: SeccionInicioModel): PestanaDelPanel[] {
+    return PESTANAS.filter(p => this.pestanaSirve(s, p.valor));
+  }
+
+  private pestanaSirve(s: SeccionInicioModel, cual: ClavePestana): boolean {
+    switch (cual) {
+      // Siempre hay algo: de dónde sale, cuántas, cada cuánto, o su lista de imágenes
+      case 'contenido': return true;
+      case 'texto':     return this.vista(s).rotulo !== 'ninguno';
+      // El alto lo llevan todas
+      case 'diseno':    return true;
+      case 'cuando':    return true;
+    }
+  }
+
+  verPestana(cual: ClavePestana): void {
+    this.pestana = cual;
+  }
+
+  /** Escape cierra el mando de la previa, como cualquier cuadro de esta casa. */
+  @HostListener('document:keydown.escape')
+  alPulsarEscape(): void {
+    if (this.pieza) { this.cerrarPieza(); }
+  }
+
+  /** Si esa pestaña es la que se está viendo (y existe en esta sección). */
+  enPestana(s: SeccionInicioModel, cual: ClavePestana): boolean {
+    const hay = this.pestanasDe(s);
+    const puesta = hay.some(p => p.valor === this.pestana) ? this.pestana : hay[0].valor;
+    return puesta === cual;
+  }
+
+  // ================================================================
+  // LA VISTA PREVIA
+  // ================================================================
+  //
+  // UN BOCETO, NO LA TIENDA: cajas grises del alto y la forma que van a
+  // tener, con los colores y el rótulo de verdad. Se pinta con lo que hay
+  // en el FORMULARIO, no con lo guardado, que es lo que la hace útil:
+  // elegir un color y tener que guardar para ver si queda bien es probar a
+  // ciegas, y aquí se prueba delante de los clientes.
+  //
+  // Las alturas van a un tercio, como en el modelado: a tamaño real una
+  // franja de 560 px no cabe en un panel.
+
+  /** Qué dibujo le toca a esta sección. */
+  formaDeLaPrevia(s: SeccionInicioModel): FormaDePrevia {
+    if (this.tieneGaleria(s)) {
+      return this.vistaDe(s) === 'carteles' ? 'banner_carteles' : 'banner_franja';
+    }
+    if (this.esDestacadas(s)) { return this.formaDe(s) === 'cuadrado' ? 'cuadros' : 'circulos'; }
+    if (s.clave === 'mosaico' || s.clave === 'marcas_promocion') { return 'promos'; }
+    if (s.clave === 'marcas') { return 'logos'; }
+    if (s.clave === 'catalogo') { return 'catalogo'; }
+    if (this.esEscaparate(s)) { return 'productos'; }
+    return 'ninguna';
+  }
+
+  /** La línea de abajo, tal como está escrita ahora mismo. */
+  subtituloMuestra(s: SeccionInicioModel): string {
+    return (this.formularios[s.id]?.value?.subtitulo ?? '').toString().trim();
+  }
+
+  /** Cuántas cajas se dibujan en la fila, según lo que enseñe. */
+  cuantasEnLaPrevia(s: SeccionInicioModel): number[] {
+    const forma = this.formaDeLaPrevia(s);
+    const cuantas = forma === 'circulos' ? 6
+                  : forma === 'cuadros' ? 4
+                  : forma === 'promos' ? 4
+                  : forma === 'logos' ? 6
+                  : forma === 'banner_carteles' ? 3
+                  : forma === 'catalogo' ? 5
+                  : this.disposicionDe(s) === 'cartel' ? 3
+                  : this.disposicionDe(s) === 'paginada' ? 8
+                  : 4;
+    return Array.from({ length: cuantas }, (_, i) => i);
+  }
+
+  /** El alto de la franja de un banner en la previa, o null si lo pone la imagen. */
+  altoFranjaPrevia(s: SeccionInicioModel): number | null {
+    const px = this.pxImagen(s);
+    return px === null ? null : Math.round(px / 3);
+  }
+
+  /** Si la imagen de al lado se dibuja, y de qué lado. */
+  ladoDeLaPrevia(s: SeccionInicioModel): 'izquierda' | 'derecha' | null {
+    if (!this.conImagenAlLado(s)) { return null; }
+    const lado = this.disposicionDe(s);
+    return lado === 'izquierda' || lado === 'derecha' ? lado : null;
+  }
+
+  // ================================================================
+  // TOCAR LA PREVIA PARA CAMBIARLA
+  // ================================================================
+  //
+  // EL MANDO SALE DEBAJO DE LA PREVIA, no flotando encima: el panel mide
+  // 400 px largos y un cuadro flotante taparía justo lo que se está
+  // mirando. Para saber qué se está tocando se marca la pieza, que es lo
+  // que hace falta ver.
+  //
+  // NO SUSTITUYE A LAS PESTAÑAS: lo que no tiene pieza que tocar —de dónde
+  // salen los productos, cuántos, las fechas, la lista de imágenes— sigue
+  // estando sólo ahí, y el mando lleva un enlace a la pestaña que tiene
+  // todo lo de esa pieza.
+
+  /** Qué se está tocando, o null. */
+  public pieza: PiezaPrevia | null = null;
+
+  /** Con «color»: cuáles, y cómo se llama lo que se está tocando. */
+  public piezaColores: ColorDeTarjeta[] = [];
+  public piezaNombre = "";
+
+  /** Abre (o cierra, si ya estaba) el mando de una pieza. */
+  tocar(cual: PiezaPrevia, nombre: string, colores: ColorDeTarjeta[] = []): void {
+    if (this.pieza === cual && this.piezaNombre === nombre) { this.cerrarPieza(); return; }
+    this.pieza = cual;
+    this.piezaNombre = nombre;
+    this.piezaColores = colores;
+
+    // El título y la línea de abajo se escriben EN la previa: el campo
+    // aparece donde estaba el texto y hay que llevarle el cursor, o habría
+    // que pulsar dos veces para escribir en lo que se acaba de pulsar
+    if (cual === 'titulo' || cual === 'subtitulo') {
+      setTimeout(() => {
+        const campo = this.host.nativeElement.querySelector('.previa__escribir') as HTMLInputElement | null;
+        campo?.focus();
+        campo?.select();
+      });
+    }
+  }
+
+  cerrarPieza(): void {
+    this.pieza = null;
+    this.piezaColores = [];
+    this.piezaNombre = '';
+  }
+
+  /** Si esa pieza es la que se está tocando (con `nombre`, también cuál). */
+  tocando(cual: PiezaPrevia, nombre?: string): boolean {
+    return this.pieza === cual && (nombre === undefined || this.piezaNombre === nombre);
+  }
+
+  /** En qué pestaña está TODO lo de la pieza que se está tocando. */
+  pestanaDeLaPieza(): ClavePestana {
+    return this.pieza === 'titulo' || this.pieza === 'subtitulo' ? 'texto' : 'diseno';
+  }
+
+  /** Ir a esa pestaña y cerrar el mando: allí está lo mismo y más. */
+  verTodoDeLaPieza(): void {
+    this.verPestana(this.pestanaDeLaPieza());
+    this.cerrarPieza();
+  }
+
+  /** El nombre de la pestaña, para el enlace del mando. */
+  nombreDeLaPestana(cual: ClavePestana): string {
+    return PESTANAS.find(p => p.valor === cual)?.texto ?? '';
+  }
+
+  /** Los cuatro botones y los cuatro colores de la tarjeta, por su clave. */
+  colorPorCampo(campo: string): ColorDeTarjeta | null {
+    return [...BOTONES_TARJETA, ...COLORES_TARJETA].find(x => x.campo === campo) ?? null;
   }
 
   /** La sección elegida, o null. La columna de la derecha pinta la suya. */
@@ -1749,6 +2002,8 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
         // Y lo mismo con la tarjeta y su cartel: sólo donde hay tarjetas
         tarjeta_fondo_color:  this.conBotones(s) ? limpio(v.tarjeta_fondo_color)  : null,
         tarjeta_borde_color:  this.conBotones(s) ? limpio(v.tarjeta_borde_color)  : null,
+        // La sombra, sólo donde hay tarjetas que la lleven
+        tarjeta_sombra:       this.conBotones(s) ? (limpio(v.tarjeta_sombra) || 'ninguna') : null,
         descuento_color:      this.conBotones(s) ? limpio(v.descuento_color)      : null,
         descuento_texto:      this.conBotones(s) ? limpio(v.descuento_texto)      : null,
         etiqueta:             this.conBotones(s) ? limpio(v.etiqueta)             : null,

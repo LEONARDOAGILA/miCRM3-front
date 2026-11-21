@@ -512,49 +512,466 @@
               <b>{{ comoSeLlama(s) }}</b>
               <span class="seccion-que-es">{{ vista(s).descripcion }}</span>
             </div>
-            <span class="chip" [ngClass]="estados[s.estado].clase">
-              <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
-              {{ estados[s.estado].texto }}
-            </span>
+            <!-- GUARDAR, ARRIBA Y SIEMPRE A LA VISTA: la cabecera es pegajosa,
+                 así que el botón no se va aunque el panel baje. Antes estaba al
+                 final de todo y, con las pestañas, quedaba a distinta altura en
+                 cada una.
+
+                 AQUÍ ESTABA EL ESTADO («En la portada»), y no se pierde: cada
+                 sección lo lleva en su ficha de la lista de al lado, que es donde
+                 se mira para comparar unas con otras. A quien sólo puede mirar se
+                 le sigue enseñando ahí, que para eso no hay botón. -->
+            @if (puedeEditar) {
+              <button type="button" class="btn btn-sm btn-primary inicio-contenido__guardar"
+                      [disabled]="guardando === s.id" (click)="guardarSeccion(s)">
+                <i class="fa fa-save"></i>
+                {{ guardando === s.id ? 'Guardando…' : 'Guardar la sección' }}
+              </button>
+            } @else {
+              <span class="chip" [ngClass]="estados[s.estado].clase">
+                <i class="fa-solid" [ngClass]="estados[s.estado].icono"></i>
+                {{ estados[s.estado].texto }}
+              </span>
+            }
           </div>
 
           <div class="inicio-campos" [formGroup]="formularios[s.id]">
 
-              <!-- Qué es esta sección ya lo dice la cabecera de arriba, que se
-                   queda a la vista al desplazar: repetirlo aquí era leerlo dos
-                   veces seguidas -->
+              <!-- ===================== LA VISTA PREVIA =====================
+                   UN BOCETO DE CÓMO VA A SALIR, no la tienda: cajas del alto y la forma
+                   que van a tener, con el rótulo y los colores de verdad. Se pinta con lo
+                   que hay EN EL FORMULARIO, así que se mueve mientras se escribe y antes
+                   de guardar.
 
-              <!-- Rótulo y fechas -->
-              <div class="row g-2">
-                @if (vista(s).rotulo !== 'ninguno') {
-                  <div class="col-12" [class.col-md-6]="vista(s).rotulo === 'titulo_subtitulo'">
-                    <app-campoTexto
-                      [control]="$any(formularios[s.id].controls['titulo'])"
-                      label="CÓMO SE LLAMA EN LA TIENDA"
-                      [placeholder]="ejemploRotulo(s)"
-                      [maxLength]="80"
-                      [trimEspacios]="true">
-                    </app-campoTexto>
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      Es lo que lee el cliente encima de esta sección en la
-                      página web. {{ rotuloVacio(s) }}
-                    </p>
+                   NO SE VA CON LA PESTAÑA: es la respuesta a «¿y cómo queda?», y esa
+                   pregunta se hace tocando las cuatro.
+
+                   Fondo blanco en los dos temas del CRM, porque blanco es el fondo de la
+                   sección en la tienda; nada de aquí dentro usa los colores del tema. -->
+              <!-- ===================== LA VISTA PREVIA =====================
+                   UN BOCETO DE CÓMO VA A SALIR, no la tienda: cajas del alto y la forma
+                   que van a tener, con el rótulo y los colores de verdad. Se pinta con lo
+                   que hay EN EL FORMULARIO, así que se mueve mientras se escribe y antes
+                   de guardar.
+
+                   Y SE TOCA: cada pieza es un botón y abre su mando debajo, con lo justo
+                   para cambiarla. El título y la línea de abajo se escriben aquí mismo.
+                   Lo que no tiene pieza —de dónde salen, cuántos, las fechas— sigue
+                   estando en las pestañas, y el mando lleva un enlace a la suya.
+
+                   NO SE VA CON LA PESTAÑA: es la respuesta a «¿y cómo queda?», y esa
+                   pregunta se hace tocando las cuatro.
+
+                   Fondo blanco en los dos temas del CRM, porque blanco es el fondo de la
+                   sección en la tienda; nada de aquí dentro usa los colores del tema. -->
+              <div class="previa">
+                <div class="previa__papel">
+
+                  <!-- El aire de encima también se toca: es el «Alto» de la sección -->
+                  <button type="button" class="previa__aire"
+                          [class.is-tocada]="tocando('aire')"
+                          [style.height.px]="aireMuestra(s)"
+                          title="El alto de la sección: el aire que deja encima"
+                          (click)="tocar('aire', 'El alto de la sección')">
+                    <span class="previa__aire-marca">{{ aireMuestra(s) }} px de aire</span>
+                  </button>
+
+                  @if (vista(s).rotulo !== 'ninguno') {
+                    <!-- El rótulo: se pulsa y se escribe encima, con su misma letra -->
+                    @if (tocando('titulo')) {
+                      <input class="previa__escribir" formControlName="titulo" maxlength="80"
+                             [placeholder]="ejemploRotulo(s)"
+                             [style.font-size.px]="tamanoMuestra(s)"
+                             [style.color]="colorMuestra(s)"
+                             [style.font-family]="fuenteMuestra(s).css"
+                             [style.font-style]="fuenteMuestra(s).cursiva ? 'italic' : 'normal'"
+                             [style.text-transform]="fuenteMuestra(s).versalitas ? 'uppercase' : 'none'"
+                             (keydown.enter)="cerrarPieza()">
+                    } @else {
+                      <button type="button" class="previa__titulo"
+                              title="El título: pulsa para escribirlo y elegir su letra"
+                              [style.font-size.px]="tamanoMuestra(s)"
+                              [style.color]="colorMuestra(s)"
+                              [style.font-family]="fuenteMuestra(s).css"
+                              [style.font-style]="fuenteMuestra(s).cursiva ? 'italic' : 'normal'"
+                              [style.text-transform]="fuenteMuestra(s).versalitas ? 'uppercase' : 'none'"
+                              (click)="tocar('titulo', 'El título')">
+                        {{ textoMuestra(s) }}
+                      </button>
+                    }
+
+                    @if (vista(s).rotulo === 'titulo_subtitulo') {
+                      @if (tocando('subtitulo')) {
+                        <input class="previa__escribir previa__escribir--chico" formControlName="subtitulo"
+                               maxlength="80" placeholder="Debajo del nombre, más pequeña"
+                               (keydown.enter)="cerrarPieza()">
+                      } @else {
+                        <button type="button" class="previa__subtitulo"
+                                title="La línea de abajo: pulsa para escribirla"
+                                (click)="tocar('subtitulo', 'La línea de abajo')">
+                          {{ subtituloMuestra(s) || 'La línea de abajo' }}
+                        </button>
+                      }
+                    }
+                  }
+
+                  <!-- Una tarjeta de producto, con los colores elegidos. Se escribe una vez
+                       y se usa en las dos filas que la llevan. Cada parte lleva a su color -->
+                  <ng-template #tarjetaPrevia>
+                    <span class="previa__tarjeta"
+                          [class.is-tocada]="tocando('color', 'La tarjeta')"
+                          [style.background-color]="fondoTarjeta(s)"
+                          [style.border-color]="bordeTarjeta(s)"
+                          [style.box-shadow]="sombraMuestra(s)">
+
+                      <span class="previa__foto">
+                        <!-- El cartel del descuento, en su esquina -->
+                        <button type="button" class="previa__descuento"
+                                [class.is-tocada]="tocando('color', 'El cartel del descuento')"
+                                [style.background-color]="colorBoton(s, colorPorCampo('descuento_color')!)"
+                                [style.color]="textoBoton(s, colorPorCampo('descuento_color')!)"
+                                title="El cartel del descuento y la etiqueta de encima"
+                                (click)="tocar('color', 'El cartel del descuento',
+                                               [colorPorCampo('descuento_color')!, colorPorCampo('etiqueta_color')!])">-12%</button>
+                      </span>
+
+                      <span class="previa__linea" [style.background-color]="letraTarjeta(s)"></span>
+                      <span class="previa__linea previa__linea--corta" [style.background-color]="letraFlojaTarjeta(s)"></span>
+
+                      <!-- Los cuatro botones: cada punto abre el suyo -->
+                      <span class="previa__puntos">
+                        @for (b of botones; track b.campo) {
+                          <button type="button" class="previa__punto"
+                                  [class.is-tocada]="tocando('color', b.texto)"
+                                  [style.background-color]="colorBoton(s, b)"
+                                  [title]="'El botón «' + b.texto + '»'"
+                                  (click)="tocar('color', b.texto, [b])"></button>
+                        }
+                      </span>
+
+                      <!-- Y el cuerpo de la tarjeta: su fondo y su borde -->
+                      <button type="button" class="previa__tarjeta-fondo"
+                              title="El fondo y el borde de la tarjeta"
+                              (click)="tocar('color', 'La tarjeta',
+                                             [colorPorCampo('tarjeta_fondo_color')!, colorPorCampo('tarjeta_borde_color')!])"></button>
+                    </span>
+                  </ng-template>
+
+                  @switch (formaDeLaPrevia(s)) {
+
+                    <!-- Un banner: la franja del alto elegido, o del que traiga la imagen -->
+                    @case ('banner_franja') {
+                      <button type="button" class="previa__franja"
+                              [class.is-tocada]="tocando('franja')"
+                              [class.previa__franja--libre]="altoFranjaPrevia(s) === null"
+                              [style.height.px]="altoFranjaPrevia(s)"
+                              title="El alto de las imágenes y cómo se enseñan"
+                              (click)="tocar('franja', 'La franja de imágenes')">
+                        {{ pxImagen(s) ? 'Aquí va la imagen' : 'El alto lo pone cada imagen' }}
+                      </button>
+                    }
+
+                    <!-- El mismo banner, en carteles -->
+                    @case ('banner_carteles') {
+                      <span class="previa__fila">
+                        @for (i of cuantasEnLaPrevia(s); track i) {
+                          <button type="button" class="previa__cartel"
+                                  [class.is-tocada]="tocando('franja')"
+                                  [class.previa__cartel--cuadrado]="altoFranjaPrevia(s) === null"
+                                  [style.height.px]="altoFranjaPrevia(s)"
+                                  title="El alto de las imágenes y cómo se enseñan"
+                                  (click)="tocar('franja', 'Los carteles')"></button>
+                        }
+                      </span>
+                    }
+
+                    <!-- Las categorías destacadas: en círculo o en cuadro -->
+                    @case ('circulos') {
+                      <span class="previa__fila">
+                        @for (i of cuantasEnLaPrevia(s); track i) {
+                          <button type="button" class="previa__circulo"
+                                  [class.is-tocada]="tocando('forma')"
+                                  title="En círculo o en cuadro"
+                                  (click)="tocar('forma', 'La forma de las fichas')"></button>
+                        }
+                      </span>
+                    }
+                    @case ('cuadros') {
+                      <span class="previa__fila">
+                        @for (i of cuantasEnLaPrevia(s); track i) {
+                          <button type="button" class="previa__cuadro"
+                                  [class.is-tocada]="tocando('forma')"
+                                  title="En círculo o en cuadro"
+                                  (click)="tocar('forma', 'La forma de las fichas')"></button>
+                        }
+                      </span>
+                    }
+
+                    <!-- Los carteles grandes de las categorías o las marcas en promoción.
+                         No se tocan: sus colores los pone la tienda por la posición -->
+                    @case ('promos') {
+                      <span class="previa__fila">
+                        @for (i of cuantasEnLaPrevia(s); track i) {
+                          <span class="previa__promo"></span>
+                        }
+                      </span>
+                    }
+
+                    <!-- Los logos de las marcas -->
+                    @case ('logos') {
+                      <span class="previa__fila">
+                        @for (i of cuantasEnLaPrevia(s); track i) {
+                          <span class="previa__logo"></span>
+                        }
+                      </span>
+                    }
+
+                    <!-- Un escaparate: sus tarjetas, y la imagen de al lado si la lleva -->
+                    @case ('productos') {
+                      <span class="previa__conjunto" [class.previa__conjunto--derecha]="ladoDeLaPrevia(s) === 'derecha'">
+                        @if (ladoDeLaPrevia(s)) {
+                          <button type="button" class="previa__lateral"
+                                  [class.is-tocada]="tocando('imagen')"
+                                  title="La imagen de al lado: de qué lado va"
+                                  (click)="tocar('imagen', 'La imagen de al lado')">Imagen</button>
+                        }
+                        <span class="previa__fila previa__fila--tarjetas">
+                          @for (i of cuantasEnLaPrevia(s); track i) {
+                            <ng-container [ngTemplateOutlet]="tarjetaPrevia" />
+                          }
+                        </span>
+                      </span>
+                    }
+
+                    <!-- El catálogo: su barra de resultados y la rejilla -->
+                    @case ('catalogo') {
+                      <span class="previa__barra">Mostrando 12 de {{ s.cuantas ?? 0 }} productos</span>
+                      <span class="previa__fila previa__fila--tarjetas">
+                        @for (i of cuantasEnLaPrevia(s); track i) {
+                          <ng-container [ngTemplateOutlet]="tarjetaPrevia" />
+                        }
+                      </span>
+                    }
+
+                    @default {
+                      <span class="previa__franja previa__franja--libre">Esta sección</span>
+                    }
+                  }
+                </div>
+
+                <span class="previa__pie">
+                  <i class="fa-solid fa-hand-pointer"></i>
+                  Pulsa cualquier parte para cambiarla. Es un boceto: el aire y el rótulo son los de verdad en computadora;
+                  lo de dentro es del tamaño que le toca, no la foto que va a salir.
+                </span>
+
+                <!-- ============ EL MANDO DE LA PIEZA QUE SE ESTÁ TOCANDO ============
+                     Debajo de la previa y no flotando encima: el panel es estrecho y un
+                     cuadro flotante taparía justo lo que se está mirando. -->
+                @if (pieza) {
+                  <div class="mando">
+                    <div class="mando__cabecera">
+                      <b>{{ piezaNombre }}</b>
+                      <button type="button" class="mando__cerrar" title="Cerrar (Esc)" (click)="cerrarPieza()">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+
+                    <div class="mando__cuerpo">
+                      @switch (pieza) {
+
+                        <!-- El rótulo: se escribe arriba; aquí va su pinta -->
+                        @case ('titulo') {
+                          <div class="rotulo-campo">
+                            <label [attr.for]="'m-tamano-' + s.id">Tamaño</label>
+                            <select class="form-select form-select-sm" formControlName="tamano"
+                                    [id]="'m-tamano-' + s.id">
+                              @for (t of tamanos; track t.valor) {
+                                <option [value]="t.valor">{{ t.texto }}</option>
+                              }
+                            </select>
+                          </div>
+                          <div class="rotulo-campo rotulo-campo--ancho">
+                            <label [attr.for]="'m-fuente-' + s.id">Letra</label>
+                            <select class="form-select form-select-sm" formControlName="fuente"
+                                    [id]="'m-fuente-' + s.id">
+                              @for (f of fuentes; track f.valor) {
+                                <option [value]="f.valor">{{ f.texto }}</option>
+                              }
+                            </select>
+                          </div>
+                          <div class="rotulo-campo color-bloque">
+                            <label [attr.for]="'m-color-' + s.id">Color</label>
+                            <app-campoColor [idCampo]="'m-color-' + s.id"
+                                            [valor]="colorMuestra(s)"
+                                            [propio]="colorPropio(s)"
+                                            porDefecto="El de la tienda"
+                                            etiqueta="Color del rótulo"
+                                            [paleta]="colores"
+                                            [deshabilitado]="!puedeEditar"
+                                            (cambia)="elegirColor(s, $event)" />
+                          </div>
+                        }
+
+                        <!-- La línea de abajo se pinta sola: no tiene nada que elegir -->
+                        @case ('subtitulo') {
+                          <p class="mando__nota mb-0">
+                            Se escribe arriba. Se lee siempre igual, debajo del título y más pequeña.
+                          </p>
+                        }
+
+                        @case ('aire') {
+                          <div class="rotulo-campo rotulo-campo--ancho">
+                            <label [attr.for]="'m-alto-' + s.id">Alto de la sección</label>
+                            <select class="form-select form-select-sm" formControlName="alto"
+                                    [id]="'m-alto-' + s.id">
+                              @for (a of altos; track a.valor) {
+                                <option [value]="a.valor">{{ a.texto }}</option>
+                              }
+                            </select>
+                          </div>
+                          <p class="mando__nota mb-0">
+                            Es el aire que deja alrededor, no el tamaño de lo que hay dentro.
+                          </p>
+                        }
+
+                        @case ('franja') {
+                          <div class="rotulo-campo rotulo-campo--ancho">
+                            <label [attr.for]="'m-altoimg-' + s.id">Alto de las imágenes</label>
+                            <select class="form-select form-select-sm" formControlName="alto_imagen"
+                                    [id]="'m-altoimg-' + s.id">
+                              @for (a of altosImagen; track a.valor) {
+                                <option [value]="a.valor">{{ a.texto }}@if (a.px) { — {{ a.px }} px }</option>
+                              }
+                            </select>
+                          </div>
+                          <div class="mando__botones">
+                            @for (v of vistasBanner; track v.valor) {
+                              <button type="button" class="mando__opcion"
+                                      [class.is-activa]="vistaDe(s) === v.valor"
+                                      [disabled]="!puedeEditar" [title]="v.ayuda"
+                                      (click)="ponerVista(s, v.valor)">{{ v.texto }}</button>
+                            }
+                          </div>
+                        }
+
+                        @case ('forma') {
+                          <div class="mando__botones">
+                            @for (f of formasFicha; track f.valor) {
+                              <button type="button" class="mando__opcion"
+                                      [class.is-activa]="formaDe(s) === f.valor"
+                                      [disabled]="!puedeEditar" [title]="f.ayuda"
+                                      (click)="ponerForma(s, f.valor)">{{ f.texto }}</button>
+                            }
+                          </div>
+                        }
+
+                        @case ('imagen') {
+                          <div class="mando__botones">
+                            @for (d of disposiciones; track d.valor) {
+                              <button type="button" class="mando__opcion"
+                                      [class.is-activa]="disposicionDe(s) === d.valor"
+                                      [disabled]="!puedeEditar" [title]="d.ayuda"
+                                      (click)="ponerDisposicion(s, d.valor)">{{ d.texto }}</button>
+                            }
+                          </div>
+                          <p class="mando__nota mb-0">
+                            La foto se cambia en «Diseño», aquí debajo.
+                          </p>
+                        }
+
+                        <!-- Los colores: el mismo mando para los cuatro botones, el fondo,
+                             el borde, el cartel del descuento y la etiqueta. El de la
+                             tarjeta lleva además su sombra, que es lo otro que se decide
+                             mirándola -->
+                        @case ('color') {
+                          @if (tocando('color', 'La tarjeta')) {
+                            <div class="rotulo-campo rotulo-campo--ancho">
+                              <label [attr.for]="'m-sombra-' + s.id">Sombra</label>
+                              <select class="form-select form-select-sm" formControlName="tarjeta_sombra"
+                                      [id]="'m-sombra-' + s.id">
+                                @for (x of sombras; track x.valor) {
+                                  <option [value]="x.valor">{{ x.texto }} — {{ x.pista }}</option>
+                                }
+                              </select>
+                            </div>
+                          }
+                          @for (c of piezaColores; track c.campo) {
+                            <div class="mando__color">
+                              <div class="rotulo-campo color-bloque">
+                                <label [attr.for]="'m-' + c.campo + '-' + s.id">{{ c.texto }}</label>
+                                <app-campoColor [idCampo]="'m-' + c.campo + '-' + s.id"
+                                                [valor]="colorBoton(s, c)"
+                                                [propio]="botonPropio(s, c)"
+                                                porDefecto="El de la tienda"
+                                                [etiqueta]="c.texto"
+                                                [paleta]="colores"
+                                                [deshabilitado]="!puedeEditar"
+                                                (cambia)="ponerColorBoton(s, c, $event)" />
+                              </div>
+
+                              @if (c.campoTexto) {
+                                <div class="rotulo-campo color-bloque">
+                                  <label [attr.for]="'m-' + c.campoTexto + '-' + s.id">Su letra</label>
+                                  <app-campoColor [idCampo]="'m-' + c.campoTexto + '-' + s.id"
+                                                  [valor]="textoBoton(s, c)"
+                                                  [propio]="textoPropio(s, c)"
+                                                  porDefecto="La que se lea"
+                                                  [etiqueta]="'Letra de ' + c.texto"
+                                                  [paleta]="colores"
+                                                  [deshabilitado]="!puedeEditar"
+                                                  (cambia)="ponerTextoBoton(s, c, $event)" />
+                                </div>
+                              }
+
+                              @if (c.campoRotulo) {
+                                <div class="rotulo-campo rotulo-campo--ancho">
+                                  <label [attr.for]="'m-etiqueta-' + s.id">Lo que dice</label>
+                                  <input type="text" class="form-control form-control-sm"
+                                         [id]="'m-etiqueta-' + s.id" formControlName="etiqueta"
+                                         maxlength="30" placeholder="Sin etiqueta"
+                                         [attr.disabled]="puedeEditar ? null : ''">
+                                </div>
+                              }
+                            </div>
+
+                            @if (botonFlojo(s, c)) {
+                              <p class="campo-hint campo-hint--aviso mb-0">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Así cuesta leerlo ({{ contrasteBotonTexto(s, c) }} a 1, y lo mínimo son 4,5 a 1).
+                              </p>
+                            }
+                          }
+                        }
+                      }
+                    </div>
+
+                    <button type="button" class="mando__ir" (click)="verTodoDeLaPieza()">
+                      Ver todo en «{{ nombreDeLaPestana(pestanaDeLaPieza()) }}»
+                      <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                   </div>
                 }
+              </div>
 
-                @if (vista(s).rotulo === 'titulo_subtitulo') {
-                  <div class="col-12 col-md-6">
-                    <app-campoTexto
-                      [control]="$any(formularios[s.id].controls['subtitulo'])"
-                      label="LA LÍNEA DE ABAJO"
-                      placeholder="Debajo del nombre, más pequeña"
-                      [maxLength]="80"
-                      [trimEspacios]="true">
-                    </app-campoTexto>
-                  </div>
+              <!-- ===================== LAS CUATRO PESTAÑAS ===================== -->
+              <div class="pestanas" role="tablist">
+                @for (p of pestanasDe(s); track p.valor) {
+                  <button type="button" class="pestanas__boton" role="tab"
+                          [class.is-activa]="enPestana(s, p.valor)"
+                          [attr.aria-selected]="enPestana(s, p.valor)"
+                          [title]="p.pista"
+                          (click)="verPestana(p.valor)">
+                    <i class="fa-solid" [ngClass]="p.icono"></i>
+                    <span>{{ p.texto }}</span>
+                  </button>
                 }
+              </div>
 
+                <div class="row g-2">
+                <!-- ======================== CONTENIDO ========================
+                     Qué enseña y de dónde sale. Lo primero que se decide. -->
+                @if (enPestana(s, 'contenido')) {
                 <!-- ---------- De dónde sale lo que enseña ----------
                      Sólo en un cuerpo que apunte a una categoría o a una
                      marca: en el principal no hay «lo de esta página», y en un
@@ -586,248 +1003,7 @@
                     </p>
                   </div>
                 }
-
-                <!-- ---------- En qué forma salen las categorías ----------
-                     Sólo «Categorías destacadas», que es la única sección con
-                     dos maneras de pintarse. Con dibujos y no con un
-                     desplegable: «en cuadro» se entiende de un vistazo
-                     viéndolo. -->
-                @if (esDestacadas(s)) {
-                  <div class="col-12">
-                    <label class="seccion-rotulo">CÓMO SE PINTAN LAS CATEGORÍAS</label>
-
-                    <div class="disposiciones">
-                      @for (f of formasFicha; track f.valor) {
-                        <button type="button" class="disposicion"
-                                [class.is-activa]="formaDe(s) === f.valor"
-                                [attr.aria-pressed]="formaDe(s) === f.valor"
-                                [disabled]="!puedeEditar"
-                                [title]="f.ayuda"
-                                (click)="ponerForma(s, f.valor)">
-                          <span class="disposicion__dibujo"
-                                [ngClass]="'forma--' + f.valor" aria-hidden="true">
-                            <i></i><i></i><i></i>
-                          </span>
-                          <span class="disposicion__texto">{{ f.texto }}</span>
-                        </button>
-                      }
-                    </div>
-
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      En círculo salen seis por fila con el nombre debajo, como
-                      hasta ahora. En cuadro salen cinco fichas anchas, con la
-                      foto entera y el nombre escrito encima.
-                    </p>
-                  </div>
-                }
-
-                <!-- ---------- El color de los botones de la tarjeta ----------
-                     Las secciones que pintan tarjetas de producto: los
-                     escaparates y el catálogo (desde el 09/11/2026 la tienda
-                     usa UNA sola tarjeta en todas sus pantallas). Se elige el
-                     FONDO; la letra y el icono los calcula la tienda para que
-                     se lean encima. -->
-                @if (conBotones(s)) {
-                  <div class="col-12">
-                    <label class="seccion-rotulo">EL COLOR DE LOS BOTONES</label>
-
-                    <div class="botones-colores">
-                      @for (b of botones; track b.campo) {
-                        <div class="boton-color">
-                          <!-- La muestra ES el botón: con su fondo y con la
-                               letra que la tienda le va a poner encima -->
-                          <span class="boton-color__muestra"
-                                [style.background-color]="colorBoton(s, b)"
-                                [style.color]="textoBoton(s, b)"
-                                [title]="b.ayuda">
-                            <i class="fa-solid" [ngClass]="b.icono"></i>
-                            {{ b.texto }}
-                          </span>
-
-                          <!-- ---------- El fondo ---------- -->
-                          <span class="boton-color__que">Fondo</span>
-                          <app-campoColor [idCampo]="b.campo + '-' + s.id"
-                                          [valor]="colorBoton(s, b)"
-                                          [propio]="botonPropio(s, b)"
-                                          porDefecto="El de la tienda"
-                                          [etiqueta]="'Fondo del botón ' + b.texto"
-                                          [paleta]="colores"
-                                          [deshabilitado]="!puedeEditar"
-                                          [apilado]="true"
-                                          [compacto]="true"
-                                          (cambia)="ponerColorBoton(s, b, $event)" />
-
-                          <!-- ---------- La letra ----------
-                               Sin elegir ninguna, la tienda pone la que se lea
-                               encima del fondo; por eso la muestra de arriba
-                               ya enseña cuál sería. -->
-                          <span class="boton-color__que">Letra e icono</span>
-                          <app-campoColor [idCampo]="b.campoTexto + '-' + s.id"
-                                          [valor]="textoBoton(s, b)"
-                                          [propio]="textoPropio(s, b)"
-                                          porDefecto="La que se lea"
-                                          [etiqueta]="'Letra del botón ' + b.texto"
-                                          [paleta]="colores"
-                                          [deshabilitado]="!puedeEditar"
-                                          [apilado]="true"
-                                          [compacto]="true"
-                                          (cambia)="ponerTextoBoton(s, b, $event)" />
-
-                          <!-- Se avisa, no se prohíbe: igual que con el rótulo -->
-                          @if (botonFlojo(s, b)) {
-                            <p class="campo-hint campo-hint--aviso mb-0">
-                              <i class="fa-solid fa-triangle-exclamation"></i>
-                              Así cuesta leerlo ({{ contrasteBotonTexto(s, b) }} a 1, y lo
-                              mínimo son 4,5 a 1). Se guarda igual.
-                            </p>
-                          }
-                        </div>
-                      }
-                    </div>
-
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      Se elige el fondo; la letra y el icono los pone la tienda
-                      en blanco o en negro, el que se lea encima. Sin elegir
-                      ninguno, cada botón se queda con el color de siempre.
-                    </p>
-                  </div>
-
-                  <!-- ---------- La tarjeta entera y su cartel ----------
-                       El fondo, el borde y el «-12%» de la esquina. Van con su
-                       muestra: el fondo y el borde por separado no dicen nada,
-                       y juntos en una tarjeta se ve en un vistazo si pegan. -->
-                  <div class="col-12">
-                    <label class="seccion-rotulo">LA TARJETA Y SU CARTEL</label>
-
-                    <div class="tarjeta-colores">
-                      <!-- La muestra es una tarjeta de verdad, en pequeño, con
-                           los mismos colores que va a usar la tienda. Nada de
-                           aquí dentro usa variables del tema del CRM: en el
-                           tema oscuro desaparecerían sobre el fondo elegido -->
-                      <div class="tarjeta-muestra"
-                           [style.background-color]="fondoTarjeta(s)"
-                           [style.border-color]="bordeTarjeta(s)">
-                        <div class="tarjeta-muestra__media">
-                          <!-- Las dos pastillas, en el mismo orden que en la
-                               tienda: la etiqueta encima del descuento. La
-                               etiqueta sólo si hay texto, que es lo que hace
-                               la tienda -->
-                          <div class="tarjeta-muestra__carteles">
-                            @if (textoEtiqueta(s)) {
-                              <span class="tarjeta-muestra__cartel"
-                                    [style.background-color]="colorBoton(s, etiqueta)"
-                                    [style.color]="textoBoton(s, etiqueta)">{{ textoEtiqueta(s) }}</span>
-                            }
-                            <span class="tarjeta-muestra__cartel"
-                                  [style.background-color]="colorBoton(s, cartel)"
-                                  [style.color]="textoBoton(s, cartel)">-12%</span>
-                          </div>
-                          <span class="tarjeta-muestra__foto"></span>
-                        </div>
-
-                        <span class="tarjeta-muestra__nombre" [style.color]="letraTarjeta(s)">
-                          Televisor QLED 55 pulgadas 4K
-                        </span>
-
-                        <div class="tarjeta-muestra__precios" [style.border-color]="lineaTarjeta(s)">
-                          <div class="tarjeta-muestra__precio">
-                            <span class="tarjeta-muestra__rotulo" [style.color]="acentoTarjeta(s)">Tarjeta Crédito</span>
-                            <b [style.color]="letraTarjeta(s)">$160,90</b>
-                            <del [style.color]="letraFlojaTarjeta(s)">$181,82</del>
-                          </div>
-                          <div class="tarjeta-muestra__precio" [style.border-left-color]="lineaTarjeta(s)">
-                            <span class="tarjeta-muestra__rotulo" [style.color]="acentoTarjeta(s)">Crédito Directo</span>
-                            <span [style.color]="letraFlojaTarjeta(s)">Cuotas desde</span>
-                            <b [style.color]="letraTarjeta(s)">$13,41</b>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="tarjeta-colores__campos">
-                        @for (c of coloresTarjeta; track c.campo) {
-                          <div class="tarjeta-color">
-                            <span class="boton-color__que" [title]="c.ayuda">{{ c.texto }}</span>
-
-                            <!-- La etiqueta es la única que lleva palabras: el
-                                 descuento las saca de los precios y el fondo y
-                                 el borde no llevan nada escrito. Va primero
-                                 porque sin texto no hay etiqueta, así que
-                                 elegir color antes no sirve de nada -->
-                            @if (c.campoRotulo) {
-                              <app-campoTexto
-                                [control]="$any(formularios[s.id].controls[c.campoRotulo])"
-                                label="QUÉ DICE"
-                                placeholder="Ej.: NUEVO, LIQUIDACIÓN"
-                                [maxLength]="30"
-                                [trimEspacios]="true">
-                              </app-campoTexto>
-                              <p class="campo-hint mb-0">
-                                <i class="fa-solid fa-circle-info"></i>
-                                Vacío, no sale la pastilla. Sale en todas las
-                                tarjetas de esta sección.
-                              </p>
-                            }
-
-                            <app-campoColor [idCampo]="c.campo + '-' + s.id"
-                                            [valor]="colorBoton(s, c)"
-                                            [propio]="botonPropio(s, c)"
-                                            porDefecto="El de la tienda"
-                                            [etiqueta]="c.texto"
-                                            [paleta]="colores"
-                                            [deshabilitado]="!puedeEditar"
-                                            (cambia)="ponerColorBoton(s, c, $event)" />
-
-                            <!-- Sólo el cartel tiene letra: el fondo y el borde
-                                 de la tarjeta no llevan nada escrito -->
-                            @if (c.campoTexto) {
-                              <!-- «Letra» a secas: cada caja ya lleva arriba de
-                                   qué es, y «Letra del cartel» dentro de la de
-                                   la etiqueta decía otra cosa -->
-                              <span class="boton-color__que">Letra</span>
-                              <app-campoColor [idCampo]="c.campoTexto + '-' + s.id"
-                                              [valor]="textoBoton(s, c)"
-                                              [propio]="textoPropio(s, c)"
-                                              porDefecto="La que se lea"
-                                              [etiqueta]="'Letra del ' + c.texto"
-                                              [paleta]="colores"
-                                              [deshabilitado]="!puedeEditar"
-                                              (cambia)="ponerTextoBoton(s, c, $event)" />
-
-                              @if (botonFlojo(s, c)) {
-                                <p class="campo-hint campo-hint--aviso mb-0">
-                                  <i class="fa-solid fa-triangle-exclamation"></i>
-                                  Así cuesta leerlo ({{ contrasteBotonTexto(s, c) }} a 1, y lo
-                                  mínimo son 4,5 a 1). Se guarda igual.
-                                </p>
-                              }
-                            }
-
-                            <!-- Que no se lea la letra es una cosa; que el
-                                 cartel entero se pierda dentro de la tarjeta,
-                                 otra -->
-                            @if (cartelSeConfunde(s, c)) {
-                              <p class="campo-hint campo-hint--aviso mb-0">
-                                <i class="fa-solid fa-triangle-exclamation"></i>
-                                Con ese fondo, el cartel casi no se distingue de
-                                la tarjeta. Se guarda igual.
-                              </p>
-                            }
-                          </div>
-                        }
-                      </div>
-                    </div>
-
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      El nombre y los precios no se eligen: la tienda los aclara
-                      o los oscurece sola para que se lean encima del fondo que
-                      pongas. Sin elegir nada, la tarjeta se queda blanca con su
-                      borde gris, como hoy.
-                    </p>
-                  </div>
-
+                  @if (conBotones(s)) {
                   <!-- ---------- Cuántas antes del botón ----------
                        Sólo la paginada: las otras cuatro son una fila, y en una
                        fila «cuántas salen» lo decide el ancho de la pantalla. -->
@@ -874,7 +1050,6 @@
                       </p>
                     </div>
                   }
-
                   <!-- ---------- Si la fila pasa sola ----------
                        La fila se mueve con las flechas desde siempre; esto la
                        hace pasar sola cada tantos segundos. Con palanca y no
@@ -917,7 +1092,204 @@
                       </p>
                     </div>
                   }
+                  }
+                <!-- ---------- Cada cuánto se mueve ----------
+                     Sólo en los banners: el principal y los simples. Rotando
+                     cambia la imagen; en carteles, la página de carteles. -->
+                @if (tieneGaleria(s)) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo" [attr.for]="'segundos-' + s.id">
+                      CADA CUÁNTO CAMBIA {{ queCambia(s) === 'de imagen' ? 'DE IMAGEN' : 'DE PÁGINA' }}
+                      <span>opcional</span>
+                    </label>
+                    <div class="row g-2">
+                      <div class="col-6 col-md-3">
+                        <div class="input-group input-group-sm">
+                          <input type="number" class="form-control form-control-sm"
+                                 [id]="'segundos-' + s.id" formControlName="segundos"
+                                 min="2" max="60" step="1" placeholder="5"
+                                 [attr.disabled]="puedeEditar ? null : ''">
+                          <span class="input-group-text">segundos</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Cada cuánto cambia {{ queCambia(s) }}, entre 2 y 60
+                      segundos. Vacío, cada 5, que es como ha ido siempre. Para
+                      mientras el cliente tiene el mouse encima.
+                    </p>
+                  </div>
+                }
+                }
 
+                <!-- ========================== TEXTO ==========================
+                     Lo que el cliente lee encima de la sección, y con qué pinta. -->
+                @if (enPestana(s, 'texto')) {
+                @if (vista(s).rotulo !== 'ninguno') {
+                  <div class="col-12" [class.col-md-6]="vista(s).rotulo === 'titulo_subtitulo'">
+                    <app-campoTexto
+                      [control]="$any(formularios[s.id].controls['titulo'])"
+                      label="CÓMO SE LLAMA EN LA TIENDA"
+                      [placeholder]="ejemploRotulo(s)"
+                      [maxLength]="80"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Es lo que lee el cliente encima de esta sección en la
+                      página web. {{ rotuloVacio(s) }}
+                    </p>
+                  </div>
+                }
+                @if (vista(s).rotulo === 'titulo_subtitulo') {
+                  <div class="col-12 col-md-6">
+                    <app-campoTexto
+                      [control]="$any(formularios[s.id].controls['subtitulo'])"
+                      label="LA LÍNEA DE ABAJO"
+                      placeholder="Debajo del nombre, más pequeña"
+                      [maxLength]="80"
+                      [trimEspacios]="true">
+                    </app-campoTexto>
+                  </div>
+                }
+                  <div class="col-12">
+                    <label class="seccion-rotulo">CON QUÉ LETRA SE LEE</label>
+
+                    <div class="rotulo-pinta">
+                    @if (vista(s).rotulo !== 'ninguno') {
+                      <div class="rotulo-campo">
+                        <label [attr.for]="'tamano-' + s.id">Tamaño de la letra</label>
+                        <select class="form-select form-select-sm" formControlName="tamano"
+                                [id]="'tamano-' + s.id">
+                          @for (t of tamanos; track t.valor) {
+                            <option [value]="t.valor">{{ t.texto }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      <div class="rotulo-campo rotulo-campo--ancho">
+                        <label [attr.for]="'fuente-' + s.id">Tipo de letra</label>
+                        <select class="form-select form-select-sm" formControlName="fuente"
+                                [id]="'fuente-' + s.id">
+                          @for (f of fuentes; track f.valor) {
+                            <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      <!-- La misma paleta del administrador de archivos: el
+                           selector del navegador escondido en una muestra
+                           redonda, el código al lado y los colores de siempre -->
+                      <div class="rotulo-campo rotulo-campo--ancho color-bloque">
+                        <label [attr.for]="'color-' + s.id">Color</label>
+                        <app-campoColor [idCampo]="'color-' + s.id"
+                                        [valor]="colorMuestra(s)"
+                                        [propio]="colorPropio(s)"
+                                        porDefecto="El de la tienda"
+                                        etiqueta="Color del rótulo"
+                                        [paleta]="colores"
+                                        [deshabilitado]="!puedeEditar"
+                                        (cambia)="elegirColor(s, $event)" />
+                      </div>
+                    }
+                    </div>
+
+                  @if (colorFlojo(s)) {
+                    <p class="campo-hint campo-hint--aviso">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                      Ese color se lee flojo sobre el fondo blanco de la tienda
+                      ({{ contraste(s) }} a 1, y lo mínimo son 3 a 1). Se guarda
+                      igual, pero a un cliente con la pantalla al sol le va a costar.
+                    </p>
+                  }
+                  </div>
+                }
+
+                <!-- ========================= DISEÑO ==========================
+                     Cómo se ve: su alto, su forma y sus colores. -->
+                @if (enPestana(s, 'diseno')) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo">EL ALTO</label>
+
+                    <div class="rotulo-pinta">
+                    <div class="rotulo-campo">
+                      <label [attr.for]="'alto-' + s.id">Alto de la sección</label>
+                      <select class="form-select form-select-sm" formControlName="alto"
+                              [id]="'alto-' + s.id">
+                        @for (a of altos; track a.valor) {
+                          <option [value]="a.valor">{{ a.texto }}</option>
+                        }
+                      </select>
+                    </div>
+                    <!-- Y el alto de la FRANJA DE IMÁGENES, que es otra cosa: el de
+                         arriba es el aire de alrededor y éste lo que miden las fotos.
+                         Sólo en los banners: en una sección de productos no hay
+                         ninguna franja que medir. -->
+                    @if (tieneGaleria(s)) {
+                      <div class="rotulo-campo rotulo-campo--ancho">
+                        <label [attr.for]="'altoimg-' + s.id">Alto de las imágenes</label>
+                        <select class="form-select form-select-sm" formControlName="alto_imagen"
+                                [id]="'altoimg-' + s.id">
+                          @for (a of altosImagen; track a.valor) {
+                            <option [value]="a.valor">
+                              {{ a.texto }}@if (a.px) { — {{ a.px }} px } — {{ a.pista }}
+                            </option>
+                          }
+                        </select>
+                      </div>
+                    }
+                    </div>
+
+                  <p class="campo-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    El alto es el espacio que ocupa la sección: lo que cambia es el
+                    aire que deja, no el tamaño de las fotos ni de las tarjetas.
+                    @if (vista(s).rotulo === 'ninguno') {
+                      Esta sección no lleva nada escrito encima en la tienda:
+                      {{ vista(s).sinRotulo }}.
+                    }
+                    @if (tieneGaleria(s)) {
+                      El de las imágenes sí las mide: es el alto de la franja, y vale
+                      igual rotando, de borde a borde y en carteles.
+                    }
+                  </p>
+                  </div>
+                <!-- ---------- En qué forma salen las categorías ----------
+                     Sólo «Categorías destacadas», que es la única sección con
+                     dos maneras de pintarse. Con dibujos y no con un
+                     desplegable: «en cuadro» se entiende de un vistazo
+                     viéndolo. -->
+                @if (esDestacadas(s)) {
+                  <div class="col-12">
+                    <label class="seccion-rotulo">CÓMO SE PINTAN LAS CATEGORÍAS</label>
+
+                    <div class="disposiciones">
+                      @for (f of formasFicha; track f.valor) {
+                        <button type="button" class="disposicion"
+                                [class.is-activa]="formaDe(s) === f.valor"
+                                [attr.aria-pressed]="formaDe(s) === f.valor"
+                                [disabled]="!puedeEditar"
+                                [title]="f.ayuda"
+                                (click)="ponerForma(s, f.valor)">
+                          <span class="disposicion__dibujo"
+                                [ngClass]="'forma--' + f.valor" aria-hidden="true">
+                            <i></i><i></i><i></i>
+                          </span>
+                          <span class="disposicion__texto">{{ f.texto }}</span>
+                        </button>
+                      }
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      En círculo salen seis por fila con el nombre debajo, como
+                      hasta ahora. En cuadro salen cinco fichas anchas, con la
+                      foto entera y el nombre escrito encima.
+                    </p>
+                  </div>
+                }
+                  @if (conBotones(s)) {
                   <!-- ---------- Cómo se enseña la sección ----------
                        Sola, o con una imagen a un lado que puede llevar a
                        otra página. Los cuatro dibujos y no un desplegable:
@@ -1045,162 +1417,230 @@
                       }
                     }
                   </div>
+                <!-- ---------- El color de los botones de la tarjeta ----------
+                     Las secciones que pintan tarjetas de producto: los
+                     escaparates y el catálogo (desde el 09/11/2026 la tienda
+                     usa UNA sola tarjeta en todas sus pantallas). Se elige el
+                     FONDO; la letra y el icono los calcula la tienda para que
+                     se lean encima. -->
+                  <div class="col-12">
+                    <label class="seccion-rotulo">EL COLOR DE LOS BOTONES</label>
+
+                    <div class="botones-colores">
+                      @for (b of botones; track b.campo) {
+                        <div class="boton-color">
+                          <!-- La muestra ES el botón: con su fondo y con la
+                               letra que la tienda le va a poner encima -->
+                          <span class="boton-color__muestra"
+                                [style.background-color]="colorBoton(s, b)"
+                                [style.color]="textoBoton(s, b)"
+                                [title]="b.ayuda">
+                            <i class="fa-solid" [ngClass]="b.icono"></i>
+                            {{ b.texto }}
+                          </span>
+
+                          <!-- ---------- El fondo ---------- -->
+                          <span class="boton-color__que">Fondo</span>
+                          <app-campoColor [idCampo]="b.campo + '-' + s.id"
+                                          [valor]="colorBoton(s, b)"
+                                          [propio]="botonPropio(s, b)"
+                                          porDefecto="El de la tienda"
+                                          [etiqueta]="'Fondo del botón ' + b.texto"
+                                          [paleta]="colores"
+                                          [deshabilitado]="!puedeEditar"
+                                          [apilado]="true"
+                                          [compacto]="true"
+                                          (cambia)="ponerColorBoton(s, b, $event)" />
+
+                          <!-- ---------- La letra ----------
+                               Sin elegir ninguna, la tienda pone la que se lea
+                               encima del fondo; por eso la muestra de arriba
+                               ya enseña cuál sería. -->
+                          <span class="boton-color__que">Letra e icono</span>
+                          <app-campoColor [idCampo]="b.campoTexto + '-' + s.id"
+                                          [valor]="textoBoton(s, b)"
+                                          [propio]="textoPropio(s, b)"
+                                          porDefecto="La que se lea"
+                                          [etiqueta]="'Letra del botón ' + b.texto"
+                                          [paleta]="colores"
+                                          [deshabilitado]="!puedeEditar"
+                                          [apilado]="true"
+                                          [compacto]="true"
+                                          (cambia)="ponerTextoBoton(s, b, $event)" />
+
+                          <!-- Se avisa, no se prohíbe: igual que con el rótulo -->
+                          @if (botonFlojo(s, b)) {
+                            <p class="campo-hint campo-hint--aviso mb-0">
+                              <i class="fa-solid fa-triangle-exclamation"></i>
+                              Así cuesta leerlo ({{ contrasteBotonTexto(s, b) }} a 1, y lo
+                              mínimo son 4,5 a 1). Se guarda igual.
+                            </p>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Se elige el fondo; la letra y el icono los pone la tienda
+                      en blanco o en negro, el que se lea encima. Sin elegir
+                      ninguno, cada botón se queda con el color de siempre.
+                    </p>
+                  </div>
+                  <!-- ---------- La tarjeta entera y su cartel ----------
+                       El fondo, el borde y el «-12%» de la esquina. Van con su
+                       muestra: el fondo y el borde por separado no dicen nada,
+                       y juntos en una tarjeta se ve en un vistazo si pegan. -->
+                  <div class="col-12">
+                    <label class="seccion-rotulo">LA TARJETA Y SU CARTEL</label>
+
+                    <!-- LA SOMBRA ES DE LA TARJETA ENTERA, como el fondo y el borde, así
+                         que va con ellos y no con los colores: no se elige ningún color,
+                         se elige cuánto se levanta del fondo de la página -->
+                    <div class="rotulo-pinta mb-2">
+                      <div class="rotulo-campo rotulo-campo--ancho">
+                        <label [attr.for]="'sombra-' + s.id">Sombra de la tarjeta</label>
+                        <select class="form-select form-select-sm" formControlName="tarjeta_sombra"
+                                [id]="'sombra-' + s.id">
+                          @for (x of sombras; track x.valor) {
+                            <option [value]="x.valor">{{ x.texto }} — {{ x.pista }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="tarjeta-colores">
+                      <!-- La muestra es una tarjeta de verdad, en pequeño, con
+                           los mismos colores que va a usar la tienda. Nada de
+                           aquí dentro usa variables del tema del CRM: en el
+                           tema oscuro desaparecerían sobre el fondo elegido -->
+                      <div class="tarjeta-muestra"
+                           [style.background-color]="fondoTarjeta(s)"
+                           [style.border-color]="bordeTarjeta(s)">
+                        <div class="tarjeta-muestra__media">
+                          <!-- Las dos pastillas, en el mismo orden que en la
+                               tienda: la etiqueta encima del descuento. La
+                               etiqueta sólo si hay texto, que es lo que hace
+                               la tienda -->
+                          <div class="tarjeta-muestra__carteles">
+                            @if (textoEtiqueta(s)) {
+                              <span class="tarjeta-muestra__cartel"
+                                    [style.background-color]="colorBoton(s, etiqueta)"
+                                    [style.color]="textoBoton(s, etiqueta)">{{ textoEtiqueta(s) }}</span>
+                            }
+                            <span class="tarjeta-muestra__cartel"
+                                  [style.background-color]="colorBoton(s, cartel)"
+                                  [style.color]="textoBoton(s, cartel)">-12%</span>
+                          </div>
+                          <span class="tarjeta-muestra__foto"></span>
+                        </div>
+
+                        <span class="tarjeta-muestra__nombre" [style.color]="letraTarjeta(s)">
+                          Televisor QLED 55 pulgadas 4K
+                        </span>
+
+                        <div class="tarjeta-muestra__precios" [style.border-color]="lineaTarjeta(s)">
+                          <div class="tarjeta-muestra__precio">
+                            <span class="tarjeta-muestra__rotulo" [style.color]="acentoTarjeta(s)">Tarjeta Crédito</span>
+                            <b [style.color]="letraTarjeta(s)">$160,90</b>
+                            <del [style.color]="letraFlojaTarjeta(s)">$181,82</del>
+                          </div>
+                          <div class="tarjeta-muestra__precio" [style.border-left-color]="lineaTarjeta(s)">
+                            <span class="tarjeta-muestra__rotulo" [style.color]="acentoTarjeta(s)">Crédito Directo</span>
+                            <span [style.color]="letraFlojaTarjeta(s)">Cuotas desde</span>
+                            <b [style.color]="letraTarjeta(s)">$13,41</b>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="tarjeta-colores__campos">
+                        @for (c of coloresTarjeta; track c.campo) {
+                          <div class="tarjeta-color">
+                            <span class="boton-color__que" [title]="c.ayuda">{{ c.texto }}</span>
+
+                            <!-- La etiqueta es la única que lleva palabras: el
+                                 descuento las saca de los precios y el fondo y
+                                 el borde no llevan nada escrito. Va primero
+                                 porque sin texto no hay etiqueta, así que
+                                 elegir color antes no sirve de nada -->
+                            @if (c.campoRotulo) {
+                              <app-campoTexto
+                                [control]="$any(formularios[s.id].controls[c.campoRotulo])"
+                                label="QUÉ DICE"
+                                placeholder="Ej.: NUEVO, LIQUIDACIÓN"
+                                [maxLength]="30"
+                                [trimEspacios]="true">
+                              </app-campoTexto>
+                              <p class="campo-hint mb-0">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Vacío, no sale la pastilla. Sale en todas las
+                                tarjetas de esta sección.
+                              </p>
+                            }
+
+                            <app-campoColor [idCampo]="c.campo + '-' + s.id"
+                                            [valor]="colorBoton(s, c)"
+                                            [propio]="botonPropio(s, c)"
+                                            porDefecto="El de la tienda"
+                                            [etiqueta]="c.texto"
+                                            [paleta]="colores"
+                                            [deshabilitado]="!puedeEditar"
+                                            (cambia)="ponerColorBoton(s, c, $event)" />
+
+                            <!-- Sólo el cartel tiene letra: el fondo y el borde
+                                 de la tarjeta no llevan nada escrito -->
+                            @if (c.campoTexto) {
+                              <!-- «Letra» a secas: cada caja ya lleva arriba de
+                                   qué es, y «Letra del cartel» dentro de la de
+                                   la etiqueta decía otra cosa -->
+                              <span class="boton-color__que">Letra</span>
+                              <app-campoColor [idCampo]="c.campoTexto + '-' + s.id"
+                                              [valor]="textoBoton(s, c)"
+                                              [propio]="textoPropio(s, c)"
+                                              porDefecto="La que se lea"
+                                              [etiqueta]="'Letra del ' + c.texto"
+                                              [paleta]="colores"
+                                              [deshabilitado]="!puedeEditar"
+                                              (cambia)="ponerTextoBoton(s, c, $event)" />
+
+                              @if (botonFlojo(s, c)) {
+                                <p class="campo-hint campo-hint--aviso mb-0">
+                                  <i class="fa-solid fa-triangle-exclamation"></i>
+                                  Así cuesta leerlo ({{ contrasteBotonTexto(s, c) }} a 1, y lo
+                                  mínimo son 4,5 a 1). Se guarda igual.
+                                </p>
+                              }
+                            }
+
+                            <!-- Que no se lea la letra es una cosa; que el
+                                 cartel entero se pierda dentro de la tarjeta,
+                                 otra -->
+                            @if (cartelSeConfunde(s, c)) {
+                              <p class="campo-hint campo-hint--aviso mb-0">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Con ese fondo, el cartel casi no se distingue de
+                                la tarjeta. Se guarda igual.
+                              </p>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                    <p class="campo-hint">
+                      <i class="fa-solid fa-circle-info"></i>
+                      El nombre y los precios no se eligen: la tienda los aclara
+                      o los oscurece sola para que se lean encima del fondo que
+                      pongas. Sin elegir nada, la tarjeta se queda blanca con su
+                      borde gris, como hoy.
+                    </p>
+                  </div>
+                  }
                 }
 
-                <!-- ---------- Cómo se ve en la tienda ----------
-                     El alto lo llevan todas; el resto, sólo las que pintan
-                     un rótulo. -->
-                <div class="col-12">
-                  <label class="seccion-rotulo">CÓMO SE VE EN LA TIENDA</label>
-
-                  <div class="rotulo-pinta">
-                    <div class="rotulo-campo">
-                      <label [attr.for]="'alto-' + s.id">Alto de la sección</label>
-                      <select class="form-select form-select-sm" formControlName="alto"
-                              [id]="'alto-' + s.id">
-                        @for (a of altos; track a.valor) {
-                          <option [value]="a.valor">{{ a.texto }}</option>
-                        }
-                      </select>
-                    </div>
-
-                    <!-- Y el alto de la FRANJA DE IMÁGENES, que es otra cosa: el de
-                         arriba es el aire de alrededor y éste lo que miden las fotos.
-                         Sólo en los banners: en una sección de productos no hay
-                         ninguna franja que medir. -->
-                    @if (tieneGaleria(s)) {
-                      <div class="rotulo-campo rotulo-campo--ancho">
-                        <label [attr.for]="'altoimg-' + s.id">Alto de las imágenes</label>
-                        <select class="form-select form-select-sm" formControlName="alto_imagen"
-                                [id]="'altoimg-' + s.id">
-                          @for (a of altosImagen; track a.valor) {
-                            <option [value]="a.valor">
-                              {{ a.texto }}@if (a.px) { — {{ a.px }} px } — {{ a.pista }}
-                            </option>
-                          }
-                        </select>
-                      </div>
-                    }
-
-                    @if (vista(s).rotulo !== 'ninguno') {
-                      <div class="rotulo-campo">
-                        <label [attr.for]="'tamano-' + s.id">Tamaño de la letra</label>
-                        <select class="form-select form-select-sm" formControlName="tamano"
-                                [id]="'tamano-' + s.id">
-                          @for (t of tamanos; track t.valor) {
-                            <option [value]="t.valor">{{ t.texto }}</option>
-                          }
-                        </select>
-                      </div>
-
-                      <div class="rotulo-campo rotulo-campo--ancho">
-                        <label [attr.for]="'fuente-' + s.id">Tipo de letra</label>
-                        <select class="form-select form-select-sm" formControlName="fuente"
-                                [id]="'fuente-' + s.id">
-                          @for (f of fuentes; track f.valor) {
-                            <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
-                          }
-                        </select>
-                      </div>
-
-                      <!-- La misma paleta del administrador de archivos: el
-                           selector del navegador escondido en una muestra
-                           redonda, el código al lado y los colores de siempre -->
-                      <div class="rotulo-campo rotulo-campo--ancho color-bloque">
-                        <label [attr.for]="'color-' + s.id">Color</label>
-                        <app-campoColor [idCampo]="'color-' + s.id"
-                                        [valor]="colorMuestra(s)"
-                                        [propio]="colorPropio(s)"
-                                        porDefecto="El de la tienda"
-                                        etiqueta="Color del rótulo"
-                                        [paleta]="colores"
-                                        [deshabilitado]="!puedeEditar"
-                                        (cambia)="elegirColor(s, $event)" />
-                      </div>
-                    }
-                  </div>
-
-                  <!-- La muestra: fondo blanco siempre, porque blanco es el de la
-                       sección en la tienda. Nada de aquí dentro usa los colores del
-                       tema del CRM: en el tema oscuro desaparecerían.
-
-                       El hueco de arriba es el aire de verdad que va a dejar la
-                       sección: «Amplia» no dice nada hasta que se ve al lado de
-                       lo que ya hay. -->
-                  <div class="rotulo-muestra" [style.padding-top.px]="aireMuestra(s)">
-                    @if (vista(s).rotulo !== 'ninguno') {
-                      <span class="rotulo-muestra-texto"
-                            [style.font-size.px]="tamanoMuestra(s)"
-                            [style.color]="colorMuestra(s)"
-                            [style.font-family]="fuenteMuestra(s).css"
-                            [style.font-style]="fuenteMuestra(s).cursiva ? 'italic' : 'normal'"
-                            [style.text-transform]="fuenteMuestra(s).versalitas ? 'uppercase' : 'none'">
-                        {{ textoMuestra(s) }}
-                      </span>
-                    } @else {
-                      <span class="rotulo-muestra-sin">
-                        <i class="fa-solid" [ngClass]="vista(s).icono"></i>
-                        Aquí empieza la sección, sin nada escrito encima
-                      </span>
-                    }
-                    <span class="rotulo-muestra-pie">
-                      Deja {{ aireMuestra(s) }} px de aire encima en computadora.
-                      @if (vista(s).rotulo !== 'ninguno') {
-                        Así se lee el rótulo.
-                      }
-                      En celular la tienda lo encoge todo sola.
-                    </span>
-                  </div>
-
-                  <!-- La franja de un banner, a un tercio: a tamaño real una de
-                       560 px taparía el formulario entero. Dice los dos números,
-                       porque el de celular no se puede ver aquí. -->
-                  @if (tieneGaleria(s)) {
-                    <div class="franja-muestra">
-                      @if (pxImagen(s); as px) {
-                        <div class="franja-muestra__caja" [style.height.px]="altoMuestraImagen(s)">
-                          <span class="franja-muestra__texto">Aquí va la imagen</span>
-                        </div>
-                        <span class="rotulo-muestra-pie">
-                          {{ px }} px de alto en computadora y {{ pxImagenCelular(s) }} en celular.
-                          Lo que no entre en esa franja se recorta desde el centro.
-                        </span>
-                      } @else {
-                        <div class="franja-muestra__caja franja-muestra__caja--libre">
-                          <span class="franja-muestra__texto">El alto lo pone cada imagen</span>
-                        </div>
-                        <span class="rotulo-muestra-pie">
-                          No se recorta nada, y dos imágenes de distinta proporción se
-                          ven de distinto alto.
-                        </span>
-                      }
-                    </div>
-                  }
-
-                  <p class="campo-hint">
-                    <i class="fa-solid fa-circle-info"></i>
-                    El alto es el espacio que ocupa la sección: lo que cambia es el
-                    aire que deja, no el tamaño de las fotos ni de las tarjetas.
-                    @if (vista(s).rotulo === 'ninguno') {
-                      Esta sección no lleva nada escrito encima en la tienda:
-                      {{ vista(s).sinRotulo }}.
-                    }
-                    @if (tieneGaleria(s)) {
-                      El de las imágenes sí las mide: es el alto de la franja, y vale
-                      igual rotando, de borde a borde y en carteles.
-                    }
-                  </p>
-
-                  @if (colorFlojo(s)) {
-                    <p class="campo-hint campo-hint--aviso">
-                      <i class="fa-solid fa-triangle-exclamation"></i>
-                      Ese color se lee flojo sobre el fondo blanco de la tienda
-                      ({{ contraste(s) }} a 1, y lo mínimo son 3 a 1). Se guarda
-                      igual, pero a un cliente con la pantalla al sol le va a costar.
-                    </p>
-                  }
-                </div>
-
+                <!-- ======================= CUÁNDO SE VE ======================
+                     Entre qué fechas sale sola. -->
+                @if (enPestana(s, 'cuando')) {
                 <div class="col-12">
                   <label class="seccion-rotulo">ENTRE QUÉ FECHAS SE VE <span>opcional</span></label>
                   <div class="row g-2">
@@ -1221,36 +1661,8 @@
                     apaga sola. Vacías, se ve siempre.
                   </p>
                 </div>
-
-                <!-- ---------- Cada cuánto se mueve ----------
-                     Sólo en los banners: el principal y los simples. Rotando
-                     cambia la imagen; en carteles, la página de carteles. -->
-                @if (tieneGaleria(s)) {
-                  <div class="col-12">
-                    <label class="seccion-rotulo" [attr.for]="'segundos-' + s.id">
-                      CADA CUÁNTO CAMBIA {{ queCambia(s) === 'de imagen' ? 'DE IMAGEN' : 'DE PÁGINA' }}
-                      <span>opcional</span>
-                    </label>
-                    <div class="row g-2">
-                      <div class="col-6 col-md-3">
-                        <div class="input-group input-group-sm">
-                          <input type="number" class="form-control form-control-sm"
-                                 [id]="'segundos-' + s.id" formControlName="segundos"
-                                 min="2" max="60" step="1" placeholder="5"
-                                 [attr.disabled]="puedeEditar ? null : ''">
-                          <span class="input-group-text">segundos</span>
-                        </div>
-                      </div>
-                    </div>
-                    <p class="campo-hint">
-                      <i class="fa-solid fa-circle-info"></i>
-                      Cada cuánto cambia {{ queCambia(s) }}, entre 2 y 60
-                      segundos. Vacío, cada 5, que es como ha ido siempre. Para
-                      mientras el cliente tiene el mouse encima.
-                    </p>
-                  </div>
                 }
-              </div>
+                </div>
 
               <!-- ---------- Lo que sólo tienen los banners ----------
                    Su nombre y el botón de borrarlo. El nombre va por su
@@ -1259,6 +1671,7 @@
                    guardado del rótulo pudiera renombrar la galería sin que
                    nadie lo pidiera. -->
               @if (s.es_banner) {
+                @if (enPestana(s, 'diseno')) {
                 <!-- ---------- Cómo se enseña este banner ----------
                      Las mismas imágenes, con sus mismos enlaces, de dos
                      maneras. Con dibujos y no con un desplegable: «en
@@ -1294,7 +1707,10 @@
                     sigue llevando a donde le pusiste en «A dónde lleva».
                   </p>
                 </div>
+                }
 
+                <!-- El nombre es de los que administran, no de la tienda: va con el contenido -->
+                @if (enPestana(s, 'contenido')) {
                 <div class="banner-propio">
                   <div class="banner-propio__nombre">
                     <label class="seccion-rotulo" [attr.for]="'nombre-' + s.id">
@@ -1325,13 +1741,14 @@
                     </button>
                   }
                 </div>
+                }
               }
 
               <!-- ---------- Quitar un escaparate de ESTA página ----------
                    No es la papelera: el escaparate y sus productos siguen en
                    «Productos por sección», y se puede volver a añadir. Por eso
                    el botón dice lo que hace y el aviso lo repite. -->
-              @if (s.producto_seccion_id && puedeEliminar) {
+              @if (s.producto_seccion_id && puedeEliminar && enPestana(s, 'contenido')) {
                 <div class="escaparate-propio">
                   <p class="campo-hint mb-0">
                     <i class="fa-solid fa-circle-info"></i>
@@ -1349,17 +1766,11 @@
                 </div>
               }
 
-              @if (puedeEditar) {
-                <div class="d-flex justify-content-end mb-3">
-                  <button type="button" class="btn btn-sm btn-primary"
-                          [disabled]="guardando === s.id" (click)="guardarSeccion(s)">
-                    <i class="fa fa-save"></i>
-                    {{ guardando === s.id ? 'Guardando…' : 'Guardar la sección' }}
-                  </button>
-                </div>
-              }
 
-              <!-- Lo que enseña: su galería, dónde se llena, o lo que falta -->
+              <!-- Lo que enseña: su galería, dónde se llena, o lo que falta.
+                   Va en «Contenido», que es su pregunta: las imágenes de un banner son
+                   lo que enseña, no cómo se ve -->
+              @if (enPestana(s, 'contenido')) {
               <div class="seccion-contenido">
                 @if (s.fuente.tipo === 'galeria') {
                   <app-galeriaImagenes
@@ -1413,6 +1824,7 @@
                   </div>
                 }
               </div>
+              }
 
               @if (s.updated_at) {
                 <small class="seccion-pie">

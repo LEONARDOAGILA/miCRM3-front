@@ -29,14 +29,53 @@ export class EncabezadoService {
   // CONFIGURACIÓN
   // ================================================================
 
-  /** La configuración y el menú de un tirón. */
-  getEncabezado(): Observable<any> {
-    return this._http.get(this.URL_SERVICIOS + 'getEncabezado');
+  /**
+   * La configuración de UNO y el menú de un tirón.
+   *
+   * Sin id, el predeterminado: es el que abre la pantalla. La respuesta trae
+   * además la lista de todos, para poder cambiar de uno a otro sin volver a
+   * preguntar.
+   */
+  getEncabezado(id?: number | null): Observable<any> {
+    const query = id ? '?encabezado_id=' + id : '';
+    return this._http.get(this.URL_SERVICIOS + 'getEncabezado' + query);
   }
 
-  /** Sólo la configuración; el menú tiene sus propias llamadas. */
-  editEncabezado(config: any): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'editEncabezado', { config });
+  /** Sólo la pinta de uno; el menú tiene sus propias llamadas. */
+  editEncabezado(config: any, id?: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'editEncabezado', { config, encabezado_id: id ?? null });
+  }
+
+  // ================================================================
+  // LOS ENCABEZADOS DE CAMPAÑA
+  // ================================================================
+  //
+  // Uno por temporada, con sus fechas. El predeterminado no se apaga ni se
+  // borra: lo impide la base, y la pantalla lo dice antes de intentarlo.
+
+  /** Uno nuevo, copiando la pinta de otro (el predeterminado si no se dice). */
+  addEncabezado(nombre: string, copiarDe?: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'addEncabezado', { nombre, copiar_de: copiarDe ?? null });
+  }
+
+  /** Su nombre y sus fechas. La pinta va por editEncabezado. */
+  editDatos(id: number, datos: any): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'editDatos/' + id, datos);
+  }
+
+  /** Sin `activo`, alterna. */
+  activarEncabezado(id: number, activo?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'activarEncabezado/' + id,
+                           activo === undefined ? {} : { activo });
+  }
+
+  /** Éste pasa a ser el predeterminado (y se enciende). */
+  predeterminado(id: number): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'predeterminado/' + id, {});
+  }
+
+  deleteEncabezado(id: number): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'deleteEncabezado/' + id);
   }
 
   // ================================================================
@@ -51,15 +90,18 @@ export class EncabezadoService {
   // Content-Type a mano —el navegador tiene que poner el suyo con el
   // `boundary`—. Las dos devuelven el encabezado entero.
 
-  subirLogo(archivo: File): Observable<any> {
+  subirLogo(archivo: File, id?: number | null): Observable<any> {
     const datos = new FormData();
     datos.append('logo', archivo);
+    // CADA ENCABEZADO TIENE EL SUYO: el de Navidad puede llevar el del gorro
+    if (id) { datos.append('encabezado_id', String(id)); }
     return this._http.post(this.URL_SERVICIOS + 'logo', datos);
   }
 
   /** Lo quita: la tienda vuelve a pintar el que trae dibujado. */
-  quitarLogo(): Observable<any> {
-    return this._http.delete(this.URL_SERVICIOS + 'logo');
+  quitarLogo(id?: number | null): Observable<any> {
+    const query = id ? '?encabezado_id=' + id : '';
+    return this._http.delete(this.URL_SERVICIOS + 'logo' + query);
   }
 
   // ================================================================
