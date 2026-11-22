@@ -445,7 +445,7 @@
                      palanca y los banners se borran desde sus campos, porque
                      eso sí se lleva sus imágenes por delante. Quitar un
                      escaparate no borra nada, y por eso vive aquí. -->
-                @if (s.producto_seccion_id && puedeEliminar) {
+                @if (s.grupo_productos_id && puedeEliminar) {
                   <span class="seccion-botones" (click)="$event.stopPropagation()">
                     <button type="button" class="btn btn-xs btn-borrar"
                             title="Quitar de esta página (el escaparate y sus productos siguen en «Productos por sección»)"
@@ -1748,13 +1748,13 @@
                    No es la papelera: el escaparate y sus productos siguen en
                    «Productos por sección», y se puede volver a añadir. Por eso
                    el botón dice lo que hace y el aviso lo repite. -->
-              @if (s.producto_seccion_id && puedeEliminar && enPestana(s, 'contenido')) {
+              @if (s.grupo_productos_id && puedeEliminar && enPestana(s, 'contenido')) {
                 <div class="escaparate-propio">
                   <p class="campo-hint mb-0">
                     <i class="fa-solid fa-circle-info"></i>
                     <span>
                       Los productos de esta sección se eligen en
-                      <a routerLink="/ecommerce/producto-por-seccion">Productos por sección</a>,
+                      <a routerLink="/ecommerce/grupo-productos">Productos por sección</a>,
                       y son los mismos en todas las páginas donde salga. Lo de aquí
                       —el rótulo, los colores, el sitio— es sólo de esta página.
                     </span>

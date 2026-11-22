@@ -32,6 +32,7 @@ import {
   ALTOS_SECCION, AIRE_BASE_PX,
   ALTOS_IMAGEN_BANNER, ALTO_BANNER_CELULAR, AltoImagenBanner,
 } from '../../../interfaces/inicioModel';
+import { cargarLetrasDeLaTienda } from '../../../interfaces/letrasTienda';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoColorComponent } from '../../../../../components/campos/campoColor/campoColor.component';
@@ -626,7 +627,7 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
 
   async ngOnInit(): Promise<void> {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
-    this.pedirLetrasDeLaTienda();
+    cargarLetrasDeLaTienda();
     // Los cuerpos primero: hasta saber cuál es el principal no hay secciones
     // que pedir
     await this.cargarCuerpos();
@@ -870,7 +871,7 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
   vista(s: SeccionInicioModel): VistaSeccion {
     // Las de productos y los banners no pueden estar en el catálogo de claves:
     // las suyas las fabrica el servidor al crearlas.
-    if (s.producto_seccion_id) { return vistaDeProductos(s.nombre); }
+    if (s.grupo_productos_id) { return vistaDeProductos(s.nombre); }
     if (s.es_banner) { return vistaDeBanner(); }
     return VISTA_SECCIONES[s.clave] ?? VISTA_POR_DEFECTO;
   }
@@ -1493,17 +1494,6 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
    * muestra sale con la letra del sistema y los nombres siguen diciendo cuál
    * es cada una.
    */
-  private pedirLetrasDeLaTienda(): void {
-    const id = 'letras-de-la-tienda';
-    if (document.getElementById(id)) { return; }
-
-    const link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@700'
-              + '&family=Poppins:wght@700&family=Barlow+Condensed:ital,wght@1,700&display=swap';
-    document.head.appendChild(link);
-  }
 
   /** Lo que se lee en la cabecera sin abrirla. */
   resumen(s: SeccionInicioModel): string {
@@ -1540,11 +1530,11 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
       { ruta: string; pantalla: string; regla: string; params?: Record<string, any> } | null {
     if (s.fuente.tipo === 'productos') {
       return {
-        ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'producto-por-seccion'),
+        ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'grupo-productos'),
         pantalla: 'Productos por sección',
         // El enlace lleva la sección puesta: llegar a una lista de escaparates
         // y tener que buscar el que se estaba mirando es el paso que sobra.
-        params: s.fuente.seccion_id ? { seccion: s.fuente.seccion_id } : undefined,
+        params: s.fuente.grupo_id ? { grupo: s.fuente.grupo_id } : undefined,
         regla: 'Salen aquí los productos que le metas a este escaparate, en el '
              + 'orden que tengan allí. Lo que aquí se decide es dónde va en la '
              + 'portada, qué se lee encima y entre qué fechas se ve.',

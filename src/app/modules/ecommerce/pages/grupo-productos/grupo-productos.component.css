@@ -48,12 +48,12 @@
 /* ============================================================
    LA LISTA DE SECCIONES
    ============================================================ */
-.pps-lista {
+.gp-lista {
   min-height: 100%;
   padding: .4rem .5rem .5rem;
 }
 
-.pps-seccion {
+.gp-grupo {
   display: flex;
   align-items: center;
   gap: .4rem;
@@ -68,13 +68,13 @@
   transition: border-color .12s ease, background-color .12s ease;
 }
 
-.pps-seccion:hover {
+.gp-grupo:hover {
   border-color: var(--bs-app-theme, #00acac);
 }
 
 /* La elegida: es el destino de todo lo que se marque en la rejilla, así
    que tiene que verse de lejos y no por un matiz de fondo. */
-.pps-seccion.is-elegida {
+.gp-grupo.is-elegida {
   border-color: var(--bs-app-theme, #00acac);
   border-left-width: 4px;
   background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .09);
@@ -83,22 +83,22 @@
 /* Apagada o fuera de fecha: la tienda no la enseñaría. Se atenúa el
    nombre, no la fila entera: los mandos tienen que seguir legibles para
    poder encenderla. */
-.pps-seccion.is-apagada .pps-seccion__nombre {
+.gp-grupo.is-apagada .gp-grupo__nombre {
   opacity: .6;
   text-decoration: line-through;
   text-decoration-color: rgba(var(--bs-body-color-rgb, 33, 37, 41), .35);
 }
 
-.pps-seccion__asa {
+.gp-grupo__asa {
   flex: 0 0 auto;
   color: var(--bs-secondary-color, #adb5bd);
   font-size: 11px;
   cursor: grab;
 }
 
-.pps-seccion__asa:active { cursor: grabbing; }
+.gp-grupo__asa:active { cursor: grabbing; }
 
-.pps-seccion__cuerpo {
+.gp-grupo__cuerpo {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -106,7 +106,7 @@
   gap: .1rem;
 }
 
-.pps-seccion__nombre {
+.gp-grupo__nombre {
   font-size: .8125rem;
   font-weight: 600;
   line-height: 1.2;
@@ -117,7 +117,7 @@
   white-space: nowrap;
 }
 
-.pps-seccion__datos {
+.gp-grupo__datos {
   display: flex;
   align-items: center;
   gap: .35rem;
@@ -125,7 +125,7 @@
   color: var(--bs-secondary-color, #6c757d);
 }
 
-.pps-chapa {
+.gp-chapa {
   min-width: 20px;
   padding: 0 5px;
   border-radius: 999px;
@@ -137,55 +137,55 @@
   text-align: center;
 }
 
-.pps-seccion.is-elegida .pps-chapa {
+.gp-grupo.is-elegida .gp-chapa {
   background-color: var(--bs-app-theme, #00acac);
   color: #fff;
 }
 
-.pps-seccion__aviso {
+.gp-grupo__aviso {
   display: inline-flex;
   align-items: center;
   gap: .2rem;
   color: var(--bs-warning-text-emphasis, #997404);
 }
 
-.pps-seccion__mandos {
+.gp-grupo__mandos {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: .15rem;
 }
 
-.pps-seccion__mandos .btn {
+.gp-grupo__mandos .btn {
   padding: .1rem .35rem;
   font-size: 10px;
 }
 
-.pps-borrar:hover {
+.gp-borrar:hover {
   color: var(--bs-danger, #dc3545);
 }
 
 /* La palanca, el estándar de la casa: el HTML pone .form-switch y aquí va
    el tamaño. Sin esto sale una casilla cuadrada. */
-.pps-switch {
+.gp-switch {
   min-height: 0;
   margin: 0;
   padding: 0;
 }
 
-.pps-switch .form-check-input {
+.gp-switch .form-check-input {
   width: 1.9rem;
   height: 1rem;
   margin: 0;
   cursor: pointer;
 }
 
-.pps-switch .form-check-input:disabled {
+.gp-switch .form-check-input:disabled {
   cursor: default;
 }
 
 /* El hueco que deja la fila mientras se arrastra */
-.pps-fantasma {
+.gp-fantasma {
   height: 44px;
   margin-bottom: .25rem;
   border: 1px dashed var(--bs-app-theme, #00acac);
@@ -197,9 +197,9 @@
    LA FRANJA DE ARRIBA DE LA REJILLA
    ============================================================ */
 
-/* A qué sección va lo que se marque. Es el dato que falta cuando se mira
+/* A qué grupo va lo que se marque. Es el dato que falta cuando se mira
    la rejilla, así que va pegado al conmutador de vistas. */
-.pps-destino {
+.gp-destino {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
@@ -215,22 +215,22 @@
   text-overflow: ellipsis;
 }
 
-.pps-destino i { color: var(--bs-app-theme, #00acac); }
+.gp-destino i { color: var(--bs-app-theme, #00acac); }
 
-.pps-destino__cuenta {
+.gp-destino__cuenta {
   color: var(--bs-secondary-color, #6c757d);
 }
 
-/* Sin sección elegida no hay destino: en ámbar, porque los botones de
+/* Sin grupo elegido no hay destino: en ámbar, porque los botones de
    meter y sacar están apagados por eso. */
-.pps-destino.is-sin {
+.gp-destino.is-sin {
   background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), .16);
 }
 
-.pps-destino.is-sin i { color: var(--bs-warning, #ffc107); }
+.gp-destino.is-sin i { color: var(--bs-warning, #ffc107); }
 
 /* Cuántos hay marcados, sobre el botón de meter */
-.pps-badge {
+.gp-badge {
   position: absolute;
   top: -4px;
   right: -6px;
@@ -238,20 +238,20 @@
   padding: .2em .4em;
 }
 
-.pps-filtrado {
+.gp-filtrado {
   font-style: italic;
   opacity: .8;
 }
 
-/* Los filtros no valen en «La sección»: se atenúan y no se pueden tocar.
+/* Los filtros no valen en «El grupo»: se atenúan y no se pueden tocar.
    Apagados pero visibles: así se ve que SIGUEN puestos, y volver al
    catálogo no sorprende con un filtro que no se recordaba. */
-.pps-grupo.is-inerte {
+.gp-bloque.is-inerte {
   opacity: .5;
   pointer-events: none;
 }
 
-.pps-masiva {
+.gp-masiva {
   white-space: normal;
   line-height: 1.25;
   text-align: left;
@@ -260,7 +260,7 @@
 /* ============================================================
    LA REJILLA
    ============================================================ */
-.pps-grilla-caja {
+.gp-grilla-caja {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -301,7 +301,7 @@
 
 /* ---------- El asa de arrastrar de la rejilla ----------
    Columna estrecha y sin relleno: dentro sólo cabe el agarre de ag-Grid. */
-:host ::ng-deep .pps-grilla .ag-cell.celda-asa {
+:host ::ng-deep .gp-grilla .ag-cell.celda-asa {
   padding: 0;
   display: flex;
   align-items: center;
@@ -309,12 +309,12 @@
   background-color: var(--bs-tertiary-bg, #f8f9fa);
 }
 
-:host ::ng-deep .pps-grilla .ag-drag-handle {
+:host ::ng-deep .gp-grilla .ag-drag-handle {
   color: var(--bs-secondary-color, #adb5bd);
   cursor: grab;
 }
 
-:host ::ng-deep .pps-grilla .ag-drag-handle:active {
+:host ::ng-deep .gp-grilla .ag-drag-handle:active {
   cursor: grabbing;
 }
 
@@ -330,11 +330,11 @@
 
    NO se toca el color del texto: la fila inactiva (.fila-inactiva, en
    styles.css) ya usa eso para decir otra cosa, y las dos cosas se pueden
-   dar a la vez —un producto apagado que está en la sección—. */
-:host ::ng-deep .ag-row.pps-fila--dentro .ag-cell {
+   dar a la vez —un producto apagado que está en el grupo—. */
+:host ::ng-deep .ag-row.gp-fila--dentro .ag-cell {
   background-color: rgba(var(--bs-app-theme-rgb, 0, 172, 172), .07);
 }
 
-:host ::ng-deep .ag-row.pps-fila--dentro .ag-cell:first-of-type {
+:host ::ng-deep .ag-row.gp-fila--dentro .ag-cell:first-of-type {
   box-shadow: inset 3px 0 0 0 var(--bs-app-theme, #00acac);
 }

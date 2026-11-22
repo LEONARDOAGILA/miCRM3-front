@@ -164,7 +164,7 @@ export class ModeladoComponent implements OnInit {
   vista(s: SeccionInicioModel): VistaSeccion {
     // Las de productos y los banners no están en el catálogo de claves: las
     // suyas las fabrica el servidor al crearlas.
-    if (s.producto_seccion_id) { return vistaDeProductos(s.nombre); }
+    if (s.grupo_productos_id) { return vistaDeProductos(s.nombre); }
     if (s.es_banner) { return vistaDeBanner(); }
     return VISTA_SECCIONES[s.clave] ?? VISTA_POR_DEFECTO;
   }
@@ -182,7 +182,7 @@ export class ModeladoComponent implements OnInit {
    * tarjetas—, que es lo que son.
    */
   dibujoDe(s: SeccionInicioModel): string {
-    if (s.producto_seccion_id) { return 'productos'; }
+    if (s.grupo_productos_id) { return 'productos'; }
     // Las marcas en promoción son los MISMOS carteles que el mosaico, con
     // otros datos: se dibujan igual en vez de tener un dibujo repetido
     if (s.clave === 'marcas_promocion') { return 'mosaico'; }
@@ -190,7 +190,7 @@ export class ModeladoComponent implements OnInit {
   }
 
   private contenidoDe(s: SeccionInicioModel) {
-    if (s.producto_seccion_id) { return CONTENIDO_SECCION_PRODUCTOS; }
+    if (s.grupo_productos_id) { return CONTENIDO_SECCION_PRODUCTOS; }
     // Todos los banners miden lo mismo que el de siempre: son la misma pieza
     // con otras imágenes. Sin esto caerían en la medida por defecto y el
     // dibujo diría que ocupan el doble de lo que ocupan.

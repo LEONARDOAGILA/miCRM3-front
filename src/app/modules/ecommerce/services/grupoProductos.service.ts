@@ -2,70 +2,70 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { FiltroProductos } from '../interfaces/productoSeccionModel';
+import { FiltroProductos } from '../interfaces/grupoProductosModel';
 
 /**
- * Secciones de productos: los escaparates y lo que lleva cada uno.
+ * Grupos de productos: los escaparates y lo que lleva cada uno.
  *
  * AQUÍ NO SE PIDE EL CATÁLOGO. La rejilla del medio de la pantalla usa
  * `ProductoService.allProductos`, la misma que la pantalla de productos:
  * paginación, buscador, marcas, categorías por rama y los dos rangos ya están
- * resueltos allí. Lo de este servicio es la sección y el cruce.
+ * resueltos allí. Lo de este servicio es el grupo y el cruce.
  */
 @Injectable({
   providedIn: 'root',
 })
-export class ProductoSeccionService {
+export class GrupoProductosService {
 
   private URL_SERVICIOS: string;
 
   constructor(
     private _http: HttpClient,
   ) {
-    this.URL_SERVICIOS = environment.URL_SERVICIOS + 'ecommerce/productoSeccion/';
+    this.URL_SERVICIOS = environment.URL_SERVICIOS + 'ecommerce/grupoProductos/';
   }
 
-  // ---------- Las secciones ----------
+  // ---------- Los grupos ----------
 
-  allSecciones(): Observable<any> {
-    return this._http.get(this.URL_SERVICIOS + 'allSecciones');
+  allGrupos(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'allGrupos');
   }
 
-  addSeccion(datos: { nombre: string; desde?: string | null; hasta?: string | null }): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'addSeccion', datos);
+  addGrupo(datos: { nombre: string; desde?: string | null; hasta?: string | null }): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'addGrupo', datos);
   }
 
-  editSeccion(id: number, datos: { nombre: string; desde?: string | null; hasta?: string | null }): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'editSeccion/' + id, datos);
+  editGrupo(id: number, datos: { nombre: string; desde?: string | null; hasta?: string | null }): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'editGrupo/' + id, datos);
   }
 
   /** Sin `activo`, alterna. Es lo que hace la palanca de la lista. */
-  activarSeccion(id: number, activo?: boolean): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'activarSeccion/' + id,
+  activarGrupo(id: number, activo?: boolean): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'activarGrupo/' + id,
                            activo === undefined ? {} : { activo });
   }
 
-  /** Van TODAS las secciones, en el orden en que se ven. */
-  ordenarSecciones(ids: number[]): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'ordenarSecciones', { ids });
+  /** Van TODAS los grupos, en el orden en que se ven. */
+  ordenarGrupos(ids: number[]): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'ordenarGrupos', { ids });
   }
 
   /** A la papelera; los productos que tenía dentro no se tocan. */
-  deleteSeccion(id: number): Observable<any> {
-    return this._http.delete(this.URL_SERVICIOS + 'deleteSeccion/' + id);
+  deleteGrupo(id: number): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'deleteGrupo/' + id);
   }
 
-  papeleraSecciones(): Observable<any> {
-    return this._http.get(this.URL_SERVICIOS + 'papeleraSecciones');
+  papeleraGrupos(): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'papeleraGrupos');
   }
 
-  restaurarSeccion(id: number): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'restaurarSeccion/' + id, {});
+  restaurarGrupo(id: number): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'restaurarGrupo/' + id, {});
   }
 
   // ---------- Lo que lleva dentro ----------
 
-  /** Las fichas completas, en el orden de la sección. */
+  /** Las fichas completas, en el orden del grupo. */
   productos(id: number): Observable<any> {
     return this._http.get(this.URL_SERVICIOS + 'productos/' + id);
   }
@@ -89,7 +89,7 @@ export class ProductoSeccionService {
     return this._http.post(this.URL_SERVICIOS + 'quitar/' + id, { producto_ids: productoIds });
   }
 
-  /** Van TODOS los productos de la sección, en el orden nuevo. */
+  /** Van TODOS los productos del grupo, en el orden nuevo. */
   ordenar(id: number, productoIds: number[]): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'ordenar/' + id, { producto_ids: productoIds });
   }

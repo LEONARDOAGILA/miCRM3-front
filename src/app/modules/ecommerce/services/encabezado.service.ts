@@ -5,7 +5,12 @@ import { environment } from '../../../../environments/environment';
 
 /**
  * El encabezado de la tienda: la franja de arriba, el aviso de crédito, las
- * frases del buscador y el menú de dos niveles.
+ * frases del buscador y el menú.
+ *
+ * CADA ENCABEZADO LLEVA SU MENÚ. Las llamadas que crean, reordenan o vacían
+ * dicen de cuál —`encabezadoId`—; las que van por id de enlace no lo
+ * necesitan, porque la fila ya dice de qué encabezado es. Sin id se entiende
+ * el predeterminado, que es el que abre la pantalla.
  *
  * CASI TODO DEVUELVE EL ENCABEZADO ENTERO, también crear, borrar y ordenar.
  * Es un árbol de seis enlaces y cualquier cambio puede mover el orden de otras
@@ -108,9 +113,15 @@ export class EncabezadoService {
   // EL MENÚ
   // ================================================================
 
-  /** Con `padre_id` nace dentro de un desplegable; sin él, es principal. */
-  addEnlace(data: any): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'addEnlace', data);
+  /**
+   * Con `padre_id` nace dentro de un desplegable; sin él, es principal.
+   *
+   * Y nace EN EL ENCABEZADO que se esté editando. Si cuelga de otro enlace
+   * manda el del padre: un desplegable no puede cruzar de encabezado.
+   */
+  addEnlace(data: any, encabezadoId?: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'addEnlace',
+                           { ...data, encabezado_id: encabezadoId ?? null });
   }
 
   /** El padre NO se cambia aquí: mover un enlace de sitio es arrastrarlo. */
@@ -131,8 +142,9 @@ export class EncabezadoService {
    * sigue aquí porque renumera una rama entera en una sola llamada, que es
    * otra cosa y el servidor la mantiene.
    */
-  ordenarEnlaces(ids: number[]): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'ordenarEnlaces', { ids });
+  ordenarEnlaces(ids: number[], encabezadoId?: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'ordenarEnlaces',
+                           { ids, encabezado_id: encabezadoId ?? null });
   }
 
   /**
@@ -156,16 +168,25 @@ export class EncabezadoService {
   // PAPELERA
   // ================================================================
 
-  papelera(): Observable<any> {
-    return this._http.get(this.URL_SERVICIOS + 'papelera');
+  /** La del encabezado que se está editando: cada uno tiene la suya. */
+  papelera(encabezadoId?: number | null): Observable<any> {
+    const query = encabezadoId ? '?encabezado_id=' + encabezadoId : '';
+    return this._http.get(this.URL_SERVICIOS + 'papelera' + query);
   }
 
-  restaurar(ids: number[]): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'restaurar', { ids });
+  restaurar(ids: number[], encabezadoId?: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'restaurar',
+                           { ids, encabezado_id: encabezadoId ?? null });
   }
 
-  /** No tiene vuelta atrás; el servidor exige el permiso «vaciar». */
-  vaciarPapelera(): Observable<any> {
-    return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera');
+  /**
+   * No tiene vuelta atrás; el servidor exige el permiso «vaciar».
+   *
+   * VACÍA LA DE UN ENCABEZADO, no la de todos: no lleva ids, así que el
+   * único freno es ése.
+   */
+  vaciarPapelera(encabezadoId?: number | null): Observable<any> {
+    const query = encabezadoId ? '?encabezado_id=' + encabezadoId : '';
+    return this._http.delete(this.URL_SERVICIOS + 'vaciarPapelera' + query);
   }
 }

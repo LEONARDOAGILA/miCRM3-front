@@ -33,6 +33,24 @@ export interface BarraSuperior {
   /** La parte en rojo, que es la que se mira */
   destacado?: string | null;
   /**
+   * CÓMO SE VE CADA PARTE DE ESTE MENSAJE (el primero), desde el
+   * 21/11/2026.
+   *
+   * Las dos se leen seguidas en la misma línea, y lo que las distingue es
+   * justamente esto: el destacado va más grande, en otro color y a veces
+   * en otra letra. Antes el color era de la franja entera y el tamaño y la
+   * letra, del mensaje entero, así que no se podía decir.
+   *
+   * Vacíos = los 14 px, la letra de la tienda y, en el destacado, el
+   * brillo del color de la marca.
+   */
+  texto_color?: string | null;
+  texto_tamano?: number | null;
+  texto_fuente?: 'titulos' | 'texto' | 'deportiva' | 'serif' | null;
+  destacado_color?: string | null;
+  destacado_tamano?: number | null;
+  destacado_fuente?: 'titulos' | 'texto' | 'deportiva' | 'serif' | null;
+  /**
    * LOS BOTONES, en el orden en que se ven. Hasta el 20/11/2026 había uno
    * solo (`boton_texto` y `boton_enlace`); ahora se pueden crear hasta
    * cuatro, cada uno con su URL, y lo que había guardado ya viene convertido
@@ -42,7 +60,41 @@ export interface BarraSuperior {
    * una píldora vacía no se puede pulsar y deja un hueco en la franja.
    */
   botones?: BotonFranja[];
+  /**
+   * LOS MENSAJES QUE SE TURNAN, sin contar el primero.
+   *
+   * `texto` y `destacado` son el primero, el de siempre; éstos son los que
+   * van detrás, hasta cuatro más. Vacío = una frase quieta.
+   */
+  mensajes?: MensajeFranja[];
+  /** Qué se mueve. Vacío = nada, que es como ha ido la franja hasta hoy. */
+  efectos?: EfectoFranja[];
 }
+
+/** Uno de los mensajes que se turnan en la franja. */
+export interface MensajeFranja {
+  texto?: string | null;
+  destacado?: string | null;
+  /** Los de cada parte, como en el primero. Vacíos = los de la tienda. */
+  texto_color?: string | null;
+  texto_tamano?: number | null;
+  texto_fuente?: 'titulos' | 'texto' | 'deportiva' | 'serif' | null;
+  destacado_color?: string | null;
+  destacado_tamano?: number | null;
+  destacado_fuente?: 'titulos' | 'texto' | 'deportiva' | 'serif' | null;
+}
+
+/** Las dos mitades de un mensaje de la franja. */
+export type ParteDelMensaje = 'texto' | 'destacado';
+
+/**
+ * LOS EFECTOS DE LA FRANJA. Se eligen por separado y se suman.
+ *
+ *   destello  una luz cruza el destacado y las píldoras
+ *   latido    las píldoras crecen y vuelven, muy poco, en bucle
+ *   luz       un resplandor recorre el fondo de la franja
+ */
+export type EfectoFranja = 'destello' | 'latido' | 'luz';
 
 /**
  * LA PINTA DE UN ENLACE DE LA BARRA, cuando tiene que destacar sobre los
@@ -125,8 +177,9 @@ export interface ConfigEncabezado {
    * sección: la franja es una frase y se elige mirándola, así que se escribe
    * el número. Vacío = los 14 de siempre.
    */
-  franja_tamano?: number | null;
-  franja_fuente?: 'titulos' | 'texto' | 'deportiva' | 'serif' | null;
+  // El tamaño y la letra YA NO ESTÁN AQUÍ (20/11/2026): son de cada
+  // mensaje —barra_superior.tamano/fuente y los de cada entrada de
+  // barra_superior.mensajes—, porque es lo que cambia cuando se turnan.
   franja_texto?: string | null;
   encabezado_fondo?: string | null;
   encabezado_texto?: string | null;
@@ -136,6 +189,15 @@ export interface ConfigEncabezado {
    * mismo que la barra roja no está en `franja_fondo`: va del color de la
    * tienda. null en los tres = blanco, 12 px y la letra de siempre.
    */
+  /**
+   * SI SE ENSEÑAN «CATEGORÍAS» Y «MARCAS» en la barra.
+   *
+   * No son enlaces del menú —los arma la tienda con el catálogo—, así que
+   * hasta el 21/11/2026 salían siempre. Lo que no venga se entiende
+   * encendido: se guarda lo que se apaga.
+   */
+  mostrar_menu_categorias?: boolean;
+  mostrar_menu_marcas?: boolean;
   menu_texto?: string | null;
   menu_tamano?: number | null;
   menu_fuente?: 'titulos' | 'texto' | 'deportiva' | 'serif' | null;

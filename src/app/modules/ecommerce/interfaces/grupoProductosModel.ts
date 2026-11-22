@@ -1,18 +1,18 @@
 import { ProductoModel } from '../../inventarios/interfaces/productoModel';
 
 /**
- * Una SECCIÓN DE PRODUCTOS (ecommerce.producto_secciones).
+ * Una SECCIÓN DE PRODUCTOS (ecommerce.grupos_productos).
  *
  * Un escaparate armado a mano: «Los más vendidos», «Ofertas de navidad», «Lo
  * nuevo de Samsung». No es una categoría ni una marca —ésas las decide quien
- * da de alta el producto—: la sección la decide quien vende, y junta cosas
+ * da de alta el producto—: el grupo la decide quien vende, y junta cosas
  * que el catálogo no junta.
  *
- * La sección no guarda productos: los guarda el cruce
- * (ecommerce.producto_secciones_items). Aquí sólo viaja la CUENTA, que es lo
+ * El grupo no guarda productos: los guarda el cruce
+ * (ecommerce.grupos_productos_items). Aquí sólo viaja la CUENTA, que es lo
  * que se lee al lado del nombre.
  */
-export interface SeccionProductoModel {
+export interface GrupoProductosModel {
   id: number;
   nombre: string;
   /** La posición en la lista; se cambia arrastrando. */
@@ -27,14 +27,14 @@ export interface SeccionProductoModel {
    * Encendida Y en fechas: lo calcula la base, no la pantalla.
    *
    * `activo` dice si está encendida; `visible` dice si HOY se vería. Una
-   * sección encendida con la vigencia pasada está encendida y no se ve, y sin
+   * grupo encendida con la vigencia pasada está encendida y no se ve, y sin
    * este campo la lista diría que sí.
    */
   visible: boolean;
 
   /**
    * Cuántos productos tiene DE VERDAD: sin los que están en la papelera del
-   * catálogo. Si contara las filas del cruce, la sección diría «8» y la lista
+   * catálogo. Si contara las filas del cruce, el grupo diría «8» y la lista
    * de abajo enseñaría seis.
    */
   productos: number;
@@ -48,14 +48,14 @@ export interface SeccionProductoModel {
 }
 
 /**
- * Un producto DENTRO de una sección.
+ * Un producto DENTRO de un grupo.
  *
  * Es la ficha del catálogo tal cual —la misma que trae la rejilla de
  * productos, porque el servidor la arma con la misma función— más la posición
- * que ocupa en esta sección.
+ * que ocupa en este grupo.
  */
-export interface ProductoDeSeccionModel extends ProductoModel {
-  orden_seccion: number;
+export interface ProductoDeGrupoModel extends ProductoModel {
+  orden_grupo: number;
 }
 
 /**
@@ -79,18 +79,18 @@ export interface FiltroProductos {
 }
 
 /** Qué está enseñando la rejilla del medio. */
-export type VistaProductos = 'catalogo' | 'seccion';
+export type VistaProductos = 'catalogo' | 'grupo';
 
 /**
  * Lo que se lee en el conmutador de la rejilla.
  *
  * Son dos listas distintas y no un filtro de la misma: el catálogo lo pagina
- * el servidor (puede tener miles) y la sección llega entera (tiene decenas).
- * Por eso ordenar arrastrando sólo se puede en «La sección».
+ * el servidor (puede tener miles) y el grupo llega entera (tiene decenas).
+ * Por eso ordenar arrastrando sólo se puede en «El grupo».
  */
 export const VISTAS_PRODUCTOS: { clave: VistaProductos; texto: string; icono: string; ayuda: string }[] = [
   { clave: 'catalogo', texto: 'Catálogo', icono: 'fa-boxes-stacked',
-    ayuda: 'Todo el catálogo, para elegir qué entra en la sección' },
-  { clave: 'seccion',  texto: 'La sección', icono: 'fa-basket-shopping',
+    ayuda: 'Todo el catálogo, para elegir qué entra en el grupo' },
+  { clave: 'grupo',  texto: 'El grupo', icono: 'fa-basket-shopping',
     ayuda: 'Sólo lo que ya está dentro, en el orden en que va' },
 ];

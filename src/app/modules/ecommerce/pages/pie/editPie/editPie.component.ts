@@ -14,8 +14,9 @@ import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { PieService } from '../../../services/pie.service';
 import {
   ColumnaPieModel, EnlacePieModel, PieModel, REDES_SUGERIDAS, ZonaPie,
-  FUENTES_TIENDA, FuenteTienda, URL_LETRAS_TIENDA,
+  FUENTES_TIENDA, FuenteTienda,
 } from '../../../interfaces/pieModel';
+import { cargarLetrasDeLaTienda } from '../../../interfaces/letrasTienda';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { TabPanelComponent, PestanaTab } from '../../../../../components/campos/tabPanel/tabPanel.component';
@@ -165,7 +166,7 @@ export class EditPieComponent implements OnInit {
       enlace_texto: ['', [Validators.maxLength(60)]],
       enlace:       ['', [Validators.maxLength(250)]],
     });
-    this.cargarLetrasDeLaTienda();
+    cargarLetrasDeLaTienda();
     this.cargar();
   }
 
@@ -222,23 +223,6 @@ export class EditPieComponent implements OnInit {
     if (!this.puedeEditar) { this.form.disable(); }
   }
 
-  /**
-   * Trae las tres letras de la tienda para que la muestra enseñe la de verdad.
-   *
-   * NO VAN EN EL index.html DEL CRM: son cien kilobytes de letras que sólo
-   * hacen falta en esta pantalla, y el CRM lo abre todo el mundo todo el día.
-   * Se piden aquí, una vez: si ya está el <link>, no se repite.
-   */
-  private cargarLetrasDeLaTienda(): void {
-    const ID = 'letras-de-la-tienda';
-    if (document.getElementById(ID)) { return; }
-
-    const link = document.createElement('link');
-    link.id = ID;
-    link.rel = 'stylesheet';
-    link.href = URL_LETRAS_TIENDA;
-    document.head.appendChild(link);
-  }
 
   /**
    * El color del título.

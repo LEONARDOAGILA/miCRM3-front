@@ -3,9 +3,9 @@
 
        1. Miga de pan
        2. <panel> a toda la altura
-          2a. Las secciones, con lo que lleva cada una
+          2a. Los grupos, con lo que lleva cada una
           2b. Divisor arrastrable
-          2c. El catálogo (o la sección), con sus casillas
+          2c. El catálogo (o el grupo), con sus casillas
           2d. Divisor arrastrable
           2e. Los filtros, y abajo la asignación masiva
 
@@ -14,9 +14,9 @@
      ============================================================ -->
 
 <!-- ================= 1. MIGA DE PAN ================= -->
-<ol class="breadcrumb lista-breadcrumb pps-breadcrumb">
+<ol class="breadcrumb lista-breadcrumb gp-breadcrumb">
   <li class="breadcrumb-item"><a routerLink="/ecommerce/home">Ecommerce</a></li>
-  <li class="breadcrumb-item active">Productos por sección</li>
+  <li class="breadcrumb-item active">Grupos de productos</li>
 </ol>
 
 <!-- ================= 2. PANEL ================= -->
@@ -50,31 +50,31 @@
 
         @if (lateralPlegado) {
           <button type="button" class="cpl-tira" (click)="alternarLateral()"
-                  title="Mostrar las secciones">
+                  title="Mostrar los grupos">
             <i class="fa fa-angles-right cpl-tira__flecha"></i>
-            <span class="cpl-tira__texto">Secciones</span>
-            @if (secciones.length) {
-              <span class="cpl-tira__chapa">{{ secciones.length }}</span>
+            <span class="cpl-tira__texto">Grupos</span>
+            @if (grupos.length) {
+              <span class="cpl-tira__chapa">{{ grupos.length }}</span>
             }
           </button>
         } @else {
 
           <div class="file-manager-sidebar-mobile-toggler">
-            <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Secciones">
+            <button type="button" class="btn" (click)="toggleMobileSidebar()" title="Grupos">
               <i class="fa" [ngClass]="mobileSidebarToggled ? 'fa-chevron-left' : 'fa-basket-shopping'"></i>
             </button>
           </div>
 
           <div class="cpl-lateral__cabecera">
             <span class="cpl-lateral__titulo">
-              <i class="fa fa-basket-shopping"></i> Secciones
-              @if (secciones.length) { <span class="cpl-panel__cuantos">{{ secciones.length }}</span> }
+              <i class="fa fa-basket-shopping"></i> Grupos
+              @if (grupos.length) { <span class="cpl-panel__cuantos">{{ grupos.length }}</span> }
             </span>
-            <div class="btn-group cpl-lateral__acciones" role="group" aria-label="Secciones">
+            <div class="btn-group cpl-lateral__acciones" role="group" aria-label="Grupos">
               <button type="button" class="btn btn-xs btn-primary"
-                      [title]="puedeCrear ? 'Nueva sección' : 'No tienes permiso para crear secciones'"
+                      [title]="puedeCrear ? 'Nueva grupo' : 'No tienes permiso para crear grupos'"
                       [disabled]="!puedeCrear"
-                      (click)="nuevaSeccion()">
+                      (click)="nuevoGrupo()">
                 <i class="fa fa-plus"></i>
               </button>
               <button type="button" class="btn btn-xs btn-white" title="Plegar la columna"
@@ -85,7 +85,7 @@
           </div>
 
           <div class="cpl-lateral__cuerpo">
-            @if (cargandoSecciones) {
+            @if (cargandoGrupos) {
               <div class="loader1" role="status" aria-label="Cargando"></div>
               <div class="overlay1" aria-hidden="true"></div>
             }
@@ -93,53 +93,53 @@
             <ng-scrollbar class="h-100">
               <!-- Una sola lista, así que el eje SÍ se puede fijar: no hay otra
                    columna a la que soltar. -->
-              <div class="pps-lista"
+              <div class="gp-lista"
                    cdkDropList
                    cdkDropListLockAxis="y"
                    [cdkDropListDisabled]="!puedeEditar || trabajando"
-                   (cdkDropListDropped)="moverSeccion($event)">
+                   (cdkDropListDropped)="moverGrupo($event)">
 
-                @for (s of secciones; track s.id) {
-                  <div class="pps-seccion"
-                       [class.is-elegida]="seccionId === s.id"
+                @for (s of grupos; track s.id) {
+                  <div class="gp-grupo"
+                       [class.is-elegida]="grupoId === s.id"
                        [class.is-apagada]="!s.visible"
                        cdkDrag
-                       [attr.aria-current]="seccionId === s.id ? 'true' : null"
-                       (click)="elegirSeccion(s)">
+                       [attr.aria-current]="grupoId === s.id ? 'true' : null"
+                       (click)="elegirGrupo(s)">
 
-                    <div class="pps-fantasma" *cdkDragPlaceholder></div>
+                    <div class="gp-fantasma" *cdkDragPlaceholder></div>
 
                     @if (puedeEditar) {
-                      <span class="pps-seccion__asa" cdkDragHandle
+                      <span class="gp-grupo__asa" cdkDragHandle
                             title="Arrastra para cambiar el orden"
                             (click)="$event.stopPropagation()">
                         <i class="fa fa-grip-vertical"></i>
                       </span>
                     }
 
-                    <div class="pps-seccion__cuerpo">
-                      <span class="pps-seccion__nombre">{{ s.nombre }}</span>
-                      <span class="pps-seccion__datos">
-                        <span class="pps-chapa"
+                    <div class="gp-grupo__cuerpo">
+                      <span class="gp-grupo__nombre">{{ s.nombre }}</span>
+                      <span class="gp-grupo__datos">
+                        <span class="gp-chapa"
                               [title]="s.productos + ' productos dentro'">{{ s.productos }}</span>
                         <!-- `visible` lo calcula la base: encendida Y en fechas.
                              Encendida con la vigencia pasada está encendida y no
                              se ve, y sin esto la lista diría que sí. -->
                         @if (!s.activo) {
-                          <span class="pps-seccion__aviso" title="Apagada: no se ve en la tienda">
+                          <span class="gp-grupo__aviso" title="Apagada: no se ve en la tienda">
                             <i class="fa fa-power-off"></i> apagada
                           </span>
                         } @else if (!s.visible) {
-                          <span class="pps-seccion__aviso" title="Encendida, pero fuera de sus fechas">
+                          <span class="gp-grupo__aviso" title="Encendida, pero fuera de sus fechas">
                             <i class="fa fa-calendar-xmark"></i> fuera de fecha
                           </span>
                         }
                       </span>
                     </div>
 
-                    <div class="pps-seccion__mandos" (click)="$event.stopPropagation()">
+                    <div class="gp-grupo__mandos" (click)="$event.stopPropagation()">
                       <!-- La palanca de encendido, el estándar de la casa -->
-                      <div class="form-check form-switch pps-switch">
+                      <div class="form-check form-switch gp-switch">
                         <input class="form-check-input" type="checkbox" role="switch"
                                [checked]="s.activo"
                                [disabled]="!puedeEditar || trabajando"
@@ -147,19 +147,19 @@
                                [title]="puedeEditar
                                           ? (s.activo ? 'Apagar «' + s.nombre + '»' : 'Encender «' + s.nombre + '»')
                                           : (s.activo ? 'Encendida' : 'Apagada')"
-                               (change)="alternarSeccion(s)">
+                               (change)="alternarGrupo(s)">
                       </div>
 
                       <button type="button" class="btn btn-xs btn-white"
                               [title]="'Nombre y fechas de «' + s.nombre + '»'"
                               [disabled]="!puedeEditar"
-                              (click)="editarSeccion(s)">
+                              (click)="editarGrupo(s)">
                         <i class="fa fa-pen"></i>
                       </button>
-                      <button type="button" class="btn btn-xs btn-white pps-borrar"
+                      <button type="button" class="btn btn-xs btn-white gp-borrar"
                               [title]="puedeBorrar ? 'Enviar a la papelera' : 'No tienes permiso para eliminar'"
                               [disabled]="!puedeBorrar || trabajando"
-                              (click)="borrarSeccion(s)">
+                              (click)="borrarGrupo(s)">
                         <i class="fa fa-trash-can"></i>
                       </button>
                     </div>
@@ -167,9 +167,9 @@
                 } @empty {
                   <div class="cpl-vacio">
                     <i class="fa fa-basket-shopping"></i>
-                    <span>Todavía no hay secciones.</span>
+                    <span>Todavía no hay grupos.</span>
                     @if (puedeCrear) {
-                      <button type="button" class="btn btn-xs btn-primary" (click)="nuevaSeccion()">
+                      <button type="button" class="btn btn-xs btn-primary" (click)="nuevoGrupo()">
                         <i class="fa fa-plus"></i> Crear la primera
                       </button>
                     }
@@ -186,7 +186,7 @@
               y puede salir en varias páginas.
             </span>
             <span class="cpl-lateral__ayuda"
-                  title="Elige una sección y márcale productos en la rejilla del medio. La chapita dice cuántos tiene dentro. Crearla no la pone en ninguna página: en qué páginas sale, en qué sitio, qué se lee encima y entre qué fechas se ve, se decide en «Cuerpos de la tienda» con el botón «Escaparate».">
+                  title="Elige un grupo y márcale productos en la rejilla del medio. La chapita dice cuántos tiene dentro. Crearla no la pone en ninguna página: en qué páginas sale, en qué sitio, qué se lee encima y entre qué fechas se ve, se decide en «Cuerpos de la tienda» con el botón «Escaparate».">
               <i class="fa fa-hand-pointer"></i>
             </span>
           </div>
@@ -209,7 +209,7 @@
         <div class="cpl-ubicacion">
 
           <!-- Dos listas distintas, no un filtro de la misma: el catálogo lo
-               pagina el servidor y la sección llega entera. -->
+               pagina el servidor y el grupo llega entera. -->
           <div class="btn-group btn-group-sm" role="group" aria-label="Qué se está viendo">
             @for (v of vistas; track v.clave) {
               <button type="button" class="btn btn-outline-primary"
@@ -222,25 +222,25 @@
             }
           </div>
 
-          <!-- A qué sección va lo que se marque. Sin ella, el gesto no tiene
+          <!-- A qué grupo va lo que se marque. Sin ella, el gesto no tiene
                destino, y eso hay que decirlo donde se mira. -->
-          <span class="pps-destino" [class.is-sin]="!seccion">
-            @if (seccion) {
+          <span class="gp-destino" [class.is-sin]="!grupo">
+            @if (grupo) {
               <i class="fa fa-arrow-right-to-bracket"></i>
-              <b>{{ seccion.nombre }}</b>
-              <span class="pps-destino__cuenta">{{ seccion.productos }} dentro</span>
+              <b>{{ grupo.nombre }}</b>
+              <span class="gp-destino__cuenta">{{ grupo.productos }} dentro</span>
             } @else {
               <i class="fa fa-triangle-exclamation"></i>
-              Elige una sección de la izquierda
+              Elige un grupo de la izquierda
             }
           </span>
 
           <div class="cpl-ubicacion__acciones">
-            <!-- El buscador sólo busca en el catálogo: la sección llega entera
+            <!-- El buscador sólo busca en el catálogo: el grupo llega entera
                  y se mira de un vistazo. -->
             @if (vista === 'catalogo') {
               <app-campoBusquedaPaginacion
-                [id]="'pps-buscar'"
+                [id]="'gp-buscar'"
                 [placeholder]="'Buscar por código, nombre, modelo, marca…'"
                 [iconClass]="'fa fa-search fa-lg'"
                 [containerClass]="'w-100'"
@@ -256,18 +256,18 @@
                  en el envoltorio: un <button disabled> no recibe eventos de
                  ratón, así que su propio title no se llega a ver y el aviso se
                  perdería justo cuando hace falta. -->
-            <span [title]="motivoSinAsignar || 'Meter en la sección lo que esté marcado'">
+            <span [title]="motivoSinAsignar || 'Meter en el grupo lo que esté marcado'">
               <button type="button" class="btn btn-primary cpl-btn position-relative"
                       [disabled]="!!motivoSinAsignar || trabajando"
                       (click)="agregarSeleccionados()">
                 <i class="fa fa-plus"></i>
                 @if (cuantosSeleccionados) {
-                  <span class="badge rounded-pill bg-danger pps-badge">{{ cuantosSeleccionados }}</span>
+                  <span class="badge rounded-pill bg-danger gp-badge">{{ cuantosSeleccionados }}</span>
                 }
               </button>
             </span>
 
-            <span [title]="motivoSinAsignar || 'Sacar de la sección lo que esté marcado'">
+            <span [title]="motivoSinAsignar || 'Sacar del grupo lo que esté marcado'">
               <button type="button" class="btn btn-outline-danger cpl-btn"
                       [disabled]="!!motivoSinAsignar || trabajando"
                       (click)="quitarSeleccionados()">
@@ -285,9 +285,9 @@
         </div>
 
         <!-- ---------- REJILLA ---------- -->
-        <div class="pps-grilla-caja">
+        <div class="gp-grilla-caja">
           <ag-grid-angular
-            class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla pps-grilla"
+            class="ag-theme-alpine ag-grid-transparente p-2 lista-grilla gp-grilla"
             [rowData]="filas"
             [columnDefs]="columnDefs"
             [enableCellTextSelection]="true"
@@ -298,13 +298,13 @@
             [localeText]="_appAgGridService.localeText"
             [rowSelection]="'multiple'"
             [suppressRowClickSelection]="true"
-            [rowDragManaged]="vista === 'seccion'"
+            [rowDragManaged]="vista === 'grupo'"
             [pagination]="false"
             [animateRows]="true"
             [tooltipShowDelay]="400"
             [rowClassRules]="rowClassRules"
-            [overlayNoRowsTemplate]="vista === 'seccion'
-                ? '<span>Esta sección todavía no tiene productos: cámbiate al catálogo y márcale unos cuantos</span>'
+            [overlayNoRowsTemplate]="vista === 'grupo'
+                ? '<span>Este grupo todavía no tiene productos: cámbiate al catálogo y márcale unos cuantos</span>'
                 : '<span>No hay productos que cumplan el filtro</span>'"
             (gridReady)="onGridReady($event)"
             (filterChanged)="onFiltroColumna()"
@@ -316,7 +316,7 @@
         <!-- ---------- PIE DE LA REJILLA ---------- -->
         <div class="cpl-paginacion">
 
-          <!-- Paginar es cosa del catálogo: la sección llega entera -->
+          <!-- Paginar es cosa del catálogo: el grupo llega entera -->
           @if (vista === 'catalogo') {
             <div class="btn-group" role="group" aria-label="Paginación">
               <button type="button" class="btn btn-sm btn-white" title="Primera página"
@@ -342,11 +342,11 @@
 
             <div class="cpl-paginacion__info">
               Mostrando <b>{{ desde }}</b> – <b>{{ hasta }}</b> de <b>{{ totalRegistros }}</b> productos
-              @if (hayFiltro) { <span class="pps-filtrado">(filtrado)</span> }
+              @if (hayFiltro) { <span class="gp-filtrado">(filtrado)</span> }
             </div>
           } @else {
             <div class="cpl-paginacion__info">
-              <b>{{ totalRegistros }}</b> {{ totalRegistros === 1 ? 'producto' : 'productos' }} en la sección
+              <b>{{ totalRegistros }}</b> {{ totalRegistros === 1 ? 'producto' : 'productos' }} en el grupo
             </div>
             @if (puedeEditar && totalRegistros > 1) {
               <div class="cpl-paginacion__info">
@@ -406,16 +406,16 @@
           <ng-scrollbar class="cpl-panel__cuerpo">
             <div class="cpl-panel__lista">
 
-              <!-- Los filtros son del catálogo: en «La sección» no hay servidor
+              <!-- Los filtros son del catálogo: en «El grupo» no hay servidor
                    que los aplique, y dejarlos tocables haría creer que filtran. -->
-              @if (vista === 'seccion') {
+              @if (vista === 'grupo') {
                 <p class="campo-hint campo-hint--aviso">
                   <i class="fa-solid fa-circle-info"></i>
                   Los filtros son del catálogo. Cámbiate a «Catálogo» para usarlos.
                 </p>
               }
 
-              <div class="pps-grupo" [class.is-inerte]="vista === 'seccion'">
+              <div class="gp-bloque" [class.is-inerte]="vista === 'grupo'">
                 <label class="cpl-grupo__titulo">Marcas</label>
                 <app-combo-multi-seleccion
                   [items]="marcas"
@@ -429,7 +429,7 @@
                 </app-combo-multi-seleccion>
               </div>
 
-              <div class="pps-grupo" [class.is-inerte]="vista === 'seccion'">
+              <div class="gp-bloque" [class.is-inerte]="vista === 'grupo'">
                 <label class="cpl-grupo__titulo">Categorías</label>
                 <app-combo-multi-seleccion
                   [items]="categoriasPlanas"
@@ -443,7 +443,7 @@
                 </app-combo-multi-seleccion>
               </div>
 
-              <div class="pps-grupo" [class.is-inerte]="vista === 'seccion'">
+              <div class="gp-bloque" [class.is-inerte]="vista === 'grupo'">
                 <label class="cpl-grupo__titulo">Precio</label>
                 <div class="cpl-rango">
                   <input type="number" class="form-control form-control-sm" placeholder="Desde"
@@ -454,7 +454,7 @@
                 </div>
               </div>
 
-              <div class="pps-grupo" [class.is-inerte]="vista === 'seccion'">
+              <div class="gp-bloque" [class.is-inerte]="vista === 'grupo'">
                 <label class="cpl-grupo__titulo">Costo</label>
                 <div class="cpl-rango">
                   <input type="number" class="form-control form-control-sm" placeholder="Desde"
@@ -482,8 +482,8 @@
             <span class="d-block"
                   [title]="vista !== 'catalogo'
                              ? 'Cámbiate a «Catálogo» para asignar por filtro'
-                             : (motivoSinAsignar || 'Mete en la sección todos los que cumplen el filtro')">
-              <button type="button" class="btn btn-sm btn-primary w-100 pps-masiva"
+                             : (motivoSinAsignar || 'Mete en el grupo todos los que cumplen el filtro')">
+              <button type="button" class="btn btn-sm btn-primary w-100 gp-masiva"
                       [disabled]="!!motivoSinAsignar || trabajando || vista !== 'catalogo' || !totalRegistros"
                       (click)="agregarTodoElFiltro()">
                 <i class="fa fa-layer-group"></i>
@@ -494,7 +494,7 @@
                   Asignación masiva por filtro
                 } @else {
                   Agregar los {{ totalRegistros }}
-                  @if (seccion) { a «{{ seccion.nombre }}» }
+                  @if (grupo) { a «{{ grupo.nombre }}» }
                 }
               </button>
             </span>

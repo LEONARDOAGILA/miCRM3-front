@@ -16,7 +16,7 @@ import {
 } from '@angular/cdk/drag-drop';
 
 ///   SERVICIOS    ///
-import { ProductoSeccionService } from '../../services/productoSeccion.service';
+import { GrupoProductosService } from '../../services/grupoProductos.service';
 import { ProductoService } from '../../../inventarios/services/producto.service';
 import { MarcaService } from '../../../inventarios/services/marca.service';
 import { CategoriaService } from '../../../inventarios/services/categoria.service';
@@ -27,26 +27,26 @@ import { LoadingService } from '../../../../service/loading.service';
 ///   MODELOS    ///
 import { AccesoModel } from '../../../seguridad/interfaces/accesoModel';
 import {
-  SeccionProductoModel, VistaProductos, VISTAS_PRODUCTOS, FiltroProductos,
-} from '../../interfaces/productoSeccionModel';
+  GrupoProductosModel, VistaProductos, VISTAS_PRODUCTOS, FiltroProductos,
+} from '../../interfaces/grupoProductosModel';
 
 ///   COMPONENTES    ///
 import { PanelComponent } from '../../../../components/panel/panel.component';
 import { CampoBusquedaPaginacionComponent } from '../../../../components/campos/campoBusquedaPaginacion/campoBusquedaPaginacion.component';
 import { ComboMultiSeleccionComponent } from '../../../../components/campos/combo-multi-seleccion/combo-multi-seleccion.component';
 import { FilasEstirablesDirective } from '../../../../core/directives/filasEstirables.directive';
-import { SaveSeccionProductoComponent } from './saveSeccionProducto/saveSeccionProducto.component';
+import { SaveGrupoProductosComponent } from './saveGrupoProductos/saveGrupoProductos.component';
 
 /**
  * PRODUCTOS POR SECCIÓN: tres columnas para armar escaparates.
  *
- *   izquierda   las secciones, con lo que lleva cada una
+ *   izquierda   los grupos, con lo que lleva cada una
  *   centro      el catálogo, con casillas para elegir
  *   derecha     los filtros, para meter de golpe todo lo que cumple uno
  *
  * UNA SECCIÓN ES UN ESCAPARATE ARMADO A MANO —«Los más vendidos», «Ofertas de
  * navidad»—, y eso es justo lo que la categoría y la marca no saben hacer:
- * ésas las decide quien da de alta el producto, y una sección junta tres
+ * ésas las decide quien da de alta el producto, y un grupo junta tres
  * televisores de tres marcas y una barra de sonido porque ésa es la oferta de
  * esta semana.
  *
@@ -66,18 +66,18 @@ import { SaveSeccionProductoComponent } from './saveSeccionProducto/saveSeccionP
  * exactamente lo que se estaba enseñando, y no hay que mandar 340 números.
  *
  * DOS VISTAS Y NO UN FILTRO DE LA MISMA. «Catálogo» lo pagina el servidor
- * (puede tener miles); «La sección» llega entera (tiene decenas). Por eso
+ * (puede tener miles); «El grupo» llega entera (tiene decenas). Por eso
  * reordenar arrastrando sólo se puede en la segunda: arrastrar dentro de una
  * página de diez no dice nada del orden de las otras.
  */
 @Component({
-  selector: 'app-productoPorSeccion',
-  templateUrl: './producto-por-seccion.component.html',
+  selector: 'app-grupoProductos',
+  templateUrl: './grupo-productos.component.html',
   // La hoja compartida va PRIMERO: lo propio de la pantalla gana sin tener
   // que subir la especificidad de cada regla.
   styleUrls: [
     '../../../../core/styles/columnas-plegables.css',
-    './producto-por-seccion.component.css',
+    './grupo-productos.component.css',
   ],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -97,9 +97,9 @@ import { SaveSeccionProductoComponent } from './saveSeccionProducto/saveSeccionP
     CdkDragPlaceholder,
   ],
 })
-export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
+export class GrupoProductosComponent implements OnInit, OnDestroy {
 
-  public titulo = 'Productos por sección';
+  public titulo = 'Grupos de productos';
   public accesoModel: AccesoModel;
   public isLoading$ = this._loadingService.isLoading$;
 
@@ -107,24 +107,24 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   public trabajando = false;
 
   // ---------- LAS SECCIONES ----------
-  public secciones: SeccionProductoModel[] = [];
-  public seccionId: number | null = null;
-  public cargandoSecciones = false;
+  public grupos: GrupoProductosModel[] = [];
+  public grupoId: number | null = null;
+  public cargandoGrupos = false;
 
   // ---------- LA REJILLA ----------
   public vista: VistaProductos = 'catalogo';
   public readonly vistas = VISTAS_PRODUCTOS;
-  /** Las filas que se están enseñando: una página del catálogo, o la sección entera. */
+  /** Las filas que se están enseñando: una página del catálogo, o el grupo entero. */
   public filas: any[] = [];
 
   /**
-   * Los ids que ya están en la sección elegida.
+   * Los ids que ya están en el grupo elegido.
    *
    * Un conjunto y no un campo de la fila: la fila viene del catálogo, que no
-   * sabe nada de secciones. Marcar la fila obligaría a recorrerlas todas cada
-   * vez que se cambia de sección, y a recordar deshacerlo.
+   * sabe nada de grupos. Marcar la fila obligaría a recorrerlas todas cada
+   * vez que se cambia de grupo, y a recordar deshacerlo.
    */
-  public enLaSeccion = new Set<number>();
+  public enElGrupo = new Set<number>();
 
   /** Los que tienen una llamada en vuelo, para poner su rueda en la celda. */
   private enVuelo = new Set<number>();
@@ -156,8 +156,8 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   private readonly ANCHO_LATERAL_MIN = 200;
   private readonly ANCHO_LATERAL_MAX = 640;
   public readonly ANCHO_FILTROS_DEFECTO = 270;
-  private readonly CLAVE_ANCHO_LATERAL = 'miCRM3.productoPorSeccion.anchoLateral';
-  private readonly CLAVE_ANCHO_FILTROS = 'miCRM3.productoPorSeccion.anchoFiltros';
+  private readonly CLAVE_ANCHO_LATERAL = 'miCRM3.grupoProductos.anchoLateral';
+  private readonly CLAVE_ANCHO_FILTROS = 'miCRM3.grupoProductos.anchoFiltros';
   public anchoLateral = this.leerAncho(this.CLAVE_ANCHO_LATERAL, this.ANCHO_LATERAL_DEFECTO);
   public anchoFiltros = this.leerAncho(this.CLAVE_ANCHO_FILTROS, this.ANCHO_FILTROS_DEFECTO);
   public redimensionando = false;
@@ -173,7 +173,7 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
     ...this._appAgGridService.reglasFilaInactiva('activo'),
     // La fila que ya está dentro, marcada: con 1.000 productos y diez por
     // página, la casilla sola obliga a mirar fila por fila.
-    'pps-fila--dentro': (p: any) => this.vista === 'catalogo' && this.enLaSeccion.has(p.data?.id),
+    'gp-fila--dentro': (p: any) => this.vista === 'catalogo' && this.enElGrupo.has(p.data?.id),
   };
 
   @ViewChild(CampoBusquedaPaginacionComponent) campoBusqueda!: CampoBusquedaPaginacionComponent;
@@ -188,7 +188,7 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   private activeRoute = inject(ActivatedRoute);
   private _toastr = inject(ToastrService);
   private _seguridadService = inject(SeguridadService);
-  private _seccionService = inject(ProductoSeccionService);
+  private _grupoService = inject(GrupoProductosService);
   private _productoService = inject(ProductoService);
   private _marcaService = inject(MarcaService);
   private _categoriaService = inject(CategoriaService);
@@ -203,7 +203,7 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.columnDefs = this.columnasDe(this.vista);
     this.cargarFiltros();
-    this.cargarSecciones(true);
+    this.cargarGrupos(true);
   }
 
   ngOnDestroy(): void {
@@ -228,20 +228,20 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   get puedeEditar(): boolean { return this.accesoModel?.editar === true; }
   get puedeBorrar(): boolean { return this.accesoModel?.eliminar === true; }
 
-  /** La sección elegida, o null. */
-  get seccion(): SeccionProductoModel | null {
-    return this.secciones.find(s => s.id === this.seccionId) ?? null;
+  /** El grupo elegido, o null. */
+  get grupo(): GrupoProductosModel | null {
+    return this.grupos.find(s => s.id === this.grupoId) ?? null;
   }
 
   /**
    * Por qué no se puede meter nada, para decirlo en el botón.
    *
-   * Un botón apagado sin motivo es una pantalla que no contesta: sin sección
+   * Un botón apagado sin motivo es una pantalla que no contesta: sin grupo
    * elegida el gesto no tiene destino, y eso hay que escribirlo.
    */
   get motivoSinAsignar(): string {
-    if (!this.puedeEditar) { return 'No tienes permiso para cambiar las secciones'; }
-    if (!this.seccion)     { return 'Elige primero una sección de la izquierda'; }
+    if (!this.puedeEditar) { return 'No tienes permiso para cambiar los grupos'; }
+    if (!this.grupo)     { return 'Elige primero un grupo de la izquierda'; }
     return '';
   }
 
@@ -255,63 +255,63 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
    * Trae la lista y conserva lo elegido.
    *
    * `primera` elige la primera al entrar: una pantalla de tres columnas con
-   * la del medio vacía no se entiende, y la primera sección es tan buena
+   * la del medio vacía no se entiende, y la primer grupo es tan buena
    * suposición como cualquiera.
    */
-  async cargarSecciones(primera = false): Promise<void> {
-    this.cargandoSecciones = true;
+  async cargarGrupos(primera = false): Promise<void> {
+    this.cargandoGrupos = true;
     try {
-      const res: any = await firstValueFrom(this._seccionService.allSecciones());
-      this.secciones = res?.data ?? [];
+      const res: any = await firstValueFrom(this._grupoService.allGrupos());
+      this.grupos = res?.data ?? [];
 
       // Si la elegida ya no está (la borró otro), se cae a la primera
-      if (this.seccionId !== null && !this.secciones.some(s => s.id === this.seccionId)) {
-        this.seccionId = null;
+      if (this.grupoId !== null && !this.grupos.some(s => s.id === this.grupoId)) {
+        this.grupoId = null;
       }
       // La que pidan por la dirección gana: se llega aquí desde la portada,
-      // con una sección concreta en la cabeza. Sólo al entrar: después manda
+      // con un grupo concreto en la cabeza. Sólo al entrar: después manda
       // lo que se haya pulsado.
-      if (primera) { this.seccionId = this.laQuePiden() ?? this.seccionId; }
+      if (primera) { this.grupoId = this.laQuePiden() ?? this.grupoId; }
 
-      if (this.seccionId === null && (primera || this.vista === 'seccion') && this.secciones.length) {
-        this.seccionId = this.secciones[0].id;
+      if (this.grupoId === null && (primera || this.vista === 'grupo') && this.grupos.length) {
+        this.grupoId = this.grupos[0].id;
       }
 
-      await this.alCambiarDeSeccion();
+      await this.alCambiarDeGrupo();
     } catch (e: any) {
-      this._toastr.error(e?.error?.message ?? 'No se pudieron cargar las secciones', 'Error',
+      this._toastr.error(e?.error?.message ?? 'No se pudieron cargar los grupos', 'Error',
                          { timeOut: 15000, closeButton: true });
-      this.secciones = [];
+      this.grupos = [];
     } finally {
-      this.cargandoSecciones = false;
+      this.cargandoGrupos = false;
     }
   }
 
   /**
-   * La sección que pide la dirección (`?seccion=7`), si existe y está viva.
+   * El grupo que pide la dirección (`?grupo=7`), si existe y está viva.
    *
    * Se comprueba contra la lista en vez de fiarse del número: la dirección la
-   * puede traer un enlace viejo de una sección que ya está en la papelera, y
+   * puede traer un enlace viejo de un grupo que ya está en la papelera, y
    * elegir una que no está deja la pantalla con los botones apagados y sin
    * decir por qué.
    */
   private laQuePiden(): number | null {
-    const pedida = Number(this.activeRoute.snapshot.queryParamMap.get('seccion'));
+    const pedida = Number(this.activeRoute.snapshot.queryParamMap.get('grupo'));
     if (!Number.isFinite(pedida) || pedida <= 0) { return null; }
-    return this.secciones.some(s => s.id === pedida) ? pedida : null;
+    return this.grupos.some(s => s.id === pedida) ? pedida : null;
   }
 
-  async elegirSeccion(s: SeccionProductoModel): Promise<void> {
-    if (this.seccionId === s.id) { return; }
-    this.seccionId = s.id;
-    await this.alCambiarDeSeccion();
+  async elegirGrupo(s: GrupoProductosModel): Promise<void> {
+    if (this.grupoId === s.id) { return; }
+    this.grupoId = s.id;
+    await this.alCambiarDeGrupo();
   }
 
-  /** Lo que hay que rehacer cuando cambia la sección elegida. */
-  private async alCambiarDeSeccion(): Promise<void> {
-    await this.cargarIdsDeLaSeccion();
-    if (this.vista === 'seccion') {
-      await this.cargarLaSeccion();
+  /** Lo que hay que rehacer cuando cambial grupo elegido. */
+  private async alCambiarDeGrupo(): Promise<void> {
+    await this.cargarIdsDelGrupo();
+    if (this.vista === 'grupo') {
+      await this.cargarElGrupo();
     } else {
       // El catálogo es el mismo; lo que cambia es qué filas salen marcadas
       this.repintarTodo();
@@ -319,38 +319,38 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   }
 
   /** Los ids que ya están dentro, para marcar la rejilla del catálogo. */
-  private async cargarIdsDeLaSeccion(): Promise<void> {
-    this.enLaSeccion = new Set<number>();
-    if (this.seccionId === null) { return; }
+  private async cargarIdsDelGrupo(): Promise<void> {
+    this.enElGrupo = new Set<number>();
+    if (this.grupoId === null) { return; }
     try {
-      const res: any = await firstValueFrom(this._seccionService.ids(this.seccionId));
-      this.enLaSeccion = new Set<number>((res?.data ?? []).map((n: any) => Number(n)));
+      const res: any = await firstValueFrom(this._grupoService.ids(this.grupoId));
+      this.enElGrupo = new Set<number>((res?.data ?? []).map((n: any) => Number(n)));
     } catch {
       // Sin esto la rejilla no marca nada, pero sigue sirviendo para asignar:
       // la base no duplica, así que agregar algo que ya estaba no hace daño.
     }
   }
 
-  nuevaSeccion(): void {
+  nuevoGrupo(): void {
     if (this._seguridadService.isexpired() || !this.puedeCrear) { return; }
-    const ref = this.modal.open(SaveSeccionProductoComponent, { size: 'md', centered: true, backdrop: 'static' });
+    const ref = this.modal.open(SaveGrupoProductosComponent, { size: 'md', centered: true, backdrop: 'static' });
     ref.result.then(
       async (creada: any) => {
         // Se queda elegida: lo siguiente que se va a hacer es llenarla
-        if (creada?.id) { this.seccionId = Number(creada.id); }
-        await this.cargarSecciones();
+        if (creada?.id) { this.grupoId = Number(creada.id); }
+        await this.cargarGrupos();
       },
       () => {});
   }
 
-  editarSeccion(s: SeccionProductoModel): void {
+  editarGrupo(s: GrupoProductosModel): void {
     if (this._seguridadService.isexpired() || !this.puedeEditar) { return; }
-    const ref = this.modal.open(SaveSeccionProductoComponent, { size: 'md', centered: true, backdrop: 'static' });
-    ref.componentInstance.seccion = s;
-    ref.result.then(async () => { await this.cargarSecciones(); }, () => {});
+    const ref = this.modal.open(SaveGrupoProductosComponent, { size: 'md', centered: true, backdrop: 'static' });
+    ref.componentInstance.grupo = s;
+    ref.result.then(async () => { await this.cargarGrupos(); }, () => {});
   }
 
-  async alternarSeccion(s: SeccionProductoModel): Promise<void> {
+  async alternarGrupo(s: GrupoProductosModel): Promise<void> {
     if (this._seguridadService.isexpired() || !this.puedeEditar || this.trabajando) { return; }
 
     // Se manda el valor QUE SE QUIERE, no «lo contrario de lo que hay»: si dos
@@ -358,20 +358,20 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
     const quiero = !s.activo;
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(this._seccionService.activarSeccion(s.id, quiero));
-      this._toastr.success(res?.message ?? 'Sección guardada', 'Listo');
+      const res: any = await firstValueFrom(this._grupoService.activarGrupo(s.id, quiero));
+      this._toastr.success(res?.message ?? 'Grupo guardada', 'Listo');
       // La base decide: puede seguir sin verse por la vigencia
-      const guardada: SeccionProductoModel | null = res?.data ?? null;
-      if (guardada) { this.secciones = this.secciones.map(x => x.id === s.id ? guardada : x); }
+      const guardada: GrupoProductosModel | null = res?.data ?? null;
+      if (guardada) { this.grupos = this.grupos.map(x => x.id === s.id ? guardada : x); }
     } catch (e: any) {
-      this._toastr.error(e?.error?.message ?? 'No se pudo cambiar la sección', 'Error',
+      this._toastr.error(e?.error?.message ?? 'No se pudo cambiar el grupo', 'Error',
                          { timeOut: 15000, closeButton: true });
     } finally {
       this.trabajando = false;
     }
   }
 
-  async borrarSeccion(s: SeccionProductoModel): Promise<void> {
+  async borrarGrupo(s: GrupoProductosModel): Promise<void> {
     if (this._seguridadService.isexpired() || !this.puedeBorrar || this.trabajando) { return; }
 
     const conQue = s.productos === 0 ? 'Está vacía.'
@@ -382,35 +382,35 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
 
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(this._seccionService.deleteSeccion(s.id));
+      const res: any = await firstValueFrom(this._grupoService.deleteGrupo(s.id));
       this._toastr.success(res?.message ?? 'Enviada a la papelera', 'Listo');
-      if (this.seccionId === s.id) { this.seccionId = null; }
-      await this.cargarSecciones(true);
+      if (this.grupoId === s.id) { this.grupoId = null; }
+      await this.cargarGrupos(true);
     } catch (e: any) {
-      this._toastr.error(e?.error?.message ?? 'No se pudo eliminar la sección', 'Error',
+      this._toastr.error(e?.error?.message ?? 'No se pudo eliminar el grupo', 'Error',
                          { timeOut: 15000, closeButton: true });
     } finally {
       this.trabajando = false;
     }
   }
 
-  /** Se soltó una sección en otro sitio de la lista. */
-  async moverSeccion(ev: CdkDragDrop<SeccionProductoModel[]>): Promise<void> {
+  /** Se soltó un grupo en otro sitio de la lista. */
+  async moverGrupo(ev: CdkDragDrop<GrupoProductosModel[]>): Promise<void> {
     if (!this.puedeEditar || ev.previousIndex === ev.currentIndex) { return; }
 
-    moveItemInArray(this.secciones, ev.previousIndex, ev.currentIndex);
-    const ids = this.secciones.map(s => s.id);
+    moveItemInArray(this.grupos, ev.previousIndex, ev.currentIndex);
+    const ids = this.grupos.map(s => s.id);
 
     this.trabajando = true;
     try {
       // Sin aviso emergente: el orden nuevo ya está a la vista, y un toast por
       // cada arrastre es ruido.
-      await firstValueFrom(this._seccionService.ordenarSecciones(ids));
+      await firstValueFrom(this._grupoService.ordenarGrupos(ids));
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo guardar el orden', 'Error',
                          { timeOut: 15000, closeButton: true });
       // Lo de la pantalla ya no es lo que hay guardado
-      await this.cargarSecciones();
+      await this.cargarGrupos();
     } finally {
       this.trabajando = false;
     }
@@ -424,27 +424,27 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
    * Las columnas de la vista que toca.
    *
    * SE REHACEN AL CAMBIAR DE VISTA en vez de esconder y enseñar columnas,
-   * porque lo que cambia no es sólo cuáles se ven: en «La sección» no hay
+   * porque lo que cambia no es sólo cuáles se ven: en «El grupo» no hay
    * servidor que aplique los filtros de cabecera —la lista llega entera—, así
    * que tienen que DESAPARECER. Dejados ahí serían una fila de campos donde se
    * puede escribir y no pasa nada.
    */
   private columnasDe(vista: VistaProductos): any[] {
-    const enSeccion = vista === 'seccion';
+    const enGrupo = vista === 'grupo';
     return this._appAgGridService.filtrosDeServidor([
       {
-        // El asa de arrastrar: sólo en «La sección», que es donde hay un orden
+        // El asa de arrastrar: sólo en «El grupo», que es donde hay un orden
         // que tocar.
         headerName: '', field: this.COLUMNA_ASA, colId: this.COLUMNA_ASA,
-        rowDrag: true, hide: !enSeccion || !this.puedeEditar,
+        rowDrag: true, hide: !enGrupo || !this.puedeEditar,
         minWidth: 34, maxWidth: 34,
         sortable: false, filter: false, resizable: false, suppressHeaderMenuButton: true,
         cellClass: 'celda-asa',
-        headerTooltip: 'Arrastra una fila para cambiarla de sitio dentro de la sección',
+        headerTooltip: 'Arrastra una fila para cambiarla de sitio dentro del grupo',
       },
       {
-        headerName: '#', field: 'orden_seccion', colId: 'orden_seccion', hide: !enSeccion,
-        headerTooltip: 'En qué puesto va dentro de la sección',
+        headerName: '#', field: 'orden_grupo', colId: 'orden_grupo', hide: !enGrupo,
+        headerTooltip: 'En qué puesto va dentro del grupo',
         cellStyle: { textAlign: 'center' }, minWidth: 54, maxWidth: 70,
         sortable: false, filter: false,
       },
@@ -452,12 +452,12 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
         // La casilla de «ya está dentro». PULSABLE: meter un producto suelto
         // es el gesto de todos los días, y obligar a marcarlo y luego darle a
         // un botón de la barra son dos pasos para una cosa.
-        headerName: 'En la sección', field: 'en_seccion', colId: 'en_seccion',
-        hide: enSeccion,
-        headerTooltip: 'Pulsa para meter el producto en la sección o sacarlo',
+        headerName: 'En el grupo', field: 'en_grupo', colId: 'en_grupo',
+        hide: enGrupo,
+        headerTooltip: 'Pulsa para meter el producto en el grupo o sacarlo',
         cellStyle: { textAlign: 'center' }, minWidth: 110, maxWidth: 130,
         sortable: false, filter: false,
-        cellRenderer: (p: any) => this.casillaEnSeccion(p),
+        cellRenderer: (p: any) => this.casillaEnGrupo(p),
       },
       {
         // La imagen principal. El hueco gris mide lo mismo que la foto: así la
@@ -504,7 +504,7 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
       {
         // Sólo se mira: el estado del producto se cambia en su pantalla, no
         // desde un escaparate. Pero hay que verlo: un producto apagado metido
-        // en la sección no lo enseñaría la tienda.
+        // en el grupo no lo enseñaría la tienda.
         headerName: 'Activo', field: 'activo',
         headerTooltip: 'Si el producto está activo en el catálogo; se cambia en Productos',
         cellStyle: { textAlign: 'center' }, minWidth: 80, maxWidth: 90,
@@ -514,8 +514,8 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
       },
     // La lista blanca tiene que decir lo mismo que la de ProductoController:
     // lo que no esté allí se tira en el servidor, así que ofrecerlo aquí sería
-    // pintar un filtro que no filtra. En «La sección» va vacía: sin filtros.
-    ], enSeccion ? {} : ProductoPorSeccionComponent.COLUMNAS_FILTRABLES);
+    // pintar un filtro que no filtra. En «El grupo» va vacía: sin filtros.
+    ], enGrupo ? {} : GrupoProductosComponent.COLUMNAS_FILTRABLES);
   }
 
   private static readonly COLUMNAS_FILTRABLES: { [campo: string]: 'texto' | 'numero' } = {
@@ -531,7 +531,7 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   }
 
   /** La casilla de «está dentro», como HTML: el clic se atiende por data-accion. */
-  private casillaEnSeccion(params: any): string {
+  private casillaEnGrupo(params: any): string {
     const id = Number(params.data?.id);
 
     if (this.enVuelo.has(id)) {
@@ -541,14 +541,14 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
               </div>`;
     }
 
-    if (this.seccionId === null) {
-      return `<div class="celda-activo" title="Elige primero una sección">
-                <input type="checkbox" class="form-check-input" disabled aria-label="Sin sección" />
+    if (this.grupoId === null) {
+      return `<div class="celda-activo" title="Elige primero un grupo">
+                <input type="checkbox" class="form-check-input" disabled aria-label="Sin grupo" />
               </div>`;
     }
 
-    const dentro = this.enLaSeccion.has(id);
-    const donde  = this.seccion?.nombre ?? 'la sección';
+    const dentro = this.enElGrupo.has(id);
+    const donde  = this.grupo?.nombre ?? 'el grupo';
     const titulo = this.puedeEditar
       ? (dentro ? `Sacar de «${donde}»` : `Meter en «${donde}»`)
       : (dentro ? `Está en «${donde}»` : `No está en «${donde}»`);
@@ -557,7 +557,7 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
               <input type="checkbox"
                      class="form-check-input${this.puedeEditar ? ' celda-activo__check' : ''}"
                      ${dentro ? 'checked' : ''}
-                     ${this.puedeEditar ? 'data-accion="en-seccion"' : 'disabled'}
+                     ${this.puedeEditar ? 'data-accion="en-grupo"' : 'disabled'}
                      aria-label="${this.escapar(titulo)}" />
             </div>`;
   }
@@ -583,10 +583,10 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
     if (this.vista === v) { return; }
     this.vista = v;
 
-    // Los filtros de cabecera son del catálogo. Al irse a la sección se
+    // Los filtros de cabecera son del catálogo. Al irse al grupo se
     // quitan ANTES de rehacer las columnas: si no, el modelo se quedaría
     // puesto y al volver al catálogo filtraría sin que se vea por qué.
-    if (v === 'seccion' && this.cuantasColumnasFiltradas) { this.limpiarFiltrosDeColumna(); }
+    if (v === 'grupo' && this.cuantasColumnasFiltradas) { this.limpiarFiltrosDeColumna(); }
 
     this.aplicarColumnas();
     await this.cargarVista();
@@ -594,7 +594,7 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
 
   /** Pide lo que toque según la vista. */
   async cargarVista(pagina?: number): Promise<void> {
-    if (this.vista === 'seccion') { await this.cargarLaSeccion(); }
+    if (this.vista === 'grupo') { await this.cargarElGrupo(); }
     else { await this.cargarCatalogo(pagina ?? this.paginaActual); }
   }
 
@@ -633,27 +633,27 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Los productos de la sección, enteros.
+   * Los productos del grupo, enteros.
    *
-   * Sin paginar: una sección tiene decenas, no miles, y partirla en páginas
+   * Sin paginar: un grupo tiene decenas, no miles, y partirla en páginas
    * haría que arrastrar para ordenar sólo valiera dentro de cada página.
    */
-  async cargarLaSeccion(): Promise<void> {
-    if (this.seccionId === null) {
+  async cargarElGrupo(): Promise<void> {
+    if (this.grupoId === null) {
       this.ponerFilas([]);
       this.totalRegistros = 0;
       return;
     }
     try {
       this._loadingService.setLoading(true);
-      const res: any = await firstValueFrom(this._seccionService.productos(this.seccionId));
+      const res: any = await firstValueFrom(this._grupoService.productos(this.grupoId));
       const filas = res?.data ?? [];
       this.ponerFilas(filas);
       this.totalRegistros = filas.length;
       this.paginaActual = 1;
       this.ultimaPagina = 1;
     } catch (e: any) {
-      this._toastr.error(e?.error?.message ?? 'No se pudieron cargar los productos de la sección',
+      this._toastr.error(e?.error?.message ?? 'No se pudieron cargar los productos del grupo',
                          'Error', { timeOut: 15000, closeButton: true });
     } finally {
       this._loadingService.setLoading(false);
@@ -669,8 +669,8 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   private repintarTodo(): void {
     if (!this.gridApi) { return; }
     // refreshCells y no setData: lo que cambió no está en los datos de la
-    // fila, sino en `enLaSeccion`, así que la rejilla no tiene cómo notarlo.
-    this.gridApi.refreshCells({ columns: ['en_seccion'], force: true });
+    // fila, sino en `enElGrupo`, así que la rejilla no tiene cómo notarlo.
+    this.gridApi.refreshCells({ columns: ['en_grupo'], force: true });
     this.gridApi.redrawRows();
   }
 
@@ -687,35 +687,35 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
 
   onCellClicked(e: CellClickedEvent): void {
     const origen = e.event?.target as HTMLElement | null;
-    if (origen?.closest('[data-accion="en-seccion"]')) {
-      this.alternarEnSeccion(e.data);
+    if (origen?.closest('[data-accion="en-grupo"]')) {
+      this.alternarEnGrupo(e.data);
     }
   }
 
   /** La casilla de una fila: mete o saca ese producto solo. */
-  async alternarEnSeccion(fila: any): Promise<void> {
+  async alternarEnGrupo(fila: any): Promise<void> {
     if (this._seguridadService.isexpired() || !this.puedeEditar) { return; }
-    if (this.seccionId === null) {
-      this._toastr.info('Elige primero una sección de la izquierda', 'Secciones de productos');
+    if (this.grupoId === null) {
+      this._toastr.info('Elige primero un grupo de la izquierda', 'Grupos de productos');
       return;
     }
 
     const id = Number(fila?.id);
     if (!id || this.enVuelo.has(id)) { return; }
 
-    const dentro = this.enLaSeccion.has(id);
+    const dentro = this.enElGrupo.has(id);
     this.enVuelo.add(id);
     this.repintarTodo();
 
     try {
       const res: any = await firstValueFrom(
-        dentro ? this._seccionService.quitar(this.seccionId, [id])
-               : this._seccionService.agregar(this.seccionId, [id]));
+        dentro ? this._grupoService.quitar(this.grupoId, [id])
+               : this._grupoService.agregar(this.grupoId, [id]));
 
       // LA CASILLA NO DECIDE: quien dice cómo queda es el servidor
-      if (dentro) { this.enLaSeccion.delete(id); } else { this.enLaSeccion.add(id); }
-      this.refrescarCuenta(res?.data?.seccion);
-      this._toastr.success(res?.message ?? 'Listo', 'Secciones de productos');
+      if (dentro) { this.enElGrupo.delete(id); } else { this.enElGrupo.add(id); }
+      this.refrescarCuenta(res?.data?.grupo);
+      this._toastr.success(res?.message ?? 'Listo', 'Grupos de productos');
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo cambiar el producto', 'Error',
                          { timeOut: 15000, closeButton: true });
@@ -725,57 +725,57 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Mete en la sección los productos marcados. */
+  /** Mete en el grupo los productos marcados. */
   async agregarSeleccionados(): Promise<void> {
     if (this._seguridadService.isexpired() || this.motivoSinAsignar || this.trabajando) { return; }
 
     const ids = this.seleccionados.map(f => Number(f.id)).filter(Boolean);
     if (!ids.length) {
-      this._toastr.info('Marca con las casillas los productos que quieres meter', 'Secciones de productos');
+      this._toastr.info('Marca con las casillas los productos que quieres meter', 'Grupos de productos');
       return;
     }
 
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(this._seccionService.agregar(this.seccionId!, ids));
-      this._toastr.success(res?.message ?? 'Agregados', 'Secciones de productos');
-      ids.forEach(id => this.enLaSeccion.add(id));
-      this.refrescarCuenta(res?.data?.seccion);
+      const res: any = await firstValueFrom(this._grupoService.agregar(this.grupoId!, ids));
+      this._toastr.success(res?.message ?? 'Agregados', 'Grupos de productos');
+      ids.forEach(id => this.enElGrupo.add(id));
+      this.refrescarCuenta(res?.data?.grupo);
       this.gridApi?.deselectAll();
-      if (this.vista === 'seccion') { await this.cargarLaSeccion(); } else { this.repintarTodo(); }
+      if (this.vista === 'grupo') { await this.cargarElGrupo(); } else { this.repintarTodo(); }
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudieron agregar los productos', 'Error',
                          { timeOut: 15000, closeButton: true });
       // Puede haber entrado una parte: se vuelve a leer quién está dentro
-      await this.cargarIdsDeLaSeccion();
+      await this.cargarIdsDelGrupo();
       this.repintarTodo();
     } finally {
       this.trabajando = false;
     }
   }
 
-  /** Saca de la sección los productos marcados. */
+  /** Saca del grupo los productos marcados. */
   async quitarSeleccionados(): Promise<void> {
     if (this._seguridadService.isexpired() || this.motivoSinAsignar || this.trabajando) { return; }
 
     const ids = this.seleccionados.map(f => Number(f.id)).filter(Boolean);
     if (!ids.length) {
-      this._toastr.info('Marca con las casillas los productos que quieres sacar', 'Secciones de productos');
+      this._toastr.info('Marca con las casillas los productos que quieres sacar', 'Grupos de productos');
       return;
     }
 
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(this._seccionService.quitar(this.seccionId!, ids));
-      this._toastr.success(res?.message ?? 'Quitados', 'Secciones de productos');
-      ids.forEach(id => this.enLaSeccion.delete(id));
-      this.refrescarCuenta(res?.data?.seccion);
+      const res: any = await firstValueFrom(this._grupoService.quitar(this.grupoId!, ids));
+      this._toastr.success(res?.message ?? 'Quitados', 'Grupos de productos');
+      ids.forEach(id => this.enElGrupo.delete(id));
+      this.refrescarCuenta(res?.data?.grupo);
       this.gridApi?.deselectAll();
-      if (this.vista === 'seccion') { await this.cargarLaSeccion(); } else { this.repintarTodo(); }
+      if (this.vista === 'grupo') { await this.cargarElGrupo(); } else { this.repintarTodo(); }
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudieron quitar los productos', 'Error',
                          { timeOut: 15000, closeButton: true });
-      await this.cargarIdsDeLaSeccion();
+      await this.cargarIdsDelGrupo();
       this.repintarTodo();
     } finally {
       this.trabajando = false;
@@ -793,13 +793,13 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
     if (this._seguridadService.isexpired() || this.motivoSinAsignar || this.trabajando) { return; }
     if (this.vista !== 'catalogo') { return; }
     if (!this.totalRegistros) {
-      this._toastr.info('Con este filtro no hay ningún producto', 'Secciones de productos');
+      this._toastr.info('Con este filtro no hay ningún producto', 'Grupos de productos');
       return;
     }
 
     const cuantos = this.totalRegistros;
     const queFiltro = this.hayFiltro ? this.comoSeFiltra() : 'TODO el catálogo, sin filtrar';
-    if (!confirm(`¿Meter ${cuantos} ${cuantos === 1 ? 'producto' : 'productos'} en «${this.seccion!.nombre}»?\n\n`
+    if (!confirm(`¿Meter ${cuantos} ${cuantos === 1 ? 'producto' : 'productos'} en «${this.grupo!.nombre}»?\n\n`
                  + `Es ${queFiltro}.\n`
                  + 'No es sólo lo que se ve en la página: son todos los que cumplen el filtro.\n'
                  + 'Los que ya estén dentro no se duplican.')) { return; }
@@ -807,17 +807,17 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
     this.trabajando = true;
     try {
       const res: any = await firstValueFrom(
-        this._seccionService.agregarFiltro(this.seccionId!, this.filtroParaElServidor()));
-      this._toastr.success(res?.message ?? 'Agregados', 'Secciones de productos',
+        this._grupoService.agregarFiltro(this.grupoId!, this.filtroParaElServidor()));
+      this._toastr.success(res?.message ?? 'Agregados', 'Grupos de productos',
                            { timeOut: 8000, closeButton: true });
-      this.refrescarCuenta(res?.data?.seccion);
-      await this.cargarIdsDeLaSeccion();
+      this.refrescarCuenta(res?.data?.grupo);
+      await this.cargarIdsDelGrupo();
       this.gridApi?.deselectAll();
       this.repintarTodo();
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo hacer la asignación', 'Error',
                          { timeOut: 15000, closeButton: true });
-      await this.cargarIdsDeLaSeccion();
+      await this.cargarIdsDelGrupo();
       this.repintarTodo();
     } finally {
       this.trabajando = false;
@@ -857,20 +857,20 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
     return partes.join(' + ');
   }
 
-  /** Mete en la lista la sección que acaba de contestar el servidor. */
-  private refrescarCuenta(seccion: SeccionProductoModel | null | undefined): void {
-    if (!seccion?.id) { return; }
-    this.secciones = this.secciones.map(s => s.id === seccion.id ? seccion : s);
+  /** Mete en la listal grupo que acaba de contestar el servidor. */
+  private refrescarCuenta(grupo: GrupoProductosModel | null | undefined): void {
+    if (!grupo?.id) { return; }
+    this.grupos = this.grupos.map(s => s.id === grupo.id ? grupo : s);
   }
 
   /**
-   * Se soltó una fila en otro sitio dentro de la sección.
+   * Se soltó una fila en otro sitio dentro del grupo.
    *
    * Con rowDragManaged la rejilla ya la movió en SU modelo; aquí se lee ese
    * orden nuevo —es el único sitio donde está— y se manda al servidor.
    */
   async onFilaArrastrada(): Promise<void> {
-    if (this.vista !== 'seccion' || !this.puedeEditar || !this.gridApi || this.seccionId === null) { return; }
+    if (this.vista !== 'grupo' || !this.puedeEditar || !this.gridApi || this.grupoId === null) { return; }
 
     const enPantalla: any[] = [];
     this.gridApi.forEachNode(nodo => { if (nodo.data) { enPantalla.push(nodo.data); } });
@@ -880,16 +880,16 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
     if (ids.every((id, i) => id === Number(this.filas[i]?.id))) { return; }  // se soltó donde ya estaba
 
     // Los números de la columna «#» se reparten aquí, sin esperar la respuesta
-    this.filas = enPantalla.map((f, i) => ({ ...f, orden_seccion: i + 1 }));
+    this.filas = enPantalla.map((f, i) => ({ ...f, orden_grupo: i + 1 }));
     this.gridApi.setGridOption('rowData', this.filas);
 
     this.trabajando = true;
     try {
-      await firstValueFrom(this._seccionService.ordenar(this.seccionId, ids));
+      await firstValueFrom(this._grupoService.ordenar(this.grupoId, ids));
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo guardar el orden', 'Error',
                          { timeOut: 15000, closeButton: true });
-      await this.cargarLaSeccion();
+      await this.cargarElGrupo();
     } finally {
       this.trabajando = false;
     }
@@ -950,7 +950,7 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
   /** Cambió un filtro del panel: siempre a la página 1. */
   onFiltroCambiado(): void {
     this.paginaActual = 1;
-    // Los filtros son del catálogo; en «La sección» no hay nada que filtrar
+    // Los filtros son del catálogo; en «El grupo» no hay nada que filtrar
     if (this.vista === 'catalogo') { this.cargarCatalogo(1); }
   }
 
@@ -1107,7 +1107,7 @@ export class ProductoPorSeccionComponent implements OnInit, OnDestroy {
 
   /** El botón de recargar del panel. */
   async recargar(): Promise<void> {
-    await this.cargarSecciones();
+    await this.cargarGrupos();
     await this.cargarVista();
   }
 }

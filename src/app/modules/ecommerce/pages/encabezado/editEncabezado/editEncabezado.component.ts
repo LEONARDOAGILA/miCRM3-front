@@ -15,8 +15,12 @@ import { CellClickedEvent, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { SeguridadService } from '../../../../seguridad/services/seguridad.service';
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { EncabezadoService } from '../../../services/encabezado.service';
-import { BotonFranja, EncabezadoDeLaLista, EncabezadoModel, EnlaceEncabezadoModel } from '../../../interfaces/encabezadoModel';
+import {
+  BotonFranja, EfectoFranja, EncabezadoDeLaLista, EncabezadoModel, EnlaceEncabezadoModel, MensajeFranja,
+  ParteDelMensaje,
+} from '../../../interfaces/encabezadoModel';
 import { COLOR_TIENDA, FUENTES_ROTULO, contrasteEntre, esColorClaro, tonosDelColor } from '../../../interfaces/inicioModel';
+import { cargarLetrasDeLaTienda } from '../../../interfaces/letrasTienda';
 
 import { PanelComponent } from '../../../../../components/panel/panel.component';
 import { CampoColorComponent } from '../../../../../components/campos/campoColor/campoColor.component';
@@ -40,7 +44,7 @@ import { PapeleraEncabezadoComponent } from '../papeleraEncabezado/papeleraEncab
 export type PiezaEncabezado =
   | 'franja'          // su fondo, su tamaño y su letra (y encenderla)
   | 'franjaTexto'     // el texto y su color
-  | 'franjaDestacado' // lo resaltado y su color
+
   | 'franjaBotones'   // los botones, su URL y sus dos colores
   | 'logo'            // subirlo o quitarlo
   | 'buscador'        // las frases que van rotando
@@ -118,7 +122,7 @@ export class EditEncabezadoComponent implements OnInit {
 
   public listaPlegada = false;
 
-  /** Qué se mira en el centro: la previa o el menú (que es uno solo). */
+  /** Qué se mira en el centro: la previa o el menú del que se edita. */
   public vistaCentro: 'previa' | 'menu' = 'previa';
 
   /** Para encontrar uno cuando ya hay quince campañas. */
@@ -164,6 +168,35 @@ export class EditEncabezadoComponent implements OnInit {
   get barra(): FormGroup { return this.form.controls['barra_superior'] as FormGroup; }
   get frases(): FormArray { return this.form.controls['buscador_frases'] as FormArray; }
   get botones(): FormArray { return this.barra.controls['botones'] as FormArray; }
+
+  get mensajes(): FormArray { return this.barra.controls['mensajes'] as FormArray; }
+
+  get efectos(): FormGroup { return this.barra.controls['efectos'] as FormGroup; }
+
+  /** La palanca de un efecto, para el mando. */
+  ctrlEfecto(nombre: EfectoFranja): FormControl {
+    return this.efectos.controls[nombre] as FormControl;
+  }
+
+  /** Si está encendido, para pintarlo también en el boceto. */
+  efectoPuesto(nombre: EfectoFranja): boolean {
+    return this.efectos.controls[nombre]?.value === true;
+  }
+
+
+  /**
+   * SI LA FRANJA SE VA A TURNAR, que es lo que decide si el boceto lo
+   * enseña: con un mensaje no hay relevo, y entonces tampoco hay entrada.
+   */
+  get hayVariosMensajes(): boolean {
+    return this.mensajesConTexto > 0;
+  }
+
+  /** Cuántos de los de la lista dicen algo. Uno en blanco no se turna. */
+  get mensajesConTexto(): number {
+    return (this.mensajes.getRawValue() as any[])
+      .filter(m => ((m?.texto ?? '') as string).trim()).length;
+  }
   get pintaEnlaces(): FormGroup { return this.form.controls['menu_enlaces'] as FormGroup; }
 
   // ================================================================
@@ -277,6 +310,16 @@ export class EditEncabezadoComponent implements OnInit {
   public readonly paletaFondoEncabezado = ['#ffffff', '#f7f7f7', '#1d1d1f', '#102a43', '#0f3d3a', '#fdf6e3'];
   /** Y letras: la de siempre, la de los títulos, blanca y tres tonos oscuros. */
   public readonly paletaLetraEncabezado = ['#374151', '#1d1d1f', '#ffffff', '#0a58ca', '#0f766e', '#7c2d12'];
+
+  /**
+   * La del DESTACADO: colores que resaltan, no los de leer un párrafo.
+   *
+   * Hasta el 21/11/2026 el destacado pedía una paleta llamada  que
+   * no existía en esta pantalla, así que se quedaba sin atajos y había que
+   * acertar el código a mano. Empieza por el de la tienda, que es el que
+   * lleva de fábrica.
+   */
+  public readonly paletaDestacado = [COLOR_TIENDA, '#ff0000', '#0f766e', '#b45309', '#1d1d1f', '#ffffff'];
 
   ctrlColorDe(campo: string): FormControl { return this.form.controls[campo] as FormControl; }
 
@@ -436,8 +479,14 @@ export class EditEncabezadoComponent implements OnInit {
    */
   get puedeAnadirBoton(): boolean { return this.puedeEditar && this.botones.length < 4; }
 
+  /** Cuatro más del primero: cinco en total, como las frases del buscador. */
+  get puedeAnadirMensaje(): boolean { return this.puedeEditar && this.mensajes.length < 4; }
+
   ngOnInit(): void {
     this.accesoModel = this.activeRoute.snapshot.data['access'];
+    // Sin esto el boceto enseñaba las ocho letras con la del sistema: se
+    // elegía a ciegas y todas se veían igual
+    cargarLetrasDeLaTienda();
     this.construirFormulario();
     this.construirRejilla();
     this.leerPlegados();      // el árbol se abre como se dejó
@@ -450,9 +499,28 @@ export class EditEncabezadoComponent implements OnInit {
         activo:       [true],
         texto:        ['', [Validators.maxLength(80)]],
         destacado:    ['', [Validators.maxLength(60)]],
+        // CÓMO SE VE CADA PARTE. Son los mismos tres dos veces, y los
+        // mismos que lleva cada mensaje de la lista: este primero sólo se
+        // diferencia en que no se puede borrar.
+        texto_color:      [''],
+        texto_tamano:     [null, [Validators.min(8), Validators.max(48)]],
+        texto_fuente:     [''],
+        destacado_color:  [''],
+        destacado_tamano: [null, [Validators.min(8), Validators.max(48)]],
+        destacado_fuente: [''],
         // Los botones, hasta cuatro. Se llenan en `pintarFormulario`, como las
         // frases: son una lista y no un campo.
         botones:      this.fb.array([]),
+        // LOS SIGUIENTES MENSAJES, los que se turnan con el de arriba.
+        // Hasta cuatro más; vacío = una frase quieta.
+        mensajes:     this.fb.array([]),
+        // Y QUÉ SE MUEVE. Tres palancas y no una lista desplegable porque
+        // se suman: tocan tres sitios distintos de la franja.
+        efectos: this.fb.group({
+          destello: [false],
+          latido:   [false],
+          luz:      [false],
+        }),
       }),
       buscador_frases: this.fb.array([]),
       // El color de TODA la tienda. Vacío = el rojo de siempre
@@ -462,15 +530,18 @@ export class EditEncabezadoComponent implements OnInit {
       desplegable_texto: [''],
       // Y las dos franjas del encabezado, por lo mismo
       franja_fondo: [''],
-      franja_destacado: [''],
+
       franja_boton_fondo: [''],
       franja_boton_texto: [''],
       // En píxeles, entre 8 y 48. Vacío = los 14 de la tienda
-      franja_tamano: [null, [Validators.min(8), Validators.max(48)]],
-      franja_fuente: ['titulos'],
-      franja_texto: [''],
+
+
       // El menú: color, tamaño (en píxeles) y tipo de letra. El fondo no se
       // elige: la barra va del color de la tienda
+      // Los dos desplegables que pone la tienda. Encendidos de salida: es
+      // como estaba antes de que se pudieran apagar
+      mostrar_menu_categorias: [true],
+      mostrar_menu_marcas: [true],
       menu_texto: [''],
       menu_tamano: [null, [Validators.min(8), Validators.max(48)]],
       menu_fuente: [''],
@@ -533,6 +604,23 @@ export class EditEncabezadoComponent implements OnInit {
   /** El de la tira que se está editando. */
   esElQueEdito(e: EncabezadoDeLaLista): boolean {
     return e.id === this.encabezadoId;
+  }
+
+  /**
+   * CÓMO SE LLAMA EL QUE SE ESTÁ EDITANDO, para decirlo en el menú.
+   *
+   * Sale del formulario y no del modelo: así, mientras se le está cambiando
+   * el nombre, el rótulo del menú lo sigue en vez de quedarse en el viejo.
+   */
+  get nombreDelQueEdito(): string {
+    const nombre = (this.datosForm.controls['nombre']?.value ?? '').trim();
+    return nombre || 'este encabezado';
+  }
+
+  /** «Menú de «El de siempre»»: de cuál es el que se está viendo. */
+  get tituloDelMenu(): string {
+    const nombre = (this.datosForm.controls['nombre']?.value ?? '').trim();
+    return nombre ? 'Menú de «' + nombre + '»' : 'Menú de la tienda';
   }
 
   /** Cómo se lee su estado, con sus fechas. */
@@ -620,8 +708,8 @@ export class EditEncabezadoComponent implements OnInit {
     if (this._seguridadService.isexpired() || !this.puedeEliminar || this.trabajando || e.principal) { return; }
 
     if (!confirm('¿Borrar «' + e.nombre + '»?' + String.fromCharCode(10) + String.fromCharCode(10)
-                 + 'No hay papelera: sus colores y su logo se pierden. El menú no se toca, '
-                 + 'que es uno solo para todos.')) { return; }
+                 + 'No hay papelera: sus colores, su logo Y SU MENÚ se pierden. Los demás '
+                 + 'encabezados no se tocan: cada uno lleva el suyo.')) { return; }
 
     this.trabajando = true;
     try {
@@ -647,11 +735,6 @@ export class EditEncabezadoComponent implements OnInit {
 
   public readonly fuentesFranja = FUENTES_ROTULO;
 
-  /** La letra elegida para la franja, para dibujarla en la previa. */
-  fuenteDeLaFranja() {
-    const elegida = this.form.controls['franja_fuente']?.value;
-    return this.fuentesFranja.find(f => f.valor === elegida) ?? this.fuentesFranja[0];
-  }
 
   /**
    * Y lo que mide: LOS PÍXELES DE VERDAD.
@@ -661,10 +744,138 @@ export class EditEncabezadoComponent implements OnInit {
    * mismo, y es lo que se está eligiendo. Vacío o fuera de rango, los 14 de
    * la tienda.
    */
-  tamanoDeLaFranja(): number {
-    const px = Number(this.form.controls['franja_tamano']?.value);
+
+  // ================================================================
+  // CADA PARTE DE CADA MENSAJE
+  // ================================================================
+  //
+  // Un mensaje son dos trozos que se leen seguidos —la frase y lo
+  // resaltado— y cada uno lleva su color, su tamaño y su letra. EL PRIMER
+  // MENSAJE VIVE SUELTO en `barra_superior` y los demás en la lista, pero
+  // por dentro tienen los mismos seis campos: `grupoDelMensaje(null)` es el
+  // primero y `grupoDelMensaje(i)` el de la fila i de la lista, y de ahí
+  // para abajo todo es igual para los dos.
+
+  /**
+   * LOS SEIS CAMPOS DE LAS DOS PARTES, tal como van al servidor.
+   *
+   * Son los mismos para el primer mensaje y para los de la lista, así que se
+   * arman una sola vez: el 0 y el vacío significan lo mismo —«lo de la
+   * tienda»— y por eso los dos acaban en null.
+   */
+  private partesDe(m: any): Record<string, unknown> {
+    const limpio = (x: any) => (x ?? '').toString().trim() || null;
+    return {
+      texto_color:      limpio(m.texto_color),
+      texto_tamano:     m.texto_tamano ? Number(m.texto_tamano) : null,
+      texto_fuente:     limpio(m.texto_fuente),
+      destacado_color:  limpio(m.destacado_color),
+      destacado_tamano: m.destacado_tamano ? Number(m.destacado_tamano) : null,
+      destacado_fuente: limpio(m.destacado_fuente),
+    };
+  }
+
+  /** El grupo de un mensaje. null = el primero, el que no se borra. */
+  grupoDelMensaje(indice: number | null): FormGroup {
+    return indice === null ? this.barra : this.grupoMensaje(indice);
+  }
+
+  /** Cómo se numera en la pantalla: el primero es el 1. */
+  numeroDelMensaje(indice: number | null): number {
+    return indice === null ? 1 : indice + 2;
+  }
+
+  /** El color que se va a ver: el elegido, o el que pone la tienda. */
+  colorDeParte(indice: number | null, parte: ParteDelMensaje): string {
+    const propio = (this.grupoDelMensaje(indice).controls[parte + '_color']?.value ?? '') as string;
+    return propio || this.coloresDeFabrica[parte === 'texto' ? 'franja_texto' : 'franja_destacado'];
+  }
+
+  hayColorPropioDeParte(indice: number | null, parte: ParteDelMensaje): boolean {
+    return !!(this.grupoDelMensaje(indice).controls[parte + '_color']?.value ?? '');
+  }
+
+  ponerColorDeParte(indice: number | null, parte: ParteDelMensaje, color: string): void {
+    if (!this.puedeEditar) { return; }
+    const control = this.grupoDelMensaje(indice).controls[parte + '_color'];
+    control.setValue(color || '');
+    control.markAsDirty();
+  }
+
+  /** La letra elegida, o la primera de la lista (que es lo que hace la tienda). */
+  fuenteDeParte(indice: number | null, parte: ParteDelMensaje) {
+    const elegida = this.grupoDelMensaje(indice).controls[parte + '_fuente']?.value;
+    return this.fuentesFranja.find(f => f.valor === elegida) ?? this.fuentesFranja[0];
+  }
+
+  /** Los píxeles de verdad. Vacío o fuera de rango, los 14 de la tienda. */
+  tamanoDeParte(indice: number | null, parte: ParteDelMensaje): number {
+    const px = Number(this.grupoDelMensaje(indice).controls[parte + '_tamano']?.value);
     return Number.isFinite(px) && px >= 8 && px <= 48 ? px : 14;
   }
+
+  /**
+   * Y TODO JUNTO, para el boceto.
+   *
+   * CON DESTELLO el color del destacado NO va en `color`: lo pinta un
+   * degradado recortado a la letra —dos capas, el color abajo y la luz
+   * encima—, igual que en la tienda, y el color viaja en una variable. Un
+   * `color` puesto a mano le ganaría al degradado y no se vería pasar nada.
+   *
+   * SALVO MIENTRAS SE ESCRIBE (`plano`). Con el mando abierto, el boceto
+   * cambia el botón por un CAMPO, y el campo es otro elemento: la regla del
+   * degradado es del botón y no lo alcanza, así que con el destello puesto se
+   * quedaba sin color —negro— y parecía que elegirlo no hacía nada. Y aunque
+   * la regla llegara, tampoco se querría: un cursor encima de una letra
+   * recortada a un degradado no se ve. Mientras se escribe, color plano.
+   */
+  pintaDeParte(indice: number | null, parte: ParteDelMensaje,
+               plano = false): Record<string, string> {
+    const letra = this.fuenteDeParte(indice, parte);
+    const color = this.colorDeParte(indice, parte);
+    const estilo: Record<string, string> = {
+      'font-family': letra.css,
+      'font-style': letra.cursiva ? 'italic' : 'normal',
+      'font-size': this.tamanoDeParte(indice, parte) + 'px',
+    };
+    if (!plano && parte === 'destacado' && this.efectoPuesto('destello')) {
+      estilo['--pv-destacado'] = color;
+    } else {
+      estilo['color'] = color;
+    }
+    return estilo;
+  }
+
+  /** Si el texto del primer mensaje se lee sobre el fondo de la franja. */
+  ilegibleElTexto(): boolean { return this.contrasteDelTextoNumero() < 4.5; }
+
+  contrasteDelTexto(): string {
+    return this.contrasteDelTextoNumero().toFixed(1).replace('.', ',');
+  }
+
+  private contrasteDelTextoNumero(): number {
+    return contrasteEntre(this.colorQueSeVeDe('franja_fondo'), this.colorDeParte(null, 'texto'));
+  }
+
+  // ================================================================
+  // «CATEGORÍAS» Y «MARCAS»
+  // ================================================================
+  //
+  // NO SON ENLACES DEL MENÚ: no están en la pestaña «Menú» ni en la base
+  // de enlaces. Los arma la tienda con el catálogo —el primero en cascada
+  // y el segundo en lista—, y lo único que se decide aquí es si salen.
+  //
+  // SE SIGUEN DIBUJANDO EN EL BOCETO AUNQUE ESTÉN APAGADOS, en gris y
+  // tachados: si desaparecieran no habría dónde pulsar para encenderlos
+  // otra vez. Es lo mismo que hace la franja cuando se apaga.
+
+  get ctrlCategorias(): FormControl { return this.form.controls['mostrar_menu_categorias'] as FormControl; }
+
+  get ctrlMarcas(): FormControl { return this.form.controls['mostrar_menu_marcas'] as FormControl; }
+
+  get muestraCategorias(): boolean { return this.ctrlCategorias?.value !== false; }
+
+  get muestraMarcas(): boolean { return this.ctrlMarcas?.value !== false; }
 
   /** La letra elegida para el menú, para dibujarlo en el boceto. */
   fuenteDelMenu() {
@@ -682,10 +893,9 @@ export class EditEncabezadoComponent implements OnInit {
   private pintar(data: any): void {
     if (!data) { return; }
 
-    // LAS LLAMADAS DEL MENÚ DEVUELVEN SÓLO { enlaces }, y es a propósito: el
-    // menú es uno solo y los encabezados son varios, así que repintar «el
-    // encabezado» con lo que devuelve un enlace le cambiaría los colores a
-    // quien está editando el de Navidad.
+    // LAS LLAMADAS DEL MENÚ DEVUELVEN SÓLO { enlaces }, y es a propósito:
+    // repintar «el encabezado» entero con lo que devuelve un enlace le
+    // borraría lo que tenga a medio escribir en los colores.
     if (!data.config) {
       this.modelo = { ...this.modelo, enlaces: data.enlaces ?? [] } as EncabezadoModel;
       this.refrescarArbol();
@@ -716,17 +926,24 @@ export class EditEncabezadoComponent implements OnInit {
         activo:       c.barra_superior?.activo !== false,
         texto:        c.barra_superior?.texto ?? '',
         destacado:    c.barra_superior?.destacado ?? '',
+        texto_color:      c.barra_superior?.texto_color ?? '',
+        texto_tamano:     c.barra_superior?.texto_tamano ?? null,
+        texto_fuente:     c.barra_superior?.texto_fuente ?? '',
+        destacado_color:  c.barra_superior?.destacado_color ?? '',
+        destacado_tamano: c.barra_superior?.destacado_tamano ?? null,
+        destacado_fuente: c.barra_superior?.destacado_fuente ?? '',
       },
       color_principal: c.color_principal ?? '',
       desplegable_fondo: c.desplegable_fondo ?? '',
       desplegable_texto: c.desplegable_texto ?? '',
       franja_fondo: c.franja_fondo ?? '',
-      franja_destacado: c.franja_destacado ?? '',
+
       franja_boton_fondo: c.franja_boton_fondo ?? '',
       franja_boton_texto: c.franja_boton_texto ?? '',
-      franja_tamano: c.franja_tamano ?? null,
-      franja_fuente: c.franja_fuente ?? 'titulos',
-      franja_texto: c.franja_texto ?? '',
+
+
+      mostrar_menu_categorias: c.mostrar_menu_categorias !== false,
+      mostrar_menu_marcas: c.mostrar_menu_marcas !== false,
       menu_texto: c.menu_texto ?? '',
       menu_tamano: c.menu_tamano ?? null,
       menu_fuente: c.menu_fuente ?? '',
@@ -740,6 +957,20 @@ export class EditEncabezadoComponent implements OnInit {
 
     // LOS BOTONES, uno por grupo. Igual que las frases: `patchValue` no toca
     // una lista que no tiene los mismos elementos, hay que rehacerla.
+    // Los mensajes que se turnan y las tres palancas, antes de los botones
+    this.mensajes.clear();
+    for (const m of (c.barra_superior?.mensajes ?? [])) {
+      this.mensajes.push(this.grupoDeMensaje(m));
+    }
+
+    // La lista del servidor son los encendidos; los que no estén, apagados
+    const encendidos = new Set(c.barra_superior?.efectos ?? []);
+    this.efectos.patchValue({
+      destello: encendidos.has('destello'),
+      latido:   encendidos.has('latido'),
+      luz:      encendidos.has('luz'),
+    }, { emitEvent: false });
+
     this.botones.clear();
     for (const b of (c.barra_superior?.botones ?? [])) {
       this.botones.push(this.grupoDeBoton(b));
@@ -827,6 +1058,44 @@ export class EditEncabezadoComponent implements OnInit {
     control.markAsDirty();
   }
 
+  /**
+   * UN MENSAJE DE LA LISTA.
+   *
+   * El texto es obligatorio y el destacado no, igual que en el primero:
+   * hay avisos que son una frase entera sin nada resaltado. El servidor
+   * tira los que lleguen sin texto, así que aquí no se marca como
+   * requerido —uno recién añadido está en blanco y marcaría el
+   * formulario entero en rojo antes de que a nadie le dé tiempo a
+   * escribir—.
+   */
+  private grupoDeMensaje(m: Partial<MensajeFranja> = {}): FormGroup {
+    return this.fb.group({
+      texto:            [m.texto ?? '', [Validators.maxLength(80)]],
+      destacado:        [m.destacado ?? '', [Validators.maxLength(60)]],
+      texto_color:      [m.texto_color ?? ''],
+      texto_tamano:     [m.texto_tamano ?? null, [Validators.min(8), Validators.max(48)]],
+      texto_fuente:     [m.texto_fuente ?? ''],
+      destacado_color:  [m.destacado_color ?? ''],
+      destacado_tamano: [m.destacado_tamano ?? null, [Validators.min(8), Validators.max(48)]],
+      destacado_fuente: [m.destacado_fuente ?? ''],
+    });
+  }
+
+  anadirMensaje(): void {
+    if (!this.puedeAnadirMensaje) { return; }
+    this.mensajes.push(this.grupoDeMensaje());
+    this.mensajes.markAsDirty();
+  }
+
+  quitarMensaje(indice: number): void {
+    if (!this.puedeEditar) { return; }
+    this.mensajes.removeAt(indice);
+    this.mensajes.markAsDirty();
+  }
+
+  /** El grupo, no la posición, por lo mismo que en los botones. */
+  grupoMensaje(indice: number): FormGroup { return this.mensajes.at(indice) as FormGroup; }
+
   anadirBoton(): void {
     if (!this.puedeAnadirBoton) { return; }
     this.botones.push(this.grupoDeBoton());
@@ -869,7 +1138,7 @@ export class EditEncabezadoComponent implements OnInit {
     // El texto y el destacado se escriben EN el boceto: el campo aparece
     // donde estaba el texto y hay que llevarle el cursor, o habría que
     // pulsar dos veces para escribir en lo que se acaba de pulsar
-    if (cual === 'franjaTexto' || cual === 'franjaDestacado') {
+    if (cual === 'franjaTexto') {
       setTimeout(() => {
         const campo = this.host.nativeElement.querySelector('.enc-previa__escribir') as HTMLInputElement | null;
         campo?.focus();
@@ -1081,11 +1350,11 @@ export class EditEncabezadoComponent implements OnInit {
    */
   private dondeEstaLoQueFalla(): { pieza: PiezaEncabezado; nombre: string } | null {
     if (this.barra.controls['texto']?.invalid) { return { pieza: 'franjaTexto', nombre: 'el texto de la franja' }; }
-    if (this.barra.controls['destacado']?.invalid) { return { pieza: 'franjaDestacado', nombre: 'el destacado' }; }
+    if (this.barra.controls['destacado']?.invalid) { return { pieza: 'franjaTexto', nombre: 'el destacado' }; }
     if (this.botones.invalid) { return { pieza: 'franjaBotones', nombre: 'los botones de la franja' }; }
     if (this.frases.invalid) { return { pieza: 'buscador', nombre: 'las frases del buscador' }; }
-    if (this.form.controls['franja_tamano']?.invalid || this.form.controls['franja_fuente']?.invalid) {
-      return { pieza: 'franja', nombre: 'el tamaño de la franja' };
+    if (this.barra.invalid || this.mensajes.invalid) {
+      return { pieza: 'franjaTexto', nombre: 'el tamaño de un mensaje de la franja' };
     }
     if (this.form.controls['menu_tamano']?.invalid) {
       return { pieza: 'menu', nombre: 'el tamaño del menú' };
@@ -1169,6 +1438,8 @@ export class EditEncabezadoComponent implements OnInit {
         activo:       v.barra_superior.activo !== false,
         texto:        limpio(v.barra_superior.texto),
         destacado:    limpio(v.barra_superior.destacado),
+        // Un número o nada: el 0 y el vacío son lo mismo, «lo de la tienda»
+        ...this.partesDe(v.barra_superior),
         // SIN TEXTO NO HAY BOTÓN: el servidor los quita igual, pero mandarlos
         // haría que una fila a medio escribir gastara uno de los cuatro sitios
         botones: ((v.barra_superior.botones ?? []) as any[])
@@ -1179,19 +1450,32 @@ export class EditEncabezadoComponent implements OnInit {
             tamano: b.tamano ? Number(b.tamano) : null,
           }))
           .filter(b => !!b.texto),
+        // SIN TEXTO NO HAY MENSAJE: el servidor los tira igual, pero
+        // mandarlos haría que una fila a medio escribir gastara uno de
+        // los cuatro sitios
+        mensajes: ((v.barra_superior.mensajes ?? []) as any[])
+          .map(m => ({ texto: limpio(m.texto), destacado: limpio(m.destacado), ...this.partesDe(m) }))
+          .filter(m => !!m.texto),
+        // Las tres palancas, convertidas en la lista de los encendidos:
+        // la base guarda qué se mueve, no qué no se mueve
+        efectos: (['destello', 'latido', 'luz'] as EfectoFranja[])
+          .filter(nombre => v.barra_superior.efectos?.[nombre] === true),
       },
       buscador_frases: (v.buscador_frases ?? []).map((f: string) => (f ?? '').trim()).filter(Boolean),
       color_principal: limpio(v.color_principal),
       desplegable_fondo: limpio(v.desplegable_fondo),
       desplegable_texto: limpio(v.desplegable_texto),
       franja_fondo: limpio(v.franja_fondo),
-      franja_destacado: limpio(v.franja_destacado),
+
       franja_boton_fondo: limpio(v.franja_boton_fondo),
       franja_boton_texto: limpio(v.franja_boton_texto),
       // Un número o nada: el 0 y el vacío son lo mismo aquí, «el de siempre»
-      franja_tamano: v.franja_tamano ? Number(v.franja_tamano) : null,
-      franja_fuente: limpio(v.franja_fuente),
-      franja_texto: limpio(v.franja_texto),
+
+
+      // Un booleano de verdad, no lo que traiga el formulario: la base
+      // guarda lo que se apaga y un «undefined» se entendería encendido
+      mostrar_menu_categorias: v.mostrar_menu_categorias !== false,
+      mostrar_menu_marcas: v.mostrar_menu_marcas !== false,
       menu_texto: limpio(v.menu_texto),
       // Un número o nada: el 0 y el vacío son lo mismo aquí, «el de siempre»
       menu_tamano: v.menu_tamano ? Number(v.menu_tamano) : null,
@@ -1325,8 +1609,8 @@ export class EditEncabezadoComponent implements OnInit {
         minWidth: 80, maxWidth: 80, sortable: false,
       },
       {
-        // ENTRE QUÉ FECHAS SALE. El menú es uno solo para todos los
-        // encabezados, así que lo que se programa es cada enlace
+        // ENTRE QUÉ FECHAS SALE, dentro de las de su encabezado: las dos se
+        // suman, y aquí se ve la del enlace
         headerName: 'Cuándo se ve', field: 'desde',
         cellStyle: { textAlign: 'center' },
         cellRenderer: (params: any) => this.celdaFechas(params),
@@ -1825,6 +2109,8 @@ export class EditEncabezadoComponent implements OnInit {
     ref.componentInstance.enlace = enlace;
     ref.componentInstance.padreId = padreId;
     ref.componentInstance.padreTexto = padreTexto;
+    // EN CUÁL NACE: el que se está editando
+    ref.componentInstance.encabezadoId = this.encabezadoId;
 
     ref.result.then((data: any) => this.pintar(data), () => { /* se cerró sin guardar */ });
   }
@@ -1881,6 +2167,8 @@ export class EditEncabezadoComponent implements OnInit {
     const ref = this.modal.open(PapeleraEncabezadoComponent,
                                 { size: 'lg', backdrop: 'static', centered: true });
     ref.componentInstance.puedeVaciar = this.puedeVaciar;
+    // La papelera del que se está editando: cada encabezado tiene la suya
+    ref.componentInstance.encabezadoId = this.encabezadoId;
     ref.result.then((hubo: boolean) => { if (hubo) { this.cargar(); } }, () => { /* cerrada */ });
   }
 }

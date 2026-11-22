@@ -46,6 +46,12 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
   @Input() padreId: number | null = null;
   /** El texto de ese padre, para decirlo en el título. */
   @Input() padreTexto = '';
+  /**
+   * En qué encabezado nace. Sólo cuenta al crear uno principal: si cuelga
+   * de otro enlace, manda el encabezado del padre, y al modificar no se
+   * mira —un enlace nace en uno y se queda en él—.
+   */
+  @Input() encabezadoId: number | null = null;
 
   public form!: FormGroup;
   public guardando = false;
@@ -98,8 +104,7 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
       // Sólo tiene sentido en los principales; en un hijo el campo ni se pinta
       // y va en false, que es lo que la base guardaría de todas formas
       destacado: [this.enlace?.destacado === true],
-      // ENTRE QUÉ FECHAS SALE. El menú es uno solo para todos los
-      // encabezados, así que lo que se programa es cada enlace: «Regalos»
+      // ENTRE QUÉ FECHAS SALE, dentro de las de su encabezado: «Regalos»
       // del 1 de diciembre al 6 de enero, y se apaga solo
       desde: [this.enlace?.desde ?? ''],
       hasta: [this.enlace?.hasta ?? ''],
@@ -125,11 +130,11 @@ export class SaveEnlaceEncabezadoComponent implements OnInit {
 
     try {
       const res: any = await firstValueFrom(
-        this.esNuevo ? this._encabezadoService.addEnlace(payload)
+        this.esNuevo ? this._encabezadoService.addEnlace(payload, this.encabezadoId)
                      : this._encabezadoService.editEnlace(this.enlace!.id, payload));
 
       this._toastr.success(res?.message ?? 'Enlace guardado', 'Listo');
-      // Se devuelve el encabezado entero: la pantalla lo pinta tal cual
+      // Se devuelve el menú del encabezado: la pantalla lo pinta tal cual
       this.activeModal.close(res?.data ?? true);
 
     } catch (e: any) {

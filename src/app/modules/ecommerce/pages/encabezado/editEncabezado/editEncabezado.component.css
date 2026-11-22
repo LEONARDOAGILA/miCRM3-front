@@ -167,12 +167,23 @@
 
 /* La pinta de un botón va DEBAJO de lo que dice y sangrada, para que se lea
    como algo suyo y no como una fila más de la lista */
+/* La pinta de un botón: LA MISMA CINTA del mando, para que al abrirla no
+   parezca otra pantalla. Sangrada bajo el número del botón, que es de
+   quien es. */
 .enc-boton__pinta {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: .75rem;
-  margin: -.5rem 0 .75rem 1.9rem;
+  align-items: flex-start;
+  gap: .7rem .9rem;
+  margin: -.25rem 0 .9rem 1.9rem;
+}
+
+@media (max-width: 767.98px) {
+  .enc-boton__pinta {
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0;
+  }
 }
 
 .enc-boton > .btn { margin-top: 1rem; }
@@ -972,10 +983,13 @@
   gap: .5rem;
 }
 
+/* Ya sólo lleva el nombre y sus chapas: las fechas se fueron a la fila de
+   las pestañas */
 .enc-centro__quien {
   display: flex;
   flex-direction: column;
   gap: .15rem;
+  min-width: 0;
 }
 
 .enc-centro__nombre {
@@ -988,10 +1002,34 @@
 }
 
 /* El nombre se escribe donde se lee: un campo sin caja, que sólo se dibuja
-   al pasar por encima. Es un título, no un formulario. */
+   al pasar por encima. Es un título, no un formulario.
+
+   Y LLEVA UN LÁPIZ, que asoma con el ratón encima: un título que además es
+   un campo no se distingue de uno que no lo es, y nadie prueba a pulsarlo. */
+.enc-centro__editable {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.enc-centro__lapiz {
+  position: absolute;
+  right: .45rem;
+  font-size: .7rem;
+  opacity: 0;
+  pointer-events: none;
+  color: var(--bs-secondary-color, #6c757d);
+  transition: opacity .12s ease;
+}
+
+.enc-centro__editable:hover .enc-centro__lapiz,
+.enc-centro__editable:focus-within .enc-centro__lapiz {
+  opacity: .8;
+}
+
 .enc-centro__campo {
   min-width: 12rem;
-  padding: .1rem .35rem;
+  padding: .1rem 1.5rem .1rem .35rem;
   border: 1px solid transparent;
   border-radius: .25rem;
   font-size: .95rem;
@@ -1014,12 +1052,18 @@
   color: var(--bs-secondary-color, #6c757d);
 }
 
-/* Las fechas, en la misma línea y estrechas: son dos datos, no una sección */
+/* Las fechas viven al final de la fila de las pestañas (20/11/2026): son dos
+   datos, no una sección, y arriba se llevaban una fila entera.
+
+   `margin-left: auto` las manda al borde derecho; el `padding-bottom` las
+   levanta un pelo para que no se claven en la línea de las pestañas. */
 .enc-centro__fechas {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: .35rem;
+  margin-left: auto;
+  padding-bottom: .25rem;
 }
 
 .enc-centro__fechas label {
@@ -1032,13 +1076,16 @@
 
 .enc-centro__fechas input {
   width: auto;
-  min-width: 11rem;
+  min-width: 10.5rem;
+  font-size: .72rem;
 }
 
+/* La explicación cabe en el icono: la frase entera partía la fila en dos */
 .enc-centro__pista {
-  flex: 1 1 14rem;
-  font-size: .68rem;
+  flex: 0 0 auto;
+  font-size: .72rem;
   color: var(--bs-secondary-color, #6c757d);
+  cursor: help;
 }
 
 .enc-centro__botones {
@@ -1048,8 +1095,20 @@
 
 .enc-centro__pestanas {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: .25rem;
   border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+/* En pantalla estrecha las fechas bajan solas y se pegan a la izquierda:
+   apiladas a la derecha quedarían colgando de la nada */
+@media (max-width: 991.98px) {
+  .enc-centro__fechas {
+    margin-left: 0;
+    width: 100%;
+    padding-top: .35rem;
+  }
 }
 
 .enc-centro__pestana {
@@ -1327,7 +1386,12 @@
   padding: .6rem .75rem .75rem;
   border: 1px solid var(--bs-primary, #348fe2);
   border-radius: .375rem;
-  background-color: var(--bs-body-bg, #fff);
+  /* BLANCO Y NO EL DEL CUERPO: en este tema el cuerpo es un gris azulado, y
+     encima de él las tarjetas de los mensajes no se despegaban —habría que
+     pintarlas aún más oscuras, que es donde empiezan a verse sucias—. El
+     blanco es el que usa el CRM para las superficies, y deja que lo gris de
+     dentro se lea como lo que está encima. */
+  background-color: var(--bs-component-bg, #fff);
 }
 
 .mando__cabecera {
@@ -1350,33 +1414,136 @@
   color: var(--bs-body-color, #212529);
 }
 
+/* ===== EL ESTÁNDAR DE UN MANDO: UNA CINTA, COMO LA DE WORD =====
+
+   LOS CAMPOS VAN EN HORIZONTAL, uno al lado del otro, y lo que sobra se
+   queda a la derecha. Como la barra de Word: el tipo de letra, el tamaño y
+   el color seguidos en una línea.
+
+   ANTES ERAN DOS COLUMNAS de la mitad del ancho cada una, y de ahí venía
+   el desperdicio: un mando con un color y dos campos dejaba media cinta
+   vacía —una caja de nueve letras para escribir «12»— y medía el doble de
+   alto de lo que tenía que medir. (Y antes de las columnas era un flex de
+   campos sueltos, que es otra cosa: allí cada campo medía lo que midiera
+   su contenido y el mismo mando se repartía distinto según qué tuviera
+   dentro. La cinta no vuelve a eso: aquí los campos van medidos.)
+
+   UN GRUPO ES UN `.mando__col` —se sigue llamando así de cuando eran
+   columnas— y se separa del siguiente con una raya fina, igual que Word
+   separa «Fuente» de «Párrafo». LOS GRUPOS SE LLENAN EN ORDEN y el color
+   va siempre el primero: es lo que hace que dos mandos distintos se
+   reconozcan como el mismo sitio.
+
+   LO QUE NO ES UN CAMPO —la palanca, las listas, los avisos, las notas—
+   se lleva la línea entera: partido por la mitad no se lee. */
 .mando__cuerpo {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: .75rem;
+  align-items: flex-start;
+  gap: .7rem .9rem;
 }
 
-/* Lo que no es un campo suelto —la palanca, la lista de botones, un aviso—
-   se lleva la fila entera: partido en dos columnas no se lee */
-.mando__ancho {
-  flex: 1 1 100%;
+/* Un grupo de campos, uno al lado del otro */
+.mando__col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: .6rem .9rem;
+  min-width: 0;
 }
 
-.mando__nota {
-  flex: 1 1 100%;
+/* La raya de la cinta, SÓLO ENTRE DOS GRUPOS y no a la derecha de todos:
+   el último dejaría una raya suelta en medio del mando, sin nada detrás */
+.mando__col + .mando__col {
+  padding-left: .9rem;
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+/* El nombre del color, un poco más estrecho que en las tarjetas de los
+   mensajes: aquí los más largos son «Su fondo» y «Su letra», y cada rem
+   de más es un rem que se le quita al campo de al lado */
+.mando__col > app-campoColor {
+  --ae-rotulo-ancho: 4.25rem;
+}
+
+/* Un campo que no es de color: su rótulo encima y su pista debajo */
+.mando__campo {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 0;
+}
+
+/* CADA CAJA DEL ANCHO DE LO QUE LLEVA DENTRO, que es lo que hace que la
+   cinta se lea: un tamaño son dos cifras y un tipo de letra es una frase */
+.mando__campo input[type="number"] {
+  width: 5.5rem;
+}
+
+.mando__campo > label {
+  margin: 0;
   font-size: .7rem;
   color: var(--bs-secondary-color, #6c757d);
 }
 
+.mando__campo .form-control,
+.mando__campo .form-select {
+  width: 14rem;
+  max-width: 100%;
+}
+
+.mando__pista {
+  /* Del ancho de su campo: suelta, una frase de dos líneas estira el grupo
+     y empuja la raya del de al lado */
+  max-width: 14rem;
+  font-size: .66rem;
+  line-height: 1.3;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Lo que no es un campo —la palanca, la lista de botones, un aviso, una
+   nota— se lleva la línea entera: partido por la mitad no se lee */
+.mando__ancho {
+  flex: 0 0 100%;
+}
+
+.mando__nota {
+  flex: 0 0 100%;
+  margin: 0;
+  font-size: .7rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* NO SE LLEVA LA LÍNEA aunque esté solo en ella: con un `flex: 0 0 100%`
+   el botón se estiraría de lado a lado y se podría pulsar a un palmo de
+   su texto. Baja solo porque la nota que lleva encima sí se la lleva, y
+   el `margin-right` lo deja a la izquierda si alguna vez no la lleva. */
 .mando__ir {
-  align-self: flex-start;
+  flex: 0 0 auto;
+  margin-right: auto;
   padding: 0;
   border: 0;
   font-size: .7rem;
   font-weight: 600;
   color: var(--bs-primary, #348fe2);
   background: none;
+}
+
+/* En una columna por debajo de la tableta: tres campos en 360 px no son
+   una cinta, son tres campos recortados. La raya de los grupos pasa a ir
+   encima, que es donde separa cuando lo de al lado está debajo. */
+@media (max-width: 767.98px) {
+  .mando__cuerpo,
+  .mando__col {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mando__col + .mando__col {
+    padding: .7rem 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+  }
 }
 
 .mando__ir:hover {
@@ -1388,4 +1555,318 @@
   display: flex;
   flex-direction: column;
   gap: .25rem;
+}
+
+/* ===== LOS EFECTOS DE LA FRANJA, EN EL BOCETO ===== */
+/* Los mismos tres que la tienda, con los mismos tiempos: el boceto es el
+   editor, y si aquí se vieran distintos habría que ir a mirar la tienda
+   para elegir. Los nombres de las clases también son los mismos —es-luz,
+   es-destello, es-latido—, que es lo que hace evidente que son lo mismo.
+
+   LO QUE NO SE COPIA son los píxeles: el boceto está a escala (la franja
+   mide .68rem contra los 14px de la tienda), así que el latido crece lo
+   mismo en proporción y la luz tarda lo mismo en cruzar. */
+
+.enc-previa__franja.es-luz {
+  position: relative;
+  overflow: hidden;
+}
+
+.enc-previa__franja.es-luz::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(100deg,
+    transparent 28%,
+    rgba(255, 255, 255, .16) 44%,
+    rgba(0, 0, 0, .07) 58%,
+    transparent 74%);
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  animation: pv-franja-luz 7s linear infinite;
+  pointer-events: none;
+}
+
+/* Lo de dentro, por encima del resplandor */
+.enc-previa__franja.es-luz > * {
+  position: relative;
+}
+
+/* EL COLOR ABAJO Y LA LUZ ENCIMA, dos capas recortadas a la letra. El color
+   llega en --pv-destacado porque un `color` puesto a mano le ganaría al
+   degradado (ver estiloDestacadoPrevia). */
+.enc-previa__pieza--fuerte.es-destello {
+  background-image:
+    linear-gradient(100deg, transparent 44%, rgba(255, 255, 255, .92) 50%, transparent 56%),
+    linear-gradient(var(--pv-destacado, #dc3545), var(--pv-destacado, #dc3545));
+  background-size: 220% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: pv-franja-destello-texto 4.2s ease-in-out infinite;
+}
+
+.enc-previa__boton.es-destello {
+  position: relative;
+  overflow: hidden;
+}
+
+.enc-previa__boton.es-destello::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, .5) 50%, transparent 60%);
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+  animation: pv-franja-destello-pildora 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.enc-previa__boton.es-latido {
+  animation: pv-franja-latido 2.8s ease-in-out infinite;
+}
+
+/* Los dos a la vez: el latido en el botón y el destello en su capa */
+.enc-previa__boton.es-latido.es-destello {
+  animation: pv-franja-latido 2.8s ease-in-out infinite;
+}
+
+@keyframes pv-franja-luz {
+  from { background-position: -80% 0; }
+  to   { background-position: 180% 0; }
+}
+
+@keyframes pv-franja-destello-texto {
+  0%,  18%  { background-position: -70% 0, 0 0; }
+  62%, 100% { background-position: 170% 0, 0 0; }
+}
+
+@keyframes pv-franja-destello-pildora {
+  0%,  18%  { background-position: -80% 0; }
+  62%, 100% { background-position: 180% 0; }
+}
+
+@keyframes pv-franja-latido {
+  0%, 58%, 100% { transform: scale(1); }
+  66%           { transform: scale(1.08); }
+  74%           { transform: scale(1); }
+  82%           { transform: scale(1.05); }
+  90%           { transform: scale(1); }
+}
+
+/* El aviso de que hay más mensajes y se turnan. Es un botón: lleva a su
+   lista, que está en el mando del texto */
+.enc-previa__turnos {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .05rem .45rem;
+  border: 1px dashed currentColor !important;
+  border-radius: 999px;
+  font-size: .58rem;
+  opacity: .6;
+}
+
+.enc-previa__turnos:hover {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enc-previa__franja.es-luz::before,
+  .enc-previa__boton.es-destello::after {
+    display: none;
+  }
+
+  .enc-previa__pieza--fuerte.es-destello,
+  .enc-previa__boton.es-latido {
+    animation: none;
+  }
+
+  .enc-previa__pieza--fuerte.es-destello {
+    background-image: none;
+    color: var(--pv-destacado, #dc3545);
+  }
+}
+
+/* ===== LAS PALANCAS DE LOS EFECTOS, EN EL MANDO ===== */
+.enc-efectos {
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+  padding: .6rem .7rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: .5rem;
+}
+
+/* La palanca a la izquierda y lo que hace a la derecha, en una línea: son
+   tres seguidas y con la explicación debajo ocuparían media pantalla */
+.enc-efecto {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .2rem .6rem;
+}
+
+.enc-efecto app-checkbox {
+  flex: 0 0 auto;
+  min-width: 8.5rem;
+}
+
+.enc-efecto__pista {
+  flex: 1 1 11rem;
+  font-size: .72rem;
+  opacity: .75;
+}
+
+/* ===== LOS MENSAJES DE LA FRANJA ===== */
+/* Una lista, y cada fila son LAS DOS MITADES del mensaje una al lado de la
+   otra: la frase y lo resaltado. Juntas y no una debajo de otra porque en la
+   tienda se leen seguidas en la misma línea, y lo que se está cuadrando es
+   cómo quedan JUNTAS: una grande al lado de una pequeña.
+
+   El número a la izquierda y la papelera a la derecha, como en los botones;
+   el primero no lleva papelera y ese hueco se queda vacío, que es lo que
+   dice sin palabras que ése no se borra. */
+.enc-mensajes {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+/* Cada mensaje en su caja: con cinco seguidos y seis campos cada uno, una
+   raya de separación no basta para ver dónde empieza y dónde acaba uno.
+
+   LA TARJETA ES EL TONO GRIS Y EL MANDO EL BLANCO, no al revés. En este tema
+   el cuerpo (`--bs-body-bg`) es un gris azulado y la tarjeta encima tendría
+   que ser aún más oscura para despegarse, que es donde empieza a verse sucia.
+   Dándole el blanco al mando —`--bs-component-bg`, el que usa el CRM para las
+   superficies— y el gris a la tarjeta, se separan y además los campos blancos
+   de dentro resaltan sobre ella.
+
+   Las dos son variables del tema, no colores escritos a mano: con un gris
+   fijo, en el tema oscuro la tarjeta sería una mancha clara. */
+.enc-mensaje {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  padding: .75rem .8rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .4rem;
+  background-color: var(--bs-secondary-bg, #e9ecef);
+}
+
+.enc-mensaje__partes {
+  /* El ancho del nombre del color. Era de 5.5rem y lo compartían los tres
+     renglones de una mitad, que iban uno debajo de otro; desde que van en
+     cinta lo lee sólo el campo de color (campoColor.component.css), y ahí
+     el nombre más largo es «TEXTO». */
+  --ae-rotulo-ancho: 4.25rem;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: .75rem 1.25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Una raya entre las dos mitades: sin ella, con seis campos seguidos no se
+   ve de un vistazo dónde acaba el texto y dónde empieza el destacado */
+.enc-mensaje__partes > .enc-parte + .enc-parte {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+/* Una mitad: LA MISMA CINTA DEL MANDO. Su frase arriba, a todo lo ancho,
+   y debajo cómo se ve: el color y el tamaño en un renglón y el tipo de
+   letra en el siguiente.
+
+   ANTES IBAN LOS TRES UNO DEBAJO DE OTRO, cada uno con el nombre a la
+   izquierda y el control a la derecha en una columna compartida: se leía
+   bien, pero con cinco mensajes y dos mitades cada uno eran treinta
+   renglones de medio campo y la pantalla no se acababa nunca. */
+.enc-parte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: .45rem .9rem;
+  min-width: 0;
+}
+
+/* La frase, la línea entera: es lo que de verdad se lee en la tienda, y
+   partida por la mitad no se ve lo que va a decir la franja */
+.enc-parte > app-campoTexto {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+/* Y EL COLOR TAMBIÉN LA LÍNEA ENTERA. Suelto, en la mitad izquierda cabía el
+   tamaño a su lado y en la derecha no —es un poco más estrecha—, así que la
+   misma tarjeta se repartía de dos formas distintas. Con la línea entera las
+   dos mitades se leen igual: la frase, el color, y el tamaño con el tipo de
+   letra. */
+.enc-parte > app-campoColor {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+/* EL NOMBRE A LA IZQUIERDA Y EL CONTROL A LA DERECHA, pero en línea: en una
+   cinta, un nombre encima de cada caja son dos renglones por campo */
+.enc-parte__fila {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-width: 0;
+}
+
+.enc-parte__fila > label {
+  margin: 0;
+  font-size: .7rem;
+  white-space: nowrap;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* El tamaño es un número de dos cifras: con el ancho de la fila quedaba una
+   caja enorme para «16» */
+.enc-parte__px {
+  width: 5.5rem;
+  max-width: 5.5rem;
+}
+
+/* Y el tipo de letra, lo justo para leer «Con serifa — clásica…» */
+.enc-parte__fila > select {
+  width: 11rem;
+}
+
+@media (max-width: 575.98px) {
+  /* El nombre encima: en 360 px, al lado del nombre no queda caja */
+  .enc-parte__fila {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .15rem;
+  }
+
+  .enc-parte__fila > select { width: auto; }
+}
+
+/* En pantalla estrecha, una mitad debajo de la otra */
+@media (max-width: 991.98px) {
+  .enc-mensaje__partes {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* «Categorías» o «Marcas» apagados: se siguen dibujando para poder volver
+   a encenderlos, pero tachados y a media tinta, que es lo que dice que no
+   están en la tienda */
+.enc-previa__item.is-apagado {
+  opacity: .45;
+  text-decoration: line-through;
 }

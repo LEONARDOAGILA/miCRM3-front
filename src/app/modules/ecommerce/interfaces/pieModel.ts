@@ -40,7 +40,8 @@ export interface EstiloTituloRedes {
   fuente?: FuenteTienda | null;
 }
 
-export type FuenteTienda = 'titulos' | 'texto' | 'deportiva';
+export type FuenteTienda = 'titulos' | 'texto' | 'deportiva'
+                         | 'impacto' | 'manuscrita' | 'elegante' | 'gruesa';
 
 /**
  * En qué franja del pie sale una columna.
@@ -79,9 +80,10 @@ export interface ConfigPie {
 /**
  * Las letras entre las que se puede elegir.
  *
- * SON LAS TRES QUE LA TIENDA CARGA (ver su index.html) y no una lista de
+ * SON LAS QUE LA TIENDA CARGA (ver su index.html) y no una lista de
  * nombres: poner aquí «Georgia» sería pedirle al navegador del cliente una
- * letra que nadie le ha mandado, y saldría la que tuviera a mano.
+ * letra que nadie le ha mandado, y saldría la que tuviera a mano. Por eso
+ * el pie no tiene «Con serifa» y el encabezado sí: aquélla es Georgia.
  *
  * El CRM no las trae de serie; las pide al abrir la pestaña para que la
  * muestra enseñe la letra de verdad (ver cargarLetrasDeLaTienda).
@@ -90,13 +92,14 @@ export const FUENTES_TIENDA: { id: FuenteTienda; nombre: string; css: string }[]
   { id: 'titulos',   nombre: 'Títulos',   css: "'Poppins', sans-serif" },
   { id: 'texto',     nombre: 'Texto',     css: "'Inter', sans-serif" },
   { id: 'deportiva', nombre: 'Deportiva', css: "'Barlow Condensed', sans-serif" },
+  { id: 'impacto',    nombre: 'De impacto',      css: "'Bebas Neue', sans-serif" },
+  { id: 'manuscrita', nombre: 'Manuscrita',      css: "'Pacifico', cursive" },
+  { id: 'elegante',   nombre: 'Serifa elegante', css: "'Playfair Display', Georgia, serif" },
+  { id: 'gruesa',     nombre: 'Gruesa',          css: "'Montserrat', sans-serif" },
 ];
 
-/** De dónde las pide el CRM. La misma línea que tiene la tienda en su index.html. */
-export const URL_LETRAS_TIENDA =
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700'
-  + '&family=Poppins:wght@500;600;700;800'
-  + '&family=Barlow+Condensed:ital,wght@1,600;1,700&display=swap';
+// DE DÓNDE SE PIDEN: en `letrasTienda.ts`, que lo comparten las tres
+// pantallas que enseñan muestras (encabezado, portada y pie).
 
 export interface EnlacePieModel {
   id: number;

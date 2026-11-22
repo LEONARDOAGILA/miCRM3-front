@@ -8,7 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { CuerpoService } from '../../../services/cuerpo.service';
 import { CategoriaWebService } from '../../../services/categoriaWeb.service';
 import { MarcaWebService } from '../../../services/marcaWeb.service';
-import { ProductoSeccionService } from '../../../services/productoSeccion.service';
+import { GrupoProductosService } from '../../../services/grupoProductos.service';
 import { CuerpoModel, DESTINOS, DestinoCuerpo } from '../../../interfaces/cuerpoModel';
 import { contrasteEntre } from '../../../interfaces/inicioModel';
 
@@ -114,7 +114,7 @@ export class SaveCuerpoComponent implements OnInit {
   private _cuerpoService = inject(CuerpoService);
   private _categoriaService = inject(CategoriaWebService);
   private _marcaService = inject(MarcaWebService);
-  private _seccionService = inject(ProductoSeccionService);
+  private _grupoService = inject(GrupoProductosService);
   private _toastr = inject(ToastrService);
   public activeModal = inject(NgbActiveModal);
 
@@ -285,7 +285,7 @@ export class SaveCuerpoComponent implements OnInit {
       const [cats, marcas, escaparates]: any[] = await Promise.all([
         firstValueFrom(this._categoriaService.allCategoriasWeb()),
         firstValueFrom(this._marcaService.allMarcasWeb()),
-        this.esNuevo ? firstValueFrom(this._seccionService.allSecciones()) : Promise.resolve(null),
+        this.esNuevo ? firstValueFrom(this._grupoService.allGrupos()) : Promise.resolve(null),
       ]);
 
       // El árbol llega plano y en su orden: la sangría de `nivel` es lo que

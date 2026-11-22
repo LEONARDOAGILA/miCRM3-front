@@ -14,8 +14,9 @@
      elegía a ciegas y se comprobaba después; con la previa en medio se ve
      al escribirlo, y la lista de al lado dice cuál se está tocando.
 
-     El MENÚ es uno solo y vale para todos los encabezados: no cuelga de
-     ninguno, y lo que se programa ahí es cada enlace con sus fechas.
+     CADA ENCABEZADO LLEVA SU MENÚ: el de la derecha es el del que esté
+     elegido a la izquierda, y cambiar de encabezado cambia también la
+     rejilla. Uno nuevo nace con una copia del menú del que se copió.
      ============================================================ -->
 
 <ol class="breadcrumb lista-breadcrumb">
@@ -183,9 +184,16 @@
         <div class="enc-centro__cabecera">
           <div class="enc-centro__quien" [formGroup]="datosForm">
             <div class="enc-centro__nombre">
-              <input class="enc-centro__campo" formControlName="nombre" maxlength="60"
-                     placeholder="Ej.: Navidad" title="Cómo se llama aquí dentro"
-                     [attr.aria-label]="'Cómo se llama aquí dentro'">
+              <!-- EL NOMBRE SE ESCRIBE DONDE SE LEE. Es un campo sin caja —un
+                   título, no un formulario—, y por eso lleva el lápiz: sin él
+                   nadie prueba a pulsarlo. El lápiz sólo asoma al pasar por
+                   encima, para que en reposo siga leyéndose como un título. -->
+              <span class="enc-centro__editable">
+                <input class="enc-centro__campo" formControlName="nombre" maxlength="60"
+                       placeholder="Ej.: Navidad" title="Pulsa para cambiarle el nombre"
+                       [attr.aria-label]="'Cómo se llama aquí dentro'">
+                <i class="fa-solid fa-pen enc-centro__lapiz" aria-hidden="true"></i>
+              </span>
               @if (modelo?.principal) {
                 <span class="enc-chip enc-chip--abre"><i class="fa-solid fa-star"></i> Predeterminado</span>
               }
@@ -194,20 +202,6 @@
               } @else {
                 <span class="enc-chip enc-chip--no">{{ cuandoSeVe($any(modelo)) }}</span>
               }
-            </div>
-
-            <div class="enc-centro__fechas">
-              <label for="enc-desde">DESDE</label>
-              <input id="enc-desde" type="datetime-local" class="form-control form-control-sm"
-                     formControlName="desde">
-              <label for="enc-hasta">HASTA</label>
-              <input id="enc-hasta" type="datetime-local" class="form-control form-control-sm"
-                     formControlName="hasta">
-              <span class="enc-centro__pista">
-                <i class="fa-solid fa-circle-info"></i>
-                Vacías se ve siempre; con fechas se enciende y se apaga solo. El encendido y
-                la estrella se cambian en la lista de la izquierda.
-              </span>
             </div>
           </div>
 
@@ -227,6 +221,11 @@
           </div>
         </div>
 
+        <!-- LAS FECHAS VAN AQUÍ, al final de la fila de las pestañas, y no
+             arriba con el nombre: no son parte de la identidad del
+             encabezado sino de CUÁNDO manda, y arriba se comían una fila
+             entera en una caja que no se alineaba con nada. Aquí ocupan un
+             hueco que ya estaba vacío. -->
         <div class="enc-centro__pestanas">
           <button type="button" class="enc-centro__pestana"
                   [class.is-activa]="vistaCentro === 'previa'"
@@ -239,6 +238,26 @@
             <i class="fa-solid fa-bars"></i> Menú
             <span class="enc-centro__cuenta">{{ enlaces.length }}</span>
           </button>
+
+          <div class="enc-centro__fechas" [formGroup]="datosForm">
+            <label for="enc-desde">Desde</label>
+            <input id="enc-desde" type="datetime-local" class="form-control form-control-sm"
+                   formControlName="desde">
+            <label for="enc-hasta">Hasta</label>
+            <input id="enc-hasta" type="datetime-local" class="form-control form-control-sm"
+                   formControlName="hasta">
+            <!-- LA EXPLICACIÓN, EN EL ICONO: la frase entera aquí partía la
+                 fila en dos. Sigue estando, en el título y para quien lea
+                 con un lector de pantalla. -->
+            <span class="enc-centro__pista" tabindex="0"
+                  title="Vacías, el encabezado se ve siempre. Con fechas se enciende y se apaga solo. El encendido y la estrella se cambian en la lista de la izquierda.">
+              <i class="fa-solid fa-circle-info"></i>
+              <span class="visually-hidden">
+                Vacías se ve siempre; con fechas se enciende y se apaga solo. El encendido y
+                la estrella se cambian en la lista de la izquierda.
+              </span>
+            </span>
+          </div>
         </div>
 
         @if (vistaCentro === 'previa') {
@@ -270,14 +289,11 @@
                      abra el mando del fondo. -->
                 <div class="enc-previa__franja" role="button" tabindex="0"
                      [class.is-tocada]="tocando('franja')"
+                     [class.es-luz]="efectoPuesto('luz')"
                      title="La franja: su fondo, su tamaño y su letra"
                      (click)="tocar('franja', 'La franja superior')"
                      (keydown.enter)="tocar('franja', 'La franja superior')"
-                     [style.background-color]="colorQueSeVeDe('franja_fondo')"
-                     [style.color]="colorQueSeVeDe('franja_texto')"
-                     [style.font-family]="fuenteDeLaFranja().css"
-                     [style.font-style]="fuenteDeLaFranja().cursiva ? 'italic' : 'normal'"
-                     [style.font-size.px]="tamanoDeLaFranja()">
+                     [style.background-color]="colorQueSeVeDe('franja_fondo')">
 
                   <!-- El texto se escribe AQUÍ MISMO, con su letra y su color:
                        lo que se escribe se ve ya como se va a leer -->
@@ -285,28 +301,44 @@
                     <input class="enc-previa__escribir" maxlength="80"
                            placeholder="Texto de la franja"
                            [formControl]="$any(barra.controls['texto'])"
+                           [ngStyle]="pintaDeParte(null, 'texto')"
                            (click)="$event.stopPropagation()"
                            (keydown.enter)="cerrarPieza()">
                   } @else {
                     <button type="button" class="enc-previa__pieza"
-                            title="El texto de la franja: pulsa para escribirlo y elegir su color"
+                            title="El texto de la franja: pulsa para escribirlo y elegir cómo se ve"
+                            [ngStyle]="pintaDeParte(null, 'texto')"
                             (click)="$event.stopPropagation(); tocar('franjaTexto', 'El texto de la franja')">
                       {{ barra.value.texto || 'Texto de la franja' }}
                     </button>
                   }
 
-                  @if (tocando('franjaDestacado')) {
+                  <!-- EL DESTACADO ABRE EL MISMO MANDO QUE EL TEXTO: son las dos
+                       mitades de un mensaje y se escriben y se pintan juntas, así
+                       que repartirlas en dos paneles obligaba a ir y volver para
+                       cuadrar una línea.
+
+                       CON DESTELLO EL COLOR NO VA EN `color`: lo pinta un degradado
+                       recortado a la letra, igual que en la tienda, y el color viaja
+                       en una variable. Un `color` puesto a mano le ganaría al
+                       degradado y no se vería pasar nada. -->
+                  @if (tocando('franjaTexto') && barra.value.destacado) {
+                    <!-- MIENTRAS SE ESCRIBE, COLOR PLANO (el `true`): la regla del
+                         degradado es del botón y no alcanza al campo, así que con
+                         el destello puesto se quedaba negro y parecía que elegir
+                         el color no hacía nada. -->
                     <input class="enc-previa__escribir enc-previa__escribir--fuerte" maxlength="60"
                            placeholder="Lo que va resaltado"
                            [formControl]="$any(barra.controls['destacado'])"
-                           [style.color]="colorQueSeVeDe('franja_destacado')"
+                           [ngStyle]="pintaDeParte(null, 'destacado', true)"
                            (click)="$event.stopPropagation()"
                            (keydown.enter)="cerrarPieza()">
                   } @else if (barra.value.destacado) {
                     <button type="button" class="enc-previa__pieza enc-previa__pieza--fuerte"
-                            title="El destacado: pulsa para escribirlo y elegir su color"
-                            [style.color]="colorQueSeVeDe('franja_destacado')"
-                            (click)="$event.stopPropagation(); tocar('franjaDestacado', 'El destacado')">
+                            [class.es-destello]="efectoPuesto('destello')"
+                            title="El destacado: pulsa para escribirlo y elegir cómo se ve"
+                            [ngStyle]="pintaDeParte(null, 'destacado')"
+                            (click)="$event.stopPropagation(); tocar('franjaTexto', 'El texto de la franja')">
                       {{ barra.value.destacado }}
                     </button>
                   } @else if (puedeEditar) {
@@ -314,7 +346,7 @@
                          forma de ponerlo: un hueco de puntos que sólo se ve aquí -->
                     <button type="button" class="enc-previa__hueco"
                             title="Poner un texto destacado"
-                            (click)="$event.stopPropagation(); tocar('franjaDestacado', 'El destacado')">
+                            (click)="$event.stopPropagation(); tocar('franjaTexto', 'El texto de la franja')">
                       + destacado
                     </button>
                   }
@@ -324,6 +356,8 @@
                   @for (boton of botonesDeLaPrevia(); track $index) {
                     <button type="button" class="enc-previa__boton"
                             [class.is-tocada]="tocando('franjaBotones')"
+                            [class.es-destello]="efectoPuesto('destello')"
+                            [class.es-latido]="efectoPuesto('latido')"
                             title="Los botones de la franja: su texto, su URL y su pinta"
                             [style.background-color]="boton.fondo"
                             [style.color]="boton.letra"
@@ -338,6 +372,18 @@
                             title="Añadir un botón"
                             (click)="$event.stopPropagation(); tocar('franjaBotones', 'Los botones de la franja')">
                       + botón
+                    </button>
+                  }
+
+                  <!-- EL BOCETO ENSEÑA SIEMPRE EL PRIMER MENSAJE. Con varios
+                       escritos habría que elegir cuál, y uno que fuera rotando
+                       solo no dejaría escribir: se avisa de que hay más y se
+                       va a su lista. -->
+                  @if (hayVariosMensajes) {
+                    <button type="button" class="enc-previa__turnos"
+                            title="Hay más mensajes y se turnan: pulsa para verlos"
+                            (click)="$event.stopPropagation(); tocar('franjaTexto', 'El texto de la franja')">
+                      <i class="fa-solid fa-rotate"></i> 1 de {{ mensajesConTexto + 1 }}
                     </button>
                   }
                 </div>
@@ -409,14 +455,32 @@
                    [style.font-size.px]="tamanoDelMenu()"
                    [style.font-family]="fuenteDelMenu().css"
                    [style.font-style]="fuenteDelMenu().cursiva ? 'italic' : 'normal'">
-                <!-- CATEGORÍAS Y MARCAS NO SON ENLACES DEL CRM: los pone la tienda y
-                     van siempre con la letra del menú, así que pulsarlos abre la de
-                     todos. (Marcas no se dibuja aquí: el boceto es más estrecho.) -->
+                <!-- CATEGORÍAS Y MARCAS NO SON ENLACES DEL CRM: los pone la tienda
+                     con el catálogo y van siempre con la letra del menú, así que
+                     pulsarlos abre la de todos, que es donde se encienden y se
+                     apagan.
+
+                     APAGADOS SE SIGUEN DIBUJANDO, en gris y tachados: si
+                     desaparecieran no habría dónde pulsar para volver a
+                     encenderlos. Es lo mismo que hace la franja. -->
                 <button type="button" class="enc-previa__item"
                         [class.is-tocada]="tocando('menu')"
-                        title="La letra de toda la barra"
+                        [class.is-apagado]="!muestraCategorias"
+                        [title]="muestraCategorias
+                           ? '«Categorías»: pulsa para su letra y para apagarlo'
+                           : '«Categorías» está apagado: pulsa para encenderlo'"
                         (click)="$event.stopPropagation(); tocar('menu', 'La letra del menú')">
                   <i class="fa-solid fa-bars"></i> CATEGORÍAS
+                </button>
+
+                <button type="button" class="enc-previa__item"
+                        [class.is-tocada]="tocando('menu')"
+                        [class.is-apagado]="!muestraMarcas"
+                        [title]="muestraMarcas
+                           ? '«Marcas»: pulsa para su letra y para apagarlo'
+                           : '«Marcas» está apagado: pulsa para encenderlo'"
+                        (click)="$event.stopPropagation(); tocar('menu', 'La letra del menú')">
+                  <i class="fa-solid fa-tag"></i> MARCAS
                 </button>
 
                 <!-- Y CADA ENLACE CON LO SUYO: el que no eligió nada sale con la
@@ -445,7 +509,11 @@
                       (click)="tocar('desplegable', 'Los desplegables del menú')"
                       [style.background-color]="colorQueSeVeDe('desplegable_fondo')"
                       [style.color]="colorQueSeVeDe('desplegable_texto')">
-                <span>Lo que se abre al pulsar «Categorías»</span>
+
+<i class="fa-solid fa-hand-point-right me-2"></i>
+<span>Configuración del menú</span>
+                      
+
               </button>
             </div>
 
@@ -481,9 +549,8 @@
                         </app-checkbox>
                       </div>
 
-                      <div class="rotulo-campo color-bloque">
-                        <label for="franja-fondo">Fondo</label>
-                        <app-campoColor idCampo="franja-fondo"
+                      <div class="mando__col">
+                        <app-campoColor rotulo="Fondo" idCampo="franja-fondo"
                                         [valor]="colorQueSeVeDe('franja_fondo')"
                                         [propio]="hayColorPropioDe('franja_fondo')"
                                         porDefecto="Blanco"
@@ -493,78 +560,130 @@
                                         (cambia)="ponerColorDe('franja_fondo', $event)" />
                       </div>
 
-                      <!-- EL TAMAÑO Y LA LETRA SON DE LA FRANJA ENTERA: es una sola
-                           línea de texto, y tres tipografías en una línea no es una
-                           opción, es un accidente. -->
-                      <div class="rotulo-campo">
-                        <label for="franja-tamano">Tamaño (px)</label>
-                        <input id="franja-tamano" type="number" class="form-control form-control-sm"
-                               min="8" max="48" step="1" placeholder="14"
-                               [formControl]="$any(form.controls['franja_tamano'])">
-                        <small class="seccion-pie">Entre 8 y 48 (toda la frase).</small>
+
+                      <!-- ---------- LO QUE SE MUEVE ----------
+                           Tres palancas y no un desplegable de «elige un efecto»:
+                           tocan tres sitios distintos de la franja —el destacado,
+                           las píldoras y el fondo— y se pueden sumar. -->
+                      <div class="enc-efectos mando__ancho">
+                        <span class="seccion-rotulo mb-0">EFECTOS</span>
+
+                        <div class="enc-efecto">
+                          <app-checkbox class="palanca"
+                            [control]="ctrlEfecto('destello')"
+                            label="Destello"
+                            [id]="'ck-ef-destello'">
+                          </app-checkbox>
+                          <span class="enc-efecto__pista">Una luz cruza el destacado y los botones.</span>
+                        </div>
+
+                        <div class="enc-efecto">
+                          <app-checkbox class="palanca"
+                            [control]="ctrlEfecto('latido')"
+                            label="Latido"
+                            [id]="'ck-ef-latido'">
+                          </app-checkbox>
+                          <span class="enc-efecto__pista">Los botones crecen y vuelven, muy poco, en bucle.</span>
+                        </div>
+
+                        <div class="enc-efecto">
+                          <app-checkbox class="palanca"
+                            [control]="ctrlEfecto('luz')"
+                            label="Luz de fondo"
+                            [id]="'ck-ef-luz'">
+                          </app-checkbox>
+                          <span class="enc-efecto__pista">Un resplandor recorre el fondo de la franja.</span>
+                        </div>
+
+                        <p class="campo-hint mb-0">
+                          <i class="fa-solid fa-circle-info"></i>
+                          Se pueden poner los tres a la vez, y el boceto de arriba los
+                          enseña igual que la tienda. A quien tenga puesto en su equipo
+                          «reducir el movimiento» se le ven quietos: es decoración, y el
+                          aviso se lee igual.
+                        </p>
                       </div>
 
-                      <div class="rotulo-campo rotulo-campo--ancho">
-                        <label for="franja-fuente">Tipo de letra</label>
-                        <select id="franja-fuente" class="form-select form-select-sm"
-                                [formControl]="$any(form.controls['franja_fuente'])">
-                          @for (f of fuentesFranja; track f.valor) {
-                            <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
-                          }
-                        </select>
-                      </div>
-
-                      @if (ilegible('franja_fondo', 'franja_texto')) {
+                      <!-- Se mira contra el texto del PRIMER mensaje, que es el que
+                           pinta el boceto; los demás llevan su propio color y se ven
+                           al pulsarlos. -->
+                      @if (ilegibleElTexto()) {
                         <p class="color-tienda__aviso mando__ancho">
                           <i class="fa-solid fa-triangle-exclamation"></i>
-                          Esa letra encima de ese fondo se lee a
-                          {{ contrasteTextoDe('franja_fondo', 'franja_texto') }}:1, por
-                          debajo del 4,5:1 que hace falta. El aviso es lo primero
-                          que se ve al entrar. Se guarda igual, pero mira el boceto antes.
+                          El texto del primer mensaje encima de ese fondo se lee a
+                          {{ contrasteDelTexto() }}:1, por debajo del 4,5:1 que hace
+                          falta. El aviso es lo primero que se ve al entrar. Se guarda
+                          igual, pero mira el boceto antes.
                         </p>
                       }
+
+                      <!-- EL TAMAÑO Y LA LETRA YA NO ESTÁN AQUÍ: son de cada
+                           mensaje. Lo que le va bien a «ENVÍO GRATIS» no le va
+                           bien a una línea de condiciones, y desde que se turnan
+                           un número para los dos deja a uno partido en dos líneas
+                           o al otro ilegible. -->
+                      <p class="mando__nota">
+                        El <b>color</b>, el <b>tamaño</b> y el <b>tipo de letra</b> de lo que
+                        se lee son de cada mensaje, y dentro de cada mensaje, de cada mitad:
+                        se eligen pulsando el texto, aquí arriba en el boceto.
+                      </p>
+                      <button type="button" class="mando__ir"
+                              (click)="tocar('franjaTexto', 'El texto de la franja')">
+                        Ir al texto y su letra
+                        <i class="fa-solid fa-arrow-right"></i>
+                      </button>
                     }
 
                     <!-- ---------- El texto de la franja ---------- -->
                     @case ('franjaTexto') {
-                      <div class="rotulo-campo color-bloque">
-                        <label for="franja-texto-color">Color del texto</label>
-                        <app-campoColor idCampo="franja-texto-color"
-                                        [valor]="colorQueSeVeDe('franja_texto')"
-                                        [propio]="hayColorPropioDe('franja_texto')"
-                                        porDefecto="La de siempre"
-                                        etiqueta="Color del texto"
-                                        [paleta]="paletaLetraEncabezado"
-                                        [deshabilitado]="!puedeEditar"
-                                        (cambia)="ponerColorDe('franja_texto', $event)" />
+                      <!-- ===== LOS MENSAJES DE LA FRANJA =====
+
+                           UNA SOLA LISTA, numerada desde el 1. El primero vive
+                           suelto en `barra_superior` y los demás en un array —por eso
+                           el primero no se puede borrar: siempre hay uno—, pero eso
+                           es cosa del dato: aquí se leen y se tocan igual.
+
+                           CADA MENSAJE SON DOS MITADES que se leen seguidas, la frase
+                           y lo resaltado, y CADA UNA LLEVA LO SUYO: color, tamaño y
+                           tipo de letra. Es justo lo que las distingue, y hasta el
+                           21/11/2026 no se podía decir: el color era de la franja
+                           entera y el tamaño y la letra, del mensaje entero. -->
+                      <div class="enc-mensajes mando__ancho">
+                        <div class="enc-botones__cabecera">
+                          <span class="seccion-rotulo mb-0">
+                            MENSAJES <span>{{ mensajes.length + 1 }} de 5</span>
+                          </span>
+                          @if (puedeAnadirMensaje) {
+                            <button type="button" class="btn btn-xs btn-outline-theme"
+                                    (click)="anadirMensaje()">
+                              <i class="fa fa-plus"></i> Añadir
+                            </button>
+                          }
+                        </div>
+
+                        <!-- EL TEXTO VA DENTRO DE UN <span>: `campo-hint` es un flex,
+                             así que un <b> suelto se vuelve una COLUMNA del aviso y la
+                             frase sale partida en tres trozos a distintas alturas. -->
+                        <p class="campo-hint mb-0">
+                          <i class="fa-solid fa-circle-info"></i>
+                          <span>
+                            Con uno solo la franja se queda quieta. Escribe más y
+                            <b>se turnan</b>: cada uno sale unos segundos y da paso al
+                            siguiente. El primero es el que dibuja el boceto de arriba.
+                          </span>
+                        </p>
+
+                        <!-- El primero: el mismo molde que los demás, sin papelera -->
+                        <ng-container *ngTemplateOutlet="mensaje; context: { $implicit: null }"></ng-container>
+
+                        <!-- Y los que se turnan con él. Se sigue el GRUPO, no la
+                             posición: con track $index, al quitar uno los campos
+                             enseñan los del vecino. -->
+                        @for (fila of mensajes.controls; track fila; let i = $index) {
+                          <ng-container *ngTemplateOutlet="mensaje; context: { $implicit: i }"></ng-container>
+                        }
                       </div>
-                      <p class="mando__nota mb-0">
-                        Se escribe arriba, en el boceto. El tamaño y la letra son de la
-                        franja entera: se eligen pulsando su fondo.
-                      </p>
                     }
-
-                    <!-- ---------- El destacado ---------- -->
-                    @case ('franjaDestacado') {
-                      <div class="rotulo-campo color-bloque">
-                        <label for="franja-destacado-color">Color del destacado</label>
-                        <app-campoColor idCampo="franja-destacado-color"
-                                        [valor]="colorQueSeVeDe('franja_destacado')"
-                                        [propio]="hayColorPropioDe('franja_destacado')"
-                                        porDefecto="El de la tienda"
-                                        etiqueta="Color del destacado"
-                                        [paleta]="colores"
-                                        [deshabilitado]="!puedeEditar"
-                                        (cambia)="ponerColorDe('franja_destacado', $event)" />
-                      </div>
-
-                      <p class="mando__nota mb-0">
-                        Se escribe arriba, en el boceto. Es la parte que sale resaltada, que es
-                        la que se mira: sin color propio lleva el de la tienda, con el brillo que
-                        se mueve; con uno elegido, se queda quieto en ese color.
-                      </p>
-                    }
-
                     <!-- ---------- Los botones ---------- -->
                     @case ('franjaBotones') {
                       <!-- LOS BOTONES: hasta cuatro, cada uno con su URL. Los
@@ -626,9 +745,8 @@
                                —lo normal— manda la de la franja, que está más abajo.
                                Se llena cuando uno tiene que destacar sobre el otro. -->
                           <div class="enc-boton__pinta">
-                            <div class="rotulo-campo color-bloque">
-                              <label [attr.for]="'boton-fondo-' + i">Su fondo</label>
-                              <app-campoColor [idCampo]="'boton-fondo-' + i"
+                            <div class="mando__col">
+                              <app-campoColor rotulo="Su fondo" [idCampo]="'boton-fondo-' + i"
                                               [valor]="colorDelBoton(i, 'fondo')"
                                               [propio]="hayColorPropioDelBoton(i, 'fondo')"
                                               porDefecto="El de la franja"
@@ -636,11 +754,8 @@
                                               [paleta]="paletaFondoEncabezado"
                                               [deshabilitado]="!puedeEditar"
                                               (cambia)="ponerColorDelBoton(i, 'fondo', $event)" />
-                            </div>
 
-                            <div class="rotulo-campo color-bloque">
-                              <label [attr.for]="'boton-letra-' + i">Su letra</label>
-                              <app-campoColor [idCampo]="'boton-letra-' + i"
+                              <app-campoColor rotulo="Su letra" [idCampo]="'boton-letra-' + i"
                                               [valor]="colorDelBoton(i, 'letra')"
                                               [propio]="hayColorPropioDelBoton(i, 'letra')"
                                               porDefecto="La de la franja"
@@ -650,12 +765,15 @@
                                               (cambia)="ponerColorDelBoton(i, 'letra', $event)" />
                             </div>
 
-                            <div class="rotulo-campo">
-                              <label [attr.for]="'boton-tamano-' + i">Su tamaño (px)</label>
-                              <input [id]="'boton-tamano-' + i" type="number"
-                                     class="form-control form-control-sm"
-                                     min="8" max="48" step="1" placeholder="11"
-                                     [formControl]="$any(grupoBoton(i).controls['tamano'])">
+                            <div class="mando__col">
+                              <div class="mando__campo">
+                                <label [attr.for]="'boton-tamano-' + i">Su tamaño (px)</label>
+                                <input [id]="'boton-tamano-' + i" type="number"
+                                       class="form-control form-control-sm"
+                                       min="8" max="48" step="1" placeholder="11"
+                                       [formControl]="$any(grupoBoton(i).controls['tamano'])">
+                                <small class="mando__pista">Entre 8 y 48. Vacío, el de la franja.</small>
+                              </div>
                             </div>
                           </div>
                         }
@@ -669,9 +787,8 @@
                         LOS DE TODOS <span>para el que no lleve el suyo</span>
                       </label>
 
-                      <div class="rotulo-campo color-bloque">
-                        <label for="franja-boton-fondo">Fondo del botón</label>
-                        <app-campoColor idCampo="franja-boton-fondo"
+                      <div class="mando__col">
+                        <app-campoColor rotulo="Fondo" idCampo="franja-boton-fondo"
                                         [valor]="colorQueSeVeDe('franja_boton_fondo')"
                                         [propio]="hayColorPropioDe('franja_boton_fondo')"
                                         porDefecto="El que calcula la tienda"
@@ -679,11 +796,8 @@
                                         [paleta]="paletaFondoEncabezado"
                                         [deshabilitado]="!puedeEditar"
                                         (cambia)="ponerColorDe('franja_boton_fondo', $event)" />
-                      </div>
 
-                      <div class="rotulo-campo color-bloque">
-                        <label for="franja-boton-texto">Letra del botón</label>
-                        <app-campoColor idCampo="franja-boton-texto"
+                        <app-campoColor rotulo="Letra" idCampo="franja-boton-texto"
                                         [valor]="colorQueSeVeDe('franja_boton_texto')"
                                         [propio]="hayColorPropioDe('franja_boton_texto')"
                                         porDefecto="La que calcula la tienda"
@@ -782,9 +896,8 @@
 
                     <!-- ---------- La fila del logo ---------- -->
                     @case ('filaLogo') {
-                      <div class="rotulo-campo color-bloque">
-                        <label for="encabezado-fondo">Fondo</label>
-                        <app-campoColor idCampo="encabezado-fondo"
+                      <div class="mando__col">
+                        <app-campoColor rotulo="Fondo" idCampo="encabezado-fondo"
                                         [valor]="colorQueSeVeDe('encabezado_fondo')"
                                         [propio]="hayColorPropioDe('encabezado_fondo')"
                                         porDefecto="Blanco"
@@ -792,11 +905,8 @@
                                         [paleta]="paletaFondoEncabezado"
                                         [deshabilitado]="!puedeEditar"
                                         (cambia)="ponerColorDe('encabezado_fondo', $event)" />
-                      </div>
 
-                      <div class="rotulo-campo color-bloque">
-                        <label for="encabezado-texto">Letra</label>
-                        <app-campoColor idCampo="encabezado-texto"
+                        <app-campoColor rotulo="Letra" idCampo="encabezado-texto"
                                         [valor]="colorQueSeVeDe('encabezado_texto')"
                                         [propio]="hayColorPropioDe('encabezado_texto')"
                                         porDefecto="La de los títulos"
@@ -825,9 +935,8 @@
 
                     <!-- ---------- El color de toda la tienda ---------- -->
                     @case ('tienda') {
-                      <div class="rotulo-campo color-bloque">
-                        <label for="color-tienda">Color de la tienda</label>
-                        <app-campoColor idCampo="color-tienda"
+                      <div class="mando__col">
+                        <app-campoColor rotulo="Color" idCampo="color-tienda"
                                         [valor]="colorQueSeVe" [propio]="hayColorPropio"
                                         porDefecto="El rojo de siempre"
                                         etiqueta="Color de la tienda"
@@ -838,10 +947,16 @@
 
                       <!-- Los dos tonos de al lado salen solos del elegido, con la
                            misma cuenta que hace la tienda -->
-                      <div class="color-tienda__tonos">
-                        <i [style.background-color]="colorQueSeVe" title="El que elegiste"></i>
-                        <i [style.background-color]="tonos.oscuro" title="Con el mouse encima (sale solo)"></i>
-                        <i [style.background-color]="tonos.claro" title="Fondos suaves (sale solo)"></i>
+                      <div class="mando__col">
+                        <div class="mando__campo">
+                          <label>Los tonos que salen de él</label>
+                          <div class="color-tienda__tonos">
+                            <i [style.background-color]="colorQueSeVe" title="El que elegiste"></i>
+                            <i [style.background-color]="tonos.oscuro" title="Con el mouse encima (sale solo)"></i>
+                            <i [style.background-color]="tonos.claro" title="Fondos suaves (sale solo)"></i>
+                          </div>
+                          <small class="mando__pista">El elegido, el del mouse encima y el de los fondos suaves.</small>
+                        </div>
                       </div>
 
                       @if (colorIlegible) {
@@ -866,9 +981,8 @@
                       <!-- EL FONDO NO ESTÁ AQUÍ: la barra va del color de la tienda,
                            junto con los botones y el pie. Lo que se elige es cómo se
                            lee encima. -->
-                      <div class="rotulo-campo color-bloque">
-                        <label for="menu-letra">Color de la letra</label>
-                        <app-campoColor idCampo="menu-letra"
+                      <div class="mando__col">
+                        <app-campoColor rotulo="Letra" idCampo="menu-letra"
                                         [valor]="colorQueSeVeDe('menu_texto')"
                                         [propio]="hayColorPropioDe('menu_texto')"
                                         porDefecto="Blanca"
@@ -878,22 +992,62 @@
                                         (cambia)="ponerColorDe('menu_texto', $event)" />
                       </div>
 
-                      <div class="rotulo-campo">
-                        <label for="menu-tamano">Tamaño (px)</label>
-                        <input id="menu-tamano" type="number" class="form-control form-control-sm"
-                               min="8" max="48" step="1" placeholder="12"
-                               [formControl]="$any(form.controls['menu_tamano'])">
-                        <small class="seccion-pie">Entre 8 y 48 (toda la barra).</small>
+                      <div class="mando__col">
+                        <div class="mando__campo">
+                          <label for="menu-fuente">Tipo de letra</label>
+                          <select id="menu-fuente" class="form-select form-select-sm"
+                                  [formControl]="$any(form.controls['menu_fuente'])">
+                            @for (f of fuentesFranja; track f.valor) {
+                              <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+                            }
+                          </select>
+                        </div>
+
+                        <div class="mando__campo">
+                          <label for="menu-tamano">Tamaño (px)</label>
+                          <input id="menu-tamano" type="number" class="form-control form-control-sm"
+                                 min="8" max="48" step="1" placeholder="12"
+                                 [formControl]="$any(form.controls['menu_tamano'])">
+                          <small class="mando__pista">Entre 8 y 48 (toda la barra).</small>
+                        </div>
                       </div>
 
-                      <div class="rotulo-campo rotulo-campo--ancho">
-                        <label for="menu-fuente">Tipo de letra</label>
-                        <select id="menu-fuente" class="form-select form-select-sm"
-                                [formControl]="$any(form.controls['menu_fuente'])">
-                          @for (f of fuentesFranja; track f.valor) {
-                            <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
-                          }
-                        </select>
+                      <!-- ---------- LOS DOS QUE PONE LA TIENDA ----------
+                           «Categorías» y «Marcas» no son enlaces del CRM: no se
+                           crean ni se ordenan en la pestaña «Menú», los arma la
+                           tienda con el catálogo. Lo único que se decide es si
+                           salen, y se decide aquí porque aquí es donde se toca
+                           la barra. -->
+                      <div class="enc-efectos mando__ancho">
+                        <span class="seccion-rotulo mb-0">LOS DOS DEL CATÁLOGO</span>
+
+                        <div class="enc-efecto">
+                          <app-checkbox class="palanca"
+                            [control]="ctrlCategorias"
+                            label="Categorías"
+                            [id]="'ck-menu-categorias'">
+                          </app-checkbox>
+                          <span class="enc-efecto__pista">El desplegable en cascada: departamentos, categorías y subcategorías.</span>
+                        </div>
+
+                        <div class="enc-efecto">
+                          <app-checkbox class="palanca"
+                            [control]="ctrlMarcas"
+                            label="Marcas"
+                            [id]="'ck-menu-marcas'">
+                          </app-checkbox>
+                          <span class="enc-efecto__pista">La lista de marcas visibles, cada una a su página.</span>
+                        </div>
+
+                        <p class="campo-hint mb-0">
+                          <i class="fa-solid fa-circle-info"></i>
+                          <span>
+                            Apagados siguen dibujados en el boceto, en gris y tachados, para
+                            poder encenderlos otra vez. Lo que hay dentro de cada uno se
+                            administra en <b>Categorías de la tienda</b> y <b>Marcas de la
+                            tienda</b>; aquí sólo se decide si salen.
+                          </span>
+                        </p>
                       </div>
 
                       <p class="mando__nota mb-0">
@@ -918,9 +1072,8 @@
                            mismo que no está en el menú: la barra va del color de la
                            tienda. -->
                       @if (enlaceTocado; as idEnlace) {
-                        <div class="rotulo-campo color-bloque">
-                          <label for="enlace-fondo">Su fondo</label>
-                          <app-campoColor idCampo="enlace-fondo"
+                        <div class="mando__col">
+                          <app-campoColor rotulo="Fondo" idCampo="enlace-fondo"
                                           [valor]="fondoDelEnlace(idEnlace)"
                                           [propio]="hayFondoPropioDelEnlace(idEnlace)"
                                           [porDefecto]="porDefectoDelFondo"
@@ -928,11 +1081,8 @@
                                           [paleta]="paletaFondoEncabezado"
                                           [deshabilitado]="!puedeEditar"
                                           (cambia)="ponerFondoDelEnlace(idEnlace, $event)" />
-                        </div>
 
-                        <div class="rotulo-campo color-bloque">
-                          <label for="enlace-color">Su color</label>
-                          <app-campoColor idCampo="enlace-color"
+                          <app-campoColor rotulo="Texto" idCampo="enlace-color"
                                           [valor]="colorDelEnlace(idEnlace)"
                                           [propio]="hayColorPropioDelEnlace(idEnlace)"
                                           [porDefecto]="porDefectoDelEnlace"
@@ -942,23 +1092,25 @@
                                           (cambia)="ponerColorDelEnlace(idEnlace, $event)" />
                         </div>
 
-                        <div class="rotulo-campo">
-                          <label for="enlace-tamano">Su tamaño (px)</label>
-                          <input id="enlace-tamano" type="number" class="form-control form-control-sm"
-                                 min="8" max="48" step="1" [placeholder]="tamanoDelMenu()"
-                                 [formControl]="$any(grupoEnlace(idEnlace).controls['tamano'])">
-                          <small class="seccion-pie">Entre 8 y 48. Vacío, el del menú.</small>
-                        </div>
+                        <div class="mando__col">
+                          <div class="mando__campo">
+                            <label for="enlace-fuente">Su tipo de letra</label>
+                            <select id="enlace-fuente" class="form-select form-select-sm"
+                                    [formControl]="$any(grupoEnlace(idEnlace).controls['fuente'])">
+                              <option value="">La del menú</option>
+                              @for (f of fuentesFranja; track f.valor) {
+                                <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+                              }
+                            </select>
+                          </div>
 
-                        <div class="rotulo-campo rotulo-campo--ancho">
-                          <label for="enlace-fuente">Su tipo de letra</label>
-                          <select id="enlace-fuente" class="form-select form-select-sm"
-                                  [formControl]="$any(grupoEnlace(idEnlace).controls['fuente'])">
-                            <option value="">La del menú</option>
-                            @for (f of fuentesFranja; track f.valor) {
-                              <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
-                            }
-                          </select>
+                          <div class="mando__campo">
+                            <label for="enlace-tamano">Su tamaño (px)</label>
+                            <input id="enlace-tamano" type="number" class="form-control form-control-sm"
+                                   min="8" max="48" step="1" [placeholder]="tamanoDelMenu()"
+                                   [formControl]="$any(grupoEnlace(idEnlace).controls['tamano'])">
+                            <small class="mando__pista">Entre 8 y 48. Vacío, el del menú.</small>
+                          </div>
                         </div>
 
                         @if (ilegibleElEnlace(idEnlace)) {
@@ -989,20 +1141,16 @@
 
                     <!-- ---------- Los desplegables ---------- -->
                     @case ('desplegable') {
-                      <div class="rotulo-campo color-bloque">
-                        <label for="menu-fondo">Fondo</label>
-                        <app-campoColor idCampo="menu-fondo"
+                      <div class="mando__col">
+                        <app-campoColor rotulo="Fondo" idCampo="menu-fondo"
                                         [valor]="menuFondoQueSeVe" [propio]="hayMenuFondoPropio"
                                         porDefecto="Blanco"
                                         etiqueta="Fondo del desplegable"
                                         [paleta]="paletaMenuFondo"
                                         [deshabilitado]="!puedeEditar"
                                         (cambia)="ponerMenuFondo($event)" />
-                      </div>
 
-                      <div class="rotulo-campo color-bloque">
-                        <label for="menu-texto">Letra</label>
-                        <app-campoColor idCampo="menu-texto"
+                        <app-campoColor rotulo="Letra" idCampo="menu-texto"
                                         [valor]="menuTextoQueSeVe" [propio]="hayMenuTextoPropio"
                                         porDefecto="La letra de siempre"
                                         etiqueta="Letra del desplegable"
@@ -1039,11 +1187,24 @@
             }
           </form>
         } @else {
-          <panel headerClass="bg-gray-800" title="Menú de la tienda" noButton="true"
+          <panel headerClass="bg-gray-800" [title]="tituloDelMenu" noButton="true"
                  noBody="true" panelClass="mb-0" icono="bars" fondoGris="true">
 
             <ng-container outsideBody>
               <div class="form-card__body">
+
+                <!-- DE QUIÉN ES ESTE MENÚ, lo primero: la rejilla cambia al
+                     cambiar de encabezado en la lista de la izquierda, y sin
+                     decirlo parecería que se borraron enlaces. -->
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span>
+                    Éste es el menú de <b>{{ nombreDelQueEdito }}</b>: cada
+                    encabezado lleva el suyo, y tocarlo aquí no cambia el de
+                    los demás. Uno nuevo nace con una copia del menú del
+                    encabezado desde el que se creó.
+                  </span>
+                </p>
 
                 <p class="campo-hint">
                   <i class="fa-solid fa-circle-info"></i>
@@ -1163,3 +1324,106 @@
     </div>
   }
 </panel>
+
+<!-- ============================================================
+     UN MENSAJE DE LA FRANJA, con sus dos mitades.
+
+     `$implicit` es null para el primero —el que vive suelto y no se borra—
+     y el índice en la lista para los demás. Todo lo de dentro pasa por
+     `grupoDelMensaje(i)`, así que el molde es UNO SOLO: si fueran dos, el
+     día que se añada un campo se añadiría en uno y no en el otro.
+     ============================================================ -->
+<ng-template #mensaje let-i>
+  <div class="enc-mensaje">
+    <span class="enc-boton__numero">{{ numeroDelMensaje(i) }}</span>
+
+    <div class="enc-mensaje__partes" [formGroup]="grupoDelMensaje(i)">
+
+      <!-- ---------- LA FRASE ---------- -->
+      <div class="enc-parte">
+        <app-campoTexto
+          [control]="$any(grupoDelMensaje(i).controls['texto'])"
+          label="TEXTO"
+          placeholder="Difiere tus compras hasta"
+          [maxLength]="80">
+        </app-campoTexto>
+
+        <app-campoColor rotulo="Texto"
+                        [idCampo]="'msj-texto-color-' + numeroDelMensaje(i)"
+                        [valor]="colorDeParte(i, 'texto')"
+                        [propio]="hayColorPropioDeParte(i, 'texto')"
+                        porDefecto="La de siempre"
+                        etiqueta="Color del texto"
+                        [paleta]="paletaLetraEncabezado"
+                        [deshabilitado]="!puedeEditar"
+                        (cambia)="ponerColorDeParte(i, 'texto', $event)" />
+
+        <div class="enc-parte__fila">
+          <label [attr.for]="'msj-texto-px-' + numeroDelMensaje(i)">Tamaño (px)</label>
+          <input [id]="'msj-texto-px-' + numeroDelMensaje(i)" type="number"
+                 class="form-control form-control-sm enc-parte__px"
+                 min="8" max="48" step="1" placeholder="14"
+                 formControlName="texto_tamano">
+        </div>
+
+        <div class="enc-parte__fila">
+          <label [attr.for]="'msj-texto-letra-' + numeroDelMensaje(i)">Tipo de letra</label>
+          <select [id]="'msj-texto-letra-' + numeroDelMensaje(i)" class="form-select form-select-sm"
+                  formControlName="texto_fuente">
+            <option value="">La de siempre</option>
+            @for (f of fuentesFranja; track f.valor) {
+              <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- ---------- LO RESALTADO ---------- -->
+      <div class="enc-parte">
+        <app-campoTexto
+          [control]="$any(grupoDelMensaje(i).controls['destacado'])"
+          label="DESTACADO"
+          placeholder="18 MESES SIN INTERESES"
+          [maxLength]="60">
+        </app-campoTexto>
+
+        <app-campoColor rotulo="Texto"
+                        [idCampo]="'msj-dest-color-' + numeroDelMensaje(i)"
+                        [valor]="colorDeParte(i, 'destacado')"
+                        [propio]="hayColorPropioDeParte(i, 'destacado')"
+                        porDefecto="El de la tienda"
+                        etiqueta="Color del destacado"
+                        [paleta]="paletaDestacado"
+                        [deshabilitado]="!puedeEditar"
+                        (cambia)="ponerColorDeParte(i, 'destacado', $event)" />
+
+        <div class="enc-parte__fila">
+          <label [attr.for]="'msj-dest-px-' + numeroDelMensaje(i)">Tamaño (px)</label>
+          <input [id]="'msj-dest-px-' + numeroDelMensaje(i)" type="number"
+                 class="form-control form-control-sm enc-parte__px"
+                 min="8" max="48" step="1" placeholder="14"
+                 formControlName="destacado_tamano">
+        </div>
+
+        <div class="enc-parte__fila">
+          <label [attr.for]="'msj-dest-letra-' + numeroDelMensaje(i)">Tipo de letra</label>
+          <select [id]="'msj-dest-letra-' + numeroDelMensaje(i)" class="form-select form-select-sm"
+                  formControlName="destacado_fuente">
+            <option value="">La de siempre</option>
+            @for (f of fuentesFranja; track f.valor) {
+              <option [value]="f.valor">{{ f.texto }} — {{ f.pista }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- EL PRIMERO NO SE BORRA: la franja encendida tiene que decir algo -->
+    @if (puedeEditar && i !== null) {
+      <button type="button" class="btn btn-xs btn-borrar"
+              title="Quitar este mensaje" (click)="quitarMensaje(i)">
+        <i class="fa fa-trash"></i>
+      </button>
+    }
+  </div>
+</ng-template>

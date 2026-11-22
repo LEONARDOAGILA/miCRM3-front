@@ -180,9 +180,9 @@ export class EcommerceHomeComponent implements OnInit, OnDestroy {
 
     // ---------- Escaparates ----------
     {
-      url: 'ecommerce/producto-por-seccion',
-      clave: 'producto_secciones',
-      label: 'PRODUCTOS POR SECCIÓN',
+      url: 'ecommerce/grupo-productos',
+      clave: 'grupos_productos',
+      label: 'GRUPOS DE PRODUCTOS',
       icon: 'fa-basket-shopping',
       color: 'bg-warning',
       descripcion: 'Escaparates armados a mano: «Los más vendidos», «Ofertas de navidad»',
@@ -302,10 +302,10 @@ export class EcommerceHomeComponent implements OnInit, OnDestroy {
         return plural(d.paginas, 'página', 'páginas');
       case 'productos':
         return plural(d.productos, 'producto', 'productos');
-      case 'producto_secciones':
-        return d.secciones === 0
-          ? 'Todavía ninguna'
-          : `${plural(d.secciones, 'sección', 'secciones')} con ${plural(d.productos, 'producto', 'productos')}`;
+      case 'grupos_productos':
+        return d.grupos === 0
+          ? 'Todavía ninguno'
+          : `${plural(d.grupos, 'grupo', 'grupos')} con ${plural(d.productos, 'producto', 'productos')}`;
       default:
         return '—';
     }

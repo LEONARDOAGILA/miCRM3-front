@@ -96,3 +96,117 @@
 @media (prefers-reduced-motion: reduce) {
   .color-paleta__punto { transition: none; }
 }
+
+/* ===== LA FORMA DE FILA (con `rotulo`) =====
+   El nombre, la muestra, el código y «Quitar» en una línea, y la paleta
+   debajo alineada con el código. Es una rejilla y no un flex porque lo que
+   se busca es justo lo que un flex no da: que tres campos seguidos tengan
+   las muestras y los códigos EN LA MISMA COLUMNA, midan lo que midan los
+   nombres. Con flex, «FONDO» y «TIPO DE LETRA» empujaban cada fila a una
+   distancia distinta y el mando se leía desordenado.
+
+   La columna de «Quitar» es `auto`: sin color propio el botón no existe y
+   la columna se queda en cero, así que la fila no deja un hueco esperando. */
+.color-bloque__fila.es-fila {
+  /* LA COLUMNA DEL NOMBRE, FIJA Y NO `auto`: cada campo es una rejilla suya,
+     así que con `auto` cada uno la mide por su propio nombre y «FONDO» y
+     «DESTACADO», uno debajo del otro, dejaban las muestras a seis píxeles de
+     distancia. Fija, todas caen en la misma vertical aunque sean campos
+     distintos, que es justo lo que se vino a arreglar.
+
+     Caben los nombres de los colores («DESTACADO» es el más largo); uno que
+     no quepa se recorta con puntos suspensivos antes que empujar la fila.
+
+     Y SE PUEDE FIJAR DESDE FUERA con `--ae-rotulo-ancho`: donde este campo
+     convive con otros que también llevan el nombre a la izquierda —las
+     mitades de un mensaje de la franja—, los nombres tienen que caer todos
+     en la misma vertical, y el de al lado no es un campo de color. */
+  --rotulo-ancho: var(--ae-rotulo-ancho, 5.25rem);
+
+  display: grid;
+  /* La del código TIENE TOPE y las columnas se agrupan a la izquierda: con un
+     `1fr` la caja se quedaba en sus 9rem pero la COLUMNA crecía con el mando,
+     y «Quitar» acababa a media pantalla del código al que pertenece. */
+  grid-template-columns: var(--rotulo-ancho) auto minmax(5rem, 9rem) auto;
+  grid-template-areas:
+    "rotulo muestra codigo quitar"
+    ".      paleta  paleta  paleta";
+  justify-content: start;
+  align-items: center;
+  gap: .3rem .5rem;
+}
+
+.es-fila .color-rotulo {
+  grid-area: rotulo;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Cuadrada y no redonda: al lado de una caja de texto, un círculo y un
+   rectángulo no comparten línea de base y la fila se ve torcida */
+.es-fila .color-muestra {
+  grid-area: muestra;
+  width: 30px;
+  height: 30px;
+  border-radius: .3rem;
+}
+
+.es-fila .color-codigo {
+  grid-area: codigo;
+  max-width: 9rem;
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: .72rem;
+  text-transform: uppercase;
+}
+
+/* EL TEXTO DE POR DEFECTO NO ES UN CÓDIGO: es una frase («El de la barra»,
+   «El que calcula la tienda»), así que ni en mayúsculas ni en monoespaciada.
+   Lo de arriba vale para lo que se escribe, que sí es un «#rrggbb». */
+.es-fila .color-codigo::placeholder {
+  /* El de la página y no `inherit`, que aquí heredaría la monoespaciada del
+     propio campo y es justo de lo que se la quiere sacar */
+  font-family: var(--bs-body-font-family, system-ui, sans-serif);
+  text-transform: none;
+  opacity: .75;
+}
+
+.es-fila .color-quitar {
+  grid-area: quitar;
+  white-space: nowrap;
+}
+
+.es-fila .color-paleta {
+  grid-area: paleta;
+  margin-left: 0;
+  gap: .25rem;
+}
+
+/* Más pequeños que en la forma de siempre: aquí son un atajo debajo del
+   campo, no el campo */
+.es-fila .color-paleta__punto {
+  width: 15px;
+  height: 15px;
+  border-width: 1.5px;
+}
+
+@media (max-width: 575.98px) {
+  /* El nombre encima: con cuatro columnas en 360 px el código se queda en
+     dos caracteres */
+  .color-bloque__fila.es-fila {
+    grid-template-columns: auto minmax(5rem, 1fr) auto;
+    grid-template-areas:
+      "rotulo  rotulo rotulo"
+      "muestra codigo quitar"
+      "paleta  paleta paleta";
+  }
+
+  .es-fila .color-rotulo { width: auto; }
+
+  .es-fila .color-paleta { width: auto; }
+}

@@ -11,7 +11,7 @@ import { AllCategoriasWebComponent } from './pages/categorias/allCategoriasWeb/a
 import { AllMarcasWebComponent } from './pages/marcas/allMarcasWeb/allMarcasWeb.component';
 import { CuerpoPrincipalComponent } from './pages/cuerpo/cuerpo-principal/cuerpo-principal.component';
 import { ModeladoComponent } from './pages/modelado/modelado.component';
-import { ProductoPorSeccionComponent } from './pages/producto-por-seccion/producto-por-seccion.component';
+import { GrupoProductosComponent } from './pages/grupo-productos/grupo-productos.component';
 
 // ============================================================================
 // MÓDULO ECOMMERCE: la administración de la página web.
@@ -126,8 +126,8 @@ export const ECOMMERCE_ROUTES: Routes = [
       // sale de este tramo tal cual (PRODUCTO-POR-SECCION), y el menú tiene que
       // decir exactamente lo mismo.
       {
-        path: 'producto-por-seccion',
-        component: ProductoPorSeccionComponent,
+        path: 'grupo-productos',
+        component: GrupoProductosComponent,
         canActivate: [AuthGuard],
         resolve: { access: AccessResolver },
       },

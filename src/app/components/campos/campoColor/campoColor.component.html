@@ -1,6 +1,21 @@
-<div class="color-bloque__fila">
+<!-- DOS FORMAS DEL MISMO CAMPO, y la elige `rotulo`:
+
+     · SIN RÓTULO, la de siempre: el rótulo lo pone quien lo usa encima del
+       campo, el color elegido se lee en un `code` y la paleta va a la derecha.
+       Es la que siguen usando el cuerpo y el pie.
+
+     · CON RÓTULO, la fila: el nombre a la izquierda, la muestra, el código
+       ESCRIBIBLE y «Quitar», y la paleta debajo en pequeño. Es el estándar de
+       los mandos del encabezado, donde hay dos y tres colores seguidos y la
+       otra forma los dejaba a distintas alturas. -->
+<div class="color-bloque__fila" [class.es-fila]="rotulo">
+
+  @if (rotulo) {
+    <span class="color-rotulo">{{ rotulo }}</span>
+  }
+
   <!-- El <input type="color"> nativo es feo y cambia por navegador: se esconde
-       dentro de la muestra redonda y el clic lo abre igual -->
+       dentro de la muestra y el clic lo abre igual -->
   <label class="color-muestra" [style.background-color]="valor"
          [title]="'Elegir cualquier color: ' + etiqueta">
     <input type="color" [id]="idCampo" [value]="valor"
@@ -9,9 +24,25 @@
            (input)="delSelector($event)">
   </label>
 
-  <!-- Sin color elegido se lee de dónde sale el que se ve, no un código: un
-       «#ffffff» ahí parecería una decisión que nadie tomó -->
-  <code class="color-valor">{{ propio ? valor : porDefecto }}</code>
+  @if (rotulo) {
+    <!-- SE PUEDE ESCRIBIR, que es la gracia: un color de marca llega en un
+         correo como «#E30613» y antes había que buscarlo en la rueda. Vacío
+         vuelve a lo de por defecto, y lo que no sea un color se deshace solo
+         (lo dice el borde rojo un momento). -->
+    <input type="text" class="form-control form-control-sm color-codigo"
+           [class.is-invalid]="error()"
+           [value]="propio ? valor : ''"
+           [placeholder]="porDefecto"
+           [disabled]="deshabilitado"
+           [attr.aria-label]="etiqueta"
+           spellcheck="false" autocomplete="off" maxlength="7"
+           (change)="delTexto($event)"
+           (keydown.enter)="delTexto($event)">
+  } @else {
+    <!-- Sin color elegido se lee de dónde sale el que se ve, no un código: un
+         «#ffffff» ahí parecería una decisión que nadie tomó -->
+    <code class="color-valor">{{ propio ? valor : porDefecto }}</code>
+  }
 
   @if (propio) {
     <button type="button" class="btn btn-xs btn-link color-quitar"
@@ -22,8 +53,9 @@
   }
 
   <!-- La paleta va DENTRO de la fila: con `flex-wrap`, apilada se baja sola a
-       su línea y a la derecha se queda pegada al borde. Así los dos modos son
-       el mismo marcado y no se pueden separar -->
+       su línea y a la derecha se queda pegada al borde. En la forma de fila
+       tiene su sitio en la rejilla, debajo del código y más pequeña. Así los
+       dos modos son el mismo marcado y no se pueden separar -->
   <div class="color-paleta">
     @for (c of paleta; track c) {
       <button type="button" class="color-paleta__punto"

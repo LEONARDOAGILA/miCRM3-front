@@ -112,10 +112,10 @@ export class InicioService {
   }
 
   /** Lo enseña en este cuerpo, al final y encendido. */
-  addEscaparate(seccionId: number, cuerpoId?: number | null): Observable<any> {
+  addEscaparate(grupoId: number, cuerpoId?: number | null): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'addEscaparate',
-                           cuerpoId ? { seccion_id: seccionId, cuerpo_id: cuerpoId }
-                                    : { seccion_id: seccionId });
+                           cuerpoId ? { grupo_id: grupoId, cuerpo_id: cuerpoId }
+                                    : { grupo_id: grupoId });
   }
 
   /**

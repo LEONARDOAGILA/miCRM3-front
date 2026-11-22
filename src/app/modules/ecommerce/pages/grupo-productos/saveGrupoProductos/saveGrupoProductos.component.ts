@@ -5,53 +5,53 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 
-import { ProductoSeccionService } from '../../../services/productoSeccion.service';
-import { SeccionProductoModel } from '../../../interfaces/productoSeccionModel';
+import { GrupoProductosService } from '../../../services/grupoProductos.service';
+import { GrupoProductosModel } from '../../../interfaces/grupoProductosModel';
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
 
 /**
  * EL NOMBRE Y LA VIGENCIA DE UNA SECCIÓN DE PRODUCTOS.
  *
- * Una sección no tiene más que eso: su nombre, entre qué fechas se ve, y los
+ * Un grupo no tiene más que eso: su nombre, entre qué fechas se ve, y los
  * productos que lleva dentro. Los productos se eligen en la pantalla —la
  * rejilla del medio— porque son cientos y no caben en un diálogo; aquí queda
  * lo que sí es un formulario.
  *
- * Sirve para crear y para renombrar; la diferencia es si llega `seccion`.
+ * Sirve para crear y para renombrar; la diferencia es si llega `grupo`.
  *
- * LA VIGENCIA ES EL MOTIVO DE QUE HAYA FECHAS AQUÍ: la sección de navidad se
+ * LA VIGENCIA ES EL MOTIVO DE QUE HAYA FECHAS AQUÍ: el grupo de navidad se
  * arma en noviembre y tiene que apagarse sola el 7 de enero. Con sólo la
  * palanca de encendido, alguien tiene que acordarse de volver a apagarla.
  */
 @Component({
-  selector: 'app-saveSeccionProducto',
-  templateUrl: './saveSeccionProducto.component.html',
+  selector: 'app-saveGrupoProductos',
+  templateUrl: './saveGrupoProductos.component.html',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, ReactiveFormsModule, CampoTextoComponent],
 })
-export class SaveSeccionProductoComponent implements OnInit {
+export class SaveGrupoProductosComponent implements OnInit {
 
-  /** La sección que se modifica; sin ella, se crea una nueva. */
-  @Input() seccion: SeccionProductoModel | null = null;
+  /** El grupo que se modifica; sin ella, se crea una nueva. */
+  @Input() grupo: GrupoProductosModel | null = null;
 
   public form!: FormGroup;
   public guardando = false;
 
   private fb = inject(FormBuilder);
-  private _seccionService = inject(ProductoSeccionService);
+  private _grupoService = inject(GrupoProductosService);
   private _toastr = inject(ToastrService);
   public activeModal = inject(NgbActiveModal);
 
-  get esNueva(): boolean { return this.seccion === null; }
-  get titulo(): string { return this.esNueva ? 'Nueva sección' : 'Modificar sección'; }
+  get esNueva(): boolean { return this.grupo === null; }
+  get titulo(): string { return this.esNueva ? 'Nueva grupo' : 'Modificar grupo'; }
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      nombre: [this.seccion?.nombre ?? '',
+      nombre: [this.grupo?.nombre ?? '',
                [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
-      desde:  [this.seccion?.desde ?? ''],
-      hasta:  [this.seccion?.hasta ?? ''],
+      desde:  [this.grupo?.desde ?? ''],
+      hasta:  [this.grupo?.hasta ?? ''],
     });
   }
 
@@ -82,14 +82,14 @@ export class SaveSeccionProductoComponent implements OnInit {
       // Si el nombre choca con otro lo dice el servidor: compara sin tildes ni
       // mayúsculas, y repetir esa regla aquí es separarlas a la primera.
       const res: any = await firstValueFrom(
-        this.esNueva ? this._seccionService.addSeccion(datos)
-                     : this._seccionService.editSeccion(this.seccion!.id, datos));
+        this.esNueva ? this._grupoService.addGrupo(datos)
+                     : this._grupoService.editGrupo(this.grupo!.id, datos));
 
-      this._toastr.success(res?.message ?? 'Sección guardada', 'Listo');
+      this._toastr.success(res?.message ?? 'Grupo guardada', 'Listo');
       this.activeModal.close(res?.data ?? true);
 
     } catch (e: any) {
-      this._toastr.error(e?.error?.message ?? 'No se pudo guardar la sección', 'Error',
+      this._toastr.error(e?.error?.message ?? 'No se pudo guardar el grupo', 'Error',
                          { timeOut: 15000, closeButton: true });
     } finally {
       this.guardando = false;

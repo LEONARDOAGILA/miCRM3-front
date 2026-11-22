@@ -8,7 +8,8 @@ import { EncabezadoService } from '../../../services/encabezado.service';
 import { FilaPapeleraEnlace } from '../../../interfaces/encabezadoModel';
 
 /**
- * La papelera de los enlaces del menú del encabezado.
+ * La papelera de los enlaces del menú DE UN ENCABEZADO: cada uno tiene la
+ * suya, porque cada uno tiene su menú.
  *
  * Borrar un principal se lleva su desplegable entero, así que aquí pueden
  * aparecer juntos. Restaurar el principal los devuelve a todos.
@@ -27,6 +28,8 @@ import { FilaPapeleraEnlace } from '../../../interfaces/encabezadoModel';
 export class PapeleraEncabezadoComponent implements OnInit {
 
   @Input() puedeVaciar = false;
+  /** De cuál es esta papelera. Sin él, la del predeterminado. */
+  @Input() encabezadoId: number | null = null;
 
   public filas: FilaPapeleraEnlace[] = [];
   public cargando = true;
@@ -57,7 +60,7 @@ export class PapeleraEncabezadoComponent implements OnInit {
   async cargar(): Promise<void> {
     this.cargando = true;
     try {
-      const res: any = await firstValueFrom(this._encabezadoService.papelera());
+      const res: any = await firstValueFrom(this._encabezadoService.papelera(this.encabezadoId));
       this.filas = res?.data ?? [];
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo abrir la papelera', 'Error');
@@ -70,7 +73,8 @@ export class PapeleraEncabezadoComponent implements OnInit {
     if (this.trabajando) { return; }
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(this._encabezadoService.restaurar([fila.id]));
+      const res: any = await firstValueFrom(
+        this._encabezadoService.restaurar([fila.id], this.encabezadoId));
       this._toastr.success(res?.message ?? 'Restaurado', 'Listo');
       this.hubocambios = true;
       await this.cargar();
@@ -91,7 +95,8 @@ export class PapeleraEncabezadoComponent implements OnInit {
 
     this.trabajando = true;
     try {
-      const res: any = await firstValueFrom(this._encabezadoService.vaciarPapelera());
+      const res: any = await firstValueFrom(
+        this._encabezadoService.vaciarPapelera(this.encabezadoId));
       this._toastr.success(res?.message ?? 'Papelera vaciada', 'Listo');
       this.hubocambios = true;
       await this.cargar();

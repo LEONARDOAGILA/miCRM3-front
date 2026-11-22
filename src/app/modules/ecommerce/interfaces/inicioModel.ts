@@ -67,7 +67,7 @@ export interface SeccionInicioModel {
    * no se crean ni se borran. Las demás son una sección de productos que
    * alguien armó, y aquí aparecen como una fila más de la portada.
    */
-  producto_seccion_id: number | null;
+  grupo_productos_id: number | null;
 
   /**
    * A qué galería de imágenes apunta, si es un banner.
@@ -563,7 +563,8 @@ export interface EstiloRotulo {
 }
 
 export type TamanoRotulo = 'pequeno' | 'normal' | 'grande' | 'enorme';
-export type FuenteRotulo = 'titulos' | 'texto' | 'deportiva' | 'serif';
+export type FuenteRotulo = 'titulos' | 'texto' | 'deportiva' | 'serif'
+                         | 'impacto' | 'manuscrita' | 'elegante' | 'gruesa';
 
 /**
  * Los tamaños, con la escala que les aplica la tienda.
@@ -585,9 +586,14 @@ export const ROTULO_BASE_PX = 28;
 /**
  * Las letras, con cómo se escriben en CSS para la muestra.
  *
- * SÓLO ESTÁN LAS QUE LA TIENDA CARGA DE VERDAD —Poppins, Inter y Barlow
- * Condensed— más una con serifa que ya traen todos los equipos. Ofrecer
- * cualquier otra sería enseñar aquí una letra que el cliente no va a ver.
+ * SÓLO ESTÁN LAS QUE LA TIENDA CARGA DE VERDAD (el <link> de su index.html,
+ * que es el mismo de `letrasTienda.ts`) más una con serifa que ya traen
+ * todos los equipos. Ofrecer cualquier otra sería enseñar aquí una letra
+ * que el cliente no va a ver.
+ *
+ * LA CLAVE NO ES EL NOMBRE DE LA LETRA: se guarda «impacto», no «Bebas
+ * Neue». Así el día que la tienda cambie de letra de impacto, lo guardado
+ * la sigue sin tocar una fila.
  */
 export const FUENTES_ROTULO: {
   valor: FuenteRotulo; texto: string; pista: string; css: string; cursiva: boolean; versalitas: boolean;
@@ -600,6 +606,18 @@ export const FUENTES_ROTULO: {
     css: "'Barlow Condensed', sans-serif",   cursiva: true,  versalitas: true },
   { valor: 'serif',     texto: 'Con serifa',        pista: 'clásica, para algo elegante',
     css: "Georgia, 'Times New Roman', serif", cursiva: false, versalitas: false },
+
+  // Las cuatro del 21/11/2026. Bebas Neue no tiene minúsculas —las dibuja
+  // como mayúsculas—, y por eso la muestra va en versalitas: es lo que se
+  // va a ver, no una decisión de aquí.
+  { valor: 'impacto',    texto: 'De impacto',       pista: 'Bebas Neue, alta y en mayúsculas, para precios',
+    css: "'Bebas Neue', sans-serif",          cursiva: false, versalitas: true },
+  { valor: 'manuscrita', texto: 'Manuscrita',       pista: 'Pacifico, escrita a mano, para campañas',
+    css: "'Pacifico', cursive",               cursiva: false, versalitas: false },
+  { valor: 'elegante',   texto: 'Serifa elegante',  pista: 'Playfair Display, fina y gruesa, para algo caro',
+    css: "'Playfair Display', Georgia, serif", cursiva: false, versalitas: false },
+  { valor: 'gruesa',     texto: 'Gruesa',           pista: 'Montserrat, ancha y sólida',
+    css: "'Montserrat', sans-serif",          cursiva: false, versalitas: false },
 ];
 
 /** El color con el que la tienda pinta sus títulos: lo de fábrica, y con lo que se compara. */
@@ -693,7 +711,7 @@ export interface FuenteSeccion {
   /** Con `promocion`, `destacadas` y `productos`: la pantalla donde se llena. */
   pantalla?: string;
   /** Con `productos`: cuál escaparate, para abrirlo ya elegido. */
-  seccion_id?: number;
+  grupo_id?: number;
   /** Con `pendiente`: qué falta. */
   falta?: string;
 }
