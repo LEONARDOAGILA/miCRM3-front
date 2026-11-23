@@ -83,7 +83,7 @@ export class InicioService {
    *
    * ES LA ÚNICA SECCIÓN QUE SE CREA DESDE AQUÍ: un banner son imágenes con su
    * sitio, y la tienda ya sabe pintarlo. Las de fábrica nacen con el cuerpo y
-   * las de productos se arman en «Productos por sección».
+   * las de productos se arman en «Grupos de productos».
    */
   addBanner(nombre: string, cuerpoId?: number | null): Observable<any> {
     return this._http.post(this.URL_SERVICIOS + 'addBanner',
@@ -101,29 +101,29 @@ export class InicioService {
   }
 
   /**
-   * Los escaparates de «Productos por sección» que este cuerpo NO enseña.
+   * Las secciones de productos de «Grupos de productos» que este cuerpo NO enseña.
    *
    * Cada uno con cuántos productos tiene y en cuántas páginas sale ya: uno
    * vacío se puede añadir, pero la tienda se lo salta.
    */
-  escaparatesDisponibles(cuerpoId?: number | null): Observable<any> {
+  seccionesProductosDisponibles(cuerpoId?: number | null): Observable<any> {
     const query = cuerpoId ? '?cuerpo_id=' + cuerpoId : '';
-    return this._http.get(this.URL_SERVICIOS + 'escaparatesDisponibles' + query);
+    return this._http.get(this.URL_SERVICIOS + 'seccionesProductosDisponibles' + query);
   }
 
   /** Lo enseña en este cuerpo, al final y encendido. */
-  addEscaparate(grupoId: number, cuerpoId?: number | null): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'addEscaparate',
+  addSeccionProductos(grupoId: number, cuerpoId?: number | null): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'addSeccionProductos',
                            cuerpoId ? { grupo_id: grupoId, cuerpo_id: cuerpoId }
                                     : { grupo_id: grupoId });
   }
 
   /**
-   * Lo quita de ESTA página. NO borra el escaparate: sus productos siguen en
-   * «Productos por sección» y se puede volver a poner.
+   * Lo quita de ESTA página. NO borra la sección: sus productos siguen en
+   * «Grupos de productos» y se puede volver a poner.
    */
-  quitarEscaparate(id: number): Observable<any> {
-    return this._http.delete(this.URL_SERVICIOS + 'quitarEscaparate/' + id);
+  quitarSeccionProductos(id: number): Observable<any> {
+    return this._http.delete(this.URL_SERVICIOS + 'quitarSeccionProductos/' + id);
   }
 
   /** Van TODOS los ids del cuerpo, en el orden en que se ven. */

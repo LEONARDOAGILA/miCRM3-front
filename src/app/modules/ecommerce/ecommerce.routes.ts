@@ -118,7 +118,7 @@ export const ECOMMERCE_ROUTES: Routes = [
         resolve: { access: AccessResolver },
       },
 
-      // Secciones de productos: escaparates armados a mano. Tres columnas —las
+      // Secciones de productos: secciones de productos armadas a mano. Tres columnas —las
       // secciones, el catálogo con casillas, y los filtros para meter de golpe
       // todo lo que cumple uno—.
       //

@@ -946,7 +946,7 @@
 
 /* ---------- El grupo de «Lo que enseña la tienda» ----------
    Una raya y un rótulo dentro del mismo panel: los tres precios de abajo son
-   de escaparate, y el de arriba es con el que se factura. Separarlos en otro
+   de sección, y el de arriba es con el que se factura. Separarlos en otro
    panel los habría alejado de su precio, que es con el que se comparan. */
 .prod-separador {
   margin: .25rem 0 .75rem;

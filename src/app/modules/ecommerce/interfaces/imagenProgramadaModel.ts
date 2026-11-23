@@ -14,6 +14,13 @@ export interface ImagenProgramadaModel {
   imagen_url: string | null;
   /** Para reconocerla en la lista: «Navidad 2026». */
   nombre: string | null;
+  /**
+   * A DÓNDE LLEVA AL PULSARLA. Sólo los banners de una categoría: el
+   * círculo de la portada ya lleva a su categoría y ahí no se elige.
+   */
+  enlace?: string | null;
+  /** Si ese enlace abre otra pestaña. Lo decide el servidor por la dirección. */
+  nueva_pestana?: boolean;
   /** 'YYYY-MM-DDTHH:mm' o null (ilimitada). */
   desde: string | null;
   hasta: string | null;

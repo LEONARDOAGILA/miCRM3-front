@@ -38,13 +38,13 @@ import { FilasEstirablesDirective } from '../../../../core/directives/filasEstir
 import { SaveGrupoProductosComponent } from './saveGrupoProductos/saveGrupoProductos.component';
 
 /**
- * PRODUCTOS POR SECCIÓN: tres columnas para armar escaparates.
+ * PRODUCTOS POR SECCIÓN: tres columnas para armar secciones de productos.
  *
  *   izquierda   los grupos, con lo que lleva cada una
  *   centro      el catálogo, con casillas para elegir
  *   derecha     los filtros, para meter de golpe todo lo que cumple uno
  *
- * UNA SECCIÓN ES UN ESCAPARATE ARMADO A MANO —«Los más vendidos», «Ofertas de
+ * UNA SECCIÓN ES UNA SECCIÓN DE PRODUCTOS ARMADO A MANO —«Los más vendidos», «Ofertas de
  * navidad»—, y eso es justo lo que la categoría y la marca no saben hacer:
  * ésas las decide quien da de alta el producto, y un grupo junta tres
  * televisores de tres marcas y una barra de sonido porque ésa es la oferta de
@@ -503,7 +503,7 @@ export class GrupoProductosComponent implements OnInit, OnDestroy {
       },
       {
         // Sólo se mira: el estado del producto se cambia en su pantalla, no
-        // desde un escaparate. Pero hay que verlo: un producto apagado metido
+        // desde una sección de productos. Pero hay que verlo: un producto apagado metido
         // en el grupo no lo enseñaría la tienda.
         headerName: 'Activo', field: 'activo',
         headerTooltip: 'Si el producto está activo en el catálogo; se cambia en Productos',

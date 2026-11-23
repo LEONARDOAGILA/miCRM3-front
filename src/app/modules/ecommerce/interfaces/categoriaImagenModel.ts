@@ -8,9 +8,23 @@ import { ImagenProgramadaModel } from './imagenProgramadaModel';
  * cuenta que pinta la chapita del árbol.
  */
 
-/** Las imágenes de UNA categoría, como las devuelve el servidor. */
+/**
+ * CADA CATEGORÍA TIENE DOS LISTAS, y las dos son imágenes programadas con
+ * sus fechas, su orden y su papelera:
+ *
+ *   «imagen»  la de siempre: el círculo de las dos secciones de la portada
+ *   «banner»  la tira ancha que sale arriba de /shop en esa categoría
+ *
+ * Es el mismo dato con el mismo comportamiento —por eso comparten tabla,
+ * pantalla y modal—; lo único que cambia es dónde lo pinta la tienda.
+ */
+export type ListaDeImagenes = 'imagen' | 'banner';
+
+/** Las imágenes de UNA categoría y de UNA de sus dos listas. */
 export interface ImagenesDeCategoria {
   categoria_id: number;
+  /** De cuál de las dos listas habla esto. */
+  tipo: ListaDeImagenes;
   en_papelera: number;
   imagenes: ImagenProgramadaModel[];
 }
@@ -20,4 +34,7 @@ export interface CuentaImagenes {
   categoria_id: number;
   cuantas: number;
   sale_alguna: boolean;
+  /** Y lo mismo de los banners, que se cuentan aparte. */
+  banners?: number;
+  sale_banner?: boolean;
 }

@@ -14,7 +14,7 @@ import { SeguridadService } from '../../../../seguridad/services/seguridad.servi
 import { AccesoModel } from '../../../../seguridad/interfaces/accesoModel';
 import { CategoriaWebService } from '../../../services/categoriaWeb.service';
 import { CategoriaWebModel, ESTADOS_CATEGORIA } from '../../../interfaces/categoriaWebModel';
-import { ImagenesDeCategoria, CuentaImagenes } from '../../../interfaces/categoriaImagenModel';
+import { ImagenesDeCategoria, CuentaImagenes, ListaDeImagenes } from '../../../interfaces/categoriaImagenModel';
 import {
   ImagenProgramadaModel, ImagenProgramadaEnPapelera, ESTADOS_IMAGEN_PROGRAMADA,
 } from '../../../interfaces/imagenProgramadaModel';
@@ -52,6 +52,25 @@ import { filtrarArbol, recorrer } from '../../../../seguridad/pages/grupos/arbol
  * una categoría. Mezclarlo daría dos sitios para cambiar el árbol y dos
  * formas de dejarlo inconsistente.
  */
+/**
+ * LO QUE LA PANTALLA GUARDA DE UNA DE LAS DOS LISTAS de la categoría.
+ *
+ * Antes era un juego de campos sueltos en el componente, porque sólo había
+ * una lista. Con dos, lo que guarda cada una tiene que ir junto y nombrado:
+ * así no hay forma de encender un banner y repintar las imágenes.
+ */
+interface EstadoDeLista {
+  contenido: ImagenesDeCategoria | null;
+  cargando: boolean;
+  papelera: ImagenProgramadaEnPapelera[];
+  papeleraAbierta: boolean;
+}
+
+/** Una lista sin nada: al cambiar de categoría las dos vuelven aquí. */
+function estadoVacio(): EstadoDeLista {
+  return { contenido: null, cargando: false, papelera: [], papeleraAbierta: false };
+}
+
 @Component({
   selector: 'app-allCategoriasWeb',
   templateUrl: './allCategoriasWeb.component.html',
@@ -84,11 +103,19 @@ export class AllCategoriasWebComponent implements OnInit {
 
   // ---------- La elegida ----------
   public seleccionId: number | null = null;
-  public contenido: ImagenesDeCategoria | null = null;
-  public cargandoImagenes = false;
 
-  public papelera: ImagenProgramadaEnPapelera[] = [];
-  public papeleraAbierta = false;
+  /**
+   * LAS DOS LISTAS DE LA CATEGORÍA, cada una con lo suyo.
+   *
+   * Antes había un solo juego de campos sueltos —contenido, papelera,
+   * cargando— porque sólo había una lista. Con dos, la forma de guardarlo
+   * tiene que decir de cuál habla cada cosa: si no, encender un banner
+   * repinta las imágenes y la papelera de una sale en la otra.
+   */
+  public listas: Record<ListaDeImagenes, EstadoDeLista> = {
+    imagen: estadoVacio(),
+    banner: estadoVacio(),
+  };
 
   /** El nombre para la tienda, mientras se escribe. */
   public nombreWeb = '';
@@ -121,12 +148,25 @@ export class AllCategoriasWebComponent implements OnInit {
     return this.categorias.find(c => c.id === this.seleccionId) ?? null;
   }
 
-  get imagenes(): ImagenProgramadaModel[] { return this.contenido?.imagenes ?? []; }
+  /** El estado de una de las dos listas. */
+  estado(lista: ListaDeImagenes): EstadoDeLista { return this.listas[lista]; }
+
+  imagenesDe(lista: ListaDeImagenes): ImagenProgramadaModel[] {
+    return this.listas[lista].contenido?.imagenes ?? [];
+  }
+
+  /** Cuántas hay en la papelera de esa lista. */
+  enPapeleraDe(lista: ListaDeImagenes): number {
+    return this.listas[lista].contenido?.en_papelera ?? 0;
+  }
 
   /** La que se está viendo ahora mismo en la tienda, si hay alguna. */
-  get laQueSale(): ImagenProgramadaModel | null {
-    return this.imagenes.find(i => i.sale_ahora) ?? null;
+  laQueSaleDe(lista: ListaDeImagenes): ImagenProgramadaModel | null {
+    return this.imagenesDe(lista).find(i => i.sale_ahora) ?? null;
   }
+
+  /** Alguna de las dos está cargando: es el icono de «volver a cargar». */
+  get cargando(): boolean { return this.listas.imagen.cargando || this.listas.banner.cargando; }
 
   /** Cuántas categorías tienen hoy una imagen programada saliendo. */
   get cuantasEnLaPortada(): number {
@@ -385,13 +425,15 @@ export class AllCategoriasWebComponent implements OnInit {
 
   async seleccionar(id: number): Promise<void> {
     this.seleccionId = id;
-    this.papeleraAbierta = false;
-    this.papelera = [];
+    // Las dos listas arrancan limpias: lo de la categoría anterior no
+    // tiene nada que ver con ésta
+    this.listas = { imagen: estadoVacio(), banner: estadoVacio() };
 
     recorrer(this.originalNodes, n => { n.isSelected = n.id === id; });
     this.nodes = filtrarArbol(this.originalNodes, this.searchQuery);
 
     this.nombreWeb = this.seleccionada?.nombre_web ?? '';
+    this.segundosBanner = this.seleccionada?.banner_segundos ?? null;
     await this.cargarImagenes();
   }
 
@@ -467,19 +509,27 @@ export class AllCategoriasWebComponent implements OnInit {
   // LA CATEGORÍA ELEGIDA
   // ================================================================
 
+  /** Las dos listas a la vez: son dos peticiones chicas y la pantalla las
+   *  enseña juntas, así que pedirlas por separado sólo dejaría un hueco. */
   async cargarImagenes(): Promise<void> {
+    await Promise.all([this.cargarLista('imagen'), this.cargarLista('banner')]);
+  }
+
+  private async cargarLista(lista: ListaDeImagenes): Promise<void> {
     if (this.seleccionId === null) { return; }
 
-    this.cargandoImagenes = true;
+    const estado = this.listas[lista];
+    estado.cargando = true;
     try {
-      const res: any = await firstValueFrom(this._categoriaService.imagenes(this.seleccionId));
-      this.contenido = res?.data ?? null;
+      const res: any = await firstValueFrom(
+        this._categoriaService.imagenes(this.seleccionId, lista));
+      estado.contenido = res?.data ?? null;
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudieron cargar las imágenes', 'Error',
                          { timeOut: 15000, closeButton: true });
-      this.contenido = null;
+      estado.contenido = null;
     } finally {
-      this.cargandoImagenes = false;
+      estado.cargando = false;
     }
   }
 
@@ -514,6 +564,33 @@ export class AllCategoriasWebComponent implements OnInit {
   }
 
   /** Guarda el nombre con el que se enseña en la tienda. */
+  /**
+   * CADA CUÁNTOS SEGUNDOS CAMBIA EL BANNER de esta categoría.
+   *
+   * Vacío es «el ritmo de siempre», y es lo normal: sólo se toca cuando
+   * una campaña necesita que su banner se vea más rato.
+   */
+  public segundosBanner: number | null = null;
+
+  async guardarSegundosBanner(): Promise<void> {
+    const c = this.seleccionada;
+    if (!c || !this.puedeEditar || this.trabajando) { return; }
+    if (this._seguridadService.isexpired()) { return; }
+
+    const n = Number(this.segundosBanner);
+    const segundos = Number.isFinite(n) && n >= 2 && n <= 60 ? Math.round(n) : null;
+    // Lo que no vale vuelve a vacío en la caja, para que no se quede un
+    // número puesto que el servidor no guardó
+    this.segundosBanner = segundos;
+
+    await this.accionCategoria(() => this._categoriaService.editCategoriaWeb(c.id, {
+      oculta: c.oculta,
+      nombre_web: c.nombre_web ?? null,
+      // UN 0 ES «VACÍALOS»: con nulo el servidor entiende «no dije nada»
+      banner_segundos: segundos ?? 0,
+    }));
+  }
+
   async guardarNombreWeb(): Promise<void> {
     const c = this.seleccionada;
     if (!c || !this.puedeEditar || this.trabajando) { return; }
@@ -534,6 +611,7 @@ export class AllCategoriasWebComponent implements OnInit {
       this.categorias = res?.data ?? this.categorias;
       this.construirArbol();
       this.nombreWeb = this.seleccionada?.nombre_web ?? '';
+      this.segundosBanner = this.seleccionada?.banner_segundos ?? null;
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo guardar', 'Error',
                          { timeOut: 20000, closeButton: true });
@@ -547,10 +625,13 @@ export class AllCategoriasWebComponent implements OnInit {
   // LAS IMÁGENES
   // ================================================================
 
-  programar(): void { this.abrirImagen(null); }
-  editarImagen(i: ImagenProgramadaModel): void { this.abrirImagen(i); }
+  programar(lista: ListaDeImagenes): void { this.abrirImagen(null, lista); }
 
-  private abrirImagen(i: ImagenProgramadaModel | null): void {
+  editarImagen(i: ImagenProgramadaModel, lista: ListaDeImagenes): void {
+    this.abrirImagen(i, lista);
+  }
+
+  private abrirImagen(i: ImagenProgramadaModel | null, lista: ListaDeImagenes): void {
     const c = this.seleccionada;
     if (!c) { return; }
     if (!(i ? this.puedeEditar : this.puedeCrear)) { return; }
@@ -559,75 +640,86 @@ export class AllCategoriasWebComponent implements OnInit {
     const ref = this.modal.open(SaveImagenProgramadaComponent,
                                 { size: 'lg', backdrop: 'static', centered: true });
     ref.componentInstance.tipo = 'categoria';
+    // De cuál de las dos listas es la que se va a programar
+    ref.componentInstance.lista = lista;
     ref.componentInstance.duenioId = c.id;
     ref.componentInstance.duenioNombre = this.rutaSeleccionada;
     ref.componentInstance.imagen = i;
 
-    ref.result.then((data: ImagenesDeCategoria) => this.pintar(data),
+    ref.result.then((data: ImagenesDeCategoria) => this.pintar(data, lista),
                     () => { /* se cerró sin guardar */ });
   }
 
-  async alternarImagen(i: ImagenProgramadaModel): Promise<void> {
+  async alternarImagen(i: ImagenProgramadaModel, lista: ListaDeImagenes): Promise<void> {
     if (!this.puedeEditar || this.trabajando) { return; }
-    await this.accionImagen(() => this._categoriaService.activarImagen(i.id));
+    await this.accionImagen(() => this._categoriaService.activarImagen(i.id), lista);
   }
 
-  async quitarImagen(i: ImagenProgramadaModel): Promise<void> {
+  async quitarImagen(i: ImagenProgramadaModel, lista: ListaDeImagenes): Promise<void> {
     if (!this.puedeEliminar || this.trabajando) { return; }
-    if (!confirm(`¿Quitar esta imagen de «${this.seleccionada?.nombre}»?\n\n`
+    const que = lista === 'banner' ? 'este banner' : 'esta imagen';
+    if (!confirm(`¿Quitar ${que} de «${this.seleccionada?.nombre}»?\n\n`
                  + 'Va a la papelera de esta categoría: desde ahí se puede devolver.')) { return; }
 
-    await this.accionImagen(() => this._categoriaService.deleteImagen(i.id));
+    await this.accionImagen(() => this._categoriaService.deleteImagen(i.id), lista);
   }
 
-  async soltarImagen(evento: CdkDragDrop<ImagenProgramadaModel[]>): Promise<void> {
-    if (!this.puedeEditar || evento.previousIndex === evento.currentIndex || !this.contenido) { return; }
+  async soltarImagen(evento: CdkDragDrop<ImagenProgramadaModel[]>,
+                     lista: ListaDeImagenes): Promise<void> {
+    const contenido = this.listas[lista].contenido;
+    if (!this.puedeEditar || evento.previousIndex === evento.currentIndex || !contenido) { return; }
 
-    moveItemInArray(this.contenido.imagenes, evento.previousIndex, evento.currentIndex);
+    moveItemInArray(contenido.imagenes, evento.previousIndex, evento.currentIndex);
     await this.accionImagen(
-      () => this._categoriaService.ordenarImagenes(this.contenido!.imagenes.map(i => i.id)), false);
+      () => this._categoriaService.ordenarImagenes(contenido.imagenes.map(i => i.id)), lista, false);
   }
 
   // ---------- La papelera, la de esta categoría ----------
 
-  async alternarPapelera(): Promise<void> {
-    this.papeleraAbierta = !this.papeleraAbierta;
-    if (this.papeleraAbierta) { await this.cargarPapelera(); }
+  async alternarPapelera(lista: ListaDeImagenes): Promise<void> {
+    const estado = this.listas[lista];
+    estado.papeleraAbierta = !estado.papeleraAbierta;
+    if (estado.papeleraAbierta) { await this.cargarPapelera(lista); }
   }
 
-  private async cargarPapelera(): Promise<void> {
+  private async cargarPapelera(lista: ListaDeImagenes): Promise<void> {
     if (this.seleccionId === null) { return; }
     try {
-      const res: any = await firstValueFrom(this._categoriaService.papeleraImagenes(this.seleccionId));
-      this.papelera = res?.data ?? [];
+      const res: any = await firstValueFrom(
+        this._categoriaService.papeleraImagenes(this.seleccionId, lista));
+      this.listas[lista].papelera = res?.data ?? [];
     } catch {
-      this.papelera = [];
+      this.listas[lista].papelera = [];
     }
   }
 
-  async restaurarImagen(p: ImagenProgramadaEnPapelera): Promise<void> {
+  async restaurarImagen(p: ImagenProgramadaEnPapelera, lista: ListaDeImagenes): Promise<void> {
     if (!this.puedeEditar || this.trabajando) { return; }
-    await this.accionImagen(() => this._categoriaService.restaurarImagenes([p.id]));
+    await this.accionImagen(() => this._categoriaService.restaurarImagenes([p.id]), lista);
   }
 
-  async vaciarPapelera(): Promise<void> {
-    if (!this.puedeEliminar || this.trabajando || !this.papelera.length) { return; }
+  async vaciarPapelera(lista: ListaDeImagenes): Promise<void> {
+    const cuantas = this.listas[lista].papelera.length;
+    if (!this.puedeEliminar || this.trabajando || !cuantas) { return; }
     if (this.seleccionId === null) { return; }
-    if (!confirm(`¿Vaciar la papelera de «${this.seleccionada?.nombre}»?\n\n`
-                 + `Se borran ${this.papelera.length} imagen(es) del disco y no se pueden recuperar.`)) { return; }
+    const que = lista === 'banner' ? 'de los banners' : 'de las imágenes';
+    if (!confirm(`¿Vaciar la papelera ${que} de «${this.seleccionada?.nombre}»?\n\n`
+                 + `Se borran ${cuantas} imagen(es) del disco y no se pueden recuperar.`)) { return; }
 
-    await this.accionImagen(() => this._categoriaService.vaciarImagenes(this.seleccionId!));
+    await this.accionImagen(
+      () => this._categoriaService.vaciarImagenes(this.seleccionId!, lista), lista);
   }
 
   // ================================================================
 
   /** Todas las acciones devuelven las imágenes enteras y se repinta. */
-  private async accionImagen(llamada: () => any, avisar = true): Promise<void> {
+  private async accionImagen(llamada: () => any, lista: ListaDeImagenes,
+                             avisar = true): Promise<void> {
     this.trabajando = true;
     try {
       const res: any = await firstValueFrom(llamada());
       if (avisar) { this._toastr.success(res?.message ?? 'Listo', 'Listo'); }
-      this.pintar(res?.data);
+      this.pintar(res?.data, lista);
     } catch (e: any) {
       this._toastr.error(e?.error?.message ?? 'No se pudo completar la acción', 'Error',
                          { timeOut: 15000, closeButton: true });
@@ -644,18 +736,27 @@ export class AllCategoriasWebComponent implements OnInit {
    * propia respuesta, y recargarlo entero cerraría las ramas abiertas y
    * movería el foco justo después de cada clic.
    */
-  private pintar(data: ImagenesDeCategoria | null | undefined): void {
+  private pintar(data: ImagenesDeCategoria | null | undefined,
+                 lista: ListaDeImagenes): void {
     if (!data) { return; }
-    this.contenido = data;
+    // LA LISTA LA DICE EL SERVIDOR: lo que vuelve de encender un banner son
+    // los banners, y meterlo en la otra dejaría las dos cruzadas
+    const suya = data.tipo ?? lista;
+    this.listas[suya].contenido = data;
 
+    const antes = this.cuentas.get(data.categoria_id);
+    const cuantas = data.imagenes.length;
+    const sale = data.imagenes.some(i => i.sale_ahora);
     this.cuentas.set(data.categoria_id, {
       categoria_id: data.categoria_id,
-      cuantas: data.imagenes.length,
-      sale_alguna: data.imagenes.some(i => i.sale_ahora),
+      cuantas:     suya === 'imagen' ? cuantas : (antes?.cuantas ?? 0),
+      sale_alguna: suya === 'imagen' ? sale    : (antes?.sale_alguna ?? false),
+      banners:     suya === 'banner' ? cuantas : (antes?.banners ?? 0),
+      sale_banner: suya === 'banner' ? sale    : (antes?.sale_banner ?? false),
     });
     this.construirArbol();
 
-    if (this.papeleraAbierta) { this.cargarPapelera(); }
+    if (this.listas[suya].papeleraAbierta) { this.cargarPapelera(suya); }
   }
 
   /** Las fechas en una línea legible. */

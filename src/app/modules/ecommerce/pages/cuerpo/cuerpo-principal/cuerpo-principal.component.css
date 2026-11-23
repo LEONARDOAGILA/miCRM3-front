@@ -1086,7 +1086,7 @@
 }
 
 /* El botón de guardar, en la cabecera pegajosa: no se encoge aunque el
-   nombre de la sección sea largo, que es lo que pasa con los escaparates */
+   nombre de la sección sea largo, que es lo que pasa con las secciones de productos */
 .inicio-contenido__guardar {
   flex: 0 0 auto;
   white-space: nowrap;
@@ -1286,10 +1286,10 @@
   opacity: .55;
 }
 
-/* ---------- Un escaparate traído de «Productos por sección» ----------
+/* ---------- Una sección de productos traída de «Grupos de productos» ----------
    Mismo reparto que el bloque de un banner: lo que explica a la izquierda y
    la acción a la derecha. */
-.escaparate-propio {
+.seccionProductos-propio {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1300,11 +1300,11 @@
   border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
-.escaparate-propio .campo-hint {
+.seccionProductos-propio .campo-hint {
   flex: 1 1 280px;
 }
 
-/* El desplegable de escaparates, dentro del renglón de añadir */
+/* El desplegable de secciones de productos, dentro del renglón de añadir */
 .inicio-nuevo .form-select {
   flex: 1 1 220px;
   min-width: 0;
@@ -1329,7 +1329,7 @@
   opacity: .5;
 }
 
-/* ---------- Quitar un escaparate, desde la propia lista ----------
+/* ---------- Quitar una sección de productos, desde la propia lista ----------
    La tarjeta es flex y los textos se estiran: el botón se queda pegado a la
    derecha sin encogerse. Se ve apagado hasta que el mouse pasa por la fila,
    para que una lista de diez secciones no sea una fila de diez equis. */

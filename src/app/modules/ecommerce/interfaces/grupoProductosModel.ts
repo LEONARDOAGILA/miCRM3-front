@@ -3,7 +3,7 @@ import { ProductoModel } from '../../inventarios/interfaces/productoModel';
 /**
  * Una SECCIÓN DE PRODUCTOS (ecommerce.grupos_productos).
  *
- * Un escaparate armado a mano: «Los más vendidos», «Ofertas de navidad», «Lo
+ * Una sección de productos armada a mano: «Los más vendidos», «Ofertas de navidad», «Lo
  * nuevo de Samsung». No es una categoría ni una marca —ésas las decide quien
  * da de alta el producto—: el grupo la decide quien vende, y junta cosas
  * que el catálogo no junta.

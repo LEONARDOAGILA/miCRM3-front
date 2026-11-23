@@ -50,7 +50,7 @@ import { GaleriaImagenesComponent } from '../../galerias/galeriaImagenes/galeria
  *
  * AQUÍ NO SE CREAN NI SE BORRAN SECCIONES, pero por dos motivos distintos:
  * las CINCO DE FÁBRICA existen porque la tienda sabe pintarlas, y las de
- * PRODUCTOS se crean y se borran en «Productos por sección», que es donde se
+ * PRODUCTOS se crean y se borran en «Grupos de productos», que es donde se
  * les meten los productos. Lo que se administra aquí es cuáles se ven, en qué
  * orden, CÓMO SE LLAMAN EN LA TIENDA y entre qué fechas.
  *
@@ -439,7 +439,7 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
   // galería de imágenes con su sitio en la portada y nada más, y la tienda ya
   // sabe pintarlo: no hace falta código nuevo por cada uno. Las de fábrica
   // existen porque la tienda las sabe pintar y las de productos se arman en
-  // «Productos por sección», así que ésas siguen sin crearse aquí.
+  // «Grupos de productos», así que ésas siguen sin crearse aquí.
 
   /** Si está abierto el renglón de «añadir banner». */
   public creandoBanner = false;
@@ -495,47 +495,47 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   // ================================================================
-  // LOS ESCAPARATES DE OTRAS PANTALLAS
+  // LAS SECCIONES DE PRODUCTOS DE OTRAS PANTALLAS
   // ================================================================
   //
-  // Las secciones de «Productos por sección» se crean allí y nacen en el
+  // Las secciones de «Grupos de productos» se crean allí y nacen en el
   // cuerpo principal. AQUÍ SE DECIDE EN QUÉ PÁGINAS SALEN: el mismo
-  // escaparate puede estar en varias, cada una con su rótulo, sus colores y
+  // sección puede estar en varias, cada una con su rótulo, sus colores y
   // su sitio. Lo que se repite es la fila, no los productos.
   //
   // QUITARLO DE UNA PÁGINA NO LO BORRA. Por eso no es el botón de la
-  // papelera: el escaparate y sus productos siguen en su pantalla, y volver a
+  // papelera: la sección y sus productos siguen en su pantalla, y volver a
   // ponerlo es elegirlo otra vez en esta lista.
 
-  public anadiendoEscaparate = false;
-  public escaparates: { id: number; nombre: string; cuantos: number; en_paginas: number }[] = [];
-  public escaparateElegido: number | null = null;
-  public cargandoEscaparates = false;
+  public anadiendoSeccionProductos = false;
+  public seccionesProductos: { id: number; nombre: string; cuantos: number; en_paginas: number }[] = [];
+  public seccionProductosElegida: number | null = null;
+  public cargandoSeccionesProductos = false;
 
-  async abrirAnadirEscaparate(): Promise<void> {
-    this.anadiendoEscaparate = true;
-    this.escaparateElegido = null;
-    this.cargandoEscaparates = true;
+  async abrirAnadirSeccionProductos(): Promise<void> {
+    this.anadiendoSeccionProductos = true;
+    this.seccionProductosElegida = null;
+    this.cargandoSeccionesProductos = true;
     try {
       const res: any = await firstValueFrom(
-        this._inicioService.escaparatesDisponibles(this.cuerpoElegido));
-      this.escaparates = res?.data ?? [];
+        this._inicioService.seccionesProductosDisponibles(this.cuerpoElegido));
+      this.seccionesProductos = res?.data ?? [];
     } catch (e: any) {
-      this._toastr.error(e?.error?.message ?? 'No se pudieron cargar los escaparates', 'Error',
+      this._toastr.error(e?.error?.message ?? 'No se pudieron cargar las secciones de productos', 'Error',
                          { timeOut: 15000, closeButton: true });
-      this.escaparates = [];
+      this.seccionesProductos = [];
     } finally {
-      this.cargandoEscaparates = false;
+      this.cargandoSeccionesProductos = false;
     }
   }
 
-  cerrarAnadirEscaparate(): void {
-    this.anadiendoEscaparate = false;
-    this.escaparateElegido = null;
+  cerrarAnadirSeccionProductos(): void {
+    this.anadiendoSeccionProductos = false;
+    this.seccionProductosElegida = null;
   }
 
   /** Cuántos productos tiene y en cuántas páginas sale ya, para el desplegable. */
-  rotuloEscaparate(e: { nombre: string; cuantos: number; en_paginas: number }): string {
+  rotuloSeccionProductos(e: { nombre: string; cuantos: number; en_paginas: number }): string {
     const cuantos = e.cuantos === 1 ? '1 producto' : e.cuantos + ' productos';
     const donde = e.en_paginas === 0 ? 'en ninguna página'
                 : e.en_paginas === 1 ? 'ya en 1 página'
@@ -543,25 +543,25 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
     return e.nombre + ' — ' + cuantos + ', ' + donde;
   }
 
-  async anadirEscaparate(): Promise<void> {
-    if (!this.puedeCrear || !this.escaparateElegido) { return; }
+  async anadirSeccionProductos(): Promise<void> {
+    if (!this.puedeCrear || !this.seccionProductosElegida) { return; }
 
-    await this.accion(() => this._inicioService.addEscaparate(
-      Number(this.escaparateElegido), this.cuerpoElegido));
-    this.cerrarAnadirEscaparate();
+    await this.accion(() => this._inicioService.addSeccionProductos(
+      Number(this.seccionProductosElegida), this.cuerpoElegido));
+    this.cerrarAnadirSeccionProductos();
     await this.cargarCuerpos();   // cambió cuántas secciones tiene
   }
 
-  async quitarEscaparate(s: SeccionInicioModel): Promise<void> {
+  async quitarSeccionProductos(s: SeccionInicioModel): Promise<void> {
     if (!this.puedeEliminar) { return; }
     if (!confirm('«' + s.nombre + '» dejará de salir en esta página.\n\n'
-                 + 'NO se borra: sus productos siguen en «Productos por sección» y lo puedes '
+                 + 'NO se borra: sus productos siguen en «Grupos de productos» y lo puedes '
                  + 'volver a añadir. ¿Seguir?')) {
       return;
     }
 
     if (this.elegida === s.id) { this.elegida = null; }
-    await this.accion(() => this._inicioService.quitarEscaparate(s.id));
+    await this.accion(() => this._inicioService.quitarSeccionProductos(s.id));
     await this.cargarCuerpos();
   }
 
@@ -1062,7 +1062,7 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
 
   /**
    * Si esta sección pinta TARJETAS DE PRODUCTO, y entonces se le pueden elegir
-   * sus colores: los escaparates y el catálogo.
+   * sus colores: las secciones de productos y el catálogo.
    *
    * El catálogo entró el 09/11/2026, cuando la tienda pasó a usar una sola
    * tarjeta en todas sus pantallas: hasta entonces /shop tenía otra más pobre y
@@ -1073,14 +1073,14 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   /**
-   * Si es UN ESCAPARATE, de los que se arman a mano.
+   * Si es UNA SECCIÓN DE PRODUCTOS, de los que se arman a mano.
    *
    * Se pregunta aparte de `conBotones` para lo que es de la FILA —cómo se
    * mueve, cuántas salen antes del botón—: el catálogo lleva las mismas
    * tarjetas pero no es una fila, trae sus propios filtros y su propio «cuántos
    * por página», así que esas dos perillas ahí no mandarían nada.
    */
-  esEscaparate(s: SeccionInicioModel): boolean {
+  esSeccionProductos(s: SeccionInicioModel): boolean {
     return s.fuente.tipo === 'productos';
   }
 
@@ -1531,11 +1531,11 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
     if (s.fuente.tipo === 'productos') {
       return {
         ruta: '/ecommerce/' + (s.fuente.pantalla ?? 'grupo-productos'),
-        pantalla: 'Productos por sección',
-        // El enlace lleva la sección puesta: llegar a una lista de escaparates
+        pantalla: 'Grupos de productos',
+        // El enlace lleva la sección puesta: llegar a una lista de secciones de productos
         // y tener que buscar el que se estaba mirando es el paso que sobra.
         params: s.fuente.grupo_id ? { grupo: s.fuente.grupo_id } : undefined,
-        regla: 'Salen aquí los productos que le metas a este escaparate, en el '
+        regla: 'Salen aquí los productos que le metas a esta sección, en el '
              + 'orden que tengan allí. Lo que aquí se decide es dónde va en la '
              + 'portada, qué se lee encima y entre qué fechas se ve.',
       };
@@ -1699,7 +1699,7 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
     if (s.clave === 'mosaico' || s.clave === 'marcas_promocion') { return 'promos'; }
     if (s.clave === 'marcas') { return 'logos'; }
     if (s.clave === 'catalogo') { return 'catalogo'; }
-    if (this.esEscaparate(s)) { return 'productos'; }
+    if (this.esSeccionProductos(s)) { return 'productos'; }
     return 'ninguna';
   }
 
@@ -2012,14 +2012,14 @@ export class CuerpoPrincipalComponent implements OnInit, AfterViewInit, OnDestro
         // productos manda la palanca: apagada, null aunque haya un número
         // escrito, para que volver a encenderla lo recupere
         forma:                this.esDestacadas(s) ? (limpio(v.forma) || 'circulo') : null,
-        // El alcance sólo donde se mira: en un banner o en un escaparate no
+        // El alcance sólo donde se mira: en un banner o en una sección de productos no
         // dice nada, y guardarlo ahí dejaría un campo que nadie lee
         alcance:              this.miraElAlcance(s) ? (limpio(v.alcance) || 'tienda') : null,
         // Sólo la paginada lo mira: en las demás se guardaría un número que
         // no enseña nadie
         por_pagina:           this.esPaginadaLa(s) ? enteroDe(v.por_pagina) : null,
         segundos:             this.tieneGaleria(s) ? enteroDe(v.segundos)
-                            : this.esEscaparate(s) ? (v.mueve_sola ? (enteroDe(v.segundos) ?? 5) : null)
+                            : this.esSeccionProductos(s) ? (v.mueve_sola ? (enteroDe(v.segundos) ?? 5) : null)
                             : null,
         imagen_alt:           this.conBotones(s) ? limpio(v.imagen_alt)    : null,
         imagen_enlace:        this.conBotones(s) ? limpio(v.imagen_enlace) : null,

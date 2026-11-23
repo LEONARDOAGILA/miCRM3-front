@@ -6,7 +6,7 @@
  *
  * HAY DE DOS CLASES. Las CINCO DE FÁBRICA existen porque la tienda sabe
  * pintarlas —banner, destacadas, marcas— y no se crean ni se borran. Las demás
- * son SECCIONES DE PRODUCTOS que alguien armó en «Productos por sección»: se
+ * son SECCIONES DE PRODUCTOS que alguien armó en «Grupos de productos»: se
  * crean y se borran allí, y aquí aparecen como una fila más, con su orden, su
  * rótulo, su alto y sus fechas como las otras. Por eso en esta pantalla no hay
  * «nueva» ni «borrar»: el sitio de crearlas es el otro.
@@ -61,7 +61,7 @@ export interface SeccionInicioModel {
   con_contenido: boolean;
 
   /**
-   * A qué escaparate de «Productos por sección» apunta, si es uno.
+   * A qué sección de «Grupos de productos» apunta, si es uno.
    *
    * Las cinco de siempre traen null: existen porque la tienda sabe pintarlas y
    * no se crean ni se borran. Las demás son una sección de productos que
@@ -710,7 +710,7 @@ export interface FuenteSeccion {
   galeria?: string;
   /** Con `promocion`, `destacadas` y `productos`: la pantalla donde se llena. */
   pantalla?: string;
-  /** Con `productos`: cuál escaparate, para abrirlo ya elegido. */
+  /** Con `productos`: cuál sección, para abrirla ya elegida. */
   grupo_id?: number;
   /** Con `pendiente`: qué falta. */
   falta?: string;
@@ -873,10 +873,10 @@ export const VISTA_POR_DEFECTO: VistaSeccion = {
  * apuntarla. Se arma con el nombre que traiga.
  *
  * LLEVA RÓTULO Y LÍNEA DE ABAJO, y de fábrica no dicen nada: lo que se lee
- * encima lo escribe quien arma el escaparate. Dejar el nombre interno como
+ * encima lo escribe quien arma la sección. Dejar el nombre interno como
  * rótulo de fábrica sacaría «pro1» en la tienda.
  *
- * La línea de abajo porque es lo que distingue un escaparate de una lista:
+ * La línea de abajo porque es lo que distingue una sección de productos de una lista:
  * «Recomendados para ti» y, más pequeño, «Las mejores ofertas para tu hogar».
  */
 export function vistaDeProductos(nombre: string): VistaSeccion {

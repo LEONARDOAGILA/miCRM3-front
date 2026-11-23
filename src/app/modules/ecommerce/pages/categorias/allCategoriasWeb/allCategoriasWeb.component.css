@@ -312,6 +312,35 @@
 
 .cat-seccion__titulo i { color: var(--bs-app-theme, #00acac); }
 
+/* Cada cuántos segundos se turnan los banners. Sale sólo cuando hay más de
+   uno: con uno solo no hay nada que turnar y la caja sobraría */
+.cat-segundos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .5rem;
+  font-size: .75rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.cat-segundos input {
+  width: 5rem;
+}
+
+.cat-segundos__pista {
+  flex: 1 1 14rem;
+  font-size: .68rem;
+}
+
+/* El «Programar…» de cada lista, al final de su propio título: antes era
+   uno solo arriba, y con dos listas no se sabía a cuál iba */
+.cat-seccion__boton {
+  margin-left: auto;
+}
+
+.cat-seccion__boton i { color: inherit; }
+
 .cat-seccion__cuenta {
   padding: .05rem .4rem;
   border-radius: 1rem;

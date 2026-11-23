@@ -5,7 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { FiltroProductos } from '../interfaces/grupoProductosModel';
 
 /**
- * Grupos de productos: los escaparates y lo que lleva cada uno.
+ * Grupos de productos: las secciones de productos y lo que lleva cada uno.
  *
  * AQUÍ NO SE PIDE EL CATÁLOGO. La rejilla del medio de la pantalla usa
  * `ProductoService.allProductos`, la misma que la pantalla de productos:

@@ -17,6 +17,14 @@ export interface CategoriaWebModel {
   nombre_catalogo: string;
   /** El alternativo, o null si se usa el del catálogo */
   nombre_web?: string | null;
+  /**
+   * CADA CUÁNTOS SEGUNDOS CAMBIA SU BANNER (2 a 60).
+   *
+   * Nulo es el ritmo de siempre de la tienda. Es de la categoría y no de
+   * cada banner: lo que se elige es el ritmo de la rotación, no el de una
+   * imagen suelta, igual que en los banners del inicio.
+   */
+  banner_segundos?: number | null;
 
   /** Apagada a mano: ella y todo lo que cuelgue de ella dejan de salir */
   oculta: boolean;

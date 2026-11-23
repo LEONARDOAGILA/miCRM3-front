@@ -178,14 +178,14 @@ export class EcommerceHomeComponent implements OnInit, OnDestroy {
       descripcion: 'Ficha técnica, imágenes y franjas del detalle de cada producto',
     },
 
-    // ---------- Escaparates ----------
+    // ---------- Secciones de productos ----------
     {
       url: 'ecommerce/grupo-productos',
       clave: 'grupos_productos',
       label: 'GRUPOS DE PRODUCTOS',
       icon: 'fa-basket-shopping',
       color: 'bg-warning',
-      descripcion: 'Escaparates armados a mano: «Los más vendidos», «Ofertas de navidad»',
+      descripcion: 'Secciones de productos armados a mano: «Los más vendidos», «Ofertas de navidad»',
     },
   ];
 

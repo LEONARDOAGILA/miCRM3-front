@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { ListaDeImagenes } from '../interfaces/categoriaImagenModel';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
@@ -84,8 +85,14 @@ export class CategoriaWebService {
     return this._http.get(this.URL_SERVICIOS + 'imagenesCuentas');
   }
 
-  imagenes(categoriaId: number): Observable<any> {
-    return this._http.get(this.URL_SERVICIOS + 'imagenes/' + categoriaId);
+  /**
+   * Las imágenes de una categoría, de una de sus dos listas.
+   *
+   * LO QUE NO DIGA NADA ES LA DE SIEMPRE, aquí y en el servidor: las dos
+   * listas comparten rutas y lo único que las separa es `?tipo=banner`.
+   */
+  imagenes(categoriaId: number, tipo: ListaDeImagenes = 'imagen'): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'imagenes/' + categoriaId, { params: { tipo } });
   }
 
   addImagen(categoriaId: number, datos: FormData): Observable<any> {
@@ -112,8 +119,8 @@ export class CategoriaWebService {
     return this._http.delete(this.URL_SERVICIOS + 'deleteImagen/' + id);
   }
 
-  papeleraImagenes(categoriaId: number): Observable<any> {
-    return this._http.get(this.URL_SERVICIOS + 'papeleraImagenes/' + categoriaId);
+  papeleraImagenes(categoriaId: number, tipo: ListaDeImagenes = 'imagen'): Observable<any> {
+    return this._http.get(this.URL_SERVICIOS + 'papeleraImagenes/' + categoriaId, { params: { tipo } });
   }
 
   restaurarImagenes(ids: number[]): Observable<any> {
@@ -121,7 +128,7 @@ export class CategoriaWebService {
   }
 
   /** Vacía la de ESTA categoría, y ahí sí se borran los ficheros del disco. */
-  vaciarImagenes(categoriaId: number): Observable<any> {
-    return this._http.post(this.URL_SERVICIOS + 'vaciarImagenes/' + categoriaId, {});
+  vaciarImagenes(categoriaId: number, tipo: ListaDeImagenes = 'imagen'): Observable<any> {
+    return this._http.post(this.URL_SERVICIOS + 'vaciarImagenes/' + categoriaId, { tipo });
   }
 }

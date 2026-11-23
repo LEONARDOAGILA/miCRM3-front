@@ -43,6 +43,16 @@ export class SaveImagenProgramadaComponent implements OnInit {
   /** De quién es la imagen: decide a qué servicio se le guarda. */
   @Input() tipo: 'categoria' | 'marca' = 'categoria';
 
+  /**
+   * Y DE CUÁL DE SUS DOS LISTAS, cuando el dueño es una categoría: la de
+   * siempre —el círculo de la portada— o la de los banners de /shop.
+   *
+   * SE LLAMA `lista` Y NO `tipo` porque aquí `tipo` ya era de quién es la
+   * imagen. Al servidor viaja como «tipo», que es como se llama la columna.
+   * Las marcas no tienen banners: para ellas esto no se toca.
+   */
+  @Input() lista: 'imagen' | 'banner' = 'imagen';
+
   /** El id de esa categoría o marca. Hace falta siempre. */
   @Input() duenioId!: number;
   /** Su nombre, para la cabecera del modal. */
@@ -66,7 +76,12 @@ export class SaveImagenProgramadaComponent implements OnInit {
   public activeModal = inject(NgbActiveModal);
 
   get esNueva(): boolean { return this.imagen === null; }
-  get titulo(): string { return this.esNueva ? 'Programar una imagen' : 'Modificar la imagen'; }
+  get esBanner(): boolean { return this.lista === 'banner'; }
+
+  get titulo(): string {
+    if (this.esBanner) { return this.esNueva ? 'Programar un banner' : 'Modificar el banner'; }
+    return this.esNueva ? 'Programar una imagen' : 'Modificar la imagen';
+  }
   get ctrlActivo(): FormControl { return this.form.controls['activo'] as FormControl; }
 
   /** Sin fechas, se ve siempre: decirlo evita que se rellenen «por si acaso». */
@@ -84,6 +99,10 @@ export class SaveImagenProgramadaComponent implements OnInit {
       desde:  [i?.desde ?? ''],
       hasta:  [i?.hasta ?? ''],
       activo: [i?.activo !== false],
+      // SÓLO LOS BANNERS LO ENSEÑAN, pero el campo está siempre: un control
+      // que aparece y desaparece del formulario es por donde se cuelan los
+      // «no existe el control 'enlace'» al cambiar de lista
+      enlace: [i?.enlace ?? '', [Validators.maxLength(250)]],
     });
   }
 
@@ -154,6 +173,12 @@ export class SaveImagenProgramadaComponent implements OnInit {
     cuerpo.append('desde', limpio(v.desde));
     cuerpo.append('hasta', limpio(v.hasta));
     cuerpo.append('activo', v.activo !== false ? '1' : '0');
+    // SÓLO CUENTA AL CREAR: el servidor no deja que una imagen se pase a
+    // banner por el camino
+    cuerpo.append('tipo', this.lista);
+    // El enlace es de los banners; en una imagen de círculo el servidor lo
+    // ignora, pero mejor no mandarlo y que no parezca que se guarda
+    if (this.esBanner) { cuerpo.append('enlace', limpio(v.enlace)); }
 
     this.guardando = true;
     try {

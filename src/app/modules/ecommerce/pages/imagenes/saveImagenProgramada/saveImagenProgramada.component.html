@@ -68,6 +68,22 @@
           [trimEspacios]="true">
         </app-campoTexto>
 
+        <!-- A DÓNDE LLEVA, sólo en los banners: el círculo de una categoría
+             ya lleva a su categoría y no hay nada que elegir -->
+        @if (esBanner) {
+          <app-campoTexto
+            [control]="$any(form.controls['enlace'])"
+            label="A DÓNDE LLEVA (OPCIONAL)"
+            placeholder="/shop?categoria=26  ·  https://…"
+            [maxLength]="250"
+            [trimEspacios]="true">
+          </app-campoTexto>
+          <small class="text-muted d-block mb-2" style="font-size:.7rem">
+            Vacío, el banner no lleva a ninguna parte. Una dirección de fuera
+            («https://…») abre en otra pestaña sola.
+          </small>
+        }
+
         <label class="img-rotulo mt-2">ENTRE QUÉ FECHAS SE VE</label>
 
         <div class="row g-2">

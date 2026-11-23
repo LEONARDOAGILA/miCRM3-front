@@ -185,7 +185,7 @@
            Con categoría o marca, la casilla nace encendida: una página de
            «Línea Blanca» sin un producto de línea blanca no es lo que nadie
            quería. Sin categoría ni marca el catálogo es el ENTERO —eso es
-           /shop— y además se ofrece empezar con un escaparate. -->
+           /shop— y además se ofrece empezar con una sección de productos. -->
       <div class="col-12">
         <label class="seccion-rotulo">QUÉ PRODUCTOS ENSEÑA</label>
 
@@ -215,30 +215,30 @@
         </p>
       </div>
 
-      <!-- ---------- Con qué escaparate nace ----------
+      <!-- ---------- Con qué sección nace ----------
            Sólo al CREAR una página suelta: ahí no hay categoría de la que
-           sacar productos, y entrar después al editor a añadir el escaparate
+           sacar productos, y entrar después al editor a añadir la sección
            es el paso que se olvida. En una página que ya existe no sale: los
-           escaparates se ponen y se quitan en el editor de la página, y
+           secciones de productos se ponen y se quitan en el editor de la página, y
            tenerlo en dos sitios es tener dos sitios donde mirar. -->
-      @if (ofreceEscaparate) {
+      @if (ofreceSeccionProductos) {
         <div class="col-12">
           @if (cargandoListas) {
             <p class="text-muted mb-0">
-              <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando los escaparates…
+              <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando las secciones de productos…
             </p>
-          } @else if (escaparates.length) {
+          } @else if (seccionesProductos.length) {
             <app-combo
-              formControlName="escaparate_id"
-              label="EMPIEZA CON UN ESCAPARATE (OPCIONAL)"
-              [items]="escaparates"
+              formControlName="seccion_productos_id"
+              label="EMPIEZA CON UNA SECCIÓN DE PRODUCTOS (OPCIONAL)"
+              [items]="seccionesProductos"
               bindLabel="etiqueta"
               bindValue="id">
             </app-combo>
             <p class="campo-hint mb-0">
               <i class="fa-solid fa-circle-info"></i>
               <span>
-                Un escaparate es una lista armada a mano en <b>Productos por
+                Una sección de productos es una lista armada a mano en <b>Productos por
                 sección</b> («Los más vendidos», «Ofertas»). La página nace con
                 él dentro, encendido. Después puedes añadirle más desde el
                 editor de la página.
@@ -248,7 +248,7 @@
             <p class="campo-hint mb-0">
               <i class="fa-solid fa-circle-info"></i>
               <span>
-                Todavía no hay escaparates. Se arman en <b>Productos por
+                Todavía no hay secciones de productos. Se arman en <b>Productos por
                 sección</b>, y desde ahí o desde el editor de esta página se le
                 pueden añadir después.
               </span>

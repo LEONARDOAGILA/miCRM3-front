@@ -21,8 +21,8 @@ import { CampoColorComponent } from '../../../../../components/campos/campoColor
 /** Una categoría o una marca, ya aplanada para el desplegable. */
 interface Opcion { id: number; nombre: string; }
 
-/** Un escaparate de «Productos por sección», con lo que hace falta decir de él. */
-interface OpcionEscaparate extends Opcion { etiqueta: string; }
+/** Una sección de productos de «Grupos de productos», con lo que hace falta decir de él. */
+interface OpcionSeccionProductos extends Opcion { etiqueta: string; }
 
 /**
  * UN CUERPO DE LA TIENDA: crear y modificar, en el mismo diálogo.
@@ -50,9 +50,9 @@ interface OpcionEscaparate extends Opcion { etiqueta: string; }
  *    hasta la casilla. Se puede apagar, y apagarlo no borra lo que se le haya
  *    puesto a esa sección.
  *  · Sin categoría ni marca no hay nada que filtrar, así que ahí lo que se
- *    ofrece es un ESCAPARATE —una lista armada a mano en «Productos por
+ *    ofrece es una SECCIÓN DE PRODUCTOS —una lista armada a mano en «Productos por
  *    sección»— con el que la página nace. Sólo al crearla: después, los
- *    escaparates se ponen y se quitan en el editor de la página, y tenerlo en
+ *    secciones de productos se ponen y se quitan en el editor de la página, y tenerlo en
  *    dos sitios es tener dos sitios donde mirar.
  *
  * EL CATÁLOGO DE UNA PÁGINA SUELTA es el catálogo ENTERO, no uno filtrado: es
@@ -94,8 +94,8 @@ export class SaveCuerpoComponent implements OnInit {
   /** Campos y no getters: con `[items]` de un getter, ng-select pierde lo elegido. */
   public categorias: Opcion[] = [];
   public marcas: Opcion[] = [];
-  /** Los de «Productos por sección», para que la página pueda nacer con uno. */
-  public escaparates: OpcionEscaparate[] = [];
+  /** Los de «Grupos de productos», para que la página pueda nacer con uno. */
+  public seccionesProductos: OpcionSeccionProductos[] = [];
   public cargandoListas = true;
 
   /**
@@ -161,8 +161,8 @@ export class SaveCuerpoComponent implements OnInit {
                   : 'Enseña todos sus productos';
   }
 
-  /** El escaparate sólo se ofrece al crear una página suelta. */
-  get ofreceEscaparate(): boolean {
+  /** La sección sólo se ofrece al crear una página suelta. */
+  get ofreceSeccionProductos(): boolean {
     return this.esNuevo && this.destino === 'libre';
   }
 
@@ -254,7 +254,7 @@ export class SaveCuerpoComponent implements OnInit {
       // entero y eso se pide a propósito
       catalogo:     [c?.catalogo ?? (destino !== 'libre')],
       // Con el que nace, si se elige. Sólo al crear una página suelta
-      escaparate_id: [null],
+      seccion_productos_id: [null],
       activo:       [c?.activo ?? true],
     });
 
@@ -281,8 +281,8 @@ export class SaveCuerpoComponent implements OnInit {
    */
   private async cargarListas(): Promise<void> {
     try {
-      // Los escaparates sólo hacen falta al crear: es cuando se ofrecen
-      const [cats, marcas, escaparates]: any[] = await Promise.all([
+      // Las secciones de productos sólo hacen falta al crear: es cuando se ofrecen
+      const [cats, marcas, seccionesProductos]: any[] = await Promise.all([
         firstValueFrom(this._categoriaService.allCategoriasWeb()),
         firstValueFrom(this._marcaService.allMarcasWeb()),
         this.esNuevo ? firstValueFrom(this._grupoService.allGrupos()) : Promise.resolve(null),
@@ -303,7 +303,7 @@ export class SaveCuerpoComponent implements OnInit {
 
       // Con cuántos productos tiene cada uno y si está apagado: uno vacío se
       // puede elegir, pero la tienda se lo salta y no se vería nada
-      this.escaparates = (escaparates?.data ?? []).map((s: any) => ({
+      this.seccionesProductos = (seccionesProductos?.data ?? []).map((s: any) => ({
         id: s.id,
         nombre: s.nombre,
         etiqueta: s.nombre
@@ -396,9 +396,9 @@ export class SaveCuerpoComponent implements OnInit {
       // /shop: por eso se manda lo que diga la casilla y no un false fijo,
       // que apagaba el catálogo de /shop con sólo abrir y guardar
       catalogo:     v.catalogo === true,
-      // El escaparate con el que nace. Sólo al crear una página suelta: en una
-      // que ya existe, los escaparates se ponen en el editor de la página
-      escaparate_id: this.ofreceEscaparate ? (v.escaparate_id ?? null) : null,
+      // La sección con el que nace. Sólo al crear una página suelta: en una
+      // que ya existe, las secciones de productos se ponen en el editor de la página
+      seccion_productos_id: this.ofreceSeccionProductos ? (v.seccion_productos_id ?? null) : null,
       activo:       this.esPrincipal ? true : v.activo !== false,
     };
 

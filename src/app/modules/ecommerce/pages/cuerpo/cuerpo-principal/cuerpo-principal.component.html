@@ -231,13 +231,13 @@
                 <i class="fa fa-plus"></i> Banner
               </button>
             }
-            <!-- Y lo que se trae de «Productos por sección»: el mismo escaparate
+            <!-- Y lo que se trae de «Grupos de productos»: la misma sección
                  puede salir en varias páginas -->
-            @if (puedeCrear && !anadiendoEscaparate) {
+            @if (puedeCrear && !anadiendoSeccionProductos) {
               <button type="button" class="btn btn-xs btn-outline-theme"
-                      title="Enseñar aquí un escaparate de «Productos por sección»"
-                      [disabled]="trabajando" (click)="abrirAnadirEscaparate()">
-                <i class="fa fa-plus"></i> Escaparate
+                      title="Enseñar aquí una sección de productos de «Grupos de productos»"
+                      [disabled]="trabajando" (click)="abrirAnadirSeccionProductos()">
+                <i class="fa fa-plus"></i> Sección
               </button>
             }
             <button type="button" class="btn btn-xs btn-white"
@@ -317,42 +317,42 @@
             </div>
           }
 
-          <!-- Traer un escaparate de «Productos por sección»: el mismo puede
+          <!-- Traer una sección de productos de «Grupos de productos»: la misma puede
                salir en varias páginas, cada una con su rótulo y sus colores -->
-          @if (anadiendoEscaparate) {
+          @if (anadiendoSeccionProductos) {
             <div class="inicio-nuevo">
-              <label class="inicio-nuevo__rotulo" for="nuevo-escaparate">CUÁL SE ENSEÑA AQUÍ</label>
-              @if (cargandoEscaparates) {
+              <label class="inicio-nuevo__rotulo" for="nueva-seccion-productos">CUÁL SE ENSEÑA AQUÍ</label>
+              @if (cargandoSeccionesProductos) {
                 <span class="text-muted">
                   <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando…
                 </span>
-              } @else if (escaparates.length === 0) {
+              } @else if (seccionesProductos.length === 0) {
                 <span class="inicio-nuevo__pie">
-                  Esta página ya enseña todos los escaparates que hay. Se crean en
-                  «Productos por sección».
+                  Esta página ya enseña todos las secciones de productos que hay. Se crean en
+                  «Grupos de productos».
                 </span>
               } @else {
-                <select id="nuevo-escaparate" class="form-select form-select-sm"
-                        [(ngModel)]="escaparateElegido" [ngModelOptions]="{ standalone: true }"
+                <select id="nueva-seccion-productos" class="form-select form-select-sm"
+                        [(ngModel)]="seccionProductosElegida" [ngModelOptions]="{ standalone: true }"
                         [disabled]="trabajando">
-                  <option [ngValue]="null">Elige un escaparate…</option>
-                  @for (e of escaparates; track e.id) {
-                    <option [ngValue]="e.id">{{ rotuloEscaparate(e) }}</option>
+                  <option [ngValue]="null">Elige un grupo de productos…</option>
+                  @for (e of seccionesProductos; track e.id) {
+                    <option [ngValue]="e.id">{{ rotuloSeccionProductos(e) }}</option>
                   }
                 </select>
                 <button type="button" class="btn btn-sm btn-primary"
-                        [disabled]="!escaparateElegido || trabajando"
-                        (click)="anadirEscaparate()">
+                        [disabled]="!seccionProductosElegida || trabajando"
+                        (click)="anadirSeccionProductos()">
                   Añadir
                 </button>
               }
               <button type="button" class="btn btn-sm btn-white"
-                      [disabled]="trabajando" (click)="cerrarAnadirEscaparate()">
+                      [disabled]="trabajando" (click)="cerrarAnadirSeccionProductos()">
                 Cancelar
               </button>
               <span class="inicio-nuevo__pie">
                 Se pone al final y encendida. Sus productos se siguen eligiendo en
-                «Productos por sección», y son los mismos en todas las páginas donde salga.
+                «Grupos de productos», y son los mismos en todas las páginas donde salga.
               </span>
             </div>
           }
@@ -438,18 +438,18 @@
                   </span>
                 </span>
 
-                <!-- QUITAR EL ESCAPARATE DE ESTA PÁGINA, en la misma lista donde
-                     se añadió con «Escaparate»: es donde se busca.
+                <!-- QUITAR LA SECCIÓN DE ESTA PÁGINA, en la misma lista donde
+                     se añadió con «Sección»: es donde se busca.
 
-                     Sólo los escaparates: las de fábrica se apagan con su
+                     Sólo las secciones de productos: las de fábrica se apagan con su
                      palanca y los banners se borran desde sus campos, porque
                      eso sí se lleva sus imágenes por delante. Quitar un
-                     escaparate no borra nada, y por eso vive aquí. -->
+                     sección no borra nada, y por eso vive aquí. -->
                 @if (s.grupo_productos_id && puedeEliminar) {
                   <span class="seccion-botones" (click)="$event.stopPropagation()">
                     <button type="button" class="btn btn-xs btn-borrar"
-                            title="Quitar de esta página (el escaparate y sus productos siguen en «Productos por sección»)"
-                            [disabled]="trabajando" (click)="quitarEscaparate(s)">
+                            title="Quitar de esta página (la sección y sus productos siguen en «Grupos de productos»)"
+                            [disabled]="trabajando" (click)="quitarSeccionProductos(s)">
                       <i class="fa fa-xmark"></i>
                     </button>
                   </span>
@@ -726,7 +726,7 @@
                       </span>
                     }
 
-                    <!-- Un escaparate: sus tarjetas, y la imagen de al lado si la lleva -->
+                    <!-- Una sección de productos: sus tarjetas, y la imagen de al lado si la lleva -->
                     @case ('productos') {
                       <span class="previa__conjunto" [class.previa__conjunto--derecha]="ladoDeLaPrevia(s) === 'derecha'">
                         @if (ladoDeLaPrevia(s)) {
@@ -975,7 +975,7 @@
                 <!-- ---------- De dónde sale lo que enseña ----------
                      Sólo en un cuerpo que apunte a una categoría o a una
                      marca: en el principal no hay «lo de esta página», y en un
-                     banner o un escaparate el campo no diría nada.
+                     banner o una sección de productos el campo no diría nada.
 
                      Se dice CON SUS NOMBRES lo que va a enseñar cada opción:
                      «las categorías que cuelgan de Movilidad» se entiende y
@@ -1007,7 +1007,7 @@
                   <!-- ---------- Cuántas antes del botón ----------
                        Sólo la paginada: las otras cuatro son una fila, y en una
                        fila «cuántas salen» lo decide el ancho de la pantalla. -->
-                  @if (esEscaparate(s) && esPaginadaLa(s)) {
+                  @if (esSeccionProductos(s) && esPaginadaLa(s)) {
                     <div class="col-12">
                       <label class="seccion-rotulo" [attr.for]="'por-pagina-' + s.id">
                         CUÁNTAS SALEN ANTES DEL BOTÓN
@@ -1058,7 +1058,7 @@
                        apagarla sin perder el número deja volver atrás.
 
                        La paginada no se mueve: se baja. -->
-                  @if (esEscaparate(s) && !esPaginadaLa(s)) {
+                  @if (esSeccionProductos(s) && !esPaginadaLa(s)) {
                     <div class="col-12">
                       <label class="seccion-rotulo">CÓMO SE MUEVE LA FILA</label>
 
@@ -1419,7 +1419,7 @@
                   </div>
                 <!-- ---------- El color de los botones de la tarjeta ----------
                      Las secciones que pintan tarjetas de producto: los
-                     escaparates y el catálogo (desde el 09/11/2026 la tienda
+                     secciones de productos y el catálogo (desde el 09/11/2026 la tienda
                      usa UNA sola tarjeta en todas sus pantallas). Se elige el
                      FONDO; la letra y el icono los calcula la tienda para que
                      se lean encima. -->
@@ -1744,23 +1744,23 @@
                 }
               }
 
-              <!-- ---------- Quitar un escaparate de ESTA página ----------
-                   No es la papelera: el escaparate y sus productos siguen en
-                   «Productos por sección», y se puede volver a añadir. Por eso
+              <!-- ---------- Quitar una sección de productos de ESTA página ----------
+                   No es la papelera: la sección y sus productos siguen en
+                   «Grupos de productos», y se puede volver a añadir. Por eso
                    el botón dice lo que hace y el aviso lo repite. -->
               @if (s.grupo_productos_id && puedeEliminar && enPestana(s, 'contenido')) {
-                <div class="escaparate-propio">
+                <div class="seccion-productos-propia">
                   <p class="campo-hint mb-0">
                     <i class="fa-solid fa-circle-info"></i>
                     <span>
                       Los productos de esta sección se eligen en
-                      <a routerLink="/ecommerce/grupo-productos">Productos por sección</a>,
+                      <a routerLink="/ecommerce/grupo-productos">Grupos de productos</a>,
                       y son los mismos en todas las páginas donde salga. Lo de aquí
                       —el rótulo, los colores, el sitio— es sólo de esta página.
                     </span>
                   </p>
                   <button type="button" class="btn btn-sm btn-outline-danger"
-                          [disabled]="trabajando" (click)="quitarEscaparate(s)">
+                          [disabled]="trabajando" (click)="quitarSeccionProductos(s)">
                     <i class="fa fa-eye-slash"></i> Quitar de esta página
                   </button>
                 </div>

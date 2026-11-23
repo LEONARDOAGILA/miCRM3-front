@@ -135,15 +135,11 @@
             </span>
 
             <div class="cat-ubicacion__acciones">
-              @if (puedeCrear) {
-                <button type="button" class="btn btn-sm btn-primary"
-                        [disabled]="trabajando" (click)="programar()">
-                  <i class="fa fa-plus"></i> Programar imagen
-                </button>
-              }
-              <button type="button" class="btn btn-sm btn-white" title="Volver a cargar"
-                      [disabled]="cargandoImagenes" (click)="cargarImagenes()">
-                <i class="fa fa-rotate" [class.fa-spin]="cargandoImagenes"></i>
+              <!-- AQUÍ YA NO SE PROGRAMA NADA: con dos listas, un botón suelto
+                   no dice a cuál. El de cada una está en su sección. -->
+              <button type="button" class="btn btn-sm btn-white" title="Volver a cargar las dos listas"
+                      [disabled]="cargando" (click)="cargarImagenes()">
+                <i class="fa fa-rotate" [class.fa-spin]="cargando"></i>
               </button>
             </div>
           </div>
@@ -281,170 +277,10 @@
                 </div>
               </div>
 
-              <!-- Las imágenes -->
-              <div class="cat-seccion">
-                <div class="cat-seccion__titulo">
-                  <i class="fa-solid fa-images"></i>
-                  Imágenes programadas
-                  <span class="cat-seccion__cuenta">{{ imagenes.length }}</span>
-                </div>
-
-                <!-- El texto va dentro de un <span>: .campo-hint es flex, y un
-                     <b> suelto se convertiría en otra columna. -->
-                <p class="campo-hint">
-                  <i class="fa-solid fa-circle-info"></i>
-                  <span>
-                    Cada imagen tiene sus fechas, y la tienda enseña la que toque
-                    hoy sola. Sin fechas es ilimitada. Si dos están en fecha a la
-                    vez manda la de arriba: arrástralas para cambiar el orden.
-                    <b>Es la imagen que usan las dos secciones de la portada</b>
-                    —destacadas y promoción— cuando la categoría está marcada.
-                  </span>
-                </p>
-
-                @if (cargandoImagenes) {
-                  <p class="text-muted small mb-0">
-                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando…
-                  </p>
-
-                } @else if (imagenes.length === 0) {
-                  <div class="cat-sin-imagenes">
-                    <i class="fa-solid fa-image"></i>
-                    <div>
-                      <b>Esta categoría no tiene ninguna imagen.</b>
-                      En la tienda sale sólo en el menú y en los filtros; para
-                      que salga con imagen en las secciones de la portada, prográmale una.
-                    </div>
-                  </div>
-
-                } @else {
-
-                  @if (!laQueSale) {
-                    <p class="cat-aviso">
-                      <i class="fa-solid fa-triangle-exclamation"></i>
-                      Hoy no sale ninguna: están apagadas, o sus fechas no
-                      incluyen hoy. La categoría seguirá saliendo en la portada
-                      si está marcada, pero sin imagen.
-                    </p>
-                  }
-
-                  <div cdkDropList [cdkDropListData]="imagenes"
-                       [cdkDropListDisabled]="!puedeEditar || trabajando"
-                       (cdkDropListDropped)="soltarImagen($event)">
-
-                    @for (i of imagenes; track i.id) {
-                      <div class="cat-fila"
-                           [class.cat-fila--sale]="i.sale_ahora"
-                           [class.cat-fila--apagada]="i.estado !== 'vigente'"
-                           cdkDrag>
-
-                        <div class="cat-fantasma" *cdkDragPlaceholder></div>
-
-                        @if (puedeEditar) {
-                          <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden">
-                            <i class="fa-solid fa-grip-vertical"></i>
-                          </span>
-                        }
-
-                        <img class="cat-miniatura" [src]="i.imagen_url" [alt]="i.nombre || 'Imagen'" loading="lazy">
-
-                        <div class="cat-datos">
-                          <b class="cat-nombre">{{ i.nombre || 'Sin nombre' }}</b>
-
-                          <span class="cat-etiquetas">
-                            @if (i.sale_ahora) {
-                              <span class="chip chip-ok" title="Es la que está viendo el cliente ahora mismo">
-                                <i class="fa-solid fa-circle-check"></i> Es la que sale
-                              </span>
-                            }
-
-                            <span class="chip" [ngClass]="estadosImagen[i.estado].clase"
-                                  [title]="estadosImagen[i.estado].ayuda">
-                              <i class="fa-solid" [ngClass]="estadosImagen[i.estado].icono"></i>
-                              {{ estadosImagen[i.estado].texto }}
-                            </span>
-
-                            @if (i.tapada) {
-                              <span class="chip chip-warn" title="Está en fecha, pero sale la de arriba">
-                                <i class="fa-solid fa-layer-group"></i> Tapada por la de arriba
-                              </span>
-                            }
-
-                            <span class="chip chip-muted">
-                              <i class="fa-solid" [class.fa-infinity]="!i.desde && !i.hasta"
-                                 [class.fa-calendar]="!!(i.desde || i.hasta)"></i>
-                              {{ vigencia(i) }}
-                            </span>
-                          </span>
-                        </div>
-
-                        <span class="cat-botones">
-                          @if (puedeEditar) {
-                            <button type="button" class="btn btn-xs btn-editar" title="Modificar"
-                                    [disabled]="trabajando" (click)="editarImagen(i)">
-                              <i class="fa fa-pen"></i>
-                            </button>
-                            <button type="button" class="btn btn-xs btn-ver"
-                                    [title]="i.activo ? 'Apagar' : 'Encender'"
-                                    [disabled]="trabajando" (click)="alternarImagen(i)">
-                              <i class="fa" [class.fa-eye]="!i.activo" [class.fa-eye-slash]="i.activo"></i>
-                            </button>
-                          }
-                          @if (puedeEliminar) {
-                            <button type="button" class="btn btn-xs btn-borrar" title="Quitar"
-                                    [disabled]="trabajando" (click)="quitarImagen(i)">
-                              <i class="fa fa-trash"></i>
-                            </button>
-                          }
-                        </span>
-                      </div>
-                    }
-                  </div>
-                }
-
-                <!-- La papelera DE ESTA CATEGORÍA -->
-                @if (contenido && (contenido.en_papelera || papeleraAbierta)) {
-                  <div class="cat-papelera">
-                    <button type="button" class="btn btn-xs btn-outline-secondary" (click)="alternarPapelera()">
-                      <i class="fa" [class.fa-chevron-right]="!papeleraAbierta"
-                         [class.fa-chevron-down]="papeleraAbierta"></i>
-                      Papelera ({{ contenido.en_papelera }})
-                    </button>
-
-                    @if (papeleraAbierta) {
-                      @if (papelera.length === 0) {
-                        <p class="text-muted small mt-2 mb-0">La papelera de esta categoría está vacía.</p>
-                      } @else {
-                        @for (p of papelera; track p.id) {
-                          <div class="cat-fila cat-fila--papelera">
-                            <img class="cat-miniatura" [src]="p.imagen_url" [alt]="p.nombre || 'Imagen'" loading="lazy">
-                            <div class="cat-datos">
-                              <b class="cat-nombre">{{ p.nombre || 'Sin nombre' }}</b>
-                              <small class="cat-detalle">Quitada el {{ p.deleted_at }} por {{ p.deleted_by || '—' }}</small>
-                            </div>
-                            <span class="cat-botones">
-                              @if (puedeEditar) {
-                                <button type="button" class="btn btn-xs btn-ver" title="Devolver"
-                                        [disabled]="trabajando" (click)="restaurarImagen(p)">
-                                  <i class="fa fa-rotate-left"></i>
-                                </button>
-                              }
-                            </span>
-                          </div>
-                        }
-
-                        @if (puedeEliminar) {
-                          <button type="button" class="btn btn-xs btn-outline-danger mt-2"
-                                  [disabled]="trabajando" (click)="vaciarPapelera()">
-                            <i class="fa fa-trash"></i> Vaciar la papelera de esta categoría
-                          </button>
-                        }
-                      }
-                    }
-                  </div>
-                }
-              </div>
-
+              <!-- LAS DOS LISTAS. La de siempre primero, que es la que ya
+                   estaba y la que usa la portada. -->
+              <ng-container *ngTemplateOutlet="seccionDeImagenes; context: { $implicit: 'imagen' }"></ng-container>
+              <ng-container *ngTemplateOutlet="seccionDeImagenes; context: { $implicit: 'banner' }"></ng-container>
             </div>
           </ng-scrollbar>
         }
@@ -619,3 +455,219 @@
   </div>
 
 </panel>
+
+<!-- ===================================================================
+     UNA LISTA DE IMÁGENES DE LA CATEGORÍA
+     ===================================================================
+     LA MISMA PIEZA DOS VECES: las imágenes de siempre —el círculo de la
+     portada— y los banners de /shop. Son el mismo dato con el mismo
+     comportamiento (fechas, orden, encendido y papelera) y lo único que
+     cambia es dónde lo pinta la tienda, así que escribirla dos veces era
+     garantizar que una de las dos se quedara atrás.
+
+     `lista` vale «imagen» o «banner», y es lo único que entra. -->
+<ng-template #seccionDeImagenes let-lista>
+<div class="cat-seccion">
+<div class="cat-seccion__titulo">
+    <i class="fa-solid" [class.fa-images]="lista === 'imagen'"
+       [class.fa-panorama]="lista === 'banner'"></i>
+    {{ lista === 'banner' ? 'Banners de la categoría' : 'Imágenes programadas' }}
+    <span class="cat-seccion__cuenta">{{ imagenesDe(lista).length }}</span>
+
+    <!-- EL BOTÓN VA EN CADA SECCIÓN y no arriba: con dos listas, un
+         «Programar imagen» suelto en la cabecera no dice a cuál. -->
+    @if (puedeCrear) {
+      <button type="button" class="btn btn-xs btn-primary cat-seccion__boton"
+              [disabled]="trabajando" (click)="programar(lista)">
+        <i class="fa fa-plus"></i>
+        {{ lista === 'banner' ? 'Programar banner' : 'Programar imagen' }}
+      </button>
+    }
+  </div>
+
+  <!-- CADA CUÁNTO CAMBIAN, sólo en los banners: las imágenes de siempre no
+       se turnan, sale la que toca por fecha y se queda. -->
+  @if (lista === 'banner' && imagenesDe(lista).length > 1) {
+    <div class="cat-segundos">
+      <label for="cat-banner-segundos">Cambian cada</label>
+      <input id="cat-banner-segundos" type="number" class="form-control form-control-sm"
+             min="2" max="60" step="1" placeholder="5"
+             [disabled]="!puedeEditar || trabajando"
+             [(ngModel)]="segundosBanner" (change)="guardarSegundosBanner()">
+      <span>segundos</span>
+      <small class="cat-segundos__pista">Entre 2 y 60. Vacío, el ritmo de siempre de la tienda.</small>
+    </div>
+  }
+
+                <!-- El texto va dentro de un <span>: .campo-hint es flex, y un
+                     <b> suelto se convertiría en otra columna. -->
+                <p class="campo-hint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span>
+      Cada una tiene sus fechas, y la tienda enseña la que toque hoy sola.
+      Sin fechas es ilimitada. Si dos están en fecha a la vez manda la de
+      arriba: arrástralas para cambiar el orden.
+      @if (lista === 'banner') {
+        <b>Sale arriba del todo en la página de esta categoría</b>, antes del
+        título. Las subcategorías que no tengan el suyo enseñan éste.
+      } @else {
+        <b>Es la imagen que usan las dos secciones de la portada</b>
+        —destacadas y promoción— cuando la categoría está marcada.
+      }
+                  </span>
+                </p>
+
+                @if (estado(lista).cargando) {
+                  <p class="text-muted small mb-0">
+                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando…
+                  </p>
+
+                } @else if (imagenesDe(lista).length === 0) {
+                  <div class="cat-sin-imagenes">
+                    <i class="fa-solid fa-image"></i>
+                    <div>
+        @if (lista === 'banner') {
+          <b>Esta categoría no tiene banner.</b>
+          Su página en la tienda se queda como está hoy: la miga de pan y el
+          título, sin tira de arriba. Si su categoría de arriba tiene uno,
+          sale ése.
+        } @else {
+          <b>Esta categoría no tiene ninguna imagen.</b>
+          En la tienda sale sólo en el menú y en los filtros; para
+          que salga con imagen en las secciones de la portada, prográmale una.
+        }
+                    </div>
+                  </div>
+
+                } @else {
+
+                  @if (!laQueSaleDe(lista)) {
+                    <p class="cat-aviso">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+        Hoy no sale ninguna: están apagadas, o sus fechas no incluyen hoy.
+        @if (lista === 'banner') {
+          La página de la categoría se queda sin tira de arriba.
+        } @else {
+          La categoría seguirá saliendo en la portada si está marcada, pero
+          sin imagen.
+        }
+                    </p>
+                  }
+
+                  <div cdkDropList [cdkDropListData]="imagenesDe(lista)"
+                       [cdkDropListDisabled]="!puedeEditar || trabajando"
+                       (cdkDropListDropped)="soltarImagen($event, lista)">
+
+                    @for (i of imagenesDe(lista); track i.id) {
+                      <div class="cat-fila"
+                           [class.cat-fila--sale]="i.sale_ahora"
+                           [class.cat-fila--apagada]="i.estado !== 'vigente'"
+                           cdkDrag>
+
+                        <div class="cat-fantasma" *cdkDragPlaceholder></div>
+
+                        @if (puedeEditar) {
+                          <span class="cat-asa" cdkDragHandle title="Arrastra para cambiar el orden">
+                            <i class="fa-solid fa-grip-vertical"></i>
+                          </span>
+                        }
+
+                        <img class="cat-miniatura" [src]="i.imagen_url" [alt]="i.nombre || 'Imagen'" loading="lazy">
+
+                        <div class="cat-datos">
+                          <b class="cat-nombre">{{ i.nombre || 'Sin nombre' }}</b>
+
+                          <span class="cat-etiquetas">
+                            @if (i.sale_ahora) {
+                              <span class="chip chip-ok" title="Es la que está viendo el cliente ahora mismo">
+                                <i class="fa-solid fa-circle-check"></i> Es la que sale
+                              </span>
+                            }
+
+                            <span class="chip" [ngClass]="estadosImagen[i.estado].clase"
+                                  [title]="estadosImagen[i.estado].ayuda">
+                              <i class="fa-solid" [ngClass]="estadosImagen[i.estado].icono"></i>
+                              {{ estadosImagen[i.estado].texto }}
+                            </span>
+
+                            @if (i.tapada) {
+                              <span class="chip chip-warn" title="Está en fecha, pero sale la de arriba">
+                                <i class="fa-solid fa-layer-group"></i> Tapada por la de arriba
+                              </span>
+                            }
+
+                            <span class="chip chip-muted">
+                              <i class="fa-solid" [class.fa-infinity]="!i.desde && !i.hasta"
+                                 [class.fa-calendar]="!!(i.desde || i.hasta)"></i>
+                              {{ vigencia(i) }}
+                            </span>
+                          </span>
+                        </div>
+
+                        <span class="cat-botones">
+                          @if (puedeEditar) {
+                            <button type="button" class="btn btn-xs btn-editar" title="Modificar"
+                                    [disabled]="trabajando" (click)="editarImagen(i, lista)">
+                              <i class="fa fa-pen"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-ver"
+                                    [title]="i.activo ? 'Apagar' : 'Encender'"
+                                    [disabled]="trabajando" (click)="alternarImagen(i, lista)">
+                              <i class="fa" [class.fa-eye]="!i.activo" [class.fa-eye-slash]="i.activo"></i>
+                            </button>
+                          }
+                          @if (puedeEliminar) {
+                            <button type="button" class="btn btn-xs btn-borrar" title="Quitar"
+                                    [disabled]="trabajando" (click)="quitarImagen(i, lista)">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                          }
+                        </span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- La papelera DE ESTA CATEGORÍA -->
+                @if (enPapeleraDe(lista) || estado(lista).papeleraAbierta) {
+                  <div class="cat-papelera">
+                    <button type="button" class="btn btn-xs btn-outline-secondary" (click)="alternarPapelera(lista)">
+                      <i class="fa" [class.fa-chevron-right]="!estado(lista).papeleraAbierta"
+                         [class.fa-chevron-down]="estado(lista).papeleraAbierta"></i>
+                      Papelera ({{ enPapeleraDe(lista) }})
+                    </button>
+
+                    @if (estado(lista).papeleraAbierta) {
+                      @if (estado(lista).papelera.length === 0) {
+                        <p class="text-muted small mt-2 mb-0">La papelera de esta categoría está vacía.</p>
+                      } @else {
+                        @for (p of estado(lista).papelera; track p.id) {
+                          <div class="cat-fila cat-fila--papelera">
+                            <img class="cat-miniatura" [src]="p.imagen_url" [alt]="p.nombre || 'Imagen'" loading="lazy">
+                            <div class="cat-datos">
+                              <b class="cat-nombre">{{ p.nombre || 'Sin nombre' }}</b>
+                              <small class="cat-detalle">Quitada el {{ p.deleted_at }} por {{ p.deleted_by || '—' }}</small>
+                            </div>
+                            <span class="cat-botones">
+                              @if (puedeEditar) {
+                                <button type="button" class="btn btn-xs btn-ver" title="Devolver"
+                                        [disabled]="trabajando" (click)="restaurarImagen(p, lista)">
+                                  <i class="fa fa-rotate-left"></i>
+                                </button>
+                              }
+                            </span>
+                          </div>
+                        }
+
+                        @if (puedeEliminar) {
+                          <button type="button" class="btn btn-xs btn-outline-danger mt-2"
+                                  [disabled]="trabajando" (click)="vaciarPapelera(lista)">
+                            <i class="fa fa-trash"></i> Vaciar la papelera de esta categoría
+                          </button>
+                        }
+                      }
+                    }
+                  </div>
+                }
+              </div>
+</ng-template>

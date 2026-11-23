@@ -227,17 +227,18 @@
              entera en una caja que no se alineaba con nada. Aquí ocupan un
              hueco que ya estaba vacío. -->
         <div class="enc-centro__pestanas">
-          <button type="button" class="enc-centro__pestana"
-                  [class.is-activa]="vistaCentro === 'previa'"
-                  (click)="vistaCentro = 'previa'">
-            <i class="fa-solid fa-eye"></i> Vista previa
-          </button>
-          <button type="button" class="enc-centro__pestana"
-                  [class.is-activa]="vistaCentro === 'menu'"
-                  (click)="vistaCentro = 'menu'">
-            <i class="fa-solid fa-bars"></i> Menú
-            <span class="enc-centro__cuenta">{{ enlaces.length }}</span>
-          </button>
+          <!-- LA BARRA DE LA CASA (app-tab-panel), la misma del pie y del resto
+               del CRM. Estaban escritas aquí a mano —dos botones con un
+               subrayado— y se veían distintas de las demás pantallas.
+
+               SIN PANEL: lo que hay debajo no es contenido proyectado, es el
+               boceto con su propio marco; la caja con borde del componente le
+               pondría un segundo recuadro alrededor. -->
+          <app-tab-panel class="enc-centro__tabs"
+                         [pestanas]="pestanasCentro"
+                         [activa]="vistaCentro"
+                         [margenInferior]="false"
+                         (cambiada)="vistaCentro = $any($event)" />
 
           <div class="enc-centro__fechas" [formGroup]="datosForm">
             <label for="enc-desde">Desde</label>

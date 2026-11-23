@@ -1093,12 +1093,23 @@
   gap: .35rem;
 }
 
+/* La fila de las pestañas: la barra de la casa a la izquierda y las fechas
+   al final. SIN `border-bottom` AQUÍ: la línea la dibuja la propia barra
+   (un ::after dentro del <ul>, para que la pestaña activa pueda taparla), y
+   con las dos saldría una raya de dos píxeles bajo las pestañas y de uno
+   bajo las fechas. */
 .enc-centro__pestanas {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: .25rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  gap: .25rem 1rem;
+}
+
+/* La barra se lleva todo el ancho que dejen las fechas: su línea es la que
+   hace de base de la fila */
+.enc-centro__tabs {
+  flex: 1 1 16rem;
+  min-width: 0;
 }
 
 /* En pantalla estrecha las fechas bajan solas y se pegan a la izquierda:
@@ -1111,31 +1122,6 @@
   }
 }
 
-.enc-centro__pestana {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  margin-bottom: -1px;
-  padding: .4rem .7rem;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  font-size: .78rem;
-  font-weight: 600;
-  color: var(--bs-secondary-color, #6c757d);
-  background: none;
-}
-
-.enc-centro__pestana.is-activa {
-  color: var(--bs-primary, #348fe2);
-  border-bottom-color: var(--bs-primary, #348fe2);
-}
-
-.enc-centro__cuenta {
-  padding: 0 .35rem;
-  border-radius: 999px;
-  font-size: .68rem;
-  background-color: var(--bs-tertiary-bg, #f1f3f5);
-}
 
 /* ----- El boceto de la tienda -----
    Los colores vienen del formulario por [style], así que aquí NO se pone

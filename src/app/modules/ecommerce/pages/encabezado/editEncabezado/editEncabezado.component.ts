@@ -27,6 +27,7 @@ import { CampoColorComponent } from '../../../../../components/campos/campoColor
 import { CampoTextoComponent } from '../../../../../components/campos/campoTexto/campoTexto.component';
 import { CheckboxComponent } from '../../../../../components/campos/checkbox/checkbox.component';
 import { CampoBusquedaComponent } from '../../../../../components/campos/campoBusqueda/campoBusqueda.component';
+import { TabPanelComponent, PestanaTab } from '../../../../../components/campos/tabPanel/tabPanel.component';
 import { svgDeIconoTienda } from '../../../../../components/campos/campoIconoTienda/iconoTienda.component';
 import { ActionButtonsComponent } from '../../../../../components/botones/action-buttons/action-buttons.component';
 import { FilasEstirablesDirective } from '../../../../../core/directives/filasEstirables.directive';
@@ -93,7 +94,7 @@ export type PiezaEncabezado =
     // vacío y parece que el botón no hace nada
     CommonModule, RouterLink, FormsModule, ReactiveFormsModule, AgGridModule, FilasEstirablesDirective,
     PanelComponent, CampoColorComponent, CampoTextoComponent, CheckboxComponent,
-    CampoBusquedaComponent,
+    CampoBusquedaComponent, TabPanelComponent,
   ],
 })
 export class EditEncabezadoComponent implements OnInit {
@@ -124,6 +125,25 @@ export class EditEncabezadoComponent implements OnInit {
 
   /** Qué se mira en el centro: la previa o el menú del que se edita. */
   public vistaCentro: 'previa' | 'menu' = 'previa';
+
+  /**
+   * Las dos pestañas, con la barra de la casa (app-tab-panel), la misma del
+   * pie y del resto del CRM.
+   *
+   * ES UN GETTER y no un campo porque el contador del menú cambia al crear
+   * o borrar un enlace, y porque al cambiar de encabezado en la lista de la
+   * izquierda el menú es otro. Un array fijo se quedaría con la cuenta del
+   * encabezado anterior.
+   */
+  get pestanasCentro(): PestanaTab[] {
+    return [
+      { id: 'previa', texto: 'Vista previa', icono: 'fa-solid fa-eye',
+        ayuda: 'El boceto de la tienda: se pulsa cada parte para cambiarla' },
+      { id: 'menu', texto: 'Menú', icono: 'fa-solid fa-bars',
+        insignia: this.enlaces.length,
+        ayuda: 'Los enlaces de la barra de este encabezado' },
+    ];
+  }
 
   /** Para encontrar uno cuando ya hay quince campañas. */
   public buscarHeader = '';
